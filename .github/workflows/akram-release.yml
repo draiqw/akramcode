@@ -1,0 +1,61 @@
+name: akram-code Release
+
+run-name: akram-code ${{ github.ref_name || inputs.tag }}
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag to validate and publish
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: akram-code-release-${{ github.ref_name || inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Validate and publish release
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Resolve release tag
+        id: tag
+        env:
+          PUSH_TAG: ${{ github.ref_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          tag="${INPUT_TAG:-$PUSH_TAG}"
+          case "$tag" in
+            v[0-9]*.[0-9]*.[0-9]*) ;;
+            *) echo "Expected a semantic version tag such as v0.1.0, got: $tag" >&2; exit 1 ;;
+          esac
+          echo "value=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Check out the exact release tag
+        uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a # v7.0.1
+        with:
+          repository: draiqw/akram-code
+          ref: ${{ steps.tag.outputs.value }}
+          fetch-depth: 0
+
+      - name: Set up Hermes PM
+        uses: ./.github/actions/setup-pm
+        with:
+          cache-python: true
+
+      - name: Validate installer and update contracts
+        run: scripts/run_tests.sh tests/scripts/ -k 'install or update or release'
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.value }}
+        run: gh release create "$TAG" --repo draiqw/akram-code --verify-tag --generate-notes --title "akram-code $TAG"
