@@ -38,9 +38,12 @@ jobs:
 
           branch="upstream-sync/${upstream_sha:0:12}"
           git switch -c "$branch"
+          git diff --name-only --diff-filter=D HEAD upstream/main | xargs -r git rm -f --
+          git checkout upstream/main -- .
+          git add --all
           git -c user.name="github-actions[bot]" \
               -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-              merge --allow-unrelated-histories --no-ff --no-edit upstream/main
+              commit -m "chore: sync Hermes upstream ${upstream_sha:0:12}"
           git push --set-upstream origin "$branch"
 
           title="chore: sync Hermes upstream ${upstream_sha:0:12}"
