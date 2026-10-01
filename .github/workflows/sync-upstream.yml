@@ -31,7 +31,7 @@ jobs:
           set -euo pipefail
 
           upstream_sha="$(git rev-parse upstream/main)"
-          if git merge-base --is-ancestor "$upstream_sha" HEAD; then
+          if git diff --quiet HEAD upstream/main; then
             echo "up_to_date=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -40,7 +40,7 @@ jobs:
           git switch -c "$branch"
           git -c user.name="github-actions[bot]" \
               -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-              merge --no-ff --no-edit upstream/main
+              merge --allow-unrelated-histories --no-ff --no-edit upstream/main
           git push --set-upstream origin "$branch"
 
           title="chore: sync Hermes upstream ${upstream_sha:0:12}"
