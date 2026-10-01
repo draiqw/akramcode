@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Hermes Agent bootstrap: clone, acquire uv/Python, then hand the checkout to
+# akramcode bootstrap: clone, acquire uv/Python, then hand the checkout to
 # the same completion an update runs -- command publication, product builds and
 # post-build maintenance -- so a fresh install and a finished update land in one
 # state. Heavy dependencies (tool binaries, browsers, node) are pm's job:
@@ -24,7 +24,10 @@ REPO_URL="${HERMES_REPO_URL:-https://github.com/draiqw/akram-code.git}"
 BRANCH="main"
 INSTALL_COMMIT=""
 INSTALL_DIR="${HERMES_INSTALL_DIR:-}"
-HERMES_HOME="${HERMES_HOME:-$HOME/.hermes}"
+AKRAMCODE_HOME="${AKRAMCODE_HOME:-${HERMES_HOME:-$HOME/.akramcode}}"
+# Keep the legacy variable populated for the current runtime while the public
+# installer and new installs use AKRAMCODE_HOME.
+HERMES_HOME="$AKRAMCODE_HOME"
 STAGE=""
 WANT_MANIFEST=false
 JSON=false
@@ -46,7 +49,7 @@ while [ $# -gt 0 ]; do
                 --branch|-Branch) BRANCH="$2" ;;
                 --commit|-Commit) INSTALL_COMMIT="$2" ;;
                 --dir) INSTALL_DIR="$2" ;;
-                --hermes-home|-HermesHome) HERMES_HOME="$2" ;;
+                --hermes-home|-HermesHome) AKRAMCODE_HOME="$2"; HERMES_HOME="$2" ;;
                 --stage|-Stage) STAGE="$2" ;;
             esac
             shift 2 ;;
@@ -76,8 +79,8 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-INSTALL_DIR="${INSTALL_DIR:-$HERMES_HOME/hermes-agent}"
-export HERMES_HOME
+INSTALL_DIR="${INSTALL_DIR:-$AKRAMCODE_HOME/akramcode}"
+export AKRAMCODE_HOME HERMES_HOME
 
 INSTALL_LOG="$HERMES_HOME/logs/install.log"
 
@@ -100,7 +103,7 @@ fail() { STAGE_REASON="$1"; log_error "$1"; exit 1; }
 print_banner() {
     printf '\n%s%s' "$C_MAGENTA" "$C_BOLD"
     printf '%s\n' "┌─────────────────────────────────────────────────────────┐"
-    printf '%s\n' "│             ☤ akram-code Installer                      │"
+            printf '%s\n' "│             ☤ akramcode Installer                       │"
     printf '%s\n' "├─────────────────────────────────────────────────────────┤"
     printf '%s\n' "│  Personal AI agent based on Hermes.                      │"
     printf '%s\n' "└─────────────────────────────────────────────────────────┘"

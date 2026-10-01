@@ -1,4 +1,4 @@
-"""Shared constants for Hermes Agent.
+"""Shared constants for akramcode.
 
 Import-safe, stdlib-only — importable from anywhere without circular-import risk.
 """
@@ -54,8 +54,32 @@ def _get_platform_default_hermes_home() -> Path:
     if sys.platform == "win32":
         local_appdata = os.environ.get("LOCALAPPDATA", "").strip()
         base = Path(local_appdata) if local_appdata else Path.home() / "AppData" / "Local"
-        return base / ("hermes" + suffix)
-    return Path.home() / (".hermes" + suffix)
+        return base / ("akramcode" + suffix)
+    return Path.home() / (".akramcode" + suffix)
+
+
+def _legacy_platform_home() -> Path:
+    """Return the pre-akramcode data directory for one-time migration."""
+    if sys.platform == "win32":
+        local_appdata = os.environ.get("LOCALAPPDATA", "").strip()
+        base = Path(local_appdata) if local_appdata else Path.home() / "AppData" / "Local"
+        return base / "hermes"
+    return Path.home() / ".hermes"
+
+
+def migrate_legacy_home(*, current: Path | None = None, legacy: Path | None = None) -> bool:
+    """Move an existing Hermes home to the akramcode location once.
+
+    The move is deliberately conservative: an existing non-empty destination is never
+    overwritten. The old path disappears only after the filesystem move succeeds.
+    """
+    current = current or _get_platform_default_hermes_home()
+    legacy = legacy or _legacy_platform_home()
+    if current == legacy or not legacy.exists() or current.exists():
+        return False
+    current.parent.mkdir(parents=True, exist_ok=True)
+    legacy.rename(current)
+    return True
 
 
 def sudo_invoker_default_home() -> Path | None:
@@ -72,7 +96,7 @@ def sudo_invoker_default_home() -> Path | None:
     import pwd
 
     try:
-        return Path(pwd.getpwnam(sudo_user).pw_dir) / ".hermes"
+        return Path(pwd.getpwnam(sudo_user).pw_dir) / ".akramcode"
     except KeyError:  # SUDO_USER not in passwd (chroot/container)
         return None
 
@@ -165,8 +189,13 @@ def get_process_hermes_home() -> Path:
     ``HERMES_HOME`` live on purpose: routed-profile DECISIONS compare against
     :func:`get_routing_process_hermes_home` instead (#119242).
     """
-    val = os.environ.get("HERMES_HOME", "").strip()
-    return _expand_hermes_home(val) if val else _get_platform_default_hermes_home()
+    val = os.environ.get("AKRAMCODE_HOME", "").strip() or os.environ.get("HERMES_HOME", "").strip()
+    if val:
+        return _expand_hermes_home(val)
+    current = _get_platform_default_hermes_home()
+    with contextlib.suppress(OSError):
+        migrate_legacy_home(current=current)
+    return current
 
 
 # Host-pinned identity of the profile this process serves as its own (None: follow HERMES_HOME).
@@ -1408,4 +1437,3 @@ def normalize_scope(scope: str | Path | None) -> str | None:
     normcase on Windows) so writes and reads agree on the key.
     """
     return hermes_home_key(scope) if scope is not None else None
-
