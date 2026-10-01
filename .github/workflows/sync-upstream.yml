@@ -22,7 +22,7 @@ jobs:
         run: git remote add upstream https://github.com/NousResearch/hermes-agent.git || true
 
       - name: Fetch upstream main
-        run: git fetch --no-tags upstream main
+        run: git fetch --no-tags --depth=1 upstream main
 
       - name: Prepare upstream PR
         id: prepare
