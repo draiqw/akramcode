@@ -4,7 +4,9 @@ title: "Hermes Docker Setup"
 description: "Running Hermes Agent in Docker and using Docker as a terminal backend"
 ---
 
-# Hermes Docker Setup
+# AkramCode Docker Setup
+
+The Dockerfile intentionally keeps build rationale out of the build recipe. This page documents the important decisions: the image pins Debian and SQLite inputs, uses PM for the managed Python/Node/browser toolchain, builds only the TUI, and stores mutable state in `/opt/data`. The image does not contain a web dashboard or desktop application.
 
 There are two distinct ways Docker intersects with Hermes Agent:
 
