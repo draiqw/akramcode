@@ -31,8 +31,8 @@ def two_homes(tmp_path, monkeypatch):
 
 def test_served_profile_reads_its_own_sessions_settings(two_homes, monkeypatch):
     root, alpha = two_homes
-    from hermes_state_fts import _cjk_fts_config_enabled
-    from hermes_state_search import _search_slow_ms
+    from hermes_state.fts import _cjk_fts_config_enabled
+    from hermes_state.search import _search_slow_ms
     # The multiplexer bridged the LAUNCH (default) profile's sessions.* into env at import.
     monkeypatch.setenv("HERMES_CJK_FTS", "true")
     monkeypatch.setenv("HERMES_SEARCH_SLOW_MS", "1000")

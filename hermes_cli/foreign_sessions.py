@@ -14,7 +14,7 @@ from pathlib import Path
 from stat import S_ISREG
 from typing import Any, Dict, List, Optional, Tuple
 
-from hermes_state_ids import new_session_id
+from hermes_state.ids import new_session_id
 
 # User-message texts that are really injected context wrappers, not typed input.
 _WRAPPER_TAG_RE = re.compile(
@@ -248,7 +248,7 @@ def import_foreign_session(source: str, path, db=None) -> str:
     tool = _SOURCE_DB_NAMES[source]
     owns_db = db is None
     if owns_db:
-        from hermes_state_registry import acquire
+        from hermes_state.registry import acquire
         db = acquire()  # the CLI resume that follows acquires this same handle
     try:
         session_id = new_session_id()

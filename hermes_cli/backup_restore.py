@@ -18,7 +18,7 @@ import zipfile
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-from hermes_state_holders import read_only_db_uri
+from hermes_state.holders import read_only_db_uri
 from utils import (
     _preserve_file_mode, _preserve_file_owner, _restore_file_mode, _restore_file_owner, atomic_replace,
 )

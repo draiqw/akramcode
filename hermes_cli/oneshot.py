@@ -350,7 +350,7 @@ def _create_session_db_for_oneshot():
     handle is the one in-process tools (delegation, goals) acquire during the run, so the process
     holds one writer; ``_close_agent``'s ``close()`` releases the refcount."""
     try:
-        from hermes_state_registry import acquire
+        from hermes_state.registry import acquire
 
         return acquire()
     except Exception as exc:

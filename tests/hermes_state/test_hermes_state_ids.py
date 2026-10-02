@@ -1,5 +1,5 @@
 """Session-id minting contract: every surface that creates a session mints through
-``hermes_state_ids.new_session_id`` and the id it produces is what lost-and-found salvage classifies
+``hermes_state.ids.new_session_id`` and the id it produces is what lost-and-found salvage classifies
 as a session id (the shape is the recovery sentinel for schema-less rows).
 """
 
@@ -11,7 +11,7 @@ from datetime import datetime
 
 import pytest
 
-from hermes_state_ids import SESSION_ID_PATTERN, new_session_id
+from hermes_state.ids import SESSION_ID_PATTERN, new_session_id
 
 @pytest.mark.parametrize("hex_len,expected_re", [(6, r"^\d{8}_\d{6}_[0-9a-f]{6}$"), (8, r"^\d{8}_\d{6}_[0-9a-f]{8}$"),
                                                  (12, r"^\d{8}_\d{6}_[0-9a-f]{12}$")])

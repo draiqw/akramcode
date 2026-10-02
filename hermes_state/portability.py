@@ -1,7 +1,7 @@
 """Session listing/rich rows, export, and import (portability) for SessionDB.
 
 Plain mixin for ``hermes_state.SessionDB`` (no ``__init__``/state of its own).
-Must never import hermes_state (cycle); shared constants live in hermes_state_common.
+Must never import hermes_state (cycle); shared constants live in hermes_state.common.
 """
 
 import logging
@@ -14,9 +14,9 @@ from typing import Any, Dict, List, Optional
 from agent.skill_commands import AUTO_LOAD_SCAFFOLD_SQL_LIKE, SKILL_SCAFFOLD_SQL_LIKE
 from utils import safe_json_loads
 from hermes_cli.timefmt import coerce_epoch
-from hermes_state_ids import new_session_id
-from hermes_state_common import SCHEMA_SQL, _PREVIEW_RAW_SUBQUERY_SQL, _shape_preview, _sql_session_last_active
-from hermes_state_messages import _parse_tool_calls, _tool_calls_count
+from hermes_state.ids import new_session_id
+from hermes_state.common import SCHEMA_SQL, _PREVIEW_RAW_SUBQUERY_SQL, _shape_preview, _sql_session_last_active
+from hermes_state.messages import _parse_tool_calls, _tool_calls_count
 
 # Pre-split logger identity so log filtering/capture is unchanged.
 logger = logging.getLogger("hermes_state")

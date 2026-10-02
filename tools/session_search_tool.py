@@ -15,7 +15,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Union
 
-from hermes_state_common import _BOUNDARY_END_REASONS
+from hermes_state.common import _BOUNDARY_END_REASONS
 from hermes_time import safe_strftime
 
 # Hidden from browsing/searching — integrations (HERMES_SESSION_SOURCE=tool), delegate
@@ -623,7 +623,7 @@ def session_search(query: str = "", role_filter: str = None, limit: int = 3, db=
     """Run session search, closing DBs opened here. Positional order is frozen for old callers;
     new parameters are appended after ``detail``."""
     from hermes_state import format_session_db_unavailable
-    from hermes_state_registry import acquire, release_or_close
+    from hermes_state.registry import acquire, release_or_close
     owned_dbs: List[Any] = []
     if db is None:
         db = _quiet(acquire, None, "SessionDB unavailable for session_search")

@@ -200,7 +200,7 @@ class TestQuarantineScope:
 
 @pytest.fixture
 def _clean_registry():
-    import hermes_state_registry as registry
+    import hermes_state.registry as registry
 
     registry.close_all()
     registry._generations.clear()

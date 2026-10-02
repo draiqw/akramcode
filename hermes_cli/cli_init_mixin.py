@@ -11,7 +11,7 @@ import queue
 import threading
 from datetime import datetime
 from hermes_cli.fallback_config import get_fallback_chain
-from hermes_state_ids import new_session_id
+from hermes_state.ids import new_session_id
 from pathlib import Path
 from rich.console import Console
 from typing import Any, Dict, List, Optional
@@ -329,7 +329,7 @@ class CLIInitMixin:
             # path a moment later from the REPL thread, and a second writer repeats the full
             # open (the /proc-wide deleted-WAL scan, ~4k readlinks) while the render thread
             # holds the GIL — that repeat was the post-banner freeze before the first prompt.
-            from hermes_state_registry import acquire
+            from hermes_state.registry import acquire
             self._session_db = acquire()
         except Exception as e:
             # Without a store the transcript is NOT persisted while the chat looks healthy,
@@ -340,7 +340,7 @@ class CLIInitMixin:
             # the store before relying on resume.
             self._session_db_unavailable = True
             logger.warning("Failed to initialize SessionDB — session will NOT be indexed for search: %s", e)
-            from hermes_state_user_copy import describe_storage_failure, storage_failure_details
+            from hermes_state.user_copy import describe_storage_failure, storage_failure_details
             from agent.i18n import t
             failure = describe_storage_failure(e)
             def _present_store_warning():

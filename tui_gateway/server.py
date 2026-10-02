@@ -28,7 +28,7 @@ from hermes_constants import (
     reset_hermes_home_override, set_hermes_home_override)
 from hermes_cli.env_loader import load_hermes_dotenv
 from utils import file_signature, is_truthy_value
-from hermes_state_ids import new_session_id
+from hermes_state.ids import new_session_id
 from tools.environments.local import hermes_subprocess_env
 from agent.fast_mode import STATIC_TIERS
 from agent.replay_cleanup import canonicalize_replay_history
@@ -433,7 +433,7 @@ def _launch_state_db_path() -> Path:
 def _get_db():
     global _db, _db_error
     if _db is None:
-        from hermes_state_registry import acquire
+        from hermes_state.registry import acquire
         try:
             # Launch home, never the context-local override (#102526); resolved at first
             # use, not import time (#112692). See _launch_state_db_path.
@@ -470,7 +470,7 @@ def _open_profile_session_db(profile_home):
     """Open a DEDICATED handle on ``profile_home``'s ``state.db`` — FAIL CLOSED: a silent fallback to the
     launch ``state.db`` would bleed rows into the wrong profile's store exactly when the profile store is
     briefly unopenable (locked, mid-restore); callers let the error abort the build (→ ``agent_error``)."""
-    from hermes_state_registry import acquire
+    from hermes_state.registry import acquire
     db_path = Path(profile_home) / "state.db"
     try:
         return acquire(db_path)
@@ -494,7 +494,7 @@ def _profile_db(params: dict | None = None, *, writer: bool = False):
     else:
         try:
             if writer:
-                from hermes_state_registry import acquire
+                from hermes_state.registry import acquire
                 db = acquire(Path(profile_home) / "state.db")
             else:
                 from hermes_cli.web_server_sessions import _open_session_db_at_path
@@ -539,7 +539,7 @@ def _response_profile_name(profile: str | None = None) -> str:
 
 
 def _db_unavailable_error(rid, *, code: int):
-    from hermes_state_user_copy import describe_storage_failure, storage_failure_details
+    from hermes_state.user_copy import describe_storage_failure, storage_failure_details
     failure = describe_storage_failure(_db_error)
     return _err(
         rid, code,

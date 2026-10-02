@@ -9,7 +9,7 @@ state.db (two documented production incidents, 2026-08-15 and 2026-08-23).
 The fix: every full structural rebuild entry point — ``rebuild_fts()``, the
 ``_init_schema`` trigger-repair rebuilds, and ``_recover_stale_fts`` — admits
 through one cross-process file lock (``fts_rebuild_admission`` in
-hermes_state_common) and FAILS CLOSED: a process that cannot acquire the
+hermes_state.common) and FAILS CLOSED: a process that cannot acquire the
 authority defers the rebuild instead of racing the holder. These tests use
 real spawned processes holding the real lock file, per the review contract
 on PR #93200 — the bug is cross-process ownership, so monkeypatched helpers
@@ -26,9 +26,9 @@ from pathlib import Path
 
 import pytest
 
-import hermes_state_common
+import hermes_state.common
 from hermes_state import SessionDB
-from hermes_state_common import FTS_STALE_KEY, _FTS_TRIGGERS
+from hermes_state.common import FTS_STALE_KEY, _FTS_TRIGGERS
 
 pytestmark = pytest.mark.skipif(
     sys.platform == "win32", reason="POSIX flock child-process harness"
@@ -101,7 +101,7 @@ def _meta_value(db_path: Path, key: str):
 @pytest.fixture
 def fast_timeout(monkeypatch):
     monkeypatch.setattr(
-        hermes_state_common, "_FTS_REBUILD_LOCK_TIMEOUT_SECONDS", 0.5
+        hermes_state.common, "_FTS_REBUILD_LOCK_TIMEOUT_SECONDS", 0.5
     )
 
 
@@ -139,7 +139,7 @@ class TestRebuildFtsAdmission:
     def test_rebuild_waits_out_a_short_holder(self, db, monkeypatch):
         """A holder that releases within the bounded wait does not cause deferral."""
         monkeypatch.setattr(
-            hermes_state_common, "_FTS_REBUILD_LOCK_TIMEOUT_SECONDS", 10.0
+            hermes_state.common, "_FTS_REBUILD_LOCK_TIMEOUT_SECONDS", 10.0
         )
         with _rebuild_lock_held_by_other_process(db.db_path, hold_seconds=1.0):
             # Child exits after 1s; deadline is 10s — this must acquire and rebuild.
@@ -147,7 +147,7 @@ class TestRebuildFtsAdmission:
 
     def test_admission_yields_true_for_pathless_db(self):
         """In-memory / pathless stores have no cross-process surface."""
-        with hermes_state_common.fts_rebuild_admission(None) as admitted:
+        with hermes_state.common.fts_rebuild_admission(None) as admitted:
             assert admitted is True
 
 
@@ -245,9 +245,9 @@ class TestSchemaPathAdmission:
 _ORPHANING_HOLDER_SCRIPT = """
 import os, sys, time
 sys.path.insert(0, {repo!r})
-import hermes_state_common
+import hermes_state.common
 
-admission = hermes_state_common.fts_rebuild_admission({db!r})
+admission = hermes_state.common.fts_rebuild_admission({db!r})
 admitted = admission.__enter__()
 assert admitted is True
 pid = os.fork()
@@ -270,7 +270,7 @@ def _orphaned_fork_holder(db_path: Path):
     import signal
 
     script = _ORPHANING_HOLDER_SCRIPT.format(
-        repo=str(Path(hermes_state_common.__file__).parent), db=str(db_path)
+        repo=str(Path(hermes_state.common.__file__).parent), db=str(db_path)
     )
     proc = subprocess.Popen(
         [sys.executable, "-c", script], stdout=subprocess.PIPE, text=True
@@ -312,7 +312,7 @@ class TestOrphanedHolderStalenessBreak:
         with _rebuild_lock_held_by_other_process(db.db_path) as proc:
             record = {
                 "pid": proc.pid,
-                "start_ticks": hermes_state_common._proc_start_ticks(proc.pid),
+                "start_ticks": hermes_state.common._proc_start_ticks(proc.pid),
                 "acquired_at": 0,
             }
             lock.write_bytes(json.dumps(record).encode())
@@ -320,7 +320,7 @@ class TestOrphanedHolderStalenessBreak:
 
     def test_holder_record_cleared_on_normal_release(self, tmp_path):
         lock = tmp_path / "x.db.fts_rebuild.lock"
-        with hermes_state_common.fts_rebuild_admission(tmp_path / "x.db") as ok:
+        with hermes_state.common.fts_rebuild_admission(tmp_path / "x.db") as ok:
             assert ok is True
             assert b"pid" in lock.read_bytes()
         assert lock.read_bytes() == b""
@@ -338,9 +338,9 @@ class TestOrphanedHolderStalenessBreak:
 import os, sys, time
 sys.path.insert(0, {repo!r})
 from pathlib import Path
-import hermes_state_repair
+import hermes_state.repair
 
-lock_cm = hermes_state_repair._cross_process_repair_lock(Path({db!r}))
+lock_cm = hermes_state.repair._cross_process_repair_lock(Path({db!r}))
 assert lock_cm.__enter__() is True
 pid = os.fork()
 if pid == 0:
@@ -348,7 +348,7 @@ if pid == 0:
     os._exit(0)
 print("child", pid, flush=True)
 os._exit(1)
-""".format(repo=str(Path(hermes_state_common.__file__).parent), db=str(db_path))
+""".format(repo=str(Path(hermes_state.common.__file__).parent), db=str(db_path))
         import os
         import signal
 
@@ -358,9 +358,9 @@ os._exit(1)
         grandchild = int(proc.stdout.readline().strip().split()[1])
         proc.wait(timeout=10)
         try:
-            import hermes_state_repair
+            import hermes_state.repair
 
-            with hermes_state_repair._cross_process_repair_lock(db_path) as holding:
+            with hermes_state.repair._cross_process_repair_lock(db_path) as holding:
                 assert holding is True
         finally:
             with contextlib.suppress(OSError):
@@ -374,7 +374,7 @@ class TestNonContentionErrnoFailsFast:
         import fcntl
 
         monkeypatch.setattr(
-            hermes_state_common, "_FTS_REBUILD_LOCK_TIMEOUT_SECONDS", 30.0
+            hermes_state.common, "_FTS_REBUILD_LOCK_TIMEOUT_SECONDS", 30.0
         )
 
         def _flock(*_args, **_kwargs):
@@ -383,7 +383,7 @@ class TestNonContentionErrnoFailsFast:
         monkeypatch.setattr(fcntl, "flock", _flock)
         db_path = tmp_path / "state.db"
         t0 = time.monotonic()
-        with hermes_state_common.fts_rebuild_admission(db_path) as admitted:
+        with hermes_state.common.fts_rebuild_admission(db_path) as admitted:
             assert admitted is False
         assert time.monotonic() - t0 < 2.0
 
@@ -391,9 +391,9 @@ class TestNonContentionErrnoFailsFast:
         self, tmp_path, monkeypatch
     ):
         """Gateway-shaped: same SessionDB stays open and retries after deferral."""
-        import hermes_state_schema
+        import hermes_state.schema
 
-        monkeypatch.setattr(hermes_state_schema, "_FTS_STALE_RETRY_SECONDS", 0.0)
+        monkeypatch.setattr(hermes_state.schema, "_FTS_STALE_RETRY_SECONDS", 0.0)
         db_path = tmp_path / "state.db"
         d = SessionDB(db_path=db_path)
         if not d._fts_enabled:
@@ -440,7 +440,7 @@ class TestNonContentionErrnoFailsFast:
         import logging
 
         monkeypatch.setattr(
-            hermes_state_common, "_FTS_REBUILD_LOCK_TIMEOUT_SECONDS", 30.0
+            hermes_state.common, "_FTS_REBUILD_LOCK_TIMEOUT_SECONDS", 30.0
         )
 
         def _flock(*_args, **_kwargs):
@@ -448,7 +448,7 @@ class TestNonContentionErrnoFailsFast:
 
         monkeypatch.setattr(fcntl, "flock", _flock)
         with caplog.at_level(logging.INFO, logger="hermes_state"):
-            with hermes_state_common.fts_rebuild_admission(
+            with hermes_state.common.fts_rebuild_admission(
                 tmp_path / "state.db"
             ) as admitted:
                 assert admitted is False
@@ -463,7 +463,7 @@ class TestNonContentionErrnoFailsFast:
         import fcntl
 
         import hermes_state
-        import hermes_state_repair
+        import hermes_state.repair
 
         monkeypatch.setattr(hermes_state, "_REPAIR_LOCK_TIMEOUT_SECONDS", 30.0)
 
@@ -472,7 +472,7 @@ class TestNonContentionErrnoFailsFast:
 
         monkeypatch.setattr(fcntl, "flock", _flock)
         t0 = time.monotonic()
-        with hermes_state_repair._cross_process_repair_lock(tmp_path / "state.db") as ok:
+        with hermes_state.repair._cross_process_repair_lock(tmp_path / "state.db") as ok:
             assert ok is False
         assert time.monotonic() - t0 < 2.0
 
@@ -490,7 +490,7 @@ class TestNonContentionErrnoFailsFast:
         ],
     )
     def test_is_advisory_lock_contention_table(self, exc, expected):
-        assert hermes_state_common.is_advisory_lock_contention(exc) is expected
+        assert hermes_state.common.is_advisory_lock_contention(exc) is expected
 
 
 class TestDeferredFtsRetryInProcess:
@@ -513,7 +513,7 @@ class TestDeferredFtsRetryInProcess:
     def test_retry_is_non_blocking_while_live_holder_and_backs_off(
         self, tmp_path, fast_timeout, monkeypatch
     ):
-        import hermes_state_schema
+        import hermes_state.schema
 
         db_path = tmp_path / "state.db"
         d = SessionDB(db_path=db_path)
@@ -532,7 +532,7 @@ class TestDeferredFtsRetryInProcess:
                 # Live holder: the retry must return quickly (timeout=0),
                 # not wait out any admission budget.
                 monkeypatch.setattr(
-                    hermes_state_common, "_FTS_REBUILD_LOCK_TIMEOUT_SECONDS", 30.0
+                    hermes_state.common, "_FTS_REBUILD_LOCK_TIMEOUT_SECONDS", 30.0
                 )
                 t0 = time.monotonic()
                 assert gw.retry_deferred_fts_recovery() is False
@@ -543,8 +543,8 @@ class TestDeferredFtsRetryInProcess:
                 assert gw.retry_deferred_fts_recovery() is False
                 # Backoff doubled (60s -> 120s) but capped at the max.
                 assert gw._fts_stale_retry_interval == min(
-                    2 * hermes_state_schema._FTS_STALE_RETRY_SECONDS,
-                    hermes_state_schema._FTS_STALE_RETRY_MAX_SECONDS,
+                    2 * hermes_state.schema._FTS_STALE_RETRY_SECONDS,
+                    hermes_state.schema._FTS_STALE_RETRY_MAX_SECONDS,
                 )
                 assert gw._fts_stale_retry_after > time.monotonic()
             except BaseException:
@@ -571,11 +571,11 @@ class TestDeferredFtsRetryInProcess:
         and reaches shared-registry instances."""
         import threading
 
-        import hermes_state_registry
-        import hermes_state_schema
+        import hermes_state.registry
+        import hermes_state.schema
         import gateway.run as grun
 
-        monkeypatch.setattr(hermes_state_schema, "_FTS_STALE_RETRY_SECONDS", 0.0)
+        monkeypatch.setattr(hermes_state.schema, "_FTS_STALE_RETRY_SECONDS", 0.0)
         db_path = tmp_path / "state.db"
         d = SessionDB(db_path=db_path)
         if not d._fts_enabled:
@@ -587,10 +587,10 @@ class TestDeferredFtsRetryInProcess:
         self._mark_stale(db_path)
 
         with _rebuild_lock_held_by_other_process(db_path):
-            gw = hermes_state_registry.acquire(db_path)
+            gw = hermes_state.registry.acquire(db_path)
         try:
             assert gw._fts_stale is True
-            assert gw in hermes_state_registry.live_shared_session_dbs()
+            assert gw in hermes_state.registry.live_shared_session_dbs()
             stop = threading.Event()
             th = threading.Thread(
                 target=grun._start_gateway_housekeeping,
@@ -607,7 +607,7 @@ class TestDeferredFtsRetryInProcess:
             assert gw._fts_stale is False
             assert gw._fts_enabled is True
         finally:
-            hermes_state_registry.release_or_close(gw)
+            hermes_state.registry.release_or_close(gw)
         assert _meta_value(db_path, FTS_STALE_KEY) is None
 
     def test_retry_noop_when_not_stale_or_read_only(self, tmp_path):

@@ -64,7 +64,7 @@ def _close_late_session_db_result(future: "concurrent.futures.Future") -> None:
     with contextlib.suppress(Exception):
         db = future.result()
         if db is not None:
-            from hermes_state_registry import release_or_close
+            from hermes_state.registry import release_or_close
             release_or_close(db)
 
 
@@ -1840,7 +1840,7 @@ def _open_cron_session_db(job: dict):
     # timeout proceeds without a session store instead of blocking the run forever.
     _session_db_timeout = _get_session_db_timeout()
     try:
-        from hermes_state_registry import acquire
+        from hermes_state.registry import acquire
 
         if _session_db_timeout <= 0:
             return acquire()
@@ -2038,7 +2038,7 @@ def _final_response_from_result(result: dict, job_id: str, job_name: str, AIAgen
         # Render every persistence-cause variant or cause-refined text slips through.
         _explainer_variants = []
         try:
-            from hermes_state_errors import PERSISTENCE_ERROR_CAUSES as _causes
+            from hermes_state.errors import PERSISTENCE_ERROR_CAUSES as _causes
         except Exception:
             _causes = ("locked", "disk", "unknown")
         # The finalizer fills the model name into the explainer; render with the same name (and
@@ -2148,7 +2148,7 @@ def _finalize_cron_session(session_db, agent, job_id: str, job_name: str, cron_s
     except (Exception, KeyboardInterrupt) as e:
         logger.debug("Job '%s': failed to end session: %s", job_id, e)
     try:
-        from hermes_state_registry import release_or_close
+        from hermes_state.registry import release_or_close
         release_or_close(_session_db)
     except (Exception, KeyboardInterrupt) as e:
         logger.debug("Job '%s': failed to close SQLite session store: %s", job_id, e)

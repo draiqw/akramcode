@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
-from hermes_state_common import (
+from hermes_state.common import (
     AUTO_VACUUM_MIN_FREELIST_RATIO, _id_chunks, _non_continuation_child_sql, _placeholders, _sql_session_last_active,
     escape_like as _escape_like
 )
@@ -26,7 +26,7 @@ def _like(value: str) -> str:
 
 
 def _cwd_prefix_filter(value: str) -> Tuple[List[str], list]:
-    from hermes_state_sessions import _cwd_prefix_clause
+    from hermes_state.sessions import _cwd_prefix_clause
     clause, params = _cwd_prefix_clause(value)
     return [clause], list(params)
 
@@ -127,7 +127,7 @@ class SessionMaintenanceMixin:
         """True when a live turn lease / compression lock protects ``sid``; expired or
         dead-holder guards are reclaimed and fenced as a side effect."""
         from hermes_state import SessionCompressionInProgressError
-        from hermes_state_errors import SessionTurnLeaseLostError
+        from hermes_state.errors import SessionTurnLeaseLostError
         try:
             self._check_transcript_write_guards(
                 conn, sid, compression_lock_holder=None, turn_lease_holder=None,
@@ -420,7 +420,7 @@ class SessionMaintenanceMixin:
         ``request_dump_*``) for pruned sessions are removed as part of the same sweep (issue #3015).
         Messaging and UI sources are never touched here. See #54189.
         """
-        from hermes_state_repair import _release_auto_maintenance_lock, _try_acquire_auto_maintenance_lock
+        from hermes_state.repair import _release_auto_maintenance_lock, _try_acquire_auto_maintenance_lock
         result: Dict[str, Any] = {"skipped": False, "pruned": 0, "closed": 0, "vacuumed": False}
         if retention_days is None or retention_days < 0:
             # A negative retention would build a future cutoff and match every ended
@@ -469,7 +469,7 @@ class SessionMaintenanceMixin:
                 # one multiplexed process another live SessionDB generation for this same path is
                 # just as much a holder as another process would be.
                 # Automatic maintenance only ever SKIPS — a turn is never refused over housekeeping.
-                from hermes_state_holders import (
+                from hermes_state.holders import (
                     foreign_state_db_holders, in_process_state_db_holders)
                 holders = (foreign_state_db_holders(self.db_path)
                            + in_process_state_db_holders(self.db_path, exclude=self))

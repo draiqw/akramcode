@@ -19,10 +19,10 @@ from agent.message_metadata import (
     index_tool_call_uids, message_uid_or_none, resolve_tool_call_uid, mint_uid, stamp_message_uid)
 from agent.message_sanitization import _sanitize_surrogates, coalesce_tool_call_id
 from hermes_cli.timefmt import coerce_epoch
-from hermes_state_common import (
+from hermes_state.common import (
     _COMPRESSION_LOCK_ROW_SQL, _ENDED_ROW_SQL, _RESET_END_REASONS, _RESET_END_REASONS_SQL, _ended_by_compression,
     _json_or, _legacy_reset_child_sql, _placeholders, _sql_json_extract)
-from hermes_state_identity import (
+from hermes_state.identity import (
     _absorbed_uids_json, _restore_identity_columns, _tool_call_uid_map, _tool_call_uid_or_none, _tool_call_uids_json)
 
 logger = logging.getLogger("hermes_state")  # caplog tests pin the origin module's name
@@ -214,7 +214,7 @@ class SessionMessagesMixin:
         unowned turn lease in that same transaction.
         """
         from hermes_state import SessionCompressionInProgressError
-        from hermes_state_errors import CompressionSessionClosedError, SessionTurnLeaseLostError
+        from hermes_state.errors import CompressionSessionClosedError, SessionTurnLeaseLostError
         # NOTE (#75316 redesign): appends do NOT check compression_locks. The lock's job is to stop two
         # COMPRESSIONS colliding, not to fence ordinary transcript writes. Concurrent appends during a
         # compression are safe by construction: archive_and_compact() commits against a watermark captured
@@ -824,7 +824,7 @@ class SessionMessagesMixin:
         the whole transcript on every rewind). The live view is identical either way; only the durability
         of the dropped turns differs.
         """
-        from hermes_state_errors import CompressionSessionClosedError
+        from hermes_state.errors import CompressionSessionClosedError
         def _do(conn):
             if reject_active_turn_lease:
                 self._check_transcript_write_guards(

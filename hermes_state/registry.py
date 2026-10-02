@@ -37,7 +37,7 @@ import threading
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, Iterator, List, Optional, Tuple
 
-from hermes_state_common import stat_db_file_identity as _stat_db_file_identity
+from hermes_state.common import stat_db_file_identity as _stat_db_file_identity
 
 if TYPE_CHECKING:  # pragma: no cover - import cycle guard, typed only
     from hermes_state import SessionDB
@@ -118,7 +118,7 @@ def _close_quietly(db: "SessionDB", debug_message: str) -> None:
     try:
         db.close()
     except Exception as exc:
-        from hermes_state_dbfile import RetiredGenerationCaptureError
+        from hermes_state.dbfile import RetiredGenerationCaptureError
         if isinstance(exc, RetiredGenerationCaptureError):
             logger.error("SessionDB for %s did not settle at close: %s", _db_path_of(db), exc)
         else:

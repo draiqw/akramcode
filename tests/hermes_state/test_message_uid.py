@@ -74,10 +74,10 @@ class TestMintAndRestore:
     def test_legacy_rows_are_backfilled_in_bounded_slices_across_opens(self, tmp_path, monkeypatch):
         """A single full-table UPDATE held the write lock for minutes on a large store; each open now
         mints at most one chunk past its time budget, keeps earlier uids, and converges."""
-        import hermes_state_schema
+        import hermes_state.schema
 
-        monkeypatch.setattr(hermes_state_schema, "_MESSAGE_UID_BACKFILL_CHUNK", 2)
-        monkeypatch.setattr(hermes_state_schema, "_MESSAGE_UID_BACKFILL_BUDGET_S", 0.0)
+        monkeypatch.setattr(hermes_state.schema, "_MESSAGE_UID_BACKFILL_CHUNK", 2)
+        monkeypatch.setattr(hermes_state.schema, "_MESSAGE_UID_BACKFILL_BUDGET_S", 0.0)
         path = tmp_path / "legacy.db"
         first = SessionDB(db_path=path)
         try:

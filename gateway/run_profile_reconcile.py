@@ -251,7 +251,7 @@ class GatewayProfileReconcileMixin:
                 with _log_suppressed(logging.DEBUG, "agent eviction failed for %s", key, exc_info=True):
                     self._evict_cached_agent(key)
             with _log_suppressed(logging.DEBUG, "profile handle release failed", exc_info=True):
-                from hermes_state_registry import close_all_under
+                from hermes_state.registry import close_all_under
                 close_all_under(home)
             with _log_suppressed(logging.DEBUG, "memory-store release failed", exc_info=True):
                 from plugins.memory.holographic.store import MemoryStore
@@ -393,7 +393,7 @@ def migrate_profile_identity_verb(runner):
             return {"ok": False, "error": "live gateway has no session store"}
         acquired = []
         try:
-            from hermes_state_registry import acquire, release_or_close
+            from hermes_state.registry import acquire, release_or_close
             db_counts: Dict[str, Dict[str, int]] = {}
             routing_db = getattr(store, "_routing_db", None)
             if routing_db is not None and hasattr(routing_db, "rekey_profile_state"):

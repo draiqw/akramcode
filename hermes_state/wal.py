@@ -1,6 +1,6 @@
 """SQLite journal-mode and PRAGMA policy for state.db (split from hermes_state).
 
-Patchable helpers are looked up as module globals at call time, so tests patch ``hermes_state_wal.<name>``.
+Patchable helpers are looked up as module globals at call time, so tests patch ``hermes_state.wal.<name>``.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ import time
 from typing import Any, Dict, Optional
 
 from hermes_cli.sqlite_runtime import is_sqlite_wal_reset_vulnerable as _is_sqlite_wal_reset_vulnerable
-from hermes_state_errors import is_sqlite_lock_error
+from hermes_state.errors import is_sqlite_lock_error
 
 # Log-record parity with the origin module (caplog tests pin "hermes_state").
 logger = logging.getLogger("hermes_state")
@@ -31,7 +31,7 @@ _WAL_INCOMPAT_MARKERS = ("locking protocol", "not authorized", "disk i/o error")
 _WAL_SIZE_LIMIT_BYTES = 64 * 1024 * 1024  # 64 MiB
 
 # Once-per-process-per-db_label dedup sets (kanban_db.connect() runs on every kanban operation, so an undeduped
-# line would repeat per connection). Tests clear these via ``hermes_state_wal.<name>``.
+# line would repeat per connection). Tests clear these via ``hermes_state.wal.<name>``.
 _wal_fallback_warned_paths: set[str] = set()
 _wal_fallback_warned_lock = threading.Lock()
 

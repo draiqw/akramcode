@@ -8,8 +8,8 @@ import sqlite3
 import time
 from typing import Any, Dict, List, Optional
 
-from hermes_state_common import _PREVIEW_ELIGIBLE_SQL, _PREVIEW_RAW_SELECT, _sql_session_last_active
-from hermes_state_errors import StateDbReplacedError
+from hermes_state.common import _PREVIEW_ELIGIBLE_SQL, _PREVIEW_RAW_SELECT, _sql_session_last_active
+from hermes_state.errors import StateDbReplacedError
 
 # caplog tests pin the "hermes_state" logger name.
 logger = logging.getLogger("hermes_state")

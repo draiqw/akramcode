@@ -57,7 +57,7 @@ def _tick_failing(job, tmp_path, deliveries, error="boom unrelated"):
          patch("cron.scheduler_delivery._resolve_origin", return_value=None), \
          patch("hermes_cli.env_loader.load_hermes_dotenv"), \
          patch("hermes_cli.env_loader.reset_secret_source_cache"), \
-         patch("hermes_state_registry.acquire", return_value=fake_db), \
+         patch("hermes_state.registry.acquire", return_value=fake_db), \
          patch("tools.mcp_tool_discovery.discover_mcp_tools", return_value=[]), \
          patch("hermes_cli.runtime_provider.resolve_runtime_provider",
                return_value={

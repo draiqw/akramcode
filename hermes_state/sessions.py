@@ -15,8 +15,8 @@ from agent.session_activity import (
     ActivityProvenance, bound_activity_description, normalize_activity_provenance,
 )
 from hermes_startup_watchdog import report_startup_progress
-from hermes_state_errors import SessionActiveWriteGuardError
-from hermes_state_common import (
+from hermes_state.errors import SessionActiveWriteGuardError
+from hermes_state.common import (
     _LISTABLE_CHILD_SQL, _PREVIEW_ELIGIBLE_SQL, _PREVIEW_RAW_SELECT, _RECOVERABLE_END_REASONS,
     _RECOVERABLE_END_REASONS_SQL, _RESET_CHILD_SQL, _RESET_END_REASONS, _legacy_reset_child_sql, _non_continuation_child_sql,
     _shape_preview, QUEUED_PROMPT_METADATA_KEY,

@@ -131,7 +131,7 @@ def test_oneshot_wires_session_db_for_recall(monkeypatch):
 
     monkeypatch.setitem(sys.modules, "run_agent", mod("run_agent", AIAgent=FakeAgent))
     # Oneshot borrows the process-shared registry handle (one writer per state.db path).
-    monkeypatch.setitem(sys.modules, "hermes_state_registry", mod("hermes_state_registry", acquire=fake_acquire))
+    monkeypatch.setitem(sys.modules, "hermes_state.registry", mod("hermes_state.registry", acquire=fake_acquire))
     monkeypatch.setitem(
         sys.modules,
         "hermes_cli.config",

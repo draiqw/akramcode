@@ -10,9 +10,9 @@ from pathlib import Path
 from typing import Sequence
 
 from hermes_constants import get_hermes_home
-from hermes_state_common import (FTS_CJK_STALE_KEY, FTS_STALE_KEY, _FTS_CJK_TRIGGERS, _FTS_TRIGGERS,
+from hermes_state.common import (FTS_CJK_STALE_KEY, FTS_STALE_KEY, _FTS_CJK_TRIGGERS, _FTS_TRIGGERS,
     routed_sessions_setting)
-from hermes_state_errors import is_fts_scoped_corruption_error, is_sqlite_lock_error
+from hermes_state.errors import is_fts_scoped_corruption_error, is_sqlite_lock_error
 
 # caplog tests pin the "hermes_state" logger name.
 logger = logging.getLogger("hermes_state")
@@ -348,7 +348,7 @@ class SessionFtsSetupMixin:
         """Corruption SQLite identifies as FTS-scoped (SQLITE_CORRUPT_VTAB, or an ``fts5:``
         report naming ``messages_fts*`` on builds without result codes); a bare malformed
         image is structural. One rule, shared with ``classify_persistence_error`` and the
-        gateway transcript retry: see :func:`hermes_state_errors.is_fts_scoped_corruption_error`."""
+        gateway transcript retry: see :func:`hermes_state.errors.is_fts_scoped_corruption_error`."""
         return is_fts_scoped_corruption_error(exc)
 
     def _enter_fts_fail_open(

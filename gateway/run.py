@@ -3784,7 +3784,7 @@ class GatewayRunner(
         #88235 broadcast.
         """
         from hermes_state import AsyncSessionDB, _default_db_path
-        from hermes_state_registry import acquire
+        from hermes_state.registry import acquire
         from gateway.session_db_recovery import RecoverableHandleCache
         path = Path(_default_db_path())
         cache = getattr(self, "_session_db_handle_cache", None)
@@ -3853,7 +3853,7 @@ class GatewayRunner(
                 return
             # Shared instances no-op on close() (the registry owns the lifecycle). Release the refcount
             # instead (#90837).
-            from hermes_state_registry import release_or_close
+            from hermes_state.registry import release_or_close
             try:
                 release_or_close(inner)
             except Exception as exc:
@@ -4732,7 +4732,7 @@ def _housekeeping_state_db_maintenance(launch: Optional[Tuple[Path, Path]] = Non
     gateway owns (``web_server_sessions``). *launch* carries the launch home's configured transcript
     dir (:func:`_launch_sessions_dir`) so its override still governs its own profile."""
     from hermes_cli.config import load_config as _load_full_config
-    from hermes_state_registry import acquire, release_or_close
+    from hermes_state.registry import acquire, release_or_close
     _sess_cfg = (_load_full_config().get("sessions") or {})
     if not (_sess_cfg.get("auto_archive", False) or _sess_cfg.get("auto_prune", False)):
         return
@@ -4759,7 +4759,7 @@ def _housekeeping_deferred_fts_retry() -> None:
     # Retry here, on the existing tick, against the shared instances this process already holds:
     # non-blocking admission, no new thread, rate-limited inside SessionDB. No-op when nothing is stale (one
     # attribute read per instance). See #100108.
-    from hermes_state_registry import borrow_live_shared_session_dbs
+    from hermes_state.registry import borrow_live_shared_session_dbs
     with borrow_live_shared_session_dbs() as _session_dbs:
         for _sdb in _session_dbs:
             _retry = getattr(_sdb, "retry_deferred_fts_recovery", None)

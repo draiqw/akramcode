@@ -37,7 +37,7 @@ def _clear_setup_sessions(profile_dir) -> None:
                 if Path(sess.get("profile_home") or _hermes_home).resolve() == target]
     for sid in live:
         _close_session_by_id(sid, end_reason="setup_reset")
-    from hermes_state_registry import acquire, release_or_close
+    from hermes_state.registry import acquire, release_or_close
     db = acquire(target / "state.db")
     try:
         ids = [row[0] for row in db._read_all("SELECT id FROM sessions")]

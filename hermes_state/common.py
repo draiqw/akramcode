@@ -1037,7 +1037,7 @@ END;
 # structural rebuild (FTS5 'rebuild' or `_recover_stale_fts`'s drop/recreate) must run in ONE at a time —
 # concurrent rebuilds corrupted state.db in production.  Gates `rebuild_fts()`, `_rebuild_fts_indexes()`,
 # `_recover_stale_fts()`; the chunked backfill (`fts_rebuild_step`) is deliberately NOT routed through it (it
-# claims progress under SQLite transaction authority).  Mirrors `hermes_state_repair._cross_process_repair_lock`:
+# claims progress under SQLite transaction authority).  Mirrors `hermes_state.repair._cross_process_repair_lock`:
 # portable (msvcrt/flock), bounded wait, FAIL CLOSED; orphaned-fd holders (see `_acquire_db_flock`) are broken
 # only when provably dead, indeterminate liveness defers.  `<db>.fts_rebuild.lock` is distinct from
 # `<db>.repair.lock` (offline schema surgery, minutes in VACUUM).  Lives here: mixins cannot import hermes_state.
@@ -1052,7 +1052,7 @@ END;
 # `SessionSchemaMixin._rebuild_fts_indexes()` (via `_init_schema`), and
 # `SessionSchemaMixin._recover_stale_fts()`. The chunked deferred backfill (`fts_rebuild_step`) is
 # deliberately NOT routed through it — it claims progress under `_execute_write`'s SQLite transaction
-# authority and is intentionally multi-process. Semantics mirror `hermes_state_repair._cross_process_repair_lock`
+# authority and is intentionally multi-process. Semantics mirror `hermes_state.repair._cross_process_repair_lock`
 # (the schema- surgery authority): portable (msvcrt on Windows, flock elsewhere), bounded wait, and FAIL
 # CLOSED — a caller that cannot acquire the lock must NOT rebuild. The kernel drops both lock types when the
 # holder dies — UNLESS a forked child inherited the lock fd (flock rides the open file description, which

@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from hermes_state import SessionDB
-from hermes_state_common import FTS_CJK_STALE_KEY
+from hermes_state.common import FTS_CJK_STALE_KEY
 
 
 def _trigger_sql(conn: sqlite3.Connection, name: str) -> str | None:

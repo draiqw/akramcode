@@ -679,7 +679,7 @@ class GatewayStatusCommandsMixin:
                 days = int(flag) if flag.isdigit() else days
                 i += 1
         try:
-            from hermes_state_registry import acquire
+            from hermes_state.registry import acquire
             from agent.insights import InsightsEngine
 
             def _run_insights():
@@ -688,7 +688,7 @@ class GatewayStatusCommandsMixin:
                     engine = InsightsEngine(db)
                     return engine.format_gateway(engine.generate(days=days, source=source))
                 finally:
-                    from hermes_state_registry import release_or_close
+                    from hermes_state.registry import release_or_close
                     release_or_close(db)
 
             # Not a bare hop: ``SessionDB()`` resolves ``get_hermes_home()`` at call time, a

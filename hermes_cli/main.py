@@ -1441,8 +1441,8 @@ def _create_titled_session(title: str) -> Optional[str]:
     """
     db = None
     try:
-        from hermes_state_ids import new_session_id as mint_session_id
-        from hermes_state_registry import acquire
+        from hermes_state.ids import new_session_id as mint_session_id
+        from hermes_state.registry import acquire
 
         new_session_id = mint_session_id()
         # The CLI acquires the registry handle for this same path moments later; share it

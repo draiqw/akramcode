@@ -16,7 +16,7 @@ from pathlib import Path
 
 from hermes_cli.cli_output import print_truncated
 from hermes_cli.sessions_cmd_browse import _relative_time, _session_browse_picker
-from hermes_state_errors import SessionActiveWriteGuardError
+from hermes_state.errors import SessionActiveWriteGuardError
 
 
 def get_hermes_home():
@@ -101,7 +101,7 @@ def _write_output(output, text, summary) -> None:
 
 def _cmd_repair(args):
     from hermes_state import DEFAULT_DB_PATH as db_path, SessionDB
-    from hermes_state_repair import _db_opens_cleanly, repair_state_db_schema
+    from hermes_state.repair import _db_opens_cleanly, repair_state_db_schema
     if not db_path.exists():
         print(f"No session database at {db_path} (nothing to repair).")
         return
@@ -263,7 +263,7 @@ def _default_exclude(args):
 
 
 def _cmd_list(db, args):
-    from hermes_state_sessions import workspace_key as _ws_key
+    from hermes_state.sessions import workspace_key as _ws_key
     # LIMIT lives in the query, so probe one row past the cap: it is the only way to know the
     # page was cut without a second COUNT query (``--limit 0`` is ``LIMIT 0``: no rows, no probe).
     limit = args.limit
@@ -1216,7 +1216,7 @@ def cmd_sessions(args, sessions_parser=None):
             sessions_parser.print_help()
             return
         if action in _HELD_STORE_ACTIONS and not getattr(args, "dry_run", False) and not getattr(args, "force", False):
-            from hermes_state_holders import held_store_refusal
+            from hermes_state.holders import held_store_refusal
             # Same resolver the SessionDB above opened, so the scan never depends on the db object.
             refusal = held_store_refusal(_default_db_path(), command=action)
             if refusal:
@@ -1225,7 +1225,7 @@ def cmd_sessions(args, sessions_parser=None):
         try:
             return handler(db, args)
         except sqlite3.OperationalError as e:
-            from hermes_state_repair import _schema_not_built
+            from hermes_state.repair import _schema_not_built
 
             if not observational or not _schema_not_built(e):
                 raise

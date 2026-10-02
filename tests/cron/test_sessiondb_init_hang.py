@@ -102,7 +102,7 @@ class TestSessionDbInitTimeout:
                  patch("cron.scheduler_delivery._resolve_origin", return_value=None), \
                  patch("hermes_cli.env_loader.load_hermes_dotenv"), \
                  patch("hermes_cli.env_loader.reset_secret_source_cache"), \
-                 patch("hermes_state_registry.acquire", side_effect=make_session_db), \
+                 patch("hermes_state.registry.acquire", side_effect=make_session_db), \
                  patch(
                      "hermes_cli.runtime_provider.resolve_runtime_provider",
                      return_value=_RUNTIME,
@@ -131,7 +131,7 @@ class TestSessionDbInitTimeout:
              patch("cron.scheduler_delivery._resolve_origin", return_value=None), \
              patch("hermes_cli.env_loader.load_hermes_dotenv"), \
              patch("hermes_cli.env_loader.reset_secret_source_cache"), \
-             patch("hermes_state_registry.acquire"), \
+             patch("hermes_state.registry.acquire"), \
              patch(
                  "hermes_cli.runtime_provider.resolve_runtime_provider",
                  return_value=_RUNTIME,
@@ -172,7 +172,7 @@ class TestSessionDbInitTimeout:
              patch("cron.scheduler_delivery._resolve_origin", return_value=None), \
              patch("hermes_cli.env_loader.load_hermes_dotenv"), \
              patch("hermes_cli.env_loader.reset_secret_source_cache"), \
-             patch("hermes_state_registry.acquire"), \
+             patch("hermes_state.registry.acquire"), \
              patch(
                  "hermes_cli.runtime_provider.resolve_runtime_provider",
                  return_value=_RUNTIME,
@@ -222,7 +222,7 @@ class TestDispatchGuardReleasedAfterHang:
                  patch("cron.scheduler_delivery._resolve_origin", return_value=None), \
                  patch("hermes_cli.env_loader.load_hermes_dotenv"), \
                  patch("hermes_cli.env_loader.reset_secret_source_cache"), \
-                 patch("hermes_state_registry.acquire"), \
+                 patch("hermes_state.registry.acquire"), \
                  patch(
                      "hermes_cli.runtime_provider.resolve_runtime_provider",
                      return_value=_RUNTIME,
@@ -286,7 +286,7 @@ class TestLateSessionDbClosedAfterTimeout:
                  patch("cron.scheduler_delivery._resolve_origin", return_value=None), \
                  patch("hermes_cli.env_loader.load_hermes_dotenv"), \
                  patch("hermes_cli.env_loader.reset_secret_source_cache"), \
-                 patch("hermes_state_registry.acquire", side_effect=_hanging_then_capture), \
+                 patch("hermes_state.registry.acquire", side_effect=_hanging_then_capture), \
                  patch(
                      "hermes_cli.runtime_provider.resolve_runtime_provider",
                      return_value={
@@ -344,7 +344,7 @@ class TestSessionDbInitAfterEarlyReturns:
              patch("cron.scheduler_delivery._resolve_origin", return_value=None), \
              patch("hermes_cli.env_loader.load_hermes_dotenv"), \
              patch("hermes_cli.env_loader.reset_secret_source_cache"), \
-             patch("hermes_state_registry.acquire") as mock_db_cls, \
+             patch("hermes_state.registry.acquire") as mock_db_cls, \
              patch(
                  "cron.scheduler._run_job_script_with_claim_heartbeat",
                  return_value=(True, '{"wakeAgent": false}'),

@@ -1,6 +1,6 @@
 """state.db repair, backup and writability preflight (split from hermes_state).
 
-Patchable helpers are looked up as module globals at call time, so tests patch ``hermes_state_repair.<name>``.
+Patchable helpers are looked up as module globals at call time, so tests patch ``hermes_state.repair.<name>``.
 """
 
 from __future__ import annotations
@@ -22,8 +22,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from hermes_constants import get_hermes_home
 from hermes_startup_watchdog import report_startup_progress
-from hermes_state_holders import read_only_db_uri
-from hermes_state_common import (
+from hermes_state.holders import read_only_db_uri
+from hermes_state.common import (
     _acquire_db_flock, _clear_lock_holder_record, _describe_lock_holder, _read_lock_holder_record,
     is_advisory_lock_contention,
 )
@@ -603,7 +603,7 @@ def _reapply_durability_barriers(conn: sqlite3.Connection) -> bool:
     """Best-effort (re)application of the macOS write barriers; True if accepted.
     Call before ``VACUUM``/``REINDEX`` once the schema parses: a connection opened
     on a malformed schema could not take them at open time. Never raises."""
-    from hermes_state_wal import _apply_macos_checkpoint_barrier, _enforce_macos_synchronous_full
+    from hermes_state.wal import _apply_macos_checkpoint_barrier, _enforce_macos_synchronous_full
     try:
         _apply_macos_checkpoint_barrier(conn)
         _enforce_macos_synchronous_full(conn)
@@ -616,7 +616,7 @@ def apply_durability_barriers(conn: sqlite3.Connection) -> bool:
     """Durability barriers for guest users of ``state.db`` that must inherit its owner's journal mode. Also
     applies the configured ``database.synchronous`` level, a per-connection pragma that otherwise only
     rides on the journal-mode setup path guests must not run."""
-    from hermes_state_wal import _apply_synchronous_pragma
+    from hermes_state.wal import _apply_synchronous_pragma
     ok = _reapply_durability_barriers(conn)
     with contextlib.suppress(Exception):
         from hermes_cli.config import cfg_get, load_config_readonly  # local: avoids an import cycle
@@ -835,11 +835,11 @@ def _db_opens_cleanly(db_path: Path) -> Optional[str]:
 def _live_writer_holds_db(db_path: Path) -> bool:
     """True when another process (or a connection outside this call) still holds ``db_path``.
 
-    The foreign-holder scan (``hermes_state_holders``) is the authority: any other process with the DB or a
+    The foreign-holder scan (``hermes_state.holders``) is the authority: any other process with the DB or a
     WAL sidecar open, a deleted WAL generation, or an unknown/uninspectable holder fails CLOSED. The SQLite
     probe (``locking_mode=EXCLUSIVE`` + ``BEGIN IMMEDIATE``) is only an additional positive signal — it cannot
     see a ``journal_mode=DELETE`` reader and cannot run on a malformed file, which is why the scan comes first."""
-    import hermes_state_holders as _state_holders
+    import hermes_state.holders as _state_holders
     return _state_holders.live_writer_holds_db(db_path, connect_repair_durable=_connect_repair_durable)
 
 
@@ -928,7 +928,7 @@ def _probe_journal_mode_for_repair(db_path: Path) -> Optional[str]:
     """Best-effort journal-mode probe: ``wal``/``delete``, or ``None`` when the file cannot be opened or
     probed (malformed header, concurrent opener's locks — both expected on the repair path); callers then
     fall back to ``database.journal_mode``."""
-    from hermes_state_wal import _on_disk_journal_mode
+    from hermes_state.wal import _on_disk_journal_mode
     try:
         with _repair_conn(db_path) as conn:
             return _on_disk_journal_mode(conn)
@@ -955,7 +955,7 @@ def _restore_journal_mode_after_repair(db_path: Path, before_mode: Optional[str]
     The transactional promotion already leaves the destination in its pre-repair mode, so on that path this
     is mostly the WAL-companion re-assertion; the reopen is the hazard, not the mode. See #101064.
     """
-    from hermes_state_wal import apply_wal_with_fallback
+    from hermes_state.wal import apply_wal_with_fallback
     try:
         if conn is None:
             with _repair_conn(db_path) as owned:

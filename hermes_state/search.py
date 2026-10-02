@@ -1,7 +1,7 @@
 """Full-text / trigram / CJK message search and FTS maintenance for SessionDB.
 
 Plain mixin for ``hermes_state.SessionDB`` (no ``__init__``/state of its own).
-Must never import hermes_state (cycle); shared constants live in hermes_state_common.
+Must never import hermes_state (cycle); shared constants live in hermes_state.common.
 """
 
 import contextlib
@@ -12,7 +12,7 @@ import time
 from typing import Any, Callable, Collection, Dict, List, Optional, Tuple
 
 from agent.skill_commands import describe_skill_invocation
-from hermes_state_common import (
+from hermes_state.common import (
     FTS_CJK_STALE_KEY, FTS_SQL, FTS_STALE_KEY, FTS_STORAGE_VERSION, FTS_TOOL_CONTENT_PREFIX_CHARS,
     FTS_TRIGRAM_EXCLUDED_SOURCES, FTS_TRIGRAM_SQL,
     MAX_FTS5_QUERY_CHARS, SCHEMA_VERSION, _FTS_CJK_TRIGGERS,

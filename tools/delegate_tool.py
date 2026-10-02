@@ -100,7 +100,7 @@ def _open_child_session_db(parent_agent) -> Any:
     if parent_session_db is None:
         return None
     with _quiet("subagent: failed to open dedicated SessionDB; child persistence disabled", exc_info=True):
-        from hermes_state_registry import acquire
+        from hermes_state.registry import acquire
         _parent_db_path = getattr(parent_session_db, "db_path", None)
         return acquire(_parent_db_path) if _parent_db_path is not None else acquire()
     return None
@@ -251,7 +251,7 @@ def _build_child_agent(
             # No child close() will ever run: release the dedicated handle here.
             if child_session_db is not None:
                 with _quiet(None):
-                    from hermes_state_registry import release_or_close
+                    from hermes_state.registry import release_or_close
                     release_or_close(child_session_db)
             raise
     child._print_fn = getattr(parent_agent, "_print_fn", None)

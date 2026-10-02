@@ -1,7 +1,7 @@
 """Who holds the SQLite write lock on state.db right now (Linux ``/proc/locks``).
 
 The "database is locked for over Ns" failure names the victim but not the holder, and the
-open-descriptor scan (``hermes_state_holders``) cannot tell a reader from the one writer: every
+open-descriptor scan (``hermes_state.holders``) cannot tell a reader from the one writer: every
 Hermes process has the DB open. SQLite's unix VFS takes ``fcntl`` byte-range locks whose offsets
 encode the lock kind, and the kernel exports them with the owning pid, so the holder can be named
 at the moment the deadline passes.
@@ -103,7 +103,7 @@ def state_db_write_lock_holders(db_path) -> List[str]:
         except OSError:
             return []
         held.extend(entry for entry in parse_proc_locks(text, inodes) if entry not in held)
-    from hermes_state_holders import describe_holder_pid
+    from hermes_state.holders import describe_holder_pid
 
     lines = []
     for pid, kind, sidecar in held:

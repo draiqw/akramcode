@@ -56,7 +56,7 @@ def _run(tmp_path, job, *, primary_error=None):
          patch("cron.scheduler_delivery._resolve_origin", return_value=None), \
          patch("hermes_cli.env_loader.load_hermes_dotenv"), \
          patch("hermes_cli.env_loader.reset_secret_source_cache"), \
-         patch("hermes_state_registry.acquire", return_value=MagicMock()), \
+         patch("hermes_state.registry.acquire", return_value=MagicMock()), \
          patch("hermes_cli.runtime_provider.resolve_runtime_provider", side_effect=resolve), \
          patch("tools.mcp_tool_discovery.discover_mcp_tools", return_value=[]), \
          patch("run_agent.AIAgent") as agent_cls:

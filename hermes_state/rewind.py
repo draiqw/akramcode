@@ -35,7 +35,7 @@ def _comparison_content(message: Dict[str, Any]) -> Any:
     """Project content the way the durable row stores it (flush projection, then the read-side sanitize) so a
     warm row and its durable twin compare equal."""
     from agent.session_persistence import _durable_content
-    from hermes_state_messages import SessionMessagesMixin
+    from hermes_state.messages import SessionMessagesMixin
     return SessionMessagesMixin._loaded_view_content(message.get("role"), _durable_content(message.get("content")))
 
 
