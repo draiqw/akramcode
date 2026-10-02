@@ -1016,4 +1016,4 @@ test(tools): add unit tests for file_operations
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the [MIT License](LICENSE).
+By contributing, you agree that your contributions will be licensed under the [MIT License](../licenses/LICENSE).
