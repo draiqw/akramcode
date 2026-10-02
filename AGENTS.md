@@ -200,7 +200,7 @@ hermes-agent/
 ├── hermes_state.py       # SessionDB facade; hermes_state_*.py siblings
 ├── hermes_constants.py   # get_hermes_home(), display_hermes_home() — profile-aware paths
 ├── hermes_logging.py     # agent.log / errors.log / gateway.log (profile-aware)
-├── batch_runner.py       # Parallel batch processing
+├── scripts/batch_runner.py # Parallel batch processing
 ├── agent/                # turn_*.py loop phases, providers, memory, compression, prompt builder
 ├── hermes_cli/           # CLI subcommands, setup, config, plugins loader, skins, updater
 │   └── web_routers/      # Dashboard FastAPI routers (one per surface); web_server.py mounts them
@@ -227,7 +227,7 @@ hermes-agent/
 profile-aware via `get_hermes_home()`. Browse logs with `hermes logs [--follow] [--level] [--session]`.
 
 **Dependency chain:** `tools/registry.py` (no deps) ← `tools/*.py` (register at import) ←
-`model_tools.py` (discovery) ← `run_agent.py`, `cli.py`, `batch_runner.py`, `environments/`.
+`model_tools.py` (discovery) ← `run_agent.py`, `cli.py`, `scripts/batch_runner.py`, `environments/`.
 
 ### Facade + siblings layout (Sep 2026 decomposition)
 
@@ -385,7 +385,7 @@ scripts/run_tests.sh -v --tb=long                       # pytest flags pass thro
   wall-clock bounds ≥ 2s, event-based sync, no `assert not _wait_until(...)` races.
 - **Placement mirrors the source tree.** A test lives in `tests/<top-level source dir>/` (`tests/hermes_cli/`,
   `tests/agent/`, `tests/hermes_state/`, `tests/gateway/relay/`, ...); installer/updater script tests
-  under `tests/scripts/{install,desktop_update}/`. Only tests of root-level modules (`batch_runner`,
+  under `tests/scripts/{install,desktop_update}/`. Only tests of root-level modules (`utils`,
   `utils`, `hermes_constants`, packaging) sit directly in `tests/`. No issue numbers in filenames —
   cite the issue in the module docstring (`test_89315_x.py` → `test_x.py`, "Regression for #89315").
 - **Placement (CI lanes):** `scripts/ci/classify_changes.py` picks jobs by changed files. A Python test

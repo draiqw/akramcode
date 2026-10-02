@@ -20,10 +20,13 @@ import contextlib
 import os
 import time
 import traceback
+import sys
 from datetime import datetime
 from multiprocessing import Lock, Pool
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import fire
 from rich.console import Console

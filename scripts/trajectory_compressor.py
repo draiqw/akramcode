@@ -17,6 +17,7 @@ import random
 import shutil
 import tempfile
 import time
+import sys
 import hermes_yaml as yaml
 import logging
 import asyncio
@@ -24,6 +25,8 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from utils import base_url_host_matches, base_url_hostname
 import fire

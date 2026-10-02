@@ -17,13 +17,17 @@ import json
 import logging
 import os
 import tempfile
+import sys
 from datetime import datetime
+from pathlib import Path
 from typing import List, Dict, Any, Optional
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import fire
 from dotenv import load_dotenv
 from agent.tool_dispatch_helpers import make_tool_result_message
-from trajectory_compressor import _effective_temperature_for_model
+from scripts.trajectory_compressor import _effective_temperature_for_model
 
 # Load environment variables
 load_dotenv()
