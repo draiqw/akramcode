@@ -8,7 +8,7 @@ import json
 import os
 
 import pytest
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 
 import gateway.relay as relay
 from gateway.config import Platform, load_gateway_config

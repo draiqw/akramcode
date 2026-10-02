@@ -274,7 +274,7 @@ def _make_runner(adapter):
 
 
 async def _run_turn(monkeypatch, tmp_path, *, consumer_cls=None, session_id):
-    import hermes_yaml as yaml
+    import akram_core.hermes_yaml as yaml
 
     (tmp_path / "config.yaml").write_text(
         yaml.safe_dump(

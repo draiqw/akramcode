@@ -3,11 +3,11 @@
 Provides ``start_gateway()`` (start all configured adapters) and ``GatewayRunner`` (lifecycle).
 Run via ``python -m gateway.run`` or ``python cli.py --gateway``."""
 
-# hermes_bootstrap must be the very first import (UTF-8 stdio on Windows; no-op on POSIX).
+# akram_core.hermes_bootstrap must be the very first import (UTF-8 stdio on Windows; no-op on POSIX).
 try:
-    import hermes_bootstrap  # noqa: F401
+    import akram_core.hermes_bootstrap  # noqa: F401
 except ModuleNotFoundError as exc:  # a partial ``hermes update`` can leave the bootstrap unregistered
-    if exc.name != "hermes_bootstrap":
+    if exc.name != "akram_core.hermes_bootstrap":
         raise  # the bootstrap exists but cannot load: skipping it would skip PM activation
 
 import asyncio
@@ -429,7 +429,7 @@ def _ensure_windows_gateway_venv_imports() -> None:
     from pm.environments import committed_venv
 
     # A PM install's store Python was already activated onto the committed generation by
-    # hermes_bootstrap; overlaying the leftover pre-PM venv loads a foreign ABI (#122183).
+    # akram_core.hermes_bootstrap; overlaying the leftover pre-PM venv loads a foreign ABI (#122183).
     if committed_venv(project_root) is not None:
         return
     candidates: list[Path] = []
@@ -1248,7 +1248,7 @@ def _build_gateway_agent_history(
     """Convert stored gateway transcript rows into agent replay messages.
 
     Observed context stays out of ``conversation_history`` so consecutive-user repair can't merge it in."""
-    from hermes_time import get_timezone as _get_msg_tz
+    from akram_core.hermes_time import get_timezone as _get_msg_tz
     from gateway.message_timestamps import (
         render_user_content_with_timestamp as _render_msg_ts,
         strip_leading_message_timestamps as _strip_msg_ts,
@@ -1730,7 +1730,7 @@ def _enable_multiplex_log_routing(config: object) -> bool:
     if not getattr(config, "multiplex_profiles", False):
         return False
     try:
-        from hermes_logging import enable_profile_log_routing
+        from akram_core.hermes_logging import enable_profile_log_routing
         return enable_profile_log_routing([home for _name, home in _multiplex_profile_homes(config)])
     except Exception:
         logger.debug("could not enable per-profile log routing", exc_info=True)
@@ -5247,7 +5247,7 @@ def _start_gateway_configure_logging(verbosity: Optional[int]) -> None:
     _best_effort(_sync_skills)
 
     # Centralized logging (agent.log INFO+, errors.log WARNING+, gateway.log gateway-only); idempotent.
-    from hermes_logging import setup_logging, _safe_stderr
+    from akram_core.hermes_logging import setup_logging, _safe_stderr
     setup_logging(hermes_home=_hermes_home, mode="gateway")
 
     def _security_audit() -> None:
@@ -6036,7 +6036,7 @@ def main():
     def _arm_watchdog() -> None:
         # Armed before config load / DB opens so a pre-loop deadlock is respawned by the supervisor instead
         # of wedging as a live-PID zombie. GatewayRunner disarms it.
-        from hermes_startup_watchdog import arm_startup_watchdog
+        from akram_core.hermes_startup_watchdog import arm_startup_watchdog
         arm_startup_watchdog()
 
     def _utf8_stdio() -> None:
@@ -6076,7 +6076,7 @@ def main():
 
     config = None
     if args.config:
-        import hermes_yaml as yaml
+        import akram_core.hermes_yaml as yaml
         with open(args.config, encoding="utf-8-sig") as f:
             config = GatewayConfig.from_dict(yaml.safe_load(f) or {})
         # Same boot-time verdict the loaded config gets when the file leaves the flag unset.
@@ -6142,7 +6142,7 @@ def _exit_after_graceful_shutdown(exit_code: int) -> None:
     def _drain_logs() -> None:
         # os._exit bypasses the listener's atexit drain. Bounded, no restart — NOT flush_log_queue():
         # a listener wedged on the rotation lock would re-freeze shutdown in an unbounded stop() join.
-        from hermes_logging import drain_log_queue
+        from akram_core.hermes_logging import drain_log_queue
         drain_log_queue(timeout=1.0)
 
     for _step in (_release_locks, _mark_exited, _drain_logs):

@@ -14,7 +14,7 @@ import json
 from pathlib import Path
 
 import pytest
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 
 from hermes_cli.agent_import import (
     ENTRY_DELIMITER,

@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from cron.jobs import effective_job_state
 
-import hermes_time
+import akram_core.hermes_time
 
 # Logger parity with the origin module.
 logger = logging.getLogger("tools.cronjob_tools")
@@ -45,7 +45,7 @@ def _first_fire_within_thread_horizon(
         fire_at = datetime.fromisoformat(str(run_at).replace("Z", "+00:00"))
     except ValueError:
         return False
-    now = hermes_time.now()
+    now = akram_core.hermes_time.now()
     if fire_at.tzinfo is None:
         fire_at = fire_at.replace(tzinfo=now.tzinfo)
     # Bounded interval: an already-expired run_at gives a negative delta that would

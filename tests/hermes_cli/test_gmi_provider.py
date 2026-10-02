@@ -273,7 +273,7 @@ class TestGmiMainFlow:
 
             _model_flow_api_key_provider(load_config(), "gmi", "old-model")
 
-        import hermes_yaml as yaml
+        import akram_core.hermes_yaml as yaml
         from hermes_constants import get_hermes_home
 
         config = yaml.safe_load((get_hermes_home() / "config.yaml").read_text()) or {}

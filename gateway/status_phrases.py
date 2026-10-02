@@ -13,7 +13,7 @@ from collections.abc import Mapping, MutableSequence
 from pathlib import Path
 from typing import Any
 
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 
 from hermes_constants import get_hermes_home
 

@@ -774,7 +774,7 @@ def _load_secrets_config(home_path: Path) -> dict:
     if not config_path.exists():
         return {}
     # Prefer the shared raw-config cache: this is the first config.yaml read of a normal startup, so
-    # populating it lets main.py's early bridge and hermes_logging reuse one parse instead of 3-4.
+    # populating it lets main.py's early bridge and akram_core.hermes_logging reuse one parse instead of 3-4.
     if home_path == _process_hermes_home():
         try:
             from hermes_cli.config import read_raw_config

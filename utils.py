@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any, Union
 from urllib.parse import urlparse
 
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 
 logger = logging.getLogger(__name__)
 

@@ -33,7 +33,7 @@ import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 
 from tests.e2e.core.upgrade import _helpers as H
 from tests.e2e.core.upgrade import _install_helpers as I

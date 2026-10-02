@@ -106,7 +106,7 @@ def _run_gateway_import(
 
 def _write_config(home: Path, agent_cfg: dict | None = None, display_cfg: dict | None = None,
                   timezone: str | None = None, gateway_cfg: dict | None = None) -> None:
-    import hermes_yaml as yaml
+    import akram_core.hermes_yaml as yaml
     cfg: dict = {}
     if agent_cfg:
         cfg["agent"] = agent_cfg

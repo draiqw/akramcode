@@ -9,9 +9,9 @@ here too, so the installer's PATH launcher behaves the same way.
 
 from __future__ import annotations
 
-# hermes_bootstrap first (UTF-8 stdio on Windows; no-op on POSIX), like every other entry point.
+# akram_core.hermes_bootstrap first (UTF-8 stdio on Windows; no-op on POSIX), like every other entry point.
 try:
-    import hermes_bootstrap  # noqa: F401
+    import akram_core.hermes_bootstrap  # noqa: F401
 except ModuleNotFoundError:
     pass  # partial `hermes update` — only skips the Windows UTF-8 stdio setup
 

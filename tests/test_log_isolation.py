@@ -51,9 +51,9 @@ def _all_file_destinations() -> list[str]:
     collect(logging.getLogger().handlers)
 
     try:
-        import hermes_logging
+        import akram_core.hermes_logging
 
-        listener = getattr(hermes_logging, "_queue_listener", None)
+        listener = getattr(akram_core.hermes_logging, "_queue_listener", None)
         if listener is not None:
             collect(getattr(listener, "handlers", ()))
     except Exception:

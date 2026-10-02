@@ -8,7 +8,7 @@ import asyncio
 import time
 
 import pytest
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 
 import gateway.run as gateway_run
 from gateway.config import Platform

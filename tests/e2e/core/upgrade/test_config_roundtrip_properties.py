@@ -43,7 +43,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable
 
 import pytest
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 
 from tests.e2e.core.upgrade._helpers import WORKTREE, isolated_env
 

@@ -8,14 +8,14 @@ Usage:
     hermes <cmd> --help        # Per-command help
 """
 
-# hermes_bootstrap must be the very first import — it sets up UTF-8 stdio on
+# akram_core.hermes_bootstrap must be the very first import — it sets up UTF-8 stdio on
 # Windows (no-op on POSIX). Guarded: after a ``git pull`` / interrupted
 # ``hermes update`` the editable install's ``.pth`` may not list it yet; crashing
 # here would block ``hermes update``.
 try:
-    import hermes_bootstrap  # noqa: F401
+    import akram_core.hermes_bootstrap  # noqa: F401
 except ModuleNotFoundError as exc:
-    if exc.name != "hermes_bootstrap":
+    if exc.name != "akram_core.hermes_bootstrap":
         raise  # the bootstrap exists but cannot load: skipping it would skip PM activation
 
 # A `hermes update` killed while git was writing the new tree leaves a mix of old and new files that
@@ -53,7 +53,7 @@ _startup_fast.normalize_hermes_home_env()
 # Startup-liveness watchdog: for gateway runs, arm BEFORE the heavy import
 # graph below — an import-time deadlock (native-extension init, contended
 # import lock) is exactly the "wedged before the event loop, no logs, live
-# PID" class it exists for. ``hermes_startup_watchdog`` is stdlib-only so it
+# PID" class it exists for. ``akram_core.hermes_startup_watchdog`` is stdlib-only so it
 # cannot itself wedge. The match requires the ADJACENT pair ``gateway run``
 # (wherever global flags like ``-p <profile>`` put it) so unrelated commands
 # mentioning both words never arm a 300s hard-exit timer. Foreground runs arm
@@ -65,7 +65,7 @@ def _argv_is_gateway_run(argv: list) -> bool:
 
 if _argv_is_gateway_run(sys.argv[1:]):
     try:
-        from hermes_startup_watchdog import arm_startup_watchdog as _arm_sw
+        from akram_core.hermes_startup_watchdog import arm_startup_watchdog as _arm_sw
 
         _arm_sw()
         del _arm_sw
@@ -260,7 +260,7 @@ def _config_default_interface_early() -> str:
     value = "cli"
     try:
         if os.path.exists(cfg_path):
-            import hermes_yaml as _yaml_iface
+            import akram_core.hermes_yaml as _yaml_iface
 
             with open(cfg_path, encoding="utf-8-sig") as _f:
                 raw = _yaml_iface.safe_load(_f) or {}
@@ -658,7 +658,7 @@ def _apply_profile_override() -> None:
 
 
 _apply_profile_override()
-# ``-p``/active_profile re-homed the process after hermes_bootstrap ran: re-point the temp vars
+# ``-p``/active_profile re-homed the process after akram_core.hermes_bootstrap ran: re-point the temp vars
 # at THIS home's scratch dir (a user-set TMPDIR is still left alone).
 try:
     from hermes_constants import export_scratch_tmp_env as _export_scratch_tmp_env
@@ -706,14 +706,14 @@ from hermes_cli.env_loader import load_hermes_dotenv
 # owns that argv check for every dotenv load in the process. See #73381.
 load_hermes_dotenv(project_env=PROJECT_ROOT / ".env")
 
-# Bridge security.redact_secrets → HERMES_REDACT_SECRETS BEFORE hermes_logging
+# Bridge security.redact_secrets → HERMES_REDACT_SECRETS BEFORE akram_core.hermes_logging
 # imports agent.redact, which snapshots the flag exactly once at import. A
 # .env value still wins — this is config.yaml fallback only. network.force_ipv4
 # is read from the same parse to avoid a second full load_config() (~17ms).
 _FORCE_IPV4_EARLY = False
 try:
     # The effective-config cache (shared raw parse with read_raw_config()) means this SAME parse
-    # serves hermes_logging, hermes_time and later raw reads: 3-4 config.yaml parses become one.
+    # serves akram_core.hermes_logging, akram_core.hermes_time and later raw reads: 3-4 config.yaml parses become one.
     # Managed overlay included: administrator-pinned redact_secrets / force_ipv4 win here too.
     from hermes_cli.config_effective import load_user_config_effective as _load_effective_early
 
@@ -737,7 +737,7 @@ except Exception:
 # Centralized file logging for every subcommand (agent.log + errors.log).
 # Dashboard entrypoints use GUI mode so gui.log captures pre-dispatch failures.
 try:
-    from hermes_logging import setup_logging as _setup_logging
+    from akram_core.hermes_logging import setup_logging as _setup_logging
 
     _setup_logging(
         mode=(
@@ -2677,7 +2677,7 @@ def _dashboard_prepare_runtime(args, headless_backend) -> bool:
     # Attach gui.log early so dashboard startup/build failures are captured in
     # the same logs directory as every other Hermes surface.
     try:
-        from hermes_logging import setup_logging as _setup_logging_gui
+        from akram_core.hermes_logging import setup_logging as _setup_logging_gui
         _setup_logging_gui(mode="gui")
     except Exception:
         pass

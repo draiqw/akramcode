@@ -6,13 +6,13 @@ Protocol: reads JSON lines from stdin {id, command}, writes {id, ok, output|erro
 # Stop a ``utils/`` (or ``proxy/``, ``ui/``) package in the launch directory from shadowing Hermes's own
 # top-level modules: this worker is spawned as ``-m tui_gateway.slash_worker`` with the user's CWD, so
 # ``import cli`` would otherwise resolve ``utils`` to a colliding local package and crash the child in a
-# retry loop. ``hermes_bootstrap`` lives at the repo root (no collision risk), so importing it first is safe.
-# ``hermes_bootstrap`` lives at the repo root, so importing it is safe before the guard runs (its name won't
+# retry loop. ``akram_core.hermes_bootstrap`` lives at the repo root (no collision risk), so importing it first is safe.
+# ``akram_core.hermes_bootstrap`` lives at the repo root, so importing it is safe before the guard runs (its name won't
 # collide with a user package), and it owns the canonical path-hardening logic shared with the other entry
 # points — #51693 added the guard to ``entry.py``/``acp_adapter/entry.py`` but missed this child.
-import hermes_bootstrap
+import akram_core.hermes_bootstrap
 
-hermes_bootstrap.harden_import_path()
+akram_core.hermes_bootstrap.harden_import_path()
 
 import argparse
 import contextlib

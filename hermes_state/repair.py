@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from hermes_constants import get_hermes_home
-from hermes_startup_watchdog import report_startup_progress
+from akram_core.hermes_startup_watchdog import report_startup_progress
 from hermes_state.holders import read_only_db_uri
 from hermes_state.common import (
     _acquire_db_flock, _clear_lock_holder_record, _describe_lock_holder, _read_lock_holder_record,

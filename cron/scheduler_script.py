@@ -145,7 +145,7 @@ def _posix_cron_script_argv(script: Path) -> tuple[list[str], dict[str, str]]:
     script spawns would inherit it and a foreign interpreter would load the store's compiled
     extensions (#123440). The venv resolves Hermes from its generation's workspace snapshot,
     rebuilt only on a dependency change, so the bootstrap puts the live checkout first.
-    Lazy installs are off for the script's process tree: a script importing ``hermes_bootstrap``
+    Lazy installs are off for the script's process tree: a script importing ``akram_core.hermes_bootstrap``
     could otherwise complete a source update and ``execv`` itself onto the bare store Python."""
     from hermes_cli._launchers import resolve_store_python
     from pm.environments import project_python

@@ -403,7 +403,7 @@ def _read_permanent_allowlist() -> set:
     legacy = isinstance(raw, str)
     if legacy:
         # Old config-set versions serialized list values as scalar strings.
-        import hermes_yaml as yaml
+        import akram_core.hermes_yaml as yaml
         try:
             raw = yaml.safe_load(raw)
         except yaml.YAMLError:

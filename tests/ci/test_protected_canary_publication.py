@@ -15,7 +15,7 @@ import subprocess
 import sys
 import zipfile
 
-import hermes_yaml
+import akram_core.hermes_yaml
 import pytest
 
 from hermes_cli.release_channels import ChannelReader
@@ -29,7 +29,7 @@ pytestmark = pytest.mark.platforms("posix")
 
 
 def workflow_jobs():
-    return hermes_yaml.safe_load((ROOT / ".github/workflows/desktop-bundled-release.yml").read_text())["jobs"]
+    return akram_core.hermes_yaml.safe_load((ROOT / ".github/workflows/desktop-bundled-release.yml").read_text())["jobs"]
 
 
 def canary_job():

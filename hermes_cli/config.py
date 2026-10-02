@@ -31,7 +31,7 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Dict, Any, Literal, Optional, List, Tuple, Set
 
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 
 from hermes_cli.cli_output import line_input
 from hermes_cli.colors import Colors, color
@@ -1076,7 +1076,7 @@ def _validate_voice(config: Dict[str, Any], issues: List[ConfigIssue]) -> None:
 def _validate_timezone(config: Dict[str, Any], issues: List[ConfigIssue]) -> None:
     """``timezone`` must be an IANA name the runtime can load.
 
-    ``hermes_time._get_zoneinfo()`` swallows an invalid name behind a single WARNING in the
+    ``akram_core.hermes_time._get_zoneinfo()`` swallows an invalid name behind a single WARNING in the
     gateway log, then runs the agent clock AND every cron schedule on server-local time.
     Surface it here, where doctor and the startup check both look. Silent when the
     interpreter has no tz database at all (bare Windows without ``tzdata``) — nothing can be

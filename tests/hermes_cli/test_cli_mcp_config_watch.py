@@ -35,7 +35,7 @@ class TestMCPConfigWatch:
 
     def test_new_mcp_server_triggers_reload(self, tmp_path):
         """Adding a new MCP server to config triggers auto-reload."""
-        import hermes_yaml as yaml
+        import akram_core.hermes_yaml as yaml
         obj, cfg_file = _make_cli(tmp_path, mcp_servers={})
 
         # Simulate user adding a new MCP server to config.yaml
@@ -49,7 +49,7 @@ class TestMCPConfigWatch:
 
     def test_removed_mcp_server_triggers_reload(self, tmp_path):
         """Removing an MCP server from config triggers auto-reload."""
-        import hermes_yaml as yaml
+        import akram_core.hermes_yaml as yaml
         obj, cfg_file = _make_cli(tmp_path, mcp_servers={"github": {"url": "https://mcp.github.com"}})
 
         # Simulate user removing the server
@@ -76,7 +76,7 @@ class TestMCPConfigWatch:
         flipping the toggle and editing mcp_servers in one edit behaves
         correctly.
         """
-        import hermes_yaml as yaml
+        import akram_core.hermes_yaml as yaml
         obj, cfg_file = _make_cli(
             tmp_path,
             mcp_servers={},
@@ -101,7 +101,7 @@ class TestMCPConfigWatch:
         """After an opted-out change, the watcher must not re-notify every
         tick: the snapshot is updated so the same content compares equal on
         the next pass."""
-        import hermes_yaml as yaml
+        import akram_core.hermes_yaml as yaml
         obj, cfg_file = _make_cli(tmp_path, mcp_servers={})
 
         cfg_file.write_text(yaml.safe_dump({
@@ -127,7 +127,7 @@ class TestMCPConfigWatch:
 
         A config that sets ONLY ``auxiliary.mcp.auto_reload_on_config_change:
         false`` must NOT disable the reload."""
-        import hermes_yaml as yaml
+        import akram_core.hermes_yaml as yaml
         obj, cfg_file = _make_cli(
             tmp_path,
             mcp_servers={},
@@ -158,7 +158,7 @@ class TestMCPConfigWatch:
         save_config_value('agent.reasoning_effort', ...) from /reasoning)
         fired a full MCP reconnect.
         """
-        import hermes_yaml as yaml
+        import akram_core.hermes_yaml as yaml
         monkeypatch.setenv("MCP_GH_API_KEY", "sekrit-token")
 
         raw_servers = {

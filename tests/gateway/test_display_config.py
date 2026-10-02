@@ -201,7 +201,7 @@ class TestConfigMigration:
 
     def test_migration_creates_platforms_entries(self, tmp_path, monkeypatch):
         """Old overrides are migrated into display.platforms.<plat>.tool_progress."""
-        import hermes_yaml as yaml
+        import akram_core.hermes_yaml as yaml
 
         config_path = tmp_path / "config.yaml"
         config = {

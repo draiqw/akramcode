@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 
 from hermes_cli.xai_retirement import (
     RetirementIssue,

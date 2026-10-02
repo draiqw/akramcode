@@ -368,7 +368,7 @@ def test_real_bootstrap_reexecs_before_app_imports(source_launch, tmp_path, isol
     repository = Path(__file__).resolve().parents[2]
     # Copy the real bootstrap so it owns this disposable source install. The
     # other modules remain real checkout imports; only acquisition is injected.
-    shutil.copy2(repository / "hermes_bootstrap.py", root / "hermes_bootstrap.py")
+    shutil.copy2(repository / "akram_core.hermes_bootstrap.py", root / "akram_core.hermes_bootstrap.py")
     (root / "launch_test_tools.py").write_text(
         "import sys\n"
         "from pathlib import Path\n"
@@ -382,7 +382,7 @@ def test_real_bootstrap_reexecs_before_app_imports(source_launch, tmp_path, isol
     entry = root / "launch_probe.py"
     entry.write_text(
         "import launch_test_tools\n"
-        "import hermes_bootstrap\n"
+        "import akram_core.hermes_bootstrap\n"
         "import json, sys\n"
         "from pathlib import Path\n"
         "from pm.environments import selected_venv, site_packages\n"
@@ -457,7 +457,7 @@ def test_failed_launch_completion_degrades_to_a_warning(source_launch, tmp_path,
     CLI on the previous generation with a warning — and a metadata query must not even try."""
     root, store_python, worker_command = source_launch
     repository = Path(__file__).resolve().parents[2]
-    shutil.copy2(repository / "hermes_bootstrap.py", root / "hermes_bootstrap.py")
+    shutil.copy2(repository / "akram_core.hermes_bootstrap.py", root / "akram_core.hermes_bootstrap.py")
     (root / "launch_test_tools.py").write_text(
         "import sys\n"
         "from pathlib import Path\n"
@@ -471,7 +471,7 @@ def test_failed_launch_completion_degrades_to_a_warning(source_launch, tmp_path,
     entry = root / "launch_probe.py"
     entry.write_text(
         "import launch_test_tools\n"
-        "import hermes_bootstrap\n"
+        "import akram_core.hermes_bootstrap\n"
         "import json, sys\n"
         "print(json.dumps({'executable': sys.executable, 'args': sys.argv[1:]}))\n",
         encoding="utf-8",

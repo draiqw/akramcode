@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 
 from hermes_cli.plugin_validate import validate_plugin_dir
 from hermes_cli.plugin_validate_desktop import desktop_surface_hits, is_desktop_surface

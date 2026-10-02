@@ -139,7 +139,7 @@ _real_preflight = gm._preflight_apply
 
 
 def _config_flag(root: Path):
-    import hermes_yaml as yaml
+    import akram_core.hermes_yaml as yaml
     raw = yaml.safe_load((root / "config.yaml").read_text(encoding="utf-8")) or {}
     return (raw.get("gateway") or {}).get("multiplex_profiles")
 

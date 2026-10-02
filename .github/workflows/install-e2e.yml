@@ -128,7 +128,7 @@ on:
       - 'scripts/install*'
       - 'scripts/desktop-update/**'
       - 'setup-hermes.*'
-      - 'hermes_bootstrap.py'
+      - 'akram_core.hermes_bootstrap.py'
       - 'pm/**'
       - 'hermes_cli/update*'
       - 'hermes_cli/*update*'

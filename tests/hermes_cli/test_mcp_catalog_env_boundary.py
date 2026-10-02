@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 
 import pytest
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 from fastapi.testclient import TestClient
 
 from hermes_cli.web_server import _SESSION_TOKEN, app

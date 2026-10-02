@@ -33,10 +33,10 @@ def test_scratch_env_follows_home_and_respects_user_tmpdir(tmp_path):
 
 
 def test_bootstrap_import_exports_scratch_to_process_and_children(tmp_path):
-    """``import hermes_bootstrap`` alone makes ``tempfile`` (this process AND a child) land in scratch."""
+    """``import akram_core.hermes_bootstrap`` alone makes ``tempfile`` (this process AND a child) land in scratch."""
     env = {k: v for k, v in os.environ.items() if k not in ("TMPDIR", "TMP", "TEMP", "HERMES_SCRATCH_DIR")}
     env["HERMES_HOME"] = str(tmp_path)
-    code = ("import tempfile, os, subprocess, sys; import hermes_bootstrap; "
+    code = ("import tempfile, os, subprocess, sys; import akram_core.hermes_bootstrap; "
             "print(tempfile.gettempdir()); "
             "print(subprocess.run([sys.executable, '-c', 'import tempfile;print(tempfile.gettempdir())'],"
             " capture_output=True, text=True).stdout.strip())")

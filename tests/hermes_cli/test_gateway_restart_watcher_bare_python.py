@@ -1,6 +1,6 @@
 """The detached gateway restart watcher must survive on an interpreter without the dependency env.
 
-``hermes update`` finishes on the bare store Python (dependencies come from ``hermes_bootstrap``,
+``hermes update`` finishes on the bare store Python (dependencies come from ``akram_core.hermes_bootstrap``,
 not site-packages) and spawns the watcher as ``sys.executable -c <watcher>``. A watcher that imports
 a third-party-backed Hermes module (``gateway.status`` -> ``utils`` -> ``ruamel``) dies before it
 relaunches the gateway, leaving a manually started gateway down after every update.

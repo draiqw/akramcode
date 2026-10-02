@@ -372,7 +372,7 @@ def activation_environment(project_root: Path) -> dict[str, str]:
     environment = committed_venv(project_root)
     env.pop("PYTHONHOME", None)
     env.pop("VIRTUAL_ENV", None)
-    # Nothing committed: the child's own hermes_bootstrap decides (a bare store Python refuses),
+    # Nothing committed: the child's own akram_core.hermes_bootstrap decides (a bare store Python refuses),
     # rather than inheriting the pre-PM in-tree venv from here.
     env["PYTHONPATH"] = os.pathsep.join([str(project_root.resolve()),
                                          *([str(site_packages(environment))] if environment else [])])

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import time
 
-import hermes_startup_watchdog as sw
+import akram_core.hermes_startup_watchdog as sw
 from hermes_state import SessionDB
 
 

@@ -24,7 +24,7 @@ function Get-SourceHermes([string]$Root) {
 # A pre-handoff release cannot flip during `hermes update` -- there is no
 # retired-hook seam on its update path to reach, so the update ends with the
 # tree at HEAD and no `.hermes/bin/*`. The NEXT ordinary startup is what
-# completes it: hermes_bootstrap calls prepare_launch() before importing
+# completes it: akram_core.hermes_bootstrap calls prepare_launch() before importing
 # anything, which syncs PM, publishes the launchers and re-execs.
 #
 # Deliberately NOT used for `--version` probes: those stay under

@@ -55,7 +55,7 @@ def _fire(home, mode):
 @pytest.mark.parametrize('mode', ['builtin', 'provider', 'worker'])
 def test_completed_occurrence_survives_restart_and_prestamp_rollback(tmp_path, mode):
     from datetime import timedelta
-    from hermes_time import now
+    from akram_core.hermes_time import now
 
     home = tmp_path / mode
     cron = home / 'cron'
@@ -148,7 +148,7 @@ def test_ledger_migration_and_completion_identity(tmp_path, monkeypatch):
 
         # A runnable legacy wall-clock value cannot establish an exact UTC identity.
         from datetime import timedelta
-        from hermes_time import now
+        from akram_core.hermes_time import now
         naive = jobs.create_job(prompt='legacy', schedule='every 4h')
         rows = jobs.load_jobs()
         for item in rows:
@@ -188,7 +188,7 @@ def test_completed_occurrence_skip_names_job_slot_and_row(tmp_path, monkeypatch,
     from datetime import timedelta
 
     from cron import executions, jobs
-    from hermes_time import now
+    from akram_core.hermes_time import now
 
     monkeypatch.setattr(executions, 'EXECUTIONS_FILE', tmp_path / 'executions.db')
     slot = (now() - timedelta(minutes=2)).isoformat()

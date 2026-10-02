@@ -62,7 +62,7 @@ def cleanup_terminal_temp_cache(max_age_hours: float = TERMINAL_TEMP_MAX_IDLE_HO
     directory's subtree; the kwarg name is the ``cleanup_*_cache`` signature the gateway
     housekeeping loop calls every entry with); return count.
     Only the managed default dir is pruned — never a user-pointed ``terminal.temp_dir``."""
-    from hermes_constants_scratch import subtree_touched_since
+    from akram_core.hermes_constants_scratch import subtree_touched_since
 
     root = _default_terminal_temp_dir()
     if root is None:

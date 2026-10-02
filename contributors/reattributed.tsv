@@ -109,7 +109,7 @@ f84db42a32b28a00a2ef1e11e5471a27d22cc37f	2026-09-25T11:06:00-05:00	fix(cron): de
 d10afb5a8851be2b0f6fe5d3b04022c3a8877d6c	2026-09-25T18:52:11-05:00	fix(tests): import CONFIG_SCHEMA from its defining module
 3521034ed6b282ba6126b73bb04e3c958570432d	2026-09-24T18:51:45-05:00	fix(desktop): isolate Inbox session actions from the row resume (#85163)
 1ec4957d4c31b719fb4d8caf546fc44c43edfb81	2026-09-24T18:55:04-05:00	fix(desktop): drop ghost sidebar rows absorbed by a reorganized compression chain (#85331)
-7c80df7120781f55749b8843d6ef8016f8672eba	2026-09-24T22:18:52-05:00	fix(test): use hermes_yaml instead of bare pyyaml in onboarding test
+7c80df7120781f55749b8843d6ef8016f8672eba	2026-09-24T22:18:52-05:00	fix(test): use akram_core.hermes_yaml instead of bare pyyaml in onboarding test
 8507948c04714622327a61371cb0f06a0073a3af	2026-09-25T17:49:50-05:00	fix(desktop): qualify lineage absorption members by profile (#92454)
 b07d307bae64313e4aecaeb1c73dc95e03be204f	2026-09-25T10:08:28-05:00	fix(tui): bind side-agent UI owner; skip secret prompts with no owner
 283de37b6b4edfce7429f63ff9b0eee6b4882311	2026-09-25T18:13:06-05:00	fix(tui): refuse secret requests after the owning runtime closes

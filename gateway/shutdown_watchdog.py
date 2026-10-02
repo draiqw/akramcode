@@ -302,7 +302,7 @@ def arm_shutdown_watchdog(
             remove_pid_file()
             release_gateway_runtime_lock()
         with contextlib.suppress(Exception):
-            from hermes_logging import drain_log_queue
+            from akram_core.hermes_logging import drain_log_queue
             drain_log_queue(timeout=1.0)
         _mark_exited_quietly(exit_code, "shutdown_watchdog")
         _hard_exit(exit_code)

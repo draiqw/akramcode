@@ -12,7 +12,7 @@ from tests.hermes_cli.plugin_worker_support import (
     isolated_python as isolated_python,
     plugin_world as plugin_world,
 )
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 
 from hermes_cli.subcommands.plugins import build_plugins_parser
 

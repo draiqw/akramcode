@@ -18,7 +18,7 @@ def __getattr__(name: str) -> str:
     Lazy because ``pm`` is not importable when this package loads: a venv
     editable-installed from a pre-PM tree maps only the top-level packages it knew
     at install time, and the repo root reaches ``sys.path`` only once
-    ``hermes_bootstrap`` runs -- after this ``__init__``, from ``hermes_cli.main``.
+    ``akram_core.hermes_bootstrap`` runs -- after this ``__init__``, from ``hermes_cli.main``.
     """
     if name != "__version__":
         raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

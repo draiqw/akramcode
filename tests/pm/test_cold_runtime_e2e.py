@@ -101,8 +101,8 @@ def test_cold_cli_builds_own_runtime_discovers_plugins_and_repairs_app(tmp_path,
     for name in ("pm", "hermes_cli"):
         shutil.copytree(source / name, repo / name,
                         ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
-    for name in ("utils.py", "hermes_constants.py", "hermes_yaml.py",
-                 "hermes_bootstrap.py"):
+    for name in ("utils.py", "hermes_constants.py", "akram_core.hermes_yaml.py",
+                 "akram_core.hermes_bootstrap.py"):
         shutil.copy2(source / name, repo / name)
     # No production application lock or metadata enters this source snapshot.
     recipe = tomllib.loads((repo / "pm" / "pyproject.toml").read_text())
@@ -200,7 +200,7 @@ assert importlib.util.find_spec('idna') is None
             lock.write_bytes(lock.read_bytes() + b"\n# source update\n")
             entry = repo / "launch_probe.py"
             entry.write_text(
-                "import hermes_bootstrap\n"
+                "import akram_core.hermes_bootstrap\n"
                 "import idna, json, sys\n"
                 "print(json.dumps({'python': sys.executable, 'version': list(sys.version_info[:2]), "
                 "'idna': idna.__file__}))\n", encoding="utf-8",

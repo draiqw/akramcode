@@ -16,7 +16,7 @@ import sys
 
 
 import pytest
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 
 from tests.pm._fixtures import _wheel, isolated_python as isolated_python
 

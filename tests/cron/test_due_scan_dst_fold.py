@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
-import hermes_time
+import akram_core.hermes_time
 import pytest
 
 from cron import jobs
@@ -16,12 +16,12 @@ NEW_YORK = ZoneInfo("America/New_York")
 def dst_cron_store(tmp_path, monkeypatch):
     monkeypatch.setenv("HERMES_HOME", str(tmp_path))
     monkeypatch.setenv("HERMES_TIMEZONE", "America/New_York")
-    hermes_time.reset_cache()
+    akram_core.hermes_time.reset_cache()
     monkeypatch.setattr(jobs, "CRON_DIR", tmp_path / "cron")
     monkeypatch.setattr(jobs, "JOBS_FILE", tmp_path / "cron" / "jobs.json")
     monkeypatch.setattr(jobs, "OUTPUT_DIR", tmp_path / "cron" / "output")
     yield tmp_path
-    hermes_time.reset_cache()
+    akram_core.hermes_time.reset_cache()
 
 
 def _instant(hour, minute):

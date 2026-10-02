@@ -9,7 +9,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
 
-import hermes_yaml
+import akram_core.hermes_yaml
 import pytest
 
 from tests.ci.desktop_release_roles import (
@@ -26,7 +26,7 @@ ALL_JOBS = ','.join(JOB_GROUPS)
 
 
 def smoke_workflow():
-    return hermes_yaml.safe_load((ROOT / '.github/workflows/desktop-bundle-smoke.yml').read_text(encoding='utf-8-sig'))
+    return akram_core.hermes_yaml.safe_load((ROOT / '.github/workflows/desktop-bundle-smoke.yml').read_text(encoding='utf-8-sig'))
 
 
 def smoke_fetch_script():
@@ -164,7 +164,7 @@ def test_signature_cache_saves_only_in_the_writable_build():
     setup = next(step for step in assembly['steps'] if step.get('uses') == './.github/actions/setup-pm')
     assert setup['with']['cache-python'] is False
     assert setup['with']['save-tools-cache'] is False and setup['with']['save-node-cache'] is False
-    action = hermes_yaml.safe_load((ROOT / '.github/actions/setup-pm/action.yml').read_text())
+    action = akram_core.hermes_yaml.safe_load((ROOT / '.github/actions/setup-pm/action.yml').read_text())
     tools = next(step for step in action['runs']['steps'] if step.get('id') == 'tools-cache')
     # The assembly's save-tools-cache: false must turn the tool cache save off.
     enabled = {'cache': 'true', 'save-tools-cache': 'true'}
@@ -215,7 +215,7 @@ def test_smoke_matrix_native_routes_and_driver_only_dependencies():
             chat = next(step for step in job['steps'] if step.get('id') == verdict)
             assert 'continue-on-error' not in chat
 
-    recorder = hermes_yaml.safe_load((ROOT / '.github/actions/e2e-screen-record/action.yml').read_text())
+    recorder = akram_core.hermes_yaml.safe_load((ROOT / '.github/actions/e2e-screen-record/action.yml').read_text())
     assert all(not step.get('uses', '').startswith('actions/cache') for step in recorder['runs']['steps'])
     assert 'save-cache' not in recorder['inputs']
     # ffmpeg comes from the PM toolchain: the action must verify, not install.
@@ -227,7 +227,7 @@ def test_smoke_matrix_native_routes_and_driver_only_dependencies():
         assert 'ffmpeg' not in run or 'winget' not in run and 'brew install' not in run and 'apt-get' not in run, \
             f"step {step.get('name')} installs ffmpeg through an OS package manager"
 
-    workflows = [workflow] + [hermes_yaml.safe_load((ROOT / '.github/workflows' / name).read_text(encoding='utf-8-sig'))
+    workflows = [workflow] + [akram_core.hermes_yaml.safe_load((ROOT / '.github/workflows' / name).read_text(encoding='utf-8-sig'))
                              for name in ('install-e2e-run.yml', 'install-e2e-macos-run.yml', 'install-e2e-windows-run.yml')]
     for document in workflows:
         # A job that never checks out (the smoke admission job's bare case

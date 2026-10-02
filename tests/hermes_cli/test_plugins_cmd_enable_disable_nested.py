@@ -2,7 +2,7 @@
 import shutil
 
 import pytest
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 
 from tests.hermes_cli.plugin_worker_support import (
     plugin_world as plugin_world,

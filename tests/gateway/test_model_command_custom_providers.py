@@ -3,7 +3,7 @@
 import threading
 
 import pytest
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 
 from gateway.config import Platform
 from gateway.platforms.event import MessageEvent, MessageType

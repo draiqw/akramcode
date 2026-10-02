@@ -2637,7 +2637,7 @@ def fill_empty_non_final_wire_payload(msg: Dict[str, Any], *, is_final: bool) ->
 
 def _session_id_for_heal_log() -> str:
     try:
-        from hermes_logging import _session_context
+        from akram_core.hermes_logging import _session_context
         return str(getattr(_session_context, "session_id", None) or "")
     except Exception:
         return ""

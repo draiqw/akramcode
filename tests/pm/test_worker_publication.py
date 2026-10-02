@@ -379,14 +379,14 @@ def test_inactive_portable_publication_does_not_inspect_unrelated_dependency_man
 
 
 def test_selection_preserves_yaml11_values_and_quotes_plugin_names(client, tmp_path, monkeypatch):
-    import hermes_yaml
+    import akram_core.hermes_yaml
     _current_environment(tmp_path, monkeypatch, [])
     home = tmp_path / "home"
     config = home / "config.yaml"
     config.write_text('feature: yes\nother: no\nlabel: "on"\nplugins: {enabled: []}\n')
-    before = hermes_yaml.safe_load(config.read_bytes())
+    before = akram_core.hermes_yaml.safe_load(config.read_bytes())
     client.sync_venv(explicit=True, plugins=Selection({"home": str(home), "enabled": ["on", "yes", "no"], "disabled": []}))
-    after = hermes_yaml.safe_load(config.read_bytes())
+    after = akram_core.hermes_yaml.safe_load(config.read_bytes())
     assert {key: after[key] for key in ("feature", "other", "label")} == {key: before[key] for key in ("feature", "other", "label")}
     assert set(after["plugins"]["enabled"]) == {"on", "yes", "no"}
     assert 'label: "on"' in config.read_text()

@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 
 logger = logging.getLogger(__name__)
 

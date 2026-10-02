@@ -92,10 +92,10 @@ def test_shipped_post_swap_argv_enters_takeover_before_current_cli(tmp_path):
     package.mkdir(parents=True)
     (package / "__init__.py").write_text("", encoding="utf-8")
     (package / "main.py").write_text(
-        "import hermes_bootstrap\nraise AssertionError('current CLI parsed a legacy continuation')\n",
+        "import akram_core.hermes_bootstrap\nraise AssertionError('current CLI parsed a legacy continuation')\n",
         encoding="utf-8",
     )
-    for relative in ("hermes_bootstrap.py", "hermes_cli/update_handoff.py", "hermes_cli/_old_updater.py"):
+    for relative in ("akram_core.hermes_bootstrap.py", "hermes_cli/update_handoff.py", "hermes_cli/_old_updater.py"):
         shutil.copy2(source / relative, root / relative)
     (package / "_update_takeover.py").write_text(
         "import json, sys\nfrom pathlib import Path\n"

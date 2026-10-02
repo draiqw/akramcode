@@ -174,7 +174,7 @@ def _patch_aborted_startup(monkeypatch, runner_cls):
     monkeypatch.setattr("gateway.status.remove_pid_file", lambda: None)
     monkeypatch.setattr("gateway.status.release_gateway_runtime_lock", lambda: None)
     monkeypatch.setattr("tools.skills_sync.sync_skills", lambda quiet=True: None)
-    monkeypatch.setattr("hermes_logging.setup_logging", lambda hermes_home, mode: None)
+    monkeypatch.setattr("akram_core.hermes_logging.setup_logging", lambda hermes_home, mode: None)
     monkeypatch.setattr("gateway.run.GatewayRunner", runner_cls)
 
 

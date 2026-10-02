@@ -203,7 +203,7 @@ def _install_integrity_check_lease(conn: sqlite3.Connection) -> None:
     The handler always returns 0 -- it must never abort the verdict PRAGMA.  Synchronous
     by design: no checker worker thread can outlive the check.
     """
-    from hermes_startup_watchdog import report_startup_progress
+    from akram_core.hermes_startup_watchdog import report_startup_progress
 
     report_startup_progress(_INTEGRITY_CHECK_LEASE_S, phase=_INTEGRITY_CHECK_LEASE_PHASE)
     last_renew = time.monotonic()

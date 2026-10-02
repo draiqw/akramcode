@@ -203,7 +203,7 @@ class TestOneTurnNeverPersisted:
 
     @staticmethod
     def _runner_with_store(tmp_path, monkeypatch):
-        import hermes_yaml as _yaml
+        import akram_core.hermes_yaml as _yaml
 
         import gateway.run as gateway_run
         from gateway.run import GatewayRunner

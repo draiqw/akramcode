@@ -699,7 +699,7 @@ def _init_turn_state(agent, run_budget_seconds):
 def _setup_logging(agent):
     # agent.log (INFO+) + errors.log (WARNING+); idempotent so per-message gateway agents
     # don't duplicate handlers.
-    from hermes_logging import setup_logging, setup_verbose_logging
+    from akram_core.hermes_logging import setup_logging, setup_verbose_logging
     # The ACTIVE home, not run_agent's import-time freeze: a Desktop serve backend builds agents
     # for several profiles inside set_hermes_home_override(), and the frozen launch home made
     # setup_logging() see a home it already served, so it never adopted the profile and every
@@ -710,7 +710,7 @@ def _setup_logging(agent):
         setup_verbose_logging()
         _ra().logger.info("Verbose logging enabled (third-party library logs suppressed)")
     # Quiet mode must NOT raise per-logger levels: isEnabledFor() runs before propagation and
-    # would starve the root file handlers. Noise reduction belongs in hermes_logging.
+    # would starve the root file handlers. Noise reduction belongs in akram_core.hermes_logging.
 
 
 def _print_key_banner(key, label: str, warn_missing: bool = False) -> None:

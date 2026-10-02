@@ -493,7 +493,7 @@ def validate_plugin_dir(plugin_dir: Path) -> ValidationReport:
         )
         return report
 
-    import hermes_yaml as yaml
+    import akram_core.hermes_yaml as yaml
 
     try:
         manifest = yaml.safe_load(

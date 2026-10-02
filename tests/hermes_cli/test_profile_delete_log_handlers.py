@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-import hermes_logging
+import akram_core.hermes_logging
 from hermes_cli import profiles
 from hermes_constants import reset_hermes_home_override, set_hermes_home_override
 
@@ -31,13 +31,13 @@ def routed_profile(tmp_path, monkeypatch):
     monkeypatch.setattr(profiles, "_stop_profile_backends", lambda *_: None)
     monkeypatch.setattr(profiles, "_notify_multiplexer", lambda *_: None)
     profile = profiles.create_profile("routed-log-delete", no_alias=True)
-    hermes_logging.setup_logging(hermes_home=home, force=True)
+    akram_core.hermes_logging.setup_logging(hermes_home=home, force=True)
     try:
         yield home, profile
     finally:
         # Keep a pre-fix failure from leaking open handles into tempdir cleanup.
-        hermes_logging._reset_queued_handlers()
-        hermes_logging._logging_initialized = False
+        akram_core.hermes_logging._reset_queued_handlers()
+        akram_core.hermes_logging._logging_initialized = False
 
 
 def _log_into(profile: Path, *, adopt: bool) -> None:
@@ -47,19 +47,19 @@ def _log_into(profile: Path, *, adopt: bool) -> None:
     token = set_hermes_home_override(profile)
     try:
         if adopt:
-            hermes_logging.setup_logging(hermes_home=profile)
+            akram_core.hermes_logging.setup_logging(hermes_home=profile)
         else:
-            assert hermes_logging.enable_profile_log_routing([Path(profile).parent.parent, profile]) is True
+            assert akram_core.hermes_logging.enable_profile_log_routing([Path(profile).parent.parent, profile]) is True
         logger.error("routed record before deletion")
     finally:
         reset_hermes_home_override(token)
-    hermes_logging.flush_log_queue()
+    akram_core.hermes_logging.flush_log_queue()
     assert "routed record before deletion" in (profile / "logs" / "agent.log").read_text(encoding="utf-8")
 
 
 def _routers() -> list:
-    return [h for h in hermes_logging._queued_file_handlers
-            if isinstance(h, hermes_logging._ProfileRoutingFileHandler)]
+    return [h for h in akram_core.hermes_logging._queued_file_handlers
+            if isinstance(h, akram_core.hermes_logging._ProfileRoutingFileHandler)]
 
 
 @pytest.mark.parametrize("adopt", [False, True], ids=["explicit-routing", "setup_logging-adoption"])

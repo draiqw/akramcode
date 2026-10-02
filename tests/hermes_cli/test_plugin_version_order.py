@@ -3,7 +3,7 @@ import json
 from types import SimpleNamespace
 
 import pytest
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 
 from hermes_cli.plugins_updates import run_checks
 

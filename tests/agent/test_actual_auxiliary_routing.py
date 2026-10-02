@@ -8,7 +8,7 @@ import threading
 import time
 
 import pytest
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 
 
 @pytest.fixture

@@ -8,7 +8,7 @@ any particular document.
 
 import io
 
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 
 from utils import fast_safe_load
 

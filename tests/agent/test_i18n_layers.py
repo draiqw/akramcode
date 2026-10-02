@@ -4,7 +4,7 @@ manifest loaded through the real discovery path — no loader mocks."""
 
 from __future__ import annotations
 
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 import pytest
 
 from agent import i18n, i18n_layers

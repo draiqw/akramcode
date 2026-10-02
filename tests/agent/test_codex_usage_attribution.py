@@ -10,7 +10,7 @@ from types import SimpleNamespace
 
 import httpx
 import pytest
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 
 from hermes_cli.version_info import get_version_info
 from hermes_constants import reset_hermes_home_override, set_hermes_home_override

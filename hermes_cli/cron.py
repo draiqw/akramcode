@@ -114,7 +114,7 @@ def _next_run_overdue_seconds(next_run_at: Any) -> Optional[float]:
     the instant (mixed UTC offsets, DST folds, legacy naive stamps read as system-local).
     """
     from cron.jobs import _parse_aware
-    from hermes_time import now
+    from akram_core.hermes_time import now
     dt = _parse_aware(next_run_at)
     if dt is None:
         return None

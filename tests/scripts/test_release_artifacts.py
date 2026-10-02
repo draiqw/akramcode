@@ -11,7 +11,7 @@ import zipfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-import hermes_yaml
+import akram_core.hermes_yaml
 import pytest
 
 from scripts.bundles.release_artifacts import materialize, record, stamp_matches
@@ -247,7 +247,7 @@ def test_promote_writes_the_stable_mac_feed_from_the_attempt_archive(tmp_path, m
     # this test is order-independent against the per-test self-signed CA.
     monkeypatch.setattr(urllib.request, 'urlopen', https_origin.opener)
     artifacts.promote(manifest, tmp_path / 'promote', base)
-    feed = hermes_yaml.safe_load(r2_server.store['releases/darwin/stable/stable-mac.yml'][0].decode())
+    feed = akram_core.hermes_yaml.safe_load(r2_server.store['releases/darwin/stable/stable-mac.yml'][0].decode())
     # The feed version is the plain package version, never the attempt ref.
     assert feed['version'] == '1.2.3'
     assert feed['version'] != manifest['archive']
@@ -276,8 +276,8 @@ def test_promote_refuses_when_one_macos_arch_is_missing(tmp_path, monkeypatch, r
 def candidate_workflow_step(tmp_path, r2_server, staged_candidate):
     """Run real workflow shell/CLIs; replace only service endpoints and tool setup."""
     manifest, fetched, base = staged_candidate
-    jobs = hermes_yaml.safe_load((ROOT / '.github/workflows/desktop-bundled-release.yml').read_text(encoding='utf-8-sig'))['jobs']
-    stable_jobs = hermes_yaml.safe_load(
+    jobs = akram_core.hermes_yaml.safe_load((ROOT / '.github/workflows/desktop-bundled-release.yml').read_text(encoding='utf-8-sig'))['jobs']
+    stable_jobs = akram_core.hermes_yaml.safe_load(
         (ROOT / '.github/workflows/stable-release.yml').read_text(encoding='utf-8-sig'))['jobs']
     render = next(step for step in stable_jobs['complete']['steps']
                   if step.get('name', '').startswith('Render the admitted'))

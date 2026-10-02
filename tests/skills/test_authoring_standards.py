@@ -13,7 +13,7 @@ import re
 from pathlib import Path
 
 import pytest
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 
 REPO = Path(__file__).resolve().parents[2]
 MARKETING = re.compile(

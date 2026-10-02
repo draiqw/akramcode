@@ -16,7 +16,7 @@ import types
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 import pytest
 
 from hermes_cli import profiles
@@ -1481,7 +1481,7 @@ class TestWriteProfileMetaDurability:
     def _interrupted_write(profile_dir):
         """Run a ``write_profile_meta`` whose serialization fails mid-call.
 
-        ``utils.atomic_yaml_write`` serializes through ``hermes_yaml.safe_dump``.
+        ``utils.atomic_yaml_write`` serializes through ``akram_core.hermes_yaml.safe_dump``.
         Breaking that seam measures durability rather than the choice of writer. A
         scoped ``MonkeyPatch.context`` is used instead of the fixture so the
         patch is reverted immediately, without touching the session-wide env

@@ -10,7 +10,7 @@ import json
 from unittest import mock
 
 import pytest
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 
 from hermes_cli.plugin_packs import (
     PackError,

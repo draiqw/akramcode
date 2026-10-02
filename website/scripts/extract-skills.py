@@ -26,7 +26,7 @@ from datetime import datetime, timezone
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, REPO_ROOT)
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 
 LOCAL_SKILL_DIRS = [
     ("skills", "built-in"),

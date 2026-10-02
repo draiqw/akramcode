@@ -13,20 +13,20 @@ from types import SimpleNamespace
 
 import pytest
 
-import hermes_logging
+import akram_core.hermes_logging
 from hermes_constants import reset_hermes_home_override, set_hermes_home_override
-from hermes_logging import RotatingFileHandler, _ProfileRoutingFileHandler
+from akram_core.hermes_logging import RotatingFileHandler, _ProfileRoutingFileHandler
 
 
 @pytest.fixture(autouse=True)
 def _reset_logging_state():
-    """Reset hermes_logging module globals so each test starts unconfigured."""
-    hermes_logging._logging_initialized = False
-    hermes_logging._reset_queued_handlers()
+    """Reset akram_core.hermes_logging module globals so each test starts unconfigured."""
+    akram_core.hermes_logging._logging_initialized = False
+    akram_core.hermes_logging._reset_queued_handlers()
     yield
-    hermes_logging._reset_queued_handlers()
-    hermes_logging._logging_initialized = False
-    hermes_logging.clear_session_context()
+    akram_core.hermes_logging._reset_queued_handlers()
+    akram_core.hermes_logging._logging_initialized = False
+    akram_core.hermes_logging.clear_session_context()
 
 
 def _agent_stub() -> SimpleNamespace:
@@ -60,7 +60,7 @@ class TestSetupLoggingProfileScope:
             _witness("agent.test_profile_scope_125974", "scoped-witness-b")
         finally:
             reset_hermes_home_override(token)
-        hermes_logging.flush_log_queue()
+        akram_core.hermes_logging.flush_log_queue()
 
         log_b = home_b / "logs" / "agent.log"
         assert log_b.is_file(), "the profile-scoped agent's records must reach its own logs/"
@@ -83,8 +83,8 @@ class TestSetupLoggingProfileScope:
         home_a.mkdir()
         home_b.mkdir()
 
-        hermes_logging.setup_logging(hermes_home=home_a)
-        assert hermes_logging.enable_profile_log_routing([home_a, home_b]) is True
+        akram_core.hermes_logging.setup_logging(hermes_home=home_a)
+        assert akram_core.hermes_logging.enable_profile_log_routing([home_a, home_b]) is True
 
         token = set_hermes_home_override(str(home_b))
         try:
@@ -92,10 +92,10 @@ class TestSetupLoggingProfileScope:
             _witness("agent.test_routing_guard_125974", "routing-guard-witness-b")
         finally:
             reset_hermes_home_override(token)
-        hermes_logging.flush_log_queue()
+        akram_core.hermes_logging.flush_log_queue()
 
         bare = [
-            h for h in hermes_logging._queued_file_handlers
+            h for h in akram_core.hermes_logging._queued_file_handlers
             if isinstance(h, RotatingFileHandler)
         ]
         assert not bare, f"bare file handlers must not ride beside the routers: {bare}"
@@ -105,5 +105,5 @@ class TestSetupLoggingProfileScope:
         # And the routers themselves must still be routing, not replaced.
         assert any(
             isinstance(h, _ProfileRoutingFileHandler)
-            for h in hermes_logging._queued_file_handlers
+            for h in akram_core.hermes_logging._queued_file_handlers
         )

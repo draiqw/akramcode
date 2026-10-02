@@ -61,7 +61,7 @@ def validate_manifest(source: Path) -> dict:
 
 class PluginSelection:
     def __init__(self, selection: dict):
-        from hermes_yaml import roundtrip_yaml
+        from akram_core.hermes_yaml import roundtrip_yaml
 
         self.configs = selection_snapshot()
         self.home = Path(selection["home"]).resolve()

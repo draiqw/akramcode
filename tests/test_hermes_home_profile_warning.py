@@ -98,7 +98,7 @@ class TestGetHermesHomeProfileWarning:
 class TestBootReadersBeforeProfileOverride:
     """Readers that run before the CLI applies the sticky ``active_profile`` must not warn.
 
-    ``hermes_bootstrap`` points ``TMPDIR`` at the scratch dir of the *process* home during
+    ``akram_core.hermes_bootstrap`` points ``TMPDIR`` at the scratch dir of the *process* home during
     import, and ``main._apply_profile_override`` re-homes the process a few lines later. A
     caller that already resolved its home must not send the policy back through
     ``get_hermes_home()``: for a sticky-profile user with ``HERMES_HOME`` unset in a plain

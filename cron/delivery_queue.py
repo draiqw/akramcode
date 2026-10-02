@@ -23,7 +23,7 @@ from typing import Any, Callable, Iterator, Optional
 from agent.redact import redact_sensitive_text
 from cron.executions import _owner_is_live, _process_start_time
 from hermes_constants import get_hermes_home
-from hermes_time import now as _hermes_now
+from akram_core.hermes_time import now as _hermes_now
 
 logger = logging.getLogger(__name__)
 

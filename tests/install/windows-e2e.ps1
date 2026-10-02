@@ -403,7 +403,7 @@ function Test-HermesRuns([string]$Label) {
         # A pre-handoff release cannot complete inside `hermes update`: its
         # update path reaches no retired-hook seam, so the update ends with the
         # tree at HEAD and no published launcher. The NEXT ordinary startup
-        # completes it (hermes_bootstrap -> prepare_launch -> sync PM, publish
+        # completes it (akram_core.hermes_bootstrap -> prepare_launch -> sync PM, publish
         # launchers, re-exec). Drive that startup here, WITHOUT the lazy-install
         # ban, and only when the launcher is missing -- so a healthy update is
         # still judged by the strict checks below, and `--version` probes keep

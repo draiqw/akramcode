@@ -51,7 +51,7 @@ def _result(resp):
 
 def _read_yaml(path: Path) -> dict:
     """Read a config.yaml directly for assertions (test-side, not the guarded loader)."""
-    import hermes_yaml as yaml
+    import akram_core.hermes_yaml as yaml
 
     if not path.is_file():
         return {}

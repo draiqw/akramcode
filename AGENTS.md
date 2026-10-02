@@ -199,7 +199,7 @@ hermes-agent/
 ├── cli.py                # HermesCLI (REPL, slash dispatch) + hermes_cli/cli_*_mixin.py
 ├── hermes_state.py       # SessionDB facade; hermes_state_*.py siblings
 ├── hermes_constants.py   # get_hermes_home(), display_hermes_home() — profile-aware paths
-├── hermes_logging.py     # agent.log / errors.log / gateway.log (profile-aware)
+├── akram_core.hermes_logging.py     # agent.log / errors.log / gateway.log (profile-aware)
 ├── scripts/batch_runner.py # Parallel batch processing
 ├── agent/                # turn_*.py loop phases, providers, memory, compression, prompt builder
 ├── hermes_cli/           # CLI subcommands, setup, config, plugins loader, skins, updater

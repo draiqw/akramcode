@@ -27,7 +27,7 @@ from types import SimpleNamespace
 
 import pytest
 
-import hermes_bootstrap  # noqa: F401  (process boot before tui_gateway.server)
+import akram_core.hermes_bootstrap  # noqa: F401  (process boot before tui_gateway.server)
 
 
 class RecordingAgent:

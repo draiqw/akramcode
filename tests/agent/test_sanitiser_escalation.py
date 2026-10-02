@@ -23,7 +23,7 @@ from agent.agent_runtime_helpers import (
     get_sanitizer_heal_stats,
     repair_empty_non_final_messages,
 )
-from hermes_logging import clear_session_context, set_session_context
+from akram_core.hermes_logging import clear_session_context, set_session_context
 
 
 @pytest.fixture(autouse=True)

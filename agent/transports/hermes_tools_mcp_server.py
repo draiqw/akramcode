@@ -7,12 +7,12 @@ exposed over stdio MCP; codex registers it via ``~/.codex/config.toml
 
 from __future__ import annotations
 
-# First, like every entry point: stdio, import-path and environ-lifetime fixes (hermes_bootstrap).
+# First, like every entry point: stdio, import-path and environ-lifetime fixes (akram_core.hermes_bootstrap).
 # Only as ``python -m``: codex_runtime & co. import this module for a constant, and the
 # bootstrap's scratch/TMPDIR exports must not fire in those library importers.
 if __name__ == "__main__":
     try:
-        import hermes_bootstrap  # noqa: F401
+        import akram_core.hermes_bootstrap  # noqa: F401
     except ModuleNotFoundError:
         pass  # a partial ``hermes update`` can leave the bootstrap unregistered
 

@@ -756,10 +756,10 @@ print(json.dumps({"boots": boots, "marker": os.environ.get(sys.argv[1])}))
 @pytest.mark.parametrize("marked", [True, False])
 def test_marked_worker_boots_dependencies_before_cron_jobs(marked):
     """#122222: ``-m cron.scheduler`` executes ``cron/__init__.py`` first, whose first import
-    (``cron.jobs`` -> ``hermes_yaml`` -> ``ruamel``) is already a dependency, so the marked
+    (``cron.jobs`` -> ``akram_core.hermes_yaml`` -> ``ruamel``) is already a dependency, so the marked
     worker must boot before it -- exactly once, consuming the marker so the worker's own
     children do not inherit it. An unmarked importer (the gateway already booted through
-    ``hermes_bootstrap``) is never re-booted."""
+    ``akram_core.hermes_bootstrap``) is never re-booted."""
     import cron.worker_bootstrap as worker_bootstrap
 
     repo_root = Path(worker_bootstrap.__file__).resolve().parent.parent

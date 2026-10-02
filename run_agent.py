@@ -6,11 +6,11 @@
     response = agent.run_conversation("Tell me about the latest Python updates")
 """
 
-# hermes_bootstrap must be the very first import (UTF-8 stdio on Windows; no-op on POSIX).
+# akram_core.hermes_bootstrap must be the very first import (UTF-8 stdio on Windows; no-op on POSIX).
 try:
-    import hermes_bootstrap  # noqa: F401
+    import akram_core.hermes_bootstrap  # noqa: F401
 except ModuleNotFoundError as exc:  # partial `hermes update` left the bootstrap unregistered
-    if exc.name != "hermes_bootstrap":
+    if exc.name != "akram_core.hermes_bootstrap":
         raise  # the bootstrap exists but cannot load: skipping it would skip PM activation
 
 import sys

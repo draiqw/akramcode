@@ -28,11 +28,11 @@ _MULTI = "top = 1\nx = 0\ny = 0\nz = 0\nend = 1\n"
 
 
 # Runs an entry module with the repair replaced by a probe that lists the checkout modules imported so
-# far (the entry module, its package's __init__ and what hermes_bootstrap needs excluded: those run
+# far (the entry module, its package's __init__ and what akram_core.hermes_bootstrap needs excluded: those run
 # before any code in the entry can), then stops.
 _ENTRY_SPY = """
 import importlib, json, os, sys
-import hermes_bootstrap
+import akram_core.hermes_bootstrap
 from hermes_cli import _early_recovery as er
 
 venv, entry = os.path.realpath(sys.prefix), sys.argv[1]
@@ -149,7 +149,7 @@ def test_killed_pull_is_restored_on_next_launch_and_update_reruns(checkout, monk
     assert _git(root, "rev-parse", "HEAD") == b and not marker.exists()
 
     # Every console script (`hermes`, `hermes-agent`, `hermes-acp`) repairs before its entry module imports
-    # any other checkout module past hermes_bootstrap: any of them may be a half-written file.
+    # any other checkout module past akram_core.hermes_bootstrap: any of them may be a half-written file.
     repo = os.path.realpath(Path(er.__file__).parent.parent)
     for entry in ("hermes_cli.main", "agent.legacy_cli", "run_agent", "acp_adapter.entry"):
         run = subprocess.run([sys.executable, "-c", _ENTRY_SPY, entry], cwd=repo, capture_output=True, text=True,

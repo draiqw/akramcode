@@ -321,7 +321,7 @@ def _yaml():
     """Shared YAML helpers or None (not a hard requirement for proxy discovery)."""
 
     try:
-        import hermes_yaml as yaml
+        import akram_core.hermes_yaml as yaml
         return yaml
     except ImportError:
         return None

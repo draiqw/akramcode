@@ -97,7 +97,7 @@ def _hermes_home_points_at_production(value: str) -> bool:
     return resolved.parent.name == "profiles" and resolved.parent.parent == real_root
 
 
-# ``import hermes_bootstrap`` (transitively: any entry-point module) runs
+# ``import akram_core.hermes_bootstrap`` (transitively: any entry-point module) runs
 # ``export_scratch_tmp_env()``, which points TMPDIR/TMP/TEMP at
 # ``<HERMES_HOME>/cache/scratch`` unless a temp var is already set — and a
 # Hermes-launched shell (agent terminal, ``hermes`` child) arrives with that
@@ -1034,7 +1034,7 @@ def _pytest_disk_temp_root(native: Path) -> Path:
     one (``scripts/run_tests_parallel.py::_runner_scratch_root``), else a plain (not
     dot-prefixed — hidden-dir search tests would see every fixture as hidden) sibling of
     the native home. Entries idle for a day are swept on the way in."""
-    from hermes_constants_scratch import prune_idle_entries
+    from akram_core.hermes_constants_scratch import prune_idle_entries
 
     if os.name != "nt" and os.path.isdir("/var/tmp"):  # no-tmp: ok — disk-backed FHS root
         root = Path("/var/tmp/hermes-pytest")  # no-tmp: ok — /var/tmp is disk-backed by FHS, never tmpfs

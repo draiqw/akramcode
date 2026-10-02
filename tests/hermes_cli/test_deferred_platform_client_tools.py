@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 
 import pytest
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 
 
 A2A_CLIENT_TOOLS = {

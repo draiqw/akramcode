@@ -13,7 +13,7 @@ Coverage levels:
 import time
 
 import pytest
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 from unittest.mock import patch, MagicMock
 
 from agent.model_metadata import (
@@ -554,7 +554,7 @@ class TestCodexOAuthContextLength:
         base_url = "https://chatgpt.com/backend-api/codex"
         stale_key = f"gpt-5.5@{base_url}"
         other_key = "other-model@https://api.openai.com/v1/"
-        import hermes_yaml as _yaml
+        import akram_core.hermes_yaml as _yaml
         cache_file.write_text(_yaml.safe_dump({"context_lengths": {
             stale_key: stale_context,
             other_key: 128_000,

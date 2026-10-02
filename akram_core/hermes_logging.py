@@ -899,7 +899,7 @@ def _read_logging_config():
     try:
         # Prefer the shared effective-config cache (managed overlay included, so an administrator
         # can pin logging.*) so this reuses hermes_cli.main's early parse (one config.yaml parse
-        # per process); fall back to a direct parse for bare hermes_logging consumers.
+        # per process); fall back to a direct parse for bare akram_core.hermes_logging consumers.
         try:
             from hermes_cli.config_effective import load_user_config_effective
             cfg = load_user_config_effective(get_config_path())

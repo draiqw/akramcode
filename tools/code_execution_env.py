@@ -126,8 +126,8 @@ def _build_child_env(*, rpc_endpoint: str, rpc_token: str, tmpdir: str,
     child_env["PYTHONIOENCODING"] = "utf-8"
     child_env["PYTHONUTF8"] = "1"
     # Only TZ reaches the child; HERMES_TIMEZONE is an internal setting (and under the multiplexed
-    # gateway holds only the default profile's value — hermes_time resolves the routed profile's).
-    from hermes_time import get_timezone_name
+    # gateway holds only the default profile's value — akram_core.hermes_time resolves the routed profile's).
+    from akram_core.hermes_time import get_timezone_name
 
     _tz_name = get_timezone_name()
     # Windows CPython does not support IANA names in TZ.  Leaving TZ unset

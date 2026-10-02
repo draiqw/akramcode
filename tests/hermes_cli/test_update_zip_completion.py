@@ -14,7 +14,7 @@ from hermes_cli import main, update_cmd, update_cmd_fleet as fleet, update_cmd_m
 from hermes_cli import update_cmd_zip, update_receipt
 from hermes_cli.config_defaults import DEFAULT_CONFIG
 from hermes_cli.update_inventory import RuntimeRecord, UpdatePlan
-import hermes_yaml
+import akram_core.hermes_yaml
 
 
 @pytest.fixture
@@ -135,7 +135,7 @@ def test_zip_command_migrates_profiles_recovers_snapshot_and_verifies_fleet(
     update_cmd._cmd_update_impl(SimpleNamespace(branch="main", yes=True), gateway_mode)
 
     for profile in (state.active, state.sibling):
-        config = hermes_yaml.safe_load((profile / "config.yaml").read_text())
+        config = akram_core.hermes_yaml.safe_load((profile / "config.yaml").read_text())
         assert config["_config_version"] == DEFAULT_CONFIG["_config_version"]
         assert config["model"]["default"] == "retained-model"
     assert (state.sibling / ".env").read_bytes() == (state.active / ".env").read_bytes()

@@ -463,7 +463,7 @@ def _explicitly_disabled(name: str, provider_dir: Path) -> bool:
         return False
     names = {name, provider_dir.name}
     try:
-        import hermes_yaml as yaml
+        import akram_core.hermes_yaml as yaml
         with open(provider_dir / "plugin.yaml", encoding="utf-8-sig") as f:
             names.add(str((yaml.safe_load(f) or {}).get("name") or ""))
     except Exception:

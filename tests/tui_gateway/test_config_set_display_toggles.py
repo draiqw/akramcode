@@ -7,7 +7,7 @@ shipped with a toggle that never reached the backend gating the tool.
 """
 
 import pytest
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 
 from tui_gateway import server
 

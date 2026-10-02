@@ -45,7 +45,7 @@ def _generation(project):
 def _pm_source(project, home):
     root = Path(__file__).resolve().parents[2]
     for relative in (
-        "hermes", "hermes_bootstrap.py", "hermes_constants.py", "hermes_cli/__init__.py",
+        "hermes", "akram_core.hermes_bootstrap.py", "hermes_constants.py", "hermes_cli/__init__.py",
         "pm/environments.py", "pm/filesystem.py", "hermes_cli/runtime_state.py",
         "hermes_cli/_early_recovery.py", "hermes_cli/_parser.py",
         "hermes_cli/venv_sync.py", "hermes_cli/steward.py", "hermes_cli/stderr_timestamp.py",

@@ -41,7 +41,7 @@ accept_installer_marker() {
 # A pre-handoff release cannot flip during `hermes update` -- there is no
 # retired-hook seam on its update path to reach, so the update ends with the
 # tree at HEAD and no `.hermes/bin/*`. The NEXT ordinary startup is what
-# completes it: hermes_bootstrap calls prepare_launch() before importing
+# completes it: akram_core.hermes_bootstrap calls prepare_launch() before importing
 # anything, which syncs PM and publishes the launchers.
 #
 # Deliberately NOT used for `--version` probes: those stay under

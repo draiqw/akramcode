@@ -1,7 +1,7 @@
 """Source-install launchers shared by setup, installers, and Windows repair.
 
 Launchers execute store Python in isolated mode. They set the install's
-default home and load hermes_bootstrap before the entry point. Bootstrap
+default home and load akram_core.hermes_bootstrap before the entry point. Bootstrap
 reads the selected dependency generation at each start.
 
 Windows uses distlib executables or a command-file fallback. POSIX uses
@@ -52,7 +52,7 @@ def runtime_command(repo_root: Path, args=(), *, module: str = "hermes_cli.main"
         "os.environ.pop('VIRTUAL_ENV', None); "
         f"sys.path.insert(0, {_inline_string_literal(str(root))}); "
         f"os.environ['HERMES_HOME'] = os.environ.get('HERMES_HOME') or {default_home}; "
-        "import hermes_bootstrap; "
+        "import akram_core.hermes_bootstrap; "
         + entry
     )
     return [str(python), "-I", "-c", bootstrap, *args]
@@ -291,7 +291,7 @@ def _launcher_script(name: str, repo_root: Path, dependencies: Path | None) -> s
         "    from hermes_cli._launchers import print_runtime_command\n"
         f"    print_runtime_command(Path({str(repo_root.resolve())!r}), sys.argv[2:])\n"
         "    sys.exit(0)\n"
-        "import hermes_bootstrap\n"
+        "import akram_core.hermes_bootstrap\n"
         "if sys.argv[1:2] == ['--run-module']:\n"
         "    import runpy\n"
         "    if len(sys.argv) < 3: sys.exit('hermes: --run-module needs a module')\n"

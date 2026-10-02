@@ -1,4 +1,4 @@
-"""Tests for hermes_logging — centralized logging setup."""
+"""Tests for akram_core.hermes_logging — centralized logging setup."""
 import importlib.util
 import io
 import logging
@@ -11,14 +11,14 @@ from unittest.mock import patch
 
 import pytest
 
-import hermes_logging
-# Use whatever RotatingFileHandler class hermes_logging actually resolved so
+import akram_core.hermes_logging
+# Use whatever RotatingFileHandler class akram_core.hermes_logging actually resolved so
 # the autouse fixture's isinstance checks (which strip rotating handlers
-# between tests) match the real handlers on every platform. hermes_logging
+# between tests) match the real handlers on every platform. akram_core.hermes_logging
 # aliases concurrent-log-handler's ConcurrentRotatingFileHandler on Windows
 # (the #44873 fix) but keeps stdlib RotatingFileHandler on POSIX, so importing
 # the name from the module under test keeps the two in lockstep.
-from hermes_logging import RotatingFileHandler
+from akram_core.hermes_logging import RotatingFileHandler
 
 
 @pytest.fixture(autouse=True)
@@ -31,10 +31,10 @@ def _reset_logging_state():
     root logger.  We strip ALL RotatingFileHandlers before each test so the
     count assertions are stable regardless of test ordering.
     """
-    hermes_logging._logging_initialized = False
+    akram_core.hermes_logging._logging_initialized = False
     # File handlers now live behind the async QueueListener, not on the root
     # logger; tear down any leaked from other tests in this process.
-    hermes_logging._reset_queued_handlers()
+    akram_core.hermes_logging._reset_queued_handlers()
     root = logging.getLogger()
     prev_root_level = root.level
     root.setLevel(logging.NOTSET)
@@ -42,17 +42,17 @@ def _reset_logging_state():
     # test adds.
     pre_existing = list(root.handlers)
     # Ensure the record factory is installed (it's idempotent).
-    hermes_logging._install_session_record_factory()
+    akram_core.hermes_logging._install_session_record_factory()
     yield
     # Restore — tear down async file logging + remove handlers added by the test.
-    hermes_logging._reset_queued_handlers()
+    akram_core.hermes_logging._reset_queued_handlers()
     for h in list(root.handlers):
         if h not in pre_existing:
             root.removeHandler(h)
             h.close()
     root.setLevel(prev_root_level)
-    hermes_logging._logging_initialized = False
-    hermes_logging.clear_session_context()
+    akram_core.hermes_logging._logging_initialized = False
+    akram_core.hermes_logging.clear_session_context()
 
 
 @pytest.fixture
@@ -72,14 +72,14 @@ def test_repeated_setup_routes_records_once(hermes_home, mode, component, config
     if configured:
         (hermes_home / "config.yaml").write_text(f"logging:\n  level: {configured}\n", encoding="utf-8")
     for _ in range(2):
-        assert hermes_logging.setup_logging(hermes_home=hermes_home, mode=mode, log_level=explicit) == hermes_home / "logs"
-    hermes_logging.set_session_context("routing-session")
+        assert akram_core.hermes_logging.setup_logging(hermes_home=hermes_home, mode=mode, log_level=explicit) == hermes_home / "logs"
+    akram_core.hermes_logging.set_session_context("routing-session")
     sources = ["tools.terminal_tool", "agent.context_compressor", "gateway.run",
                "plugins.platforms.telegram.adapter", "hermes_cli.web_server", "tui_gateway.ws"]
     for index, source in enumerate(sources):
         for level in (logging.DEBUG, logging.INFO, logging.WARNING):
             logging.getLogger(source).log(level, "routing-witness-%s-%s", index, level)
-    hermes_logging.flush_log_queue()
+    akram_core.hermes_logging.flush_log_queue()
     outputs = {path.name: path.read_text(encoding="utf-8-sig") for path in (hermes_home / "logs").glob("*.log")}
     assert set(outputs) == {"agent.log", "errors.log"} | ({component} if component else set())
     for filename, content in outputs.items():
@@ -103,8 +103,8 @@ class TestSetupLogging:
 
         profile_home = tmp_path / "profile-b"
         profile_home.mkdir()
-        hermes_logging.setup_logging(hermes_home=hermes_home)
-        assert hermes_logging.enable_profile_log_routing(
+        akram_core.hermes_logging.setup_logging(hermes_home=hermes_home)
+        assert akram_core.hermes_logging.enable_profile_log_routing(
             [hermes_home, profile_home]
         ) is True
 
@@ -114,7 +114,7 @@ class TestSetupLogging:
             logger.info("profile-routed cron record")
         finally:
             reset_hermes_home_override(token)
-        hermes_logging.flush_log_queue()
+        akram_core.hermes_logging.flush_log_queue()
 
         assert "profile-routed cron record" in (
             profile_home / "logs" / "agent.log"
@@ -141,8 +141,8 @@ class TestSetupLogging:
             (routed / "config.yaml").write_text("security:\n  redact_secrets: false\n", encoding="utf-8")
         elif routed_opt_out == "env":
             (routed / ".env").write_text("HERMES_REDACT_SECRETS=false\n", encoding="utf-8")
-        hermes_logging.setup_logging(hermes_home=hermes_home)
-        assert hermes_logging.enable_profile_log_routing([hermes_home, routed]) is True
+        akram_core.hermes_logging.setup_logging(hermes_home=hermes_home)
+        assert akram_core.hermes_logging.enable_profile_log_routing([hermes_home, routed]) is True
         routed_secret = "sk-proj-ROUTEDPROFILE" + "b" * 24
         launch_secret = "sk-proj-LAUNCHPROFILE" + "a" * 24
 
@@ -153,7 +153,7 @@ class TestSetupLogging:
         finally:
             reset_hermes_home_override(token)
         logger.warning("launch key %s", launch_secret)
-        hermes_logging.flush_log_queue()
+        akram_core.hermes_logging.flush_log_queue()
 
         assert (routed_secret not in (routed / "logs" / "agent.log").read_text()) is routed_redacted
         assert (launch_secret not in (hermes_home / "logs" / "agent.log").read_text()) is launch_redacts
@@ -166,8 +166,8 @@ class TestSetupLogging:
         other_home = tmp_path / "profile-other"
         deleted_home.mkdir()
         other_home.mkdir()
-        hermes_logging.setup_logging(hermes_home=hermes_home)
-        assert hermes_logging.enable_profile_log_routing(
+        akram_core.hermes_logging.setup_logging(hermes_home=hermes_home)
+        assert akram_core.hermes_logging.enable_profile_log_routing(
             [hermes_home, deleted_home, other_home]
         ) is True
 
@@ -182,17 +182,17 @@ class TestSetupLogging:
             logger.warning("other profile log handles")
         finally:
             reset_hermes_home_override(token)
-        hermes_logging.flush_log_queue()
+        akram_core.hermes_logging.flush_log_queue()
 
         routers = [
-            handler for handler in hermes_logging._queued_file_handlers
-            if isinstance(handler, hermes_logging._ProfileRoutingFileHandler)
+            handler for handler in akram_core.hermes_logging._queued_file_handlers
+            if isinstance(handler, akram_core.hermes_logging._ProfileRoutingFileHandler)
         ]
         assert len(routers) == 2  # agent.log and errors.log
         assert all(deleted_home.resolve() in handler._profile_handlers for handler in routers)
         assert all(other_home.resolve() in handler._profile_handlers for handler in routers)
 
-        assert hermes_logging.release_profile_log_handlers(deleted_home) == 2
+        assert akram_core.hermes_logging.release_profile_log_handlers(deleted_home) == 2
 
         assert all(deleted_home.resolve() not in handler._profile_handlers for handler in routers)
         assert all(deleted_home.resolve() not in handler._profile_homes for handler in routers)
@@ -210,10 +210,10 @@ class TestSetupLogging:
 
         profile_home = tmp_path / "profile-b"
         profile_home.mkdir()
-        hermes_logging.setup_logging(hermes_home=hermes_home)
-        hermes_logging.setup_logging(hermes_home=profile_home)
+        akram_core.hermes_logging.setup_logging(hermes_home=hermes_home)
+        akram_core.hermes_logging.setup_logging(hermes_home=profile_home)
 
-        assert not [h for h in hermes_logging._queued_file_handlers if isinstance(h, RotatingFileHandler)], (
+        assert not [h for h in akram_core.hermes_logging._queued_file_handlers if isinstance(h, RotatingFileHandler)], (
             "the second home must not add an unfiltered file handler")
 
         logger = logging.getLogger("agent.conversation_loop.second-home-test")
@@ -223,7 +223,7 @@ class TestSetupLogging:
         finally:
             reset_hermes_home_override(token)
         logger.info("turn of the launch profile")
-        hermes_logging.flush_log_queue()
+        akram_core.hermes_logging.flush_log_queue()
 
         a_log = (hermes_home / "logs" / "agent.log").read_text()
         b_log = (profile_home / "logs" / "agent.log").read_text()
@@ -239,17 +239,17 @@ class TestSetupLogging:
 
         profile_home = tmp_path / "profile-b"
         profile_home.mkdir()
-        hermes_logging.setup_logging(hermes_home=hermes_home)
-        assert hermes_logging.enable_profile_log_routing([hermes_home, profile_home]) is True
-        hermes_logging.setup_logging(hermes_home=profile_home)
+        akram_core.hermes_logging.setup_logging(hermes_home=hermes_home)
+        assert akram_core.hermes_logging.enable_profile_log_routing([hermes_home, profile_home]) is True
+        akram_core.hermes_logging.setup_logging(hermes_home=profile_home)
 
-        assert not [h for h in hermes_logging._queued_file_handlers if isinstance(h, RotatingFileHandler)]
+        assert not [h for h in akram_core.hermes_logging._queued_file_handlers if isinstance(h, RotatingFileHandler)]
         token = set_hermes_home_override(profile_home)
         try:
             logging.getLogger("agent.conversation_loop.routed-home-test").info("once please")
         finally:
             reset_hermes_home_override(token)
-        hermes_logging.flush_log_queue()
+        akram_core.hermes_logging.flush_log_queue()
 
         assert (profile_home / "logs" / "agent.log").read_text().count("once please") == 1
         assert "once please" not in (hermes_home / "logs" / "agent.log").read_text()
@@ -261,9 +261,9 @@ class TestSetupLogging:
 
         profile_home = tmp_path / "profile-b"
         profile_home.mkdir()
-        hermes_logging.setup_logging(hermes_home=hermes_home)
-        hermes_logging.setup_logging(hermes_home=profile_home)
-        hermes_logging.setup_logging(hermes_home=hermes_home, mode="gateway")
+        akram_core.hermes_logging.setup_logging(hermes_home=hermes_home)
+        akram_core.hermes_logging.setup_logging(hermes_home=profile_home)
+        akram_core.hermes_logging.setup_logging(hermes_home=hermes_home, mode="gateway")
 
         logger = logging.getLogger("gateway.run.routed-component-test")
         token = set_hermes_home_override(profile_home)
@@ -272,7 +272,7 @@ class TestSetupLogging:
         finally:
             reset_hermes_home_override(token)
         logger.info("gw-a")
-        hermes_logging.flush_log_queue()
+        akram_core.hermes_logging.flush_log_queue()
 
         a_log = (hermes_home / "logs" / "gateway.log").read_text()
         assert "gw-a" in a_log and "gw-b" not in a_log
@@ -283,15 +283,15 @@ class TestSetupLogging:
 
     def test_explicit_params_override_config(self, hermes_home):
         """Explicit function params take precedence over config.yaml."""
-        import hermes_yaml as yaml
+        import akram_core.hermes_yaml as yaml
         config = {"logging": {"level": "DEBUG"}}
         (hermes_home / "config.yaml").write_text(yaml.safe_dump(config))
 
-        hermes_logging.setup_logging(hermes_home=hermes_home, log_level="WARNING")
+        akram_core.hermes_logging.setup_logging(hermes_home=hermes_home, log_level="WARNING")
 
         root = logging.getLogger()
         agent_handlers = [
-            h for h in hermes_logging._queued_file_handlers
+            h for h in akram_core.hermes_logging._queued_file_handlers
             if isinstance(h, RotatingFileHandler)
             and "agent.log" in getattr(h, "baseFilename", "")
         ]
@@ -305,8 +305,8 @@ class TestSetupVerboseLogging:
     """setup_verbose_logging() adds a DEBUG-level console handler."""
 
     def test_adds_stream_handler(self, hermes_home):
-        hermes_logging.setup_logging(hermes_home=hermes_home)
-        hermes_logging.setup_verbose_logging()
+        akram_core.hermes_logging.setup_logging(hermes_home=hermes_home)
+        akram_core.hermes_logging.setup_verbose_logging()
 
         root = logging.getLogger()
         verbose_handlers = [
@@ -328,19 +328,19 @@ class TestAddRotatingHandler:
         log_path = tmp_path / "test.log"
         formatter = logging.Formatter("%(message)s")
 
-        hermes_logging._add_rotating_handler(
+        akram_core.hermes_logging._add_rotating_handler(
             log_path,
             level=logging.INFO, max_bytes=1024, backup_count=1,
             formatter=formatter,
         )
-        hermes_logging._add_rotating_handler(
+        akram_core.hermes_logging._add_rotating_handler(
             log_path,
             level=logging.INFO, max_bytes=1024, backup_count=1,
             formatter=formatter,
         )
 
         rotating_handlers = [
-            h for h in hermes_logging._queued_file_handlers
+            h for h in akram_core.hermes_logging._queued_file_handlers
             if isinstance(h, RotatingFileHandler)
         ]
         assert len(rotating_handlers) == 1
@@ -355,7 +355,7 @@ class TestAddRotatingHandler:
         old_umask = os.umask(0o022)
         try:
             with patch("hermes_cli.config.is_managed", return_value=True):
-                hermes_logging._add_rotating_handler(
+                akram_core.hermes_logging._add_rotating_handler(
                     log_path,
                     level=logging.INFO, max_bytes=1024, backup_count=1,
                     formatter=formatter,
@@ -377,7 +377,7 @@ class TestWindowsConcurrentLogLockTimeout:
         logger.propagate = False
         logger.setLevel(logging.INFO)
 
-        handler = hermes_logging._ManagedRotatingFileHandler(
+        handler = akram_core.hermes_logging._ManagedRotatingFileHandler(
             str(log_path), maxBytes=1, backupCount=1, encoding="utf-8",
         )
         handler.setFormatter(logging.Formatter("%(message)s"))
@@ -389,10 +389,10 @@ class TestWindowsConcurrentLogLockTimeout:
         # Windows-only: concurrent-log-handler (and therefore its cross-process
         # lock timeout) is only installed on Windows — faking sys.platform
         # exercised the string check without the handler that raises it.
-        assert hermes_logging._is_windows_concurrent_log_lock_timeout(
+        assert akram_core.hermes_logging._is_windows_concurrent_log_lock_timeout(
             RuntimeError("Cannot acquire lock after 20 attempts")
         )
-        assert not hermes_logging._is_windows_concurrent_log_lock_timeout(
+        assert not akram_core.hermes_logging._is_windows_concurrent_log_lock_timeout(
             RuntimeError("some other logging failure")
         )
 
@@ -400,7 +400,7 @@ class TestWindowsConcurrentLogLockTimeout:
     def test_helper_never_matches_off_windows(self):
         # On POSIX the suppression must stay inert: stdlib RotatingFileHandler
         # is in use, so this RuntimeError text is never a CLH lock timeout.
-        assert not hermes_logging._is_windows_concurrent_log_lock_timeout(
+        assert not akram_core.hermes_logging._is_windows_concurrent_log_lock_timeout(
             RuntimeError("Cannot acquire lock after 20 attempts")
         )
 
@@ -430,9 +430,9 @@ class TestWindowsConcurrentLogLockTimeout:
                 captured_warnings.append(record)
 
         listener = _Capture()
-        logging.getLogger("hermes_logging").addHandler(listener)
+        logging.getLogger("akram_core.hermes_logging").addHandler(listener)
         monkeypatch = pytest.MonkeyPatch()
-        monkeypatch.setattr(hermes_logging, "_windows_lock_timeout_warned", False)
+        monkeypatch.setattr(akram_core.hermes_logging, "_windows_lock_timeout_warned", False)
         try:
             try:
                 raise RuntimeError("Cannot acquire lock after 20 attempts")
@@ -451,7 +451,7 @@ class TestWindowsConcurrentLogLockTimeout:
             assert "concurrent-log-handler" in captured_warnings[0].getMessage()
         finally:
             monkeypatch.undo()
-            logging.getLogger("hermes_logging").removeHandler(listener)
+            logging.getLogger("akram_core.hermes_logging").removeHandler(listener)
             logger.removeHandler(handler)
             handler.close()
 
@@ -462,11 +462,11 @@ class TestWindowsConcurrentLogLockTimeout:
         RuntimeError, so warn-once is what keeps errors.log from being spammed
         as badly as the stderr noise the suppression replaces."""
         monkeypatch = pytest.MonkeyPatch()
-        monkeypatch.setattr(hermes_logging, "_windows_lock_timeout_warned", False)
+        monkeypatch.setattr(akram_core.hermes_logging, "_windows_lock_timeout_warned", False)
         try:
-            with caplog.at_level(logging.WARNING, logger="hermes_logging"):
-                hermes_logging._warn_windows_lock_timeout_once()
-                hermes_logging._warn_windows_lock_timeout_once()
+            with caplog.at_level(logging.WARNING, logger="akram_core.hermes_logging"):
+                akram_core.hermes_logging._warn_windows_lock_timeout_once()
+                akram_core.hermes_logging._warn_windows_lock_timeout_once()
         finally:
             monkeypatch.undo()
         warnings = [r for r in caplog.records if r.levelno >= logging.WARNING]
@@ -477,7 +477,7 @@ class TestWindowsConcurrentLogLockTimeout:
     def fresh_logging(self):
         def load():
             spec = importlib.util.spec_from_file_location(
-                "_hermes_logging_import_test", hermes_logging.__file__,
+                "_hermes_logging_import_test", akram_core.hermes_logging.__file__,
             )
             assert spec is not None and spec.loader is not None
             module = importlib.util.module_from_spec(spec)
@@ -550,17 +550,17 @@ class TestReadLoggingConfig:
     """_read_logging_config() reads from config.yaml."""
 
     def test_returns_none_when_no_config(self, hermes_home):
-        level, max_size, backup = hermes_logging._read_logging_config()
+        level, max_size, backup = akram_core.hermes_logging._read_logging_config()
         assert level is None
         assert max_size is None
         assert backup is None
 
     def test_reads_logging_section(self, hermes_home):
-        import hermes_yaml as yaml
+        import akram_core.hermes_yaml as yaml
         config = {"logging": {"level": "DEBUG", "max_size_mb": 10, "backup_count": 5}}
         (hermes_home / "config.yaml").write_text(yaml.safe_dump(config), encoding="utf-8")
 
-        level, max_size, backup = hermes_logging._read_logging_config()
+        level, max_size, backup = akram_core.hermes_logging._read_logging_config()
         assert level == "DEBUG"
         assert max_size == 10
         assert backup == 5
@@ -578,8 +578,8 @@ class TestExternalRotationRecovery:
     instead of the file the operator expects to read.
     """
 
-    def _make_handler(self, log_path: Path) -> hermes_logging._ManagedRotatingFileHandler:
-        handler = hermes_logging._ManagedRotatingFileHandler(
+    def _make_handler(self, log_path: Path) -> akram_core.hermes_logging._ManagedRotatingFileHandler:
+        handler = akram_core.hermes_logging._ManagedRotatingFileHandler(
             str(log_path), maxBytes=10 * 1024 * 1024, backupCount=3,
             encoding="utf-8",
         )
@@ -592,10 +592,10 @@ class TestExternalRotationRecovery:
             name="gateway.run", level=logging.INFO, pathname="", lineno=0,
             msg=msg, args=(), exc_info=None,
         )
-        # Match the record factory that hermes_logging installs at import time.
+        # Match the record factory that akram_core.hermes_logging installs at import time.
         record.session_tag = ""
         handler.emit(record)
-        hermes_logging.flush_log_queue()
+        akram_core.hermes_logging.flush_log_queue()
 
     def test_recovers_after_external_rename(self, tmp_path):
         """logrotate-style external rename: ``mv gateway.log gateway.log.1``.
@@ -662,12 +662,12 @@ class TestExternalRotationRecovery:
         records leaking to agent.log) when something external rotates the
         file between setup_logging() calls.
         """
-        hermes_logging.setup_logging(hermes_home=hermes_home, mode="gateway")
+        akram_core.hermes_logging.setup_logging(hermes_home=hermes_home, mode="gateway")
         gw_path = hermes_home / "logs" / "gateway.log"
         rotated = hermes_home / "logs" / "gateway.log.1"
 
         logging.getLogger("gateway.run").info("line BEFORE rotation")
-        hermes_logging.flush_log_queue()
+        akram_core.hermes_logging.flush_log_queue()
         assert "BEFORE rotation" in gw_path.read_text(encoding="utf-8-sig")
 
         # External actor renames the file out from under us.
@@ -677,10 +677,10 @@ class TestExternalRotationRecovery:
         # Caller (or some restart path) re-enters setup_logging.  This used
         # to silently no-op due to the per-path dedup check, leaving the
         # stale fd in place.
-        hermes_logging.setup_logging(hermes_home=hermes_home, mode="gateway")
+        akram_core.hermes_logging.setup_logging(hermes_home=hermes_home, mode="gateway")
 
         logging.getLogger("gateway.run").info("line AFTER rotation")
-        hermes_logging.flush_log_queue()
+        akram_core.hermes_logging.flush_log_queue()
 
         # The new record must reach the live gateway.log, not the rotated
         # backup.  Allen's logs had everything past the rotation point
@@ -704,7 +704,7 @@ def test_eio_from_file_handler_names_the_path_once_then_recovers(tmp_path, capsy
         seek = tell = flush = write
 
     path = tmp_path / "agent.log"
-    handler = hermes_logging._ManagedRotatingFileHandler(
+    handler = akram_core.hermes_logging._ManagedRotatingFileHandler(
         str(path), maxBytes=1024, backupCount=1, encoding="utf-8",
     )
     handler.setFormatter(logging.Formatter("%(message)s"))
@@ -738,7 +738,7 @@ def test_eio_after_successful_reopen_still_names_the_path_once(tmp_path, capsys)
         seek = tell = flush = write
 
     path = tmp_path / "agent.log"
-    handler = hermes_logging._ManagedRotatingFileHandler(
+    handler = akram_core.hermes_logging._ManagedRotatingFileHandler(
         str(path), maxBytes=1024, backupCount=1, encoding="utf-8",
     )
     handler.setFormatter(logging.Formatter("%(message)s"))
@@ -776,7 +776,7 @@ class TestSafeStderr:
 
         fake = FakeStderr()
         monkeypatch.setattr(sys, "stderr", fake)
-        result = hermes_logging._safe_stderr()
+        result = akram_core.hermes_logging._safe_stderr()
         # Should be a TextIOWrapper, not the original FakeStderr
         assert isinstance(result, io.TextIOWrapper)
         assert result.encoding == "utf-8"
@@ -805,21 +805,21 @@ class TestLineBufferPipedStdout:
 
         tty = self._fake_stdout(isatty=True)
         monkeypatch.setattr(sys, "stdout", tty)
-        hermes_logging._line_buffer_piped_stdout()
+        akram_core.hermes_logging._line_buffer_piped_stdout()
         tty.reconfigure.assert_not_called()
 
         monkeypatch.setattr(sys, "stdout", None)
-        hermes_logging._line_buffer_piped_stdout()  # must not raise
+        akram_core.hermes_logging._line_buffer_piped_stdout()  # must not raise
         # A stream without reconfigure() (e.g. a print-redirect shim).
         monkeypatch.setattr(sys, "stdout", SimpleNamespace(isatty=lambda: False))
-        hermes_logging._line_buffer_piped_stdout()
+        akram_core.hermes_logging._line_buffer_piped_stdout()
 
     def test_setup_logging_applies_it_to_piped_stdout(self, tmp_path, monkeypatch):
         stream = self._fake_stdout(isatty=False)
         monkeypatch.setattr(sys, "stdout", stream)
-        hermes_logging.setup_logging(hermes_home=tmp_path, force=True)
+        akram_core.hermes_logging.setup_logging(hermes_home=tmp_path, force=True)
         # setup_logging runs per AIAgent build: a second call must not re-flush/reconfigure.
-        hermes_logging.setup_logging(hermes_home=tmp_path, force=True)
+        akram_core.hermes_logging.setup_logging(hermes_home=tmp_path, force=True)
         stream.reconfigure.assert_called_once_with(line_buffering=True)
 
 
@@ -831,7 +831,7 @@ class TestRolloverPreservesLogOwnership:
     def _rolled_handler(log_path: Path):
         log_path.write_text("seed\n", encoding="utf-8")
         os.chmod(log_path, 0o640)
-        handler = hermes_logging._ManagedRotatingFileHandler(
+        handler = akram_core.hermes_logging._ManagedRotatingFileHandler(
             str(log_path), maxBytes=1, backupCount=1, encoding="utf-8")
         try:
             handler.doRollover()

@@ -28,7 +28,7 @@ def homes(tmp_path, monkeypatch):
 
 
 def _write_config(home: Path, enabled: list) -> None:
-    import hermes_yaml as yaml
+    import akram_core.hermes_yaml as yaml
 
     config = {"plugins": {"enabled": enabled}} if enabled else {"plugins": {}}
     with (home / "config.yaml").open("w", encoding="utf-8") as f:
@@ -151,7 +151,7 @@ def test_empty_config_is_an_explicit_empty_selection(homes, content):
     ([], "ghost", False, []),
 ])
 def test_memory_provider_joins_ordered_selection(homes, enabled, provider, exists, expected):
-    import hermes_yaml as yaml
+    import akram_core.hermes_yaml as yaml
     home, sibling = homes
     if exists:
         (home / "plugins" / provider).mkdir(parents=True)

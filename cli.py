@@ -3,9 +3,9 @@
 
 # Must be the very first import (UTF-8 stdio on Windows). Missing only mid-``hermes update``.
 try:
-    import hermes_bootstrap  # noqa: F401
+    import akram_core.hermes_bootstrap  # noqa: F401
 except ModuleNotFoundError as exc:
-    if exc.name != "hermes_bootstrap":
+    if exc.name != "akram_core.hermes_bootstrap":
         raise  # the bootstrap exists but cannot load: skipping it would skip PM activation
 
 import logging
@@ -1603,7 +1603,7 @@ def _run_legacy_gateway():
     """Legacy `cli.py --gateway` entry: arm the startup watchdog (before importing the gateway graph), then run it."""
     import asyncio
     with suppress(Exception):
-        from hermes_startup_watchdog import arm_startup_watchdog
+        from akram_core.hermes_startup_watchdog import arm_startup_watchdog
         arm_startup_watchdog()
     from gateway.run import start_gateway
     print(_t("cli.gateway.starting"))

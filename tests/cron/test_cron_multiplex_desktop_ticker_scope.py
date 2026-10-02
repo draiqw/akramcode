@@ -134,7 +134,7 @@ def test_desktop_ticker_gates_on_profile_gateway_running(tmp_path, monkeypatch, 
     monkeypatch.setattr(web_server, "resolve_cron_scheduler", lambda: _Provider(), raising=False)
     monkeypatch.setattr(sp, "resolve_cron_scheduler", lambda: _Provider())
     monkeypatch.setattr(sp, "InProcessCronScheduler", _Provider)
-    monkeypatch.setattr("hermes_logging.enable_profile_log_routing", lambda homes: None)
+    monkeypatch.setattr("akram_core.hermes_logging.enable_profile_log_routing", lambda homes: None)
 
     web_server._start_desktop_cron_ticker(threading.Event(), interval=0)
 

@@ -1,7 +1,7 @@
 """Regression test for #97905 / carrier PR #92489.
 
 A multiplex ticker (desktop dashboard backend, multiplex gateway) resolves
-``hermes_time`` under the process's own startup profile, then ticks OTHER
+``akram_core.hermes_time`` under the process's own startup profile, then ticks OTHER
 profiles' cron stores via ``set_hermes_home_override()`` + ``use_cron_store()``.
 Before the profile-keyed timezone cache, the first profile's resolved zone
 was process-global, so ``compute_next_run`` / ``create_job`` / ``mark_job_run``
@@ -19,15 +19,15 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-import hermes_time
+import akram_core.hermes_time
 
 
 @pytest.fixture(autouse=True)
 def _fresh_tz_cache(monkeypatch):
     monkeypatch.delenv("HERMES_TIMEZONE", raising=False)
-    hermes_time.reset_cache()
+    akram_core.hermes_time.reset_cache()
     yield
-    hermes_time.reset_cache()
+    akram_core.hermes_time.reset_cache()
 
 
 def test_foreign_process_tick_persists_owning_profile_offset(
@@ -49,7 +49,7 @@ def test_foreign_process_tick_persists_owning_profile_offset(
     monkeypatch.setenv("HERMES_HOME", str(backend_home))
 
     # Backend process resolves its own timezone first (process startup).
-    assert hermes_time.now().utcoffset() == datetime.now(
+    assert akram_core.hermes_time.now().utcoffset() == datetime.now(
         ZoneInfo("UTC")
     ).utcoffset()
 

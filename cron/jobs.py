@@ -34,8 +34,8 @@ from typing import Optional, Dict, List, Any, Callable, Set, Tuple, Union, Colle
 
 logger = logging.getLogger(__name__)
 
-from hermes_time import now as _hermes_now
-from hermes_time import get_timezone
+from akram_core.hermes_time import now as _hermes_now
+from akram_core.hermes_time import get_timezone
 from hermes_cli.observability.shared_metrics_gateway import record_cron_missed
 from utils import atomic_replace, atomic_write_text, fsync_directory
 
@@ -804,7 +804,7 @@ def parse_schedule(schedule: str) -> Dict[str, Any]:
         try:
             dt = datetime.fromisoformat(schedule.replace('Z', '+00:00'))
             # Naive timestamps become aware in the CONFIGURED Hermes timezone (not server-local):
-            # the due-check compares against hermes_time.now().
+            # the due-check compares against akram_core.hermes_time.now().
             # Make naive timestamps timezone-aware at parse time so the stored value doesn't depend on the
             # system timezone matching at check time. UTC) while now() runs in Asia/Kolkata, the stored
             # instant would land hours off from the user's wall-clock intent — far enough that one-shots

@@ -449,7 +449,7 @@ class TestBusySessionOnboardingHint:
         adapter._send_with_retry.assert_called_once()
 
         # The flag is now persisted to tmp_path/config.yaml
-        import hermes_yaml as yaml
+        import akram_core.hermes_yaml as yaml
         cfg = yaml.safe_load((tmp_path / "config.yaml").read_text())
         assert cfg["onboarding"]["seen"]["busy_input_prompt"] is True
 

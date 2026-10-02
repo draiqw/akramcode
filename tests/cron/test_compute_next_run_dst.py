@@ -15,7 +15,7 @@ from zoneinfo import ZoneInfo
 
 pytest.importorskip("croniter")
 
-import hermes_time
+import akram_core.hermes_time
 from cron.jobs import compute_next_run
 
 TORONTO = ZoneInfo("America/Toronto")
@@ -26,9 +26,9 @@ MORNING = {"kind": "cron", "expr": "0 9 * * *"}
 def toronto(monkeypatch):
     """Configure the active profile's zone through the real resolution path."""
     monkeypatch.setenv("HERMES_TIMEZONE", "America/Toronto")
-    hermes_time.reset_cache()
+    akram_core.hermes_time.reset_cache()
     yield
-    hermes_time.reset_cache()
+    akram_core.hermes_time.reset_cache()
 
 
 def _next_local(last_run_at: str) -> datetime:

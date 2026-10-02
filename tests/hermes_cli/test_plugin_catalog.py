@@ -8,7 +8,7 @@ import os
 
 import pytest
 
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 
 from hermes_cli import plugin_catalog as pc
 

@@ -13,7 +13,7 @@ from __future__ import annotations
 import asyncio
 
 import pytest
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 
 from hermes_cli.model_switch import ModelSwitchResult
 

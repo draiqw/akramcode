@@ -7,7 +7,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-import hermes_yaml as yaml
+import akram_core.hermes_yaml as yaml
 
 import tui_gateway.server as server
 

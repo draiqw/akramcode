@@ -100,7 +100,7 @@ set/get/unset <NAME>` route any bare name registered in `OPTIONAL_ENV_VARS` / `_
   (`hermes tools/setup`, most subcommands, `hermes_cli/config.py`, merges `DEFAULT_CONFIG`);
   `hermes_cli/config_effective.py::load_user_config_effective()` (gateway runtime via
   `gateway/run.py::_load_gateway_config`, TUI gateway `_load_cfg`, cron, `hermes send`, doctor,
-  `hermes_time`/`hermes_logging`: user file + managed overlay + `${VAR}` expansion + model-key
+  `akram_core.hermes_time`/`akram_core.hermes_logging`: user file + managed overlay + `${VAR}` expansion + model-key
   canon, NO defaults — for presence-sensitive readers). If the CLI sees a key and the gateway
   doesn't (or vice versa), you're on the wrong loader — check `DEFAULT_CONFIG` coverage. Never
   hand-roll raw-read → overlay → expand; `read_user_config_raw` is for write-back round-trips only.

@@ -3,9 +3,9 @@
 What is virtual and what stays real:
 
 * ``VirtualClock`` is ONE epoch value in a file shared by every process of a scenario. It is
-  installed at the single wall-clock seam — ``hermes_time.datetime`` (every ``_hermes_now``
+  installed at the single wall-clock seam — ``akram_core.hermes_time.datetime`` (every ``_hermes_now``
   binding in cron/jobs.py, scheduler.py, executions.py, occurrences via jobs, ... resolves
-  ``hermes_time.now()`` -> ``datetime.now(tz)`` at call time) — plus the ``time.time()`` reads of
+  ``akram_core.hermes_time.now()`` -> ``datetime.now(tz)`` at call time) — plus the ``time.time()`` reads of
   cron.jobs / cron.scheduler / cron.executions (in-flight ages, ledger handoff grace, ticker
   heartbeat marker). ``time.monotonic`` stays real on purpose: it only paces REAL waits (lock
   deadlines, heartbeat thread cadence, reap/GC throttles).
@@ -238,10 +238,10 @@ def install(clock: VirtualClock, control: Control, setattr_fn=setattr) -> None:
     import cron.executions as executions
     import cron.jobs as jobs
     import cron.scheduler as scheduler
-    import hermes_time
+    import akram_core.hermes_time
     import tools.send_message_tool as send_message_tool
 
-    setattr_fn(hermes_time, "datetime", _virtual_datetime_class(clock))
+    setattr_fn(akram_core.hermes_time, "datetime", _virtual_datetime_class(clock))
     proxy = _TimeProxy(clock)
     for module in (jobs, scheduler, executions):
         setattr_fn(module, "time", proxy)
@@ -264,7 +264,7 @@ def install(clock: VirtualClock, control: Control, setattr_fn=setattr) -> None:
     setattr_fn(sqlite_util, "open_db", open_db_no_full_sync)
     # Worktree GC prunes the REAL git checkout the test runs from; hygiene, not scheduling.
     setattr_fn(scheduler, "_maybe_run_worktree_maintenance", lambda: None)
-    hermes_time.reset_cache()
+    akram_core.hermes_time.reset_cache()
 
 
 # --- stepping ticker hosts -------------------------------------------------------------------
