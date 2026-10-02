@@ -82,17 +82,17 @@ def installation_command(repo_root: Path, args=(), *, module: str = "akramcode_c
     if resolve_store_python(root) is None:
         return runtime_command(root, args, module=module, python=python, home=home)
     prefix = [] if module == "akramcode_cli.main" else ["--run-module", module]
-    return [str(root / ".hermes" / "bin" / "akramcode"), *prefix, *args]
+    return [str(root / ".hermes" / "bin" / "hermes"), *prefix, *args]
 
 #: Launcher command names — keep in lockstep with scripts/install.ps1
 #: Publish-UserCommand and akramcode_cli/_install_repair.py.
-WINDOWS_BIN_LAUNCHERS = ("akramcode", "akramcode-acp")
+WINDOWS_BIN_LAUNCHERS = ("hermes", "hermes-acp")
 
 #: command name -> (entry module, callable) — mirrors pyproject.toml
 #: [project.scripts].
 ENTRY_POINTS = {
-    "akramcode": ("akramcode_cli.main", "main"),
-    "akramcode-acp": ("acp_adapter.entry", "main"),
+    "hermes": ("akramcode_cli.main", "main"),
+    "hermes-acp": ("acp_adapter.entry", "main"),
 }
 
 
@@ -363,8 +363,8 @@ def _publish_conveniences(root: Path, out_dir: Path, names, *, create: bool = Tr
         if (not create or target.exists() or target.is_symlink()) and not _owns_launcher(target, root):
             continue
         before = target.lstat().st_mtime_ns if target.exists() or target.is_symlink() else None
-        command = ([str(root / ".hermes/bin/akramcode"), "--run-module", "run_agent"]
-                   if name == "akramcode-agent" else [str(root / ".hermes/bin" / name)])
+        command = ([str(root / ".hermes/bin/hermes"), "--run-module", "run_agent"]
+                   if name == "hermes-agent" else [str(root / ".hermes/bin" / name)])
         if _write_shell(target, command) is None:
             raise OSError(f"could not publish launcher {target}")
         published[target] = before != target.lstat().st_mtime_ns
@@ -576,7 +576,7 @@ def _symlink_sealed_launchers(payload_bin) -> dict:
     written: list[str] = []
     try:
         link_dir.mkdir(parents=True, exist_ok=True)
-        for name in ("akramcode", "akramcode-agent", "akramcode-acp"):
+        for name in ("akramcode", "akramcode-acp", "hermes", "hermes-agent", "hermes-acp"):
             source = payload_bin / name
             if not source.is_file():
                 continue
