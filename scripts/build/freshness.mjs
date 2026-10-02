@@ -6,7 +6,7 @@ import { parseArgs } from 'node:util'
 import { isMain } from './frontend-common.mjs'
 
 const receiptName = 'hermes-build.json'
-const workspaces = { tui: 'ui-tui', web: 'web', desktop: 'apps/desktop' }
+const workspaces = { tui: 'ui-tui', web: 'web' }
 const generated = new Set(['node_modules', 'dist', 'build', 'release', '.cache', '.git', 'coverage', 'test-results', 'playwright-report'])
 
 // OS file-manager metadata is never a build input, and it can land in ANY hashed

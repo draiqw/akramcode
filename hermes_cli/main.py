@@ -372,7 +372,6 @@ from hermes_cli.subcommands.console import build_console_parser
 from hermes_cli.subcommands.update import build_update_parser
 from hermes_cli.subcommands.uninstall import build_uninstall_parser
 from hermes_cli.subcommands.dashboard import build_dashboard_parser, build_serve_parser
-from hermes_cli.subcommands.gui import build_gui_parser
 from hermes_cli.subcommands.logs import build_logs_parser
 from hermes_cli.subcommands.prompt_size import build_prompt_size_parser
 from hermes_cli.subcommands.memory import build_memory_parser
@@ -876,17 +875,6 @@ from hermes_cli.main_install_repair import (  # frozen updater surface: update_c
     _resolve_update_branch,
     _update_marker_path,
     _venv_scripts_dir,
-)
-from hermes_cli.main_desktop import (
-    cmd_gui,
-)
-from hermes_cli.main_desktop import (  # frozen updater surface: update_cmd*.py resolve these via _m()
-    _desktop_build_needed,
-    _desktop_dist_exists,
-    _desktop_macos_relaunchable_fixup,
-    _desktop_packaged_executable,
-    _install_rebuilt_desktop_app,
-    _installed_desktop_apps,
 )
 from hermes_cli.main_web_build import (
     _sweep_stale_bytecode_if_checkout_changed,
@@ -3545,9 +3533,6 @@ def _build_cli_parser():
         cmd_dashboard=cmd_dashboard,
         cmd_dashboard_register=cmd_dashboard_register,
     )
-    # "desktop" is canonical (Hermes-Setup.exe tells users to run it, so it
-    # must be the name --help shows); "gui" is a deprecated alias.
-    build_gui_parser(subparsers, cmd_gui=cmd_gui)
     build_logs_parser(subparsers, cmd_logs=cmd_logs)
     build_prompt_size_parser(subparsers, cmd_prompt_size=cmd_prompt_size)
     return parser, subparsers

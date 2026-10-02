@@ -31,7 +31,7 @@ function contains(parent, child) {
 
 const productMarker = '.hermes-product'
 const productOwner = 'hermes-frontend-product-v1\n'
-const developerOutputs = ['ui-tui/dist', 'hermes_cli/web_dist', 'apps/desktop/dist', 'apps/desktop/build/native-deps']
+const developerOutputs = ['ui-tui/dist', 'hermes_cli/web_dist']
 
 function developerOutput(source, out) {
   return source && developerOutputs.some(name => path.resolve(out) === path.join(path.resolve(source), name))
@@ -65,7 +65,7 @@ export function productOutput(source, out, inputs) {
   // In-tree products have explicit homes; everything else under source is an
   // input, even when this particular compiler does not read it.
   const generated = developerOutput(src, dest)
-    || ['.build', 'apps/desktop/build/products'].some(name => {
+    || ['.build'].some(name => {
       const root = path.join(src, name)
       return dest !== root && contains(root, dest)
     })

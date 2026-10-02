@@ -916,8 +916,6 @@ select = ["PLW1514", "ASYNC210", "ASYNC220", "ASYNC221", "ASYNC251", "TID251"]
 
 [tool.ruff.lint.per-file-ignores]
 "pm/**" = ["TID251"]
-# Desktop E2E fixtures stand in for PM's worker/runtime and reach into it like tests do.
-"apps/desktop/electron/fixtures/**" = ["TID251"]
 # Tests can intentionally exercise locale-encoding edge cases.
 "tests/**" = [
   "PLW1514",

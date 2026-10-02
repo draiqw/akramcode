@@ -96,7 +96,7 @@ def _complete_locked(
     except Exception as exc:  # noqa: BLE001 — git-less steps below still complete
         print(f"⚠ Could not provide git for the source completion: {exc}", file=sys.stderr)
     publish_launchers(root)
-    build_update_products(root, desktop=desktop)
+    build_update_products(root, desktop=False)
     if announce:
         print(announce)
     complete = _run_post_update_maintenance(

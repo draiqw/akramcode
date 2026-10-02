@@ -5,9 +5,7 @@ from typing import Dict, List, Any, Set, Optional, Tuple
 
 
 # Shared tool list for CLI and all messaging platform toolsets (edit once, all
-# platforms follow). Desktop GUI affordances are deliberately NOT here: they live
-# in `desktop_ui`/`project`, enabled per desktop-sourced session by the GUI gateway
-# (tui_gateway/server.py::_load_enabled_toolsets). HA, kanban and computer_use
+# platforms follow). HA, kanban and computer_use
 # entries are further gated by their tools' check_fns.
 _HERMES_CORE_TOOLS = [
     "web_search", "web_extract",
@@ -71,7 +69,7 @@ _CODING_TOOLS = _core_without("image_generate", "text_to_speech", "cronjob_manag
 
 # Toolsets a CLIENT adds to its own sessions (tui_gateway/server.py::_gui_surface_toolsets), never
 # config: another surface lacking them made no configuration choice.
-CLIENT_SURFACE_TOOLSETS = frozenset({"project", "desktop_ui"})
+CLIENT_SURFACE_TOOLSETS = frozenset()
 
 # Core toolset definitions: individual tools or references to other toolsets.
 TOOLSETS = {
@@ -133,19 +131,8 @@ TOOLSETS = {
     "context_engine": _ts("Runtime tools exposed by the active context engine"),
     "session_search": _ts("Search and recall past conversations with summarization", ["session_search"]),
     "connections": _ts("Remote connector discovery, execution, and account authorization", ["manage_connections"]),
-    "project": _ts("Desktop Projects — create/switch named workspaces (GUI sessions only)", ["desktop_project"]),
     "bot_room": _ts("Verified text-only Group Chat turn capabilities"),
 
-    # GUI-renderer affordances, enabled per desktop-sourced SESSION by the GUI
-    # gateway (tui_gateway/server.py::_load_enabled_toolsets) — never by a
-    # process env var, which is blind to a desktop client on a remote backend.
-    "desktop_ui": _ts(
-        "Desktop GUI affordances — in-app terminal/browser panes, pane focus, "
-        "reactions (GUI sessions only)",
-        ["read_terminal", "close_terminal", "desktop_preview", "drive_preview",
-         "annotate_preview", "read_window_below", "focus_pane", "react_to_message",
-         "gui_tour", "show_tip"],
-    ),
     # Enabled per SESSION whose PROFILE carries ``role: setup`` in its backend-written
     # profile.yaml (tui_gateway/server.py::_load_enabled_toolsets); stripped from every
     # other profile's selection whatever the config, env pin or client asked for
@@ -186,7 +173,6 @@ TOOLSETS = {
     "safe": _ts("Safe toolkit without terminal access", [], includes=["web", "vision", "image_gen"]),
 
     # Coding posture, auto-selected in a code workspace (agent/coding_context.py).
-    # `desktop_ui` is folded in separately by the GUI gateway for desktop sessions.
     # posture=True: per-session posture, never auto-recovered into platform tool
     # config (see the non-configurable-toolset recovery loop in hermes_cli/tools_config.py).
     "coding": _ts(

@@ -794,14 +794,8 @@ def _async_delegation_display_metadata(evt: dict) -> dict:
             **({"duration_seconds": duration} if isinstance(duration, (int, float)) else {})}
 
 
-_desktop_ui_wired = False
-
-
-def _wire_desktop_sinks() -> None:
-    """Idempotently wire process-registry and desktop-tool sinks to renderer events: `agent.terminal.output` and
-    `terminal.close` (drops a tab without killing the process) route to the window owning the process; desktop-only
-    tools pass the turn's ``HERMES_UI_SESSION_ID`` as ``sid``. `_emit` is thread-safe."""
-    global _desktop_ui_wired
+def _wire_process_sinks() -> None:
+    """Wire terminal process events to the owning TUI session."""
     from tools.process_registry import process_registry
 
     def _owner_sid(session) -> str:
@@ -816,11 +810,6 @@ def _wire_desktop_sinks() -> None:
             "agent.terminal.output", _owner_sid(session), {"process_id": session.id, "chunk": chunk})
     if getattr(process_registry, "on_close", None) is None:
         process_registry.on_close = lambda session, pid: _emit("terminal.close", _owner_sid(session), {"process_id": pid})
-    if not _desktop_ui_wired:
-        with contextlib.suppress(Exception):
-            from tools import desktop_ui
-            desktop_ui.set_emitter(lambda sid, event, payload: _emit(event, sid, payload))
-            _desktop_ui_wired = True
 
 
 # (stop_event, thread) for every poller started in this process, pruned of dead threads on each spawn. Test teardowns
@@ -830,7 +819,7 @@ _notification_pollers: list = []
 
 def _start_notification_poller(sid: str, session: dict) -> threading.Event:
     """Start the background notification poller for a TUI session (thread name is greppable)."""
-    _wire_desktop_sinks()
+    _wire_process_sinks()
     stop = threading.Event()
     t = threading.Thread(target=_notification_poller_loop, args=(stop, sid, session), daemon=True, name=f"tui-notif-poller-{sid}")
     _notification_pollers[:] = [(s, th) for (s, th) in _notification_pollers if th.is_alive()] + [(stop, t)]
