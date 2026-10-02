@@ -371,7 +371,6 @@ from hermes_cli.subcommands.skin import build_skin_parser
 from hermes_cli.subcommands.console import build_console_parser
 from hermes_cli.subcommands.update import build_update_parser
 from hermes_cli.subcommands.uninstall import build_uninstall_parser
-from hermes_cli.subcommands.dashboard import build_dashboard_parser, build_serve_parser
 from hermes_cli.subcommands.logs import build_logs_parser
 from hermes_cli.subcommands.prompt_size import build_prompt_size_parser
 from hermes_cli.subcommands.memory import build_memory_parser
@@ -803,21 +802,6 @@ from hermes_cli.main_platform_setup import (
     cmd_whatsapp_cloud,
 )
 from hermes_cli.process_identity import is_desktop_owned_backend as _is_desktop_owned_backend
-from hermes_cli.main_dashboard import (
-    _attach_to_host_backend,
-    _finalize_update_output,
-    _find_stale_dashboard_pids,
-    _install_hangup_protection,
-    _is_electron_packaged_web_dist,
-    _maybe_setup_dashboard_auth_interactively,
-    _read_ssh_session_token_file,
-    _report_dashboard_status,
-    _resolve_dashboard_web_dist,
-    _route_named_profile_dashboard,
-)
-from hermes_cli.main_dashboard import (  # frozen updater surface: update_cmd*.py resolve these via _m()
-    _respawn_dashboard_processes,
-)
 from hermes_cli.main_provider_setup import (
     _GENERIC_API_KEY_PROVIDERS,
     _aux_config_menu,
@@ -875,15 +859,6 @@ from hermes_cli.main_install_repair import (  # frozen updater surface: update_c
     _resolve_update_branch,
     _update_marker_path,
     _venv_scripts_dir,
-)
-from hermes_cli.main_web_build import (
-    _sweep_stale_bytecode_if_checkout_changed,
-)
-from hermes_cli.main_web_build import (  # frozen updater surface: update_cmd*.py resolve these via _m()
-    _build_web_ui,
-    _nixos_build_env,
-    _record_bytecode_fingerprint,
-    _run_npm_install_deterministic,
 )
 from hermes_cli.main_tui_launch import (
     _launch_tui,
@@ -3204,20 +3179,7 @@ def _try_fast_serve_launch() -> bool:
     except Exception:
         return False
 
-    parser = build_serve_parser(
-        cmd_dashboard=cmd_dashboard,
-        add_help=False,
-        exit_on_error=False,
-    )
-    try:
-        args, unknown = parser.parse_known_args(argv[1:])
-    except (argparse.ArgumentError, ValueError):
-        return False
-    if unknown:
-        return False
-
-    cmd_dashboard(args)
-    return True
+    return False
 
 
 def _try_fast_chat_launch() -> bool:
@@ -3528,11 +3490,6 @@ def _build_cli_parser():
     build_acp_parser(subparsers, cmd_acp=cmd_acp)
     build_profile_parser(subparsers, cmd_profile=cmd_profile)
     build_completion_parser(subparsers, cmd_completion=cmd_completion, parser=parser)
-    build_dashboard_parser(
-        subparsers,
-        cmd_dashboard=cmd_dashboard,
-        cmd_dashboard_register=cmd_dashboard_register,
-    )
     build_logs_parser(subparsers, cmd_logs=cmd_logs)
     build_prompt_size_parser(subparsers, cmd_prompt_size=cmd_prompt_size)
     return parser, subparsers
