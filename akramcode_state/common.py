@@ -39,7 +39,7 @@ def routed_sessions_setting(key: str, env_var: str) -> Any:
     ``sessions.*`` settings must read its own config.yaml. Unscoped: the env bridge, as before.
     Returns ``None`` when neither source sets the key.
     """
-    from hermes_constants import get_hermes_home_override
+    from akramcode_constants import get_hermes_home_override
 
     if get_hermes_home_override():
         try:

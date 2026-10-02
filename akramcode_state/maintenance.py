@@ -11,7 +11,7 @@ from akramcode_state.common import (
     AUTO_VACUUM_MIN_FREELIST_RATIO, _id_chunks, _non_continuation_child_sql, _placeholders, _sql_session_last_active,
     escape_like as _escape_like
 )
-from akram_core.hermes_startup_watchdog import report_startup_progress
+from akram_core.akramcode_startup_watchdog import report_startup_progress
 
 # caplog tests pin the "akramcode_state" logger name.
 logger = logging.getLogger("akramcode_state")

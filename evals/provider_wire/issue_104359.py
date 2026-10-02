@@ -121,7 +121,7 @@ config = {
     },
     "prompt_caching": {"enabled": False},
 }
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 Path(os.environ["HERMES_HOME"], "config.yaml").write_text(yaml.safe_dump(config), encoding="utf-8")
 from akramcode_state import SessionDB

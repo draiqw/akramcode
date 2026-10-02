@@ -14,7 +14,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 from agent.session_activity import (
     ActivityProvenance, bound_activity_description, normalize_activity_provenance,
 )
-from akram_core.hermes_startup_watchdog import report_startup_progress
+from akram_core.akramcode_startup_watchdog import report_startup_progress
 from akramcode_state.errors import SessionActiveWriteGuardError
 from akramcode_state.common import (
     _LISTABLE_CHILD_SQL, _PREVIEW_ELIGIBLE_SQL, _PREVIEW_RAW_SELECT, _RECOVERABLE_END_REASONS,
@@ -307,7 +307,7 @@ class SessionSessionsMixin:
         ``<root>/profiles/<name>/state.db`` → name): a gateway serving a NON-launch profile opens that
         profile's store. None outside the profile tree — NULL beats a fabricated owner."""
         try:
-            from hermes_constants import get_default_hermes_root
+            from akramcode_constants import get_default_hermes_root
             root = get_default_hermes_root().resolve()
             parent = Path(self.db_path).resolve().parent
             if parent == root:

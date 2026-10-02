@@ -25,7 +25,7 @@ _STATE_DB_GUARD_BYPASS_ENV = "HERMES_STATE_DB_GUARD_BYPASS"
 
 def _real_platform_state_root() -> Optional[Path]:
     """The REAL platform-default Hermes root. Avoids ``Path.home()`` /
-    ``hermes_constants`` (tests monkeypatch Path.home to a tempdir); ``expanduser``
+    ``akramcode_constants`` (tests monkeypatch Path.home to a tempdir); ``expanduser``
     reads HOME/passwd, which the conftest never rewrites."""
     try:
         home = Path(os.path.expanduser("~"))

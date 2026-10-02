@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 from typing import Sequence
 
-from hermes_constants import get_hermes_home
+from akramcode_constants import get_hermes_home
 from akramcode_state.common import (FTS_CJK_STALE_KEY, FTS_STALE_KEY, _FTS_CJK_TRIGGERS, _FTS_TRIGGERS,
     routed_sessions_setting)
 from akramcode_state.errors import is_fts_scoped_corruption_error, is_sqlite_lock_error

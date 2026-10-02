@@ -57,7 +57,7 @@ cfg = {
     "display": {"quiet": True},
 }
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 with open(os.path.join(hh, "config.yaml"), "w", encoding="utf-8") as f:
     yaml.safe_dump(cfg, f)

@@ -192,7 +192,7 @@ def _store_install_layout(this_home: str) -> Tuple[Optional[str], Optional[str]]
     so ANY named-profile selection contradicts it.
     """
     try:
-        from hermes_constants import named_profile_home
+        from akramcode_constants import named_profile_home
 
         profile_home = named_profile_home(this_home)
         if profile_home is not None:
@@ -595,7 +595,7 @@ def held_store_refusal(db_path: Path, *, command: str, force_hint: Optional[str]
     holders = foreign_state_db_holders(db_path)
     if not holders:
         return None
-    from hermes_constants import profile_cli_selector
+    from akramcode_constants import profile_cli_selector
     from akramcode_state.errors import STORAGE_RECOVERY_DOCS_URL
 
     by_pid: dict[int, Set[str]] = {}
