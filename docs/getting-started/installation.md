@@ -1,12 +1,12 @@
 ---
 sidebar_position: 2
 title: "Installation"
-description: "Install Hermes Agent with desktop bundles, source installers, Docker, Nix, or the Termux APT package"
+description: "Install AkramCode with desktop bundles, source installers, Docker, Nix, or the Termux APT package"
 ---
 
 # Installation
 
-Get Hermes Agent up and running in under two minutes!
+Get AkramCode up and running in under two minutes!
 
 :::tip Platform Support
 For the full platform support matrix (which OSes, distribution methods, and
@@ -16,29 +16,28 @@ platform-gated features are supported), see **[Platform Support](./platform-supp
 ## Quick Install
 ### Desktop packages on macOS or Windows
 
-Download the package for your platform from the
-[Hermes website](https://hermes-agent.nousresearch.com/).
+Check the [project releases](https://github.com/draiqw/akram-code/releases) for a desktop package for your platform.
 
 - **Windows:** open the `.appinstaller` download with Windows App Installer.
   It installs the signed MSIX bundle and records its update source.
   Microsoft Store packages have separate Store ownership.
-- **macOS:** open the DMG, then copy `Hermes.app` to Applications. The ZIP
+- **macOS:** open the DMG, then copy the AkramCode app to Applications. The ZIP
   artifact carries the signed app used by the automatic updater.
 
 Bundled packages contain the agent, Python, supported dependencies, and prebuilt
 interfaces. First launch does not build that base runtime. Provider access and
 optional integrations can still require network access.
 
-A `Hermes-Setup` bootstrap installer is different: it downloads a source
+A setup bootstrap installer is different: it downloads a source
 installation and builds the desktop app. Light is a remote-only build variant,
-not a bundled local runtime. See [Hermes Desktop](../user-guide/desktop.md).
+not a bundled local runtime. See the [desktop app guide](../user-guide/desktop.md).
 
 :::note
 The macOS installer is **Apple Silicon only**. macOS on x86 (Intel) processors is [not a supported platform](./platform-support.md#unsupported).
 :::
 
-### Without Hermes Desktop:
-For a command-line only install without Hermes Desktop, run:
+### Command-line installation
+For a command-line only install, run:
 
 #### Linux / macOS / WSL2
 ```bash
@@ -52,7 +51,7 @@ Run in powershell:
 iex (irm https://hermes-agent.nousresearch.com/install.ps1) 
 ```
 
-If you want to install & run Hermes Desktop after a command-line only install, simply run
+To launch the desktop app after a command-line install, run
 ```bash
 hermes desktop
 ```
