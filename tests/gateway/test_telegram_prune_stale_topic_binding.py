@@ -28,7 +28,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 
-from hermes_state import SessionDB
+from akramcode_state import SessionDB
 
 
 # ---------------------------------------------------------------------------

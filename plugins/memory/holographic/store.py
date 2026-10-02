@@ -125,11 +125,11 @@ class MemoryStore:
 
     def _init_db(self) -> None:
         """Create schema, enable WAL via the shared fallback helper (NFS/SMB/FUSE degrade gracefully), add hrr_vector to pre-HRR DBs."""
-        from hermes_state.wal import apply_wal_with_fallback
+        from akramcode_state.wal import apply_wal_with_fallback
         apply_wal_with_fallback(self._conn, db_label="memory_store.db (holographic)")
         self._conn.executescript(_SCHEMA)
         if "hrr_vector" not in {row[1] for row in self._conn.execute("PRAGMA table_info(facts)").fetchall()}:
-            from hermes_cli.sqlite_util import add_column_if_missing
+            from akramcode_cli.sqlite_util import add_column_if_missing
             add_column_if_missing(self._conn, "facts", "hrr_vector", "hrr_vector BLOB")
         self._conn.commit()
 

@@ -31,8 +31,8 @@ def fixture_repo(tmp_path):
     git(repo, 'remote', 'set-url', 'origin', 'https://github.com/fixture-owner/fixture-repo.git')
     shutil.copytree(ROOT / 'scripts/releases', repo / 'scripts/releases')
     for relative in ('scripts/release.py', 'scripts/release-content-types.json',
-                     'hermes_cli/__init__.py', 'hermes_cli/update_channel.py',
-                     'hermes_cli/release_channels.py',
+                     'akramcode_cli/__init__.py', 'akramcode_cli/update_channel.py',
+                     'akramcode_cli/release_channels.py',
                      'pm/paths.py', 'pm/environments.py', 'hermes_constants.py'):
         dest = repo / relative
         dest.parent.mkdir(parents=True, exist_ok=True)

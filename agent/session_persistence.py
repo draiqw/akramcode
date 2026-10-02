@@ -152,7 +152,7 @@ def adopt_unanswered_turn(history: List[Dict[str, Any]], query: Any, agent: Any)
     reuse it as this turn's user dict and the flush writes no second row. What differs per lane is only HOW
     the dispatcher knows the DM is unanswered:
 
-    * ``hermes_cli.quiet_single_query.adopt_unanswered_turn`` — the delivery lanes' re-run is a fresh CLI
+    * ``akramcode_cli.quiet_single_query.adopt_unanswered_turn`` — the delivery lanes' re-run is a fresh CLI
       process, told so through ``tools.bot_relay.RESUME_UNANSWERED_TURN_ENV``.
     * ``gateway.platforms.api_server`` — the peer-DM lane re-runs the turn in-process and calls this
       directly on the agent it just built for the re-run (#115325).
@@ -348,8 +348,8 @@ def _db_flush_failed(agent, e: Exception, batch_rows: List[Dict[str, Any]], adop
     agent._db_flush_scan_prefix = None  # full re-scan next flush: an exception mid-loop leaves mixed dispositions
     # The only place the SQLite error is visible before it becomes a bare False — classify it so the turn-end
     # explanation names the real cause.
-    from hermes_state import StateDbCorruptError, StateDbReplacedError, classify_persistence_error, divert_session_transcript_jsonl
-    from hermes_state.errors import CompressionSessionClosedError
+    from akramcode_state import StateDbCorruptError, StateDbReplacedError, classify_persistence_error, divert_session_transcript_jsonl
+    from akramcode_state.errors import CompressionSessionClosedError
     agent._last_persistence_error_cause = classify_persistence_error(e)
     if agent._last_persistence_error_cause == "session_row_missing":
         # The session row was removed under this live agent (`hermes sessions delete`, the Desktop/web

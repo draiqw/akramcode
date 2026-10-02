@@ -310,7 +310,7 @@ def test_compressed_summary_marker_survives_restart_via_resume_history(tmp_path)
     the resume path carries ``_compressed_summary`` so checkpoint providers
     keep excluding derivative summaries after a process restart.
     """
-    from hermes_state import SessionDB
+    from akramcode_state import SessionDB
 
     db = SessionDB(tmp_path / "state.db")
     db.create_session("s1", source="cli")
@@ -330,7 +330,7 @@ def test_compressed_summary_marker_survives_restart_via_resume_history(tmp_path)
 
 
 def test_live_replay_preserves_summary_boundary_without_changing_display(tmp_path):
-    from hermes_state import SessionDB
+    from akramcode_state import SessionDB
 
     db_path = tmp_path / "state.db"
     db = SessionDB(db_path)
@@ -366,7 +366,7 @@ def test_compressed_summary_column_is_added_to_legacy_databases(tmp_path):
     """
     import sqlite3
 
-    from hermes_state import SessionDB
+    from akramcode_state import SessionDB
 
     db_path = tmp_path / "state.db"
     SessionDB(db_path)
@@ -492,7 +492,7 @@ def test_turn_finalizer_never_micro_compacts_while_checkpoint_gate_armed(
     )
     from agent.turn_finalizer import finalize_turn
 
-    monkeypatch.setattr("hermes_cli.plugins.invoke_hook", lambda *_a, **_kw: [])
+    monkeypatch.setattr("akramcode_cli.plugins.invoke_hook", lambda *_a, **_kw: [])
 
     class _RecordingCompressor:
         _micro_compact_enabled = True

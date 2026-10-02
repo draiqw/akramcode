@@ -4,7 +4,7 @@ Hermes Agent uses a SQLite database (`~/.hermes/state.db`) to persist session
 metadata, full message history, and model configuration across CLI and gateway
 sessions. This replaces the earlier per-session JSONL file approach.
 
-Source files: `hermes_state.py` (facade) plus the `hermes_state_*.py` siblings (schema, fts, search, compression, portability, gateway, ...)
+Source files: `akramcode_state.py` (facade) plus the `akramcode_state_*.py` siblings (schema, fts, search, compression, portability, gateway, ...)
 
 ## Hermes home and profile isolation
 
@@ -147,7 +147,7 @@ Key design decisions:
 
 ### Sessions Table
 
-Abridged — see `SCHEMA_SQL` in `hermes_state.common.py` (applied by `hermes_state.schema.py`) for the full current column list
+Abridged — see `SCHEMA_SQL` in `akramcode_state.common.py` (applied by `akramcode_state.schema.py`) for the full current column list
 (which also includes gateway routing metadata such as `session_key`, `chat_id`,
 `chat_type`, `thread_id`, `display_name`, `origin_json`, `expiry_finalized`,
 workspace fields `cwd` / `git_branch` / `git_repo_root`, handoff and
@@ -265,7 +265,7 @@ The FTS5 table is kept in sync via three triggers that fire on INSERT, UPDATE,
 and DELETE of the `messages` table. The current triggers are gated on the
 `fts_rebuild_high_water` / `fts_rebuild_progress` markers in `state_meta` (so a
 background FTS rebuild can proceed without double-indexing) and cover all three
-indexed columns — see `SCHEMA_SQL` in `hermes_state.common.py` for the exact SQL.
+indexed columns — see `SCHEMA_SQL` in `akramcode_state.common.py` for the exact SQL.
 
 
 ## Schema Version and Migrations
@@ -324,7 +324,7 @@ _CHECKPOINT_EVERY_N_WRITES = 50
 ```
 
 When a writer exhausts its budget the turn ends with
-`session_persistence_failed:locked` and, on Linux, `hermes_state.lockowners`
+`session_persistence_failed:locked` and, on Linux, `akramcode_state.lockowners`
 logs a WARNING naming the process that held the lock at that moment
 (`PID 594094 (hermes --worktree --yolo) holds WAL write lock on state.db-shm`),
 read from `/proc/locks` — SQLite's byte-range `fcntl` locks encode the lock kind
@@ -335,7 +335,7 @@ because every Hermes process has the DB open. Look for that line in
 `~/.hermes/logs/errors.log` next to the `database is locked` failure.
 
 Lock contention is recognised by SQLite result code (`SQLITE_BUSY` /
-`SQLITE_LOCKED`, `hermes_state.errors.is_sqlite_lock_error`), not by message
+`SQLITE_LOCKED`, `akramcode_state.errors.is_sqlite_lock_error`), not by message
 text. In rollback-journal (`delete`) mode a lock lost inside FTS5's table
 constructor arrives as `SQLITE_BUSY` with the text `vtable constructor failed:
 messages_fts`; it is treated like `database is locked`. Opening a writable
@@ -349,7 +349,7 @@ answers 503 (busy), not 500.
 ### Initialize
 
 ```python
-from hermes_state import SessionDB
+from akramcode_state import SessionDB
 
 db = SessionDB()                           # Default: ~/.hermes/state.db
 db = SessionDB(db_path=Path("~/.hermes/cache/scratch/test.db").expanduser())  # Custom path

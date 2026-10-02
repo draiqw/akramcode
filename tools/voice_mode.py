@@ -25,7 +25,7 @@ from typing import Any, Callable, Dict, List, Optional
 logger = logging.getLogger(__name__)
 
 from hermes_constants import is_termux as _is_termux_environment
-from hermes_platform.host.runtime import is_wsl
+from akramcode_platform.host.runtime import is_wsl
 from tools.voice_mode_transcript import _voice_config, is_voice_stop_phrase, is_whisper_hallucination
 
 # ── Recording parameters ──
@@ -1453,7 +1453,7 @@ def _check_plugin_stt_provider(provider: str) -> bool:
         return False
     try:
         from agent.transcription_registry import get_provider
-        from hermes_cli.plugins import _ensure_plugins_discovered
+        from akramcode_cli.plugins import _ensure_plugins_discovered
         _ensure_plugins_discovered()
         plugin_provider = get_provider(key)
         if plugin_provider is None:

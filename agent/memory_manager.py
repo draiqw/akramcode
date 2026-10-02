@@ -645,7 +645,7 @@ class MemoryManager:
         provider = self._tool_to_provider.get(tool_name)
         if provider is None:
             return tool_error(f"No memory provider handles tool '{tool_name}'")
-        from hermes_cli.observability.shared_metrics_loop import record_provider_memory_call
+        from akramcode_cli.observability.shared_metrics_loop import record_provider_memory_call
         try:
             result = provider.handle_tool_call(tool_name, args, **kwargs)
         except Exception as e:

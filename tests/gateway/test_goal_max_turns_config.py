@@ -6,7 +6,7 @@ from gateway.config import GatewayConfig, Platform, PlatformConfig
 from gateway.platforms.event import MessageEvent, MessageType
 from gateway.run import GatewayRunner
 from gateway.session import SessionSource
-from hermes_cli import goals
+from akramcode_cli import goals
 
 
 class _FakeSessionEntry:
@@ -88,22 +88,22 @@ async def test_goal_command_slow_db_init_still_persists(tmp_path, monkeypatch):
     window, so the window-only path would drop the write — this test
     discriminates the off-loop warm-up from mere window-widening without
     multi-second sleeps. Loop-freeze bounds are covered separately in
-    tests/hermes_cli/test_goals_db_bootstrap_off_loop.py; no wall-clock
+    tests/akramcode_cli/test_goals_db_bootstrap_off_loop.py; no wall-clock
     gap assertions here (those are their own flake class).
     """
-    import hermes_state
+    import akramcode_state
 
     monkeypatch.setattr(goals, "_DB_BOOTSTRAP_INIT_WAIT_S", 0.2)
     INIT_S = 0.8  # past the shrunk init window
 
-    real_session_db = hermes_state.SessionDB
+    real_session_db = akramcode_state.SessionDB
 
     class _SlowSessionDB(real_session_db):
         def __init__(self, *a, **k):
             time.sleep(INIT_S)
             super().__init__(*a, **k)
 
-    monkeypatch.setattr(hermes_state, "SessionDB", _SlowSessionDB)
+    monkeypatch.setattr(akramcode_state, "SessionDB", _SlowSessionDB)
 
     home = tmp_path / ".hermes"
     home.mkdir()

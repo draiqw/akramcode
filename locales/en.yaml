@@ -900,7 +900,7 @@ gateway:
     already_retrying: "{name} is already retrying — no resume needed."
     resumed: "✓ {name} resumed — retrying on next watcher tick."
 
-  # /bundles: ``*_plain`` variants are the surface-independent executor text (hermes_cli/slash_exec.py),
+  # /bundles: ``*_plain`` variants are the surface-independent executor text (akramcode_cli/slash_exec.py),
   # the others the gateway's markdown rendering.
   bundles:
     unavailable: "Bundles subsystem unavailable: {error}"
@@ -3229,7 +3229,7 @@ cli:
     header: "🧠 Context Usage — {model}"
     compute_failed: "(._.) Could not compute context breakdown: {error}"
   error:
-    # Chat-panel copy for a failed model request (hermes_cli/cli_chat_error_copy.py).
+    # Chat-panel copy for a failed model request (akramcode_cli/cli_chat_error_copy.py).
     auth: "Your {provider} key was rejected. Run `hermes model` to re-enter it."
     billing: "Your {provider} account is out of credit. Top up at the provider, or run /model to switch."
     model_not_found: "'{model}' isn't available on {provider}. Run /model to pick a valid model."
@@ -3586,7 +3586,7 @@ explainer:
     the_model: "The model"
 
 tips:
-  # CLI startup / /new discovery tips (hermes_cli/tips.py). Zero-padded index keeps YAML
+  # CLI startup / /new discovery tips (akramcode_cli/tips.py). Zero-padded index keeps YAML
   # order stable; pickers read tips.tNNN for the active language.
   t001: "/bg <prompt> runs a task in a separate session while your current one stays free; /btw <question> answers a side question about this conversation without interrupting it."
   t002: "/branch forks the current session so you can explore a different direction without losing progress."

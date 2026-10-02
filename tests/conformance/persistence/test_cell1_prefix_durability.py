@@ -30,7 +30,7 @@ from tests.conformance.persistence._harness import (
 WRITER = r"""
 import json, sys
 from pathlib import Path
-from hermes_state import SessionDB
+from akramcode_state import SessionDB
 
 db_path = Path({db_path!r})
 journal = Path({journal!r})

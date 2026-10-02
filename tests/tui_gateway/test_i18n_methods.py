@@ -24,8 +24,8 @@ def _call(server, method, params):
 
 def test_languages_and_catalog_serve_pack_layers_per_surface(tmp_path, monkeypatch, clean_layers):
     import tui_gateway.server as server
-    from hermes_cli.plugins import PluginContext, PluginManager
-    from hermes_cli.plugins_manifest import PluginManifest
+    from akramcode_cli.plugins import PluginContext, PluginManager
+    from akramcode_cli.plugins_manifest import PluginManifest
 
     home = tmp_path / "home"
     (home / "locales").mkdir(parents=True)

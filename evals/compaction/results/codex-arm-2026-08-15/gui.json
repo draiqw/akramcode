@@ -41,7 +41,7 @@
   },
   {
    "q": "What specific file and line number were identified as the cause of an AssertionError (assert 56 == 55) in the Python tests?",
-   "gold": "tests/hermes_cli/test_session_recovery_lost_and_found.py:327",
+   "gold": "tests/akramcode_cli/test_session_recovery_lost_and_found.py:327",
    "answer": "**UNKNOWN** \u2014 best guess: a schema-width assertion in a Python schema/config test, expecting 55 fields but receiving 56 after `git_metadata_generation` was added.",
    "score": 0,
    "why": "The answer fails to provide the specific file and line number requested, which are present in the gold answer. It instead provides a guess about the context of the error without identifying the location."

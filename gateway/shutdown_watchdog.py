@@ -164,7 +164,7 @@ def _mark_exited_quietly(exit_code: int, reason: str) -> None:
         from gateway.lifecycle_ledger import mark_exited
         mark_exited(exit_code, reason=reason)
     with contextlib.suppress(Exception):  # os._exit skips atexit: stamp the exit-metrics marker now
-        from hermes_cli.observability.shared_metrics_process import stamp_exit
+        from akramcode_cli.observability.shared_metrics_process import stamp_exit
         stamp_exit("watchdog")
     with contextlib.suppress(Exception):
         from gateway.status import write_runtime_status

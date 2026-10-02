@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from types import SimpleNamespace
 from typing import Any, Dict, Optional
 
-from hermes_cli.timeouts import get_provider_request_timeout, get_provider_stale_timeout
+from akramcode_cli.timeouts import get_provider_request_timeout, get_provider_stale_timeout
 from hermes_constants import PARTIAL_STREAM_STUB_ID, FINISH_REASON_LENGTH
 from agent.error_classifier import (
     FailoverReason, PROVIDER_STREAM_EMPTY_FRAME_ERROR_CODE, PROVIDER_STREAM_NON_JSON_ERROR_CODE,
@@ -477,7 +477,7 @@ def _provider_preferences_for_agent(agent) -> Dict[str, Any]:
         "data_collection": agent.provider_data_collection}
     per_model = {}
     with contextlib.suppress(Exception):
-        from hermes_cli.config import load_config_readonly
+        from akramcode_cli.config import load_config_readonly
         from hermes_constants import resolve_per_model_provider_routing
         _pr = load_config_readonly().get("provider_routing")
         per_model = resolve_per_model_provider_routing(agent.model, (_pr or {}).get("models") if isinstance(_pr, dict) else None)
@@ -638,7 +638,7 @@ def _local_stream_stale_timeout_default() -> float:
     Responses first-event watchdog so both give a local server the same prefill grace."""
     local_default = 900.0
     with contextlib.suppress(Exception):
-        from hermes_cli.config import load_config_readonly
+        from akramcode_cli.config import load_config_readonly
         cfg = load_config_readonly()  # read-only consumer — no deepcopy
         agent_cfg = cfg.get("agent") if isinstance(cfg, dict) else None
         value = agent_cfg.get("local_stream_stale_timeout") if isinstance(agent_cfg, dict) else None
@@ -841,8 +841,8 @@ def _managed_local_load_notice(agent, api_kwargs: dict) -> "Optional[str]":
         if not base:
             return None
         from urllib.parse import urlparse
-        from hermes_cli.local_runtime.load_progress import get_loading_progress, get_prefill_progress
-        from hermes_cli.local_runtime.supervisor import state_path
+        from akramcode_cli.local_runtime.load_progress import get_loading_progress, get_prefill_progress
+        from akramcode_cli.local_runtime.supervisor import state_path
         state = json.loads(state_path().read_text(encoding="utf-8-sig"))
         managed = urlparse(str(state.get("base_url", ""))).netloc.lower()
         if not managed or urlparse(base).netloc.lower() != managed:
@@ -1790,7 +1790,7 @@ def _fallback_entry_unavailable_without_network(agent, fb: dict) -> Optional[str
     if (fb.get("provider") or "").strip().lower() != "nous":
         return None
     try:
-        from hermes_cli.auth import get_provider_auth_state
+        from akramcode_cli.auth import get_provider_auth_state
         state = get_provider_auth_state("nous") or {}
     except Exception as exc:
         return f"nous_auth_unreadable:{type(exc).__name__}"
@@ -1835,7 +1835,7 @@ def _fallback_reason_text(reason: "FailoverReason | None") -> str:
 def _is_anthropic_wire_url(url: str) -> bool:
     """Same Messages-only host match as determine_api_mode() / _detect_api_mode_for_url(): api.anthropic.com,
     a /anthropic suffix, or Kimi Code's api.kimi.com/coding (its /chat/completions 404s — #77256)."""
-    from hermes_cli.providers import host_mandated_api_mode
+    from akramcode_cli.providers import host_mandated_api_mode
     return host_mandated_api_mode(url) == "anthropic_messages"
 
 
@@ -1844,7 +1844,7 @@ def _fallback_api_mode_hint(fb: dict, fb_provider: str, fb_base_url_hint: Option
     rewrites a dual-surface /anthropic base to /v1, losing the Anthropic wire signal. An explicit
     ``api_mode`` always wins (even "chat_completions") and suppresses later re-detection;
     ``provider: anthropic`` without a base_url still resolves to anthropic_messages."""
-    from hermes_cli.runtime_provider import _get_named_custom_provider, _parse_api_mode
+    from akramcode_cli.runtime_provider import _get_named_custom_provider, _parse_api_mode
     # Entries accept the same ``api_mode`` / ``transport`` spellings as ``providers.<name>``.
     explicit = _parse_api_mode(fb.get("api_mode") or fb.get("transport"))
     if explicit:
@@ -1867,8 +1867,8 @@ def _fallback_api_mode_resolved(agent, fb_provider: str, fb_model: str, fb_base_
     landed on the chat_completions default (never called for an explicit api_mode)."""
     if fb_provider == "openai-codex":
         return "codex_responses"
-    from hermes_cli.models import opencode_model_api_mode
-    from hermes_cli.runtime_provider_custom import _opencode_family_for_custom
+    from akramcode_cli.models import opencode_model_api_mode
+    from akramcode_cli.runtime_provider_custom import _opencode_family_for_custom
     opencode_family = _opencode_family_for_custom(fb_provider, fb_base_url)
     if opencode_family is not None:
         # OpenCode Zen/Go/free serve Responses-only (muse-spark, gpt-*, grok-*), anthropic_messages
@@ -1877,7 +1877,7 @@ def _fallback_api_mode_resolved(agent, fb_provider: str, fb_model: str, fb_base_
         return opencode_model_api_mode(opencode_family, fb_model)
     if fb_provider in {"nous", "nous-portal", "nousresearch"}:
         # Portal is dual-wire: anthropic/* must land on /v1/messages (the swap rebuilds the native client).
-        from hermes_cli.providers import nous_api_mode
+        from akramcode_cli.providers import nous_api_mode
         return nous_api_mode(fb_model)
     if _is_anthropic_wire_url(fb_base_url):
         # Named custom providers (cron-anthropic) resolve base_url from config; the hint pass never saw it.
@@ -2028,7 +2028,7 @@ def _reresolve_fallback_reasoning_config(agent) -> None:
     try:
         # Re-resolve reasoning_config for the new fallback model (Closes #21256). Wrapped in try/except
         # because a config load failure must not kill the swap.
-        from hermes_cli.config import load_config
+        from akramcode_cli.config import load_config
         from hermes_constants import resolve_reasoning_config
         agent.reasoning_config = resolve_reasoning_config(load_config() or {}, agent.model)
         logger.info("Fallback %s: reasoning_config resolved: %s", agent.model, agent.reasoning_config)
@@ -2095,7 +2095,7 @@ def try_activate_fallback(agent, reason: "FailoverReason | None" = None, reset_a
 
         try:
             from agent.auxiliary_client import resolve_provider_client
-            from hermes_cli.fallback_config import resolve_entry_api_key
+            from akramcode_cli.fallback_config import resolve_entry_api_key
             # Pass the entry's base_url/api_key so custom endpoints (Ollama Cloud) resolve instead
             # of falling through to OpenRouter defaults.
             fb_base_url_hint = (fb.get("base_url") or "").strip() or None
@@ -2124,13 +2124,13 @@ def try_activate_fallback(agent, reason: "FailoverReason | None" = None, reset_a
                 fb_base_url, fb_api_mode = "moa://local", "chat_completions"
             else:
                 try:
-                    from hermes_cli.model_normalize import normalize_model_for_provider
+                    from akramcode_cli.model_normalize import normalize_model_for_provider
                     fb_model = normalize_model_for_provider(fb_model, fb_provider)
                 except Exception as _norm_err:
                     logger.warning("Could not normalize fallback model %r for provider %r: %s", fb_model, fb_provider, _norm_err)
 
                 fb_base_url = str(fb_client.base_url)
-                from hermes_cli.providers import is_actual_route
+                from akramcode_cli.providers import is_actual_route
                 if is_actual_route(fb_provider, fb_base_url):
                     fb_api_mode = "chat_completions"
                 elif not fb_api_mode_explicit and fb_api_mode == "chat_completions":
@@ -2181,7 +2181,7 @@ def try_activate_fallback(agent, reason: "FailoverReason | None" = None, reset_a
             agent._provider_fallback_active = True
             agent._provider_fallback_route = (str(fb_model), str(fb_provider))
             _log_fallback_activated(agent, reason, old_model, old_provider, fb_model, fb_provider)
-            from hermes_cli.observability.shared_metrics_events import record_fallback
+            from akramcode_cli.observability.shared_metrics_events import record_fallback
             record_fallback(from_provider=old_provider, to_provider=fb_provider, reason=reason)
             # The stale-call streak measured the OLD provider; carrying it over would
             # short-circuit the fresh fallback before its first stream attempt.

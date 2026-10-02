@@ -65,7 +65,7 @@ def test_current_installer_publishes_real_dependencies_and_warm_path(tmp_path, s
     run([uv, "python", "install", "--no-bin", "--no-registry", minor])
     source = tmp_path / "fixture source"
     source.mkdir()
-    for name in ("pm", "hermes_cli", "hermes_platform"):
+    for name in ("pm", "akramcode_cli", "akramcode_platform"):
         shutil.copytree(ROOT / name, source / name, ignore=shutil.ignore_patterns("__pycache__"))
     for name in ("utils.py", "hermes_constants.py", "akram_core.hermes_yaml.py", "akram_core.hermes_bootstrap.py", "setup-hermes.sh"):
         shutil.copy2(ROOT / name, source / name)
@@ -91,7 +91,7 @@ def test_current_installer_publishes_real_dependencies_and_warm_path(tmp_path, s
     run([uv, "lock", "--python", str(python)], cwd=source)
     # Only the application is a fixture; the shell, PM, bootstrap and writer run unchanged.
     # Completion still imports the CLI's checkout root during post-install maintenance.
-    (source / "hermes_cli/main.py").write_text(
+    (source / "akramcode_cli/main.py").write_text(
         "import installer_probe, json, sys\n"
         "from pathlib import Path\n"
         "PROJECT_ROOT = Path(__file__).resolve().parents[1]\n"

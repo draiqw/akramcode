@@ -799,9 +799,9 @@ _SETUP_INTRO = (  # "" → blank line
 
 
 def interactive_setup() -> None:
-    from hermes_cli.config import get_env_value, save_env_value
-    from hermes_cli.cli_output import prompt, prompt_yes_no, print_info, print_success, print_warning
-    from hermes_cli.setup_platforms import declines_reconfigure
+    from akramcode_cli.config import get_env_value, save_env_value
+    from akramcode_cli.cli_output import prompt, prompt_yes_no, print_info, print_success, print_warning
+    from akramcode_cli.setup_platforms import declines_reconfigure
     if declines_reconfigure("Teams", "Reconfigure Teams?", "TEAMS_CLIENT_ID"):
         return
     for line in _SETUP_INTRO:

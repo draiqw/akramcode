@@ -29,8 +29,8 @@ def test_release_workflow_checks_tag_tests_and_publishes_release():
 
 
 def test_update_and_release_links_use_akram_code():
-    updater = (ROOT / "hermes_cli/update_cmd_git.py").read_text()
-    banner = (ROOT / "hermes_cli/banner.py").read_text()
+    updater = (ROOT / "akramcode_cli/update_cmd_git.py").read_text()
+    banner = (ROOT / "akramcode_cli/banner.py").read_text()
     release = (ROOT / "scripts/release.py").read_text()
 
     for source in (updater, banner, release):

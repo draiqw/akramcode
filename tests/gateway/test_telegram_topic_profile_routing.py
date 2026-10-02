@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from types import SimpleNamespace
 
-from hermes_state import SessionDB
+from akramcode_state import SessionDB
 from gateway.config import Platform
 from gateway.session import SessionSource
 

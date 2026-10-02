@@ -654,7 +654,7 @@ def _ensure_terminal_env_bridged() -> None:
     _terminal_config_bridge_attempted = True
     # Never let a config problem take the terminal tool down.
     with _quiet("terminal config → env fallback bridge failed"):
-        from hermes_cli.config import apply_terminal_config_to_env, read_raw_config
+        from akramcode_cli.config import apply_terminal_config_to_env, read_raw_config
 
         raw_config = read_raw_config()
         if isinstance(raw_config.get("terminal"), dict):
@@ -676,7 +676,7 @@ def _resolve_config_cwd(env_type: str, mount_docker_cwd: bool) -> tuple:
     """
     default_cwd = _safe_getcwd() if env_type == "local" else _DEFAULT_CWD_BY_BACKEND.get(env_type, "/root")
     cwd = _tenv("TERMINAL_CWD", default_cwd)
-    from hermes_cli.config import _is_ssh_remote_tilde_cwd
+    from akramcode_cli.config import _is_ssh_remote_tilde_cwd
     if cwd and not _is_ssh_remote_tilde_cwd(env_type, cwd):
         cwd = os.path.expanduser(cwd)
     host_cwd = None
@@ -713,7 +713,7 @@ def _resolve_config_cwd(env_type: str, mount_docker_cwd: bool) -> tuple:
 
 def _get_env_config() -> Dict[str, Any]:
     """Resolve the terminal configuration dict from TERMINAL_* env vars."""
-    from hermes_cli.config_defaults import DEFAULT_SANDBOX_IMAGE as default_image
+    from akramcode_cli.config_defaults import DEFAULT_SANDBOX_IMAGE as default_image
     _ensure_terminal_env_bridged()
     env_type = _tenv("TERMINAL_ENV", "local")
     mount_docker_cwd = _tenv_bool("TERMINAL_DOCKER_MOUNT_CWD_TO_WORKSPACE", "false")
@@ -1243,7 +1243,7 @@ def _run_foreground(
 ) -> str:
     """Execute in the foreground with retry on transient errors, then finalize. ``metered``
     is False for Hermes' own control-plane commands (``_host_local``)."""
-    from hermes_cli.observability.shared_metrics_harness import record_terminal_outcome
+    from akramcode_cli.observability.shared_metrics_harness import record_terminal_outcome
     max_retries = 3
     env_type, eff, effective_timeout = plan.env_type, plan.effective_task_id, plan.effective_timeout
 
@@ -1401,7 +1401,7 @@ def terminal_tool(
     ``_host_local`` forces the local backend for Hermes-owned control-plane
     children (kept in a separate env cache from the configured backend).
     """
-    from hermes_cli.observability.shared_metrics_loop import record_terminal_backend as _metered
+    from akramcode_cli.observability.shared_metrics_loop import record_terminal_backend as _metered
     plan = None
     try:
         plan = _plan_execution(

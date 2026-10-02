@@ -56,7 +56,7 @@ def _build_provider_env_blocklist() -> frozenset:
     """Derive the blocklist from provider, tool, and gateway config."""
     blocked: set[str] = set(_STATIC_PROVIDER_ENV_BLOCKLIST)
     try:
-        from hermes_cli.auth import PROVIDER_REGISTRY
+        from akramcode_cli.auth import PROVIDER_REGISTRY
         for pconfig in PROVIDER_REGISTRY.values():
             blocked.update(pconfig.api_key_env_vars)
             if pconfig.auth_type == "aws_sdk":
@@ -66,7 +66,7 @@ def _build_provider_env_blocklist() -> frozenset:
     except ImportError:
         pass
     try:
-        from hermes_cli.config import OPTIONAL_ENV_VARS
+        from akramcode_cli.config import OPTIONAL_ENV_VARS
         for name, metadata in OPTIONAL_ENV_VARS.items():
             category = metadata.get("category")
             if category in {"tool", "messaging"} or (
@@ -98,9 +98,9 @@ def _build_adapter_secret_env() -> frozenset:
     A profile's user-installed platform plugins are per home: :func:`_home_adapter_secret_env`.
     Nothing here fails soft: an unreadable bundled manifest or env table fails the import rather
     than dropping its secrets from the policy."""
-    from hermes_cli.config import (
+    from akramcode_cli.config import (
         CORE_DECLARED_ENV_NAMES, OPTIONAL_ENV_VARS, PLATFORM_SECRET_ENV_SUFFIXES, platform_manifest_secret_envs)
-    from hermes_cli.profile_channels import config_env_table_keys
+    from akramcode_cli.profile_channels import config_env_table_keys
     # Read in code only, declared nowhere else: the Microsoft Graph app secret and webhook
     # clientState, and the QQ bot's speech-to-text key.
     names: set[str] = {"MSGRAPH_CLIENT_SECRET", "MSGRAPH_WEBHOOK_CLIENT_STATE", "QQ_STT_API_KEY"}
@@ -112,7 +112,7 @@ def _build_adapter_secret_env() -> frozenset:
     return frozenset(names)
 
 
-# Provider blocklist first: it imports hermes_cli.auth before hermes_cli.config, whose import
+# Provider blocklist first: it imports akramcode_cli.auth before akramcode_cli.config, whose import
 # discovers provider plugins that expect a fully initialized auth registry.
 _PROVIDER_ENV_BLOCKLIST = _build_provider_env_blocklist()
 _ADAPTER_SECRET_ENV = _build_adapter_secret_env()
@@ -129,7 +129,7 @@ def _home_adapter_secret_env() -> frozenset:
     manifest under ``plugins/platforms/`` that cannot be read raises. A partial scan (a plugin dir
     or flat manifest unreadable or unparsable) keeps the names this home already had and is not
     cached, so a failed discovery never releases a known denial and recovery is seen at once."""
-    from hermes_cli.config import platform_manifest_secret_scan, platform_manifest_stamp
+    from akramcode_cli.config import platform_manifest_secret_scan, platform_manifest_stamp
     from hermes_constants import get_hermes_home, hermes_home_key
     home = get_hermes_home()
     key, stamp = hermes_home_key(home), platform_manifest_stamp(home)
@@ -150,7 +150,7 @@ def _registry_adapter_secret_env() -> frozenset:
     must not strip it from credentialed children. No blanket fallback: a registry error surfaces
     instead of an empty (fail-open) set."""
     from gateway.platform_registry import platform_registry
-    from hermes_cli.config import PLATFORM_SECRET_ENV_SUFFIXES
+    from akramcode_cli.config import PLATFORM_SECRET_ENV_SUFFIXES
     return frozenset(n.upper() for n in platform_registry.required_env_names()
                      if n.upper().endswith(PLATFORM_SECRET_ENV_SUFFIXES))
 

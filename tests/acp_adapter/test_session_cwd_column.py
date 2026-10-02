@@ -13,7 +13,7 @@ import json
 from types import SimpleNamespace
 
 from acp_adapter.session import SessionManager
-from hermes_state import SessionDB
+from akramcode_state import SessionDB
 
 
 def _manager(db):

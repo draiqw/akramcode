@@ -71,7 +71,7 @@ def test_kanban_guidance_requires_worker_task_at_agent_init(monkeypatch, task_id
         monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
     else:
         monkeypatch.setenv("HERMES_KANBAN_TASK", task_id)
-    monkeypatch.setattr("hermes_cli.plugins.discover_plugins", lambda: None)
+    monkeypatch.setattr("akramcode_cli.plugins.discover_plugins", lambda: None)
     monkeypatch.setattr(
         model_tools,
         "get_tool_definitions",
@@ -578,7 +578,7 @@ class TestTelegramRichMessagesHint:
     def test_base_hint_without_rich_messages(self, monkeypatch):
         """When rich_messages is False, only the base hint is used."""
         agent = _make_agent(platform="telegram")
-        with patch("hermes_cli.config.load_config_readonly") as mock_cfg:
+        with patch("akramcode_cli.config.load_config_readonly") as mock_cfg:
             mock_cfg.return_value = {
                 "gateway": {"platforms": {"telegram": {"extra": {"rich_messages": False}}}}
             }
@@ -591,7 +591,7 @@ class TestTelegramRichMessagesHint:
         """When rich_messages is True in gateway.platforms, the extension
         is appended (the canonical/primary location)."""
         agent = _make_agent(platform="telegram")
-        with patch("hermes_cli.config.load_config_readonly") as mock_cfg:
+        with patch("akramcode_cli.config.load_config_readonly") as mock_cfg:
             mock_cfg.return_value = {
                 "gateway": {"platforms": {"telegram": {"extra": {"rich_messages": True}}}}
             }
@@ -604,7 +604,7 @@ class TestTelegramRichMessagesHint:
         """Top-level ``platforms.telegram.extra.rich_messages`` is merged
         alongside gateway.platforms, so it works on its own."""
         agent = _make_agent(platform="telegram")
-        with patch("hermes_cli.config.load_config_readonly") as mock_cfg:
+        with patch("akramcode_cli.config.load_config_readonly") as mock_cfg:
             mock_cfg.return_value = {
                 "platforms": {"telegram": {"extra": {"rich_messages": True}}}
             }
@@ -616,7 +616,7 @@ class TestTelegramRichMessagesHint:
         """Top-level ``platforms.telegram.extra`` wins over gateway.platforms
         at the leaf, matching the adapter's merge precedence."""
         agent = _make_agent(platform="telegram")
-        with patch("hermes_cli.config.load_config_readonly") as mock_cfg:
+        with patch("akramcode_cli.config.load_config_readonly") as mock_cfg:
             mock_cfg.return_value = {
                 "gateway": {"platforms": {"telegram": {"extra": {"rich_messages": False}}}},
                 "platforms": {"telegram": {"extra": {"rich_messages": True}}},
@@ -628,7 +628,7 @@ class TestTelegramRichMessagesHint:
         """When gateway.platforms.telegram.extra has other keys but not
         rich_messages, the top-level rich_messages still activates."""
         agent = _make_agent(platform="telegram")
-        with patch("hermes_cli.config.load_config_readonly") as mock_cfg:
+        with patch("akramcode_cli.config.load_config_readonly") as mock_cfg:
             mock_cfg.return_value = {
                 "gateway": {"platforms": {"telegram": {"extra": {"disable_link_previews": True}}}},
                 "platforms": {"telegram": {"extra": {"rich_messages": True}}},
@@ -658,7 +658,7 @@ class TestTelegramRichMessagesHint:
         monkeypatch.setenv("HERMES_HOME", str(home))
         # Point config resolution at the temp file without mocking the loader:
         # mirror the pattern used in test_config_env_expansion.py.
-        from hermes_cli import config as _cfgmod
+        from akramcode_cli import config as _cfgmod
         monkeypatch.setattr(_cfgmod, "get_config_path", lambda: home / "config.yaml")
 
         agent = _make_agent(platform="telegram")
@@ -671,7 +671,7 @@ class TestTelegramRichMessagesHint:
         it should fail open to the base hint (Tek's fail-open concern).
         """
         agent = _make_agent(platform="telegram")
-        with patch("hermes_cli.config.load_config_readonly") as mock_cfg:
+        with patch("akramcode_cli.config.load_config_readonly") as mock_cfg:
             mock_cfg.return_value = {
                 "gateway": {"platforms": {"telegram": {"extra": "not-a-map"}}}
             }

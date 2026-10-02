@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
-from hermes_cli.update_channel import STABLE_TAG_RE
+from akramcode_cli.update_channel import STABLE_TAG_RE
 from scripts.releases.draft_warning import strip_draft_warning
 from scripts.releases.versioning import tag_record
 SHA = re.compile(r"[a-f0-9]{40}")

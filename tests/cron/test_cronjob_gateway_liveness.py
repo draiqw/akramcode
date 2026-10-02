@@ -173,19 +173,19 @@ class _LivenessPatches:
 
         self._stack.enter_context(
             patch(
-                "hermes_cli.cron._active_cron_provider_name",
+                "akramcode_cli.cron._active_cron_provider_name",
                 side_effect=_fake_provider_name,
             )
         )
         self._stack.enter_context(
             patch(
-                "hermes_cli.gateway.find_gateway_pids",
+                "akramcode_cli.gateway.find_gateway_pids",
                 return_value=list(self._pids),
             )
         )
         self._stack.enter_context(
             patch(
-                "hermes_cli.gateway.named_profile_served_by_running_multiplexer",
+                "akramcode_cli.gateway.named_profile_served_by_running_multiplexer",
                 return_value=False,
             )
         )
@@ -228,26 +228,26 @@ class TestRuntimeLockFirstLiveness:
     def test_lock_inactive_falls_back_to_pid_scan(self):
         from unittest.mock import patch
 
-        import hermes_cli.cron as cron_cli
+        import akramcode_cli.cron as cron_cli
 
         with (
-            patch("hermes_cli.cron._active_cron_provider_name", return_value="builtin"),
+            patch("akramcode_cli.cron._active_cron_provider_name", return_value="builtin"),
             patch("gateway.status.is_gateway_runtime_lock_active", return_value=False),
-            patch("hermes_cli.gateway.find_gateway_pids", return_value=[424242]),
+            patch("akramcode_cli.gateway.find_gateway_pids", return_value=[424242]),
         ):
             assert cron_cli._builtin_gateway_liveness() is True
 
     def test_no_lock_no_pids_is_false(self):
         from unittest.mock import patch
 
-        import hermes_cli.cron as cron_cli
+        import akramcode_cli.cron as cron_cli
 
         with (
-            patch("hermes_cli.cron._active_cron_provider_name", return_value="builtin"),
+            patch("akramcode_cli.cron._active_cron_provider_name", return_value="builtin"),
             patch("gateway.status.is_gateway_runtime_lock_active", return_value=False),
-            patch("hermes_cli.gateway.find_gateway_pids", return_value=[]),
+            patch("akramcode_cli.gateway.find_gateway_pids", return_value=[]),
             patch(
-                "hermes_cli.gateway.named_profile_served_by_running_multiplexer",
+                "akramcode_cli.gateway.named_profile_served_by_running_multiplexer",
                 return_value=False,
             ),
         ):
@@ -259,15 +259,15 @@ class TestRuntimeLockFirstLiveness:
         when both probes fail)."""
         from unittest.mock import patch
 
-        import hermes_cli.cron as cron_cli
+        import akramcode_cli.cron as cron_cli
 
         with (
-            patch("hermes_cli.cron._active_cron_provider_name", return_value="builtin"),
+            patch("akramcode_cli.cron._active_cron_provider_name", return_value="builtin"),
             patch(
                 "gateway.status.is_gateway_runtime_lock_active",
                 side_effect=OSError("lock probe failed"),
             ),
-            patch("hermes_cli.gateway.find_gateway_pids", return_value=[424242]),
+            patch("akramcode_cli.gateway.find_gateway_pids", return_value=[424242]),
         ):
             assert cron_cli._builtin_gateway_liveness() is True
 
@@ -276,15 +276,15 @@ class TestRuntimeLockFirstLiveness:
         from unittest.mock import patch
 
         from cron.jobs import record_ticker_heartbeat
-        import hermes_cli.cron as cron_cli
+        import akramcode_cli.cron as cron_cli
 
         record_ticker_heartbeat(success=True)
         with (
-            patch("hermes_cli.cron._active_cron_provider_name", return_value="builtin"),
+            patch("akramcode_cli.cron._active_cron_provider_name", return_value="builtin"),
             patch("gateway.status.is_gateway_runtime_lock_active", return_value=False),
-            patch("hermes_cli.gateway.find_gateway_pids", return_value=[]),
+            patch("akramcode_cli.gateway.find_gateway_pids", return_value=[]),
             patch(
-                "hermes_cli.gateway.named_profile_served_by_running_multiplexer",
+                "akramcode_cli.gateway.named_profile_served_by_running_multiplexer",
                 return_value=True,
             ),
         ):

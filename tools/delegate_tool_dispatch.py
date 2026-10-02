@@ -13,7 +13,7 @@ from concurrent.futures import FIRST_COMPLETED, wait as _cf_wait
 from dataclasses import dataclass, replace
 from typing import Any, Dict, List, Optional
 
-from hermes_cli.observability.shared_metrics_loop import begin_delegation_run, finish_delegation_unit
+from akramcode_cli.observability.shared_metrics_loop import begin_delegation_run, finish_delegation_unit
 from tools.async_delegation import _new_delegation_id, record_unit_child
 from tools.delegate_tool_child_run import _attach_child, _detach_child, _fabricated_entry, _signal_child_stop
 from tools.delegate_tool_progress import (

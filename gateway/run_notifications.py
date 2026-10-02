@@ -930,7 +930,7 @@ class GatewayNotificationsMixin:
             # is only consulted when a free-tier identity already exists and its own free-tier rung
             # (which may mint on a fresh install, NS-829) answers from that identity without a network
             # call. No token refresh at boot either way.
-            from hermes_cli.anon_auth import free_tier_route
+            from akramcode_cli.anon_auth import free_tier_route
             if not free_tier_route():
                 return None
         except Exception as exc:
@@ -1048,7 +1048,7 @@ class GatewayNotificationsMixin:
                 logger.info("state.db recovered before the home-channel warning went out; not broadcasting")
                 return
         from hermes_constants import get_default_hermes_root, profile_cli_selector
-        from hermes_state import _default_db_path, classify_persistence_error
+        from akramcode_state import _default_db_path, classify_persistence_error
         cause = classify_persistence_error(error)
         # Copy-pasteable, so name the real store and pin the profile: a bare `hermes` follows
         # active_profile, which may be a different database (#105887).
@@ -1062,7 +1062,7 @@ class GatewayNotificationsMixin:
             # restore advice above would be destructive on a healthy file (#97794).
             message = t("gateway.startup.db_fts_corrupt", profile_arg=profile_arg)
         else:
-            from hermes_state.user_copy import describe_storage_failure
+            from akramcode_state.user_copy import describe_storage_failure
             failure = describe_storage_failure(error)
             # The cause table owns the remedy: for a held retired-WAL generation a bare `doctor --fix`
             # is the second-writer trap this notice used to send users into (#110054). Its copy is

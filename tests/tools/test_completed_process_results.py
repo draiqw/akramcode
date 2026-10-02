@@ -250,7 +250,7 @@ def test_receipts_are_bounded_redacted_and_session_scoped(tmp_path, monkeypatch)
     with scoped_current_session_id("unrelated-session"):
         assert load_completed_results(recovered.id) == {}
         assert fresh.get(recovered.id) is None
-    from hermes_state import SessionDB
+    from akramcode_state import SessionDB
     db = SessionDB()
     try:
         db.create_session("owner-session", "cli")

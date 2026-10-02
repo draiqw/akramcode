@@ -8,7 +8,7 @@ handoff/kanban watchers, shared ingress) already reads ``profiles_to_serve()`` /
 live, so reconciling those three is enough for a profile created after boot to be served.
 
 ``reconcile_served_profiles`` runs on the loop under one lock, triggered by the ``rescan-profiles`` control
-verb (``hermes_cli/profiles.py`` create/delete fire it through the control socket) and by the supervised
+verb (``akramcode_cli/profiles.py`` create/delete fire it through the control socket) and by the supervised
 ``_profile_reconcile_watcher`` every ``_PROFILE_RESCAN_INTERVAL_SECS`` as the safety net. A served profile whose ``config.yaml``/``.env``
 changed since its adapters were last built is re-scanned too: creators make the profile first and add the
 bot token afterwards, and without this an adapter-less profile would stay adapter-less forever.
@@ -251,7 +251,7 @@ class GatewayProfileReconcileMixin:
                 with _log_suppressed(logging.DEBUG, "agent eviction failed for %s", key, exc_info=True):
                     self._evict_cached_agent(key)
             with _log_suppressed(logging.DEBUG, "profile handle release failed", exc_info=True):
-                from hermes_state.registry import close_all_under
+                from akramcode_state.registry import close_all_under
                 close_all_under(home)
             with _log_suppressed(logging.DEBUG, "memory-store release failed", exc_info=True):
                 from plugins.memory.holographic.store import MemoryStore
@@ -264,7 +264,7 @@ def _profile_lifecycle_verb(runner, *, serve: bool):
     loop = asyncio.get_running_loop()
 
     async def apply(name):
-        from hermes_cli.profiles import profiles_to_serve, profile_is_parked
+        from akramcode_cli.profiles import profiles_to_serve, profile_is_parked
         if not runner._multiplex_on() or not runner._running or runner._served_profile_homes is None:
             return {"error": "host multiplexer is not ready"}
         async with runner._reconcile_lock():
@@ -393,7 +393,7 @@ def migrate_profile_identity_verb(runner):
             return {"ok": False, "error": "live gateway has no session store"}
         acquired = []
         try:
-            from hermes_state.registry import acquire, release_or_close
+            from akramcode_state.registry import acquire, release_or_close
             db_counts: Dict[str, Dict[str, int]] = {}
             routing_db = getattr(store, "_routing_db", None)
             if routing_db is not None and hasattr(routing_db, "rekey_profile_state"):

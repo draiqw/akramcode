@@ -69,9 +69,9 @@ def mux(tmp_path, monkeypatch):
         (home / "profiles" / name).mkdir(parents=True)
     monkeypatch.setenv("HERMES_HOME", str(home))
     served = [("default", home), ("ops", home / "profiles" / "ops"), ("team_b", home / "profiles" / "team_b")]
-    with patch("hermes_cli.profiles.profiles_to_serve", return_value=served), \
-            patch("hermes_cli.profiles.get_profile_dir", side_effect=lambda n: home if n == "default" else home / "profiles" / n), \
-            patch("hermes_cli.profiles.profile_exists", return_value=True):
+    with patch("akramcode_cli.profiles.profiles_to_serve", return_value=served), \
+            patch("akramcode_cli.profiles.get_profile_dir", side_effect=lambda n: home if n == "default" else home / "profiles" / n), \
+            patch("akramcode_cli.profiles.profile_exists", return_value=True):
         yield _runner(home)
 
 

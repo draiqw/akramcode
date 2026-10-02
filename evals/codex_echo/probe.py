@@ -17,7 +17,7 @@ def main():
         from agent.message_metadata import append_message
         from agent.session_persistence import SessionPersistenceMixin
         from agent.transports.codex_app_server_session import CodexAppServerSession
-        from hermes_state import SessionDB
+        from akramcode_state import SessionDB
 
         observations = []
         for mode in ["echo", "assistant_only", "different", "later_equal"]:

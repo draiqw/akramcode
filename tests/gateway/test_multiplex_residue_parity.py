@@ -31,8 +31,8 @@ def two_homes(tmp_path, monkeypatch):
 
 def test_served_profile_reads_its_own_sessions_settings(two_homes, monkeypatch):
     root, alpha = two_homes
-    from hermes_state.fts import _cjk_fts_config_enabled
-    from hermes_state.search import _search_slow_ms
+    from akramcode_state.fts import _cjk_fts_config_enabled
+    from akramcode_state.search import _search_slow_ms
     # The multiplexer bridged the LAUNCH (default) profile's sessions.* into env at import.
     monkeypatch.setenv("HERMES_CJK_FTS", "true")
     monkeypatch.setenv("HERMES_SEARCH_SLOW_MS", "1000")
@@ -83,7 +83,7 @@ def test_stale_served_turn_never_recreates_archived_profile(two_homes):
     shutil.rmtree(alpha)
     ss.set_multiplex_active(True)
     with gw_run._profile_runtime_scope(alpha):
-        from hermes_state import SessionDB
+        from akramcode_state import SessionDB
         with pytest.raises(FileNotFoundError):
             SessionDB()
     assert not alpha.exists()
@@ -92,7 +92,7 @@ def test_stale_served_turn_never_recreates_archived_profile(two_homes):
 def test_mcp_discovery_slot_is_per_profile_home(two_homes, monkeypatch):
     """#67605: alpha building an agent after default must still get ITS discovery run."""
     root, alpha = two_homes
-    import hermes_cli.mcp_startup as ms
+    import akramcode_cli.mcp_startup as ms
     from hermes_constants import get_hermes_home
     for home in (root, alpha):
         (home / "config.yaml").write_text("mcp_servers:\n  demo:\n    command: /bin/true\n", encoding="utf-8")

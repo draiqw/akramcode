@@ -40,7 +40,7 @@ from pathlib import Path
 
 import pytest
 
-import hermes_state
+import akramcode_state
 from hermes_constants import (
     reset_hermes_home_override,
     set_hermes_home_override,
@@ -121,7 +121,7 @@ def profile_tripwire(tmp_path, monkeypatch):
        detectable.
     2. ``HERMES_HOME`` (env var AND the context-local override) pointed at
        the testprof home — the exact activation shape ``--profile`` uses.
-    3. ``hermes_state.DEFAULT_DB_PATH`` restored to its import-time snapshot.
+    3. ``akramcode_state.DEFAULT_DB_PATH`` restored to its import-time snapshot.
        The suite conftest deliberately re-points that constant at its own
        fake home, which trips the escape hatch in ``_default_db_path()``
        (a re-pointed constant wins over everything).  Closing the hatch
@@ -148,7 +148,7 @@ def profile_tripwire(tmp_path, monkeypatch):
 
     # Close the conftest's DEFAULT_DB_PATH escape hatch (see docstring).
     monkeypatch.setattr(
-        hermes_state, "DEFAULT_DB_PATH", hermes_state._IMPORT_DEFAULT_DB_PATH
+        akramcode_state, "DEFAULT_DB_PATH", akramcode_state._IMPORT_DEFAULT_DB_PATH
     )
 
     tripwire = ProfileTripwire(root, profile)
@@ -167,7 +167,7 @@ def profile_tripwire(tmp_path, monkeypatch):
 
 def _exercise_session_db(tripwire: ProfileTripwire) -> None:
     """SessionDB() argless construction + session + message (#88532)."""
-    db = hermes_state.SessionDB()
+    db = akramcode_state.SessionDB()
     try:
         db.create_session("20260823_000000_tripwire", "cli")
         db.append_message("20260823_000000_tripwire", "user", "hello")
@@ -182,7 +182,7 @@ def _exercise_session_db(tripwire: ProfileTripwire) -> None:
 
 def _exercise_config_save(tripwire: ProfileTripwire) -> None:
     """save_config()/load_config() while a profile is active (#92662, #89190)."""
-    from hermes_cli.config import load_config, save_config
+    from akramcode_cli.config import load_config, save_config
 
     cfg = load_config()
     cfg["model"] = "testprof-model"  # bare-string alias form is canonical

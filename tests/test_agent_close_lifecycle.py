@@ -11,7 +11,7 @@ sessions, tool subprocesses and httpx clients:
   per comment run in a long-lived gateway process.
 * ``tui_gateway/methods_prompt`` ``prompt.background`` — one side agent per
   background turn in the gateway process.
-* ``hermes_cli/cli_commands_mixin._handle_background_command`` — one agent
+* ``akramcode_cli/cli_commands_mixin._handle_background_command`` — one agent
   per ``/bg`` task in a long-lived CLI process.
 
 The tests drive each real call path with a recording fake ``AIAgent`` and

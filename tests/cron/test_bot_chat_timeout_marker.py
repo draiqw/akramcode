@@ -50,7 +50,7 @@ def test_timeout_queues_degraded_marker(cli_lane, monkeypatch):
 
     # Draining the marker record itself times out too: recognised by the record's flag,
     # so nothing further is queued (the guard is structural, not a text match).
-    from hermes_state import SessionDB
+    from akramcode_state import SessionDB
     SessionDB(db_path=cli_lane / "state.db").close()  # a deferred target must have a state.db
     record = {"id": key, "home": str(cli_lane), "profile": "", "degraded": True}
     posted = []
@@ -92,7 +92,7 @@ class _FakeProc:
 
 def test_late_turn_report_books_delivery(tmp_path, monkeypatch):
     """Report appearing in the kill window = turn completed = booked, not a timeout."""
-    from hermes_cli import quiet_single_query as qsq
+    from akramcode_cli import quiet_single_query as qsq
     monkeypatch.setattr(delivery.subprocess, "Popen", _FakeProc)
     late_state = {}
 

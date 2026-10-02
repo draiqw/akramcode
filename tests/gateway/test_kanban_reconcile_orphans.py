@@ -26,9 +26,9 @@ from pathlib import Path
 
 import pytest
 
-from hermes_cli import kanban_db as kb
-from hermes_cli import kanban_db_connect as kbc
-from hermes_cli import kanban_db_dispatch as kbd
+from akramcode_cli import kanban_db as kb
+from akramcode_cli import kanban_db_connect as kbc
+from akramcode_cli import kanban_db_dispatch as kbd
 
 
 @pytest.fixture

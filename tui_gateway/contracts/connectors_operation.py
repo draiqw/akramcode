@@ -80,7 +80,7 @@ class CatalogTier(WireEnum):
 
 
 class CatalogAppState(WireEnum):
-    """The desktop app a catalog plugin drives, from its ``hermes_platform`` declaration."""
+    """The desktop app a catalog plugin drives, from its ``akramcode_platform`` declaration."""
 
     present = "present"
     missing_app = "missing_app"

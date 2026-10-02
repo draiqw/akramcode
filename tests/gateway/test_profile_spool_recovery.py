@@ -25,7 +25,7 @@ from hermes_constants import get_hermes_home, reset_hermes_home_override, set_he
 @pytest.fixture
 def multiplex_homes(tmp_path, monkeypatch):
     """A launch home plus a named ``work`` profile, as in test_multiplex_session_db_profile_scope."""
-    import hermes_state
+    import akramcode_state
 
     root = tmp_path / "hermes"
     profile = root / "profiles" / "work"
@@ -33,7 +33,7 @@ def multiplex_homes(tmp_path, monkeypatch):
     (profile / "config.yaml").write_text("{}\n", encoding="utf-8")  # identity marker
     monkeypatch.setenv("HERMES_HOME", str(root))
     # Resolve state.db through get_hermes_home(), as production does (see the sibling suite).
-    monkeypatch.setattr(hermes_state, "DEFAULT_DB_PATH", hermes_state._IMPORT_DEFAULT_DB_PATH)
+    monkeypatch.setattr(akramcode_state, "DEFAULT_DB_PATH", akramcode_state._IMPORT_DEFAULT_DB_PATH)
     ss.set_multiplex_active(True)
     yield root, profile
     ss.set_multiplex_active(False)

@@ -7,8 +7,8 @@ import pytest
 
 from cron import bot_chat_delivery as queue
 from cron import scheduler_delivery as delivery
-from hermes_cli.active_sessions import try_acquire_active_session
-from hermes_state import SessionDB
+from akramcode_cli.active_sessions import try_acquire_active_session
+from akramcode_state import SessionDB
 from tools.bot_live_delivery import read_delivery_result
 
 
@@ -20,7 +20,7 @@ def test_deferred_destination_does_not_follow_root_changes(tmp_path, monkeypatch
     home.mkdir(parents=True)
     other.mkdir(parents=True)
     monkeypatch.setenv("HERMES_HOME", str(source))
-    monkeypatch.setattr("hermes_cli.profiles.get_profile_dir", lambda _: home)
+    monkeypatch.setattr("akramcode_cli.profiles.get_profile_dir", lambda _: home)
     db = SessionDB(db_path=home / "state.db")
     db.create_session(session_id="chat", source="cli")
     db.set_session_title("chat", "Bot Chat")
@@ -34,7 +34,7 @@ def test_deferred_destination_does_not_follow_root_changes(tmp_path, monkeypatch
     finally:
         lease.release()
         db.close()
-    monkeypatch.setattr("hermes_cli.profiles.get_profile_dir", lambda _: other)
+    monkeypatch.setattr("akramcode_cli.profiles.get_profile_dir", lambda _: other)
     run = Mock(return_value=subprocess.CompletedProcess([], 0, "", ""))
     monkeypatch.setattr(delivery, "_run_bot_chat_turn", run)
     if recipient == "desktop":

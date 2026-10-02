@@ -9,9 +9,9 @@ import pytest
 from gateway.config import GatewayConfig, Platform
 from gateway.run import GatewayRunner, _profile_runtime_scope
 from gateway.session import SessionStore, SessionSource
-from hermes_cli import goals
-from hermes_cli.heartbeat import HeartbeatManager, HeartbeatState
-from hermes_state import SessionDB
+from akramcode_cli import goals
+from akramcode_cli.heartbeat import HeartbeatManager, HeartbeatState
+from akramcode_state import SessionDB
 
 
 @pytest.mark.asyncio
@@ -65,7 +65,7 @@ async def test_restore_retries_persisted_routes_in_their_own_profiles(tmp_path, 
         expected = {e.session_key: (e.origin, e.session_id) for e in entries[:2]}
         assert runner._heartbeat_watch == expected
         with monkeypatch.context() as patch:
-            patch.setattr('hermes_cli.heartbeat.load_heartbeat', lambda sid: None)
+            patch.setattr('akramcode_cli.heartbeat.load_heartbeat', lambda sid: None)
             await restore_heartbeat_watches(runner)
         assert runner._heartbeat_watch == expected
         runner._heartbeat_watch.clear()

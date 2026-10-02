@@ -53,15 +53,15 @@ def two_homes(tmp_path, monkeypatch):
     monkeypatch.setattr(Path, "home", classmethod(lambda cls: fake_home))
     monkeypatch.setenv("HERMES_HOME", str(a))
     monkeypatch.delenv("NOUS_INFERENCE_BASE_URL", raising=False)
-    # The hermetic conftest pins ``hermes_state.DEFAULT_DB_PATH`` at one sandbox store whenever
-    # hermes_state is already imported, and that pin WINS over ``get_hermes_home()`` inside
+    # The hermetic conftest pins ``akramcode_state.DEFAULT_DB_PATH`` at one sandbox store whenever
+    # akramcode_state is already imported, and that pin WINS over ``get_hermes_home()`` inside
     # ``_default_db_path()`` — exactly the per-profile resolution these tests exist to prove.
     # Restore the import-time sentinel so an argless ``acquire()`` resolves through the scope.
-    import hermes_state
-    monkeypatch.setattr(hermes_state, "DEFAULT_DB_PATH", hermes_state._IMPORT_DEFAULT_DB_PATH)
+    import akramcode_state
+    monkeypatch.setattr(akramcode_state, "DEFAULT_DB_PATH", akramcode_state._IMPORT_DEFAULT_DB_PATH)
     # Disabling the hermetic pin is only safe while the sentinel still resolves INSIDE the sandbox:
     # a resolution that escaped to the real home would have these tests writing the live store.
-    resolved = Path(hermes_state._default_db_path())
+    resolved = Path(akramcode_state._default_db_path())
     assert resolved.is_relative_to(tmp_path), f"unpinned store escaped the sandbox: {resolved}"
     return a, b
 
@@ -71,7 +71,7 @@ def _record_credential_chores(monkeypatch):
     import agent.curator as curator
     import tools.skills_sync_client as ssc
     import tools.skills_sync_client_org as sso
-    from hermes_cli.auth_nous import _nous_inference_env_override
+    from akramcode_cli.auth_nous import _nous_inference_env_override
     from hermes_constants import get_hermes_home
 
     seen: dict = {"sync": [], "org": [], "curator": []}
@@ -119,14 +119,14 @@ def test_multiplexed_auto_archive_tick_sweeps_every_served_profile_store(two_hom
     every profile it owns, so a served secondary would have had no archiver at all.
     """
     from agent.secret_scope import set_multiplex_active
-    from hermes_state import SessionDB
+    from akramcode_state import SessionDB
 
     a, b = two_homes
     swept: list = []
     monkeypatch.setattr(
         SessionDB, "maybe_auto_archive", lambda self, **kw: swept.append(Path(self.db_path)))
     monkeypatch.setattr(
-        "hermes_cli.config.load_config",
+        "akramcode_cli.config.load_config",
         lambda *args, **kwargs: {"sessions": {"auto_archive": True, "min_interval_hours": 0}})
 
     set_multiplex_active(True)
@@ -147,7 +147,7 @@ def test_multiplexed_maintenance_tick_prunes_every_served_profile_store(two_home
     Real stores, real config files: nothing here is patched.
     """
     from agent.secret_scope import set_multiplex_active
-    from hermes_state import SessionDB
+    from akramcode_state import SessionDB
 
     homes = two_homes
     for home in homes:
@@ -186,10 +186,10 @@ def test_a_failing_profile_does_not_strand_the_profiles_after_it(two_homes, monk
     running) ended the per-profile loop before B, on every tick. Serve defers each served
     profile's sweep to this loop, so B had no archiver at all.
     """
-    import hermes_state.registry as registry
+    import akramcode_state.registry as registry
     from agent.secret_scope import set_multiplex_active
     from hermes_constants import get_hermes_home
-    from hermes_state import SessionDB
+    from akramcode_state import SessionDB
 
     a, b = two_homes
     swept: list = []
@@ -204,7 +204,7 @@ def test_a_failing_profile_does_not_strand_the_profiles_after_it(two_homes, monk
     monkeypatch.setattr(
         SessionDB, "maybe_auto_archive", lambda self, **kw: swept.append(Path(self.db_path)))
     monkeypatch.setattr(
-        "hermes_cli.config.load_config",
+        "akramcode_cli.config.load_config",
         lambda *args, **kwargs: {"sessions": {"auto_archive": True, "min_interval_hours": 0}})
 
     set_multiplex_active(True)
@@ -250,7 +250,7 @@ def test_prune_unlinks_transcripts_under_the_configured_sessions_dir(two_homes, 
     override left every pruned session's ``.json``/``.jsonl``/``request_dump_*`` orphaned forever.
     """
     from agent.secret_scope import set_multiplex_active
-    from hermes_state import SessionDB
+    from akramcode_state import SessionDB
 
     a, b = two_homes
     override = tmp_path / "custom-transcripts"
@@ -299,7 +299,7 @@ def test_multiplexed_plugin_update_check_visits_every_served_profiles_plugins(tw
     and marker, under that profile's ``plugins:`` config. Unscoped it checked the launch home's
     plugins only, so B's plugins were never checked and B's ``plugins.auto_apply`` was ignored."""
     from agent.secret_scope import set_multiplex_active
-    from hermes_cli import plugins_cadence
+    from akramcode_cli import plugins_cadence
 
     a, b = two_homes
     (a / "config.yaml").write_text("plugins:\n  auto_update_check_hours: 1\n", encoding="utf-8")
@@ -311,7 +311,7 @@ def test_multiplexed_plugin_update_check_visits_every_served_profiles_plugins(tw
         checked.append((plugins_dir, plugins_cadence.auto_apply_enabled()))
         return []
 
-    import hermes_cli.plugins_updates as updates
+    import akramcode_cli.plugins_updates as updates
     monkeypatch.setattr(updates, "run_checks", _run_checks)
 
     set_multiplex_active(True)

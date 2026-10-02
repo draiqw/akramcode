@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-from hermes_state import SessionDB
+from akramcode_state import SessionDB
 
 STRANDED_ID = "20260823_043331_c93770"
 
@@ -159,8 +159,8 @@ def gateway(tmp_path, monkeypatch):
     with patch.dict(
         "sys.modules",
         {
-            "hermes_cli.env_loader": MagicMock(),
-            "hermes_cli.banner": MagicMock(),
+            "akramcode_cli.env_loader": MagicMock(),
+            "akramcode_cli.banner": MagicMock(),
         },
     ):
         mod = importlib.import_module("tui_gateway.server")
@@ -173,9 +173,9 @@ def gateway(tmp_path, monkeypatch):
     profile_home = home / "profiles" / "developer"
     profile_home.mkdir(parents=True)
 
-    # session.resume resolves the profile via hermes_cli.profiles
+    # session.resume resolves the profile via akramcode_cli.profiles
     monkeypatch.setattr(
-        "hermes_cli.profiles.get_profile_dir", lambda name: str(profile_home)
+        "akramcode_cli.profiles.get_profile_dir", lambda name: str(profile_home)
     )
 
     yield mod, default_db, profile_home

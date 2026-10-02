@@ -28,7 +28,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from hermes_state import SessionDB
+from akramcode_state import SessionDB
 
 SESSION_ID = "sid-profile"
 SESSION_KEY = "tui-profile-1"
@@ -50,8 +50,8 @@ def server(hermes_home):
     with patch.dict(
         "sys.modules",
         {
-            "hermes_cli.env_loader": MagicMock(),
-            "hermes_cli.banner": MagicMock(),
+            "akramcode_cli.env_loader": MagicMock(),
+            "akramcode_cli.banner": MagicMock(),
         },
     ):
         mod = importlib.import_module("tui_gateway.server")

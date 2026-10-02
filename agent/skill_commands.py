@@ -28,7 +28,7 @@ _skill_commands_by_key: Dict[tuple, Dict[str, Dict[str, Any]]] = {}
 _publish_lock = threading.Lock()
 # ``\w`` keeps Unicode letters (CJK, Cyrillic) so a ``name: 小说拆条`` skill registers ``/小说拆条``
 # instead of slugging to "" and being dropped (#12351); Telegram's ``[a-z0-9_]`` menu limit is
-# applied by hermes_cli/commands_platforms.py, not here.
+# applied by akramcode_cli/commands_platforms.py, not here.
 _SKILL_INVALID_CHARS = re.compile(r"[^\w-]")
 _SKILL_MULTI_HYPHEN = re.compile(r"-{2,}")
 
@@ -401,7 +401,7 @@ def skill_command_collision_note(name: str) -> Optional[str]:
     built-in handlers), and the ``/skills`` listing plus the command palette render the note so
     the skipped skill is explained where the user looks, not only in the log.
     """
-    from hermes_cli.commands import resolve_command
+    from akramcode_cli.commands import resolve_command
     cmd_name = slugify_skill_name(name)
     if not cmd_name or resolve_command(cmd_name) is None:
         return None
@@ -694,7 +694,7 @@ def resolve_auto_load_skills(user_config: dict | None = None) -> list[str]:
     empty when unset, malformed, or the config is unreadable."""
     if user_config is None:
         try:
-            from hermes_cli.config import load_config_readonly
+            from akramcode_cli.config import load_config_readonly
             user_config = load_config_readonly()
         except Exception:
             return []

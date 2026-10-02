@@ -7,7 +7,7 @@ at startup, by THREE separate code paths:
   1. cli.py            -> ``env_mappings`` dict (CLI / TUI startup)
   2. gateway/run.py    -> ``_terminal_env_map`` dict (gateway / messaging
                           platforms)
-  3. hermes_cli/config.py:set_config_value
+  3. akramcode_cli/config.py:set_config_value
                        -> bridges via the canonical ``TERMINAL_CONFIG_ENV_MAP``
                           (one-shot when the user runs ``hermes config set …``)
 
@@ -34,7 +34,7 @@ def _cli_env_map() -> dict[str, str]:
 def _gateway_env_map() -> dict[str, str]:
     """terminal config key -> env var actually written by the gateway bridge."""
     from gateway.run import _bridge_terminal_config_to_env
-    from hermes_cli import config as hc_config
+    from akramcode_cli import config as hc_config
 
     class _KeyRecorder(dict):
         """Empty config that records every key the bridge looks up."""
@@ -83,7 +83,7 @@ def _save_config_env_sync_keys() -> set[str]:
     source of truth that the config-set path uses, rather than a string
     literal that the consolidation removed.
     """
-    from hermes_cli import config as hc_config
+    from akramcode_cli import config as hc_config
     # set_config_value bridges every TERMINAL_CONFIG_ENV_MAP key except
     # terminal.cwd (see the ``key != "terminal.cwd"`` guard in
     # set_config_value); mirror that exclusion here.
@@ -145,5 +145,5 @@ def test_save_config_set_bridges_every_cli_terminal_key():
     assert not missing, (
         f"`hermes config set terminal.X` doesn't sync these keys to .env: "
         f"{sorted(missing)}.  Add them to TERMINAL_CONFIG_ENV_MAP in "
-        f"hermes_cli/config.py (set_config_value bridges through it)."
+        f"akramcode_cli/config.py (set_config_value bridges through it)."
     )

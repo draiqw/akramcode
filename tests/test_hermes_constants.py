@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 import hermes_constants
-from hermes_platform.host import runtime as host_runtime
+from akramcode_platform.host import runtime as host_runtime
 from hermes_constants import (
     agent_browser_runnable,
     get_default_hermes_root,

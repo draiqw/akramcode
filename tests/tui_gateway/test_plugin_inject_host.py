@@ -12,7 +12,7 @@ from unittest.mock import MagicMock
 
 import akram_core.hermes_yaml as yaml
 
-from hermes_cli.plugins import PluginContext, PluginManager, PluginManifest
+from akramcode_cli.plugins import PluginContext, PluginManager, PluginManifest
 from tui_gateway import server
 
 

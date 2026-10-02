@@ -77,21 +77,21 @@ _ALLOWED: dict[tuple[str, str], str] = {
         "can only run what is on that subshell's PATH, which local.py populates "
         "with the managed dirs — so PATH is the correct question to ask here."
     ),
-    ("hermes_cli/main_tui_launch.py", "node"): (
+    ("akramcode_cli/main_tui_launch.py", "node"): (
         "PM-composed launch context: `which(node)` runs against the PATH "
         "pm.ensure('node'|'npm') just composed (store dirs first), not the ambient one."
     ),
-    ("hermes_cli/main_tui_launch.py", "npm"): (
+    ("akramcode_cli/main_tui_launch.py", "npm"): (
         "Same PM-composed launch context as the node lookup above."
     ),
-    ("hermes_cli/source_build.py", "node"): (
+    ("akramcode_cli/source_build.py", "node"): (
         "PM-composed build context: `which(node)` runs against the PATH pm's "
         "ensure('npm')/env_for('node') just composed, not the ambient one."
     ),
-    ("hermes_cli/source_build.py", "npm"): (
+    ("akramcode_cli/source_build.py", "npm"): (
         "Same PM-composed build context as the node lookup above."
     ),
-    ("hermes_cli/main_desktop.py", "npm"): (
+    ("akramcode_cli/main_desktop.py", "npm"): (
         "Desktop build resolves npm inside the PM-prepared build_env PATH."
     ),
     ("pm/workspace.py", "npm"): (
@@ -262,7 +262,7 @@ def _resolution_sites() -> set[tuple[str, str, str]]:
     sites: set[tuple[str, str, str]] = set()
     for path in _source_files():
         rel = path.relative_to(REPO_ROOT).as_posix()
-        if rel == "hermes_platform" or rel.startswith("hermes_platform/"):
+        if rel == "akramcode_platform" or rel.startswith("akramcode_platform/"):
             continue
         try:
             source = path.read_text(encoding="utf-8")
@@ -295,12 +295,12 @@ def test_bare_which_and_known_path_tables_are_allowlisted():
     assert not unlisted, (
         "Unreviewed command resolution sites:\n"
         + _format_resolution_sites(unlisted)
-        + "\nuse a hermes_platform resolver or add a justified allowlist row"
+        + "\nuse a akramcode_platform resolver or add a justified allowlist row"
     )
 
 
 def test_resolution_allowlist_has_no_stale_rows():
-    """Remove bootstrap rows as their call sites move to hermes_platform."""
+    """Remove bootstrap rows as their call sites move to akramcode_platform."""
     stale = _resolution_allowlist() - _resolution_sites()
 
     assert not stale, (
@@ -364,7 +364,7 @@ def test_managed_uv_helpers_exist():
     exists only so the frozen historical updater fixture can import it, and
     its entry points route to relaunch instead of doing venv work. PM owns
     real uv resolution now; the module itself must keep the names live."""
-    from hermes_cli import managed_uv
+    from akramcode_cli import managed_uv
 
     assert callable(managed_uv.resolve_uv)
     assert callable(managed_uv.ensure_uv)

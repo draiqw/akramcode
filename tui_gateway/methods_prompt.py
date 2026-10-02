@@ -532,7 +532,7 @@ def _truncate_history_for_submit(rid, sid, session, params, requested_rebind_ids
 
 def _storage_error_data(failure, raw) -> dict:
     """Machine-readable error data: ``code`` lets a GUI pick a "Run doctor" / "Retry" action."""
-    from hermes_state.user_copy import storage_failure_details
+    from akramcode_state.user_copy import storage_failure_details
     return {"code": failure.code, "cause": failure.cause, "details": storage_failure_details(raw)}
 
 
@@ -540,7 +540,7 @@ def _persist_session_row_for_submit(rid, session, text=None, display_kind=None):
     """Lazily persist the DB row now that the user sent a message (a branch becomes real
     here), then the message itself (#111868: a freeze during the first build must leave a
     resumable transcript); the error reply is the only user-visible signal (desktop maps it to a toast)."""
-    from hermes_state.user_copy import describe_storage_failure
+    from akramcode_state.user_copy import describe_storage_failure
     try:
         if _ensure_session_db_row(session) is False:
             failure = describe_storage_failure(_db_error)
@@ -656,7 +656,7 @@ _CLIENT_SURFACES = frozenset({"hud", "voice-live"})
 
 @method("prompt.submit")
 def _(rid, params: dict) -> dict:
-    from hermes_cli.input_sanitize import sanitize_user_prompt_text
+    from akramcode_cli.input_sanitize import sanitize_user_prompt_text
     sid = params.get("session_id", "")
     raw_text = params.get("text", "")
     text = sanitize_user_prompt_text(raw_text) if isinstance(raw_text, str) else raw_text
@@ -800,7 +800,7 @@ def _(rid, params: dict) -> dict:
     if err:
         return err
     try:
-        from hermes_cli.clipboard import has_clipboard_image, save_clipboard_image
+        from akramcode_cli.clipboard import has_clipboard_image, save_clipboard_image
     except Exception as e:
         return _err(rid, 5027, f"clipboard unavailable: {e}")
     session["image_counter"] = session.get("image_counter", 0) + 1
@@ -904,7 +904,7 @@ def _(rid, params: dict) -> dict:
         argv = [
             "pdftoppm", "-png", "-r", "150", "-f", str(first_page), "-l", str(last_page),
             str(pdf_path), str(td_path / "page")]
-        from hermes_cli._subprocess_compat import windows_hide_flags
+        from akramcode_cli._subprocess_compat import windows_hide_flags
         try:
             # UTF-8 + lossy decode: non-UTF-8 child output must not crash the gateway
             # thread on locale-mismatched Windows.

@@ -99,12 +99,12 @@ def _db_path():
 
 
 def _connect() -> sqlite3.Connection:
-    from hermes_cli.sqlite_util import open_db
-    # Same state.db as hermes_state.SessionDB -- reuse its owner-only (0600)
+    from akramcode_cli.sqlite_util import open_db
+    # Same state.db as akramcode_state.SessionDB -- reuse its owner-only (0600)
     # hardening so this writer doesn't create/leave the file (and its WAL
-    # sidecars) at the process umask. See hermes_state._secure_state_db_files.
+    # sidecars) at the process umask. See akramcode_state._secure_state_db_files.
     from hermes_constants import mkdir_under_hermes_home
-    from hermes_state import _secure_state_db_files
+    from akramcode_state import _secure_state_db_files
 
     path = _db_path()
     # A late replay or writer must not resurrect a removed named profile (#123265).
@@ -118,8 +118,8 @@ def _connect() -> sqlite3.Connection:
 
 
 def _initialize_schema(conn: sqlite3.Connection) -> None:
-    from hermes_state.repair import apply_durability_barriers
-    from hermes_state.schema import reconcile_state_schema
+    from akramcode_state.repair import apply_durability_barriers
+    from akramcode_state.schema import reconcile_state_schema
     # Preserve the journal mode SessionDB configured on state.db: forcing WAL from
     # every short-lived connection collides with live transcript/FTS writers.
     apply_durability_barriers(conn)
@@ -134,7 +134,7 @@ def _initialize_schema(conn: sqlite3.Connection) -> None:
 
 
 def _transaction():
-    from hermes_cli.sqlite_util import transaction
+    from akramcode_cli.sqlite_util import transaction
 
     return transaction(_connect())
 
@@ -714,7 +714,7 @@ def _batch_status(combined: Dict[str, Any]) -> str:
 
 
 def _dispatch(**kwargs) -> Dict[str, Any]:
-    from hermes_cli.backend_retirement import retirement
+    from akramcode_cli.backend_retirement import retirement
 
     with retirement.work() as admitted:
         if not admitted:
@@ -787,7 +787,7 @@ def _dispatch_admitted(
         finally:
             _finalize(delegation_id, result, status)
 
-    from hermes_cli.backend_retirement import retirement
+    from akramcode_cli.backend_retirement import retirement
 
     # The outer dispatch reservation prevents a freeze during this handoff. Retain a worker
     # reservation too: the stall monitor may finalize its registry record before it really exits.

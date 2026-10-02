@@ -117,7 +117,7 @@ def populated_sessions_dir(sessions_dir, sample_sessions):
     return sessions_dir
 
 def _create_test_db(db_path, session_id, messages):
-    """Create a minimal SQLite DB mimicking hermes_state schema."""
+    """Create a minimal SQLite DB mimicking akramcode_state schema."""
     conn = sqlite3.connect(str(db_path))
     conn.execute("""
         CREATE TABLE IF NOT EXISTS sessions (
@@ -916,7 +916,7 @@ class TestCliIntegration:
 
         import argparse
         args = argparse.Namespace(mcp_action="serve", verbose=True)
-        from hermes_cli.mcp_config import mcp_command
+        from akramcode_cli.mcp_config import mcp_command
         mcp_command(args)
         mock_run.assert_called_once_with(verbose=True)
 

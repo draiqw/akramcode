@@ -73,7 +73,7 @@ exit $LASTEXITCODE
                          cwd=tmp_path, env=env, stdin=subprocess.DEVNULL,
                          capture_output=True, text=True, timeout=120)
     assert (run.returncode == 0) == (exit_code == 0), run.stdout + run.stderr
-    from hermes_platform.host.facts import native_arch
+    from akramcode_platform.host.facts import native_arch
 
     # The request names the machine's architecture: a bare version lets uv
     # pick an emulated x86_64 build on Windows-on-ARM.

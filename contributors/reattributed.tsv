@@ -104,7 +104,7 @@ ab0e060bd77c73bd944dea4aea4c5e1aebfdeb01	2026-09-25T18:08:03-05:00	fix(desktop):
 f8dddd71510f72eabe1732506dac53a78fdee3fd	2026-09-25T18:16:52-05:00	test(desktop): match the leaf name span now that badge chips wrap the row label
 f84db42a32b28a00a2ef1e11e5471a27d22cc37f	2026-09-25T11:06:00-05:00	fix(cron): deduplicate cross-profile jobs in GET /api/cron/jobs
 40347fd40d732bfad9b403cc224b2054becd22d5	2026-09-25T11:37:53-05:00	fix(mcp): resolve bare uv/uvx under GUI-style PATHs (#37589)
-678a4762b887f3eabe5cad11254b2ab1ae859485	2026-09-25T13:26:28-05:00	fix(mcp): move uv/uvx known-dir table into hermes_platform resolver
+678a4762b887f3eabe5cad11254b2ab1ae859485	2026-09-25T13:26:28-05:00	fix(mcp): move uv/uvx known-dir table into akramcode_platform resolver
 67c6fdc092331ab6c51a7d00612031614ccd3570	2026-09-25T11:36:29-05:00	fix(desktop): stop home-directory repo scans when no roots are configured
 d10afb5a8851be2b0f6fe5d3b04022c3a8877d6c	2026-09-25T18:52:11-05:00	fix(tests): import CONFIG_SCHEMA from its defining module
 3521034ed6b282ba6126b73bb04e3c958570432d	2026-09-24T18:51:45-05:00	fix(desktop): isolate Inbox session actions from the row resume (#85163)

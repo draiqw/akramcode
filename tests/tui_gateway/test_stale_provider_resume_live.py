@@ -69,8 +69,8 @@ def live_home(monkeypatch):
         if var.endswith("_API_KEY") or var in ("OPENROUTER_KEY", "NOUS_KEY"):
             monkeypatch.delenv(var, raising=False)
 
-    import hermes_cli.config as hconfig
-    import hermes_cli.runtime_provider as rp
+    import akramcode_cli.config as hconfig
+    import akramcode_cli.runtime_provider as rp
 
     for mod in (hconfig, rp):
         for attr in ("_config_cache", "_cache", "_CONFIG_CACHE"):
@@ -80,15 +80,15 @@ def live_home(monkeypatch):
                 except Exception:
                     pass
 
-    import hermes_state
+    import akramcode_state
     import tui_gateway.server as server
 
     # The launch DB handle and the module-level home snapshot are import-time
     # caches — repoint both at the isolated home for the duration of the test
     # (see references: tui-gateway live WS harness, same trap). The hermetic
-    # conftest also re-pins hermes_state.DEFAULT_DB_PATH per test; pin it to
+    # conftest also re-pins akramcode_state.DEFAULT_DB_PATH per test; pin it to
     # THIS home so server._get_db() opens the same real state.db we seed.
-    monkeypatch.setattr(hermes_state, "DEFAULT_DB_PATH", home / "state.db")
+    monkeypatch.setattr(akramcode_state, "DEFAULT_DB_PATH", home / "state.db")
     monkeypatch.setattr(server, "_db", None, raising=False)
     monkeypatch.setattr(server, "_db_error", None, raising=False)
     monkeypatch.setattr(server, "_hermes_home", str(home), raising=False)
@@ -115,7 +115,7 @@ def _seed_session_row(
     extra_config: dict | None = None,
 ) -> str:
     """Write a REAL session row + one message into the profile's state.db."""
-    from hermes_state import SessionDB
+    from akramcode_state import SessionDB
 
     db = SessionDB(db_path=home / "state.db")
     sid = uuid.uuid4().hex[:12]

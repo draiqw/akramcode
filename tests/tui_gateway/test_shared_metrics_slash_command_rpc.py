@@ -3,7 +3,7 @@ gateway no longer counts the slash.exec / command.dispatch hops a command may or
 
 from __future__ import annotations
 
-import hermes_cli.observability.shared_metrics_events as events
+import akramcode_cli.observability.shared_metrics_events as events
 import tui_gateway.server as server
 
 

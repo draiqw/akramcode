@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Any
 
 import httpx
 
-from hermes_cli.config_defaults import DEFAULT_VERCEL_IMAGE
+from akramcode_cli.config_defaults import DEFAULT_VERCEL_IMAGE
 from hermes_constants import get_hermes_home
 from tools.environments.base import BaseEnvironment, _load_json_store, _save_json_store
 from tools.environments.base_output import _ThreadedProcessHandle

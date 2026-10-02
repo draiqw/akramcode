@@ -13,7 +13,7 @@ from gateway.config import GatewayConfig, Platform, PlatformConfig
 from gateway.platforms.event import MessageEvent, MessageType
 from gateway.run import GatewayRunner
 from gateway.session import SessionSource
-from hermes_cli import goals, loops
+from akramcode_cli import goals, loops
 
 
 class _FakeSessionEntry:
@@ -322,7 +322,7 @@ async def test_loop_wakeup_watcher_gates_profile_scope_on_active_loops(loop_env,
     """A secondary profile with no ACTIVE loop must not get its runtime scope entered on
     every tick (each entry re-parses the profile's config/secrets — the dominant idle-CPU
     cost on multiplex gateways); a profile holding an active loop must still be scanned."""
-    from hermes_state import SessionDB
+    from akramcode_state import SessionDB
 
     work_home = tmp_path / "profiles" / "work"
     work_home.mkdir(parents=True)

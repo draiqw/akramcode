@@ -13,7 +13,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
-from hermes_cli.config import get_hermes_home
+from akramcode_cli.config import get_hermes_home
 from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)
@@ -348,7 +348,7 @@ def _entries_from_origins(platform_name: str, source: str, origins_fn) -> List[D
 def _build_from_sessions_db(platform_name: str) -> List[Dict[str, str]]:
     """Pull channels/contacts from state.db gateway session rows."""
     def _origins() -> Iterable[Tuple[Dict[str, Any], Any]]:
-        from hermes_state.registry import acquire, release_or_close
+        from akramcode_state.registry import acquire, release_or_close
         db = acquire()
         try:
             lister = getattr(db, "list_gateway_sessions", None)

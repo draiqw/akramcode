@@ -10,7 +10,7 @@ from gateway.platforms.event import MessageEvent, MessageType
 from gateway.relay.adapter import RelayAdapter
 from gateway.session import SessionSource
 from gateway.stream_consumer import GatewayStreamConsumer, StreamConsumerConfig
-from hermes_cli.observability import shared_metrics_gateway as smg
+from akramcode_cli.observability import shared_metrics_gateway as smg
 from tests.gateway.relay.test_relay_adapter import _CaptureTransport, make_desc
 from tests.gateway.test_platform_shared_metrics import rows  # noqa: F401 - fixture
 
@@ -77,7 +77,7 @@ def test_an_unstamped_chat_on_a_multiplatform_connector_is_not_labelled_as_its_p
 
 
 def test_a_relay_stamped_turn_is_a_gateway_message():
-    from hermes_cli.observability.shared_metrics_contract import task_start_fields
+    from akramcode_cli.observability.shared_metrics_contract import task_start_fields
 
     assert task_start_fields({"platform": "relay"}) == {
         "entrypoint": "gateway_message", "execution_surface": "gateway", "platform": "relay"}

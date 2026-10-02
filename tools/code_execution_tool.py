@@ -779,7 +779,7 @@ def execute_code(
     if _guard.get("user_approved"):
         from tools.interrupt import clear_current_thread_interrupt
         clear_current_thread_interrupt()
-    from hermes_cli.observability.shared_metrics_loop import record_execution_backend
+    from akramcode_cli.observability.shared_metrics_loop import record_execution_backend
     if env_type != "local":
         return record_execution_backend("code", "remote", _execute_remote(code, task_id, enabled_tools, reset=bool(reset)))
     from tools.interrupt import is_interrupted as _is_interrupted
@@ -825,7 +825,7 @@ def _load_config() -> dict:
     """Effective ``code_execution`` section (defaults + user file + managed overlay) — runs while the
     module-level schema is built at tool discovery, so it must not import ``cli``."""
     try:
-        from hermes_cli.config import load_config_readonly
+        from akramcode_cli.config import load_config_readonly
         cfg = load_config_readonly().get("code_execution", {})
         return cfg if isinstance(cfg, dict) else {}
     except Exception:

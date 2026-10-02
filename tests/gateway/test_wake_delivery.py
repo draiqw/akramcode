@@ -132,7 +132,7 @@ def test_persist_delegation_delivery_appends_delivery_row(tmp_path):
     from pathlib import Path
 
     from gateway.wake import persist_delegation_delivery
-    from hermes_state import SessionDB
+    from akramcode_state import SessionDB
 
     db = SessionDB(db_path=Path(tmp_path) / "state.db")
     sid = "raw-hq-sid"

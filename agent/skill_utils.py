@@ -209,15 +209,15 @@ def skill_matches_environment(frontmatter: Dict[str, Any]) -> bool:
 def skill_matches_apps(frontmatter: Dict[str, Any]) -> bool:
     """True when every app named in ``requires_apps:`` has a registered declaration this host satisfies.
 
-    Names resolve through ``hermes_platform.declaration`` (registered by whoever owns the server,
+    Names resolve through ``akramcode_platform.declaration`` (registered by whoever owns the server,
     e.g. the plugin loader); the check is the same ``availability()`` the MCP check_fn uses. An
     unknown name hides the skill (fail closed). Offer-time filter, like ``environments:``.
     """
     names = frontmatter.get("requires_apps")
     if not names:
         return True
-    from hermes_platform import declaration
-    from hermes_platform.resolver.availability import availability
+    from akramcode_platform import declaration
+    from akramcode_platform.resolver.availability import availability
 
     for name in names if isinstance(names, list) else [names]:
         decl = declaration.lookup(str(name).strip())
@@ -246,7 +246,7 @@ def _config_cache_key(config_path: Path) -> Optional[Tuple[str, int, int, int, i
 
 
 def _load_raw_config() -> Dict[str, Any]:
-    """Read config.yaml with an mtime+size keyed cache (no hermes_cli.config import)."""
+    """Read config.yaml with an mtime+size keyed cache (no akramcode_cli.config import)."""
     config_path = get_config_path()
     if not config_path.exists():
         return {}

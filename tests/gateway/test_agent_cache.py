@@ -13,7 +13,7 @@ import threading
 from unittest.mock import MagicMock, patch
 
 import pytest
-from hermes_cli.config import DEFAULT_CONFIG, cfg_get
+from akramcode_cli.config import DEFAULT_CONFIG, cfg_get
 from tools import browser_tool_lifecycle as bt_lifecycle
 
 def _make_runner():
@@ -81,7 +81,7 @@ class TestAgentConfigSignature:
     def test_default_gateway_runtime_forwards_filtered_capabilities(self, monkeypatch):
         """Configured provider capabilities must reach a newly created gateway agent."""
         from gateway.run import _resolve_runtime_agent_kwargs
-        from hermes_cli import runtime_provider
+        from akramcode_cli import runtime_provider
 
         monkeypatch.setattr(
             runtime_provider,
@@ -722,7 +722,7 @@ class TestAgentCacheMessageCountRebaseline:
     """
 
     def _runner_with_db(self, db):
-        from hermes_state import AsyncSessionDB
+        from akramcode_state import AsyncSessionDB
 
         runner = _make_runner()
         # The gateway holds the async facade; the production refresh awaits it.
@@ -756,7 +756,7 @@ class TestAgentCacheMessageCountRebaseline:
         """After the re-baseline, a DIFFERENT process appending to the same
         session must still flip the guard to rebuild (the #45966 fix holds).
         """
-        from hermes_state import SessionDB
+        from akramcode_state import SessionDB
 
         db = SessionDB(db_path=tmp_path / "sessions.db")
         db.create_session("s1", source="telegram")
@@ -801,7 +801,7 @@ class TestAgentCacheMessageCountRebaseline:
         cache-hit guard, which reads ``get_session(session_id)`` with the same
         ``session_id`` the recursive ``_run_agent`` call is given.
         """
-        from hermes_state import SessionDB
+        from akramcode_state import SessionDB
 
         db = SessionDB(db_path=tmp_path / "sessions.db")
         db.create_session("s1", source="telegram")

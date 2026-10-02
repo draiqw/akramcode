@@ -121,7 +121,7 @@ def run_tool_round(
         _tool_turn_persisted = agent._flush_messages_to_session_db(messages, conversation_history)
     except Exception as exc:
         _tool_turn_persisted = False
-        from hermes_state import classify_persistence_error
+        from akramcode_state import classify_persistence_error
         agent._last_persistence_error_cause = classify_persistence_error(exc)
         logger.warning(
             "Incremental tool-call persistence failed before execution "
@@ -152,7 +152,7 @@ def run_tool_round(
             agent.stream_delta_callback(None)
 
     agent._execute_tool_calls(assistant_message, messages, effective_task_id, api_call_count)
-    from hermes_cli.observability.shared_metrics_harness import finish_tool_round
+    from akramcode_cli.observability.shared_metrics_harness import finish_tool_round
 
     finish_tool_round(agent)
 

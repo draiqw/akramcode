@@ -101,7 +101,7 @@ def publisher(url, **kwargs):
 
 
 def test_unknown_channel_created_over_http_retains_identity_and_immutable_requests():
-    from hermes_cli.release_channels import ChannelReader, ChannelNotFound
+    from akramcode_cli.release_channels import ChannelReader, ChannelNotFound
     with object_server() as (url, objects, headers, requests, faults):
         pub = publisher(url)
         reader = ChannelReader(url + "/bucket", repository="example/hermes-agent")
@@ -124,7 +124,7 @@ def test_stable_branded_channel_reuses_the_published_stable_identity(monkeypatch
     """--branding stable is fixed at creation; it copies a published stable record, and
     before stable has any channel record it uses the identity the first stable release
     is held to."""
-    from hermes_cli.release_channels import ChannelError, canonical_json
+    from akramcode_cli.release_channels import ChannelError, canonical_json
     from scripts.releases import channel_releases
     product = {"token": "f204dc6857361e33", "displayName": "Hermes Agent",
                "appId": "com.nousresearch.hermes-bundled", "appNamePascal": "HermesBundled",
@@ -156,7 +156,7 @@ def test_stable_branded_channel_reuses_the_published_stable_identity(monkeypatch
 
 
 def put_build(objects, request):
-    from hermes_cli.release_channels import build_prefix, canonical_json
+    from akramcode_cli.release_channels import build_prefix, canonical_json
     prefix = build_prefix(request["buildId"])
     data = b"fixture native artifact"
     objects[prefix + "darwin/package.zip"] = data
@@ -170,7 +170,7 @@ def put_build(objects, request):
 
 def test_concurrent_allocations_reverse_completion_retirement_and_readback():
     from concurrent.futures import ThreadPoolExecutor
-    from hermes_cli.release_channels import ChannelError, canonical_json
+    from akramcode_cli.release_channels import ChannelError, canonical_json
     from scripts.releases.channels import PublicVisibilityError
     with object_server() as (url, objects, headers, requests, faults):
         with ThreadPoolExecutor(max_workers=2) as pool:
@@ -224,7 +224,7 @@ def test_concurrent_allocations_reverse_completion_retirement_and_readback():
 
 
 def test_list_bootstrap_protected_roles_and_qualification_gate():
-    from hermes_cli.release_channels import ChannelError
+    from akramcode_cli.release_channels import ChannelError
     with object_server() as (url, objects, headers, requests, faults):
         pub = publisher(url)
         main = {"schema": 1, "name": "main", "repository": "example/hermes-agent", "policy": "source-branch", "state": "active", "revision": 1, "nextSequence": 1, "identity": None, "head": None, "delivery": {"kind": "source-branch", "branch": "main"}}
@@ -249,7 +249,7 @@ def test_list_bootstrap_protected_roles_and_qualification_gate():
 
 
 def test_retirement_race_requires_a_new_explicit_attempt():
-    from hermes_cli.release_channels import ChannelError, canonical_json
+    from akramcode_cli.release_channels import ChannelError, canonical_json
     from scripts.releases.channels import ChannelConflict
     with object_server() as (url, objects, headers, requests, faults):
         pub = publisher(url, verify_build=lambda request, manifest: True)
@@ -283,7 +283,7 @@ def test_retirement_race_requires_a_new_explicit_attempt():
 
 def test_retire_derives_receiver_kind_from_channel_identity_match():
     """The pinned kind is derived from identity comparison, never caller-asserted."""
-    from hermes_cli.release_channels import canonical_json
+    from akramcode_cli.release_channels import canonical_json
     with object_server() as (url, objects, headers, requests, faults):
         pub = publisher(url, verify_build=lambda request, manifest: True)
         for name in ("mainline-preview", "suffixed-preview", "stable"):
@@ -314,7 +314,7 @@ def test_retire_derives_receiver_kind_from_channel_identity_match():
 
 def test_mutable_read_loss_recovery_never_clones_another_allocation():
     from scripts.releases.channels import ChannelConflict
-    from hermes_cli.release_channels import canonical_json
+    from akramcode_cli.release_channels import canonical_json
     with object_server() as (url, objects, headers, requests, faults):
         pub = publisher(url)
         pub.create("nonce-check")
@@ -333,7 +333,7 @@ def test_mutable_read_loss_recovery_never_clones_another_allocation():
 
 
 def test_protected_releases_bootstrap_retry_and_refuse_late_or_ungated_promotion():
-    from hermes_cli.release_channels import ChannelError, canonical_json
+    from akramcode_cli.release_channels import ChannelError, canonical_json
     from scripts.releases.channels import preview_identity
     with object_server() as (url, objects, headers, requests, faults):
         pub = publisher(url, verify_build=lambda request, manifest: True)
@@ -397,7 +397,7 @@ def test_protected_releases_bootstrap_retry_and_refuse_late_or_ungated_promotion
 
 def test_accepted_release_receipts_feed_the_protected_head_without_rebuilding(tmp_path, monkeypatch):
     from scripts.releases import channel_releases
-    from hermes_cli.release_channels import ChannelError, canonical_json
+    from akramcode_cli.release_channels import ChannelError, canonical_json
     from scripts.releases.channels import preview_identity
     from scripts.releases.handoff import receipt_name
     from copy import deepcopy
@@ -503,7 +503,7 @@ def test_accepted_release_receipts_feed_the_protected_head_without_rebuilding(tm
 
 def test_protected_transaction_refuses_custom_workflow_and_unpublished_release(monkeypatch):
     from scripts.releases import channel_releases
-    from hermes_cli.release_channels import ChannelError
+    from akramcode_cli.release_channels import ChannelError
     attempt, tag, commit = "rc.1-v2.0.0", "v2.0.0", "a" * 40
     env = {"GITHUB_ACTIONS": "true", "GITHUB_EVENT_NAME": "workflow_dispatch",
            "GITHUB_REPOSITORY": "example/hermes-agent", "RELEASE_TAG": attempt,
@@ -538,7 +538,7 @@ def test_protected_transaction_refuses_custom_workflow_and_unpublished_release(m
 
 def test_stable_admission_requires_an_attempt_ref_release_tag(monkeypatch):
     from scripts.releases import channel_releases
-    from hermes_cli.release_channels import ChannelError
+    from akramcode_cli.release_channels import ChannelError
     attempt, commit = "rc.2-v1.2.3", "c" * 40
     env = {"GITHUB_ACTIONS": "true", "GITHUB_EVENT_NAME": "workflow_dispatch",
            "GITHUB_REPOSITORY": "example/hermes-agent", "RELEASE_TAG": attempt,
@@ -569,7 +569,7 @@ def test_stable_admission_requires_an_attempt_ref_release_tag(monkeypatch):
 
 def test_accepted_stable_reads_the_release_archive_by_tag(monkeypatch):
     from scripts.releases import channel_releases
-    from hermes_cli.release_channels import ChannelError, canonical_json
+    from akramcode_cli.release_channels import ChannelError, canonical_json
     tag, commit = "v2.0.0", "c" * 40
     attempt = "rc.1-v2.0.0"
     with object_server() as (url, objects, headers, requests, faults):
@@ -605,7 +605,7 @@ def test_accepted_stable_reads_the_release_archive_by_tag(monkeypatch):
 
 
 def test_request_inputs_are_rejected_before_allocating():
-    from hermes_cli.release_channels import ChannelError
+    from akramcode_cli.release_channels import ChannelError
     with object_server() as (url, objects, headers, requests, faults):
         pub = publisher(url)
         pub.create("validation")
@@ -625,7 +625,7 @@ def test_canary_native_version_is_derived_from_the_current_tag():
 
 
 def test_stable_requests_name_the_attempt_archive_only_when_given():
-    from hermes_cli.release_channels import ChannelError
+    from akramcode_cli.release_channels import ChannelError
     from scripts.releases.channels import preview_identity
     with object_server() as (url, objects, headers, requests, faults):
         pub = publisher(url)

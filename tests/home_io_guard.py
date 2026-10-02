@@ -132,7 +132,7 @@ class HomeIOGuard:
                 # pytest.fail, not AssertionError: removal helpers catch Exception and would log
                 # the refusal as a warning while the test passed.
                 pytest.fail(f"TEST BUG: changing the REAL installed Hermes desktop app: {value}\n"
-                            "Stub hermes_cli.gui_uninstall.packaged_gui_app_paths to a temporary path.")
+                            "Stub akramcode_cli.gui_uninstall.packaged_gui_app_paths to a temporary path.")
         return resolved
 
     @staticmethod

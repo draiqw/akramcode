@@ -67,7 +67,7 @@ def _make_event(text):
 
 def _fake_switch_result():
     """A successful ModelSwitchResult that bypasses real provider resolution."""
-    from hermes_cli.model_switch import ModelSwitchResult
+    from akramcode_cli.model_switch import ModelSwitchResult
 
     return ModelSwitchResult(
         success=True,
@@ -85,15 +85,15 @@ def _fake_switch_result():
 def _stub_picker_dependencies(monkeypatch):
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr(
-        "hermes_cli.model_switch_providers.list_picker_providers",
+        "akramcode_cli.model_switch_providers.list_picker_providers",
         lambda **kw: [{"slug": "openrouter", "name": "OpenRouter", "models": ["gpt-5.5"]}],
     )
     monkeypatch.setattr(
-        "hermes_cli.model_switch.switch_model",
+        "akramcode_cli.model_switch.switch_model",
         lambda **kw: _fake_switch_result(),
     )
     monkeypatch.setattr(
-        "hermes_cli.model_switch.resolve_display_context_length",
+        "akramcode_cli.model_switch.resolve_display_context_length",
         lambda *a, **k: 272000,
     )
 
@@ -114,7 +114,7 @@ def _setup_isolated_home(tmp_path, monkeypatch, model_yaml_value):
     _stub_picker_dependencies(monkeypatch)
     # save_config writes to ``get_hermes_home() / config.yaml`` — point it here.
     monkeypatch.setattr("hermes_constants.get_hermes_home", lambda: hermes_home)
-    monkeypatch.setattr("hermes_cli.config.get_hermes_home", lambda: hermes_home)
+    monkeypatch.setattr("akramcode_cli.config.get_hermes_home", lambda: hermes_home)
     return cfg_path
 
 
@@ -259,14 +259,14 @@ async def test_multiplex_picker_global_persists_only_named_profile(
 
 def _make_store_runner(adapter, sessions_dir, monkeypatch):
     """Bare runner with a real JSONL SessionStore (the durable /model override lives there)."""
-    import hermes_state
+    import akramcode_state
     from gateway.config import GatewayConfig
     from gateway.session import SessionStore
 
     def _no_sqlite(*_a, **_k):
         raise RuntimeError("SQLite disabled in test")
 
-    monkeypatch.setattr(hermes_state, "SessionDB", _no_sqlite)
+    monkeypatch.setattr(akramcode_state, "SessionDB", _no_sqlite)
     runner = _make_runner(adapter)
     runner.session_store = SessionStore(sessions_dir=sessions_dir, config=GatewayConfig())
     return runner
@@ -340,7 +340,7 @@ async def test_concurrent_model_commands_commit_in_issue_order(tmp_path, monkeyp
     busy guard while no agent runs) must commit as if issued serially: a ``--global`` pick followed by
     a session pick leaves config.yaml on the global model AND the session override on the later pick,
     instead of the global cleanup wiping it; memory and durable store agree (#100314)."""
-    from hermes_cli.model_switch import ModelSwitchResult
+    from akramcode_cli.model_switch import ModelSwitchResult
 
     def _switch(**kw):
         return ModelSwitchResult(success=True, new_model=kw["raw_input"], target_provider="openrouter",
@@ -349,7 +349,7 @@ async def test_concurrent_model_commands_commit_in_issue_order(tmp_path, monkeyp
                                  is_global=kw.get("is_global", False))
 
     cfg_path = _setup_isolated_home(tmp_path, monkeypatch, {"default": "old-model", "provider": "openrouter"})
-    monkeypatch.setattr("hermes_cli.model_switch.switch_model", _switch)
+    monkeypatch.setattr("akramcode_cli.model_switch.switch_model", _switch)
     runner = _make_store_runner(_FakePickerAdapter(), tmp_path / "sessions", monkeypatch)
     source = _make_event("x").source
     session_key = runner._session_key_for_source(source)

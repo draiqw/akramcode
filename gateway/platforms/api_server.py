@@ -37,7 +37,7 @@ def _prefix_names_served_profile(profile: str) -> bool:
     """True when a /p/<profile>/ prefix names the profile this gateway serves. Fail closed: a
     single-profile gateway answering /p/<x>/ served the owner's toolsets under another URL."""
     try:
-        from hermes_cli.profiles import profile_matches_home
+        from akramcode_cli.profiles import profile_matches_home
         return profile_matches_home(profile)
     except Exception:
         return False
@@ -159,7 +159,7 @@ from gateway.browser_control_broker import (
 from gateway.platforms._shared import coerce_port as _coerce_port
 from gateway.platforms._shared import get_scoped_secret as _get_scoped_secret
 from gateway.platforms.tcp_site import start_tcp_site
-from hermes_state.errors import SessionActiveWriteGuardError
+from akramcode_state.errors import SessionActiveWriteGuardError
 
 
 logger = logging.getLogger(__name__)
@@ -208,7 +208,7 @@ async def _call_verifier(verifier, *args, **kwargs):
 
 def _hermes_version() -> str:
     """Canonical base version for API protocol and compatibility payloads."""
-    from hermes_cli.version_info import get_version_info
+    from akramcode_cli.version_info import get_version_info
     return get_version_info().base_version
 
 
@@ -345,7 +345,7 @@ def _apply_runtime_agent_overrides(
 def _resolve_request_runtime_agent_kwargs(provider: str, target_model: Optional[str] = None) -> Dict[str, Any]:
     """gateway.run._resolve_runtime_agent_kwargs() for an explicit provider/model, so an API
     caller uses the same authenticated provider catalog without mutating config.yaml."""
-    from hermes_cli.runtime_provider import resolve_runtime_provider, format_runtime_provider_error, _get_model_config
+    from akramcode_cli.runtime_provider import resolve_runtime_provider, format_runtime_provider_error, _get_model_config
     try:
         runtime = resolve_runtime_provider(requested=provider, target_model=target_model)
     except Exception as exc:
@@ -728,7 +728,7 @@ class ResponseStore:
         if db_path is None:
             db_path = ":memory:"
             with suppress(Exception):
-                from hermes_cli.config import get_hermes_home
+                from akramcode_cli.config import get_hermes_home
                 db_path = str(get_hermes_home() / "response_store.db")
         self._db_path: Optional[str] = db_path if db_path != ":memory:" else None
         try:
@@ -737,7 +737,7 @@ class ResponseStore:
             self._conn = sqlite3.connect(":memory:", check_same_thread=False)
             self._db_path = None
         # Shared WAL-fallback so response_store.db degrades gracefully on NFS/SMB/FUSE homes.
-        from hermes_state.wal import apply_wal_with_fallback
+        from akramcode_state.wal import apply_wal_with_fallback
         apply_wal_with_fallback(self._conn, db_label="response_store.db")
         self._conn.execute(
             "CREATE TABLE IF NOT EXISTS responses ("
@@ -1062,7 +1062,7 @@ def _names_launch_profile(profile: str) -> bool:
     """True when a /p/<profile>/ prefix names the profile this process was LAUNCHED as: its
     un-prefixed and prefixed requests are one profile and must key one session."""
     try:
-        from hermes_cli.profiles import profile_matches_home
+        from akramcode_cli.profiles import profile_matches_home
         from hermes_constants import get_routing_process_hermes_home
         return profile_matches_home(profile, home=get_routing_process_hermes_home())
     except Exception:
@@ -1132,7 +1132,7 @@ class _ProviderAuthResolutionError(RuntimeError):
     def is_rate_limited(self) -> bool:
         """A quota/429 cap with valid credentials must not be labelled an authentication
         failure — the cause chain (RuntimeError -> AuthError) tells them apart (#89401)."""
-        from hermes_cli.auth import is_rate_limited_auth_error
+        from akramcode_cli.auth import is_rate_limited_auth_error
 
         cause = self.__cause__
         cause = getattr(cause, "__cause__", None) if isinstance(cause, RuntimeError) else cause
@@ -1392,7 +1392,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
     def _resolve_api_server_int(key: str, *, default: int) -> int:
         """Integer setting under gateway.api_server (unreadable config -> default; negatives -> 0)."""
         try:
-            from hermes_cli.config import cfg_get, load_config
+            from akramcode_cli.config import cfg_get, load_config
             value = int(cfg_get(load_config(), "gateway", "api_server", key, default=default))
         except Exception:
             return default
@@ -1484,11 +1484,11 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
     @staticmethod
     def _resolve_model_name(explicit: str) -> str:
         """Advertised /v1/models name: explicit override > active profile name > "hermes-agent"
-        (precedence owned by ``hermes_cli.model_switch.resolve_effective_model``)."""
-        from hermes_cli.model_switch import resolve_effective_model
+        (precedence owned by ``akramcode_cli.model_switch.resolve_effective_model``)."""
+        from akramcode_cli.model_switch import resolve_effective_model
         profile_name = ""
         with suppress(Exception):
-            from hermes_cli.profiles import get_active_profile_name
+            from akramcode_cli.profiles import get_active_profile_name
             profile = get_active_profile_name()  # launch profile, pre-identity (advertised model name)
             if profile and profile not in {"default", "custom"}:
                 profile_name = profile
@@ -1566,7 +1566,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
             return self._api_key
         try:
             from agent.secret_scope import get_secret
-            from hermes_cli.auth import has_usable_secret
+            from akramcode_cli.auth import has_usable_secret
             key = get_secret("API_SERVER_KEY", "") or ""
             return key if has_usable_secret(key, min_length=16) else ""
         except Exception as exc:
@@ -1682,7 +1682,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
         if not getattr(cfg, "multiplex_profiles", False):
             return None if _prefix_names_served_profile(profile) else _PROFILE_REJECTED
         try:
-            from hermes_cli.profiles import profiles_to_serve
+            from akramcode_cli.profiles import profiles_to_serve
             served = {name for name, _ in profiles_to_serve(multiplex=True)}
         except Exception:
             return _PROFILE_REJECTED
@@ -1706,7 +1706,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
                     return _profile_runtime_scope(get_hermes_home())
             return nullcontext()
         from gateway.run import _profile_runtime_scope
-        from hermes_cli.profiles import get_profile_dir
+        from akramcode_cli.profiles import get_profile_dir
         return _profile_runtime_scope(get_profile_dir(profile))
 
     async def _handle_profile_ingress(self, request: "web.Request") -> "web.StreamResponse":
@@ -1890,7 +1890,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
     def _open_and_cache_session_db(self, home) -> Optional[Any]:
         """Cached SessionDB for ``home`` (shared by both ``_ensure_session_db*``). Never writes
         ``self._session_db`` (explicit override only), so no profile pins later requests."""
-        from hermes_state.registry import acquire
+        from akramcode_state.registry import acquire
         key = str(home)
         with self._session_db_cache_lock:
             if self._session_db_cache_closed:
@@ -1903,7 +1903,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
 
     def _cached_session_db_locked(self, key: str) -> Optional[Any]:
         """Caller holds ``_session_db_cache_lock``. A profile unserve/delete tears the home's
-        generation down through ``hermes_state.registry.close_all_under`` (clearing
+        generation down through ``akramcode_state.registry.close_all_under`` (clearing
         ``_shared_registry_owned``) without telling this cache; serving that handle would keep
         raising ``StateDbReplacedError`` after a recreate, so drop it and let the caller reopen."""
         db = self._session_dbs.get(key)
@@ -1923,7 +1923,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
             if db is shared_db:
                 continue
             try:
-                from hermes_state.registry import release_or_close
+                from akramcode_state.registry import release_or_close
                 release_or_close(db)
             except Exception:
                 logger.debug("Failed to close API-server SessionDB", exc_info=True)
@@ -2268,7 +2268,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
         # No model.default but a provider resolved (e.g. `hermes auth add` without `hermes model`).
         if not model and runtime_kwargs.get("provider"):
             with suppress(Exception):
-                from hermes_cli.models import get_default_model_for_provider
+                from akramcode_cli.models import get_default_model_for_provider
                 model = get_default_model_for_provider(runtime_kwargs["provider"])
                 if model:
                     logger.info(
@@ -2311,8 +2311,8 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
         current_provider = _clean_request_string(runtime_kwargs.get("provider"))
         session_override = None if confirmed_runtime_lock else self._session_model_override_for(session_key)
         # Model-string precedence (override > session-persisted > global) is owned by
-        # hermes_cli.model_switch.resolve_effective_model.
-        from hermes_cli.model_switch import resolve_effective_model
+        # akramcode_cli.model_switch.resolve_effective_model.
+        from akramcode_cli.model_switch import resolve_effective_model
         if session_override:
             model = resolve_effective_model(session_override, None, model)
             self._apply_provider_runtime(
@@ -2379,7 +2379,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
         from gateway.run import (
             _checkpoint_agent_kwargs, _current_max_iterations, _resolve_runtime_agent_kwargs,
             _resolve_gateway_model, _load_gateway_config, GatewayRunner)
-        from hermes_cli.tools_config import _get_platform_tools
+        from akramcode_cli.tools_config import _get_platform_tools
         # RuntimeError is caught ONLY here (sole provider-auth raiser); the typed subclass keeps
         # run_conversation() errors distinct.
         try:
@@ -2521,7 +2521,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
         can sync to the configured provider catalog instead of scraping /v1/models."""
         refresh = _coerce_request_bool(request.query.get("refresh"), default=False)
         try:
-            from hermes_cli.inventory import build_model_options_payload, load_picker_context
+            from akramcode_cli.inventory import build_model_options_payload, load_picker_context
 
             def _build_payload() -> Dict[str, Any]:
                 return build_model_options_payload(
@@ -2792,12 +2792,12 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
         if store is not None:
             return store
         try:
-            from hermes_cli.profiles import get_profile_dir
+            from akramcode_cli.profiles import get_profile_dir
             root = Path(get_profile_dir(profile or "default")) / "artifacts" / "browser-control"
         except Exception:
             # Unscoped fallback (tests/manual wiring): controlled root under the Hermes home.
             try:
-                from hermes_state import get_hermes_home
+                from akramcode_state import get_hermes_home
                 root = Path(get_hermes_home()) / "artifacts" / "browser-control"
             except Exception:
                 raise ArtifactError("no artifact root is resolvable") from None
@@ -2969,8 +2969,8 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
         """GET /v1/toolsets — each toolset the api_server agent exposes: enabled/configured state
         plus the concrete tool names it expands to."""
         try:
-            from hermes_cli.config import load_config
-            from hermes_cli.tools_config import (
+            from akramcode_cli.config import load_config
+            from akramcode_cli.tools_config import (
                 _get_effective_configurable_toolsets, _get_platform_tools, _toolset_has_keys,
                 get_nous_subscription_features)
             from toolsets import resolve_toolset
@@ -4009,7 +4009,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
         """POST /api/cron/fire — Chronos fire webhook (NAS -> agent), authenticated by a
         NAS-minted JWT via the pluggable verifier, NOT API_SERVER_KEY. 202 + background run so
         a long turn never trips NAS's timeout; the store CAS claim guards double-fire on retry."""
-        from hermes_cli.config import cfg_get, load_config
+        from akramcode_cli.config import cfg_get, load_config
         from plugins.cron_providers.chronos.verify import get_fire_verifier
         auth = request.headers.get("Authorization", "")
         token = auth[7:].strip() if auth.startswith("Bearer ") else ""
@@ -4454,7 +4454,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
                 self.name, self._host)
             return False
         try:
-            from hermes_cli.auth import has_usable_secret
+            from akramcode_cli.auth import has_usable_secret
         except Exception as exc:
             # Fail CLOSED: "could not check" must not mean "start" on a terminal-capable endpoint.
             logger.error(
@@ -4528,7 +4528,7 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
             if is_network_accessible(self._host):
                 _backend = "local"
                 with suppress(Exception):
-                    from hermes_cli.config import load_config as _load_cfg
+                    from akramcode_cli.config import load_config as _load_cfg
                     _backend = ((_load_cfg() or {}).get("terminal") or {}).get("backend", "local")
                 if str(_backend).lower() == "local":
                     logger.warning(

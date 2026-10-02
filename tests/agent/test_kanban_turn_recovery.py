@@ -6,7 +6,7 @@ loop), then call-site behaviour parametrized over the driver — production
 goal-mode veto as one table.
 
 The exit mapping itself is main's ``cli._single_query_exit_code`` (pinned by
-``tests/hermes_cli/test_single_query_exit_contract.py``); only the stripped
+``tests/akramcode_cli/test_single_query_exit_contract.py``); only the stripped
 worker predicate this PR adds to it is pinned here.
 """
 
@@ -31,7 +31,7 @@ from agent.kanban_turn_recovery import (
     should_recover_turn,
     worker_claim_is_live,
 )
-from hermes_cli.kanban_db import KANBAN_RATE_LIMIT_EXIT_CODE
+from akramcode_cli.kanban_db import KANBAN_RATE_LIMIT_EXIT_CODE
 
 KANBAN_ENV = (
     "HERMES_KANBAN_TASK",
@@ -273,8 +273,8 @@ def test_missing_db_pin_never_resolves_an_ambient_board(tmp_path, monkeypatch):
     is ambient NOW. With the pin gone the canonical resolver must not be consulted at all,
     even when it would return a fully live board whose row matches this worker (built with
     the real board API, so this is not a strawman)."""
-    from hermes_cli import kanban_db as kb
-    from hermes_cli import kanban_db_connect as kbc
+    from akramcode_cli import kanban_db as kb
+    from akramcode_cli import kanban_db_connect as kbc
 
     home = tmp_path / ".hermes"
     home.mkdir()

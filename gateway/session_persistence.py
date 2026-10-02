@@ -49,8 +49,8 @@ class SessionPersistenceMixin:
         Resolving here rather than once in ``__init__`` is the whole fix for #88532: it lets the scoping
         that the multiplexed inbound path already performs actually reach session storage.
         """
-        from hermes_state import _default_db_path
-        from hermes_state.registry import acquire
+        from akramcode_state import _default_db_path
+        from akramcode_state.registry import acquire
 
         path = Path(db_path) if db_path is not None else Path(_default_db_path())
 
@@ -125,7 +125,7 @@ class SessionPersistenceMixin:
             return cache[profile]
         home: Optional[Path] = None
         try:
-            from hermes_cli.profiles import get_profile_dir, profile_exists
+            from akramcode_cli.profiles import get_profile_dir, profile_exists
             if profile_exists(profile):
                 home = Path(get_profile_dir(profile))
         except Exception as exc:
@@ -203,7 +203,7 @@ class SessionPersistenceMixin:
         would strand secondary profiles' handles with their WAL lock held ('database is locked' on
         restart). Drained under the lock, closed outside it; a pinned handle is the pinner's."""
         def _close(db) -> None:
-            from hermes_state.registry import release_or_close  # shared instances no-op on close()
+            from akramcode_state.registry import release_or_close  # shared instances no-op on close()
             try:
                 release_or_close(db)
             except Exception as exc:

@@ -106,7 +106,7 @@ class ParityHome:
             "PARITY_TREE_TAG": self.tag,
             # The child's HOME is the fixture home, so its ``~/.hermes/state.db`` IS
             # the tmp HERMES_HOME's db; under a pytest ancestor the live-DB guard
-            # (hermes_state.guard) would refuse it. This is the guard's documented
+            # (akramcode_state.guard) would refuse it. This is the guard's documented
             # child-process escape hatch; the path is tmp_path by construction.
             "HERMES_STATE_DB_GUARD_BYPASS": "1",
         })
@@ -442,7 +442,7 @@ def kill_tagged(ph: ParityHome) -> None:
 
 
 def hermes_argv(*args: str) -> list[str]:
-    return [sys.executable, "-m", "hermes_cli.main", *args]
+    return [sys.executable, "-m", "akramcode_cli.main", *args]
 
 
 def terminate(proc: subprocess.Popen, timeout: float = 30.0) -> int | None:

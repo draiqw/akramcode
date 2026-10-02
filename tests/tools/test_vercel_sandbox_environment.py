@@ -653,7 +653,7 @@ class TestImageSelection:
     ):
         """Vercel deprecated runtimes and rejects runtime+image together and runtime with a snapshot
         source, so: fresh sandbox -> image only; legacy runtime pin -> runtime only; restore -> neither."""
-        from hermes_cli.config_defaults import DEFAULT_VERCEL_IMAGE
+        from akramcode_cli.config_defaults import DEFAULT_VERCEL_IMAGE
 
         make_env(runtime=None)
         make_env(runtime=None, image="vercel/sandbox/python:3.14")

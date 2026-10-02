@@ -11,7 +11,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from hermes_cli.config import get_hermes_home
+from akramcode_cli.config import get_hermes_home
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +85,7 @@ def _find_session_id(platform: str, chat_id: str, thread_id: Optional[str] = Non
     for pre-migration databases.
     """
     try:
-        from hermes_state.registry import acquire, release_or_close
+        from akramcode_state.registry import acquire, release_or_close
         db = acquire()
         try:
             finder = getattr(db, "find_session_by_origin", None)
@@ -132,7 +132,7 @@ def _append_to_sqlite(session_id: str, message: dict) -> None:
     Raises on failure: ``mirror_to_session`` reports ``False`` (and warns) only when the
     exception reaches it — swallowing it here made every failed write look mirrored (#10130).
     """
-    from hermes_state.registry import acquire, release_or_close
+    from akramcode_state.registry import acquire, release_or_close
 
     db = acquire()
     try:

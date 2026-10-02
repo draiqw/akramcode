@@ -210,7 +210,7 @@ def pin_process_hermes_home(path: str | Path | None) -> None:
     profile look like the launch profile: ``agent.secret_scope.serves_routed_profile()`` turns
     False and that turn's MCP connections fall back to bare, cross-profile names; the sibling
     launch-home checks (``secret_scope._is_process_home``, ``tools.environments.local._is_routed_home``,
-    ``hermes_cli.env_loader._process_hermes_home``) misjudge the same way. ``None`` clears the pin.
+    ``akramcode_cli.env_loader._process_hermes_home``) misjudge the same way. ``None`` clears the pin.
 
     Process-global on purpose: it names the process's own identity, not a per-task value. It is NOT
     folded into :func:`get_process_hermes_home`: :func:`get_hermes_home` falls back to that for
@@ -476,7 +476,7 @@ def _run_version_probe(argv: list[str], **kwargs):
     """Run a hidden ``--version`` probe; ``None`` when it cannot run."""
     import subprocess
     try:
-        from hermes_cli._subprocess_compat import windows_hide_flags
+        from akramcode_cli._subprocess_compat import windows_hide_flags
         return subprocess.run(
             argv, capture_output=True, timeout=10, creationflags=windows_hide_flags(), **kwargs
         )
@@ -796,7 +796,7 @@ def socket_safe_tmpdir() -> str:
 
 
 # ---- Managed mode (NixOS declarative config) ----
-# Canonical home of "is this install package-manager managed": ``hermes_cli.config`` re-exports
+# Canonical home of "is this install package-manager managed": ``akramcode_cli.config`` re-exports
 # these, and :func:`apply_secure_dir_policy` below reads them. Lives here because constants
 # must stay import-safe from the CLI.
 _MANAGED_TRUE_VALUES = ("true", "1", "yes")
@@ -898,7 +898,7 @@ def apply_secure_dir_policy(path, *, home: str | Path | None = None) -> None:
     marker is read, for callers that already resolved it; without it the effective home is
     consulted.
 
-    Import-safe twin of ``hermes_cli.config._secure_dir`` (which delegates here), so callers
+    Import-safe twin of ``akramcode_cli.config._secure_dir`` (which delegates here), so callers
     outside the CLI package — like :func:`get_scratch_dir` — share one policy implementation.
     """
     if get_managed_system(home) is not None:
@@ -1163,28 +1163,28 @@ def resolve_reasoning_config(cfg: dict | None, model: str = "") -> dict | None:
 
 def is_termux() -> bool:
     """Delegate Termux detection without making the bootstrap constants module depend on the full package."""
-    from hermes_platform.host.runtime import is_termux as detect
+    from akramcode_platform.host.runtime import is_termux as detect
 
     return detect()
 
 
 def is_wsl() -> bool:
     """Delegate WSL detection without making the bootstrap constants module depend on the full package."""
-    from hermes_platform.host.runtime import is_wsl as detect
+    from akramcode_platform.host.runtime import is_wsl as detect
 
     return detect()
 
 
 def is_container() -> bool:
     """Delegate container detection without making the bootstrap constants module depend on the full package."""
-    from hermes_platform.host.runtime import is_container as detect
+    from akramcode_platform.host.runtime import is_container as detect
 
     return detect()
 
 
 def _detect_container() -> bool:
     """Keep the historical test seam while delegating canonical detection."""
-    from hermes_platform.host.runtime import _detect_container as detect
+    from akramcode_platform.host.runtime import _detect_container as detect
 
     return detect()
 
@@ -1283,7 +1283,7 @@ def openrouter_variant_base(model_id: str) -> str | None:
     OpenRouter routing-variant suffix (e.g. ``x-ai/grok-4:nitro`` →
     ``x-ai/grok-4``), else ``None``.
 
-    Lives here rather than in ``hermes_cli.models`` so the metadata layer
+    Lives here rather than in ``akramcode_cli.models`` so the metadata layer
     (``agent.model_metadata``) can share one definition without importing the
     CLI — this module is dependency-free by contract.
 

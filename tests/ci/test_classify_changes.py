@@ -165,7 +165,7 @@ CASES = {
     "nix + python → both": (["nix/checks.nix", "agent/x.py"], _lanes(python=True, scan=True, nix=True)),
     # Product Python can still break the flake (nine checks run the built
     # binary), but the flake meets it on main, not on the PR.
-    "product python → no nix on the PR": (["hermes_cli/config.py"], _lanes(python=True, scan=True)),
+    "product python → no nix on the PR": (["akramcode_cli/config.py"], _lanes(python=True, scan=True)),
     # tests/ is not packaged, so the built binary cannot change.
     "tests-only → no nix": (
         ["tests/agent/test_foo.py"],
@@ -180,7 +180,7 @@ CASES = {
     # The Windows desktop-update hand-off is a PowerShell integration surface:
     # its tests spawn the real script and poll its loopback server. They run
     # when the script, the Electron side that launches it, or their own test
-    # files change — not on every hermes_state.py PR.
+    # files change — not on every akramcode_state.py PR.
     "windows.ps1 → desktop_updater": (
         ["scripts/desktop-update/windows.ps1"],
         _lanes(python=True, desktop_updater=True, e2e_desktop_update=True),
@@ -261,7 +261,7 @@ CASES = {
         _lanes(python=True, mcp_catalog=True),
     ),
     "mcp_catalog.py → mcp_catalog": (
-        ["hermes_cli/mcp_catalog.py"],
+        ["akramcode_cli/mcp_catalog.py"],
         _lanes(python=True, scan=True, mcp_catalog=True),
     ),
     # CI-sensitive files require explicit review label.
@@ -328,13 +328,13 @@ CASES = {
         ["tests/e2e/core/sqlite/test_torture.py"],
         _lanes(python=True, python_prod=False, scan=True, e2e=True),
     ),
-    "state db → e2e": (["hermes_state.wal.py"], _lanes(python=True, scan=True, e2e=True)),
+    "state db → e2e": (["akramcode_state.wal.py"], _lanes(python=True, scan=True, e2e=True)),
     "upgrade suite → e2e_upgrade, not e2e": (
         ["tests/e2e/core/upgrade/pm/test_pm_lifecycle.py"],
         _lanes(python=True, python_prod=False, scan=True, e2e_upgrade=True),
     ),
     "updater → e2e_upgrade + desktop update": (
-        ["hermes_cli/update_cmd_git.py"],
+        ["akramcode_cli/update_cmd_git.py"],
         _lanes(python=True, scan=True, e2e_upgrade=True, e2e_desktop_update=True),
     ),
     "PM → e2e_upgrade + docker": (["pm/environments.py"], _lanes(python=True, scan=True, e2e_upgrade=True, docker=True)),

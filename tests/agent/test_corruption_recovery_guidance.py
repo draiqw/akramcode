@@ -22,7 +22,7 @@ The fix adds:
 def test_gateway_corruption_banner_backups_dir_follows_hermes_home(monkeypatch, tmp_path):
     """The gateway broadcast's step 3 must name the live backups dir, not ~/.hermes (#104250).
 
-    Pre-update backups live at ``<hermes_root>/backups`` (``hermes_cli/backup.py``); a
+    Pre-update backups live at ``<hermes_root>/backups`` (``akramcode_cli/backup.py``); a
     custom-HERMES_HOME gateway must not be told to restore from a directory that never
     held its backups.
     """
@@ -104,8 +104,8 @@ def test_corrupt_guidance_pins_the_failing_profile(tmp_path, monkeypatch):
     import asyncio
 
     import gateway.run as gateway_run
-    from hermes_state import _default_db_path
-    from hermes_state.repair import _persistent_repair_exhausted_error
+    from akramcode_state import _default_db_path
+    from akramcode_state.repair import _persistent_repair_exhausted_error
     from run_agent import AIAgent
 
     root = tmp_path / "hermes"
@@ -118,7 +118,7 @@ def test_corrupt_guidance_pins_the_failing_profile(tmp_path, monkeypatch):
     explanation = AIAgent._format_turn_completion_explanation("session_persistence_failed", "corrupt")
     commands = [line.strip() for line in explanation.splitlines() if "hermes " in line]
     assert commands and all("hermes -p research " in line for line in commands), commands
-    # The conftest pins hermes_state.DEFAULT_DB_PATH, so the store named is whatever the
+    # The conftest pins akramcode_state.DEFAULT_DB_PATH, so the store named is whatever the
     # process resolves — the contract is "the same path the runtime would open".
     assert f"--source {_default_db_path()} " in explanation
 

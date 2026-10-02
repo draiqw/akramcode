@@ -123,7 +123,7 @@ fields; callers may initialize a provider without an agent or a session database
 | `hermes_home` | Active profile's storage directory. |
 | `platform` | Session surface, such as `cli`, `gui`, `acp`, or `telegram`. |
 | `session_title` | Stored session title, when available. A display label is not necessarily a user-selected identity. |
-| `session_title_source` | Stored title provenance, when available: `derived`, `llm`, or `user`. Automatic sources must not be mistaken for explicit identity overrides; missing provenance retains a provider's legacy behavior. Shared constants live in `hermes_state.common.py`. |
+| `session_title_source` | Stored title provenance, when available: `derived`, `llm`, or `user`. Automatic sources must not be mistaken for explicit identity overrides; missing provenance retains a provider's legacy behavior. Shared constants live in `akramcode_state.common.py`. |
 | `cwd` | Non-empty logical workspace supplied as `AIAgent(cwd=...)`, available before provider initialization. Omitted for `None` or an empty string. |
 | `gateway_session_key` | Stable messaging-chat identity for per-chat session isolation. |
 | `user_id`, `user_id_alt`, `user_name`, `chat_id` | Gateway identity fields, included when present. |
@@ -394,7 +394,7 @@ def sync_turn(self, user_content, assistant_content, *, session_id="", messages=
     self._sync_thread.start()
 ```
 
-The same applies to prefetch and writer threads. Small JSON config sidecars (`$HERMES_HOME/<provider>.json`) are read with `utils.read_json_or_empty` and written with `utils.atomic_json_write`; anything under `config.yaml` goes through `hermes_cli.config.save_config(..., merge_existing=True)`.
+The same applies to prefetch and writer threads. Small JSON config sidecars (`$HERMES_HOME/<provider>.json`) are read with `utils.read_json_or_empty` and written with `utils.atomic_json_write`; anything under `config.yaml` goes through `akramcode_cli.config.save_config(..., merge_existing=True)`.
 
 `messages` is optional OpenAI-style conversation context as of the completed
 turn. When present, it includes user/assistant messages, assistant tool calls,

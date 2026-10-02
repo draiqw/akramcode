@@ -7,7 +7,7 @@ import akram_core.hermes_yaml as yaml
 
 def _invalidate_config_cache():
     try:
-        import hermes_cli.config as cfg_mod
+        import akramcode_cli.config as cfg_mod
 
         if hasattr(cfg_mod, "_invalidate_load_config_cache"):
             cfg_mod._invalidate_load_config_cache()

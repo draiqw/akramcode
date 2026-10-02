@@ -54,7 +54,7 @@ def _get_max_read_chars() -> int:
     cache: ``load_config_readonly`` is already mtime+path cached, and a process-lifetime slot
     would pin the launch profile's value under the multiplexed gateway."""
     try:
-        from hermes_cli.config import load_config_readonly
+        from akramcode_cli.config import load_config_readonly
         val = load_config_readonly().get("file_read_max_chars")
     except Exception:
         val = None
@@ -1326,7 +1326,7 @@ def _handle_write_file(args, **kw):
             f"write_file: 'content' must be a string, got "
             f"{type(args['content']).__name__}."
         )
-    from hermes_cli.observability.shared_metrics_harness import record_file_edit
+    from akramcode_cli.observability.shared_metrics_harness import record_file_edit
 
     return record_file_edit("write_file", "whole_file", lambda: write_file_tool(
         path=args["path"], content=args["content"], task_id=tid,
@@ -1336,7 +1336,7 @@ def _handle_write_file(args, **kw):
 
 
 def _handle_patch(args, **kw):
-    from hermes_cli.observability.shared_metrics_harness import record_file_edit
+    from akramcode_cli.observability.shared_metrics_harness import record_file_edit
 
     tid = kw.get("task_id") or "default"
     mode = args.get("mode", "replace")

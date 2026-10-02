@@ -221,7 +221,7 @@ def recover_pending_to_db(session_db=None, *, session_resolver=None) -> int:
         return 0
     own_db = session_db is None
     if own_db:
-        from hermes_state.registry import acquire
+        from akramcode_state.registry import acquire
         session_db = acquire()
     recovered = 0
     try:
@@ -245,7 +245,7 @@ def recover_pending_to_db(session_db=None, *, session_resolver=None) -> int:
     finally:
         if own_db:  # shutdown cancellation/interrupt must not strand an owned DB
             with contextlib.suppress(Exception):
-                from hermes_state.registry import release_or_close
+                from akramcode_state.registry import release_or_close
                 release_or_close(session_db)
     if recovered:
         logger.info("Recovered %d pending message(s) from shutdown flush", recovered)

@@ -12,14 +12,14 @@ from agent.usage_pricing import (
     estimate_usage_cost,
     with_served_service_tier,
 )
-from hermes_cli.models import model_supports_ultrafast, resolve_fast_mode_overrides
+from akramcode_cli.models import model_supports_ultrafast, resolve_fast_mode_overrides
 
 ASTRA_SPELLINGS = ("gpt-6-astra", "openai/gpt-6-astra", "gpt-6-astra-900k")
 
 
 def test_every_config_loader_parses_tiers_through_the_same_table(monkeypatch):
     from gateway.run import GatewayRunner
-    from hermes_cli.cli_config_load import _parse_service_tier_config
+    from akramcode_cli.cli_config_load import _parse_service_tier_config
     import tui_gateway.server as tui
 
     for word, tier in {**SERVICE_TIER_WORDS, "normal": None, "off": None, "bogus": None}.items():

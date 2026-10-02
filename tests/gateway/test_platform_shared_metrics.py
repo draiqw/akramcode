@@ -10,9 +10,9 @@ from gateway.platforms.base import BasePlatformAdapter, Platform, PlatformConfig
 from gateway.platforms.event import MessageEvent, MessageType
 from gateway.run_adapters import GatewayAdapterLifecycleMixin
 from gateway.stream_consumer import GatewayStreamConsumer, StreamConsumerConfig
-from hermes_cli.observability import relay_shared_metrics as rsm
-from hermes_cli.observability import shared_metrics_contract as contract
-from hermes_cli.observability import shared_metrics_gateway as smg
+from akramcode_cli.observability import relay_shared_metrics as rsm
+from akramcode_cli.observability import shared_metrics_contract as contract
+from akramcode_cli.observability import shared_metrics_gateway as smg
 from hermes_constants import get_hermes_home
 
 

@@ -60,7 +60,7 @@ def session_owned_by_profile(config: Any, profile: Optional[str], session_id: An
         home = dict(_multiplex_profile_homes(config)).get(profile)
         if home is None:
             return False
-        from hermes_state import SessionDB
+        from akramcode_state import SessionDB
         db = SessionDB(Path(home) / "state.db", read_only=True)
     except Exception as exc:
         logger.debug("wake: session ownership check unavailable for %s/%s: %s", profile, session_id, exc)

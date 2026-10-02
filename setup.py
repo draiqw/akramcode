@@ -73,7 +73,7 @@ try:
 except ImportError:
     pass
 
-# Root single-file modules (``run_agent``, ``hermes_state``, ``toolsets``...)
+# Root single-file modules (``run_agent``, ``akramcode_state``, ``toolsets``...)
 # are invisible to ``packages.find``: that finder sees only directories with an
 # ``__init__.py``. The wheel build needs them on ``py_modules``, so derive the
 # list from the source tree at build time. A static list in ``pyproject.toml``

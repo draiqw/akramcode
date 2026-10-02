@@ -61,7 +61,7 @@ async def test_insights_opens_session_db_under_the_routed_home(
     runner, profile_home, monkeypatch
 ):
     import agent.insights as insights_mod
-    import hermes_state
+    import akramcode_state
     from gateway.run import _profile_runtime_scope
     from hermes_constants import get_hermes_home
 
@@ -84,7 +84,7 @@ async def test_insights_opens_session_db_under_the_routed_home(
         def format_gateway(self, report):
             return "ok"
 
-    monkeypatch.setattr(hermes_state, "SessionDB", _RecordingDB)
+    monkeypatch.setattr(akramcode_state, "SessionDB", _RecordingDB)
     monkeypatch.setattr(insights_mod, "InsightsEngine", _Engine)
 
     with _profile_runtime_scope(profile_home):

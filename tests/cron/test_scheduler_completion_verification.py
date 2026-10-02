@@ -64,7 +64,7 @@ class _RecordingSessionDB:
 
 
 def _run_booked_job(monkeypatch, tmp_path):
-    import hermes_state
+    import akramcode_state
     import run_agent
 
     instances: list[_RecordingSessionDB] = []
@@ -75,7 +75,7 @@ def _run_booked_job(monkeypatch, tmp_path):
         instances.append(self)
 
     monkeypatch.setattr(_RecordingSessionDB, "__init__", _capture_init)
-    monkeypatch.setattr(hermes_state, "SessionDB", _RecordingSessionDB)
+    monkeypatch.setattr(akramcode_state, "SessionDB", _RecordingSessionDB)
     monkeypatch.setattr(run_agent, "AIAgent", _FakeCronAgent)
     monkeypatch.setattr(
         "hermes_constants.resolve_reasoning_config", lambda *_a, **_k: None
@@ -95,7 +95,7 @@ def _run_booked_job(monkeypatch, tmp_path):
         }
 
     monkeypatch.setattr(
-        "hermes_cli.runtime_provider.resolve_runtime_provider", _fake_runtime
+        "akramcode_cli.runtime_provider.resolve_runtime_provider", _fake_runtime
     )
     monkeypatch.setattr("tools.mcp_tool_discovery.discover_mcp_tools", lambda: [])
     monkeypatch.setattr(cron_scheduler, "_get_hermes_home", lambda: tmp_path)

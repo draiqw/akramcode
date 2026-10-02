@@ -280,7 +280,7 @@ class SessionManager:
         this process is the session end: the client that drove the
         conversation is gone. Without this writer, source='acp' rows keep
         ``ended_at`` NULL forever and the ended-session guard shared by
-        prune/archive (``hermes_state.maintenance``) can never reach them.
+        prune/archive (``akramcode_state.maintenance``) can never reach them.
         A later load/resume reopens the row (see ``_restore``), the same
         contract the TUI gateway's resume path uses. Best-effort: teardown
         must never raise. Returns the number of sessions ended.
@@ -323,7 +323,7 @@ class SessionManager:
         acquire, so the ACP server holds ONE writer on state.db instead of two (#100896)."""
         if self._db_instance is None:
             try:
-                from hermes_state.registry import acquire
+                from akramcode_state.registry import acquire
                 self._db_instance = acquire(get_hermes_home() / "state.db")
             except Exception:
                 logger.debug("SessionDB unavailable for ACP persistence", exc_info=True)
@@ -501,9 +501,9 @@ class SessionManager:
 
         from run_agent import AIAgent
         from agent.skill_utils import parse_config_string_list
-        from hermes_cli.config import load_config
-        from hermes_cli.runtime_provider import resolve_runtime_provider
-        from hermes_cli.tools_config import _get_platform_tools, enabled_mcp_server_names
+        from akramcode_cli.config import load_config
+        from akramcode_cli.runtime_provider import resolve_runtime_provider
+        from akramcode_cli.tools_config import _get_platform_tools, enabled_mcp_server_names
         from hermes_constants import resolve_reasoning_config
 
         config = load_config()
@@ -561,7 +561,7 @@ class SessionManager:
         # Bounded by ``mcp_discovery_timeout`` (config.yaml, ~1.5s); late servers are
         # picked up by HermesACPAgent._schedule_mcp_late_refresh.
         try:
-            from hermes_cli.mcp_startup import ensure_mcp_discovery_before_agent_build
+            from akramcode_cli.mcp_startup import ensure_mcp_discovery_before_agent_build
 
             ensure_mcp_discovery_before_agent_build(logger=logger, thread_name="acp-mcp-discovery")
         except Exception:

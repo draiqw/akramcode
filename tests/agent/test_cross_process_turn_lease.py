@@ -11,7 +11,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from agent import relay_runtime
-from hermes_state import SessionDB
+from akramcode_state import SessionDB
 from run_agent import AIAgent
 
 

@@ -86,7 +86,7 @@ def test_slash_exec_spawns_with_the_live_agent_provider(monkeypatch):
     assert worker_args[3] == "moa"
 
 
-def test_slash_worker_child_forwards_provider_to_hermes_cli(monkeypatch):
+def test_slash_worker_child_forwards_provider_to_akramcode_cli(monkeypatch):
     """The child's argparse accepts --provider and hands it to HermesCLI (mocked): the MoA
     virtual provider must reach ``HermesCLI(provider=...)`` instead of config re-resolution."""
     import sys as _sys

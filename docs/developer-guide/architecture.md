@@ -41,7 +41,7 @@ This page is the top-level map of Hermes Agent internals. Use it to orient yours
 ┌───────────────────┐              ┌──────────────────────┐
 │ Session Storage   │              │ Tool Backends         │
 │ (SQLite + FTS5)   │              │ Terminal (7 backends) │
-│ hermes_state.py   │              │ Browser (5 backends)  │
+│ akramcode_state.py   │              │ Browser (5 backends)  │
 │ gateway/session.py│              │ Web (4 backends)      │
 └───────────────────┘              │ MCP (dynamic)         │
                                    │ File, Vision, etc.    │
@@ -53,10 +53,10 @@ This page is the top-level map of Hermes Agent internals. Use it to orient yours
 ```text
 hermes-agent/
 ├── run_agent.py              # AIAgent facade — loop lives in agent/conversation_loop.py + agent/turn_*.py
-├── cli.py                    # HermesCLI facade — mixins in hermes_cli/cli_*_mixin.py
+├── cli.py                    # HermesCLI facade — mixins in akramcode_cli/cli_*_mixin.py
 ├── model_tools.py            # Tool discovery, schema collection, dispatch
 ├── toolsets.py               # Tool groupings and platform presets
-├── hermes_state.py           # SQLite session/state database facade (+ hermes_state_*.py siblings)
+├── akramcode_state.py           # SQLite session/state database facade (+ akramcode_state_*.py siblings)
 ├── hermes_constants.py       # HERMES_HOME, profile-aware paths
 ├── batch_runner.py           # Batch trajectory generation
 │
@@ -75,7 +75,7 @@ hermes-agent/
 │   ├── memory_provider.py   # Memory provider ABC
 │   └── trajectory.py         # Trajectory saving helpers
 │
-├── hermes_cli/               # CLI subcommands and setup
+├── akramcode_cli/               # CLI subcommands and setup
 │   ├── main.py               # Entry point — `hermes` subcommands (parsers in subcommands/, main_*.py)
 │   ├── config.py             # DEFAULT_CONFIG, OPTIONAL_ENV_VARS, migration
 │   ├── commands.py           # COMMAND_REGISTRY — central slash command definitions

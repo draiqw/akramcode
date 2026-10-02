@@ -36,7 +36,7 @@ def _make_agent(session_db, session_id):
 def test_flush_recreates_row_deleted_under_live_agent():
     """Real turn shape (messages = history + tail, conversation_history=history): every
     deletion round replays the whole in-memory transcript onto the recreated row."""
-    from hermes_state import SessionDB
+    from akramcode_state import SessionDB
 
     with tempfile.TemporaryDirectory() as tmpdir:
         db = SessionDB(db_path=Path(tmpdir) / "test.db")
@@ -73,7 +73,7 @@ def test_flush_fails_closed_when_row_cannot_be_recreated(monkeypatch):
     failure is only healed when the row is confirmed gone, and a failed lookup is no proof."""
     import sqlite3 as _sqlite3
 
-    from hermes_state import SessionDB
+    from akramcode_state import SessionDB
 
     with tempfile.TemporaryDirectory() as tmpdir:
         db = SessionDB(db_path=Path(tmpdir) / "test.db")

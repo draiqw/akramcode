@@ -119,7 +119,7 @@ hermes_gateway_up == 0
 absent_over_time(hermes_gateway_up[5m])
 
 # Locally owned bridge is explicitly down.
-hermes_platform_up == 0
+akramcode_platform_up == 0
 
 # Scheduler thread is stale even though the gateway may still be alive.
 hermes_cron_scheduler_heartbeat_age_seconds > 180

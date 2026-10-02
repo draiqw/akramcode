@@ -19,9 +19,9 @@ from agent.credential_pool import (
     CredentialPool,
     PooledCredential,
 )
-from hermes_cli.auth import read_credential_pool
-from hermes_cli.auth_constants import AuthError
-from hermes_cli.auth_plugin_providers import is_refreshable_oauth_provider
+from akramcode_cli.auth import read_credential_pool
+from akramcode_cli.auth_constants import AuthError
+from akramcode_cli.auth_plugin_providers import is_refreshable_oauth_provider
 
 
 def _entry(**over):

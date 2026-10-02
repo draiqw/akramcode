@@ -110,7 +110,7 @@ _PY_RELEVANT_CONTRACT_FILES = {
     # tests/tui_gateway/contracts/test_generated.py (rendered from tui_gateway/contracts)
     "apps/shared/src/gateway-contract.generated.ts",
     "apps/shared/src/gateway-contract.openrpc.json",
-    # tests/hermes_cli/test_desktop_slash_registry.py
+    # tests/akramcode_cli/test_desktop_slash_registry.py
     "apps/desktop/src/lib/desktop-slash-registry.json",
     # tests/tui_gateway/test_show_reasoning_display_gate.py (card-tool names vs the gateway lifecycle set)
     "apps/desktop/src/lib/tool-render-class.ts",
@@ -135,7 +135,7 @@ _SCAN_FILES = {"setup.cfg", "pyproject.toml"}
 
 # MCP catalog files that require explicit security review.
 _MCP_CATALOG_PATHS = ("optional-mcps/",)
-_MCP_CATALOG_FILES = {"hermes_cli/mcp_catalog.py"}
+_MCP_CATALOG_FILES = {"akramcode_cli/mcp_catalog.py"}
 
 # Bootstrap installer: the POSIX shell installer, the dev-checkout wrapper
 # that carries the same pin fragment, and the Tauri app's non-Rust sources
@@ -196,7 +196,7 @@ _E2E_LANES: dict[str, tuple[str, ...]] = {
         "tests/e2e/",
         # The state.db torture chamber and the compaction/exactly-once
         # suites are the only tests that run real concurrent writers.
-        "hermes_state",
+        "akramcode_state",
     ),
     "e2e_upgrade": (
         *_PY_TEST_HARNESS,
@@ -207,16 +207,16 @@ _E2E_LANES: dict[str, tuple[str, ...]] = {
         "pm/",
         "scripts/install.",
         "setup-hermes.sh",
-        "hermes_cli/update_",
-        "hermes_cli/_update_",
-        "hermes_cli/old_updater",
-        "hermes_cli/_old_updater",
-        "hermes_cli/post_update",
-        "hermes_cli/config_migrations",
-        "hermes_cli/subcommands/update",
-        "hermes_cli/install_",
-        "hermes_cli/_install_",
-        "hermes_cli/main_install",
+        "akramcode_cli/update_",
+        "akramcode_cli/_update_",
+        "akramcode_cli/old_updater",
+        "akramcode_cli/_old_updater",
+        "akramcode_cli/post_update",
+        "akramcode_cli/config_migrations",
+        "akramcode_cli/subcommands/update",
+        "akramcode_cli/install_",
+        "akramcode_cli/_install_",
+        "akramcode_cli/main_install",
     ),
     "e2e_desktop_core": (
         *_DESKTOP_E2E_SHARED,
@@ -237,8 +237,8 @@ _E2E_LANES: dict[str, tuple[str, ...]] = {
         "apps/desktop/electron/install-stamp",
         "scripts/desktop-update/",
         "scripts/install.sh",
-        "hermes_cli/desktop_update",
-        "hermes_cli/update_",
+        "akramcode_cli/desktop_update",
+        "akramcode_cli/update_",
     ),
 }
 # The upgrade journeys are their own lane; editing one does not start ``e2e``.

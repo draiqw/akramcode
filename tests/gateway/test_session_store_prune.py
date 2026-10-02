@@ -26,7 +26,7 @@ def test_session_store_default_db_uses_runtime_hermes_home(tmp_path, monkeypatch
     """SessionStore must honor runtime HERMES_HOME when opening the default DB.
 
     Regression for the import-time DEFAULT_DB_PATH freeze: importing
-    hermes_state before a fixture redirected HERMES_HOME used to pin every
+    akramcode_state before a fixture redirected HERMES_HOME used to pin every
     default SessionDB() at the developer's real ~/.hermes/state.db.
     """
     config = GatewayConfig()

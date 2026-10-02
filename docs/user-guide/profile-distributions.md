@@ -159,7 +159,7 @@ auth.json
 state.db
 state.db-shm
 state.db-wal
-hermes_state.db
+akramcode_state.db
 response_store.db
 response_store.db-shm
 response_store.db-wal

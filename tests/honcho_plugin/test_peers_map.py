@@ -53,7 +53,7 @@ class TestSeenGatewayAccounts:
 
     def test_shared_session_lists_only_its_last_author(self, tmp_path):
         """record_gateway_session_peer overwrites the row's user_id, so earlier authors are gone."""
-        from hermes_state import SessionDB
+        from akramcode_state import SessionDB
 
         db = SessionDB(tmp_path / "state.db")
         for uid in ("alice", "bob"):

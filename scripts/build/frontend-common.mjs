@@ -31,7 +31,7 @@ function contains(parent, child) {
 
 const productMarker = '.hermes-product'
 const productOwner = 'hermes-frontend-product-v1\n'
-const developerOutputs = ['ui-tui/dist', 'hermes_cli/web_dist']
+const developerOutputs = ['ui-tui/dist', 'akramcode_cli/web_dist']
 
 function developerOutput(source, out) {
   return source && developerOutputs.some(name => path.resolve(out) === path.join(path.resolve(source), name))

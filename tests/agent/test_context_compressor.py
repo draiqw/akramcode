@@ -20,7 +20,7 @@ from agent.context_compressor import (
     _is_summary_access_or_quota_error,
 )
 from agent.compression_marker import _COMPRESSION_MARKER_PREFIX
-from hermes_state import SessionDB
+from akramcode_state import SessionDB
 from agent.auxiliary_client import CODEX_STREAM_STALL_MARKER
 
 _REQ = httpx.Request("POST", "http://x")
@@ -1178,7 +1178,7 @@ class TestSustainedOverloadEscalation:
         restart the budget at zero, so a sustained outage never escalated (#123167;
         same contract as the durable fallback streak, #100185).
         """
-        from hermes_state import SessionDB
+        from akramcode_state import SessionDB
 
         db = SessionDB(db_path=tmp_path / "state.db")
         session_id = "OVERLOAD_FRESH_BIND"
@@ -2285,7 +2285,7 @@ class TestThresholdTokensCap:
     def test_default_config_compacts_at_the_ratio_trigger(self, context_length):
         """Shipped defaults carry no token cap: every window compacts at its ratio trigger, so a 1M
         window is not cut to a fixed count that suits some models and not others."""
-        from hermes_cli.config import DEFAULT_CONFIG
+        from akramcode_cli.config import DEFAULT_CONFIG
 
         default_pct = DEFAULT_CONFIG["compression"]["threshold"]
         default_cap = DEFAULT_CONFIG["compression"]["threshold_tokens"]

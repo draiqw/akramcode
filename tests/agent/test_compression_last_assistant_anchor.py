@@ -95,7 +95,7 @@ def _seed(tmp_path, tail_rows, fold, follower):
     import os
     from unittest.mock import MagicMock, patch
 
-    from hermes_state import SessionDB
+    from akramcode_state import SessionDB
 
     db = SessionDB(db_path=tmp_path / "state.db")
     session_id = "E2E_118900_REPLY"

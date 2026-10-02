@@ -29,7 +29,7 @@ from gateway.platforms.base_exec_approval import ea_default_reason_text
 from gateway.session import SessionSource
 from gateway.session_identity import replace_source
 from gateway.turn_context import TurnContext
-from hermes_cli.config import cfg_get
+from akramcode_cli.config import cfg_get
 from utils import is_truthy_value
 
 if TYPE_CHECKING:  # string annotations only; never imported at runtime (cycle)
@@ -1946,7 +1946,7 @@ class TurnRunner:
             # Model/credential resolution failed before the turn began; the raw text (URLs, status
             # codes) belongs in the log, and the chat gets the commands that fix it.
             logger.warning("Model resolution failed for session %s: %s", ctx.session_key or "", exc)
-            from hermes_cli.auth import is_rate_limited_auth_error
+            from akramcode_cli.auth import is_rate_limited_auth_error
             if is_rate_limited_auth_error(exc.__cause__):
                 # Quota cap with valid credentials: /login cannot help; name the reset window (#89401).
                 from gateway.run import _gateway_provider_error_reply

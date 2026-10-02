@@ -1,11 +1,11 @@
 # Application declarations
 
-A plugin whose MCP server fronts a desktop application declares which application that is and what the server needs of it. The core evaluates the declaration on the host and gates the server's tools, and any skill that names the application, on the answer. The parser imports only the standard library and `hermes_platform`.
+A plugin whose MCP server fronts a desktop application declares which application that is and what the server needs of it. The core evaluates the declaration on the host and gates the server's tools, and any skill that names the application, on the answer. The parser imports only the standard library and `akramcode_platform`.
 
-The vocabulary lives in `hermes_platform/declaration.py`. A declaration is data plus policy, parsed from plain mappings (already-decoded YAML, JSON, a dict literal — the parser never touches a file):
+The vocabulary lives in `akramcode_platform/declaration.py`. A declaration is data plus policy, parsed from plain mappings (already-decoded YAML, JSON, a dict literal — the parser never touches a file):
 
 ```python
-from hermes_platform import declaration
+from akramcode_platform import declaration
 
 decl = declaration.parse_declaration(
     "my-server",
@@ -72,7 +72,7 @@ requires:
 
 ## Availability: the one evaluation every reader uses
 
-`hermes_platform/resolver/availability.py::availability(decl) -> Availability`
+`akramcode_platform/resolver/availability.py::availability(decl) -> Availability`
 
 ```
 Availability(

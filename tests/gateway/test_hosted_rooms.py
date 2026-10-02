@@ -11,9 +11,9 @@ import pytest
 
 from gateway import hosted_room_driver as driver
 from gateway import hosted_rooms as rooms
-import hermes_state.wal
+import akramcode_state.wal
 from gateway.hosted_room_policy_checkpoint import HostedRoomPolicyCheckpoint
-from hermes_state import SessionDB
+from akramcode_state import SessionDB
 
 USER = {"kind": "user", "id": "desktop-user", "display_name": "User"}
 GATEWAY_A = {"kind": "gateway", "id": "gateway-a"}
@@ -168,7 +168,7 @@ def test_first_database_open_retries_only_transient_journal_lock(
     tmp_path,
     monkeypatch,
 ):
-    original = hermes_state.wal.apply_wal_with_fallback
+    original = akramcode_state.wal.apply_wal_with_fallback
     attempts = 0
 
     def transient_lock(conn, **kwargs):
@@ -178,7 +178,7 @@ def test_first_database_open_retries_only_transient_journal_lock(
             raise sqlite3.OperationalError("database is locked")
         return original(conn, **kwargs)
 
-    monkeypatch.setattr(hermes_state.wal, "apply_wal_with_fallback", transient_lock)
+    monkeypatch.setattr(akramcode_state.wal, "apply_wal_with_fallback", transient_lock)
 
     assert _create(tmp_path / "state.db")["room_id"] == "room-1"
     assert attempts == 3
@@ -198,7 +198,7 @@ def test_first_database_open_does_not_retry_other_journal_errors(
         )
 
     monkeypatch.setattr(
-        hermes_state.wal, "apply_wal_with_fallback",
+        akramcode_state.wal, "apply_wal_with_fallback",
         configured_delete_refusal,
     )
 
@@ -1239,7 +1239,7 @@ def test_interrupted_draft_schema_migration_rolls_back_atomically(
 
 
 def test_gateway_event_budget_leaves_pre_update_snapshot_headroom():
-    from hermes_cli import update_cmd
+    from akramcode_cli import update_cmd
 
     # SQLite stores room ids and index entries beyond the logical payload
     # accounting, while session data shares the same file. Keep at least an

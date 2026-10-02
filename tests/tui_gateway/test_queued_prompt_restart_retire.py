@@ -9,7 +9,7 @@ restart == never drained. Rows are deactivated, never deleted, the same marking 
 
 import types
 
-from hermes_state import SessionDB
+from akramcode_state import SessionDB
 from tui_gateway import server
 
 

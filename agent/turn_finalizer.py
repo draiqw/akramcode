@@ -58,9 +58,9 @@ def _record_kanban_budget_exhausted(
     from multiple exit paths.
     """
     try:
-        from hermes_cli import kanban_db as _kb
-        from hermes_cli import kanban_db_connect as _kbc
-        from hermes_cli import kanban_db_dispatch as _kbd
+        from akramcode_cli import kanban_db as _kb
+        from akramcode_cli import kanban_db_connect as _kbc
+        from akramcode_cli import kanban_db_dispatch as _kbd
         _conn = _kbc.connect()
         try:
             _kbd._record_task_failure(
@@ -104,7 +104,7 @@ def _clone_background_review_messages(messages):
 def _invoke_hook_safely(name: str, logger: logging.Logger, **kwargs) -> list:
     """Fire a lifecycle plugin hook; a failing hook is logged, never fatal."""
     try:
-        from hermes_cli.lifecycle import invoke_hook
+        from akramcode_cli.lifecycle import invoke_hook
         return invoke_hook(name, **kwargs)
     except Exception as exc:
         logger.warning("%s hook failed: %s", name, exc)
@@ -578,7 +578,7 @@ def finalize_turn(
 
     _rollback_interrupted_preflight_display(agent, interrupted)
 
-    from hermes_cli.observability.shared_metrics_harness import finish_turn
+    from akramcode_cli.observability.shared_metrics_harness import finish_turn
     finish_turn(agent, _turn_exit_reason, final_response, interrupted=interrupted, failed=failed)
 
     _cleanup_errors: List[str] = []

@@ -5,9 +5,9 @@ from datetime import timedelta
 import pytest
 
 from cron import executions, jobs
-from hermes_cli.observability import relay_shared_metrics as rsm
-from hermes_cli.observability import shared_metrics_contract as contract
-from hermes_cli.observability import shared_metrics_gateway as smg
+from akramcode_cli.observability import relay_shared_metrics as rsm
+from akramcode_cli.observability import shared_metrics_contract as contract
+from akramcode_cli.observability import shared_metrics_gateway as smg
 
 
 @pytest.fixture

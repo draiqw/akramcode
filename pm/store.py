@@ -35,9 +35,9 @@ MUSL_TARGETS = frozenset({"linux-x64-musl", "linux-arm64-musl"})
 def _native_machine() -> str:
     """Native host arch; PM also runs alone before the app is importable."""
     try:
-        from hermes_platform.host.facts import native_arch
+        from akramcode_platform.host.facts import native_arch
     except ModuleNotFoundError as exc:
-        if exc.name != "hermes_platform":
+        if exc.name != "akramcode_platform":
             raise
     else:
         return native_arch()

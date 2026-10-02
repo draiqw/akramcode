@@ -10,7 +10,7 @@ from __future__ import annotations
 import pytest
 
 import tui_gateway.server as srv
-from hermes_state import SessionDB
+from akramcode_state import SessionDB
 from tui_gateway import profile_roster_cache as cache
 
 @pytest.fixture(autouse=True)

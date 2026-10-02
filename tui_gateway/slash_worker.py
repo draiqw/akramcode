@@ -48,7 +48,7 @@ def _prepare_slash_worker_runtime() -> None:
 
     See #61891.
     """
-    from hermes_cli.mcp_startup import start_background_mcp_discovery, wait_for_mcp_discovery
+    from akramcode_cli.mcp_startup import start_background_mcp_discovery, wait_for_mcp_discovery
     start_background_mcp_discovery(logger=logger, thread_name="slash-worker-mcp-discovery")
     wait_for_mcp_discovery()
 
@@ -186,7 +186,7 @@ def main():
             # Workers persist for the TUI session: release allocator pages at the command boundary like
             # other long-lived gateway processes (trim_memory's shared cooldown coalesces nearby activity).
             try:
-                from hermes_cli.mem_trim import trim_memory
+                from akramcode_cli.mem_trim import trim_memory
                 trim_memory(reason="slash worker command completion")
             except Exception as exc:
                 # debug, not warning — a persistent failure would repeat every command.

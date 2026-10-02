@@ -7,7 +7,7 @@ they survive refactors of where reactions are stored.
 
 import pytest
 
-from hermes_state import SessionDB
+from akramcode_state import SessionDB
 
 
 @pytest.fixture

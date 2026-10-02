@@ -97,7 +97,7 @@ class SlashCommandsMixin:
 
         if cmd not in self._COMMANDS:
             return None
-        from hermes_cli.observability.shared_metrics_events import record_slash_command
+        from akramcode_cli.observability.shared_metrics_events import record_slash_command
         record_slash_command(command=cmd, surface="acp")
         mutating = cmd in _MID_TURN_BLOCKED_COMMANDS
         if mutating:
@@ -307,6 +307,6 @@ class SlashCommandsMixin:
         return f"Queued for the next turn. ({_queue_prompt(state, queued_text)} queued)"
 
     def _cmd_version(self, args: str, state: SessionState) -> str:
-        from hermes_cli.version_info import get_version_info
+        from akramcode_cli.version_info import get_version_info
 
         return f"Hermes Agent v{get_version_info().derived_version}"

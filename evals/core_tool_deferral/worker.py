@@ -53,7 +53,7 @@ TASK = taskmod.TASKS_BY_ID[TASK_ID]
 
 # --- seed session DB for recall tasks (both arms, always — cheap) ---------
 def seed_sessions():
-    from hermes_state import SessionDB
+    from akramcode_state import SessionDB
     db = SessionDB()
     month_ago = time.time() - 30 * 86400
     def sess(sid, msgs, t0):

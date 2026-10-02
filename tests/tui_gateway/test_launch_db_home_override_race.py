@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-import hermes_state.registry as registry
+import akramcode_state.registry as registry
 from hermes_constants import reset_hermes_home_override, set_hermes_home_override
 from tui_gateway import server
 
@@ -71,7 +71,7 @@ def test_insights_get_reads_the_requested_profile_store_not_the_launch_handle(la
     profiles_root = tmp_path / "profiles"
     work = profiles_root / "work"
     work.mkdir(parents=True)
-    monkeypatch.setattr("hermes_cli.profiles.get_profile_dir", lambda name: profiles_root / name)
+    monkeypatch.setattr("akramcode_cli.profiles.get_profile_dir", lambda name: profiles_root / name)
     monkeypatch.setattr(server, "_canonical_profile_request", lambda name: name or None)
 
     seeded = registry.acquire(work / "state.db")
