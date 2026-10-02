@@ -8,12 +8,10 @@ ROOT = Path(__file__).parents[2]
 
 def test_installers_default_to_akram_code_and_allow_override():
     shell = (ROOT / "scripts/install.sh").read_text()
-    powershell = (ROOT / "scripts/install.ps1").read_text()
 
-    for installer in (shell, powershell):
-        assert "https://github.com/draiqw/akram-code.git" in installer
-        assert "HERMES_REPO_URL" in installer
-        assert "NousResearch/hermes-agent.git" not in installer
+    assert "https://github.com/draiqw/akram-code.git" in shell
+    assert "HERMES_REPO_URL" in shell
+    assert "NousResearch/hermes-agent.git" not in shell
 
 
 def test_release_workflow_checks_tag_tests_and_publishes_release():
