@@ -6,12 +6,12 @@ checkpointing for ``--resume``, trajectories in from/value format, and tool-usag
 statistics aggregated across all batches. See ``main`` (fire CLI) for usage.
 """
 
-# akram_core.hermes_bootstrap must be the very first import — UTF-8 stdio on Windows, no-op on POSIX.
+# akram_core.akramcode_bootstrap must be the very first import — UTF-8 stdio on Windows, no-op on POSIX.
 try:
-    import akram_core.hermes_bootstrap  # noqa: F401
+    import akram_core.akramcode_bootstrap  # noqa: F401
 except ModuleNotFoundError as exc:
     # Partial ``hermes update`` (git reset landed, ``uv pip install -e .`` did not).
-    if exc.name != "akram_core.hermes_bootstrap":
+    if exc.name != "akram_core.akramcode_bootstrap":
         raise  # the bootstrap exists but cannot load: skipping it would skip PM activation
 
 import json

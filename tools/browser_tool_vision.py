@@ -39,7 +39,7 @@ def _lightpanda_vision_preroute(
     fb_path = fb_result.get("data", {}).get("path", "")
     if fb_path and os.path.exists(fb_path):
         import uuid as uuid_mod
-        from hermes_constants import get_hermes_dir
+        from akramcode_constants import get_hermes_dir
 
         screenshots_dir = get_hermes_dir("cache/screenshots", "browser_screenshots")
         screenshots_dir.mkdir(parents=True, exist_ok=True)

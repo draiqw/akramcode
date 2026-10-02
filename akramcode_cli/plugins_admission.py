@@ -61,7 +61,7 @@ def admit_plugin_set_change(
     No config or dependency selection is written by this application process. *plugin* names the
     plugin being admitted so a resolver conflict is reported against it (:class:`DependencyConflict`).
     """
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
     from pm.client import sync_venv
     from pm.plugin_inputs import Selection
 

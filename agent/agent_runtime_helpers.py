@@ -2394,7 +2394,7 @@ def switch_model(
     # Re-read the per-model reasoning_effort override so it applies immediately (per-model > global;
     # YAML False = disabled).
     try:
-        from hermes_constants import resolve_reasoning_config
+        from akramcode_constants import resolve_reasoning_config
         from akramcode_cli.config import load_config as _sm_load_config
         agent.reasoning_config = resolve_reasoning_config(_sm_load_config() or {}, agent.model)
         logger.info(
@@ -2637,7 +2637,7 @@ def fill_empty_non_final_wire_payload(msg: Dict[str, Any], *, is_final: bool) ->
 
 def _session_id_for_heal_log() -> str:
     try:
-        from akram_core.hermes_logging import _session_context
+        from akram_core.akramcode_logging import _session_context
         return str(getattr(_session_context, "session_id", None) or "")
     except Exception:
         return ""

@@ -229,7 +229,7 @@ def _input_image_part(part: Dict[str, Any], role: str = "user", *, keep_empty_ur
     if not _nonempty_str(url) and not keep_empty_url:
         return None
     url = str(url or "")
-    # Lazy import: the prep module only depends on hermes_constants at import time (no cycle).
+    # Lazy import: the prep module only depends on akramcode_constants at import time (no cycle).
     from tools.vision_tools_image_prep import rasterize_svg_data_url, unsupported_inline_image_media_type
     mime = unsupported_inline_image_media_type(url)
     if mime == "image/svg+xml":

@@ -10,7 +10,7 @@ import urllib.request
 from pathlib import Path
 from typing import Dict
 
-from hermes_constants import display_hermes_home
+from akramcode_constants import display_hermes_home
 from utils import atomic_json_write
 from akramcode_cli.config import cfg_get
 
@@ -20,7 +20,7 @@ _SUBSCRIPTIONS_FILE_MODE = 0o600
 
 
 def _subscriptions_path() -> Path:
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
     return get_hermes_home() / _SUBSCRIPTIONS_FILENAME
 
 

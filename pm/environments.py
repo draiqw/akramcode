@@ -1,7 +1,7 @@
 """Dependency-environment layout: where a project's venv generations live, which one
 is selected, and the interpreter inside any venv. Shared by PM and pre-import launchers.
 
-Only stdlib and hermes_constants: environment selection must work before
+Only stdlib and akramcode_constants: environment selection must work before
 any dependency from that environment has been imported.
 """
 from __future__ import annotations
@@ -11,7 +11,7 @@ import json
 import os
 from pathlib import Path
 
-from hermes_constants import get_default_hermes_root, project_venv_dir
+from akramcode_constants import get_default_hermes_root, project_venv_dir
 
 
 def install_key(project_root: Path) -> str:
@@ -21,7 +21,7 @@ def install_key(project_root: Path) -> str:
 
 def dependency_home_root() -> Path:
     """Scope dependency state like a process launched in the active home."""
-    from hermes_constants import get_default_hermes_root, get_hermes_home_override
+    from akramcode_constants import get_default_hermes_root, get_hermes_home_override
 
     override = get_hermes_home_override()
     return get_default_hermes_root(home=override) if override else get_default_hermes_root()
@@ -372,7 +372,7 @@ def activation_environment(project_root: Path) -> dict[str, str]:
     environment = committed_venv(project_root)
     env.pop("PYTHONHOME", None)
     env.pop("VIRTUAL_ENV", None)
-    # Nothing committed: the child's own akram_core.hermes_bootstrap decides (a bare store Python refuses),
+    # Nothing committed: the child's own akram_core.akramcode_bootstrap decides (a bare store Python refuses),
     # rather than inheriting the pre-PM in-tree venv from here.
     env["PYTHONPATH"] = os.pathsep.join([str(project_root.resolve()),
                                          *([str(site_packages(environment))] if environment else [])])

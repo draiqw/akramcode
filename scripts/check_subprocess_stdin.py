@@ -46,7 +46,7 @@ TUI_CONTEXT_DIRS = [
 # (gap reported in #67639).
 #
 # Import is deferred to ``main()`` (after ``os.chdir(repo_root)``) because
-# this script runs as a standalone subprocess — ``hermes_constants`` isn't
+# this script runs as a standalone subprocess — ``akramcode_constants`` isn't
 # on ``sys.path`` until the repo root is added.
 
 # subprocess and os APIs that inherit stdin by default when called without
@@ -207,10 +207,10 @@ def main() -> int:
     repo_root = Path(__file__).resolve().parent.parent
     os.chdir(repo_root)
 
-    # Add repo root to sys.path so we can import hermes_constants (this script
+    # Add repo root to sys.path so we can import akramcode_constants (this script
     # runs as a standalone subprocess, not as a module).
     sys.path.insert(0, str(repo_root))
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
 
     all_violations = []
 

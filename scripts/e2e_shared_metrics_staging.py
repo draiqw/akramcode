@@ -47,7 +47,7 @@ def main() -> int:
     from akramcode_cli.observability.shared_metrics_sender import SharedMetricsSender
 
     # Resolve through the real config path so this exercises what a user gets.
-    import akram_core.hermes_yaml as yaml
+    import akram_core.akramcode_yaml as yaml
 
     resolved = resolve_send_config(
         yaml.safe_load((scratch / "config.yaml").read_text(encoding="utf-8-sig"))

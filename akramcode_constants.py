@@ -490,7 +490,7 @@ def _version_probe_ok(path: str) -> bool:
     return result is not None and result.returncode == 0
 
 
-# Install tree root (this file lives at <install_root>/hermes_constants.py). Used by secure_parent_dir() to
+# Install tree root (this file lives at <install_root>/akramcode_constants.py). Used by secure_parent_dir() to
 # skip chmod on the install dir — chmodding it 0700 breaks hermes-user traversal in Docker (UID 10000). See
 # #25821, #93050.
 _INSTALL_ROOT = Path(__file__).resolve().parent
@@ -947,8 +947,8 @@ def get_scratch_dir(home: str | Path | None = None, *, prune: bool = True) -> Pa
 def prune_scratch_dir(scratch: Path | None = None, max_idle_hours: float = SCRATCH_MAX_IDLE_HOURS) -> int:
     """Delete top-level scratch entries with no write anywhere in their subtree for
     *max_idle_hours*, reaping processes and git worktree registrations rooted in them
-    first (``akram_core.hermes_constants_scratch``); return the count removed."""
-    from akram_core.hermes_constants_scratch import prune_idle_entries
+    first (``akram_core.akramcode_constants_scratch``); return the count removed."""
+    from akram_core.akramcode_constants_scratch import prune_idle_entries
 
     root = scratch if scratch is not None else get_scratch_dir(prune=False)
     return prune_idle_entries(root, max_idle_hours, frozenset({_SCRATCH_PRUNE_STAMP}))

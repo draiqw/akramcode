@@ -1956,7 +1956,7 @@ class ProcessRegistry(ProcessCheckpointMixin):
         if self._completions_restored:
             return 0
         self._completions_restored = True
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+        from akramcode_constants import reset_hermes_home_override, set_hermes_home_override
         token = set_hermes_home_override(None)
         try:
             from tools.async_delegation import restore_undelivered_completions

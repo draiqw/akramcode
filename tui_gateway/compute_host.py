@@ -3,11 +3,11 @@
 
 from __future__ import annotations
 
-# First, like every entry point: stdio, import-path and environ-lifetime fixes (akram_core.hermes_bootstrap).
+# First, like every entry point: stdio, import-path and environ-lifetime fixes (akram_core.akramcode_bootstrap).
 # Only as ``python -m``: tests import this module, and the bootstrap's TMPDIR/scratch exports
 # must not fire in a library importer.
 if __name__ == "__main__":
-    import akram_core.hermes_bootstrap  # noqa: F401
+    import akram_core.akramcode_bootstrap  # noqa: F401
 
 import argparse
 import concurrent.futures
@@ -334,7 +334,7 @@ class ComputeHost:
         owns_db = False
         try:
             if profile_home:
-                from hermes_constants import set_hermes_home_override
+                from akramcode_constants import set_hermes_home_override
                 from agent.secret_scope import build_profile_secret_scope, set_secret_scope
                 from akramcode_cli.env_loader import hydrate_profile_secret_sources
                 from akramcode_state.registry import acquire
@@ -369,7 +369,7 @@ class ComputeHost:
                     release_or_close(session_db)
             if home_token is not None:
                 with contextlib.suppress(Exception):
-                    from hermes_constants import reset_hermes_home_override
+                    from akramcode_constants import reset_hermes_home_override
                     from agent.secret_scope import reset_secret_scope
                     reset_hermes_home_override(home_token)
                     reset_secret_scope(secret_token)

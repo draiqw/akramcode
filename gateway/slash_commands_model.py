@@ -383,7 +383,7 @@ class GatewayModelCommandsMixin:
         """Slash dispatch does not install the routed profile's scope, so a multiplexed runner binds
         the owning home for the switch row and its switch_away friction."""
         from akramcode_cli.observability.shared_metrics_events import record_model_switch
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+        from akramcode_constants import reset_hermes_home_override, set_hermes_home_override
 
         home = None
         if getattr(getattr(self, "config", None), "multiplex_profiles", False):
@@ -675,7 +675,7 @@ class GatewayModelCommandsMixin:
         self, session_key: str, platform_key: str, value: str, persist_global: bool = False,
     ) -> str:
         """Apply a /reasoning argument (typed or picked) and return the reply."""
-        from hermes_constants import parse_reasoning_effort
+        from akramcode_constants import parse_reasoning_effort
 
         value = (value or "").strip().lower()
         show = _REASONING_DISPLAY_TOGGLES.get(value)
@@ -726,7 +726,7 @@ class GatewayModelCommandsMixin:
     async def _handle_reasoning_command(self, event: MessageEvent) -> Optional[str]:
         """Handle /reasoning command — manage reasoning effort and display toggle."""
         from gateway.run import _platform_config_key
-        from hermes_constants import VALID_REASONING_EFFORTS
+        from akramcode_constants import VALID_REASONING_EFFORTS
 
         raw_args = event.get_command_args().strip()
         args, persist_global = self._parse_reasoning_command_args(raw_args)

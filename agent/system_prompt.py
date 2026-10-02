@@ -27,7 +27,7 @@ from agent.prompt_builder import (
 )
 from agent import prompt_builder as _pb
 from agent.runtime_cwd import resolve_agent_cwd, resolve_context_cwd
-from hermes_constants import get_default_hermes_root, get_hermes_home
+from akramcode_constants import get_default_hermes_root, get_hermes_home
 from utils import is_truthy_value
 
 logger = logging.getLogger(__name__)
@@ -239,7 +239,7 @@ def _agent_home(agent: Any) -> Optional[Path]:
     the default profile's skills/identity into a bot prompt.
     """
     try:
-        from hermes_constants import get_hermes_home_override
+        from akramcode_constants import get_hermes_home_override
         override = get_hermes_home_override()
         if override:
             return Path(override)
@@ -264,7 +264,7 @@ def _profile_name_for_home(home: Path) -> str:
     profile session the ambient home IS the profile dir, so every profile
     would misreport as "default"."""
     try:
-        from hermes_constants import get_default_hermes_root
+        from akramcode_constants import get_default_hermes_root
         rel = home.resolve().relative_to((get_default_hermes_root() / "profiles").resolve())
         return rel.parts[0] if rel.parts else "default"
     except (ValueError, OSError):
@@ -475,7 +475,7 @@ def _zone_bits(now: Any, tz: Any) -> List[str]:
     """IANA key, abbreviation (if different) and UTC offset — all constant for
     the day, so the byte-stable date line stays cacheable."""
     _iana = getattr(tz, "key", None)
-    from akram_core.hermes_time import safe_strftime
+    from akram_core.akramcode_time import safe_strftime
     _abbrev = safe_strftime(now, "%Z")
     _offset = safe_strftime(now, "%z")  # '-0400' -> 'UTC-04:00'
     bits = [_iana] if _iana else []
@@ -490,7 +490,7 @@ def _timestamp_line(agent: Any) -> str:
     """Date-only so the prompt is byte-stable for the day; zone + offset so
     tools needn't guess EST vs EDT. Long-lived sessions get an "as of" line on
     rebuild days (the cache prefix is already invalidated at that boundary)."""
-    from akram_core.hermes_time import get_timezone as _hermes_tz, now as _hermes_now, safe_strftime
+    from akram_core.akramcode_time import get_timezone as _hermes_tz, now as _hermes_now, safe_strftime
     now = _hermes_now()
     _bits = _zone_bits(now, _hermes_tz())
     _zone_suffix = f" ({', '.join(_bits)})" if _bits else ""

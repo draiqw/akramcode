@@ -444,7 +444,7 @@ def restore_interrupted_pull(project_root: Path | None = None) -> bool:
     edits are never touched; the updater's autostash (if any) stays in ``git stash list``. Concurrent
     launches take turns (``_restore_claim``); a launch that waited out another's restore relaunches.
 
-    Limits, by design: a torn ``akramcode_cli/__init__.py``, ``akram_core.hermes_bootstrap.py``, ``agent/__init__.py``
+    Limits, by design: a torn ``akramcode_cli/__init__.py``, ``akram_core.akramcode_bootstrap.py``, ``agent/__init__.py``
     or ``agent/jiter_preload.py`` (imported before the ``hermes-agent`` hook) fails before this runs. A file git also changes that the user deleted, emptied or cut to a prefix of git's version
     looks exactly like git's own half-written file and is restored too, as is a user edit to a
     conflicted path or, on git < 2.38, to a path both sides of a custom-branch merge changed.
@@ -556,7 +556,7 @@ def _put_back_paths(git, root: Path, restore: list[str], added: list[str]) -> su
 def relaunch_after_restore() -> None:
     """Re-run this command from the restored tree; never returns.
 
-    Everything imported so far (this package, ``akram_core.hermes_bootstrap``, ``akramcode_cli.main`` itself) may
+    Everything imported so far (this package, ``akram_core.akramcode_bootstrap``, ``akramcode_cli.main`` itself) may
     be the killed git's new files, and they would run against the restored old tree.
     """
     argv = [sys.executable, *sys.orig_argv[1:]]

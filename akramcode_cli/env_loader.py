@@ -463,7 +463,7 @@ def load_hermes_dotenv(
     fallback that only fills gaps when the user env exists (and overrides shell vars when it does not)."""
     # Process home on purpose (never the per-turn override): a startup .env load must not follow a routed
     # profile — see the multiplex guard below.
-    from hermes_constants import get_process_hermes_home
+    from akramcode_constants import get_process_hermes_home
     home_path = Path(hermes_home) if hermes_home else get_process_hermes_home()
 
     # Multiplex gateway: while a routed profile-home override is active, copying that profile's .env
@@ -477,7 +477,7 @@ def load_hermes_dotenv(
     # (``is_multiplex_active()`` is also true, context-locally, for a routed cron fire in the desktop
     # backend — see ``cron.scheduler_provider.routed_profile_fire``.)
     from agent.secret_scope import is_multiplex_active
-    from hermes_constants import get_hermes_home, get_hermes_home_override
+    from akramcode_constants import get_hermes_home, get_hermes_home_override
 
     launch_home = _process_hermes_home().resolve()
     if (is_multiplex_active() and get_hermes_home_override() is not None
@@ -774,7 +774,7 @@ def _load_secrets_config(home_path: Path) -> dict:
     if not config_path.exists():
         return {}
     # Prefer the shared raw-config cache: this is the first config.yaml read of a normal startup, so
-    # populating it lets main.py's early bridge and akram_core.hermes_logging reuse one parse instead of 3-4.
+    # populating it lets main.py's early bridge and akram_core.akramcode_logging reuse one parse instead of 3-4.
     if home_path == _process_hermes_home():
         try:
             from akramcode_cli.config import read_raw_config
@@ -811,14 +811,14 @@ def _process_hermes_home() -> Path:
       (mtime,size)-keyed config cache is safe to reuse; under an override it
       must fall through to an isolated parse of the scoped profile.
 
-    ``hermes_constants.get_routing_process_hermes_home()`` is the override-immune
+    ``akramcode_constants.get_routing_process_hermes_home()`` is the override-immune
     resolver built for exactly this; delegate to it. It is also immune to a host
     that mirrors the served profile into the live ``HERMES_HOME`` env var
     (``pin_process_hermes_home``): without that, the mirrored profile satisfied
     the guard above and bridged ITS ``terminal.*`` into the shared env.
     """
     try:
-        from hermes_constants import get_routing_process_hermes_home
+        from akramcode_constants import get_routing_process_hermes_home
 
         return get_routing_process_hermes_home()
     except Exception:

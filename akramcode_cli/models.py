@@ -109,7 +109,7 @@ def _write_json_cache(path: Path, data: Any, **dump_kwargs: Any) -> None:
     """Atomically persist a cache file (creating parents). Raises on failure — callers decide
     whether a failed cache write is worth logging."""
     from utils import atomic_json_write
-    from hermes_constants import mkdir_under_hermes_home
+    from akramcode_constants import mkdir_under_hermes_home
 
     mkdir_under_hermes_home(path.parent)
     atomic_json_write(path, data, **dump_kwargs)
@@ -160,7 +160,7 @@ def _openrouter_catalog_disk_ttl() -> float:
 
 
 def _openrouter_catalog_disk_path() -> Path:
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
 
     return get_hermes_home() / "cache" / "openrouter_curated_catalog.json"
 
@@ -286,7 +286,7 @@ _free_tier_cache: dict[str, tuple[bool, float]] = {}  # profile key -> (result, 
 
 def _pricing_profile_key() -> str:
     """Stable profile identity for process-local pricing caches."""
-    from hermes_constants import hermes_home_key
+    from akramcode_constants import hermes_home_key
 
     return hermes_home_key()
 
@@ -334,7 +334,7 @@ _nous_recommended_cache: dict[tuple[str, str], tuple[dict[str, Any], float]] = {
 
 
 def _nous_recommended_disk_path() -> "Path":
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
     return get_hermes_home() / "cache" / "nous_recommended_cache.json"
 
 
@@ -672,7 +672,7 @@ def fetch_ai_gateway_models(
     if _ai_gateway_catalog_cache is not None and not force_refresh:
         return list(_ai_gateway_catalog_cache)
 
-    from hermes_constants import AI_GATEWAY_BASE_URL
+    from akramcode_constants import AI_GATEWAY_BASE_URL
 
     fallback = list(VERCEL_AI_GATEWAY_MODELS)
     live = _fetch_live_catalog_index(f"{AI_GATEWAY_BASE_URL.rstrip('/')}/models", timeout, _urlopen_model_catalog_request)
@@ -1816,7 +1816,7 @@ def _spawn_swr_refresh(cache_key: str, refresh_fn=None) -> None:
     # Under a routed profile the inflight key includes the home: the same provider slug names a
     # different disk cache and credential set per profile, so one profile's refresh must not
     # suppress another's. Unscoped keeps the bare key (tests inspect the set by slug).
-    from hermes_constants import get_hermes_home_override, hermes_home_key
+    from akramcode_constants import get_hermes_home_override, hermes_home_key
     inflight_key = cache_key if get_hermes_home_override() is None else (hermes_home_key(), cache_key)
     with _swr_refresh_lock:
         if inflight_key in _swr_refresh_inflight:
@@ -1850,7 +1850,7 @@ def _spawn_swr_refresh(cache_key: str, refresh_fn=None) -> None:
 
 
 def _provider_models_cache_path() -> Path:
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
     return get_hermes_home() / "provider_models_cache.json"
 
 
@@ -1938,7 +1938,7 @@ def _credential_fingerprint(provider: str) -> str:
         parts.append(f"codex_identity={codex_catalog_credential_identity()}")
     else:
         try:
-            from hermes_constants import get_hermes_home
+            from akramcode_constants import get_hermes_home
             for rel in ("auth.json", "credentials.json"):
                 _mtime_part(rel, get_hermes_home() / rel)
         except Exception:
@@ -2766,7 +2766,7 @@ def _fetch_ai_gateway_models(timeout: float = 5.0) -> Optional[list[str]]:
         return None
     base_url = os.getenv("AI_GATEWAY_BASE_URL", "").strip()
     if not base_url:
-        from hermes_constants import AI_GATEWAY_BASE_URL
+        from akramcode_constants import AI_GATEWAY_BASE_URL
         base_url = AI_GATEWAY_BASE_URL
 
     headers = {"Authorization": f"Bearer {api_key}", "User-Agent": _HERMES_USER_AGENT}

@@ -124,7 +124,7 @@ class HostedRoomService:
         return self.db_path.parent
 
     def local_profiles(self) -> tuple[str, ...]:
-        from hermes_constants import named_profile_has_identity, named_profile_is_deleted
+        from akramcode_constants import named_profile_has_identity, named_profile_is_deleted
 
         profiles, profiles_dir = {"default"}, self.root / "profiles"
         if profiles_dir.is_dir():

@@ -637,7 +637,7 @@ def _stage_first_contact_onboarding_note(session: dict, agent, history_empty: bo
     try:
         from agent.onboarding import first_contact_turn_note
         from akramcode_cli.config import load_config as _load_onboarding_config
-        from hermes_constants import get_hermes_home
+        from akramcode_constants import get_hermes_home
 
         note = first_contact_turn_note(
             _load_onboarding_config() or {},

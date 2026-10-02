@@ -10,7 +10,7 @@ from typing import Callable, Literal, Protocol
 
 from pydantic import ValidationError
 
-from hermes_constants import get_hermes_home
+from akramcode_constants import get_hermes_home
 from tools.connectors.gateway.errors import GatewayAuthError, GatewayUnavailable, ToolGatewayError
 from tools.connectors.portal.client import NotModified, validate_slug
 from tools.connectors.portal.errors import PortalToolsUnavailable

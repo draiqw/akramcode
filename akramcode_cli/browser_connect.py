@@ -27,7 +27,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from agent.proxy_bypass import is_loopback_host
-from hermes_constants import get_hermes_home
+from akramcode_constants import get_hermes_home
 
 logger = logging.getLogger(__name__)
 

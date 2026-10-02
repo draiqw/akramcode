@@ -26,7 +26,7 @@ SUPPORT_FLOOR_VERSION = 12
 
 def support_floor_message() -> str:
     """Human-facing explanation shown when a config is below the floor."""
-    from hermes_constants import display_hermes_home
+    from akramcode_constants import display_hermes_home
 
     return (
         f"This config predates version {SUPPORT_FLOOR_VERSION} (~2 years old) "
@@ -538,7 +538,7 @@ def _migrate_to_41(results: Dict[str, Any], quiet: bool) -> None:
     # 40 → 41: drop the plugin-era "## Messaging other agents" append from every SOUL.md. The
     # server injects the live Bot Mode section in Bot Chat sessions; the frozen SOUL copy taxed
     # every other session (~600 tok) and shadowed the live roster in Bot Chat itself.
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
     from tools.bot_mode_probe import _PROTOCOL_HEADING, _hermes_root, _roster, strip_legacy_protocol
 
     cleaned: List[str] = []

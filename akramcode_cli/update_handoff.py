@@ -31,7 +31,7 @@ def is_post_swap_child() -> bool:
 
 def write_handoff(payload: dict[str, Any]) -> Path:
     """Persist the post-swap payload under HERMES_HOME; returns its path."""
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
 
     directory = get_hermes_home() / "logs" / "update_receipts"
     directory.mkdir(parents=True, exist_ok=True)
@@ -55,7 +55,7 @@ def post_swap_python() -> Path:
     if sys.platform != "win32":
         return Path(sys.executable)
     from akramcode_cli._launchers import _is_windows
-    from hermes_constants import project_venv_dir
+    from akramcode_constants import project_venv_dir
     from pm.environments import venv_python
 
     venv_dir = project_venv_dir(Path(__file__).resolve().parents[1])

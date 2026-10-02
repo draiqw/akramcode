@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Optional
 
 from gateway.whatsapp_identity import expand_whatsapp_aliases, normalize_whatsapp_identifier
-from hermes_constants import get_default_hermes_root, get_hermes_dir, get_hermes_home
+from akramcode_constants import get_default_hermes_root, get_hermes_dir, get_hermes_home
 from utils import atomic_json_write, file_signature
 
 logger = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ PAIRING_DIR = None
 # eagerly: this module is imported once by the long-lived gateway process at container/process boot, and
 # computing the path eagerly freezes it to whatever HERMES_HOME/profile context existed at that exact import
 # moment for the rest of the process's lifetime -- even if a context-local override (see
-# hermes_constants.set_hermes_home_override) is established afterward. A freshly-started, short-lived
+# akramcode_constants.set_hermes_home_override) is established afterward. A freshly-started, short-lived
 # process (e.g. the ``hermes pairing`` CLI) re-imports this module later with the final environment already
 # in place, so it never observes the stale value -- the resulting asymmetry is what made pending pairing
 # codes issued by the gateway unrecoverable while CLI-side writes to the same directory kept working

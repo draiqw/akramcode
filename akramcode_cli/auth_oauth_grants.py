@@ -94,7 +94,7 @@ def strip_cloned_single_use_oauth_grants(profile_dir: Path) -> Dict[str, Any]:
     # a samefile() OSError as "two stores", which here would fail OPEN — so resolve identity
     # positively: same path, or samefile() says so; any error refuses.
     try:
-        from hermes_constants import get_default_hermes_root
+        from akramcode_constants import get_default_hermes_root
         root_auth_path = get_default_hermes_root() / "auth.json"
         if _same_path(auth_path, root_auth_path) or (
             root_auth_path.exists() and auth_path.samefile(root_auth_path)
@@ -225,7 +225,7 @@ def _persist_oauth_heal_clean_mark(provider_id: str, fingerprint: tuple) -> None
         if marks.get(provider_id) == new_mark:
             return  # already recorded; skip the rewrite
         marks[provider_id] = new_mark
-        from hermes_constants import mkdir_under_hermes_home
+        from akramcode_constants import mkdir_under_hermes_home
         mkdir_under_hermes_home(path.parent)
         # 0o600 like the MCP schema cache: this names credential-store paths.
         atomic_json_write(path, marks, mode=0o600)

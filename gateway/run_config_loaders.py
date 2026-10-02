@@ -147,7 +147,7 @@ class GatewayConfigLoadersMixin:
 
     @staticmethod
     def _load_reasoning_config(model: str = "") -> dict | None:
-        """Reasoning effort from config.yaml via :func:`hermes_constants.resolve_reasoning_config`.
+        """Reasoning effort from config.yaml via :func:`akramcode_constants.resolve_reasoning_config`.
 
         Per-model override > global ``agent.reasoning_effort``; YAML False = disabled. Empty
         ``model`` uses ``model.default``.
@@ -155,7 +155,7 @@ class GatewayConfigLoadersMixin:
         Closes #21256.
         """
         from gateway.run import _load_gateway_config
-        from hermes_constants import resolve_reasoning_config
+        from akramcode_constants import resolve_reasoning_config
         return resolve_reasoning_config(_load_gateway_config(), model)
 
     @staticmethod
@@ -523,7 +523,7 @@ class GatewayConfigLoadersMixin:
         home handed every secondary profile the default profile's fallback chain.
         """
         from gateway.run import _gateway_config_home
-        from hermes_constants import hermes_home_key
+        from akramcode_constants import hermes_home_key
         home = _gateway_config_home()
         by_home = getattr(self, "_fallback_model_by_home", None)
         if by_home is None:

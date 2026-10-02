@@ -13,7 +13,7 @@ import time
 from typing import Any, Dict, NamedTuple, Optional, Tuple
 
 from agent.error_classifier import FailoverReason
-from hermes_constants import display_hermes_home
+from akramcode_constants import display_hermes_home
 
 # Failure codes minted by loop sites that are not provider verdicts (see module docstring).
 SITE_FAILURE_CODES = frozenset({
@@ -394,7 +394,7 @@ def oauth_relogin_command(provider: Any) -> str:
     named profile: a profile's credentials are its own (93889b770da), so a bare ``hermes auth`` from
     the root profile re-signs the wrong store and the goal judge, reading a bare 401, guesses which
     service revoked the token (#114012)."""
-    from hermes_constants import profile_cli_selector
+    from akramcode_constants import profile_cli_selector
 
     slug = str(provider or "").strip().lower()
     if slug == "nous":
@@ -407,7 +407,7 @@ def relogin_command_hint(provider: Any) -> str:
     the exact OAuth command for a known OAuth slug, ``hermes auth add <slug>`` for a known API-key
     slug, and the ``<provider>`` placeholder when the slug is unknown — always carrying the
     ``-p <profile>`` selector so a profile user never re-signs the ROOT store (#114012)."""
-    from hermes_constants import profile_cli_selector
+    from akramcode_constants import profile_cli_selector
 
     slug = str(provider or "").strip().lower()
     if not slug:

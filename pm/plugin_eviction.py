@@ -78,7 +78,7 @@ class PluginEviction:
     """Config edits disabling the plugins in *reasons*; published like a plugin selection."""
 
     def __init__(self, entries: list[Entry], reasons: dict[Path, str]):
-        from akram_core.hermes_yaml import roundtrip_yaml
+        from akram_core.akramcode_yaml import roundtrip_yaml
         from pm.publication import selection_snapshot
 
         self.configs = selection_snapshot()

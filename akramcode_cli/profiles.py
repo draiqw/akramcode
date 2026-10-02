@@ -18,18 +18,18 @@ from typing import Dict, List, Optional, Tuple
 
 from akramcode_cli.archive_safe import archive_root_dirs, make_targz, normalize_archive_parts, safe_extract_targz
 from akramcode_cli.home_data_layout import PM_RUNTIME_ROOT_DIRS
-from hermes_constants import (
+from akramcode_constants import (
     LOCAL_RUNTIME_ROOT_DIRS, PROFILE_ID_RE, clear_named_profile_deleted, mark_named_profile_deleted,
     named_profile_has_identity, named_profile_is_deleted, named_profile_is_live,
 )
 
 logger = logging.getLogger(__name__)
 
-_PROFILE_ID_RE = PROFILE_ID_RE  # legacy alias; hermes_constants.PROFILE_ID_RE is canonical
+_PROFILE_ID_RE = PROFILE_ID_RE  # legacy alias; akramcode_constants.PROFILE_ID_RE is canonical
 
 # Directories bootstrapped inside every new profile. ``home`` is the back-compat/Docker
 # HOME for tool subprocesses (host subprocesses keep the real HOME so CLI credentials
-# stay visible; containers persist HOME state here). See hermes_constants.get_subprocess_home().
+# stay visible; containers persist HOME state here). See akramcode_constants.get_subprocess_home().
 _PROFILE_DIRS = ["memories", "sessions", "skills", "skins", "logs", "plans", "workspace", "cron", "home"]
 
 # Files copied during --clone (if they exist in the source).
@@ -191,7 +191,7 @@ _DEFAULT_EXPORT_EXCLUDE_ROOT = DEFAULT_EXPORT_EXCLUDE_ROOT = frozenset({
 # Sensitive runtime infrastructure (``state.db``, ``logs/``, ``auth.*``,
 # other profiles) is intentionally *not* in this list so the export stays
 # a portable, credential-free snapshot of the user-facing surface
-# (#58394). Add new artifacts here when introduced in ``hermes_constants``.
+# (#58394). Add new artifacts here when introduced in ``akramcode_constants``.
 _DEFAULT_EXPORT_INCLUDE_ROOT = frozenset({
     # Configuration / persona
     "config.yaml", "SOUL.md", "MEMORY.md", "USER.md", "todo.json",
@@ -226,7 +226,7 @@ def _get_profiles_root() -> Path:
 def _get_default_hermes_home() -> Path:
     """Default (pre-profile) HERMES_HOME: ``~/.hermes``, or HERMES_HOME itself in
     Docker/custom deployments (e.g. ``/opt/data``)."""
-    from hermes_constants import get_default_hermes_root
+    from akramcode_constants import get_default_hermes_root
     return get_default_hermes_root()
 
 
@@ -396,7 +396,7 @@ def profile_matches_home(name: str, home: "Path | None" = None) -> bool:
     try:
         target = get_profile_dir(name)
         if home is None:
-            from hermes_constants import get_hermes_home
+            from akramcode_constants import get_hermes_home
             home = get_hermes_home()
         return Path(target).expanduser().resolve(strict=False) == Path(home).expanduser().resolve(strict=False)
     except Exception:
@@ -522,7 +522,7 @@ def _migrate_profile_config_if_outdated(profile_dir: Path) -> None:
     # Creation must not fail over an unmigratable old config; `hermes doctor --fix` surfaces
     # the detailed error in the target profile.
     with contextlib.suppress(Exception):
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+        from akramcode_constants import reset_hermes_home_override, set_hermes_home_override
         from akramcode_cli.config import check_config_version, migrate_config
         token = set_hermes_home_override(str(profile_dir))
         try:
@@ -634,7 +634,7 @@ def _load_yaml_dict(path: Path) -> Optional[dict]:
     if not path.is_file():
         return None
     try:
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
         data = yaml.safe_load(path.read_text(encoding="utf-8-sig")) or {}
     except Exception:
         return None
@@ -734,7 +734,7 @@ def _seed_model_config(profile_dir: Path) -> None:
     if config_path.exists():
         return
     with contextlib.suppress(Exception):  # creation must not fail over this; `hermes model` sets it later
-        from hermes_constants import get_hermes_home
+        from akramcode_constants import get_hermes_home
         from akramcode_cli.config import atomic_config_write, read_user_config_raw
         source = get_hermes_home() / "config.yaml"
         seed = launch_model_seed(read_user_config_raw(source)) if source.is_file() else {}
@@ -1038,7 +1038,7 @@ def profile_is_standalone(home: Path) -> bool:
     (``gateway.standalone: true``)? Memoised by file signature. The DEFAULT profile is
     never standalone — it IS the host — and warns once per process if the key is set there."""
     global _STANDALONE_WARNED
-    from akram_core.hermes_yaml import YAMLError
+    from akram_core.akramcode_yaml import YAMLError
     from utils import file_signature
 
     home = Path(home)
@@ -1135,7 +1135,7 @@ def profiles_to_serve(multiplex: bool, *, include_standalone: bool = False,
 def _resolve_clone_source(clone_from: Optional[str]) -> Path:
     """Directory to clone from: the named profile, or the active profile when ``None``."""
     if clone_from is None:
-        from hermes_constants import get_hermes_home
+        from akramcode_constants import get_hermes_home
         source_dir = get_hermes_home()
     else:
         clone_from = _canon_valid(clone_from)
@@ -1637,7 +1637,7 @@ def _stop_bot_desktop(profile_dir: Path) -> None:
     gateway shutdown does not reach it (its own session, its own pid file). Scoped through the hermes-home
     override so the runtime reads THIS profile's bot-desktop/ state, whichever profile invoked the op.
     A failure here is logged, never fatal: the profile op is what the user asked for."""
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from akramcode_constants import reset_hermes_home_override, set_hermes_home_override
     from tools.bot_desktop import runtime
     if not runtime.is_supported_host():
         return
@@ -1781,7 +1781,7 @@ def delete_profile(name: str, yes: bool = False) -> Path:
 
     # The main serve process survives this deletion. Stop only this profile's MCP
     # transports and release cached stderr handles, including completed probes.
-    from hermes_constants import hermes_home_key
+    from akramcode_constants import hermes_home_key
     from tools.mcp_tool_lifecycle import shutdown_mcp_servers
     shutdown_mcp_servers(scope=hermes_home_key(profile_dir))
 
@@ -1805,7 +1805,7 @@ def delete_profile(name: str, yes: bool = False) -> Path:
     # QueueListener. On Windows those ConcurrentRotatingFileHandler instances retain their
     # ``.__*.lock`` files until explicitly closed, so rmtree otherwise fails with WinError 32.
     with contextlib.suppress(Exception):
-        from akram_core.hermes_logging import release_profile_log_handlers
+        from akram_core.akramcode_logging import release_profile_log_handlers
         _released_logs = release_profile_log_handlers(profile_dir)
         if _released_logs:
             print(f"✓ Released {_released_logs} profile log handler(s) held by this process")
@@ -1890,7 +1890,7 @@ def _cleanup_gateway_service(name: str, profile_dir: Path) -> bool:
     # The service name follows get_hermes_home(): bind the override (the seam a multiplexed
     # dashboard/tui-gateway process reads) and mirror the env for identity-file readers, so a
     # DELETE from a multi-profile dashboard names THIS profile's unit, never the host's bare one.
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from akramcode_constants import reset_hermes_home_override, set_hermes_home_override
     old_home = os.environ.get("HERMES_HOME")
     home_token = set_hermes_home_override(str(profile_dir))
     try:
@@ -2013,7 +2013,7 @@ def _retarget_active_profile(old: str, new: str, message: str) -> None:
 def get_active_profile_name() -> str:
     """Profile name inferred from HERMES_HOME: ``"default"`` when unset or ``~/.hermes``, the
     name under ``~/.hermes/profiles/<name>``, ``"custom"`` for any other path."""
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
     resolved = get_hermes_home().resolve()
     if resolved == _get_default_hermes_home().resolve():
         return "default"
@@ -2036,7 +2036,7 @@ def current_profile_name(default: str | None = None) -> str | None:
     The env pin is read only outside an override: ``os.environ`` is the LAUNCH profile's, so under
     an override it would re-label a served profile's board writes with the host's identity.
     """
-    from hermes_constants import get_hermes_home_override
+    from akramcode_constants import get_hermes_home_override
     if get_hermes_home_override() is None:
         for env_name in ("HERMES_PROFILE_NAME", "HERMES_PROFILE"):
             value = (os.environ.get(env_name) or "").strip()
@@ -2376,7 +2376,7 @@ def rename_profile(old_name: str, new_name: str) -> Path:
     # 1c. Release this process's cached MCP stderr handle into the old home (same as
     # delete_profile): Windows refuses to rename a directory holding an open file, and the
     # handle would otherwise stay cached under the old key after the move.
-    from hermes_constants import hermes_home_key
+    from akramcode_constants import hermes_home_key
     from tools.mcp_tool_lifecycle import shutdown_mcp_servers
     shutdown_mcp_servers(scope=hermes_home_key(old_dir))
 

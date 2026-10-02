@@ -32,18 +32,18 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Protocol, Union
 
 # Must precede repo-level imports: standalone invocations (e.g. module reload after
-# `hermes update`) otherwise fail with ModuleNotFoundError for akram_core.hermes_time et al.
+# `hermes update`) otherwise fail with ModuleNotFoundError for akram_core.akramcode_time et al.
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from cron.worker_bootstrap import WORKER_MARKER
-from hermes_constants import get_hermes_home, hermes_home_key
+from akramcode_constants import get_hermes_home, hermes_home_key
 from akramcode_cli.observability.shared_metrics_gateway import note_cron_execution, note_cron_skipped
 from cron.env_settings import cron_env_setting
 from akramcode_cli._subprocess_compat import windows_hide_flags
 from akramcode_cli.config import (
     load_config, load_config_readonly)
 from akramcode_cli.fallback_config import get_fallback_chain, scoped_fallback_chain
-from akram_core.hermes_time import now as _hermes_now, safe_strftime
+from akram_core.akramcode_time import now as _hermes_now, safe_strftime
 from agent.interrupt_compat import request_hard_interrupt
 from agent.delegation_context import (
     enter_non_dispatcher_owned_context, exit_non_dispatcher_owned_context)
@@ -517,7 +517,7 @@ def _resolve_job_reasoning_config(job: dict, cfg: dict, model: str) -> dict | No
     """Effective reasoning config for a cron run. A per-job ``reasoning_effort`` pin beats global
     and per-model config and is model-independent by design (also governs an auth-fallback swap);
     clamping stays with provider transports. An unparseable pin warns and falls back to config."""
-    from hermes_constants import parse_reasoning_effort, resolve_reasoning_config
+    from akramcode_constants import parse_reasoning_effort, resolve_reasoning_config
 
     pinned = job.get("reasoning_effort")
     if pinned is not None:
@@ -1631,7 +1631,7 @@ def _load_cron_job_config(job: dict, job_id: str, job_name: str) -> _CronJobConf
         )
 
     with contextlib.suppress(Exception):
-        from hermes_constants import apply_ipv4_preference
+        from akramcode_constants import apply_ipv4_preference
         _net_cfg = _cfg.get("network", {})
         if isinstance(_net_cfg, dict) and _net_cfg.get("force_ipv4"):
             apply_ipv4_preference(force=True)
@@ -3799,7 +3799,7 @@ def _run_external_worker_payload(payload_path: Path, ack_path: Path) -> bool:
     )
     from cron.executions import adopt_claimed_execution
     from akramcode_cli.env_loader import hydrate_profile_secret_sources
-    from hermes_constants import (
+    from akramcode_constants import (
         reset_hermes_home_override,
         set_hermes_home_override,
     )
@@ -4304,7 +4304,7 @@ if __name__ == "__main__":
         # log handler every adoption/ack failure below would otherwise be
         # invisible to the persistent log.
         try:
-            from akram_core.hermes_logging import setup_logging
+            from akram_core.akramcode_logging import setup_logging
 
             setup_logging(hermes_home=_get_hermes_home(), mode="cron")
         except Exception:

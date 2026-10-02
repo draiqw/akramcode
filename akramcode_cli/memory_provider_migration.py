@@ -37,7 +37,7 @@ def provider_present(name: str, home: Path) -> bool:
     plugins, entry point). The lookup reads the active home, so it is bound explicitly: the update
     hook walks several profile homes from one process."""
     from plugins.memory import find_provider_dir
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from akramcode_constants import reset_hermes_home_override, set_hermes_home_override
     token = set_hermes_home_override(home)
     try:
         return find_provider_dir(name) is not None
@@ -83,7 +83,7 @@ def migrate_home(home: Path, *, install: Callable[[str], dict], say: Callable[[s
 def _install_into(home: Path) -> Callable[[str], dict]:
     def _install(name: str) -> dict:
         from akramcode_cli.plugins_cmd import dashboard_install_plugin
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+        from akramcode_constants import reset_hermes_home_override, set_hermes_home_override
         token = set_hermes_home_override(home)
         try:
             return dashboard_install_plugin("", force=False, enable=True, catalog_name=name)
@@ -110,7 +110,7 @@ def migrate_all_homes(*, say: Callable[[str], None] = print) -> list[str]:
 def recover_at_startup(name: str) -> bool:
     """Agent-init hook for a configured provider that resolved nowhere. One attempt per process per
     home and name; honours ``security.allow_lazy_installs`` because it installs code. True when installed."""
-    from hermes_constants import get_hermes_home, hermes_home_key
+    from akramcode_constants import get_hermes_home, hermes_home_key
 
     home = get_hermes_home()
     key = (hermes_home_key(home), name)

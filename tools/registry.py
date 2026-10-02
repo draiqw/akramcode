@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Set
 
-from hermes_constants import hermes_home_key, normalize_scope
+from akramcode_constants import hermes_home_key, normalize_scope
 
 logger = logging.getLogger(__name__)
 
@@ -145,7 +145,7 @@ def _discovery_cache_path() -> Optional[Path]:
     """Path of the tool-discovery verdict cache, or None if unresolvable."""
     try:
         # Deferred import keeps tools/registry.py a no-deps leaf at import time.
-        from hermes_constants import get_hermes_home
+        from akramcode_constants import get_hermes_home
         return Path(get_hermes_home()) / "cache" / "tool_discovery_cache.json"
     except Exception:
         return None
@@ -171,7 +171,7 @@ def _save_discovery_cache(cache: Dict[str, list]) -> None:
         return
     try:
         from utils import atomic_json_write  # stdlib+yaml only; no cycle
-        from hermes_constants import mkdir_under_hermes_home
+        from akramcode_constants import mkdir_under_hermes_home
         mkdir_under_hermes_home(path.parent)
         atomic_json_write(path, cache, indent=0)
     except Exception as e:
@@ -280,7 +280,7 @@ def check_fn_cache_scope() -> Optional[str]:
         pass
     try:
         from agent.secret_scope import serves_routed_profile
-        from hermes_constants import get_hermes_home_override
+        from akramcode_constants import get_hermes_home_override
         if not serves_routed_profile():
             return None
         override = get_hermes_home_override()

@@ -1294,7 +1294,7 @@ def _reconcile_send_consent_once() -> None:
     try:
         # Lazy: tests patch ``shared_metrics.SharedMetricsStore`` at its origin.
         from akramcode_cli.observability.shared_metrics import SharedMetricsStore
-        from hermes_constants import get_hermes_home
+        from akramcode_constants import get_hermes_home
 
         resolved = _resolved_send_config()
         # Probe WITHOUT constructing a store: the constructor creates the directory and

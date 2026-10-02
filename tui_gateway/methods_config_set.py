@@ -6,7 +6,7 @@ Keys match exactly except ``details_mode.<section>`` (prefix) and ``_DISPLAY_TOG
 
 import os
 
-from hermes_constants import INDICATOR_STYLES
+from akramcode_constants import INDICATOR_STYLES
 
 from .method_ctx import HandlerRegistry, bind_module
 
@@ -306,7 +306,7 @@ _REASONING_DISPLAY_WORDS = (
 
 @_cfgset_guarded
 def _set_reasoning(rid, params, key, value, session):
-    from hermes_constants import parse_reasoning_effort
+    from akramcode_constants import parse_reasoning_effort
     arg = _word(value)
     scope = _word(params.get("scope"))
     for words, reported, fields, thinking, show in _REASONING_DISPLAY_WORDS:

@@ -66,7 +66,7 @@ def _plugin_scope(source_dir: Optional[Path]):
     if source_dir is None:
         yield
         return
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from akramcode_constants import reset_hermes_home_override, set_hermes_home_override
     token = set_hermes_home_override(str(source_dir))
     try:
         yield

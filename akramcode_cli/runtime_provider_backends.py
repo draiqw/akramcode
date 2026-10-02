@@ -12,7 +12,7 @@ from typing import Any, Dict, Optional
 
 from agent.azure_identity_adapter import is_token_provider
 from agent.secret_scope import get_secret_str
-from hermes_constants import OPENROUTER_BASE_URL
+from akramcode_constants import OPENROUTER_BASE_URL
 from utils import base_url_host_matches, base_url_hostname
 
 

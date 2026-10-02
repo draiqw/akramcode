@@ -105,7 +105,7 @@ print_banner() {
     printf '%s\n' "┌─────────────────────────────────────────────────────────┐"
             printf '%s\n' "│             ☤ akramcode Installer                       │"
     printf '%s\n' "├─────────────────────────────────────────────────────────┤"
-    printf '%s\n' "│  Personal AI agent based on Hermes.                      │"
+    printf '%s\n' "│  AkramCode personal AI agent.                            │"
     printf '%s\n' "└─────────────────────────────────────────────────────────┘"
     printf '%s\n' "$C_NC"
 }
@@ -406,7 +406,7 @@ products_record() {
 stage_record() {
     case "$1" in
         prerequisites) echo "System prerequisites|runtime|false" ;;
-        repository)    echo "Download Hermes Agent|runtime|false" ;;
+        repository)    echo "Download AkramCode|runtime|false" ;;
         venv)          echo "Create Python environment|runtime|false" ;;
         python-deps)   echo "Install Python dependencies|runtime|false" ;;
         config)        echo "Prepare config and skills|configuration|false" ;;
@@ -592,7 +592,7 @@ stage_repository() {
             fail "cannot publish cloned checkout"
         fi
         rmdir "$staged"
-        log_success "Hermes Agent cloned"
+    log_success "AkramCode cloned"
     fi
     if [ -n "$INSTALL_COMMIT" ]; then
         # A pin must come from the branch being installed: the complete
@@ -688,7 +688,7 @@ append_shell_path() {
         return 0
     fi
     mkdir -p "$(dirname "$rc")"
-    printf '\n# Hermes Agent command\n%s\n' "$line" >> "$rc" || fail "cannot update PATH in $rc"
+    printf '\n# AkramCode command\n%s\n' "$line" >> "$rc" || fail "cannot update PATH in $rc"
     log_success "added ~/.local/bin to PATH in $rc"
 }
 
@@ -729,11 +729,11 @@ stage_products() {
     if [ "$INCLUDE_DESKTOP" = true ] || desktop_product_present; then
         args+=(--desktop)
     fi
-    (cd "$INSTALL_DIR" && run_logged "Building the hermes command and apps" \
+    (cd "$INSTALL_DIR" && run_logged "Building the akramcode command and apps" \
         "$boot_py" -I -B -X utf8 akramcode_cli/source_completion.py "${args[@]}") \
         || fail "app products or command publication failed"
     wire_shell_path
-    log_success "app products and hermes command ready"
+    log_success "app products and akramcode command ready"
 }
 
 stage_desktop() {
@@ -808,7 +808,7 @@ print_path_reload_hint() {
         bash|"") rc="source ~/.bashrc" ;;
         *) rc=". ~/.profile" ;;
     esac
-    log "Reload your shell to use hermes: open a new terminal, or run: $rc"
+        log "Reload your shell to use akramcode: open a new terminal, or run: $rc"
 }
 
 run_stage() (

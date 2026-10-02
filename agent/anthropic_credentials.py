@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 from urllib.parse import urlparse
 
-from hermes_constants import get_hermes_home
+from akramcode_constants import get_hermes_home
 from utils import atomic_json_write
 from agent.secret_scope import get_secret as _get_secret
 
@@ -737,7 +737,7 @@ def _root_hermes_oauth_file() -> Optional[Path]:
     """Global-root ``.anthropic_oauth.json`` inside a named profile (None in classic mode); used to commit a
     rotation of a grant the profile borrowed via the pool's root fallback."""
     try:
-        from hermes_constants import get_default_hermes_root
+        from akramcode_constants import get_default_hermes_root
         root = get_default_hermes_root()
         return None if root.resolve(strict=False) == get_hermes_home().resolve(strict=False) else root / ".anthropic_oauth.json"
     except Exception:

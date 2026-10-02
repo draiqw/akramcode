@@ -900,7 +900,7 @@ class MemoryManager:
     def initialize_all(self, session_id: str, **kwargs) -> None:
         """Initialize all providers, injecting ``hermes_home`` so they resolve profile-scoped paths."""
         if "hermes_home" not in kwargs:
-            from hermes_constants import get_hermes_home
+            from akramcode_constants import get_hermes_home
             kwargs["hermes_home"] = str(get_hermes_home())
         self._each_provider("initialize failed", lambda p: p.initialize(session_id=session_id, **kwargs),
                             level=logging.WARNING)

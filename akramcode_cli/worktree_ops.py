@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Dict, Optional
 
 from akramcode_cli._subprocess_compat import kill_process_tree
-from hermes_constants import get_hermes_home
+from akramcode_constants import get_hermes_home
 from utils import atomic_json_write
 
 logger = logging.getLogger("cli")

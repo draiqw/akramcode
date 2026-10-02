@@ -20,7 +20,7 @@ import re
 from datetime import datetime
 from typing import Any, Dict, Optional
 
-from akram_core.hermes_time import now as _hermes_now, safe_strftime
+from akram_core.akramcode_time import now as _hermes_now, safe_strftime
 
 logger = logging.getLogger("cron.scheduler")
 

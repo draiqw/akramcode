@@ -19,7 +19,7 @@ from logging.handlers import QueueHandler, QueueListener
 from pathlib import Path
 from typing import Optional, Sequence
 
-from hermes_constants import get_config_path, get_hermes_home, mkdir_under_hermes_home
+from akramcode_constants import get_config_path, get_hermes_home, mkdir_under_hermes_home
 
 # setup_logging() is idempotent: a second call is a no-op unless ``force=True``.
 _logging_initialized = False
@@ -629,7 +629,7 @@ class _ProfileRoutingFileHandler(logging.Handler):
                 return
             # Formatted here, on the listener thread, where the record's profile scope is gone: bind its home so
             # RedactingFormatter applies THAT profile's redact_secrets policy and vault values, not the launch's.
-            from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+            from akramcode_constants import reset_hermes_home_override, set_hermes_home_override
             token = set_hermes_home_override(str(home))
             try:
                 handler.handle(record)
@@ -899,7 +899,7 @@ def _read_logging_config():
     try:
         # Prefer the shared effective-config cache (managed overlay included, so an administrator
         # can pin logging.*) so this reuses akramcode_cli.main's early parse (one config.yaml parse
-        # per process); fall back to a direct parse for bare akram_core.hermes_logging consumers.
+        # per process); fall back to a direct parse for bare akram_core.akramcode_logging consumers.
         try:
             from akramcode_cli.config_effective import load_user_config_effective
             cfg = load_user_config_effective(get_config_path())

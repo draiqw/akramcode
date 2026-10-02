@@ -45,7 +45,7 @@ def install_id(project_root: Optional[Path] = None) -> str:
     """Stable 12-hex identifier for THIS install (derived from its path)."""
     if project_root is None:
         try:
-            from hermes_constants import PROJECT_ROOT as _root
+            from akramcode_constants import PROJECT_ROOT as _root
 
             project_root = Path(_root)
         except Exception:
@@ -133,7 +133,7 @@ class LedgerEntry:
 def _ledger_path() -> Path:
     """Machine-root ledger path (shared by every profile of this install)."""
     try:
-        from hermes_constants import get_default_hermes_root
+        from akramcode_constants import get_default_hermes_root
 
         return Path(get_default_hermes_root()) / LEDGER_FILENAME
     except Exception:
@@ -211,7 +211,7 @@ def register_self(purpose: str, *, project_root: Optional[Path] = None, detail: 
     pipeline can relaunch a manually-started serve with its real bind address, and ``isolated``
     so attach-first discovery skips a backend that opted out of the host singleton.
     """
-    from hermes_constants import hermes_home_key
+    from akramcode_constants import hermes_home_key
 
     tag = parse_spawn_tag(os.environ.get(SPAWN_ENV_VAR))
     spawner_pid, spawner_create = (tag.spawner_pid, tag.spawner_create) if tag else _desktop_spawner_identity()
@@ -303,7 +303,7 @@ def _append_entry(entry: LedgerEntry) -> bool:
         ]
         pruned.append(asdict(entry))
         try:
-            from hermes_constants import mkdir_under_hermes_home
+            from akramcode_constants import mkdir_under_hermes_home
             mkdir_under_hermes_home(path.parent)
             # argv may carry surrogate-escaped bytes (non-UTF-8 paths); ensure_ascii keeps the
             # utf-8 text handle from raising UnicodeEncodeError (a ValueError, not an OSError).

@@ -28,7 +28,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, Sequence
 
-from hermes_constants import get_hermes_home, display_hermes_home
+from akramcode_constants import get_hermes_home, display_hermes_home
 
 # Known log files (name → filename)
 LOG_FILES = {
@@ -194,7 +194,7 @@ def tail_log(
 
     component_prefixes = None
     if component:
-        from akram_core.hermes_logging import COMPONENT_PREFIXES
+        from akram_core.akramcode_logging import COMPONENT_PREFIXES
         component_lower = component.lower()
         if component_lower not in COMPONENT_PREFIXES:
             available = ", ".join(sorted(COMPONENT_PREFIXES))

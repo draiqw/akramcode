@@ -57,7 +57,7 @@ def rehome_inbound_media(event: MessageEvent) -> None:
     """
     if not event.media_urls:
         return
-    from hermes_constants import get_hermes_home, get_routing_process_hermes_home, hermes_home_key
+    from akramcode_constants import get_hermes_home, get_routing_process_hermes_home, hermes_home_key
     active, launch = Path(get_hermes_home()), Path(get_routing_process_hermes_home())
     if hermes_home_key(active) == hermes_home_key(launch):
         return
@@ -190,7 +190,7 @@ class GatewayInboundMixin:
     async def _hm_report_ignored_dm(self, source: SessionSource) -> None:
         """Unauthorized DM under behaviour ``ignore``: nothing goes to the sender. The owner gets the
         sender's ID and the allowlist fix in the WARNING log and, once per sender, in the home channel."""
-        from hermes_constants import display_hermes_home
+        from akramcode_constants import display_hermes_home
         platform_name = source.platform.value if source.platform else "unknown"
         hint = unauthorized_owner_hint(
             platform_name, source.user_id, source.user_name or "", hermes_home=display_hermes_home(),

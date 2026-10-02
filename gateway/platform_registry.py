@@ -13,7 +13,7 @@ import threading
 from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable, Optional
 
-from hermes_constants import hermes_home_key
+from akramcode_constants import hermes_home_key
 
 logger = logging.getLogger(__name__)
 

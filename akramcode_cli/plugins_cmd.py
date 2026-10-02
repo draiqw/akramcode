@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 from typing import Any, NoReturn, Optional
 
-from hermes_constants import get_hermes_home
+from akramcode_constants import get_hermes_home
 from akramcode_cli.config import cfg_get
 from akramcode_cli.plugin_capabilities import _child_dict
 # Tests patch these two on the facade; the install/remove siblings read them through it.

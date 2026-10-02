@@ -2,10 +2,10 @@ import os
 import sys
 
 # Stop a ``utils/``-style package in the launch directory from shadowing Hermes's own
-# top-level modules; ``akram_core.hermes_bootstrap``'s name can't collide, so importing it first is safe.
-import akram_core.hermes_bootstrap
+# top-level modules; ``akram_core.akramcode_bootstrap``'s name can't collide, so importing it first is safe.
+import akram_core.akramcode_bootstrap
 
-akram_core.hermes_bootstrap.harden_import_path()
+akram_core.akramcode_bootstrap.harden_import_path()
 
 import json
 import logging

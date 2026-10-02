@@ -1017,7 +1017,7 @@ def _persisted_session_id(session_id: Optional[str]) -> Optional[str]:
         return None
     try:
         from akramcode_state import SessionDB
-        from hermes_constants import get_hermes_home
+        from akramcode_constants import get_hermes_home
 
         state = SessionDB(db_path=get_hermes_home() / "state.db", read_only=True)
     except Exception:  # state.db may not exist for a CLI/dashboard invocation

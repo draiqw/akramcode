@@ -298,7 +298,7 @@ class MCPOAuthManager:
 
     @staticmethod
     def _key(server_name: str, hermes_home: str | Path | None = None) -> tuple[str, str]:
-        from hermes_constants import get_hermes_home
+        from akramcode_constants import get_hermes_home
         home = Path(hermes_home) if hermes_home is not None else get_hermes_home()
         return (str(home.expanduser().resolve(strict=False)), server_name)
 

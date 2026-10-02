@@ -14,7 +14,7 @@ from datetime import datetime
 from typing import Dict, Optional, Tuple
 from zoneinfo import ZoneInfo
 
-from hermes_constants import get_config_path
+from akramcode_constants import get_config_path
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +94,7 @@ def _resolve_timezone_name() -> str:
             from akramcode_cli.config_effective import load_user_config_effective
             cfg = load_user_config_effective(get_config_path())
         except Exception:
-            import akram_core.hermes_yaml as yaml
+            import akram_core.akramcode_yaml as yaml
             config_path = get_config_path()
             cfg = (yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}) if config_path.exists() else {}
         if cfg:

@@ -8,17 +8,17 @@ Usage::
     python -m acp_adapter.entry   # or: hermes acp / hermes-acp
 """
 
-# IMPORTANT: akram_core.hermes_bootstrap must be the very first import — UTF-8 stdio
-# on Windows.  No-op on POSIX.  See akram_core.hermes_bootstrap.py for full rationale.
+# IMPORTANT: akram_core.akramcode_bootstrap must be the very first import — UTF-8 stdio
+# on Windows.  No-op on POSIX.  See akram_core.akramcode_bootstrap.py for full rationale.
 try:
-    import akram_core.hermes_bootstrap  # noqa: F401
+    import akram_core.akramcode_bootstrap  # noqa: F401
 except ModuleNotFoundError as exc:
     # Partial ``hermes update`` (git-reset landed, ``uv pip install -e .`` did not).
-    if exc.name != "akram_core.hermes_bootstrap":
+    if exc.name != "akram_core.akramcode_bootstrap":
         raise  # the bootstrap exists but cannot load: skipping it would skip PM activation
 else:
     # Stop a ``utils/``/``proxy/``/``ui/`` package in the launch cwd from shadowing Hermes modules.
-    akram_core.hermes_bootstrap.harden_import_path()
+    akram_core.akramcode_bootstrap.harden_import_path()
 
 # `hermes-acp` runs without akramcode_cli.main: repair a `hermes update` killed mid-pull here, before
 # importing anything else from the checkout (a no-op under `hermes acp`, which already did).
@@ -33,7 +33,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from hermes_constants import get_hermes_home
+from akramcode_constants import get_hermes_home
 
 
 # Liveness-probe methods outside the ACP schema. The router correctly answers JSON-RPC -32601

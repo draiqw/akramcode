@@ -1404,7 +1404,7 @@ class GatewayShutdownMixin:
         already on the default root, is the host.
         """
         from gateway.config_loader import drop_bridged_env
-        from hermes_constants import get_default_hermes_root, get_hermes_home
+        from akramcode_constants import get_default_hermes_root, get_hermes_home
         from tools.environments.local import host_gateway_child_env, served_profile_child_env
 
         home = get_hermes_home()

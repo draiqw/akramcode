@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run a repo Python script under the activated Hermes environment.
+# Run a repo Python script under the activated AkramCode environment.
 #
 # Shebang target for POSIX scripts:
 #     #!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/_hermes-python" "$0" "$@"'

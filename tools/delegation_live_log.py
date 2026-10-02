@@ -39,7 +39,7 @@ _TIME_FMT = "%Y-%m-%d %H:%M:%S"
 
 def live_transcript_root() -> Path:
     """Root directory for live transcripts (profile-safe, never ~/.hermes)."""
-    from hermes_constants import get_hermes_dir
+    from akramcode_constants import get_hermes_dir
     return get_hermes_dir("cache/delegation", "delegation_cache") / "live"
 
 

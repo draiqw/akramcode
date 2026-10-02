@@ -20,7 +20,7 @@ import time
 from typing import Dict, Any, Optional, Union
 from pathlib import Path
 from agent.redact import redact_cdp_url
-from hermes_constants import get_hermes_home, hermes_home_key
+from akramcode_constants import get_hermes_home, hermes_home_key
 from utils import env_int
 from akramcode_cli.config import DEFAULT_CONFIG, cfg_get
 from akramcode_cli.observability.shared_metrics_loop import record_browser_call
@@ -365,8 +365,8 @@ def _last_session_key(task_id: str) -> str:
 
 def _socket_safe_tmpdir() -> str:
     """Temp root short enough for the agent-browser socket dir and Chrome's SingletonSocket
-    (``hermes_constants.socket_safe_tmpdir``)."""
-    from hermes_constants import socket_safe_tmpdir
+    (``akramcode_constants.socket_safe_tmpdir``)."""
+    from akramcode_constants import socket_safe_tmpdir
     return socket_safe_tmpdir()
 
 
@@ -1253,7 +1253,7 @@ def browser_vision(question: str, annotate: bool = False, task_id: Optional[str]
         return _camofox("camofox_vision", question, annotate, task_id)
 
     import uuid as uuid_mod
-    from hermes_constants import get_hermes_dir
+    from akramcode_constants import get_hermes_dir
     screenshots_dir = get_hermes_dir("cache/screenshots", "browser_screenshots")
     screenshot_path = screenshots_dir / f"browser_screenshot_{uuid_mod.uuid4().hex}.png"
     effective_task_id = _last_session_key(task_id or "default")

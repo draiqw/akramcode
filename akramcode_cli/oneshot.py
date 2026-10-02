@@ -540,7 +540,7 @@ def _run_agent(
     if choice.api_mode:
         runtime["api_mode"] = choice.api_mode
 
-    from hermes_constants import parse_reasoning_effort, resolve_reasoning_config
+    from akramcode_constants import parse_reasoning_effort, resolve_reasoning_config
 
     reasoning_config = resolve_reasoning_config(cfg, choice.model)
     if reasoning is not None and str(reasoning).strip():

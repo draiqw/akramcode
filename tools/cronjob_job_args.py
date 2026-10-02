@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from cron.jobs import effective_job_state
 
-import akram_core.hermes_time
+import akram_core.akramcode_time
 
 # Logger parity with the origin module.
 logger = logging.getLogger("tools.cronjob_tools")
@@ -45,7 +45,7 @@ def _first_fire_within_thread_horizon(
         fire_at = datetime.fromisoformat(str(run_at).replace("Z", "+00:00"))
     except ValueError:
         return False
-    now = akram_core.hermes_time.now()
+    now = akram_core.akramcode_time.now()
     if fire_at.tzinfo is None:
         fire_at = fire_at.replace(tzinfo=now.tzinfo)
     # Bounded interval: an already-expired run_at gives a negative delta that would
@@ -368,7 +368,7 @@ def _validate_cron_script_path(script: Optional[str]) -> Optional[str]:
     if not script or not script.strip():
         return None
 
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
     raw = script.strip()
     scripts_dir = get_hermes_home() / "scripts"
     if raw.startswith(("/", "~")) or (len(raw) >= 2 and raw[1] == ":"):

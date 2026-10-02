@@ -47,7 +47,7 @@ def get_service() -> Optional[LSPService]:
     kernel reaps the stateless servers with their parent.)
     """
     global _service
-    from hermes_constants import get_hermes_home_override, hermes_home_key
+    from akramcode_constants import get_hermes_home_override, hermes_home_key
     if get_hermes_home_override() is not None:
         home_key = hermes_home_key()
         with _service_lock:

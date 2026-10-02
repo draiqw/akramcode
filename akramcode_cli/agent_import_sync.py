@@ -132,7 +132,7 @@ def sync_imported_agents(args) -> None:
     changed. Prompt-free (cron-friendly); ``--dry-run`` previews without touching the manifest."""
     from akramcode_cli.agent_import import AgentImporter, print_import_report
     from akramcode_cli.setup import print_error, print_header, print_info, print_success
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
 
     dry_run = bool(getattr(args, "dry_run", False))
     hermes_home = get_hermes_home().resolve()

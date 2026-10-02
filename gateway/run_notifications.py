@@ -1047,7 +1047,7 @@ class GatewayNotificationsMixin:
             if not error:
                 logger.info("state.db recovered before the home-channel warning went out; not broadcasting")
                 return
-        from hermes_constants import get_default_hermes_root, profile_cli_selector
+        from akramcode_constants import get_default_hermes_root, profile_cli_selector
         from akramcode_state import _default_db_path, classify_persistence_error
         cause = classify_persistence_error(error)
         # Copy-pasteable, so name the real store and pin the profile: a bare `hermes` follows
@@ -1553,7 +1553,7 @@ class GatewayNotificationsMixin:
         the ROOT scope, so a secondary profile's completion was looked up in the DEFAULT profile's
         state.db — classified ``terminal`` and dropped, its ledger row stranded ``pending`` forever."""
         from gateway.run import _async_profile_runtime_scope
-        from hermes_constants import get_hermes_home_override
+        from akramcode_constants import get_hermes_home_override
         source = self._build_process_event_source(evt)
         if source is None or not getattr(source, "profile", None):
             # No routed profile: the launch profile's own completion. Bind ITS scope once the

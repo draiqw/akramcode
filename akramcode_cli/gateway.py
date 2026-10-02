@@ -55,7 +55,7 @@ from akramcode_cli.config import (  # noqa: F401 — resolved lazily by siblings
     write_platform_config_field,
 )
 
-# display_hermes_home is imported lazily: hermes_constants may be a cached pre-update version.
+# display_hermes_home is imported lazily: akramcode_constants may be a cached pre-update version.
 from akramcode_cli.setup import (  # noqa: F401 — resolved lazily by siblings through the facade
     print_header,
     print_info,
@@ -1041,7 +1041,7 @@ def _restart_argv_is_host_gateway(argv: list[str]) -> bool:
     except Exception:
         pass
     try:
-        from hermes_constants import get_default_hermes_root, get_hermes_home
+        from akramcode_constants import get_default_hermes_root, get_hermes_home
         return get_hermes_home().resolve() == get_default_hermes_root().resolve()
     except Exception:
         return False
@@ -1113,7 +1113,7 @@ def _spawn_gateway_restart_watcher(old_pid: int, run_argv: list[str], *, host: b
         _stdio_target = subprocess.DEVNULL
         _stdio_fh = None
         try:
-            from hermes_constants import get_hermes_home
+            from akramcode_constants import get_hermes_home
             from pathlib import Path
             _log_dir = Path(get_hermes_home()) / "logs"
             _log_dir.mkdir(parents=True, exist_ok=True)
@@ -1555,7 +1555,7 @@ def get_gateway_runtime_snapshot(system: bool = False) -> GatewayRuntimeSnapshot
     if is_termux():
         return GatewayRuntimeSnapshot(manager="Termux / manual process", gateway_pids=gateway_pids)
 
-    from hermes_constants import is_container
+    from akramcode_constants import is_container
     if is_linux() and is_container():
         # Report s6 supervision under our /init; other container runtimes keep "docker (foreground)".
         try:
@@ -2042,7 +2042,7 @@ def is_linux() -> bool:
     return sys.platform.startswith("linux")
 
 
-from hermes_constants import is_container, is_termux, is_wsl
+from akramcode_constants import is_container, is_termux, is_wsl
 
 
 def _wsl_systemd_operational() -> bool:
@@ -2212,7 +2212,7 @@ def _profile_name_from_home(home: Path, default: Path) -> str | None:
 def _native_service_homes() -> set[Path]:
     """This process's native default home plus, when root under sudo, the invoking user's (see
     ``_profile_suffix`` for why sudo matters)."""
-    from hermes_constants import _get_platform_default_hermes_home, sudo_invoker_default_home
+    from akramcode_constants import _get_platform_default_hermes_home, sudo_invoker_default_home
 
     homes = {_get_platform_default_hermes_home().resolve()}
     sudo_home = sudo_invoker_default_home()
@@ -2276,7 +2276,7 @@ def _profile_suffix() -> str:
     no native default keeps its own suffix.
     """
     import hashlib
-    from hermes_constants import get_default_hermes_root
+    from akramcode_constants import get_default_hermes_root
     home = get_hermes_home().resolve()
     if _home_owns_bare_service_name(home):
         return ""
@@ -2288,14 +2288,14 @@ def _current_profile_name() -> str:
     """Profile id relative to the profile ROOT: ``default`` for the root itself (Docker's ``/opt/data``
     included), ``<name>`` for ``<root>/profiles/<name>``, else the service hash. s6 slots and the
     multiplexer ask which PROFILE this is; ``_profile_suffix()`` answers which HOST SERVICE this is."""
-    from hermes_constants import profile_name_for_home
+    from akramcode_constants import profile_name_for_home
     return profile_name_for_home(get_hermes_home()) or _profile_suffix()
 
 
 def _profile_arg(hermes_home: str | None = None, default_root: str | Path | None = None) -> str:
     """``--profile <name>`` for ``<root>/profiles/<name>``, else "". *hermes_home*/*default_root* let a
     sudo/root process generate a unit for another user (the defaults would refer to root)."""
-    from hermes_constants import get_default_hermes_root
+    from akramcode_constants import get_default_hermes_root
     home = Path(hermes_home or str(get_hermes_home())).resolve()
     default = Path(default_root).resolve() if default_root else get_default_hermes_root().resolve()
     if home == default:
@@ -2323,7 +2323,7 @@ def user_systemd_unit_dir() -> Path:
     ``enable`` failed with "Unit ... does not exist" (#98699). ``systemctl --user`` targets the login
     user's session, so the unit dir follows the account home like ``get_launchd_plist_path()`` does.
     """
-    from hermes_constants import get_real_home
+    from akramcode_constants import get_real_home
     config_home = os.environ.get("XDG_CONFIG_HOME", "").strip()
     base = Path(config_home) if config_home else Path(get_real_home()) / ".config"
     return base / "systemd" / "user"
@@ -2817,7 +2817,7 @@ def ensure_gateway_service(context: str = "setup") -> bool:
     """Install and start a user-scope gateway service without prompting (``hermes setup``/``import``).
     A zero-platform gateway is a supported degraded mode (cron runs), so this never gates on messaging
     config. Never raises; True when a service is installed and running."""
-    from hermes_constants import is_container
+    from akramcode_constants import is_container
     if is_container():
         # Containers use restart policies, not service managers.
         print_info("Start the gateway to bring your bots online:")
@@ -2958,7 +2958,7 @@ def legacy_launchd_labels_for_install(exclude=()) -> list[str]:
     import plistlib
     import pwd
 
-    from hermes_constants import get_default_hermes_root
+    from akramcode_constants import get_default_hermes_root
 
     try:
         home = Path(pwd.getpwuid(os.getuid()).pw_dir)  # windows-footgun: ok — POSIX launchd (macOS) helper, never invoked on Windows
@@ -3133,7 +3133,7 @@ def _systemd_watchdog_seconds(hermes_home: str | Path | None = None) -> int:
     """Resolve the managed-overlay-aware watchdog setting for a service home."""
     override_token = reset_home_override = None
     if hermes_home is not None:
-        from hermes_constants import (reset_hermes_home_override, set_hermes_home_override)
+        from akramcode_constants import (reset_hermes_home_override, set_hermes_home_override)
         override_token = set_hermes_home_override(hermes_home)
         reset_home_override = reset_hermes_home_override
     try:
@@ -3186,7 +3186,7 @@ def _append_node_dir_for_service(path_entries: list[str], hermes_root: Path | No
     if managed_dirs:
         return
 
-    from hermes_constants import (hermes_managed_node_tree_present, iter_hermes_node_dirs)
+    from akramcode_constants import (hermes_managed_node_tree_present, iter_hermes_node_dirs)
     managed_node_present = hermes_managed_node_tree_present(hermes_root)
     for directory in iter_hermes_node_dirs(hermes_root) if managed_node_present else ():
         entry = str(directory)
@@ -3207,7 +3207,7 @@ def _systemd_command(argv: list[str]) -> str:
 def _prepare_service_launcher(*, system: bool = False, run_as_user: str | None = None) -> None:
     """Publish the source command before a service definition references it."""
     from akramcode_cli._launchers import ENTRY_POINTS, ensure_install_launchers, resolve_store_python
-    from hermes_constants import set_hermes_home_override, reset_hermes_home_override
+    from akramcode_constants import set_hermes_home_override, reset_hermes_home_override
 
     root, home = PROJECT_ROOT, get_hermes_home()
     owner = None
@@ -4194,7 +4194,7 @@ def named_profile_served_by_running_multiplexer(profile_name: str | None = None)
             return True
 
     try:
-        from hermes_constants import get_default_hermes_root
+        from akramcode_constants import get_default_hermes_root
         default_root = get_default_hermes_root()
     except Exception:
         return False
@@ -4260,7 +4260,7 @@ def _named_profile_refused_under_multiplexer(force: bool = False) -> bool:
         return False
     try:
         suffix = _current_profile_name()
-        from hermes_constants import profile_name_for_home
+        from akramcode_constants import profile_name_for_home
         from akramcode_cli.profiles import profile_is_standalone
         # A profile that authored gateway.standalone: true opted out of the host multiplexer: it is
         # allowed a gateway of its own without --force. Only a RUNNING host record that still lists
@@ -4312,7 +4312,7 @@ def _named_profile_refused_under_multiplexer(force: bool = False) -> bool:
     print("  A separate per-profile gateway (for a fleet split across UNIX users or a")
     print(f"  HERMES_HOME outside profiles/) needs --force:  hermes -p {suffix} gateway install --force")
     print()
-    from hermes_constants import display_hermes_home
+    from akramcode_constants import display_hermes_home
     from akramcode_cli.gateway_multiplex_mode import STANDALONE_DEPRECATION_NOTICE
     print("  Temporary compatibility path while multiplexing gaps are closed: set")
     print(f"  gateway.standalone: true in {display_hermes_home(get_hermes_home())}/config.yaml,")
@@ -4490,7 +4490,7 @@ def _apply_startup_watchdog_config() -> None:
     vars bridge it because the argv fast-path arms before config loads, and explicit env wins. arm() is
     idempotent, so a config timeout needs disarm+re-arm. GatewayRunner disarms once the loop is live."""
     try:
-        from akram_core.hermes_startup_watchdog import (
+        from akram_core.akramcode_startup_watchdog import (
             ENV_STARTUP_WATCHDOG, ENV_STARTUP_WATCHDOG_TIMEOUT_S, arm_startup_watchdog,
             disarm_startup_watchdog, startup_watchdog_disabled,
         )
@@ -4542,7 +4542,7 @@ def _make_exit_diag():
         if os.environ.get("HERMES_GATEWAY_EXIT_DIAG", "1") != "1":
             return
         try:
-            from hermes_constants import get_hermes_home as _ghh
+            from akramcode_constants import get_hermes_home as _ghh
             log_dir = _ghh() / "logs"
             log_dir.mkdir(parents=True, exist_ok=True)
             line = {
@@ -4593,7 +4593,7 @@ def _respawn_storm_backoff() -> None:
             )
             # Tell the startup watchdog the backoff sleep is intentional, not a parked deadlock.
             try:
-                from akram_core.hermes_startup_watchdog import kick_startup_watchdog
+                from akram_core.akramcode_startup_watchdog import kick_startup_watchdog
                 kick_startup_watchdog(extra_s=_storm.backoff_s)
             except Exception:
                 pass
@@ -4972,7 +4972,7 @@ def _maybe_redirect_run_to_s6_supervision(args) -> bool:
     # This process never reaches a GatewayRunner, so the watchdog armed by akramcode_cli.main's argv
     # fast-path has no other disarm site: the in-process heartbeat below parks with zero CPU and no
     # progress lease, which the watchdog reads as a startup deadlock and os._exit(75)s the CMD process.
-    from akram_core.hermes_startup_watchdog import disarm_startup_watchdog
+    from akram_core.akramcode_startup_watchdog import disarm_startup_watchdog
 
     disarm_startup_watchdog()
     # Breadcrumb on stderr (keep stdout clean for scripts); gateway logs follow via s6-log.
@@ -5477,7 +5477,7 @@ def _restart_all_as_host(owner, system: bool) -> None:
     if kind is not None:
         _service_call(kind, "start", system)
         return
-    from hermes_constants import get_routing_process_hermes_home, named_profile_home
+    from akramcode_constants import get_routing_process_hermes_home, named_profile_home
     if named_profile_home(get_routing_process_hermes_home()) is not None:
         # A named profile's CLI never runs the root IN this process: os.environ holds that profile's
         # .env and the root's dotenv load does not clear inherited keys, so the host served the

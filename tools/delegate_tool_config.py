@@ -565,7 +565,7 @@ def _resolve_child_runtime(
     try:
         delegation_effort = delegation_cfg.get("reasoning_effort")
         if delegation_effort or delegation_effort is False:
-            from hermes_constants import parse_reasoning_effort
+            from akramcode_constants import parse_reasoning_effort
             parsed = parse_reasoning_effort(delegation_effort)
             if parsed is None:
                 logger.warning("Unknown delegation.reasoning_effort '%s', inheriting parent level", delegation_effort)

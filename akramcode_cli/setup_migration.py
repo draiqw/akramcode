@@ -8,7 +8,7 @@ from functools import partial
 from pathlib import Path
 from typing import Optional
 
-from hermes_constants import get_optional_skills_dir
+from akramcode_constants import get_optional_skills_dir
 
 logger = logging.getLogger("akramcode_cli.setup")
 

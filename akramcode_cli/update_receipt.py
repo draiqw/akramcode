@@ -190,10 +190,10 @@ class UpdateReceipt:
 
 
 def _receipt_dir() -> Path:
-    # ``hermes_constants`` (stdlib-only), never ``akramcode_cli.config``: the receipt must be
+    # ``akramcode_constants`` (stdlib-only), never ``akramcode_cli.config``: the receipt must be
     # writable from the refused/failed paths where config loading itself may be what broke
     # (#112465, #112558).
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
 
     return get_hermes_home() / "logs" / "update_receipts"
 
@@ -399,7 +399,7 @@ def _publish_shared_metrics(data: dict[str, Any]) -> None:
             # This interpreter began the run before the checkout swap: importing now would load
             # pulled code into it. Park the bounded fields (stdlib + loaded modules only); the next
             # Hermes start records them.
-            from hermes_constants import get_hermes_home
+            from akramcode_constants import get_hermes_home
             from akramcode_cli.runtime_state import _atomic_bytes
 
             pending = get_hermes_home() / "telemetry" / "shared_metrics" / "pending_updates"  # = PENDING_DIRNAME

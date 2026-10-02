@@ -278,7 +278,7 @@ def _read_jwt_store(path: Path) -> Optional[dict]:
 def _jwt_disk_path() -> Optional[Path]:
     """Path to the on-disk exchanged-JWT cache (profile-aware), or None."""
     try:
-        from hermes_constants import get_hermes_home
+        from akramcode_constants import get_hermes_home
         return Path(get_hermes_home()) / _JWT_DISK_FILENAME
     except Exception:
         return None

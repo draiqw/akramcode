@@ -408,7 +408,7 @@ def default_db_path() -> Path:
     tables in a dedicated file means profile gateways never open the master
     session store writable.
     """
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
     home = get_hermes_home()
     return (home.parent.parent if home.parent.name == "profiles" else home) / "shared-state.db"
 

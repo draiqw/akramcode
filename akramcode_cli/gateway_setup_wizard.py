@@ -896,7 +896,7 @@ def _wizard_post_setup() -> None:
         if _gw().is_wsl():
             reason, home = "wsl", ""
         elif _gw().is_termux():
-            from hermes_constants import display_hermes_home as _dhh
+            from akramcode_constants import display_hermes_home as _dhh
             reason, home = "termux", _dhh()
         else:
             reason, home = "unsupported", ""

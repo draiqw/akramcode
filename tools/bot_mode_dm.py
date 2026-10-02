@@ -60,7 +60,7 @@ _LOCAL_TARGET_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$")
 
 
 def _default_home() -> str:
-    from hermes_constants import get_process_hermes_home
+    from akramcode_constants import get_process_hermes_home
     return str(get_process_hermes_home())
 
 
@@ -891,7 +891,7 @@ if __name__ == "__main__":  # pragma: no cover - exercised as a background proce
     # sender's wake-up, and any other argv exits 2 before a Hermes import.
     if sys.argv[1:2] == ["--run-delivery"]:
         try:
-            import akram_core.hermes_bootstrap  # noqa: F401
+            import akram_core.akramcode_bootstrap  # noqa: F401
         except (Exception, SystemExit) as exc:
             # A pinned live intent means the sender may already have admitted this DM and was
             # told not to resend; a bare repair hint would read as "NOT delivered". Without an

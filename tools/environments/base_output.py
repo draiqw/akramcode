@@ -15,7 +15,7 @@ from collections import deque
 from pathlib import Path
 from typing import IO, Callable, Protocol
 
-from hermes_constants import get_hermes_home
+from akramcode_constants import get_hermes_home
 from tools.tool_output_truncate import head_tail_split, truncation_notice
 from akramcode_cli._subprocess_compat import windows_hide_flags
 

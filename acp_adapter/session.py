@@ -6,7 +6,7 @@ survive process restarts and appear in ``session_search``; ``load_session`` /
 """
 from __future__ import annotations
 
-from hermes_constants import get_hermes_home, translate_cwd_for_wsl_backend, windows_path_to_wsl
+from akramcode_constants import get_hermes_home, translate_cwd_for_wsl_backend, windows_path_to_wsl
 
 import copy
 import json
@@ -504,7 +504,7 @@ class SessionManager:
         from akramcode_cli.config import load_config
         from akramcode_cli.runtime_provider import resolve_runtime_provider
         from akramcode_cli.tools_config import _get_platform_tools, enabled_mcp_server_names
-        from hermes_constants import resolve_reasoning_config
+        from akramcode_constants import resolve_reasoning_config
 
         config = load_config()
         model_cfg = config.get("model")

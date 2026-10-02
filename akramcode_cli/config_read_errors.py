@@ -149,5 +149,5 @@ def _refuse_overwrite(config_path: Path, reason: str, exc: Exception, fix: str) 
 
 
 def _backups_dir_display() -> str:
-    from hermes_constants import display_hermes_home
+    from akramcode_constants import display_hermes_home
     return f"{display_hermes_home()}/backups/config/"

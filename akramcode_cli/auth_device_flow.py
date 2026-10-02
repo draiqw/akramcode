@@ -411,7 +411,7 @@ def _print_login_success(
     print()
     print("Login successful!")
     if show_auth_state:
-        from hermes_constants import display_hermes_home as _dhh
+        from akramcode_constants import display_hermes_home as _dhh
         print(f"  Auth state: {_dhh()}/auth.json")
     print(f"  Config updated: {config_path} (model.provider={provider_id})")
 

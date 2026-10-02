@@ -41,7 +41,7 @@ except ImportError:
 
 def _hermes_home() -> Path:
     try:
-        from hermes_constants import get_hermes_home
+        from akramcode_constants import get_hermes_home
         return get_hermes_home()
     except ImportError:
         return Path(os.environ.get("HERMES_HOME", Path.home() / ".hermes"))

@@ -98,7 +98,7 @@ def _handle_sudo_failure(output: str, env_type: str) -> str:
     is_delegated_child = _in_delegated_child_context()
     if not (is_gateway or is_delegated_child) or not any(f in output for f in _SUDO_HEADLESS_FAILURES):
         return output
-    from hermes_constants import display_hermes_home as _dhh
+    from akramcode_constants import display_hermes_home as _dhh
     if is_delegated_child:
         return output + (
             "\n\n💡 Tip: Subagents cannot prompt for a sudo password. "

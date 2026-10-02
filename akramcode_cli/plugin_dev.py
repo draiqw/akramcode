@@ -16,7 +16,7 @@ from types import SimpleNamespace
 from typing import Any, Literal
 from unittest.mock import patch
 
-from hermes_constants import get_hermes_home
+from akramcode_constants import get_hermes_home
 
 
 class _DoctorLoadError(RuntimeError):

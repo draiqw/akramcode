@@ -14,7 +14,7 @@ import time
 from datetime import datetime
 from typing import Any, Optional
 
-from akram_core.hermes_time import safe_strftime
+from akram_core.akramcode_time import safe_strftime
 
 logger = logging.getLogger(__name__)
 

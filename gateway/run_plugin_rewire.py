@@ -87,7 +87,7 @@ def reload_plugins_verb(runner: Any, loop: asyncio.AbstractEventLoop) -> Callabl
     truthful "active now" reaches the caller."""
 
     def _handler(params: Optional[dict] = None) -> dict:
-        from hermes_constants import get_hermes_home, hermes_home_key
+        from akramcode_constants import get_hermes_home, hermes_home_key
         from akramcode_cli.plugins import discover_plugins, get_plugin_manager
         from akramcode_cli.plugins_activation import activation_summaries
         from gateway.run import _profile_runtime_scope

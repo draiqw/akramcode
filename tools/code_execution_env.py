@@ -116,7 +116,7 @@ def _scrub_child_env(source_env, is_passthrough=None, is_windows=None):
 def _build_child_env(*, rpc_endpoint: str, rpc_token: str, tmpdir: str,
                      child_python: str) -> Dict[str, str]:
     """Build the scrubbed child environment both execution paths share."""
-    from hermes_constants import apply_scratch_tmp_env, apply_subprocess_home_env, get_hermes_home_override
+    from akramcode_constants import apply_scratch_tmp_env, apply_subprocess_home_env, get_hermes_home_override
     child_env = _scrub_child_env(os.environ)
     child_env["HERMES_RPC_SOCKET"] = rpc_endpoint
     child_env["HERMES_RPC_TOKEN"] = rpc_token
@@ -126,8 +126,8 @@ def _build_child_env(*, rpc_endpoint: str, rpc_token: str, tmpdir: str,
     child_env["PYTHONIOENCODING"] = "utf-8"
     child_env["PYTHONUTF8"] = "1"
     # Only TZ reaches the child; HERMES_TIMEZONE is an internal setting (and under the multiplexed
-    # gateway holds only the default profile's value — akram_core.hermes_time resolves the routed profile's).
-    from akram_core.hermes_time import get_timezone_name
+    # gateway holds only the default profile's value — akram_core.akramcode_time resolves the routed profile's).
+    from akram_core.akramcode_time import get_timezone_name
 
     _tz_name = get_timezone_name()
     # Windows CPython does not support IANA names in TZ.  Leaving TZ unset
@@ -176,7 +176,7 @@ def _build_child_env(*, rpc_endpoint: str, rpc_token: str, tmpdir: str,
     if _uses_hermes_python_environment(child_python):
         _pp_parts.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     elif child_python not in _external_env_logged:
-        # Surface once per interpreter so "import hermes_constants fails" is diagnosable.
+        # Surface once per interpreter so "import akramcode_constants fails" is diagnosable.
         _external_env_logged.add(child_python)
         logger.info("execute_code: child interpreter %s is outside the Hermes "
                     "environment; hermes root omitted from PYTHONPATH", child_python)

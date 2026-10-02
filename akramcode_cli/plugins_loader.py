@@ -22,7 +22,7 @@ from functools import wraps
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Mapping, Optional, Union
 
-from hermes_constants import get_hermes_home, reset_hermes_home_override, set_hermes_home_override
+from akramcode_constants import get_hermes_home, reset_hermes_home_override, set_hermes_home_override
 from akram_core.registration_lifecycle import replacement_coordinator
 from akramcode_cli.plugins_discovery import ENTRY_POINTS_GROUP, _select_entry_point_group
 from akramcode_cli.plugins_manifest import PluginManifest, manifest_key, portable_mcp_server_name, validate_config_schema

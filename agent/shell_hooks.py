@@ -29,7 +29,7 @@ try:
 except ImportError:  # pragma: no cover
     fcntl = None  # type: ignore[assignment]
 
-from hermes_constants import get_hermes_home
+from akramcode_constants import get_hermes_home
 from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)

@@ -68,14 +68,14 @@ def markers_dir(home: Path) -> Path:
 def _bound(hermes_home: Any) -> Iterator[None]:
     token = None
     if hermes_home:
-        from hermes_constants import set_hermes_home_override
+        from akramcode_constants import set_hermes_home_override
 
         token = set_hermes_home_override(str(hermes_home))
     try:
         yield
     finally:
         if token is not None:
-            from hermes_constants import reset_hermes_home_override
+            from akramcode_constants import reset_hermes_home_override
 
             reset_hermes_home_override(token)
 
@@ -139,7 +139,7 @@ def begin_provider_setup(surface: str, provider: Any, *, hermes_home: Any = None
             if fields is None:
                 return None
             from gateway.status import get_process_start_time
-            from hermes_constants import get_hermes_home
+            from akramcode_constants import get_hermes_home
 
             home = get_hermes_home()
             report_abandoned_setups(home)
@@ -238,7 +238,7 @@ def record_provider_setup_done(surface: str, provider: Any, *, hermes_home: Any 
 
             if not provider or not enabled():
                 return
-            from hermes_constants import get_hermes_home
+            from akramcode_constants import get_hermes_home
 
             home = str(get_hermes_home())
 

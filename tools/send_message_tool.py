@@ -328,7 +328,7 @@ def _not_configured_error(platform_name, platform, entry):
     from agent.secret_scope import load_env_file
     from gateway.config import _getenv
     from gateway.config_env import _ENV_ENABLE_CREDENTIALS
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
     home = get_hermes_home()
     env_names = list(_ENV_ENABLE_CREDENTIALS.get(platform) or (entry.required_env if entry else ()))
     names = "/".join(env_names) or "credentials"
@@ -359,7 +359,7 @@ def _not_configured_error(platform_name, platform, entry):
     # never reads this profile's .env at all.
     try:
         from gateway.status import read_runtime_status, runtime_status_pid_is_live
-        from hermes_constants import get_default_hermes_root, hermes_home_key
+        from akramcode_constants import get_default_hermes_root, hermes_home_key
         root = get_default_hermes_root()
         gateways = [(home, read_runtime_status())]
         if hermes_home_key(root) != hermes_home_key(home):

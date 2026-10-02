@@ -12,7 +12,7 @@ from agent.anthropic_credentials import _is_oauth_token, resolve_anthropic_token
 from akramcode_cli.auth import AuthError, _read_codex_tokens, resolve_codex_runtime_credentials
 from akramcode_cli.auth_codex import _codex_pool_route_base_url
 from akramcode_cli.runtime_provider import resolve_runtime_provider
-from akram_core.hermes_time import safe_strftime
+from akram_core.akramcode_time import safe_strftime
 
 if TYPE_CHECKING:
     from typing import TypeGuard

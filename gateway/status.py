@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, NamedTuple, Optional
 
-from hermes_constants import _get_platform_default_hermes_home, get_hermes_home, get_process_hermes_home
+from akramcode_constants import _get_platform_default_hermes_home, get_hermes_home, get_process_hermes_home
 from akramcode_cli._subprocess_compat import pid_exists_stdlib
 from utils import atomic_json_write
 
@@ -266,7 +266,7 @@ def recorded_gateway_home_conflicts(
 
 
 # Mirrors akramcode_cli.profiles._PROFILE_ID_RE -- duplicated so gateway identity code
-# stays import-light (hermes_constants + stdlib only).
+# stays import-light (akramcode_constants + stdlib only).
 _PROFILE_LABEL_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
 
 
@@ -278,8 +278,8 @@ def _profile_label_for_home(home: Path | str) -> Optional[str]:
         return None
     if canonical.parent.name == "profiles" and _PROFILE_LABEL_RE.match(canonical.name):
         return canonical.name
-    import hermes_constants
-    default_homes = (hermes_constants.get_default_hermes_root, _get_platform_default_hermes_home)
+    import akramcode_constants
+    default_homes = (akramcode_constants.get_default_hermes_root, _get_platform_default_hermes_home)
     for default_home in default_homes:
         with contextlib.suppress(Exception):
             if _same_hermes_home(canonical, default_home()):
@@ -1418,7 +1418,7 @@ def profile_name_for_home(profile_home: Path) -> Optional[str]:
     if named:
         return named
     try:
-        from hermes_constants import get_default_hermes_root
+        from akramcode_constants import get_default_hermes_root
         if home.resolve() == Path(get_default_hermes_root()).resolve():
             return "default"
     except Exception:
@@ -1442,7 +1442,7 @@ def multiplexer_liveness_for_profile(profile_dir: Path) -> Optional[tuple[int, d
     from gateway.host_topology import host_gateway_topology
     from akramcode_cli.gateway import named_profile_served_by_running_multiplexer
     from akramcode_cli.gateway_multiplex_served import live_default_gateway_pid
-    from hermes_constants import get_default_hermes_root
+    from akramcode_constants import get_default_hermes_root
     # The roster is matched by NAME, and the multiplexer only serves ``<default root>/profiles/<name>``:
     # a profile directory copied to another root (sandbox, restore-from-backup) keeps the name but is
     # not the home being served, so it must not borrow the multiplexer's PID.

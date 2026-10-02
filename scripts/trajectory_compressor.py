@@ -18,7 +18,7 @@ import shutil
 import tempfile
 import time
 import sys
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 import logging
 import asyncio
 from pathlib import Path
@@ -32,7 +32,7 @@ from utils import base_url_host_matches, base_url_hostname
 import fire
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, TimeElapsedColumn, TimeRemainingColumn
 from rich.console import Console
-from hermes_constants import OPENROUTER_BASE_URL, get_hermes_home
+from akramcode_constants import OPENROUTER_BASE_URL, get_hermes_home
 from agent.compression_marker import elide_middle
 from agent.retry_utils import jittered_backoff
 from akramcode_cli.env_loader import load_hermes_dotenv

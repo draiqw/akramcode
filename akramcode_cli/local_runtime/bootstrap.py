@@ -37,7 +37,7 @@ def _detect_gpu_vendor() -> str | None:
 def models_dir() -> Path:
     """Machine-scoped, deliberately NOT profile-scoped: a 20 GB GGUF is a machine asset, and every
     profile shares the one managed server that serves it (same rule as runtimes_root())."""
-    from hermes_constants import get_default_hermes_root
+    from akramcode_constants import get_default_hermes_root
 
     return get_default_hermes_root() / "models"
 
@@ -80,7 +80,7 @@ def adopt_legacy_models() -> "list[Path]":
     adopting two profiles' same-named file at once, and a same name is the same catalog variant).
     Two processes racing on one file are harmless: the loser's rename finds the source gone and
     skips it. Returns the new paths of the moved files."""
-    from hermes_constants import get_default_hermes_root, named_profile_has_identity
+    from akramcode_constants import get_default_hermes_root, named_profile_has_identity
 
     profiles_root = get_default_hermes_root() / "profiles"
     if not profiles_root.is_dir():

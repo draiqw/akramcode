@@ -2660,7 +2660,7 @@ def _worker_profile_scope(hermes_home: str, *, bind_home: bool = True):
     resolves for a standalone dispatcher.
     """
     from agent.secret_scope import build_profile_secret_scope, reset_secret_scope, set_secret_scope
-    from hermes_constants import get_process_hermes_home, reset_hermes_home_override, set_hermes_home_override
+    from akramcode_constants import get_process_hermes_home, reset_hermes_home_override, set_hermes_home_override
     from tools.terminal_scope import install_profile_terminal_scope, reset_terminal_scope
     from tui_gateway.launch_profile_policy import launch_secret_scope, launch_terminal_env
 
@@ -2877,7 +2877,7 @@ def _default_spawn(task: Task, workspace: str, *, board: Optional[str] = None) -
     # Inject HERMES_HOME so the worker reads the profile-scoped config.yaml:
     # without it the child's get_hermes_home() falls back to the DEFAULT
     # profile root because `hermes -p` applies its override before
-    # hermes_constants is imported.
+    # akramcode_constants is imported.
     if profile_home:
         env["HERMES_HOME"] = profile_home
         # A multiplexer dispatching for another profile must not hand it the launch

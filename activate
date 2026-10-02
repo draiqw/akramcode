@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# venv-style activation for the Hermes dev environment (pm-managed tools).
+# venv-style activation for the AkramCode dev environment (pm-managed tools).
 #
 #   source ./activate      (bash / zsh, repo root)
 #   .\activate.ps1         (PowerShell)
@@ -129,7 +129,7 @@ if [ -n "$_hermes_cygpath" ]; then
     done
 fi
 
-# This checkout, not whichever `hermes` PATH finds. A function beats PATH, an
+# This checkout, not whichever `akramcode` PATH finds. A function beats PATH, an
 # alias, and a hashed command, including the MSIX execution alias.
 __HERMES_WORKTREE="$_hermes_repo"
 # The branch names the worktree. A checkout cannot share a branch with another.
@@ -145,25 +145,25 @@ _hermes_worktree_here() {
     [ "$(cd "$_hermes_top" && pwd -P)" = "$(cd "$__HERMES_WORKTREE" && pwd -P)" ]
 }
 
-hermes() {
+akramcode() {
     _hermes_worktree_here || {
-        printf '%s\n' "hermes: $(pwd) is outside $__HERMES_WORKTREE; refusing (the installed command is hidden while this checkout is active)" >&2
+        printf '%s\n' "akramcode: $(pwd) is outside $__HERMES_WORKTREE; refusing (the installed command is hidden while this checkout is active)" >&2
         return 1
     }
     (
         cd "$__HERMES_WORKTREE" || exit 1
         if [ -n "${PYTHON-}" ]; then
-            exec "$PYTHON" hermes "$@"
+            exec "$PYTHON" akramcode "$@"
         elif [ -x .venv/Scripts/python.exe ]; then
-            exec .venv/Scripts/python.exe hermes "$@"
+            exec .venv/Scripts/python.exe akramcode "$@"
         elif [ -x .venv/bin/python ]; then
-            exec .venv/bin/python hermes "$@"
+            exec .venv/bin/python akramcode "$@"
         elif [ -x venv/Scripts/python.exe ]; then
-            exec venv/Scripts/python.exe hermes "$@"
+            exec venv/Scripts/python.exe akramcode "$@"
         elif [ -x venv/bin/python ]; then
-            exec venv/bin/python hermes "$@"
+            exec venv/bin/python akramcode "$@"
         else
-            exec python hermes "$@"
+            exec python akramcode "$@"
         fi
     )
 }
@@ -213,7 +213,7 @@ deactivate() {
     unset __HERMES_SAVED_PATH __HERMES_KEY_LIST __HERMES_ACTIVATED \
           __HERMES_WORKTREE __HERMES_WORKTREE_NAME \
           __HERMES_SAVED_PS1 __HERMES_SAVED_PROMPT_COMMAND
-    unset -f deactivate hermes _hermes_worktree_here _hermes_prompt
+    unset -f deactivate akramcode _hermes_worktree_here _hermes_prompt
     unset _hermes_k _hermes_was _hermes_old _hermes_top
 }
 

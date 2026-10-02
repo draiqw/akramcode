@@ -121,7 +121,7 @@ def sync_default_opt_in() -> bool:
 
 # Local skill eligibility + the personal opt-in flag
 def _skills_dir() -> Path:
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
     return get_hermes_home() / "skills"
 
 

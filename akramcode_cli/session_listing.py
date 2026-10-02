@@ -18,7 +18,7 @@ def show_subagent_sessions(hermes_home: str | Path) -> bool:
     profiles' stores, so the store's home decides, never the process ``HERMES_HOME``. False when
     the config cannot be read (the listing keeps its default shape)."""
     from akramcode_cli.config import load_config_readonly
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from akramcode_constants import reset_hermes_home_override, set_hermes_home_override
 
     token = set_hermes_home_override(str(hermes_home))
     try:

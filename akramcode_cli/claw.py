@@ -12,7 +12,7 @@ from types import SimpleNamespace
 from typing import Callable, Optional
 
 from akramcode_cli.config import get_hermes_home, get_config_path, load_config, save_config
-from hermes_constants import get_optional_skills_dir
+from akramcode_constants import get_optional_skills_dir
 from akramcode_cli.setup import (Colors, color, print_header, print_info, print_success, print_error,
                               print_warning, prompt_yes_no)
 

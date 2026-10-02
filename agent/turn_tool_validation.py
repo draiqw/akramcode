@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Optional
 from agent.message_metadata import append_message
 from agent.message_sanitization import close_interrupted_tool_sequence, coalesce_tool_call_id
 from agent.turn_failure_copy import site_copy, stamp_failure
-from hermes_constants import FINISH_REASON_LENGTH
+from akramcode_constants import FINISH_REASON_LENGTH
 
 logger = logging.getLogger("agent.conversation_loop")
 

@@ -12,7 +12,7 @@ import re
 import sys
 from pathlib import Path
 
-from hermes_constants import display_hermes_home, get_hermes_home
+from akramcode_constants import display_hermes_home, get_hermes_home
 
 _HEX_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 
@@ -34,7 +34,7 @@ def _use(name: str) -> None:
 
 
 def _skin_set(key: str, value: str, skin: str | None) -> int:
-    import akram_core.hermes_yaml as yaml
+    import akram_core.akramcode_yaml as yaml
     if not _HEX_RE.match(value):
         print(f"✗ {value!r} is not a #rrggbb hex color", file=sys.stderr)
         return 1

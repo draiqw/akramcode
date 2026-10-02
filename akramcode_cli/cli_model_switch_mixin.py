@@ -40,7 +40,7 @@ def _resolve_cli_reasoning(cli) -> None:
     the launch model's effort and 400s (#112921, #96012). ``agent.switch_model`` re-resolves its own
     copy for the live-agent path."""
     from cli import CLI_CONFIG
-    from hermes_constants import resolve_reasoning_config
+    from akramcode_constants import resolve_reasoning_config
     # getattr: tests drive /new unbound on a SimpleNamespace without ``model`` (blank -> config default).
     cli.reasoning_config = resolve_reasoning_config(CLI_CONFIG, getattr(cli, "model", None) or "")
 
@@ -215,7 +215,7 @@ _MODEL_USAGE_COL = 36
 def _picker_reasoning_rows() -> list[tuple[str, str]]:
     """``(value, label)`` rows for the picker's effort step: the canonical ladder, the off state,
     then a keep-current row (empty value = leave the effort alone)."""
-    from hermes_constants import VALID_REASONING_EFFORTS
+    from akramcode_constants import VALID_REASONING_EFFORTS
     rows = [(lvl, lvl) for lvl in VALID_REASONING_EFFORTS]
     rows.append(("none", t("cli.model.effort_none")))
     rows.append(("", t("cli.model.effort_keep_current")))

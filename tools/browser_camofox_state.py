@@ -10,7 +10,7 @@ import uuid
 from pathlib import Path
 from typing import Dict, Optional
 
-from hermes_constants import get_hermes_home
+from akramcode_constants import get_hermes_home
 
 
 def get_camofox_state_dir() -> Path:

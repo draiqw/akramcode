@@ -304,7 +304,7 @@ def _default_profile_secret_scope():
     """
     from agent.secret_scope import (
         build_profile_secret_scope, is_multiplex_active, reset_secret_scope, set_secret_scope)
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
 
     if not is_multiplex_active():
         yield

@@ -477,7 +477,7 @@ def _read_gemini_persona_prompt(gemini_config: Dict[str, Any]) -> str:
     path = Path(os.path.expandvars(raw.strip())).expanduser()
     if not path.is_absolute():
         try:
-            from hermes_constants import get_hermes_home
+            from akramcode_constants import get_hermes_home
             path = get_hermes_home() / path
         except Exception:
             path = Path.cwd() / path

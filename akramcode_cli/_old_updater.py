@@ -111,7 +111,7 @@ def _run_child(request: dict) -> tuple[int, dict]:
     """One JSON exchange; the old process never imports the updated graph."""
     root = Path(__file__).resolve().parents[1]
     home = os.environ.get("HERMES_HOME")
-    constants = sys.modules.get("hermes_constants")
+    constants = sys.modules.get("akramcode_constants")
     override = vars(constants).get("_HERMES_HOME_OVERRIDE") if constants else None
     if override is not None:
         value = override.get()

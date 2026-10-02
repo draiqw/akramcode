@@ -337,7 +337,7 @@ def _nous_shared_auth_dir() -> Path:
     override = os.getenv("HERMES_SHARED_AUTH_DIR", "").strip()
     if override:
         return Path(override).expanduser()
-    from hermes_constants import get_default_hermes_root
+    from akramcode_constants import get_default_hermes_root
     return get_default_hermes_root() / "shared"
 
 
@@ -347,7 +347,7 @@ def _nous_shared_store_path() -> Path:
     # user's Hermes root so a test that forgot HERMES_SHARED_AUTH_DIR fails loudly instead of
     # corrupting cross-profile state.
     if os.environ.get("PYTEST_CURRENT_TEST"):
-        from hermes_constants import get_default_hermes_root
+        from akramcode_constants import get_default_hermes_root
         real_home_shared = (
             get_default_hermes_root() / "shared" / NOUS_SHARED_STORE_FILENAME).resolve(strict=False)
         try:

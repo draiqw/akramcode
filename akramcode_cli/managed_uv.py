@@ -11,7 +11,7 @@ from typing import NoReturn
 from akramcode_cli._old_updater import stop_for_relaunch
 
 
-def _reload_hermes_constants() -> NoReturn:
+def _reload_akramcode_constants() -> NoReturn:
     # Shim to suppress old updater work until relaunch. Callers dereference the
     # result, so None crashes. Stop without re-executing live globals.
     stop_for_relaunch()

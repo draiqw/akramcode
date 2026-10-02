@@ -245,7 +245,7 @@ def _pairing_roots(home: Path) -> list:
     cached = _pairing_roots_cache
     if cached is not None and cached[0] == home and cached[1] == dir_mtime and now - cached[2] < _PAIRING_ROOTS_TTL_S:
         return cached[3]
-    from hermes_constants import named_profile_is_live
+    from akramcode_constants import named_profile_is_live
     roots = [home / "pairing", home / "platforms" / "pairing"]
     with contextlib.suppress(OSError):
         for profile_dir in profiles_dir.iterdir():

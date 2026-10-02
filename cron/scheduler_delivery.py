@@ -783,7 +783,7 @@ def _deliver_to_bot_chat(job: dict, content: str, profile: str, *, deferred: Opt
     import json
     import tempfile
     import uuid
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
     from akramcode_cli.profiles import get_profile_dir
     from tools.bot_live_delivery import (
         deliver_to_live_owner, find_canonical_live_owner, read_delivery_result,

@@ -64,7 +64,7 @@ def normalize_hermes_home_env() -> None:
     *relative*: the many raw ``os.environ["HERMES_HOME"]`` readers (this fast path, the
     active_profile probe, profile re-home, the dotenv loader) would each resolve it against
     cwd and scaffold a full home under ``<cwd>/~/.hermes``. One expansion here gives every
-    reader the same absolute spelling; ``hermes_constants`` expands as well for non-CLI
+    reader the same absolute spelling; ``akramcode_constants`` expands as well for non-CLI
     entry points. A relative value that is not tilde/variable-shaped is left alone.
     """
     raw = os.environ.get("HERMES_HOME", "")

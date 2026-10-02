@@ -43,13 +43,13 @@ _DISK_CACHE_VERSION = 1
 def _disk_cache_path() -> Optional[Path]:
     """Return the path for the persistent OSV verdict cache.
 
-    Uses ``hermes_constants.get_hermes_home()`` so the cache follows the
+    Uses ``akramcode_constants.get_hermes_home()`` so the cache follows the
     active profile and is isolated across Hermes homes. The cache directory
     is created on demand. Returns ``None`` when Hermes home cannot be
     resolved, in which case only the in-process cache is used.
     """
     try:
-        from hermes_constants import get_hermes_home
+        from akramcode_constants import get_hermes_home
 
         home = get_hermes_home()
     except Exception:

@@ -11,7 +11,7 @@ import re
 from datetime import datetime
 from typing import Any, Optional, Tuple
 
-from akram_core.hermes_time import safe_strftime
+from akram_core.akramcode_time import safe_strftime
 
 
 # Leading timestamp prefix, either the current human format

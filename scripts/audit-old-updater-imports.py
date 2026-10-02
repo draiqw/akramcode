@@ -8,9 +8,9 @@ contract with every released updater in the wild: delete one of those
 names and the users on that release get a traceback halfway through an
 update, on a tree that is already half-new.
 
-`managed_uv._reload_hermes_constants` is the scar tissue proving this is
+`managed_uv._reload_akramcode_constants` is the scar tissue proving this is
 real: an updater hit ``cannot import name 'venv_python_path' from
-'hermes_constants'`` while the file on disk plainly contained the name.
+'akramcode_constants'`` while the file on disk plainly contained the name.
 
 WHY THIS OVER-APPROXIMATES, ON PURPOSE
 --------------------------------------
@@ -41,7 +41,7 @@ are recorded. Unresolved expressions remain visible for manual review:
 * ``importlib.reload(m)`` — RE-EXECUTES the new file in the old process.
   This is the most dangerous load in the whole flow and it looks like
   nothing to an import walker. ``_UPDATE_RUNTIME_RELOAD_MODULES`` and
-  ``_reload_config_modules`` reload ``hermes_constants``,
+  ``_reload_config_modules`` reload ``akramcode_constants``,
   ``akramcode_cli.config`` and friends by name. Treated as a whole-module
   requirement.
 * ``getattr(module, "name")`` — a symbol requirement with no import
@@ -150,7 +150,7 @@ FIRST_PARTY_ROOTS = frozenset(
         "agent",
         "gateway",
         "akramcode_cli",
-        "hermes_constants",
+        "akramcode_constants",
         "akramcode_state",
         "installation",
         "plugins",

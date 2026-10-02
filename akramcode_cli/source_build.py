@@ -30,7 +30,7 @@ def source_build_env(base_env: dict | None = None, *, explicit: bool = False) ->
     from pm import ensure
     from pm.environments import project_python, running_from_selected_environment
     from pm.paths import repo_root
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
 
     # The historical update runs on store Python with the selected environment
     # activated in-process. Icon generation starts an isolated child, which needs

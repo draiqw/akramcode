@@ -2608,7 +2608,7 @@ class YuanbaoAdapter(BasePlatformAdapter):
 
     @classmethod
     def get_active(cls) -> Optional["YuanbaoAdapter"]:
-        from hermes_constants import get_hermes_home_override, hermes_home_key
+        from akramcode_constants import get_hermes_home_override, hermes_home_key
 
         if get_hermes_home_override() is None:
             return cls._active_instance
@@ -2616,7 +2616,7 @@ class YuanbaoAdapter(BasePlatformAdapter):
 
     @classmethod
     def set_active(cls, adapter: Optional["YuanbaoAdapter"]) -> None:
-        from hermes_constants import get_hermes_home_override, hermes_home_key
+        from akramcode_constants import get_hermes_home_override, hermes_home_key
 
         if get_hermes_home_override() is None:
             cls._active_instance = adapter

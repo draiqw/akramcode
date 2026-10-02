@@ -14,9 +14,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional
 
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
-from hermes_constants import get_hermes_home, get_optional_mcps_dir
+from akramcode_constants import get_hermes_home, get_optional_mcps_dir
 from akramcode_cli._subprocess_compat import noninteractive_git_env
 from akramcode_cli.colors import Colors, color
 from akramcode_cli.config import load_config, save_config, get_env_value, save_env_value

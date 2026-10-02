@@ -27,7 +27,7 @@ def _routed_gateway_cfg() -> Optional[Dict[str, Any]]:
     """``gateway`` section of the ROUTED profile's config when a HERMES_HOME override is active
     (multiplexed turn), else None. The env bridge is one process-wide copy of the launch profile's
     policy, so a secondary's deliveries must read their own config instead of ``os.environ``."""
-    from hermes_constants import get_hermes_home_override
+    from akramcode_constants import get_hermes_home_override
     if not get_hermes_home_override():
         return None
     try:

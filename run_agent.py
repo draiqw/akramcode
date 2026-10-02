@@ -6,11 +6,11 @@
     response = agent.run_conversation("Tell me about the latest Python updates")
 """
 
-# akram_core.hermes_bootstrap must be the very first import (UTF-8 stdio on Windows; no-op on POSIX).
+# akram_core.akramcode_bootstrap must be the very first import (UTF-8 stdio on Windows; no-op on POSIX).
 try:
-    import akram_core.hermes_bootstrap  # noqa: F401
+    import akram_core.akramcode_bootstrap  # noqa: F401
 except ModuleNotFoundError as exc:  # partial `hermes update` left the bootstrap unregistered
-    if exc.name != "akram_core.hermes_bootstrap":
+    if exc.name != "akram_core.akramcode_bootstrap":
         raise  # the bootstrap exists but cannot load: skipping it would skip PM activation
 
 import sys
@@ -36,7 +36,7 @@ from typing import List, Dict, Any, Optional, Callable
 from datetime import datetime
 from pathlib import Path
 
-from hermes_constants import get_hermes_home
+from akramcode_constants import get_hermes_home
 
 
 def _launch_cwd_for_session(source: str) -> Optional[str]:

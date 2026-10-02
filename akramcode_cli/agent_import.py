@@ -17,7 +17,7 @@ import tomllib
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from utils import atomic_write_text, atomic_yaml_write
 
@@ -524,7 +524,7 @@ class AgentImporter:
 def import_agent_command(args) -> None:
     """Handle ``hermes import-agent`` (invoked from akramcode_cli.main)."""
     from akramcode_cli.config import get_config_path, load_config, save_config
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
     from akramcode_cli.setup import (Colors, color, print_header, print_info, print_success,
                                   print_error, prompt_yes_no)
 

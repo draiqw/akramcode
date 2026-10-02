@@ -44,7 +44,7 @@ class OptionalSkillSource(SkillSource):
     _parse_frontmatter = staticmethod(_parse_frontmatter)
 
     def __init__(self, auth: Optional[GitHubAuth] = None):
-        from hermes_constants import get_optional_skills_dir
+        from akramcode_constants import get_optional_skills_dir
 
         self._optional_dir = get_optional_skills_dir(Path(__file__).parent.parent / "optional-skills")
         self._auth = auth

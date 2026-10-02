@@ -2,7 +2,7 @@
 
 ``sys.executable -m cron.scheduler --external-worker-file ...``
 (``cron/scheduler.py::_launch_external_cron_worker``) is a full Hermes entry point that
-does not go through ``akram_core.hermes_bootstrap``, and it imports Hermes packages the moment it
+does not go through ``akram_core.akramcode_bootstrap``, and it imports Hermes packages the moment it
 starts. ``cron/scheduler_worker_env.py`` restores the committed generation's
 ``site-packages`` on its ``PYTHONPATH`` so those imports resolve, but a pinned path is not a
 boot: the worker holds no lease on the generation, so the PM collector may remove it
@@ -10,12 +10,12 @@ between the gateway's exit and the worker's next import (#122290 review), and it
 ``sys.path`` never ran the generation's ``.pth`` files.
 
 ``pm.environments.activate_dependencies`` is exactly that boot -- the same call
-``akram_core.hermes_bootstrap`` makes for every other entry point -- and it leases the generation it
+``akram_core.akramcode_bootstrap`` makes for every other entry point -- and it leases the generation it
 selects for the life of the process. ``worker_bootstrap()`` runs it at the top of
 ``cron/__init__.py`` -- ``-m cron.scheduler`` executes the package before the module, and the
-package's first import (``cron.jobs`` -> ``akram_core.hermes_yaml`` -> ``ruamel``) is already a
+package's first import (``cron.jobs`` -> ``akram_core.akramcode_yaml`` -> ``ruamel``) is already a
 dependency -- and does nothing unless ``_launch_external_cron_worker`` marked this child: the
-gateway already booted through ``akram_core.hermes_bootstrap``, and every other importer of
+gateway already booted through ``akram_core.akramcode_bootstrap``, and every other importer of
 ``cron.scheduler`` is an interpreter that owns its own dependencies.
 
 A genuine activation failure propagates: continuing on the inherited, unleased path lets the

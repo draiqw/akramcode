@@ -9,7 +9,7 @@ from typing import Callable, Optional
 
 from agent.browser_provider import BrowserProvider as CloudBrowserProvider
 from agent.browser_registry import get_provider as _registry_get_browser_provider
-from hermes_constants import get_hermes_home_override, hermes_home_key
+from akramcode_constants import get_hermes_home_override, hermes_home_key
 from plugins.browser.browser_use.provider import BrowserUseBrowserProvider
 from plugins.browser.browserbase.provider import BrowserbaseBrowserProvider
 from tools.tool_backend_helpers import normalize_browser_cloud_provider

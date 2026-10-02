@@ -147,7 +147,7 @@ class TokenMapping:
 
 
 def _proxy_state_dir_ro() -> Path:  # without creating it (status probes, pidfile reads)
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
     return get_hermes_home() / "proxy"
 
 
@@ -321,7 +321,7 @@ def _yaml():
     """Shared YAML helpers or None (not a hard requirement for proxy discovery)."""
 
     try:
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
         return yaml
     except ImportError:
         return None

@@ -447,7 +447,7 @@ def profile_role_toolsets(profile_home: Optional[Path] = None) -> Tuple[Set[str]
     home override, when bound, IS its profile dir): toolsets reserved for the role in its backend-written
     ``profile.yaml``, and toolsets reserved for any other role. An ordinary profile is granted none."""
     from akramcode_cli.profiles import read_profile_meta
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
     role = read_profile_meta(Path(profile_home or get_hermes_home())).get("role")
     granted = {name for name, spec in TOOLSETS.items() if role is not None and spec.get("role") == role}
     denied = {name for name, spec in TOOLSETS.items() if spec.get("role") not in (None, role)}

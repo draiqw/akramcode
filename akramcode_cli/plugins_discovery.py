@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
-from hermes_constants import get_hermes_home
+from akramcode_constants import get_hermes_home
 from akramcode_cli.config import cfg_get
 from akramcode_cli.plugin_capabilities import VALID_CAPABILITY_IDS
 from akramcode_cli.plugin_capabilities import parse_declared_capabilities as _parse_declared_capabilities

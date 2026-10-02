@@ -12,7 +12,7 @@ import threading
 from pathlib import Path
 
 from akramcode_cli.active_sessions import _FileLock
-from hermes_constants import get_hermes_home
+from akramcode_constants import get_hermes_home
 from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)

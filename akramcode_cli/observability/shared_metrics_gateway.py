@@ -178,7 +178,7 @@ def _in_home(home: Any, fn: Callable[..., Any], *args: Any, **kwargs: Any) -> No
     if home is None:
         fn(*args, **kwargs)
         return
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from akramcode_constants import reset_hermes_home_override, set_hermes_home_override
 
     token = set_hermes_home_override(str(home))
     try:
@@ -304,7 +304,7 @@ def start_reply_clock(source: Any, *, internal: bool = False) -> None:
     key = None if internal else _clock_key(getattr(source, "platform", None), getattr(source, "chat_id", None))
     if key is None:
         return
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
 
     home = str(get_hermes_home())
     with _reply_lock:

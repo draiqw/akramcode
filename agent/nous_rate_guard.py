@@ -37,7 +37,7 @@ format_remaining = _fmt_seconds
 def _state_path(*, anonymous: bool = False) -> str:
     """Path to the Nous rate limit state file."""
     try:
-        from hermes_constants import get_hermes_home
+        from akramcode_constants import get_hermes_home
         base = get_hermes_home()
     except ImportError:
         base = os.path.join(os.path.expanduser("~"), ".hermes")

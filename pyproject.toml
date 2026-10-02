@@ -3,7 +3,7 @@
 
 
 [project]
-name = "hermes-agent"
+name = "akramcode"
 version = "0.0.0"
 description = "The self-improving AI agent — creates skills from experience, improves them during use, and runs anywhere"
 readme = "README.md"
@@ -176,18 +176,18 @@ vertex = ["google-auth==2.55.1"]
 azure-identity = ["azure-identity==1.25.3"]
 termux = [
   "python-telegram-bot[webhooks]==22.8",
-  "hermes-agent[cron]",
-  "hermes-agent[mcp]",
-  "hermes-agent[honcho]",
-  "hermes-agent[acp]",
+  "akramcode[cron]",
+  "akramcode[mcp]",
+  "akramcode[honcho]",
+  "akramcode[acp]",
 ]
 termux-all = [
-  "hermes-agent[termux]",
-  "hermes-agent[google]",
-  "hermes-agent[homeassistant]",
-  "hermes-agent[sms]",
-  "hermes-agent[web]",
-  "hermes-agent[pty]",
+  "akramcode[termux]",
+  "akramcode[google]",
+  "akramcode[homeassistant]",
+  "akramcode[sms]",
+  "akramcode[web]",
+  "akramcode[pty]",
 ]
 dingtalk = [
   "dingtalk-stream==0.24.3",
@@ -213,16 +213,16 @@ web = [
   "python-multipart==0.0.32",
 ]
 all = [
-  "hermes-agent[cron]",
-  "hermes-agent[pty]",
-  "hermes-agent[mcp]",
-  "hermes-agent[uvloop]",
-  "hermes-agent[homeassistant]",
-  "hermes-agent[sms]",
-  "hermes-agent[acp]",
-  "hermes-agent[google]",
-  "hermes-agent[web]",
-  "hermes-agent[youtube]",
+  "akramcode[cron]",
+  "akramcode[pty]",
+  "akramcode[mcp]",
+  "akramcode[uvloop]",
+  "akramcode[homeassistant]",
+  "akramcode[sms]",
+  "akramcode[acp]",
+  "akramcode[google]",
+  "akramcode[web]",
+  "akramcode[youtube]",
 ]
 
 [dependency-groups]
@@ -247,10 +247,8 @@ requires = ["setuptools==83.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project.scripts]
-hermes = "akramcode_cli.main:main"
 akramcode = "akramcode_cli.main:main"
-hermes-agent = "agent.legacy_cli:main"
-hermes-acp = "acp_adapter.entry:main"
+akramcode-agent = "agent.legacy_cli:main"
 akramcode-acp = "acp_adapter.entry:main"
 
 [tool.hermes]

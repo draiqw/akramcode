@@ -51,7 +51,7 @@ def _drain_manual_gateway(home: Path) -> None:
 
 
 def _refuse_backend_writers(home: Path) -> None:
-    from hermes_constants import get_default_hermes_root
+    from akramcode_constants import get_default_hermes_root
     from akramcode_cli.process_identity import LEDGER_FILENAME, _pid_alive_matches, _read_ledger
 
     root = get_default_hermes_root(home=home).resolve()
@@ -102,7 +102,7 @@ def _refuse_cron_writers(home: Path) -> None:
 
 
 def _refuse_multiplexer(home: Path) -> None:
-    from hermes_constants import get_default_hermes_root
+    from akramcode_constants import get_default_hermes_root
     from gateway.control_socket import identify_gateway
     from gateway.status import get_running_pid_identity_strict
 

@@ -743,7 +743,7 @@ class CLIAgentSetupMixin:
             console = ChatConsole()
             from akramcode_cli.cli_chat_error_copy import agent_init_failure_message
             console.print(f"[bold red]{_escape(agent_init_failure_message(e))}[/]")
-            from hermes_constants import partial_update_hint
+            from akramcode_constants import partial_update_hint
             for line in partial_update_hint(e):
                 console.print(line)
             return False

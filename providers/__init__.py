@@ -242,7 +242,7 @@ def _home_layer(*, force_stamp_check: bool = False) -> _HomeLayer:
 
 def _bound_home_layer() -> tuple[_HomeLayer, Path | None, str]:
     try:
-        from hermes_constants import get_hermes_home, hermes_home_key
+        from akramcode_constants import get_hermes_home, hermes_home_key
 
         home = get_hermes_home()
         key = hermes_home_key(home)
@@ -297,7 +297,7 @@ def _plugin_dir_stamps(home: Path) -> tuple:
 def _user_plugins_dir() -> Path | None:
     """Return ``$HERMES_HOME/plugins/model-providers/`` if it exists."""
     try:
-        from hermes_constants import get_hermes_home
+        from akramcode_constants import get_hermes_home
 
         d = get_hermes_home() / "plugins" / "model-providers"
         return d if d.is_dir() else None
@@ -313,7 +313,7 @@ def _installed_plugins_dir() -> Path | None:
     :func:`_discover_installed_provider_plugins`.
     """
     try:
-        from hermes_constants import get_hermes_home
+        from akramcode_constants import get_hermes_home
 
         d = get_hermes_home() / "plugins"
         return d if d.is_dir() else None

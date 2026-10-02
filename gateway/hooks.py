@@ -16,10 +16,10 @@ import threading
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from akramcode_cli.config import get_hermes_home
-from hermes_constants import hermes_home_key
+from akramcode_constants import hermes_home_key
 
 
 HOOKS_DIR = get_hermes_home() / "hooks"

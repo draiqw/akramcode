@@ -202,7 +202,7 @@ def _no_prompt_git_kwargs() -> dict:
 _UPDATE_CRITICAL_FILES = (
     "akramcode_cli/main.py", "akramcode_cli/config.py", "akramcode_cli/__init__.py",
     "akramcode_cli/web_server.py", "cli.py", "run_agent.py", "model_tools.py", "toolsets.py",
-    "hermes_constants.py")
+    "akramcode_constants.py")
 
 
 def _record_update_step(step: str, ok: bool, detail: str = "") -> None:
@@ -375,7 +375,7 @@ def _gateway_prompt(prompt_text: str, default: str = "", timeout: float = 300.0)
     """
     import json as _json
     import uuid as _uuid
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
 
     home = get_hermes_home()
     prompt_path = home / ".update_prompt.json"

@@ -25,7 +25,7 @@ def _marker_path() -> Path:
     """The last-run marker, resolved per call (tests monkeypatch
     get_hermes_home). Derivation only — NO mkdir: a due-check or any
     read path must not create user state."""
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
 
     return get_hermes_home() / _MARKERS_DIR / "last-run"
 

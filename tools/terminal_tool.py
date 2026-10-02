@@ -450,7 +450,7 @@ def _routed_home_task_key(profile_scoped: bool) -> Optional[str]:
     Persistent Docker keys the profile name exactly like B's session-bound work, so B keeps ONE
     container instead of a second one per home path.
     """
-    from hermes_constants import get_hermes_home_override, profile_name_for_home
+    from akramcode_constants import get_hermes_home_override, profile_name_for_home
     from tools.environments.local import _is_routed_home
 
     override = get_hermes_home_override()
@@ -644,7 +644,7 @@ def _ensure_terminal_env_bridged() -> None:
     if get_terminal_scope() is not None:
         return
     # Never write a secondary profile's terminal.* into process-global env.
-    from hermes_constants import get_hermes_home_override
+    from akramcode_constants import get_hermes_home_override
 
     if get_hermes_home_override() is not None:
         return

@@ -74,7 +74,7 @@ class MCPServerHealthMixin:
         """``logging_callback`` forwarding server ``notifications/message`` into Hermes logging (SDK default drops them).
 
         Routes MCP ``notifications/message`` log notifications from the server into Hermes' logging
-        (agent.log via akram_core.hermes_logging), tagged with the server name. Without this, the SDK's default
+        (agent.log via akram_core.akramcode_logging), tagged with the server name. Without this, the SDK's default
         callback silently discards them, so server-side warnings/errors during a tool call were invisible.
         Port of anomalyco/opencode#34529.
         """

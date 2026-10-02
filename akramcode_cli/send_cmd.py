@@ -118,7 +118,7 @@ def _list_targets(platform_filter: Optional[str], *, json_mode: bool) -> int:
     if not platforms:
         print("No messaging platforms configured or no channels discovered yet.")
         print("Set one up with `hermes gateway setup`, or run the gateway once so")
-        from hermes_constants import get_default_hermes_root, get_hermes_home, hermes_home_key
+        from akramcode_constants import get_default_hermes_root, get_hermes_home, hermes_home_key
         home, root = get_hermes_home(), get_default_hermes_root()
         print(f"channel discovery can populate {home / 'channel_directory.json'}.")
         # A gateway started from the default root writes that root's directory, never this profile's.
@@ -264,7 +264,7 @@ _SEND_ARGUMENTS = (
 
 def register_send_subparser(subparsers) -> argparse.ArgumentParser:
     """Create the ``send`` subparser and return it."""
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
     hermes_home = get_hermes_home()
     parser = subparsers.add_parser(
         "send",

@@ -22,7 +22,7 @@ import akramcode_cli.auth as auth_mod
 from akramcode_cli.auth import PROVIDER_REGISTRY
 from akramcode_cli.auth_plugin_providers import (
     dispatch_plugin_auth, is_refreshable_oauth_provider, plugin_missing_auth_handler_error)
-from hermes_constants import OPENROUTER_BASE_URL
+from akramcode_constants import OPENROUTER_BASE_URL
 from akramcode_cli.secret_prompt import masked_secret_prompt
 
 

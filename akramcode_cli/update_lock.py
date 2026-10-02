@@ -50,7 +50,7 @@ def update_marker_path() -> Path:
     updater resolves ``$HERMES_HOME`` or the platform default and the desktop pins that same
     value into the updater's env, so a profile-scoped path would be one the other owners never look at.
     """
-    from hermes_constants import get_process_hermes_home
+    from akramcode_constants import get_process_hermes_home
     return get_process_hermes_home() / MARKER_NAME
 
 

@@ -11,7 +11,7 @@ import time
 from contextvars import copy_context
 from pathlib import Path
 
-from hermes_constants import hermes_home_key
+from akramcode_constants import hermes_home_key
 
 logger = logging.getLogger(__name__)
 _REPO = "sheeki03/tirith"

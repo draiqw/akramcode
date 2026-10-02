@@ -33,7 +33,7 @@ _VAULT_REDACTION_LOCK = threading.Lock()
 
 
 def _vault_scope() -> str:
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
     return str(get_hermes_home())
 
 
@@ -106,7 +106,7 @@ _REDACT_ENABLED_LOCK = threading.Lock()
 
 def _redact_enabled() -> bool:
     """Effective redaction switch for the active profile (launch snapshot when no override)."""
-    from hermes_constants import get_hermes_home_override, hermes_home_key
+    from akramcode_constants import get_hermes_home_override, hermes_home_key
     if get_hermes_home_override() is None:
         return _REDACT_ENABLED
     home_key = hermes_home_key()

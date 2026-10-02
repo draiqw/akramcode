@@ -20,7 +20,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, Dict, List, Optional
 
-from hermes_constants import get_hermes_home, hermes_home_key
+from akramcode_constants import get_hermes_home, hermes_home_key
 from tools.daemon_pool import DaemonThreadPoolExecutor
 from tools.thread_context import propagate_context_to_thread
 
@@ -103,7 +103,7 @@ def _connect() -> sqlite3.Connection:
     # Same state.db as akramcode_state.SessionDB -- reuse its owner-only (0600)
     # hardening so this writer doesn't create/leave the file (and its WAL
     # sidecars) at the process umask. See akramcode_state._secure_state_db_files.
-    from hermes_constants import mkdir_under_hermes_home
+    from akramcode_constants import mkdir_under_hermes_home
     from akramcode_state import _secure_state_db_files
 
     path = _db_path()

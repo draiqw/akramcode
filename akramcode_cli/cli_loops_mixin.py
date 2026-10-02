@@ -256,7 +256,7 @@ class CLILoopsMixin:
             self._reload_skills()
 
     def _cmd_plugins(self, cmd_original: str):
-        from hermes_constants import display_hermes_home
+        from akramcode_constants import display_hermes_home
         try:
             # Discover from disk (bundled + user) like `hermes plugins list`, so
             # installed-but-not-enabled plugins show up; the plugin manager only knows

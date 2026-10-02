@@ -20,7 +20,7 @@ def _critical_module_import_failures(
     Generic import-time exceptions are tolerated unless ``report_runtime_errors=True``.
     """
     from akramcode_cli.update_cmd import _UPDATE_CRITICAL_MODULES
-    from hermes_constants import FIRST_PARTY_MODULE_ROOTS
+    from akramcode_constants import FIRST_PARTY_MODULE_ROOTS
     import secrets
     marker = f"__HERMES_IMPORT_HEALTH_{secrets.token_hex(16)}__"
     probe = (
@@ -35,7 +35,7 @@ def _critical_module_import_failures(
         "        importlib.import_module(name)\n"
         "    except ModuleNotFoundError as exc:\n"
         # A missing *third-party* module means deps aren't installed, not a skewed checkout;
-        # only our own packages count. Roots come from hermes_constants so the user hint can't drift.
+        # only our own packages count. Roots come from akramcode_constants so the user hint can't drift.
         "        missing = (getattr(exc, 'name', '') or '').split('.')[0]\n"
         "        if missing in %r or missing.startswith('hermes_') or %r:\n"
         "            failures.append((name, type(exc).__name__, str(exc)))\n"

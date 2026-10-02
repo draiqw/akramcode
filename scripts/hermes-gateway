@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Historical script entry; service policy belongs to ``hermes gateway``."""
+"""Historical script entry; service policy belongs to ``akramcode gateway``."""
 import os
 from pathlib import Path
 import sys

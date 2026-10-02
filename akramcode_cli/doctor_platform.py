@@ -15,7 +15,7 @@ from akramcode_cli.doctor_report import (
     Finding, _fail_and_issue, _section, check_bool, check_fail, check_info, check_ok, check_warn, doctor_check,
     warn_on_error,
 )
-from hermes_constants import is_termux as _is_termux
+from akramcode_constants import is_termux as _is_termux
 
 
 def _python_repair_hint() -> str:

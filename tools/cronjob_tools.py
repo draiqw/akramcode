@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Union
 
 import copy
 
-from hermes_constants import display_hermes_home
+from akramcode_constants import display_hermes_home
 
 logger = logging.getLogger(__name__)
 
@@ -356,7 +356,7 @@ def _run_claimed_job(job: Dict[str, Any], extra_prompt: Optional[str] = None) ->
         # ticker (``tick_adapters_for``) does — fail closed, never the default bot (#124248). A
         # resolution error propagates to the ``except`` below and marks the run failed.
         if runner is not None and hasattr(runner, "_adapters_for_profile"):
-            from hermes_constants import get_hermes_home, profile_name_for_home
+            from akramcode_constants import get_hermes_home, profile_name_for_home
 
             profile = profile_name_for_home(get_hermes_home())
             adapters = runner._adapters_for_profile(profile)

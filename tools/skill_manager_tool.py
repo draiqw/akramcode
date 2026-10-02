@@ -18,9 +18,9 @@ import threading
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
-from hermes_constants import get_hermes_home
+from akramcode_constants import get_hermes_home
 from utils import atomic_write_text, is_truthy_value
 from akramcode_cli.config import cfg_get
 from agent.skill_utils import (
@@ -251,7 +251,7 @@ def _find_skill_in_other_profiles(name: str) -> List[Tuple[str, Path]]:
     error can explain a wrong-profile mistake). Fail-quiet."""
     matches: List[Tuple[str, Path]] = []
     try:
-        from hermes_constants import get_default_hermes_root
+        from akramcode_constants import get_default_hermes_root
         root = get_default_hermes_root()
     except Exception:
         return matches
@@ -356,7 +356,7 @@ def _guarded_write(name: str, skill_dir: Path, target: Path, action: str, label:
         if read_guard := _background_review_read_before_write_guard(name, target, action, label):
             return read_guard
         original = target.read_text(encoding="utf-8-sig")
-    from hermes_constants import mkdir_under_hermes_home
+    from akramcode_constants import mkdir_under_hermes_home
     mkdir_under_hermes_home(target.parent)
     atomic_write_text(target, content, preserve_mode=True, create_mode=0o644)
     scan_error = _security_scan_skill(skill_dir)
@@ -419,7 +419,7 @@ def _create_skill(name: str, content: str, category: str = None) -> Dict[str, An
     if existing := _find_skill(name):
         return _err(f"A skill named '{name}' already exists at {existing['path']}.")
     skill_dir = _resolve_skill_dir(name, category)
-    from hermes_constants import mkdir_under_hermes_home
+    from akramcode_constants import mkdir_under_hermes_home
     mkdir_under_hermes_home(skill_dir.parent)
     try:
         skill_dir.mkdir(exist_ok=False)
@@ -684,7 +684,7 @@ def _maybe_debounced_sync_push(skill_name: str) -> None:
             return
     except Exception:
         return
-    from hermes_constants import hermes_home_key
+    from akramcode_constants import hermes_home_key
     home_key = hermes_home_key()
     # Timer threads start with empty ContextVars; without the scheduling turn's context the push would
     # resolve the launch profile's home and credentials instead of the writing profile's.

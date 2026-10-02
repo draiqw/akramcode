@@ -102,7 +102,7 @@ def reconcile_record() -> Optional[SetupRecord]:
     record = _record
     if record is None or record.provider_configured:
         return record
-    from hermes_constants import get_process_hermes_home, hermes_home_key
+    from akramcode_constants import get_process_hermes_home, hermes_home_key
     if hermes_home_key() != hermes_home_key(get_process_hermes_home()) or _inventory_stamp == _config_stamp():
         return record
     if not _inventory_other_providers():

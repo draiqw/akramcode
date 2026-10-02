@@ -15,7 +15,7 @@ import threading
 import time
 
 from agent.i18n import t
-from hermes_constants import is_termux as _is_termux_environment
+from akramcode_constants import is_termux as _is_termux_environment
 from rich.markup import escape as _escape
 from utils import base_url_hostname, file_signature
 
@@ -525,7 +525,7 @@ class CLIInfoMixin:
 
     def _show_gateway_status(self):
         """Show status of the gateway and connected messaging platforms."""
-        from hermes_constants import display_hermes_home
+        from akramcode_constants import display_hermes_home
         from gateway.config import load_gateway_config, Platform
 
         print()
@@ -853,7 +853,7 @@ class CLIInfoMixin:
         cache** (the next message re-sends the full input prefix, expensive on long-context / high-reasoning
         models). See #1474.
         """
-        import akram_core.hermes_yaml as _yaml
+        import akram_core.akramcode_yaml as _yaml
 
         now = time.monotonic()
         if now - self._last_config_check < CONFIG_WATCH_INTERVAL:

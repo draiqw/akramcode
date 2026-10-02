@@ -52,7 +52,7 @@ def prepare(request: dict) -> tuple[Path, dict[str, str]]:
 
 def _record_failure(request: dict, result: Path, code: int, detail: str) -> None:
     from akramcode_cli import update_receipt
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
 
     update_receipt.record_step("historical_takeover", False, detail)
     saved = update_receipt.finalize_pending_update_receipt(code, detail)

@@ -59,7 +59,7 @@ def _post_setup_agent_browser(post_setup_key: str) -> None:
     try:
         from tools.browser_tool_install import (
             _browser_install_hint, _chromium_installed, _running_in_docker, _find_agent_browser)
-        from hermes_constants import is_termux
+        from akramcode_constants import is_termux
     except Exception as exc:  # pragma: no cover — defensive
         _print_warning(f"    Could not check Chromium status: {exc}")
         return

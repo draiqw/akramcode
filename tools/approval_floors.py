@@ -60,7 +60,7 @@ def _save_blocked_payload(command: str) -> str | None:
     and nothing runs here. Returns the path, or None on any failure (hint falls
     back to write_file)."""
     try:
-        from hermes_constants import get_hermes_home
+        from akramcode_constants import get_hermes_home
         script_dir = get_hermes_home() / "cache" / "blocked-scripts"
         script_dir.mkdir(parents=True, exist_ok=True)
         # Opportunistic cleanup: blocked payloads older than 7 days.

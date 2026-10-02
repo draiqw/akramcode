@@ -1,7 +1,7 @@
 """Named-profile lifecycle inside the host gateway, never a service-manager action."""
 from __future__ import annotations
 
-from hermes_constants import get_hermes_home, get_default_hermes_root
+from akramcode_constants import get_hermes_home, get_default_hermes_root
 from akramcode_cli.profiles import parked_marker_path, profile_is_parked, profile_is_standalone, profiles_to_serve
 
 

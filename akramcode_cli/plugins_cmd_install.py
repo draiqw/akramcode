@@ -137,7 +137,7 @@ def _prompt_plugin_env_vars(manifest: dict, console) -> None:
     if not missing:
         return
     from akramcode_cli.config import save_env_value
-    from hermes_constants import display_hermes_home
+    from akramcode_constants import display_hermes_home
     plugin_name = manifest.get("name", "this plugin")
     console.print(f"\n[bold]{plugin_name}[/bold] requires the following environment variables:\n")
     for spec in missing:

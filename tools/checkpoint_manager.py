@@ -58,7 +58,7 @@ import subprocess
 import tempfile
 import time
 from pathlib import Path, PurePosixPath
-from hermes_constants import get_hermes_home
+from akramcode_constants import get_hermes_home
 from akramcode_cli._subprocess_compat import selected_git_env, windows_hide_flags
 from akramcode_cli.gitlock import clear_stale_tmp_packs
 from typing import Dict, List, Optional, Set, Tuple

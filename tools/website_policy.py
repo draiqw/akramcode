@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
-from hermes_constants import get_hermes_home
+from akramcode_constants import get_hermes_home
 from tools.url_safety import _normalize_hostname as _normalize_host
 
 logger = logging.getLogger(__name__)
@@ -69,7 +69,7 @@ def _load_policy_config(config_path: Path) -> Dict[str, Any]:
     if not config_path.exists():
         return dict(_DEFAULT_WEBSITE_BLOCKLIST)
     try:
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
     except ImportError:
         logger.debug("ruamel.yaml not installed — website blocklist disabled")
         return dict(_DEFAULT_WEBSITE_BLOCKLIST)

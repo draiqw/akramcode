@@ -267,7 +267,7 @@ def fetch_models_with_pricing(
 def fetch_ai_gateway_pricing(timeout: float = 8.0, *, force_refresh: bool = False) -> dict[str, dict[str, str]]:
     """Vercel AI Gateway /v1/models pricing, translating its ``input`` / ``output`` field names to
     the picker's ``prompt`` / ``completion`` (cache read/write names already match)."""
-    from hermes_constants import AI_GATEWAY_BASE_URL
+    from akramcode_constants import AI_GATEWAY_BASE_URL
 
     cache_key = AI_GATEWAY_BASE_URL.rstrip("/")
     if not force_refresh:
@@ -425,7 +425,7 @@ _FIREWORKS_PRICING_KEY = "models.dev/fireworks"
 
 
 def _ai_gateway_pricing_scope() -> str:
-    from hermes_constants import AI_GATEWAY_BASE_URL
+    from akramcode_constants import AI_GATEWAY_BASE_URL
     return AI_GATEWAY_BASE_URL.rstrip("/")
 
 

@@ -361,7 +361,7 @@ class GatewayAuthorizationMixin:
             return None
         _registered, profile = self._owning_profile(adapter, getattr(source, "platform", None))
         if profile is None:
-            from hermes_constants import get_process_hermes_home
+            from akramcode_constants import get_process_hermes_home
             return get_process_hermes_home()  # the primary bot's home, never the per-turn override
         from akramcode_cli.profiles import get_profile_dir
         return get_profile_dir(profile)

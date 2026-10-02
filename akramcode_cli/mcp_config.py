@@ -16,7 +16,7 @@ from akramcode_cli.config import (
     get_hermes_home,  # noqa: F401 — used by test mocks
 )
 from akramcode_cli.colors import Colors, color
-from hermes_constants import display_hermes_home
+from akramcode_constants import display_hermes_home
 from akramcode_cli.mcp_security import validate_mcp_server_entry
 from tools.mcp_tool_config import _ENV_VAR_PATTERN
 from tools.mcp_tool_common import _env_ref_name, mcp_server_enabled

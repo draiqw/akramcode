@@ -8,7 +8,7 @@ from contextlib import closing
 from pathlib import Path
 from typing import Any
 
-from hermes_constants import get_hermes_home
+from akramcode_constants import get_hermes_home
 from utils import load_yaml_file_readonly
 
 

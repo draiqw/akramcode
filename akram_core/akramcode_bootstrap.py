@@ -462,14 +462,14 @@ def export_scratch_tmp_env() -> None:
     re-runs it after ``--profile`` re-homes the process. Never raises.
     """
     try:
-        from hermes_constants import export_scratch_tmp_env as _export
+        from akramcode_constants import export_scratch_tmp_env as _export
         _export()
     except Exception:
         pass  # a missing/unwritable home just leaves the system temp dir in place
 
 
-# Apply on import — entry points just need ``import akram_core.hermes_bootstrap``
-# (or ``from akram_core.hermes_bootstrap import apply_windows_utf8_bootstrap``) at
+# Apply on import — entry points just need ``import akram_core.akramcode_bootstrap``
+# (or ``from akram_core.akramcode_bootstrap import apply_windows_utf8_bootstrap``) at
 # the very top of their module, before importing anything else.  The
 # import side effect does the right thing.
 apply_windows_utf8_bootstrap()

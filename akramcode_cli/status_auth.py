@@ -10,7 +10,7 @@ from akramcode_cli.nous_account import (
 from akramcode_cli.nous_subscription import get_nous_subscription_features
 from tools.tool_backend_helpers import managed_nous_tools_enabled
 from akramcode_cli import config
-from akram_core.hermes_time import safe_strftime
+from akram_core.akramcode_time import safe_strftime
 
 
 def _format_iso_timestamp(value) -> str:

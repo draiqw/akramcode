@@ -10,7 +10,7 @@ from __future__ import annotations
 import threading
 from typing import Dict, Optional, Tuple
 
-from hermes_constants import get_process_hermes_home, hermes_home_key
+from akramcode_constants import get_process_hermes_home, hermes_home_key
 from tools.connectors.operation import ConnectionOperation
 
 

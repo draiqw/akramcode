@@ -28,7 +28,7 @@ from functools import cached_property, wraps
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Mapping, Optional, Set, Tuple, Union
 
-from hermes_constants import get_hermes_home, get_process_hermes_home, hermes_home_key
+from akramcode_constants import get_hermes_home, get_process_hermes_home, hermes_home_key
 from akram_core.registration_lifecycle import replacement_coordinator
 from utils import env_var_enabled
 from akramcode_cli.config import load_config_readonly
@@ -1448,7 +1448,7 @@ class PluginManager(PluginLoaderMixin, PluginDispatchMixin, PluginLedgerMixin):
             # Reset and reload the SAME home the process (or routed turn) resolves to: under multiplex this
             # runs at gateway boot after sibling profiles may already have hydrated, and a global clear
             # wiped their snapshots; a routed discovery must rebuild the profile it just dropped.
-            from hermes_constants import get_hermes_home
+            from akramcode_constants import get_hermes_home
             home = get_hermes_home()
             reset_secret_source_cache(home)
             load_hermes_dotenv(hermes_home=home)

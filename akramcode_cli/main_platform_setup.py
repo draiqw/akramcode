@@ -96,7 +96,7 @@ def _whatsapp_allowed_users(wa_mode: str, get_env_value, save_env_value) -> None
 
 def _whatsapp_install_bridge(bridge_dir) -> bool:
     """Step 4 of ``hermes whatsapp``: ``npm install`` the bridge when needed. False = stop."""
-    from hermes_constants import find_node_executable, with_hermes_node_path
+    from akramcode_constants import find_node_executable, with_hermes_node_path
     if (bridge_dir / "node_modules").exists():
         print("✓ Bridge dependencies already installed")
         return True
@@ -136,7 +136,7 @@ def cmd_whatsapp(args):
     from akramcode_cli.main import _require_tty, get_hermes_home
     _require_tty("whatsapp")
     from akramcode_cli.config import get_env_value, save_env_value
-    from hermes_constants import find_node_executable, with_hermes_node_path
+    from akramcode_constants import find_node_executable, with_hermes_node_path
     _say("", "☤ WhatsApp Setup", "=" * 50)
 
     wa_mode = _whatsapp_choose_mode(get_env_value, save_env_value)

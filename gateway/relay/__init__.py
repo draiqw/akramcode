@@ -82,7 +82,7 @@ def relay_explicitly_disabled() -> bool:
     """
     from gateway.config import Platform, PlatformConfig
     from gateway.config_loader import bridge_platform_shared_keys, merge_platform_sections, read_yaml_layers
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
 
     try:
         cfg = read_yaml_layers(get_hermes_home())

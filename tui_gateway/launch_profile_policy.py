@@ -59,7 +59,7 @@ def _servable_profile_homes() -> set:
     ``hermes profile create`` leaves behind — counting it would flip a single-profile host
     fail-closed at its next boot.
     """
-    from hermes_constants import named_profile_has_servable_identity
+    from akramcode_constants import named_profile_has_servable_identity
     from akramcode_cli.profiles import profiles_to_serve
 
     homes = {Path(home).resolve() for name, home in profiles_to_serve(multiplex=True, include_standalone=True, include_parked=True)
@@ -162,7 +162,7 @@ def launch_profile_runtime_scope(launch_home: "str | Path") -> Iterator[None]:
     every plugin hook it fired saw an unscoped process (#118538). Routed turns already bind theirs
     (``gateway/run.py::_profile_runtime_scope``); the launch profile is a tenant like any other."""
     from agent.secret_scope import reset_secret_scope, set_secret_scope
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from akramcode_constants import reset_hermes_home_override, set_hermes_home_override
     from tools.terminal_scope import install_profile_terminal_scope, reset_terminal_scope
 
     home = Path(launch_home)
@@ -196,7 +196,7 @@ def launch_profile_scope_if_multiplexed():
     from agent.secret_scope import is_multiplex_active
     if not is_multiplex_active():
         return contextlib.nullcontext()
-    from hermes_constants import get_process_hermes_home
+    from akramcode_constants import get_process_hermes_home
     return launch_profile_runtime_scope(get_process_hermes_home())
 
 

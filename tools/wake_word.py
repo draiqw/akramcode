@@ -763,7 +763,7 @@ _detector_lock = threading.Lock()
 
 
 def _lock_path() -> Path:
-    from hermes_constants import get_default_hermes_root
+    from akramcode_constants import get_default_hermes_root
     return get_default_hermes_root() / "runtime" / "wake-word.lock"
 
 

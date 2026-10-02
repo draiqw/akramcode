@@ -81,7 +81,7 @@ def _load_catalog_config() -> dict[str, Any]:
 
 def _cache_path() -> Path:
     """Disk cache path; imported lazily so tests can monkeypatch home."""
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
     return get_hermes_home() / "cache" / "model_catalog.json"
 
 

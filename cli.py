@@ -3,9 +3,9 @@
 
 # Must be the very first import (UTF-8 stdio on Windows). Missing only mid-``hermes update``.
 try:
-    import akram_core.hermes_bootstrap  # noqa: F401
+    import akram_core.akramcode_bootstrap  # noqa: F401
 except ModuleNotFoundError as exc:
-    if exc.name != "akram_core.hermes_bootstrap":
+    if exc.name != "akram_core.akramcode_bootstrap":
         raise  # the bootstrap exists but cannot load: skipping it would skip PM activation
 
 import logging
@@ -329,7 +329,7 @@ _COMMAND_SPINNER_FRAMES = ("⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧
 
 
 # ~/.hermes/.env first, project .env as dev fallback; user env files override stale shell exports.
-from hermes_constants import get_hermes_home
+from akramcode_constants import get_hermes_home
 from akramcode_cli.env_loader import load_hermes_dotenv
 from agent.i18n import t as _t  # noqa: E402
 
@@ -786,7 +786,7 @@ def save_config_value(key_path: str, value: any) -> bool:
     config_path = get_hermes_home() / 'config.yaml'
 
     try:
-        from hermes_constants import mkdir_under_hermes_home
+        from akramcode_constants import mkdir_under_hermes_home
         mkdir_under_hermes_home(config_path.parent)
         from utils import atomic_roundtrip_yaml_update
         atomic_roundtrip_yaml_update(config_path, key_path, value)
@@ -1565,7 +1565,7 @@ def _build_cli_from_args(model, toolsets, provider, reasoning, api_key, base_url
         )
     except ImportError as e:
         # Direct `python cli.py` bypasses cmd_chat's partial-update ImportError handler.
-        from hermes_constants import emit_partial_update_hint
+        from akramcode_constants import emit_partial_update_hint
 
         if emit_partial_update_hint(e):
             sys.exit(1)
@@ -1603,7 +1603,7 @@ def _run_legacy_gateway():
     """Legacy `cli.py --gateway` entry: arm the startup watchdog (before importing the gateway graph), then run it."""
     import asyncio
     with suppress(Exception):
-        from akram_core.hermes_startup_watchdog import arm_startup_watchdog
+        from akram_core.akramcode_startup_watchdog import arm_startup_watchdog
         arm_startup_watchdog()
     from gateway.run import start_gateway
     print(_t("cli.gateway.starting"))

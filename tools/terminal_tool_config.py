@@ -171,7 +171,7 @@ def coerce_ssh_remote_cwd(cwd: str | None, env_type: str | None) -> str | None:
     text = cwd.strip()
     if not text or text.startswith("~"):
         return text or "~"
-    from hermes_constants import get_real_home, get_subprocess_home
+    from akramcode_constants import get_real_home, get_subprocess_home
 
     home = get_subprocess_home()
     if not home or not posixpath.isabs(text) or posixpath.normpath(home) == posixpath.normpath(get_real_home()):

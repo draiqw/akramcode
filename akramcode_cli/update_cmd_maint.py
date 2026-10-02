@@ -119,7 +119,7 @@ def _print_fts_optimize_available_notice() -> None:
         return
 
     try:
-        from hermes_constants import get_hermes_home
+        from akramcode_constants import get_hermes_home
         from akramcode_state import SessionDB
     except Exception:
         return
@@ -278,7 +278,7 @@ def _refresh_dashboard_after_update(*, already_restarted_units: set[str] | None 
     See #83595.
     """
     from akramcode_cli.update_cmd import _m, _record_update_step
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
 
     try:
         stop_result = _m()._kill_stale_dashboard_processes(
@@ -752,7 +752,7 @@ def _run_full_backup() -> None:
     from akramcode_cli.sizefmt import format_bytes
     # display_hermes_home so the user sees ~/.hermes/...
     try:
-        from hermes_constants import get_hermes_home, display_hermes_home
+        from akramcode_constants import get_hermes_home, display_hermes_home
         display_path = f"{display_hermes_home()}/{out_path.relative_to(get_hermes_home())}"
     except Exception:
         display_path = str(out_path)

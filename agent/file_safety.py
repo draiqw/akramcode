@@ -14,11 +14,11 @@ from typing import Optional
 
 
 def _constants_path(getter_name: str) -> Path:
-    """Call ``hermes_constants.<getter_name>()`` (local import avoids cycles); ``~/.hermes`` on any failure."""
+    """Call ``akramcode_constants.<getter_name>()`` (local import avoids cycles); ``~/.hermes`` on any failure."""
     try:
-        import hermes_constants
+        import akramcode_constants
 
-        return getattr(hermes_constants, getter_name)()
+        return getattr(akramcode_constants, getter_name)()
     except Exception:
         return Path(os.path.expanduser("~/.hermes"))
 
@@ -80,7 +80,7 @@ def _guard_homes(path: str = "") -> set[str]:
     account's home, which joins the set so ``~root/.ssh/authorized_keys`` stays denied."""
     homes = {os.path.expanduser("~")}
     with suppress(Exception):
-        from hermes_constants import get_real_home, get_subprocess_home, _profile_home_path
+        from akramcode_constants import get_real_home, get_subprocess_home, _profile_home_path
 
         for candidate in (get_real_home(), get_subprocess_home(), _profile_home_path()):
             if candidate:

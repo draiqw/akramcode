@@ -31,21 +31,21 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Dict, Any, Literal, Optional, List, Tuple, Set
 
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from akramcode_cli.cli_output import line_input
 from akramcode_cli.colors import Colors, color
 from akramcode_cli import managed_scope
 from akramcode_cli.default_soul import DEFAULT_SOUL_MD, is_legacy_template_soul
 from akramcode_cli.secret_prompt import masked_secret_prompt
-# Managed-mode, container and HERMES_UID/GID policy live in hermes_constants (import-safe);
+# Managed-mode, container and HERMES_UID/GID policy live in akramcode_constants (import-safe);
 # re-exported here so existing callers/patch targets keep working.
-from hermes_constants import (  # noqa: F401
+from akramcode_constants import (  # noqa: F401
     _IGNORED_MANAGED_VALUES, _LEGACY_MANAGED_SYSTEM, _MANAGED_FALSE_VALUES, _MANAGED_TRUE_VALUES,
     _chown_to_hermes_uid, _container_or_chmod_skipped, _resolve_hermes_uid_gid,
     apply_secure_dir_policy, get_managed_system)
-# Re-export from hermes_constants — canonical definition lives there.
-from hermes_constants import get_hermes_home, get_process_hermes_home  # noqa: F401
+# Re-export from akramcode_constants — canonical definition lives there.
+from akramcode_constants import get_hermes_home, get_process_hermes_home  # noqa: F401
 from utils import atomic_replace, fast_safe_load, file_signature
 from akramcode_cli.config_read_errors import (
     _CONFIG_PARSE_FAILURES, _FIX_PERMS, _FIX_YAML, FailedConfigRead, _backups_dir_display,
@@ -314,9 +314,9 @@ def detect_install_method(project_root: Optional[Path] = None) -> str:
 
 
 def _running_in_container() -> bool:
-    """Import-safe wrapper around ``hermes_constants.is_container``."""
+    """Import-safe wrapper around ``akramcode_constants.is_container``."""
     try:
-        from hermes_constants import is_container
+        from akramcode_constants import is_container
 
         return is_container()
     except Exception:
@@ -409,7 +409,7 @@ def get_container_exec_info() -> Optional[dict]:
     if os.environ.get("HERMES_DEV") == "1":
         return None
 
-    from hermes_constants import is_container
+    from akramcode_constants import is_container
     if is_container():
         return None
 
@@ -494,7 +494,7 @@ def _secure_dir(path):
     deployments need this so profile subdirs created at runtime by kanban workers don't land as root:root
     and block subsequent uid-mapped workers).
 
-    Delegates to the canonical import-safe primitive ``hermes_constants.apply_secure_dir_policy``
+    Delegates to the canonical import-safe primitive ``akramcode_constants.apply_secure_dir_policy``
     so callers outside this package (``get_scratch_dir``) share one implementation (#117347).
     """
     return apply_secure_dir_policy(path)
@@ -579,7 +579,7 @@ def ensure_hermes_home():
 
     # Named profiles must be created explicitly. Check tombstones BEFORE the memo so a stale
     # empty shell cannot skip the deleted-profile guard.
-    from hermes_constants import assert_named_profile_home_live
+    from akramcode_constants import assert_named_profile_home_live
     assert_named_profile_home_live(home)
     if key in _HERMES_HOME_ENSURED and home.is_dir():
         return
@@ -1076,7 +1076,7 @@ def _validate_voice(config: Dict[str, Any], issues: List[ConfigIssue]) -> None:
 def _validate_timezone(config: Dict[str, Any], issues: List[ConfigIssue]) -> None:
     """``timezone`` must be an IANA name the runtime can load.
 
-    ``akram_core.hermes_time._get_zoneinfo()`` swallows an invalid name behind a single WARNING in the
+    ``akram_core.akramcode_time._get_zoneinfo()`` swallows an invalid name behind a single WARNING in the
     gateway log, then runs the agent clock AND every cron schedule on server-local time.
     Surface it here, where doctor and the startup check both look. Silent when the
     interpreter has no tz database at all (bare Windows without ``tzdata``) — nothing can be
@@ -1300,7 +1300,7 @@ def warn_deprecated_cwd_env_vars() -> None:
         if val:
             lines.append(f"  \033[33m⚠\033[0m {name}={val} found in .env — this is deprecated.")
     if lines:
-        from hermes_constants import display_hermes_home
+        from akramcode_constants import display_hermes_home
 
         hint_path = display_hermes_home()
         lines.insert(0, "\033[33m⚠ Deprecated .env settings detected:\033[0m")

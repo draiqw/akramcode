@@ -17,7 +17,7 @@ from urllib.parse import urlsplit
 
 from akramcode_cli.colors import Colors, color
 from akramcode_cli.models import _HERMES_USER_AGENT
-from hermes_constants import OPENROUTER_MODELS_URL
+from akramcode_constants import OPENROUTER_MODELS_URL
 from utils import base_url_host_matches
 
 _APIKEY_PROVIDERS_CACHE: list | None = None

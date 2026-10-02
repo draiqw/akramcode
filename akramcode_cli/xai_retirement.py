@@ -138,7 +138,7 @@ def apply_migration(
     if not issues:
         return unchanged
 
-    from akram_core.hermes_yaml import ROUNDTRIP_YAML_WIDTH
+    from akram_core.akramcode_yaml import ROUNDTRIP_YAML_WIDTH
     yaml = YAML(typ="rt")
     yaml.width = ROUNDTRIP_YAML_WIDTH
     yaml.preserve_quotes = True

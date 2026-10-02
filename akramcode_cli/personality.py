@@ -130,11 +130,11 @@ def persist_personality(value: Any) -> bool:
     ``agent.system_prompt``. Returns True on success."""
     name = normalize_personality_name(value)
     try:
-        from hermes_constants import get_hermes_home
+        from akramcode_constants import get_hermes_home
         from utils import atomic_roundtrip_yaml_update
 
         config_path = get_hermes_home() / "config.yaml"
-        from hermes_constants import mkdir_under_hermes_home
+        from akramcode_constants import mkdir_under_hermes_home
         mkdir_under_hermes_home(config_path.parent)
         atomic_roundtrip_yaml_update(config_path, "display.personality", name)
         try:

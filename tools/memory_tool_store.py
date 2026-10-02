@@ -148,7 +148,7 @@ class MemoryStore:
 
         for target in ("memory", "user"):
             path = self._path_for(target)
-            from hermes_constants import mkdir_under_hermes_home
+            from akramcode_constants import mkdir_under_hermes_home
 
             mkdir_under_hermes_home(path.parent)
             # Deduplicate (order-preserving, first occurrence wins).
@@ -171,7 +171,7 @@ class MemoryStore:
         from tools import memory_tool as _mt  # fcntl/msvcrt live (and are patched) there
         fcntl, msvcrt = _mt.fcntl, _mt.msvcrt
         lock_path = path.with_suffix(path.suffix + ".lock")
-        from hermes_constants import mkdir_under_hermes_home
+        from akramcode_constants import mkdir_under_hermes_home
 
         mkdir_under_hermes_home(lock_path.parent)
         if fcntl is None and msvcrt is None:
@@ -266,7 +266,7 @@ class MemoryStore:
             if isinstance(result, dict):
                 return result
             self._set_entries(target, result[0])
-            from hermes_constants import mkdir_under_hermes_home
+            from akramcode_constants import mkdir_under_hermes_home
 
             mkdir_under_hermes_home(path.parent)
             self._write_file(path, result[0])

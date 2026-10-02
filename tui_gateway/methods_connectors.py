@@ -396,7 +396,7 @@ def _operation_view(operation):
 
 
 def _connection_update(operation, change, snapshot):
-    from hermes_constants import get_process_hermes_home, hermes_home_key
+    from akramcode_constants import get_process_hermes_home, hermes_home_key
     from tui_gateway import server
     from tui_gateway.connector_payload import connector_ui_payload
 

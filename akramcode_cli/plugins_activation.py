@@ -105,14 +105,14 @@ def activate_plugin_now(name: str, *, in_process: bool = True) -> Dict[str, Any]
     ``activation.live_now`` lists what is usable in open chats now; ``activation.deferred`` what waits
     for the next session. ``restart_required`` is True only when no gateway answered (old gateway, not
     running)."""
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_hermes_home
     activation: Optional[Dict[str, Any]] = load_and_go_live(name) if in_process else None
     if not in_process:
         activation = (notify_serve_backend(name, Path(get_hermes_home())) or {}).get("activation")
     answer = None
     try:
         from gateway.control_socket import reload_gateway_plugins
-        from hermes_constants import get_default_hermes_root
+        from akramcode_constants import get_default_hermes_root
         home = Path(get_hermes_home())
         answer = reload_gateway_plugins(home)
         if answer is None:
@@ -165,7 +165,7 @@ def _go_live(name: str) -> Optional[Dict[str, Any]]:
     server = sys.modules.get("tui_gateway.server")  # loaded == this process hosts chats
     note = live_notice(activation)
     if server is not None and (servers or note):
-        from hermes_constants import get_hermes_home
+        from akramcode_constants import get_hermes_home
         try:
             server.refresh_plugin_sessions(Path(get_hermes_home()), note)
         except Exception:

@@ -10,7 +10,7 @@ from pathlib import Path
 from akramcode_cli import source_check
 # Historical updater import (tests/compat/old_updater_surface.json). In-tree callers use the owner.
 from akramcode_cli.source_check import _github_compare_behind  # noqa: F401
-from hermes_constants import get_hermes_home
+from akramcode_constants import get_hermes_home
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 # rich and prompt_toolkit are imported lazily: this module sits on the TUI gateway's critical
@@ -109,7 +109,7 @@ def _memo(cache_name: str, compute):
 
     Not consulted under a routed profile (HERMES_HOME override): every memo here is derived from the
     launch home (its skills tree, its checkout), and the TUI gateway calls these per profile."""
-    from hermes_constants import get_hermes_home_override
+    from akramcode_constants import get_hermes_home_override
     if get_hermes_home_override() is not None:
         return compute()
     cached = globals()[cache_name]

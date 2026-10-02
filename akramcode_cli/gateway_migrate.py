@@ -211,18 +211,18 @@ def _home_env(home: Path) -> Iterator[None]:
     a routed home and take only ``home``'s own secrets — with the env var swapped, the routed-home
     checks read ``home`` as the launch profile and handed the launch profile's credentials to the
     default gateway."""
-    from hermes_constants import (
+    from akramcode_constants import (
         get_routing_process_hermes_home, pin_process_hermes_home, process_hermes_home_is_pinned,
         reset_hermes_home_override, set_hermes_home_override,
     )
-    import hermes_constants
+    import akramcode_constants
     previous = os.environ.get("HERMES_HOME")
     pinned_here = not process_hermes_home_is_pinned()
     if pinned_here:
         pin_process_hermes_home(get_routing_process_hermes_home())
     token = set_hermes_home_override(str(home))
     os.environ["HERMES_HOME"] = str(home)
-    hermes_constants._default_hermes_root_memo = None
+    akramcode_constants._default_hermes_root_memo = None
     try:
         yield
     finally:
@@ -233,11 +233,11 @@ def _home_env(home: Path) -> Iterator[None]:
             os.environ.pop("HERMES_HOME", None)
         else:
             os.environ["HERMES_HOME"] = previous
-        hermes_constants._default_hermes_root_memo = None
+        akramcode_constants._default_hermes_root_memo = None
 
 
 def _default_home() -> Path:
-    from hermes_constants import get_default_hermes_root
+    from akramcode_constants import get_default_hermes_root
     return get_default_hermes_root()
 
 
@@ -304,7 +304,7 @@ def _installed_services(home: Path) -> list[tuple[str, bool]]:
     if gw._running_under_s6():
         from akramcode_cli.gateway_multiplex_s6 import named_slot_name, slot_is_up
         from akramcode_cli.service_manager import S6ServiceManager
-        from hermes_constants import profile_name_for_home
+        from akramcode_constants import profile_name_for_home
         name = profile_name_for_home(home) or "default"
         slot_dir = S6ServiceManager().scandir / named_slot_name(name)
         if slot_dir.is_dir() and (name == "default" or slot_is_up(name)):
@@ -387,7 +387,7 @@ def _s6_slot_op(verb: str, home: Path) -> None:
     registered DOWN (``down`` file) as the target of a later ``hermes -p X gateway start``, exactly
     the shape the container's boot produces. The root slot is (re)started so it re-reads its config."""
     from akramcode_cli.gateway_multiplex_s6 import bring_root_slot_up, park_named_slot
-    from hermes_constants import profile_name_for_home
+    from akramcode_constants import profile_name_for_home
     name = profile_name_for_home(home) or "default"
     if name == "default":
         if verb in ("start", "restart"):

@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from typing import Any, Iterable, Optional
 
 from agent.learning_graph import memory_node_id
-from akram_core.hermes_time import safe_strftime
+from akram_core.akramcode_time import safe_strftime
 
 LEAD_IN = 0.06  # time-axis.ts LEAD_IN: the oldest node sits just off recency 0.
 # constants.ts AGE_GRADIENT — old quiet, recent bright.

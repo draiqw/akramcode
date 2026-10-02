@@ -116,7 +116,7 @@ def normalize_reasoning_effort(effort: Optional[str]) -> Optional[str]:
     """``VALID_REASONING_EFFORTS`` or ``"none"`` (thinking off), case-insensitive;
     empty/None = inherit the profile's own effort (NULL). Anything else raises —
     a typo'd level must not quietly hand the task back to the profile default."""
-    from hermes_constants import VALID_REASONING_EFFORTS
+    from akramcode_constants import VALID_REASONING_EFFORTS
 
     value = str(effort or "").strip().lower()
     if not value:
@@ -403,7 +403,7 @@ def kanban_home() -> Path:
     override = os.environ.get("HERMES_KANBAN_HOME", "").strip()
     if override:
         return Path(override).expanduser()
-    from hermes_constants import get_default_hermes_root
+    from akramcode_constants import get_default_hermes_root
     return get_default_hermes_root()
 
 
@@ -4368,7 +4368,7 @@ def list_profiles_on_disk() -> list[str]:
     """Profiles with a ``config.yaml`` plus the implicit ``default``; reads paths
     directly to avoid importing ``akramcode_cli.profiles`` at startup."""
     try:
-        from hermes_constants import get_default_hermes_root
+        from akramcode_constants import get_default_hermes_root
         default_root = get_default_hermes_root()
         profiles_dir = default_root / "profiles"
     except Exception:
