@@ -2,7 +2,7 @@
 
 Response-only: the agent reads ``pending_dialogs`` from ``browser_snapshot``,
 then calls ``browser_dialog(action=...)``. Gated on ``_browser_cdp_check`` so it
-appears together with ``browser_cdp``. Design: ``website/docs/developer-guide/browser-supervisor.md``.
+appears together with ``browser_cdp``. Design: ``docs/developer-guide/browser-supervisor.md``.
 """
 
 from __future__ import annotations

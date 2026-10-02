@@ -13,7 +13,7 @@ hermes tools  # → Langfuse Observability
 Restart Hermes after setup. If dependency preparation fails, retry through
 `hermes tools`; do not inject the SDK into the selected environment with pip.
 For manual source-checkout setup, see the
-[plugin guide](../../../website/docs/user-guide/features/built-in-plugins.md#observabilitylangfuse).
+[plugin guide](../../../docs/user-guide/features/built-in-plugins.md#observabilitylangfuse).
 
 ## Required credentials
 

@@ -1,7 +1,7 @@
 # plugins/ — plugin kinds, compat contract, in-tree policy
 
 Applies on top of the root `AGENTS.md`. Authoring guide + canonical compat contract:
-`website/docs/developer-guide/plugins/index.md`. Per-kind guides: `memory-provider-plugin.md`,
+`docs/developer-guide/plugins/index.md`. Per-kind guides: `memory-provider-plugin.md`,
 `model-provider-plugin.md`, `context-engine-plugin.md`, `image-gen-provider-plugin.md`, ...
 
 ## Plugins never touch core (Teknium, May 2026)

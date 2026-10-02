@@ -831,7 +831,7 @@ def browser_snapshot(
     _lp._copy_fallback_warning(response, result)
 
     # Merge supervisor state (pending dialogs + frame tree) when a CDP supervisor is
-    # attached. See website/docs/developer-guide/browser-supervisor.md.
+    # attached. See docs/developer-guide/browser-supervisor.md.
     try:
         from tools.browser_supervisor import SUPERVISOR_REGISTRY  # type: ignore[import-not-found]
         _supervisor = SUPERVISOR_REGISTRY.get(effective_task_id)

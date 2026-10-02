@@ -114,7 +114,7 @@ A well-built third-party-product plugin can clear automated review and still be 
 
 ### PM developer environment
 
-Use the [PM developer workflow](website/docs/reference/package-management.md#developer-workflow) for preparation, activation, everyday commands,
+Use the [PM developer workflow](docs/reference/package-management.md#developer-workflow) for preparation, activation, everyday commands,
 dependency changes, and test environments. Select your development
 home before setup so experimental code does not migrate production data.
 
@@ -144,7 +144,7 @@ restores the prior shell environment and removes the function.
 
 ### Manual development and test environment
 
-Use the [PM developer workflow](website/docs/reference/package-management.md#developer-workflow) to prepare Python 3.14 (`>=3.14,<3.15`) first.
+Use the [PM developer workflow](docs/reference/package-management.md#developer-workflow) to prepare Python 3.14 (`>=3.14,<3.15`) first.
 Run these commands from that checkout with its prepared Python. Keep the same
 development `HERMES_HOME`. PM must be able to start before it can build another
 environment. On Windows, initialize the native C++ build environment for your
@@ -216,7 +216,7 @@ subprocess through `scripts/run_tests_parallel.py`. It does not use xdist.
 
 Run the relevant JS workspace checks for JS changes. Native install/update
 E2E runs on disposable CI hosts, never against the developer's live app.
-See [Package management](website/docs/reference/package-management.md) for PM commands and runtime ownership.
+See [Package management](docs/reference/package-management.md) for PM commands and runtime ownership.
 
 ---
 

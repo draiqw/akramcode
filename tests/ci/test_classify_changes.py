@@ -113,7 +113,7 @@ CASES = {
     # diff that can't desync the lockfile — a registry blip on a docs PR
     # otherwise shows up as a blocking "uv.lock out of sync" red X.
     "docs → no uv_lock": (
-        ["website/docs/developer-guide/plugins/index.md"],
+        ["docs/developer-guide/plugins/index.md"],
         _lanes(python=True, site=True),
     ),
     "frontend → no uv_lock": (["apps/desktop/src/store/profile.ts"], _lanes(frontend=True)),
@@ -145,7 +145,7 @@ CASES = {
     # has its own tests. Skipping Python on either is how the index drifted to
     # 53% coverage while every PR stayed green.
     "docs page → python + site": (
-        ["website/docs/user-guide/bot-mode.md"],
+        ["docs/user-guide/bot-mode.md"],
         _lanes(python=True, site=True),
     ),
     "docs generator → python + site": (

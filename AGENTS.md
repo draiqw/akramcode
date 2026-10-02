@@ -180,7 +180,7 @@ session-scoped. Assert the GUI session gets the tool **with the env var absent**
 source ./activate   # provisions/syncs PM tools + dependencies, then activates
 ```
 Select an isolated development `HERMES_HOME` and `HERMES_RUNTIME_DIR` first;
-see `website/docs/reference/package-management.md#developer-workflow`.
+see `docs/reference/package-management.md#developer-workflow`.
 PowerShell: `. .\activate.ps1`. `deactivate` restores the prior environment.
 For tests, use the independent test environment in `docs/CONTRIBUTING.md` (or Nix);
 PM activation's `PYTHONPATH` does not survive the test runner's environment scrub.
@@ -218,7 +218,7 @@ hermes-agent/
 ├── cron/                 # jobs.py + scheduler.py (+ scheduler_*.py)
 ├── evals/                # Offline benchmarks (codebase_navigability/, compaction/, ...)
 ├── scripts/              # run_tests.sh, release.py, ci/
-├── website/              # Docusaurus docs (developer-guide/ holds the long-form area docs)
+├── docs/                 # Project documentation and developer guides
 └── tests/                # Pytest suite (~39k tests / ~3.7k files, Sep 2026)
 ```
 
@@ -254,7 +254,7 @@ families: `hermes_state.py` (21), `gateway/run.py` (15), `tools/mcp_tool.py` (15
 - **No re-export shims for internal moves** ("keep the old name importable"). Internal paths
   are not API: plugins build on `ctx` and the documented ABCs. The one-time Sep 2026
   decomposition compat layer for external plugins has been removed; never reintroduce one.
-- **Moving a symbol means fixing its docs in the same PR:** grep `website/docs`,
+- **Moving a symbol means fixing its docs in the same PR:** grep `docs`,
   `skills/`, and every `AGENTS.md` for the old `path.py` + symbol (23 doc files went stale
   after the refactor). `evals/codebase_navigability/static_metrics.py <tree> <label>` measures
   file/function/CC/elif distributions before/after a large PR in ~2 min.
@@ -516,9 +516,9 @@ extract, not to regex around it.
 | `skills/`, `optional-skills/`, `agent/curator*.py` | `skills/AGENTS.md` | Frontmatter, HARDLINE authoring standards, curator |
 | `cron/`, kanban (`hermes_cli/kanban*.py`, `tools/kanban_tools.py`, `plugins/kanban/`) | `cron/AGENTS.md` | Scheduler invariants, job fields, kanban board/dispatcher |
 | `gateway/platforms/` new adapter | `gateway/platforms/ADDING_A_PLATFORM.md` | Step-by-step adapter guide |
-| profiles / multiplex / secret scope (any area) | `gateway/AGENTS.md` § Profile scope, `website/docs/user-guide/multi-profile-gateways.md` § What is isolated per profile | which execution points bind scope, what is isolated per profile |
+| profiles / multiplex / secret scope (any area) | `gateway/AGENTS.md` § Profile scope, `docs/user-guide/multi-profile-gateways.md` § What is isolated per profile | which execution points bind scope, what is isolated per profile |
 
-Long-form background lives in `website/docs/developer-guide/` (agent-loop, prompt-assembly,
+Long-form background lives in `docs/developer-guide/` (agent-loop, prompt-assembly,
 context-compression-and-caching, gateway-internals, tools-runtime, plugins/, cron-internals,
 session-storage, ...). Workflow rules (PR/issue/review/salvage process) live in the
 `hermes-agent-dev` skill, not here.

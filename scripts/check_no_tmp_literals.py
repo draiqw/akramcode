@@ -221,7 +221,7 @@ def scan(paths=None, root: Path | None = None) -> dict[str, list[tuple[int, str]
 # Burn-down list: fix or mark, then delete the entry. Regenerate with --print-baseline.
 _BASELINE: dict[str, int] = {
     # a tree listing inside a fenced code block; an inline marker would render on the page
-    "website/docs/getting-started/nix-setup.md": 1,
+    "docs/getting-started/nix-setup.md": 1,
 }
 
 

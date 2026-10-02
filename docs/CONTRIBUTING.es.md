@@ -72,7 +72,7 @@ Esto no es una barra de calidad — es una decisión de acoplamiento y mantenimi
 ### Preparar el entorno
 
 Se requieren Git y git-lfs. PM proporciona Python 3.14 (`>=3.14,<3.15`) y las herramientas fijadas.
-Sigue el [flujo de desarrollo de PM](website/docs/reference/package-management.md#developer-workflow).
+Sigue el [flujo de desarrollo de PM](docs/reference/package-management.md#developer-workflow).
 Selecciona un `HERMES_HOME` de desarrollo antes de preparar el checkout.
 
 En Bash, desde la raíz del repositorio:

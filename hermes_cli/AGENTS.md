@@ -1,6 +1,6 @@
 # hermes_cli/ + cli.py — CLI, slash commands, config, skins, updater, profiles
 
-Applies on top of the root `AGENTS.md`. Long-form: `website/docs/developer-guide/cli-internals.md`.
+Applies on top of the root `AGENTS.md`. Long-form: `docs/developer-guide/cli-internals.md`.
 
 ## CLI architecture
 
@@ -37,7 +37,7 @@ Rules: all interactive menu-pickers use curses (`hermes_cli/curses_ui.py`; examp
 `hermes_cli/tools_config.py`). Never emit `\033[K` (ANSI erase-to-EOL) in spinner/display code —
 it leaks as literal `?[K` under prompt_toolkit's `patch_stdout`; space-pad instead:
 `f"\r{line}{' ' * pad}"`. Wrapper CLIs extend via the protected hooks in `cli_tui_mixin.py`
-(`website/docs/developer-guide/extending-the-cli.md`), not by overriding `run()`.
+(`docs/developer-guide/extending-the-cli.md`), not by overriding `run()`.
 
 ## Slash command registry (`hermes_cli/commands.py`)
 
@@ -122,7 +122,7 @@ from `default`). Built-ins in `_BUILTIN_SKINS`: `default`, `ares`, `mono`, `slat
 (banner border/title/accent/dim/text, response_border), `spinner.*` (waiting/thinking faces,
 thinking_verbs, wings), `tool_prefix`, `tool_emojis`, `branding.*` (agent_name, welcome,
 response_label, prompt_symbol). Consumers: `banner.py`, `display.py`, `cli.py`. Key-by-key table
-and YAML template: `website/docs/user-guide/features/skins.md`.
+and YAML template: `docs/user-guide/features/skins.md`.
 
 ## Update pipeline (`hermes update`) — transactional; every stage guards a real field failure
 
@@ -174,7 +174,7 @@ it guards. `plan → snapshot → apply → restart-per-kind → verify → repo
   this owner; never reload or purge modules to continue in the old interpreter. The parent keeps
   the lock, waits, and accepts only a correlated terminal result. `cmd_update` still finalizes
   early failures and missing/killed-child outcomes; PM refusal data survives the handoff.
-  See `website/docs/developer-guide/source-update-completion.md`. A begun-but-unwritten receipt is a bug.
+  See `docs/developer-guide/source-update-completion.md`. A begun-but-unwritten receipt is a bug.
 - **Nothing runs pulled code in the pre-pull interpreter.** This tree finishes updates through
   `update_completion.run_completion` / `_update_takeover.py`.
   `hermes_cli/update_handoff.py` and `hermes_cli/update_serve_obligations.py` are the
@@ -188,7 +188,7 @@ Process-scan coordination between updater, serve/dashboard, and gateway is being
 gateway-owned control socket (#92091); scans are the fallback layer for old/crashed processes — read
 #92091 before adding any heuristic. Process identity rules (never argv substrings; canonical
 matchers; parser-derived flag sets; never blanket-exclude gateway ancestors, #87594): root
-`AGENTS.md` and `website/docs/developer-guide/cli-internals.md`.
+`AGENTS.md` and `docs/developer-guide/cli-internals.md`.
 
 ## Profiles (multi-instance)
 
