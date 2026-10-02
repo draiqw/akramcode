@@ -32,6 +32,8 @@ Usage::
     profile = get_provider_profile("kimi")     # checks name + aliases
 """
 
+# Docs: [provider registry notes](../docs/provider-registry-notes.md)
+
 from __future__ import annotations
 
 import hashlib
@@ -49,12 +51,8 @@ from pathlib import Path
 from providers.base import ProviderProfile
 
 logger = logging.getLogger(__name__)
-
-# Process-wide layer: bundled plugins, pip entry points, legacy ``providers/<name>.py``.
 _REGISTRY: dict[str, ProviderProfile] = {}
 _ALIASES: dict[str, str] = {}
-# Where the CURRENT registration of each name came from: "bundled" / "user" (a
-# ``$HERMES_HOME`` plugin dir) / "runtime" (entry point, legacy module, direct call).
 _SOURCES: dict[str, str] = {}
 _current_source: str | None = None
 _PROVIDER_LIST_CACHE: list[ProviderProfile] | None = None
@@ -82,13 +80,7 @@ class _HomeLayer:
 
 _HOME_LAYERS: dict[str, _HomeLayer] = {}
 _HOME_LAYERS_LOCK = threading.Lock()
-# The layer a ``$HERMES_HOME`` plugin import registers into. A ContextVar, not a module global:
-# two turn threads scanning two profile homes at once must not cross-register. Never a lock held
-# across the import itself — a thread mid-``import akramcode_cli.auth`` (whose import calls
-# ``list_providers()``) would block on it while the scanning thread waits on that module's import lock.
 _REGISTRATION_TARGET: ContextVar[_HomeLayer | None] = ContextVar("_provider_registration_target", default=None)
-
-# Repo-root ``plugins/model-providers/`` — populated at discovery time.
 _BUNDLED_PLUGINS_DIR = (
     Path(__file__).resolve().parent.parent / "plugins" / "model-providers"
 )
@@ -100,7 +92,6 @@ def _sync_auth_registry() -> None:
     ``akramcode_cli.auth`` takes its own snapshot of ``list_providers()`` when it is imported. If a
     plugin's imports pull that module in while :func:`_discover_providers` is still running, the
     snapshot is partial and later plugins never reach the auth registry ("Unknown provider",
-    #102123). Calling back into auth once discovery is complete closes that window. Looked up via
     ``sys.modules`` on purpose: this layer must never import ``akramcode_cli`` (that would run auth's
     top-level code mid-scan and risk a circular import). Never raises: registration must not fail
     because of the auth mirror.
@@ -170,16 +161,10 @@ def get_provider_profile(name: str) -> ProviderProfile | None:
         return layer.registry.get(canonical) or _REGISTRY.get(canonical)
 
     profile = lookup(name)
-    # A newly installed provider is normally first requested by its new name, so a miss
-    # re-checks the plugin dirs now (unless this call just did) instead of waiting for the
-    # periodic check. ``custom:<route>`` misses resolve to the generic profile below and the
-    # picker asks for them once per model, so they wait for the periodic check.
     is_custom_route = isinstance(name, str) and name.lower().startswith("custom:")
     if profile is None and not is_custom_route and not checked:
         if _refresh_home_layer(layer, home, key, force=True):
             profile = lookup(name)
-    # Named custom routes share the generic wire policy unless a plugin
-    # explicitly registered that route. Other names retain exact lookup.
     if profile is None and is_custom_route:
         profile = lookup("custom")
     return profile
@@ -198,9 +183,6 @@ def routed_model_rejects_vision_tool_messages(provider: str, model: str) -> bool
     profile = get_provider_profile(provider_name)
     if profile is not None and profile.supports_vision_tool_messages is False:
         return True
-    # Routing aggregators accept a ``vendor/model`` identifier while the request is sent
-    # to the aggregator; the target provider can have stricter message-shape support than
-    # the aggregator's generic OpenAI-compatible transport profile.
     from akramcode_cli.providers import is_routing_aggregator
     if not is_routing_aggregator(provider_name):
         return False
@@ -220,7 +202,6 @@ def list_providers() -> list[ProviderProfile]:
         _discover_providers()
     layer = _home_layer()
     if _PROVIDER_LIST_CACHE is None:
-        # Deduplicate: _REGISTRY has canonical names; _ALIASES points to same objects
         seen: set[int] = set()
         cache: list[ProviderProfile] = []
         for profile in _REGISTRY.values():
@@ -273,10 +254,6 @@ def _refresh_home_layer(layer: _HomeLayer, home: Path | None, key: str, *, force
     if stamps != layer.stamps:
         _scan_home_layer(layer, key)
         layer.stamps = stamps
-        # Publish the completed layer -- stamps AND check time -- before auth
-        # sync: it calls list_providers(), which re-enters this function. An
-        # unpublished stamp rescanned forever; an unpublished check time
-        # re-stats the plugin dirs inside the TTL.
         layer.stamp_checked_at = now
         if _discovered and not _discovering:
             _sync_auth_registry()
@@ -399,11 +376,6 @@ def _import_plugin_dir(plugin_dir: Path, source: str, *, home_key: str = "") -> 
     init_file = plugin_dir / "__init__.py"
     if not init_file.exists():
         return
-
-    # Give bundled plugins a stable import path (``plugins.model_providers.<name>``)
-    # so relative imports within the plugin work. User plugins load via
-    # ``importlib.util.spec_from_file_location`` under a per-home module name so
-    # multiple HERMES_HOME profiles don't alias each other.
     if source == "bundled":
         module_name = f"plugins.model_providers.{plugin_dir.name.replace('-', '_')}"
     else:
@@ -468,9 +440,6 @@ def _discover_entry_point_providers() -> None:
         import importlib.metadata as _md
     except Exception:  # pragma: no cover — importlib.metadata always present ≥3.8
         return
-
-    # Same opt-in gate as the general PluginManager: only entry points named
-    # in ``plugins.enabled`` load, and ``plugins.disabled`` always wins.
     try:
         from akramcode_cli.plugins import _get_disabled_plugins, _get_enabled_plugins
 
@@ -484,7 +453,6 @@ def _discover_entry_point_providers() -> None:
     group = "hermes_agent.plugins"
     try:
         eps = _md.entry_points()
-        # Python 3.10+ exposes .select(); older returns a dict-like mapping.
         if hasattr(eps, "select"):
             group_eps = list(eps.select(group=group))
         else:  # pragma: no cover — legacy interpreters
@@ -506,11 +474,6 @@ def _discover_entry_point_providers() -> None:
                 "Failed to load entry-point provider plugin %r: %s", ep.name, exc
             )
             continue
-        # ``module:func`` → callable we invoke; bare ``module`` → import side
-        # effect already happened during load(). Only call when it's callable
-        # AND zero-arg: general plugins in this shared group expose
-        # ``register(ctx)`` (requires an argument) and belong to the
-        # PluginManager, not the provider registry.
         if callable(loaded):
             if _requires_arguments(loaded):
                 logger.debug(
@@ -573,39 +536,17 @@ def _discover_providers() -> None:
         _run_discovery_steps()
     finally:
         _discovering = False
-        # akramcode_cli.auth may have been imported by a plugin during discovery and snapshotted a
-        # partial profile list — hand it the complete one (no-op unless auth is already loaded).
         _sync_auth_registry()
 
 
 def _run_discovery_steps() -> None:
     """The discovery passes, in precedence order (see :func:`_discover_providers`)."""
-    # 0. Pip-installed plugins — entry points in the ``hermes_agent.plugins``
-    #    group (the same group the general PluginManager uses). The manager
-    #    records model-provider manifests for introspection but deliberately
-    #    does NOT import them — provider lifecycle is owned here — so without
-    #    this step a ``pip install``ed provider never calls
-    #    ``register_provider()`` and is never selectable.
-    #
-    #    Discovered FIRST, i.e. lowest precedence: because
-    #    ``register_provider()`` is last-writer-wins, running this before the
-    #    filesystem steps means a bundled or ``$HERMES_HOME`` profile of the
-    #    same name always overrides a pip-installed one. That prevents a
-    #    third-party package from silently hijacking a first-party provider
-    #    name (e.g. ``openrouter``) while still letting pip packages add
-    #    genuinely new providers.
     _discover_entry_point_providers()
-
-    # 1. Bundled plugins — shipped with hermes-agent.
     if _BUNDLED_PLUGINS_DIR.is_dir():
         for child in sorted(_BUNDLED_PLUGINS_DIR.iterdir()):
             if not child.is_dir() or child.name.startswith(("_", ".")):
                 continue
             _import_plugin_dir(child, "bundled")
-
-    # 2. Legacy single-file profiles at providers/<name>.py. Kept for
-    #    back-compat — if someone drops a ``providers/foo.py`` into an
-    #    editable install, it still works without the plugin layout.
     try:
         import pkgutil
 
@@ -622,7 +563,3 @@ def _run_discovery_steps() -> None:
                 )
     except Exception:
         pass
-
-    # (Pip entry-point providers are discovered in step 0, before the
-    # filesystem plugins, so first-party profiles always win on name
-    # collision — see _discover_entry_point_providers.)

@@ -9,6 +9,8 @@ They do NOT own client construction, credential rotation, or streaming.
 Those stay on AIAgent.
 """
 
+# Docs: [provider registry notes](../docs/provider-registry-notes.md)
+
 from __future__ import annotations
 
 import logging
@@ -19,8 +21,6 @@ if TYPE_CHECKING:
     from agent.account_usage import AccountUsageSnapshot
 
 logger = logging.getLogger(__name__)
-
-# Sentinel for "omit temperature entirely" (Kimi: server manages it)
 OMIT_TEMPERATURE = object()
 
 
@@ -41,109 +41,40 @@ def _profile_user_agent() -> str:
 @dataclass
 class ProviderProfile:
     """Base provider profile — subclass or instantiate with overrides."""
-
-    # ── Identity ─────────────────────────────────────────────
     name: str
     api_mode: str = "chat_completions"
     aliases: tuple = ()
-
-    # ── Human-readable metadata ───────────────────────────────
     display_name: str = ""       # e.g. "GMI Cloud" — shown in picker/labels
     description: str = ""        # e.g. "GMI Cloud (multi-model direct API)" — picker subtitle
     signup_url: str = ""         # e.g. "https://www.gmicloud.ai/" — shown during setup
-
-    # ── Auth & endpoints ─────────────────────────────────────
     env_vars: tuple = ()
     base_url: str = ""
     models_url: str = ""  # explicit models endpoint; falls back to {base_url}/models
     auth_type: str = "api_key"   # api_key|oauth_device_code|oauth_external|copilot|aws_sdk
     supports_health_check: bool = True  # False → doctor skips /models probe for this provider
-    # False → fetch_models returns None without a network call (catalog comes from an SDK/subprocess).
     supports_model_listing: bool = True
-
-    # ── Provider-owned auth (optional; non-api-key plugins) ──────────
-    # ``auth_handler(action, args) -> bool``: ``hermes auth add|status|logout|refresh <name>`` calls it
-    # FIRST with the parsed CLI namespace; truthy = the plugin owned the action, falsy = built-in path.
-    # ``refresh_credential(entry) -> Mapping | None``: the credential pool's refresh of a pooled OAuth
-    # row — return the rotated fields (``access_token``, ``refresh_token``, ``expires_at_ms`` …) or raise.
-    # Both own their own token endpoints; Hermes passes no secrets beyond the pooled row itself.
-    # ``classify_api_error(error, *, status_code, error_code, message, body, model) -> Mapping | None``:
-    # consulted by ``agent.error_classifier.classify_api_error`` for THIS provider's failures only, after
-    # the generic ``transform_api_error_classification`` plugin hooks and before the built-in pipeline.
-    # Return ``{"reason": <FailoverReason name>, ...hint flags}`` to override, ``None`` to decline.
     auth_handler: Callable[[str, Any], Any] | None = None
     refresh_credential: Callable[[Any], Any] | None = None
     classify_api_error: Callable[..., Any] | None = None
-
-    # ── Vision support ────────────────────────────────────────
-    # True when the provider's API accepts image content inside
-    # tool-result messages natively.  Set on providers that expose
-    # multimodal models via tool results (Anthropic Messages API,
-    # OpenAI Chat Completions, Gemini, MiniMax, etc.).
-    # Falls back to model-catalog lookup when False and the provider
-    # has no registered profile.
     supports_vision: bool = False
-
-    # True when the provider's API accepts list-type tool message
-    # content (multipart with image_url parts).  Defaults to True for
-    # backward compatibility.  Set to False for providers that accept
-    # multimodal user messages but reject list-type tool content
-    # (e.g. Xiaomi MiMo, which returns 400 "text is not set").
     supports_vision_tool_messages: bool = True
-
-    # True only when this provider's Chat Completions endpoint explicitly
-    # documents ``prompt_cache_key`` as an accepted request body field.  This
-    # is deliberately opt-in: many OpenAI-compatible endpoints reject unknown
-    # top-level fields rather than ignoring them.
     supports_prompt_cache_key: bool = False
-
-    # Private replay carriers use a namespaced '<provider>.native_assistant' type
-    # in reasoning_details. Only this profile may receive its matching carrier;
-    # other providers (including an unregistered fallback) get ordinary details only.
     native_reasoning_details_type: str | None = None
-
-    # ── External-process providers (auth_type="external_process") ──
-    # An agent CLI driven over stdio (ACP) rather than an HTTP endpoint. These
-    # describe how to launch it; akramcode_cli/auth.py's
-    # resolve_external_process_provider_credentials() reads them instead of
-    # hardcoding one vendor's binary. Env vars are checked in order and win
-    # over the static defaults, so an operator can point at a custom build.
     process_command: str = ""            # default binary, e.g. "copilot"
     process_args: tuple = ()             # default argv tail, e.g. ("--acp", "--stdio")
     process_command_env_vars: tuple = ()  # env overrides for the binary, in priority order
     process_args_env_var: str = ""       # env override for argv (shlex-split)
-
-    # ── Model catalog ─────────────────────────────────────────
-    # fallback_models: curated list shown in /model picker when live fetch fails.
-    # Only agentic models that support tool calling should appear here.
     fallback_models: tuple = ()
-    # model_aliases: short name -> id in fallback_models, for providers whose catalog is not
-    # in models.dev (external processes); `/model <alias>` resolves here before core guessing.
     model_aliases: dict = field(default_factory=dict)
-
-    # hostname: base hostname for URL→provider reverse-mapping in model_metadata.py
-    # e.g. "api.gmi-serving.com". Derived from base_url when empty.
     hostname: str = ""
-
-    # ── Client-level quirks (set once at client construction) ─
     default_headers: dict[str, str] = field(default_factory=dict)
-
-    # ── Request-level quirks ─────────────────────────────────
-    # Temperature: None = use caller's default, OMIT_TEMPERATURE = don't send
     fixed_temperature: Any = None
     default_max_tokens: int | None = None
-    # ``response_format`` types the API rejects outright (e.g. ("json_schema",)); aux requests omit them up front.
     unsupported_response_formats: tuple = ()
     default_aux_model: str = (
         ""  # cheap model for auxiliary tasks (compression, vision, etc.)
     )
-    # empty = use main model
-
-    # Per-model metadata in the canonical model_overrides schema. Partial entries
-    # patch catalog metadata; explicit user overrides still win. Exact model IDs.
     model_capabilities: dict[str, dict[str, Any]] = field(default_factory=dict)
-
-    # ── Hooks (override in subclass for complex providers) ───
 
     def fetch_account_usage(
         self, *, base_url: str | None = None, api_key: str | None = None
@@ -398,9 +329,6 @@ class ProviderProfile:
         if api_key:
             req.add_header("Authorization", f"Bearer {api_key}")
         req.add_header("Accept", "application/json")
-        # Some providers (e.g. OpenCode Zen) sit behind a WAF that blocks
-        # the default ``Python-urllib/<ver>`` User-Agent.  Set a generic
-        # hermes-cli UA so the catalog endpoint is reachable.
         req.add_header("User-Agent", _profile_user_agent())
         for k, v in self.default_headers.items():
             req.add_header(k, v)
