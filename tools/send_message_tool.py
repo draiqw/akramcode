@@ -11,12 +11,11 @@ from agent.secret_scope import get_secret
 
 logger = logging.getLogger(__name__)
 
-from tools.send_message_targets import _HOME_CHANNEL_ENV_OVERRIDES, _SLACK_USER_ID_RE, resolve_send_target
+from tools.send_message_targets import _HOME_CHANNEL_ENV_OVERRIDES, resolve_send_target
 from tools.send_message_senders import (
     _AUDIO_EXTS, _DEFAULT_CAPTION_LIMIT, _IMAGE_EXTS, _NO_DELIVERABLE, _VIDEO_EXTS, _VOICE_EXTS,
     _adapter_media_method, _error, _live_adapter, _media_caption_split, _plugin_standalone_sender,
-    _registry_standalone_send, _resolve_slack_user_target, _sanitize_error_text, _send_bluebubbles,
-    _send_matrix_via_adapter, _send_qqbot, _send_signal, _send_telegram, _send_weixin, _send_yuanbao)
+    _registry_standalone_send, _sanitize_error_text, _send_telegram)
 from tools.registry import tool_error
 
 # NOTE: ``send_message`` is intentionally NOT registered as an agent-callable model tool
@@ -240,13 +239,6 @@ def _handle_send(args):
             return tool_error(err)
     if duplicate_skip := _maybe_skip_cron_duplicate_send(platform_name, chat_id, thread_id):
         return json.dumps(duplicate_skip)
-    # Slack: resolve user targets to DM channel IDs before sending. _parse_target_ref emits internal
-    # ``user:U...`` / ``user_name:@handle`` targets; a bare U... id can also arrive from session metadata or
-    # the home-channel config. All are opened via conversations.open (fixes #19236).
-    if platform_name == "slack" and chat_id:
-        chat_id, resolve_err = _slack_dm_chat_id(pconfig, chat_id)
-        if resolve_err:
-            return json.dumps(resolve_err)
     # POSITION IS LOAD-BEARING — this must stay BELOW Slack user→DM resolution.
     # `_parse_target_ref` emits internal pseudo-ids (`user_name:ben`,
     # `user:U...`) that no provenance can ever contain, because provenances
@@ -264,12 +256,9 @@ def _handle_send(args):
 
     try:
         from model_tools import _run_async
-        # Only custom plugin handlers receive the complete typed request. ``mentions`` is a WhatsApp-only
-        # contract (the CLI rejects it elsewhere); other platforms' standalone senders don't accept the kwarg.
+        # Only custom plugin handlers receive the complete typed request.
         handler_args = {"args": args} if entry is not None and entry.send_message_handler is not None else {}
         mentions = args.get("mentions")
-        if mentions and platform_name == "whatsapp":
-            handler_args["mentions"] = [mentions] if isinstance(mentions, str) else list(mentions)
         result = _run_async(_send_to_platform(platform, pconfig, chat_id, cleaned_message, thread_id=thread_id,
                                               media_files=media_files, force_document=force_document_attachments,
                                               **handler_args))
@@ -404,16 +393,6 @@ def _home_chat_id(config, platform, platform_name):
     return None, (f"No home channel set for {platform_name} to determine where to send the message. "
                   f"Either specify a channel directly with '{platform_name}:CHANNEL_NAME', "
                   f"or set a home channel via: akramcode config set {home_env} <channel_id>")
-
-
-def _slack_dm_chat_id(pconfig, chat_id):
-    """Open Slack user targets (``user:``/``user_name:`` from the parser, or a bare U... id from
-    session metadata / home-channel config) as DM conversations. ``(chat_id, None)`` or ``(None, error_dict)``."""
-    dm_target = f"user:{chat_id}" if chat_id.startswith("U") and _SLACK_USER_ID_RE.fullmatch(chat_id) else chat_id
-    if not dm_target.startswith(("user:", "user_name:")):
-        return chat_id, None
-    from model_tools import _run_async
-    return _run_async(_resolve_slack_user_target(pconfig.token, dm_target))
 
 
 def _mirror_sent_message(platform_name, chat_id, mirror_text, thread_id):
@@ -622,8 +601,7 @@ def _platform_max_length(platform):
 # registry ``standalone_sender_fn`` (Discord: forums/threads/multipart; Slack: files_upload_v2;
 # WhatsApp: Baileys /send-media). platform -> (error label, run discover_plugins first,
 # caption-capable, media_files sentinel for non-final chunks, forward force_document)
-_PLUGIN_STANDALONE_MEDIA = {"discord": ("Discord", False, True, [], False), "feishu": ("Feishu", True, False, None, False),
-                            "slack": ("Slack", True, True, [], False), "whatsapp": ("WhatsApp", True, True, None, True)}
+_PLUGIN_STANDALONE_MEDIA = {}
 
 
 async def _send_plugin_standalone(platform_name, pconfig, chat_id, message, chunks, media_files, *, thread_id,
@@ -662,26 +640,16 @@ def _via_adapter_route(p, pc, cid, chunk, media, tid, fd):
 # (E2EE text). Signal: attachments ride the JSON-RPC param. Yuanbao / WeCom: media needs the
 # running gateway. Slack text: live adapter (multi-workspace, ignored_channels gates) else the
 # plugin's standalone sender. Names resolve at call time so tests can monkeypatch ``_send_signal``.
-_CHUNKED_ROUTES = {
-    "matrix": (False, [], lambda p, pc, cid, chunk, media, tid, fd: _send_matrix_via_adapter(
-        pc, cid, chunk, media_files=media, thread_id=tid)),
-    "signal": (True, [], lambda p, pc, cid, chunk, media, tid, fd: _send_signal(
-        pc.extra, cid, chunk, media_files=media)),
-    "yuanbao": (True, None, lambda p, pc, cid, chunk, media, tid, fd: _send_yuanbao(cid, chunk, media_files=media)),
-    "slack": (False, [], _via_adapter_route),
-    "wecom": (True, None, _via_adapter_route)}
+_CHUNKED_ROUTES = {}
 
 # Text-only senders for built-in platforms (generic path; media is dropped with a
 # warning). Signature: (pconfig, chat_id, chunk, thread_id) -> result.
 _TEXT_SENDERS = {
-    **{name: partial(_registry_standalone_send, name)
-       for name in ("whatsapp", "email", "sms", "dingtalk", "feishu", "wecom")},
-    "signal": lambda pc, cid, chunk, tid: _send_signal(pc.extra, cid, chunk),
-    "bluebubbles": lambda pc, cid, chunk, tid: _send_bluebubbles(pc.extra, cid, chunk),
-    "qqbot": lambda pc, cid, chunk, tid: _send_qqbot(pc, cid, chunk),
-    "yuanbao": lambda pc, cid, chunk, tid: _send_yuanbao(cid, chunk)}
+    "telegram": lambda pc, cid, chunk, tid: _send_telegram(pc.extra, cid, chunk),
+    "email": partial(_registry_standalone_send, "email"),
+}
 
-_MEDIA_PLATFORMS_NOTE = "telegram, discord, matrix, weixin, signal, yuanbao, feishu, whatsapp and slack"
+_MEDIA_PLATFORMS_NOTE = "telegram"
 
 
 async def _send_to_platform(platform, pconfig, chat_id, message, thread_id=None, media_files=None,
@@ -692,8 +660,6 @@ async def _send_to_platform(platform, pconfig, chat_id, message, thread_id=None,
     from gateway.config import Platform
     platform_name = platform.value if hasattr(platform, "value") else str(platform)
     media_files = media_files or []
-    if platform == Platform.WEIXIN:
-        return await _send_weixin(pconfig, chat_id, message, media_files=media_files)
     # Telegram chunks internally on the *formatted* text (escaping inflates length).
     if platform == Platform.TELEGRAM:
         return await _send_telegram(
@@ -702,8 +668,7 @@ async def _send_to_platform(platform, pconfig, chat_id, message, thread_id=None,
     from gateway.platforms.base import BasePlatformAdapter
     max_len = _platform_max_length(platform)
     chunks = BasePlatformAdapter.truncate_message(message, max_len) if max_len else [message]
-    if (platform_name == "discord" or (platform_name == "whatsapp" and mentions)
-            or (media_files and platform_name in _PLUGIN_STANDALONE_MEDIA)):
+    if media_files and platform_name in _PLUGIN_STANDALONE_MEDIA:
         return await _send_plugin_standalone(platform_name, pconfig, chat_id, message, chunks, media_files,
                                              thread_id=thread_id, max_len=max_len, force_document=force_document,
                                              mentions=mentions)

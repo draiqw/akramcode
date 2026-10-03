@@ -141,19 +141,8 @@ def anon_failure_copy(code: str, *, retry_after: Any = None) -> str:
 
 
 def guest_enabled() -> bool:
-    """The free tier is on for this process: the launch gate is set AND ``nous.guest`` (default
-    True) has not switched it off. The only place either is read."""
-    if (os.environ.get(GUEST_ONBOARDING_ENV) or "").strip() != "1":
-        return False
-    try:
-        from akramcode_cli.config import load_config_readonly
-        nous_cfg = load_config_readonly().get("nous")
-    except Exception as exc:  # config unreadable: keep today's behaviour (no guest) rather than mint
-        logger.debug("guest: config unreadable, treating nous.guest as false: %s", exc)
-        return False
-    if not isinstance(nous_cfg, dict):
-        return True
-    return bool(nous_cfg.get("guest", True))
+    """Anonymous/free-tier identity creation is disabled."""
+    return False
 
 
 def is_guest_state(state: Any) -> bool:

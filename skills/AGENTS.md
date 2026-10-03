@@ -1,17 +1,11 @@
-# skills/ + optional-skills/ — bundled skills, authoring standards, curator
+# skills/ — document skills and authoring standards
 
 Applies on top of the root `AGENTS.md`. Long-form: `docs/developer-guide/creating-skills.md`;
 user docs: `docs/user-guide/features/skills.md`, `curator.md`.
 
-## Two surfaces
+## Available skills
 
-- **`skills/`** — built-in, loadable by default, organised by category (`skills/github/`, `skills/mlops/`).
-- **`optional-skills/`** — heavier/niche skills shipped but NOT active; installed via
-  `akramcode skills install official/<category>/<skill>` (adapter `tools/skills_hub_official.py`
-  `OptionalSkillSource`). Categories: `autonomous-ai-agents, blockchain, communication, creative,
-  devops, email, health, mcp, migration, mlops, productivity, research, security, web-development`.
-
-Reviewing a skill PR: check the target directory — heavy-dep or niche skills go to `optional-skills/`.
+Only three bundled document skills are shipped: `docx`, `pdf`, and `pptx`.
 
 ## SKILL.md frontmatter
 

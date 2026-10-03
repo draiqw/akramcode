@@ -86,7 +86,7 @@ If a skill is missing from this list but present in the repo, the catalog is reg
 | [`meeting-action-items`](../user-guide/skills/bundled/productivity/productivity-meeting-action-items.md) | Turn meeting notes into cited decisions, owners, tickets. | `productivity/meeting-action-items` |
 | [`notion`](../user-guide/skills/bundled/productivity/productivity-notion.md) | Notion API + ntn CLI: pages, databases, markdown, Workers. | `productivity/notion` |
 | [`pdf`](../user-guide/skills/bundled/productivity/productivity-pdf.md) | PDF files: create, read, merge, fill, OCR, edit text. | `productivity/pdf` |
-| [`powerpoint`](../user-guide/skills/bundled/productivity/productivity-powerpoint.md) | Create, read, edit .pptx decks with python-pptx. | `productivity/powerpoint` |
+| [`pptx`](../user-guide/skills/bundled/productivity/productivity-pptx.md) | Create, read, edit .pptx decks with python-pptx. | `productivity/pptx` |
 | [`product-price-monitor`](../user-guide/skills/bundled/productivity/productivity-product-price-monitor.md) | Watch product, flight, or listing prices; alert on target. | `productivity/product-price-monitor` |
 | [`teams-meeting-pipeline`](../user-guide/skills/bundled/productivity/productivity-teams-meeting-pipeline.md) | Teams meeting summaries, job replay, Graph subscriptions. | `productivity/teams-meeting-pipeline` |
 | [`weekly-review-planning`](../user-guide/skills/bundled/productivity/productivity-weekly-review-planning.md) | Weekly reset: commitments, stalled work, next-week plan. | `productivity/weekly-review-planning` |

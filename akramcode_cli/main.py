@@ -348,8 +348,6 @@ from akramcode_cli.subcommands.profile import build_profile_parser
 from akramcode_cli.subcommands.model import build_model_parser
 from akramcode_cli.subcommands.setup import build_setup_parser
 
-from akramcode_cli.subcommands.whatsapp import build_whatsapp_parser, build_whatsapp_cloud_parser
-from akramcode_cli.subcommands.slack import build_slack_parser
 from akramcode_cli.subcommands.login import build_login_parser
 from akramcode_cli.subcommands.logout import build_logout_parser
 from akramcode_cli.subcommands.auth import build_auth_parser
@@ -796,10 +794,7 @@ from akramcode_cli.main_agent_cmds import (
     cmd_tools,
 )
 from akramcode_cli.main_platform_setup import (
-    cmd_slack,
     cmd_sync,
-    cmd_whatsapp,
-    cmd_whatsapp_cloud,
 )
 from akramcode_cli.process_identity import is_desktop_owned_backend as _is_desktop_owned_backend
 from akramcode_cli.main_provider_setup import (
@@ -2361,6 +2356,22 @@ def _clear_bytecode_cache(root: Path) -> int:
     return removed
 
 
+def _sweep_stale_bytecode_if_checkout_changed() -> None:
+    """Clear stale bytecode once when the checkout revision changes."""
+    fingerprint = _read_git_revision_fingerprint(PROJECT_ROOT)
+    if not fingerprint:
+        return
+    stamp = PROJECT_ROOT / _BYTECODE_FINGERPRINT_FILE
+    try:
+        previous = stamp.read_text(encoding="utf-8").strip() if stamp.exists() else ""
+        if previous and previous != fingerprint:
+            _clear_bytecode_cache(PROJECT_ROOT)
+        stamp.parent.mkdir(parents=True, exist_ok=True)
+        stamp.write_text(fingerprint + "\n", encoding="utf-8")
+    except OSError:
+        return
+
+
 def _finalize_update_receipt(code: int, reason: str) -> None:
     """Best-effort receipt close at the command boundary; no-op if already finalized."""
     try:
@@ -2517,7 +2528,7 @@ def _coalesce_session_name_args(argv: list) -> list:
     are collected until the next flag (``-*``) or known top-level subcommand.
     """
     _SUBCOMMANDS = {
-        "chat", "model", "gateway", "setup", "whatsapp", "whatsapp-cloud", "login", "logout",
+        "chat", "model", "gateway", "setup", "login", "logout",
         "auth", "status", "cron", "doctor", "config", "pairing", "skills", "tools", "mcp",
         "sessions", "insights", "update", "uninstall", "profile", "dashboard", "serve",
         "desktop", "gui", "honcho", "claw", "plugins", "security", "acp", "webhook", "peer",
@@ -2851,7 +2862,7 @@ _BUILTIN_SUBCOMMANDS = frozenset(
         "send", "sessions", "setup",
         "skin", "skills", "slack", "status", "sync", "tools", "uninstall", "update",
         "usage", "vault",
-        "webhook", "whatsapp", "whatsapp-cloud", "worktree", "chat", "secrets", "security",
+        "webhook", "worktree", "chat", "secrets", "security",
         "browser",
         "verify",
         # Plugin commands missing from top-level --help is an accepted trade-off.
@@ -3414,9 +3425,6 @@ def _build_cli_parser():
         logger.debug("LSP CLI registration failed: %s", _lsp_err)
 
     build_setup_parser(subparsers, cmd_setup=cmd_setup)
-    build_whatsapp_parser(subparsers, cmd_whatsapp=cmd_whatsapp)
-    build_whatsapp_cloud_parser(subparsers, cmd_whatsapp_cloud=cmd_whatsapp_cloud)
-    build_slack_parser(subparsers, cmd_slack=cmd_slack)
 
     from akramcode_cli.send_cmd import register_send_subparser
     register_send_subparser(subparsers)

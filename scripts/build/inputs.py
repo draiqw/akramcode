@@ -13,7 +13,6 @@ RESOURCE_ENV = {
     "optional-skills": "AKRAMCODE_OPTIONAL_SKILLS",
     "plugins": "AKRAMCODE_BUNDLED_PLUGINS",
     "locales": "AKRAMCODE_BUNDLED_LOCALES",
-    "optional-mcps": "AKRAMCODE_OPTIONAL_MCPS",
 }
 
 

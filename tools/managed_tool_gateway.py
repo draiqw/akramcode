@@ -38,9 +38,7 @@ def auth_json_path():
 
 
 def _read_nous_provider_state() -> Optional[dict]:
-    """The profile's Nous state, or None. A free-tier identity counts only while the free tier is on:
-    with ``nous.guest: false`` it is invisible here, so no cached or refreshed token of it is ever
-    attached to a request.
+    """The profile's authenticated Nous state, or None.
 
     Resolves through the same profile-then-global-root fallback every other credential reader
     uses: a profile created with ``share_auth`` has no ``auth.json`` of its own and signs in with
@@ -51,10 +49,6 @@ def _read_nous_provider_state() -> Optional[dict]:
 
         nous_provider = get_provider_auth_state("nous")
         if not isinstance(nous_provider, dict):
-            return None
-        from akramcode_cli.anon_auth import guest_enabled, is_guest_state
-
-        if is_guest_state(nous_provider) and not guest_enabled():
             return None
         return nous_provider
     except Exception:
@@ -100,10 +94,7 @@ def peek_nous_access_token() -> Optional[str]:
 def read_nous_access_token() -> Optional[str]:
     """Read a Nous Subscriber OAuth access token from auth store or env override.
 
-    A read: with no Nous identity there is no bearer and the answer is None. The free-tier identity
-    is created by the boot bootstrap (``akramcode_cli.free_tier_bootstrap``), never on a token-read
-    path (NS-845 Q1.2). A retired free-tier credential IS replaced here, once: that is the explicit
-    dead-credential rule, shared with inference.
+    A read: with no authenticated Nous identity there is no bearer and the answer is None.
     """
     if explicit := _read_user_token_override():
         return explicit
@@ -119,31 +110,8 @@ def read_nous_access_token() -> Optional[str]:
         if refreshed_token := _clean(resolve_nous_access_token(refresh_skew_seconds=_NOUS_ACCESS_TOKEN_REFRESH_SKEW_SECONDS)):
             return refreshed_token
     except Exception as exc:
-        # Same dead-credential rule as inference (one place decides it: anon_auth): a retired free-tier
-        # identity is replaced once, here, instead of handing back its stale token forever.
-        from akramcode_cli.anon_auth import AnonCredentialDead
-
-        if isinstance(exc, AnonCredentialDead):
-            return _replace_dead_guest_token(nous_provider, str(exc.code or "anon_credential_dead"))
         logger.debug("Nous access token refresh failed: %s", exc)
     return cached_token
-
-
-def _replace_dead_guest_token(dead_state: dict, code: str = "anon_credential_dead") -> Optional[str]:
-    from akramcode_cli.anon_auth import ANON_ACCOUNT_LOCKED, clear_dead_guest, ensure_portal_identity
-    from akramcode_cli.auth import resolve_nous_access_token
-
-    clear_dead_guest(code, dead_token=dead_state.get("anon_token"))
-    # Same rule as inference: a locked account is retired but never silently replaced.
-    if code == ANON_ACCOUNT_LOCKED:
-        return None
-    try:
-        if ensure_portal_identity(explicit=True) is None:
-            return None
-        return _clean(resolve_nous_access_token(refresh_skew_seconds=_NOUS_ACCESS_TOKEN_REFRESH_SKEW_SECONDS))
-    except Exception as exc:
-        logger.debug("Nous free tier replacement after a retired credential failed: %s", exc)
-        return None
 
 
 def get_tool_gateway_scheme() -> str:
