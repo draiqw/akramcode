@@ -1,9 +1,4 @@
-"""Contract tests for local execution and the planned OpenSandbox SDK boundary.
-
-OpenSandbox is not registered as an AkramCode backend yet. These tests exercise
-the supported local backend and specify only the external SDK lifecycle needed
-by a future adapter; they do not import a not-yet-existing production module.
-"""
+"""Contract tests for local execution and the OpenSandbox backend boundary."""
 
 from tools.environments.local import LocalEnvironment
 
@@ -23,4 +18,3 @@ def test_local_mode_runs_in_checkout_and_keeps_files_and_cwd(tmp_path):
         assert (workdir / "nested" / "marker").read_text() == "local"
     finally:
         env.cleanup()
-

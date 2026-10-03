@@ -2953,6 +2953,9 @@ def _should_background_mcp_startup(args) -> bool:
 
 def _prepare_agent_startup(args) -> None:
     """Discover plugins/MCP/hooks for commands that can run an agent turn."""
+    terminal_backend = getattr(args, "terminal_backend", None)
+    if terminal_backend:
+        os.environ["TERMINAL_ENV"] = terminal_backend
     # --yolo chokepoint: HERMES_YOLO_MODE must be set before any discovery
     # below imports tools.approval, which freezes _YOLO_MODE_FROZEN at import.
     # main() sets it earlier too, but other launchers (Termux fast-CLI) reach

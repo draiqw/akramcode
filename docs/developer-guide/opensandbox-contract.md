@@ -1,8 +1,7 @@
 # OpenSandbox terminal backend contract
 
-OpenSandbox is not currently registered as a built-in AkramCode backend. This
-document records the lifecycle expected from a future adapter and the
-configuration shape the adapter will need to support.
+OpenSandbox is registered as an optional AkramCode backend. This document
+records its lifecycle contract and configuration shape.
 
 The two execution modes are selected through the existing
 `terminal.backend` setting:
@@ -36,6 +35,6 @@ field names remain subject to the future backend implementation.
   packages outside `/workspace`, and runtime checkpoints are not promised.
 
 `tests/tools/environments/test_execution_modes_contract.py` checks local mode
-against the real host backend. OpenSandbox lifecycle tests should be added
-against a stateful SDK fake when an adapter implements this contract; testing
-a stand-alone fake before then would only test the fake itself.
+against the real host backend. OpenSandbox lifecycle tests should use a
+stateful SDK fake and must also cover reconnecting a session to its persistent
+workspace.

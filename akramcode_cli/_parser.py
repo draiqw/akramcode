@@ -209,6 +209,11 @@ def _add_top_level_flags(parser: argparse.ArgumentParser) -> None:
               help="With --tui: use native terminal scrollback and disable mouse tracking")
     inherited(parser, "--cli", action="store_true", default=False,
               help="Force the classic prompt_toolkit REPL (overrides display.interface=tui)")
+    backend_group = parser.add_mutually_exclusive_group()
+    inherited(backend_group, "--local", dest="terminal_backend", action="store_const", const="local",
+              default=None, help="Run terminal commands on the current machine")
+    inherited(backend_group, "--sandbox", dest="terminal_backend", action="store_const", const="opensandbox",
+              help="Run terminal commands in the configured OpenSandbox environment")
     inherited(parser, "--dev", dest="tui_dev", action="store_true", default=False,
               help="With --tui: run TypeScript sources via tsx (skip dist build)")
 
@@ -227,6 +232,11 @@ def _build_chat_parser(subparsers) -> argparse.ArgumentParser:
         "chat", help="Interactive chat with the agent",
         description="Start an interactive chat session with Hermes Agent")
     add, inherited, SUPPRESS = chat_parser.add_argument, _inherited_flag, argparse.SUPPRESS
+    backend_group = chat_parser.add_mutually_exclusive_group()
+    inherited(backend_group, "--local", dest="terminal_backend", action="store_const", const="local",
+              default=SUPPRESS, help="Run terminal commands on the current machine")
+    inherited(backend_group, "--sandbox", dest="terminal_backend", action="store_const", const="opensandbox",
+              default=SUPPRESS, help="Run terminal commands in the configured OpenSandbox environment")
     _query_group = chat_parser.add_mutually_exclusive_group()
     _query_group.add_argument("-q", "--query", help=(
         "Query to run. On a real TTY the prompt seeds an interactive "
