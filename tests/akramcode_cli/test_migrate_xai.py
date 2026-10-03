@@ -1,4 +1,4 @@
-"""Tests for ``hermes migrate xai`` — apply path with ruamel round-trip."""
+"""Tests for ``akramcode migrate xai`` — apply path with ruamel round-trip."""
 from __future__ import annotations
 
 import sys
@@ -22,7 +22,7 @@ def trap_config(tmp_path: Path) -> Path:
     """A config.yaml with retired models AND comments to verify round-trip."""
     p = tmp_path / "config.yaml"
     p.write_text(
-        "# Hermes config (sample)\n"
+        "# AkramCode config (sample)\n"
         "principal:\n"
         "  provider: xai             # the main model\n"
         "  model: grok-4-1-fast-non-reasoning  # retiring May 15\n"
@@ -253,7 +253,7 @@ class TestCrashDurability:
         """A config.yaml symlinked into a dotfiles repo must stay a symlink."""
         real_dir = tmp_path / "dotfiles"
         real_dir.mkdir()
-        real = real_dir / "hermes-config.yaml"
+        real = real_dir / "akramcode-config.yaml"
         real.write_text(
             "principal:\n"
             "  provider: xai\n"
@@ -292,6 +292,6 @@ class TestCrashDurability:
         apply_migration(trap_config, issues, backup=False)
 
         text = trap_config.read_text(encoding="utf-8")
-        assert "# Hermes config (sample)" in text
+        assert "# AkramCode config (sample)" in text
         assert "# the main model" in text
         assert "# not affected" in text

@@ -4,8 +4,8 @@
 def missing_optional_deps_message(surface: str, what: str, extra: str) -> str:
     return (
         f"The {surface} can't start: {what} are missing from this install.\n"
-        "Run `hermes pm install` to prepare the declared dependencies.\n"
-        "If an installed dependency is damaged, run `hermes pm repair`, then restart Hermes."
+        "Run `akramcode pm install` to prepare the declared dependencies.\n"
+        "If an installed dependency is damaged, run `akramcode pm repair`, then restart AkramCode."
     )
 
 
@@ -29,14 +29,14 @@ def smart_app_control_block_message(error: BaseException) -> "str | None":
         f"  {message}",
         "",
         "This happens when Windows Smart App Control or an Application Control",
-        "policy blocks the embedded Python runtime that ships with Hermes Desktop.",
+        "policy blocks the embedded Python runtime that ships with AkramCode Desktop.",
         "A repair / reinstall loop cannot fix this — the packages are not missing,",
         "the runtime's DLL is being blocked.",
         "",
         "Recovery options:",
         "  1. Use a trusted system Python installation instead of the embedded",
         "     runtime (if your organization allows it).",
-        "  2. Ask your IT administrator for an exemption for the Hermes Desktop",
+        "  2. Ask your IT administrator for an exemption for the AkramCode Desktop",
         "     application (Smart App Control / Application Control).",
         "  3. Use the CLI or gateway instead (they use your system Python).",
         "",

@@ -1,4 +1,4 @@
-"""Per-terminal session breadcrumbs for ``hermes -c`` / ``--continue``. Strictly best-effort: no
+"""Per-terminal session breadcrumbs for ``akramcode -c`` / ``--continue``. Strictly best-effort: no
 function raises; without a stable terminal identity (no tty, no known multiplexer env var) ``-c``
 falls back to latest-session. Gated by ``session.terminal_continue`` (default true)."""
 
@@ -25,8 +25,8 @@ _SANITIZE_RE = re.compile(r"[^A-Za-z0-9._-]")
 
 
 def _breadcrumbs_dir() -> Path:
-    from akramcode_constants import get_hermes_home
-    return get_hermes_home() / "terminal-sessions"
+    from akramcode_constants import get_akramcode_home
+    return get_akramcode_home() / "terminal-sessions"
 
 
 def _sanitize(raw: str) -> str:
@@ -84,8 +84,8 @@ def write_breadcrumb(session_id: str, cwd: Optional[str] = None) -> None:
         if not terminal_id:
             return
         directory = _breadcrumbs_dir()
-        from akramcode_constants import mkdir_under_hermes_home
-        mkdir_under_hermes_home(directory)
+        from akramcode_constants import mkdir_under_akramcode_home
+        mkdir_under_akramcode_home(directory)
         now = time.time()
         payload = {"session_id": session_id, "cwd": cwd or os.getcwd(), "ts": now}
         atomic_json_write(directory / terminal_id, payload, indent=None)

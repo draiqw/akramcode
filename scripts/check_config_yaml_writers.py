@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fail when a ``config.yaml`` is written by anything but the comment-preserving writer.
 
-Every writer of ``~/.hermes/config.yaml`` (and ``profiles/*/config.yaml``) must go through
+Every writer of ``~/.akramcode/config.yaml`` (and ``profiles/*/config.yaml``) must go through
 ``akramcode_cli.config.atomic_config_write`` (safe) or ``atomic_config_replace`` (explicit full-state)
 → ``utils.atomic_roundtrip_yaml_save`` (ruamel
 round-trip). A PyYAML dump (``yaml.dump`` / ``yaml.safe_dump`` / ``utils.atomic_yaml_write``)

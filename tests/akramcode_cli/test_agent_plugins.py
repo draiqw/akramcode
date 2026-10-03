@@ -31,7 +31,7 @@ def _write_skill(root: Path, directory: str = "summarize", **fields: object) -> 
     skill_dir.mkdir(parents=True)
     metadata = {"name": directory, "description": "Summarizes reports."}
     metadata.update(fields)
-    import akram_core.hermes_yaml as yaml
+    import akram_core.akramcode_yaml as yaml
 
     (skill_dir / "SKILL.md").write_text(
         f"---\n{yaml.safe_dump(metadata, sort_keys=False)}---\nInstructions.\n",
@@ -100,7 +100,7 @@ def test_server_declaration_joins_mcp_and_preserves_liveness(tmp_path: Path) -> 
     _write_json(
         tmp_path / "plugin.json",
         _manifest(extensions={
-            "com.nousresearch.hermes": {"servers": {"worker": {
+            "com.nousresearch.akramcode": {"servers": {"worker": {
                 "app": {"darwin": {"presence": "executable", "location": str(app)}},
                 "requires": {"app": True},
                 "liveness": {"kind": "static"},
@@ -123,7 +123,7 @@ def test_orphan_server_declaration_disables_package(tmp_path: Path) -> None:
     _write_json(
         tmp_path / "plugin.json",
         _manifest(extensions={
-            "com.nousresearch.hermes": {"servers": {"orphan": {"requires": {"app": False}}}}
+            "com.nousresearch.akramcode": {"servers": {"orphan": {"requires": {"app": False}}}}
         }),
     )
 
@@ -135,7 +135,7 @@ def test_liveness_without_declaration_disables_package(tmp_path: Path) -> None:
     _write_json(
         tmp_path / "plugin.json",
         _manifest(extensions={
-            "com.nousresearch.hermes": {"servers": {"worker": {"liveness": {"kind": "static"}}}}
+            "com.nousresearch.akramcode": {"servers": {"worker": {"liveness": {"kind": "static"}}}}
         }),
     )
     _write_json(
@@ -399,8 +399,8 @@ def test_enabled_portable_mcp_probe_does_not_load_plugins(
     )
     bundled = tmp_path / "bundled"
     bundled.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_BUNDLED_PLUGINS", str(bundled))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_BUNDLED_PLUGINS", str(bundled))
 
     assert has_enabled_agent_plugin_mcp(
         {"plugins": {"enabled": ["portable.test"]}}
@@ -436,8 +436,8 @@ def test_portable_mcp_probe_counts_streamable_http_config(
     )
     bundled = tmp_path / "bundled"
     bundled.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_BUNDLED_PLUGINS", str(bundled))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_BUNDLED_PLUGINS", str(bundled))
 
     assert has_enabled_agent_plugin_mcp(
         {"plugins": {"enabled": ["portable.test"]}}
@@ -465,8 +465,8 @@ def test_portable_mcp_probe_ignores_unsupported_only_config(
     )
     bundled = tmp_path / "bundled"
     bundled.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_BUNDLED_PLUGINS", str(bundled))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_BUNDLED_PLUGINS", str(bundled))
 
     assert not has_enabled_agent_plugin_mcp(
         {"plugins": {"enabled": ["portable.test"]}}
@@ -606,8 +606,8 @@ def test_portable_mcp_probe_honors_native_precedence(
     )
     bundled = tmp_path / "bundled"
     bundled.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_BUNDLED_PLUGINS", str(bundled))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_BUNDLED_PLUGINS", str(bundled))
 
     assert not has_enabled_agent_plugin_mcp(
         {"plugins": {"enabled": ["portable.test"]}}

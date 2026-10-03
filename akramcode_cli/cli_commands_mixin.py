@@ -1,4 +1,4 @@
-"""Slash-command handlers for the interactive CLI (``HermesCLI`` inherits ``CLICommandsMixin``).
+"""Slash-command handlers for the interactive CLI (``AkramCodeCLI`` inherits ``CLICommandsMixin``).
 
 cli.py-internal symbols (``_cprint``/``_ACCENT``/``save_config_value``…) are imported LAZILY inside
 the helpers/handlers via ``from cli import ...`` — cli.py imports this module (cycle otherwise).
@@ -27,7 +27,7 @@ from rich import box as rich_box
 from rich.markup import escape as _escape
 from rich.panel import Panel
 
-from akramcode_constants import display_hermes_home
+from akramcode_constants import display_akramcode_home
 from akramcode_state.ids import new_session_id as mint_session_id
 from agent.i18n import t
 from agent.message_metadata import message_identity
@@ -184,7 +184,7 @@ _CRON_SUBCOMMANDS = {
 _ON_WORDS = {"on", "enable", "true", "1"}
 _OFF_WORDS = {"off", "disable", "false", "0"}
 
-# /busy modes; what Enter does while Hermes is working lives in the catalog as
+# /busy modes; what Enter does while AkramCode is working lives in the catalog as
 # ``cli.commands.busy.short_<mode>`` (status line) / ``long_<mode>`` (post-set explanation).
 _BUSY_MODES = ("queue", "steer", "interrupt")
 
@@ -203,7 +203,7 @@ _REASONING_TOGGLES = {
     **dict.fromkeys(("clamp", "collapse", "short"), ("reasoning_full", False, "headline_clamped", None)),
 }
 
-# /bg AIAgent provider-routing kwargs -> HermesCLI attribute carrying the value.
+# /bg AIAgent provider-routing kwargs -> AkramCodeCLI attribute carrying the value.
 _BG_PROVIDER_KWARGS = {
     "providers_allowed": "_providers_only", "providers_ignored": "_providers_ignore",
     "providers_order": "_providers_order", "provider_sort": "_provider_sort",
@@ -393,11 +393,11 @@ def _print_side_result_panel(cli, *, header_lines, body, title_suffix, empty_not
     try:
         from akramcode_cli.skin_engine import get_active_skin
         _skin = get_active_skin()
-        label = _skin.get_branding("response_label", "☤ Hermes")
+        label = _skin.get_branding("response_label", "☤ AkramCode")
         _resp_color = _maybe_remap_for_light_mode(_skin.get_color("response_border", "#CD7F32"))
         _resp_text = _maybe_remap_for_light_mode(_skin.get_color("banner_text", "#FFF8DC"))
     except Exception:
-        label, _resp_color, _resp_text = "☤ Hermes", "#CD7F32", "#FFF8DC"
+        label, _resp_color, _resp_text = "☤ AkramCode", "#CD7F32", "#FFF8DC"
     rich_console.print(Panel(
         _render_final_assistant_content(body, mode=cli.final_response_markdown),
         title=f"[{_resp_color} bold]{label} {title_suffix}[/]", title_align="left",
@@ -546,7 +546,7 @@ def _browser_connect(cli, cdp_url: str) -> None:
             "Your browser_navigate, browser_snapshot, browser_click, and other browser tools now "
             "control that CDP browser. The command itself is a signal that using browser tools for "
             "their current browser-related request is expected; do not wait for separate permission "
-            "just because CDP is connected. This is typically a Hermes-managed isolated debug "
+            "just because CDP is connected. This is typically a AkramCode-managed isolated debug "
             "profile, not the user's main everyday browser. It is still user-visible and may contain "
             "pages, logged-in sessions, or cookies in that debug profile, so avoid destructive actions, "
             "closing tabs, or navigating away unless the user's task calls for it.]")
@@ -727,7 +727,7 @@ class CLICommandsMixin:
     # ---- /diff ----------------------------------------------------------------------------
     def _handle_diff_command(self, command: str):
         """Handle /diff [working|staged|all|session] [--stat] [<path>...] — git changes in the
-        cwd; ``session`` is everything Hermes changed since the checkpoint baseline."""
+        cwd; ``session`` is everything AkramCode changed since the checkpoint baseline."""
         stat_only = False
         mode = "working"
         paths: list[str] = []
@@ -820,7 +820,7 @@ class CLICommandsMixin:
         snaps = list_quick_snapshots()
         if not snaps:
             return _pr(f"  {_t('snapshot.none_yet')}", f"  {_t('snapshot.create_hint')}")
-        print(f"  {_t('snapshot.list_header', dir=display_hermes_home())}\n")
+        print(f"  {_t('snapshot.list_header', dir=display_akramcode_home())}\n")
         # Column labels are translated values re-padded here (never padded in the catalog).
         _pr(f"  {_t('snapshot.col_num'):>3}  {_t('snapshot.col_id'):<35} {_t('snapshot.col_files'):>5} "
             f"{_t('snapshot.col_size'):>10} {_t('snapshot.col_label')}",
@@ -980,7 +980,7 @@ class CLICommandsMixin:
 
     # ---- /journey, /paste, /copy, /image --------------------------------------------------
     def _handle_journey_command(self, cmd_original: str) -> None:
-        """Handle /journey — the learning timeline (see `hermes journey`). Read-only views render
+        """Handle /journey — the learning timeline (see `akramcode journey`). Read-only views render
         Rich color that patch_stdout would swallow, so capture with forced ANSI and re-emit via
         ``_cprint``; ``delete``/``edit`` are interactive and keep real stdio."""
         from akramcode_cli.journey import register_cli
@@ -1328,7 +1328,7 @@ class CLICommandsMixin:
         # Same contract as startup --resume: retarget the tool cwd, restore the persisted YOLO
         # bypass (approval session key changed) and the model/provider (else config default).
         # Retarget the process + tool cwd to where the session was started, so a mid-chat /resume (and
-        # /sessions <id>, which delegates here) lands in the same directory as a startup `hermes
+        # /sessions <id>, which delegates here) lands in the same directory as a startup `akramcode
         # -c`/`--resume`. The startup resume paths already call this; without it, the terminal/code-exec
         # tools and relative-path resolution keep operating in the wrong repo. Idempotent and a no-op when
         # the session recorded no cwd. See #38562.
@@ -1409,7 +1409,7 @@ class CLICommandsMixin:
                 parent_prompt = (self._session_db.get_session(parent_session_id) or {}).get("system_prompt")
         try:
             self._session_db.create_session(
-                session_id=new_session_id, source=os.environ.get("HERMES_SESSION_SOURCE", "cli"),
+                session_id=new_session_id, source=os.environ.get("AKRAMCODE_SESSION_SOURCE", "cli"),
                 model=self.model, parent_session_id=parent_session_id, system_prompt=parent_prompt or None,
                 model_config={"max_iterations": self.max_turns, "reasoning_config": self.reasoning_config,
                               "_branched_from": parent_session_id})
@@ -1442,7 +1442,7 @@ class CLICommandsMixin:
     # ---- /worktree ------------------------------------------------------------------------
     def _handle_worktree_command(self, cmd_original: str) -> None:
         """Handle /worktree [new [name]|list|prune [--dry-run]] — isolated git worktrees.
-        ``new`` moves this session into the tree (as ``hermes -w``: kept on exit only with
+        ``new`` moves this session into the tree (as ``akramcode -w``: kept on exit only with
         unpushed commits); ``prune`` never deletes tracked changes, unique commits, or in-use trees."""
         import cli as _cli
         parts = cmd_original.split(None, 2)
@@ -1514,13 +1514,13 @@ class CLICommandsMixin:
         wt_info = _cli._setup_worktree(repo_root=repo_root, sync_base=sync_base, name=rest or None)
         if not wt_info:
             return  # _setup_worktree already printed the failure
-        # Retarget the session's terminal/file tools at the new tree (as `hermes -w` does).
+        # Retarget the session's terminal/file tools at the new tree (as `akramcode -w` does).
         try:
             os.chdir(wt_info["path"])
         except OSError as e:
             print(f"  {_t('worktree.enter_failed', error=e)}")
         os.environ["TERMINAL_CWD"] = wt_info["path"]
-        # Same keep-if-unpushed cleanup as `hermes -w`. Only one tree is "active" per process;
+        # Same keep-if-unpushed cleanup as `akramcode -w`. Only one tree is "active" per process;
         # an earlier one keeps its own atexit registration (explicit info arg).
         _cli._active_worktree = wt_info
         atexit.register(_cli._cleanup_worktree, wt_info)
@@ -1833,7 +1833,7 @@ class CLICommandsMixin:
             self._pending_agent_seed = seed
 
     def _handle_curator_command(self, cmd: str):
-        """Handle /curator — delegates to akramcode_cli.curator so the CLI and the `hermes curator`
+        """Handle /curator — delegates to akramcode_cli.curator so the CLI and the `akramcode curator`
         subcommand share the same handler set."""
         tokens = shlex.split(cmd)[1:] if cmd else []
         try:
@@ -1918,7 +1918,7 @@ class CLICommandsMixin:
 
     def _handle_plan_command(self, cmd: str):
         """Handle /plan — write a markdown implementation plan, no execution. The live agent
-        inspects the workspace read-only and saves the plan under ``.hermes/plans/``."""
+        inspects the workspace read-only and saves the plan under ``.akramcode/plans/``."""
         from agent.plan_prompt import build_plan_prompt
         task = _command_arg(cmd)  # optional — empty infers the task from conversation context
         print("\n" + (_t("plan.planning", task=_ellipsize(task, 80)) if task else _t("plan.from_conversation")))
@@ -2130,7 +2130,7 @@ class CLICommandsMixin:
 
     # ---- /bundles, /browser ---------------------------------------------------------------
     def _handle_bundles_command(self, cmd: str) -> None:
-        """In-session ``/bundles`` — show installed skill bundles (``hermes bundles list`` rendered
+        """In-session ``/bundles`` — show installed skill bundles (``akramcode bundles list`` rendered
         inside the running CLI). Bundles are loaded via ``/<bundle-name>``."""
         from cli import ChatConsole, _BOLD, _RST, _accent_hex
         from akramcode_cli.slash_exec import CommandContext, execute_command
@@ -2179,7 +2179,7 @@ class CLICommandsMixin:
     def _handle_heartbeat_command(self, cmd: str) -> None:
         """Dispatch /heartbeat: set / status / pause / resume / clear. ``/heartbeat every 10m <prompt>``
         sets the session's one recurring instruction, injected as a normal user turn when due.
-        Session-scoped and in-process — use `hermes cron` for durable schedules."""
+        Session-scoped and in-process — use `akramcode cron` for durable schedules."""
         from akramcode_cli.heartbeat import format_interval
         arg = _command_arg(cmd)
         lower = arg.lower()
@@ -2367,7 +2367,7 @@ class CLICommandsMixin:
                 source = f" ({s['source']})" if s["source"] == "user" else ""
                 print(f"   {marker} {s['name']}{source} — {s['description']}")
             return _pr(f"\n  {_t('skin.usage')}",
-                       f"  {_t('skin.custom_hint', dir=display_hermes_home())}\n")
+                       f"  {_t('skin.custom_hint', dir=display_akramcode_home())}\n")
         available = {s["name"] for s in list_skins()}
         if new_skin not in available:
             return _pr(f"  {_t('skin.unknown', name=new_skin)}",
@@ -2385,7 +2385,7 @@ class CLICommandsMixin:
         Factored out so the read-back/strip logic is unit-testable."""
         editor = (os.environ.get("VISUAL") or os.environ.get("EDITOR")
                   or ("notepad" if os.name == "nt" else "nano"))
-        fd, path = tempfile.mkstemp(suffix=".md", prefix="hermes_prompt_")
+        fd, path = tempfile.mkstemp(suffix=".md", prefix="akramcode_prompt_")
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as fh:
                 fh.write(_t("prompt_compose.editor_header") + "\n\n")
@@ -2605,7 +2605,7 @@ class CLICommandsMixin:
                             scope=_scope_outcome(explicit_global, saved))))
 
     def _handle_busy_command(self, cmd: str):
-        """Handle /busy [status|queue|steer|interrupt] — what Enter does while Hermes is working."""
+        """Handle /busy [status|queue|steer|interrupt] — what Enter does while AkramCode is working."""
         arg = _command_arg(cmd, lower=True)
         usage = _dim_line(_t("busy.usage"))
         if not arg or arg == "status":
@@ -2675,7 +2675,7 @@ class CLICommandsMixin:
             lines=200, expire=7, local=local, nous="nous" in words and not local, yes=True))
 
     def _handle_update_command(self) -> bool:
-        """Handle /update — exit the session and relaunch as ``hermes update``. Returns True when
+        """Handle /update — exit the session and relaunch as ``akramcode update``. Returns True when
         confirmed (the caller exits the app; the relaunch runs on the main thread after
         prompt_toolkit restores terminal modes), False when cancelled."""
         from akramcode_cli.config import is_managed, format_managed_message
@@ -2707,7 +2707,7 @@ class CLICommandsMixin:
             _cp(_t("voice.unknown_subcommand", subcommand=subcommand), _t("voice.usage"))
 
     def _handle_wake_command(self, command: str):
-        """Handle /wake [on|off|status] — the 'Hey Hermes' hotword listener. The toggle IS the
+        """Handle /wake [on|off|status] — the 'Hey AkramCode' hotword listener. The toggle IS the
         config: on/off also writes ``wake_word.enabled`` so the choice persists; startup
         auto-arm only reads it."""
         subcommand = _command_arg(command, lower=True) or (

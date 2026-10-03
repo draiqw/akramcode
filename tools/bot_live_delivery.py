@@ -333,7 +333,7 @@ def await_delivery(
     """Poll a receipt until the owner settles it, ``timeout`` lapses, or ``should_stop`` says so.
 
     Every transport that hands a turn to a live Bot Chat owner (local ``message_agent``, the
-    Desktop relay, ``hermes peer dm`` and ``hermes peer run``) waits on the same receipt; keeping
+    Desktop relay, ``akramcode peer dm`` and ``akramcode peer run``) waits on the same receipt; keeping
     the loop here is what stops the lanes drifting (one lane returned a receipt sentence instead
     of the reply, two never waited at all). Returns the last record read — still pending when the
     budget lapsed, None when the receipt was never readable.

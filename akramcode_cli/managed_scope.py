@@ -1,6 +1,6 @@
 """Managed scope — IT-pushed, user-immutable config & env layer.
 
-DISTINCT from ``akramcode_cli.config.is_managed()`` / ``HERMES_MANAGED`` (a coarse package-manager
+DISTINCT from ``akramcode_cli.config.is_managed()`` / ``AKRAMCODE_MANAGED`` (a coarse package-manager
 write-lock that blocks all mutation); this layer injects specific immutable values. The two are
 independent and may coexist. v1 enforcement is filesystem permissions only (see
 ``docs/design/managed-scope.md`` §7); ``get_managed_dir()`` is the single seam for adding
@@ -28,7 +28,7 @@ from utils import fast_safe_load, file_signature
 logger = logging.getLogger(__name__)
 
 # POSIX default. Other-platform locations belong ONLY inside get_managed_dir().
-_DEFAULT_MANAGED_DIR = Path("/etc/hermes")
+_DEFAULT_MANAGED_DIR = Path("/etc/akramcode")
 
 _CACHE_LOCK = threading.Lock()
 # path_key -> (*file_signature, parsed)
@@ -37,19 +37,19 @@ _ENV_CACHE: Dict[str, tuple] = {}
 
 
 def _under_pytest() -> bool:
-    """True inside the test suite: ignore the system ``/etc/hermes`` so a real managed scope on a
-    dev/CI box can't leak policy into the suite. An explicit ``HERMES_MANAGED_DIR`` still wins."""
+    """True inside the test suite: ignore the system ``/etc/akramcode`` so a real managed scope on a
+    dev/CI box can't leak policy into the suite. An explicit ``AKRAMCODE_MANAGED_DIR`` still wins."""
     return "PYTEST_CURRENT_TEST" in os.environ
 
 
 def get_managed_dir() -> Optional[Path]:
     """Resolve the managed-scope directory, or None when no scope is present.
 
-    Priority: ``$HERMES_MANAGED_DIR`` (IT-only bootstrap override; never persisted to any .env;
-    honored only when non-empty AND the directory exists), then ``/etc/hermes`` when it exists.
+    Priority: ``$AKRAMCODE_MANAGED_DIR`` (IT-only bootstrap override; never persisted to any .env;
+    honored only when non-empty AND the directory exists), then ``/etc/akramcode`` when it exists.
     A missing directory resolves to None — the common case, so it must be cheap + side-effect-free.
     """
-    override = os.environ.get("HERMES_MANAGED_DIR", "").strip()
+    override = os.environ.get("AKRAMCODE_MANAGED_DIR", "").strip()
     if override:
         p = Path(override)
     elif _under_pytest():

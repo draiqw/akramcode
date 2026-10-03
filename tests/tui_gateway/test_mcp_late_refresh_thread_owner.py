@@ -6,9 +6,9 @@ toolset on the desktop app + dashboard WebUI.
 Root cause: there are two independent background MCP discovery thread owners
 by surface:
 
-  * ``tui_gateway.entry`` — the stdio ``hermes --tui`` path.
+  * ``tui_gateway.entry`` — the stdio ``akramcode --tui`` path.
   * ``akramcode_cli.mcp_startup`` — the desktop app + dashboard WebSocket sidecar
-    (``tui_gateway/ws.py``) and ``hermes dashboard``.
+    (``tui_gateway/ws.py``) and ``akramcode dashboard``.
 
 The late-refresh scheduler (``tui_gateway.server._schedule_mcp_late_refresh``)
 gates on ``tui_gateway.entry.mcp_discovery_in_flight()``. Before the fix that
@@ -25,7 +25,7 @@ import threading
 import pytest
 
 import akramcode_cli.mcp_startup as startup
-from hermes_constants import hermes_home_key
+from akramcode_constants import akramcode_home_key
 import tui_gateway.entry as entry
 
 
@@ -56,7 +56,7 @@ def test_entry_in_flight_sees_startup_thread(clean_discovery_globals):
     scheduler does not bail (the #51587 bug).
     """
     stop = threading.Event()
-    startup._mcp_discovery_thread[hermes_home_key()] = _alive_thread(stop)
+    startup._mcp_discovery_thread[akramcode_home_key()] = _alive_thread(stop)
     try:
         # Entry's own thread is None, but the startup thread is alive.
         assert entry._mcp_discovery_thread is None
@@ -78,7 +78,7 @@ def test_startup_module_exposes_in_flight_helpers(clean_discovery_globals):
 
     stop = threading.Event()
     t = _alive_thread(stop)
-    startup._mcp_discovery_thread[hermes_home_key()] = t
+    startup._mcp_discovery_thread[akramcode_home_key()] = t
     try:
         assert startup.mcp_discovery_in_flight() is True
         assert startup.join_mcp_discovery(timeout=0.1) is False

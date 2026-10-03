@@ -244,7 +244,7 @@ class TestStoredPromptReuse:
         model reads old `Model:` metadata ("what model are you?" lies).
         """
         stored = (
-            "You are Hermes Agent.\n\n"
+            "You are AkramCode Agent.\n\n"
             "Conversation started: Tuesday, June 16, 2026\n"
             "Session ID: test-session-id\n"
             "Model: anthropic/claude-opus-4.8-fast\n"
@@ -255,7 +255,7 @@ class TestStoredPromptReuse:
         agent = _make_agent(
             session_db=db,
             prebuilt_prompt=(
-                "You are Hermes Agent.\n\n"
+                "You are AkramCode Agent.\n\n"
                 "Conversation started: Tuesday, June 16, 2026\n"
                 "Session ID: test-session-id\n"
                 "Model: openai/gpt-5.5\n"
@@ -309,7 +309,7 @@ class TestStoredPromptReuse:
             assert json.loads(db.get_session("test-session-id")["tool_names"])["tools"] == pinned
 
     def test_a_swept_pin_row_is_re_pinned_on_the_next_turn(self, tmp_path):
-        """``hermes sessions recover`` from an older build deleted pin rows it did not know about,
+        """``akramcode sessions recover`` from an older build deleted pin rows it did not know about,
         leaving ``tool_names`` a hash that resolves to itself. The next turn must pin what it sends,
         or every later surface hop re-derives tools[] for the rest of the session."""
         from akramcode_state import SessionDB
@@ -559,7 +559,7 @@ class TestReconstructStaticPrefixMemoization:
 class TestPerResponseSessionWritePath:
     """The write path under an embedding host's per-response session (#96570).
 
-    Hermes Studio group chat pre-creates the SQLite row and pre-persists the
+    AkramCode Studio group chat pre-creates the SQLite row and pre-persists the
     user message BEFORE ``run_conversation()``, then runs one turn under a
     session id it destroys afterwards. The row therefore starts with a null
     system prompt and a non-empty history on its own genuine FIRST turn, which

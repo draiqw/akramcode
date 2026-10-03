@@ -13,7 +13,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-import akram_core.hermes_yaml
+import akram_core.akramcode_yaml
 
 from scripts.releases.job_groups import JOB_GROUPS
 
@@ -32,7 +32,7 @@ _MODE_BY_CACHE = {"write": "release", "read": "commit"}
 
 
 def load(path: Path = WORKFLOW) -> dict:
-    return akram_core.hermes_yaml.safe_load(path.read_text(encoding="utf-8-sig"))
+    return akram_core.akramcode_yaml.safe_load(path.read_text(encoding="utf-8-sig"))
 
 
 def needs_of(job: dict) -> list[str]:

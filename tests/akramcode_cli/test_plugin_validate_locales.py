@@ -1,20 +1,20 @@
-"""``hermes plugins validate`` on language packs: bad keys WARN by name, non-text leaves fail, a
+"""``akramcode plugins validate`` on language packs: bad keys WARN by name, non-text leaves fail, a
 manifest-only pack is loadable, a declared id with no file fails."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from akramcode_cli.plugin_validate import validate_plugin_dir
 
 
 def _pack(root: Path, *, core: dict | None, tui: dict | None = None, declared=("pl",), init: str | None = None) -> Path:
-    plugin = root / "hermes-lang-pl"
+    plugin = root / "akramcode-lang-pl"
     (plugin / "locales").mkdir(parents=True)
     (plugin / "plugin.yaml").write_text(yaml.safe_dump({
-        "name": "hermes-lang-pl", "version": "1.0.0", "description": "Polish pack",
+        "name": "akramcode-lang-pl", "version": "1.0.0", "description": "Polish pack",
         "provides_locales": list(declared),
     }), encoding="utf-8")
     if core is not None:

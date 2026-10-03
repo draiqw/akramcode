@@ -12,13 +12,13 @@ def test_pets_cli_quoted_false_disables_and_toggle_enables(tmp_path, monkeypatch
     bool('false') is True — before the is_truthy_value fix, _has_active_pet
     reported an active pet and /pet toggle DISABLED instead of enabling.
     """
-    import akram_core.hermes_yaml as yaml
+    import akram_core.akramcode_yaml as yaml
 
     from akramcode_cli.pets import _has_active_pet, toggle_pet_display
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     (home / "config.yaml").write_text(
         yaml.safe_dump(
             {"display": {"pet": {"enabled": "false", "slug": "", "scale": 0.33}}}
@@ -37,9 +37,9 @@ def test_pets_cli_quoted_false_disables_and_toggle_enables(tmp_path, monkeypatch
 
 @pytest.fixture
 def empty_home(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     return home
 
 

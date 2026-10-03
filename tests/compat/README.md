@@ -64,7 +64,7 @@ Complete history enumeration is not a complete Python call-graph proof. The
 JSON retains `unresolved_dynamic` rather than silently dropping those edges.
 The reviewed categories are:
 
-- `hermes_constants` reloads: fixed first-party module, present and audited.
+- `akramcode_constants` reloads: fixed first-party module, present and audited.
   Reload execution still depends on the running interpreter and process state.
 - `managed_scope`, `main_dashboard`, and browser module objects: fixed modules
   passed between helpers. The modules exist. Arbitrary attribute dispatch is

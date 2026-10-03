@@ -16,12 +16,12 @@ import agent.billing_usage as bu
 import agent.subscription_view as sv
 import akramcode_cli.nous_billing as nb
 from agent.subscription_view import CurrentSubscription, SubscriptionState, SubscriptionTier
-from cli import HermesCLI
+from cli import AkramCodeCLI
 
 
 @pytest.fixture
 def cli():
-    obj = HermesCLI.__new__(HermesCLI)  # bypass __init__ (no full app needed)
+    obj = AkramCodeCLI.__new__(AkramCodeCLI)  # bypass __init__ (no full app needed)
     obj._app = None  # non-interactive by default; tests flip it on
     return obj
 
@@ -93,7 +93,7 @@ def _capture_opener(monkeypatch, *, opened_ok=False):
         seen["url"] = url
         return opened_ok
 
-    monkeypatch.setattr(HermesCLI, "_open_url_in_browser", _open, raising=False)
+    monkeypatch.setattr(AkramCodeCLI, "_open_url_in_browser", _open, raising=False)
     return seen
 
 
@@ -103,7 +103,7 @@ def test_free_prints_catalog_and_deep_links_with_plan(cli, monkeypatch, capsys):
     cli._app = object()  # interactive
     monkeypatch.setattr(sv, "build_subscription_state", lambda *a, **kw: _free_state())
     # catalog pick → "plus" (single modal; the pick opens the portal directly)
-    monkeypatch.setattr(HermesCLI, "_prompt_text_input_modal", _scripted_modal("plus"), raising=False)
+    monkeypatch.setattr(AkramCodeCLI, "_prompt_text_input_modal", _scripted_modal("plus"), raising=False)
     opened = _capture_opener(monkeypatch)  # returns False → URL also printed
 
     cli._show_subscription()
@@ -179,7 +179,7 @@ def test_upgrade_confirm_names_the_subscription_card(cli, monkeypatch, capsys):
     object.__setattr__(st, "tiers", tiers)
     monkeypatch.setattr(sv, "build_subscription_state", lambda *a, **kw: st)
     # picker → ultra; charge confirm → back out (we only assert the card line)
-    monkeypatch.setattr(HermesCLI, "_prompt_text_input_modal", _scripted_modal("change", "ultra", "cancel"), raising=False)
+    monkeypatch.setattr(AkramCodeCLI, "_prompt_text_input_modal", _scripted_modal("change", "ultra", "cancel"), raising=False)
     monkeypatch.setattr(nb, "post_subscription_preview", lambda **kw: {"effect": "charge_now", "targetTierName": "Ultra", "amountDueNowCents": 4630})
     import agent.billing_view as bv
     from agent.billing_view import BillingState as _BS

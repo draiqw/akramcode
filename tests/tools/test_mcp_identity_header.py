@@ -73,11 +73,11 @@ class TestResolveIdentityHeader:
         ):
             result = _resolve_identity_header("srv", {
                 "identity_header": {
-                    "name": "X-Hermes-Profile",
+                    "name": "X-AkramCode-Profile",
                     "value_from": "profile",
                 },
             })
-        assert result == ("X-Hermes-Profile", "workbot")
+        assert result == ("X-AkramCode-Profile", "workbot")
 
     def test_missing_name_warns_and_returns_none(self, caplog):
         from tools.mcp_tool_errors import _resolve_identity_header

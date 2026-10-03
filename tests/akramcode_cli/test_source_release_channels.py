@@ -47,19 +47,19 @@ def releases(tmp_path, monkeypatch, request):
     git(checkout, "config", "commit.gpgsign", "false")
     git(checkout, "checkout", "--detach", commits[0])
     monkeypatch.setattr(main, "PROJECT_ROOT", checkout)
-    monkeypatch.setenv("HERMES_INSTALL_ROOT", str(checkout))
-    monkeypatch.delenv("HERMES_MANAGED", raising=False)
+    monkeypatch.setenv("AKRAMCODE_INSTALL_ROOT", str(checkout))
+    monkeypatch.delenv("AKRAMCODE_MANAGED", raising=False)
 
     responses = {}
     requests = []
     for channel, tag in tags.items():
         responses[f"/releases/{channel}/index.html"] = (
-            f'<meta name="hermes-build" content="{tag}">'
+            f'<meta name="akramcode-build" content="{tag}">'
         )
-        responses[f"/repos/NousResearch/hermes-agent/releases/tags/{tag}"] = {
+        responses[f"/repos/NousResearch/akramcode-agent/releases/tags/{tag}"] = {
             "tag_name": tag, "draft": False, "prerelease": channel == "canary",
         }
-        responses[f"/repos/NousResearch/hermes-agent/commits/{tag}"] = {
+        responses[f"/repos/NousResearch/akramcode-agent/commits/{tag}"] = {
             "sha": commits[1 if channel == "stable" else 2],
         }
     responses["/releases/stable/release-candidates.json"] = {
@@ -174,15 +174,15 @@ def test_source_check_honors_transient_channel_without_rewriting_record(releases
 
 
 def test_fork_origin_uses_its_own_published_release_not_the_official_pointer(releases):
-    url = "https://github.com/Fixture/hermes-agent.git"
+    url = "https://github.com/Fixture/akramcode-agent.git"
     git(releases.root, "config", "remote.origin.url", url)
     git(releases.root, "config", f"url.{releases.origin}.insteadOf", url)
     tag = releases.tags["stable"]
     git(releases.origin, "tag", "-f", tag, releases.commits[3])
-    releases.responses["/repos/Fixture/hermes-agent/releases/latest"] = {
+    releases.responses["/repos/Fixture/akramcode-agent/releases/latest"] = {
         "tag_name": tag, "draft": False, "prerelease": False,
     }
-    releases.responses[f"/repos/Fixture/hermes-agent/commits/{tag}"] = {"sha": releases.commits[3]}
+    releases.responses[f"/repos/Fixture/akramcode-agent/commits/{tag}"] = {"sha": releases.commits[3]}
     assert resolve_source_release("stable", ["git"], releases.root) == (tag, releases.commits[3])
     assert not any(path.startswith("/releases/") for path in releases.requests)
 
@@ -201,13 +201,13 @@ def test_zip_fallback_keeps_selected_repository_and_commit(releases, monkeypatch
     with pytest.raises(DownloadBoundary):
         update_cmd_zip._update_via_zip(
             SimpleNamespace(branch=None), target_sha=releases.commits[2],
-            target_repository="Fixture/hermes-agent", completion_request={})
-    assert seen == [f"https://github.com/Fixture/hermes-agent/archive/{releases.commits[2]}.zip"]
+            target_repository="Fixture/akramcode-agent", completion_request={})
+    assert seen == [f"https://github.com/Fixture/akramcode-agent/archive/{releases.commits[2]}.zip"]
 
 
 @pytest.mark.parametrize("git_cmd", [["git"], None], ids=["git", "no-git"])
 def test_selected_draft_never_falls_back_to_other_tags(releases, git_cmd):
-    releases.responses[f"/repos/NousResearch/hermes-agent/releases/tags/{releases.tags['stable']}"]["draft"] = True
+    releases.responses[f"/repos/NousResearch/akramcode-agent/releases/tags/{releases.tags['stable']}"]["draft"] = True
     assert resolve_source_release("stable", git_cmd, releases.root) == (None, None)
     assert not any("/tags?" in path for path in releases.requests)
 
@@ -233,9 +233,9 @@ def test_origin_tag_cannot_substitute_a_fork_commit(releases, channel):
 def test_missing_pointers_fall_back_only_to_published_releases(releases, channel):
     releases.responses.pop("/releases/stable/release-candidates.json")
     releases.responses.pop(f"/releases/{channel}/index.html")
-    published = releases.responses[f"/repos/NousResearch/hermes-agent/releases/tags/{releases.tags[channel]}"]
-    releases.responses["/repos/NousResearch/hermes-agent/releases/latest"] = published
-    releases.responses["/repos/NousResearch/hermes-agent/releases?per_page=100&page=1"] = [
+    published = releases.responses[f"/repos/NousResearch/akramcode-agent/releases/tags/{releases.tags[channel]}"]
+    releases.responses["/repos/NousResearch/akramcode-agent/releases/latest"] = published
+    releases.responses["/repos/NousResearch/akramcode-agent/releases?per_page=100&page=1"] = [
         {"tag_name": "v99.0.1+canary.20260912T125822Z", "draft": True, "prerelease": True},
         published,
     ]
@@ -243,4 +243,4 @@ def test_missing_pointers_fall_back_only_to_published_releases(releases, channel
         releases.tags[channel], releases.commits[1 if channel == "stable" else 2],
     )
     assert not any("/tags?" in path for path in releases.requests)
-    assert f"/repos/NousResearch/hermes-agent/releases/tags/{releases.tags[channel]}" not in releases.requests
+    assert f"/repos/NousResearch/akramcode-agent/releases/tags/{releases.tags[channel]}" not in releases.requests

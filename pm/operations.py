@@ -120,8 +120,8 @@ def _environment_root(name: str, root: Path | None) -> Path:
         raise ValueError("environment name must be a simple package name")
     if root is not None:
         return Path(root).absolute()
-    from akramcode_constants import get_hermes_home
-    return get_hermes_home() / "environments" / name
+    from akramcode_constants import get_akramcode_home
+    return get_akramcode_home() / "environments" / name
 
 
 def _python(environment: Path) -> Path:
@@ -198,7 +198,7 @@ def ensure_environment(
 
     def build(generation: Path, base_python: Path) -> Path:
         (generation / "pyproject.toml").write_text(
-            '[project]\nname = "hermes-side-environment"\nversion = "0"\n'
+            '[project]\nname = "akramcode-side-environment"\nversion = "0"\n'
             'requires-python = ">=3.11"\ndependencies = '
             + json.dumps(requirements) + '\n[tool.uv]\npackage = false\n', encoding="utf-8",
         )

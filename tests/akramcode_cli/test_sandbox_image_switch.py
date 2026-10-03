@@ -15,14 +15,14 @@ import os
 import stat
 from pathlib import Path
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    h = tmp_path / ".hermes"
+    h = tmp_path / ".akramcode"
     h.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(h))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(h))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     for var in ("TERMINAL_ENV", "TERMINAL_DOCKER_IMAGE", "TERMINAL_DOCKER_IMAGE_PINNED"):
         monkeypatch.delenv(var, raising=False)
@@ -121,7 +121,7 @@ def test_pending_needs_docker_backend_unpinned_and_a_stale_container(home, tmp_p
     from akramcode_cli import sandbox_image_switch as sw
     from akramcode_cli.config_defaults import DEFAULT_SANDBOX_IMAGE, LEGACY_SANDBOX_IMAGE
 
-    _fake_docker(tmp_path, monkeypatch, f"hermes-abc\t{LEGACY_SANDBOX_IMAGE}\nhermes-def\t{DEFAULT_SANDBOX_IMAGE}\n")
+    _fake_docker(tmp_path, monkeypatch, f"akramcode-abc\t{LEGACY_SANDBOX_IMAGE}\nakramcode-def\t{DEFAULT_SANDBOX_IMAGE}\n")
 
     _write(home, {"backend": "local"})
     assert sw.pending() is None, "local backend has no sandbox to switch"
@@ -132,9 +132,9 @@ def test_pending_needs_docker_backend_unpinned_and_a_stale_container(home, tmp_p
     _write(home, {"backend": "docker"})
     p = sw.pending()
     assert p is not None
-    assert (p.current_image, p.target_image, p.containers) == (LEGACY_SANDBOX_IMAGE, DEFAULT_SANDBOX_IMAGE, ["hermes-abc"])
+    assert (p.current_image, p.target_image, p.containers) == (LEGACY_SANDBOX_IMAGE, DEFAULT_SANDBOX_IMAGE, ["akramcode-abc"])
 
-    _fake_docker(tmp_path, monkeypatch, f"hermes-def\t{DEFAULT_SANDBOX_IMAGE}\n")
+    _fake_docker(tmp_path, monkeypatch, f"akramcode-def\t{DEFAULT_SANDBOX_IMAGE}\n")
     assert sw.pending() is None, "every container already on the target: nothing to ask"
 
 
@@ -142,7 +142,7 @@ def test_decide_pins_and_either_answer_ends_the_offer(home, tmp_path, monkeypatc
     from akramcode_cli import sandbox_image_switch as sw
     from akramcode_cli.config_defaults import DEFAULT_SANDBOX_IMAGE, LEGACY_SANDBOX_IMAGE
 
-    _fake_docker(tmp_path, monkeypatch, f"hermes-abc\t{LEGACY_SANDBOX_IMAGE}\n")
+    _fake_docker(tmp_path, monkeypatch, f"akramcode-abc\t{LEGACY_SANDBOX_IMAGE}\n")
     _write(home, {"backend": "docker"})
     evicted = []
     monkeypatch.setattr("tools.terminal_tool_lifecycle._evict_environment_for_task", lambda task: evicted.append(task))
@@ -173,7 +173,7 @@ def test_interactive_offer_writes_only_on_a_yes_or_no(home, tmp_path, monkeypatc
     from akramcode_cli import sandbox_image_switch as sw
     from akramcode_cli.config_defaults import DEFAULT_SANDBOX_IMAGE, LEGACY_SANDBOX_IMAGE
 
-    _fake_docker(tmp_path, monkeypatch, f"hermes-abc\t{LEGACY_SANDBOX_IMAGE}\n")
+    _fake_docker(tmp_path, monkeypatch, f"akramcode-abc\t{LEGACY_SANDBOX_IMAGE}\n")
     monkeypatch.setattr("tools.terminal_tool_lifecycle._evict_environment_for_task", lambda task: None)
     _write(home, {"backend": "docker"})
     printed = []
@@ -193,7 +193,7 @@ def test_pending_reads_a_bound_terminal_scope_not_the_launch_env(home, tmp_path,
     from akramcode_cli.config_defaults import LEGACY_SANDBOX_IMAGE
     from tools.terminal_scope import reset_terminal_scope, set_terminal_scope
 
-    _fake_docker(tmp_path, monkeypatch, f"hermes-abc\t{LEGACY_SANDBOX_IMAGE}\n")
+    _fake_docker(tmp_path, monkeypatch, f"akramcode-abc\t{LEGACY_SANDBOX_IMAGE}\n")
     _write(home, {"backend": "docker"})
     monkeypatch.setenv("TERMINAL_DOCKER_IMAGE", "ghcr.io/launch-profile/pinned:1")
     assert sw.pending() is None, "launch env pin"

@@ -9,7 +9,7 @@ import pytest
     ("akramcode_cli.main", "serve", ""),
     # current updater entrypoints carry the sentinel local
     ("akramcode_cli.update_cmd", "_cmd_update_impl",
-     "    _hermes_current_updater_frame = True\n"),
+     "    _akramcode_current_updater_frame = True\n"),
 ])
 def test_runtime_lookalikes_do_not_start_updates(module, name, locals_, monkeypatch):
     from akramcode_cli import _old_updater

@@ -9,7 +9,7 @@ from tools import bot_live_delivery as mailbox
 def test_live_delivery_retry_keeps_receipt_across_owner_loss(tmp_path, monkeypatch):
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     source = tmp_path / "custom-home"
-    monkeypatch.setenv("HERMES_HOME", str(source))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(source))
     subprocess_run = Mock(side_effect=AssertionError("live owner must not spawn CLI"))
     monkeypatch.setattr(delivery, "_run_bot_chat_turn", subprocess_run)
     from akramcode_cli.profiles import get_profile_dir
@@ -45,8 +45,8 @@ def test_result_records_pending_until_terminal_receipt(tmp_path, monkeypatch):
     from cron import jobs
     from gateway import config
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.delenv("_HERMES_CRON_EXTERNAL_WORKER", raising=False)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
+    monkeypatch.delenv("_AKRAMCODE_CRON_EXTERNAL_WORKER", raising=False)
     owner = dict(profile_home=str(tmp_path.resolve()), session_id="bot", lease_id="lease",
                  live_session_id="live")
     monkeypatch.setattr(mailbox, "find_canonical_live_owner", lambda home: owner)

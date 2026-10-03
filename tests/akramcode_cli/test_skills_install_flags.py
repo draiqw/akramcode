@@ -1,5 +1,5 @@
 """
-Tests for --yes / --force flag separation in `hermes skills install`.
+Tests for --yes / --force flag separation in `akramcode skills install`.
 
 --yes / -y  → skip_confirm (bypass interactive prompt, needed in TUI mode)
 --force     → force (install despite blocked scan verdict)
@@ -25,7 +25,7 @@ def test_cli_skills_install_yes_sets_skip_confirm(monkeypatch):
     monkeypatch.setattr(
         sys,
         "argv",
-        ["hermes", "skills", "install", "official/email/agentmail", "--yes"],
+        ["akramcode", "skills", "install", "official/email/agentmail", "--yes"],
     )
 
     main()
@@ -49,7 +49,7 @@ def test_cli_skills_install_no_flags(monkeypatch):
     monkeypatch.setattr(
         sys,
         "argv",
-        ["hermes", "skills", "install", "test/skill"],
+        ["akramcode", "skills", "install", "test/skill"],
     )
 
     main()

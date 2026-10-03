@@ -23,12 +23,12 @@ def _worker_board(tmp_path, monkeypatch):
         kb.claim_task(conn, tid)
     task = kb.get_task(conn, own)
     for key, value in {
-        "HERMES_KANBAN_DB": str(db), "HERMES_KANBAN_BOARD": "default",
-        "HERMES_KANBAN_TASK": own, "HERMES_KANBAN_RUN_ID": str(task.current_run_id),
-        "HERMES_KANBAN_CLAIM_LOCK": task.claim_lock, "HOME": str(tmp_path),
+        "AKRAMCODE_KANBAN_DB": str(db), "AKRAMCODE_KANBAN_BOARD": "default",
+        "AKRAMCODE_KANBAN_TASK": own, "AKRAMCODE_KANBAN_RUN_ID": str(task.current_run_id),
+        "AKRAMCODE_KANBAN_CLAIM_LOCK": task.claim_lock, "HOME": str(tmp_path),
     }.items():
         monkeypatch.setenv(key, value)
-    monkeypatch.delenv("HERMES_DELEGATED_CHILD_CONTEXT", raising=False)
+    monkeypatch.delenv("AKRAMCODE_DELEGATED_CHILD_CONTEXT", raising=False)
     return conn, own, foreign
 
 
@@ -42,10 +42,10 @@ def test_terminal_descendants_cannot_mutate_even_after_task_is_removed(tmp_path,
         "from agent.delegation_context import is_dispatcher_owned_worker_context\n"
         f"own, foreign = {own!r}, {foreign!r}\n"
         "out = {'owner': is_dispatcher_owned_worker_context(), 'default': kt._default_task_id(None),"
-        " 'db': os.getenv('HERMES_KANBAN_DB'), 'board': os.getenv('HERMES_KANBAN_BOARD')}\n"
+        " 'db': os.getenv('AKRAMCODE_KANBAN_DB'), 'board': os.getenv('AKRAMCODE_KANBAN_BOARD')}\n"
         "out['show'] = json.loads(kt._handle_show({'task_id':own}))\n"
         "out['tools'] = [json.loads(kt._handle_complete({'task_id': t, 'summary':'must refuse'})) for t in (own,foreign)]\n"
-        "os.environ.pop('HERMES_KANBAN_TASK', None)\n"
+        "os.environ.pop('AKRAMCODE_KANBAN_TASK', None)\n"
         f"p = subprocess.run([sys.executable, '-m', 'akramcode_cli.main', 'kanban', 'complete', foreign, '--result', 'must refuse'], cwd={str(ROOT)!r}, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=45)\n"
         "out['later_cli'] = {'rc': p.returncode, 'out':p.stdout, 'err':p.stderr}\n"
         "print('SCOPE_RESULT=' + json.dumps(out))\n"
@@ -65,7 +65,7 @@ def test_terminal_descendants_cannot_mutate_even_after_task_is_removed(tmp_path,
                _spawn(ShellHookSpec(event="session:start", command=command, timeout=45), "{}")['stdout']]
     child_envs = [
         _build_child_env(rpc_endpoint="fixture", rpc_token="fixture", tmpdir=str(tmp_path), child_python=sys.executable),
-        _build_safe_env({"HERMES_HOME": os.environ["HERMES_HOME"]}),
+        _build_safe_env({"AKRAMCODE_HOME": os.environ["AKRAMCODE_HOME"]}),
     ]
     for env in child_envs:
         proc = subprocess.run([sys.executable, str(script)], env=env, cwd=tmp_path,
@@ -111,7 +111,7 @@ def test_worker_cli_cannot_use_foreign_task_to_drop_run_scope(tmp_path, monkeypa
 
 def test_child_shell_can_write_a_kanban_board_outside_its_lineage_root(tmp_path, monkeypatch):
     """The fence a delegate_task child inherits applies to ITS lineage's board, not to every Kanban
-    DB its shell touches: a repro run against a scratch HERMES_HOME got a silently read-only board
+    DB its shell touches: a repro run against a scratch AKRAMCODE_HOME got a silently read-only board
     (``connect`` opened ``?mode=ro``; ``write_txn`` raised PermissionError). Real ``terminal``
     ingress, real subprocess, real SQLite — the lineage board stays fenced in the same shell."""
     from agent.delegation_context import delegated_child_context
@@ -121,9 +121,9 @@ def test_child_shell_can_write_a_kanban_board_outside_its_lineage_root(tmp_path,
     for home in (lineage_home, scratch_home):
         home.mkdir()
     monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.setenv("HERMES_HOME", str(lineage_home))
-    monkeypatch.delenv("HERMES_DELEGATED_CHILD_CONTEXT", raising=False)
-    for key in ("HERMES_KANBAN_DB", "HERMES_KANBAN_BOARD", "HERMES_KANBAN_TASK", "HERMES_KANBAN_HOME"):
+    monkeypatch.setenv("AKRAMCODE_HOME", str(lineage_home))
+    monkeypatch.delenv("AKRAMCODE_DELEGATED_CHILD_CONTEXT", raising=False)
+    for key in ("AKRAMCODE_KANBAN_DB", "AKRAMCODE_KANBAN_BOARD", "AKRAMCODE_KANBAN_TASK", "AKRAMCODE_KANBAN_HOME"):
         monkeypatch.delenv(key, raising=False)
     connect(kb.kanban_db_path()).close()  # the owner initializes the lineage board
     script = tmp_path / "repro.py"
@@ -132,13 +132,13 @@ def test_child_shell_can_write_a_kanban_board_outside_its_lineage_root(tmp_path,
         f"sys.path.insert(0, {str(ROOT)!r})\n"
         "from akramcode_cli import kanban_db as kb\n"
         "from akramcode_cli.kanban_db_connect import connect\n"
-        "out = {'marker': os.environ.get('HERMES_DELEGATED_CHILD_CONTEXT')}\n"
+        "out = {'marker': os.environ.get('AKRAMCODE_DELEGATED_CHILD_CONTEXT')}\n"
         "try:\n"
         "    conn = connect(kb.kanban_db_path()); kb.create_task(conn, title='lineage'); out['lineage'] = 'WROTE'\n"
         "except PermissionError as exc:\n"
         "    out['lineage'] = 'fenced: ' + str(exc)\n"
-        f"os.environ['HERMES_HOME'] = {str(scratch_home)!r}\n"
-        "import hermes_constants; hermes_constants._default_hermes_root_memo = None\n"
+        f"os.environ['AKRAMCODE_HOME'] = {str(scratch_home)!r}\n"
+        "import akramcode_constants; akramcode_constants._default_akramcode_root_memo = None\n"
         "conn = connect(kb.kanban_db_path()); out['scratch'] = kb.create_task(conn, title='scratch')\n"
         "print('SCOPE_RESULT=' + json.dumps(out))\n"
     )

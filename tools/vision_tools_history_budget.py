@@ -86,7 +86,7 @@ def _image_key(image_url: str) -> str:
 
 def _count_key(image_url: str) -> tuple[str, str]:
     from gateway.session_context import get_session_env
-    return get_session_env("HERMES_SESSION_ID", ""), _image_key(image_url)
+    return get_session_env("AKRAMCODE_SESSION_ID", ""), _image_key(image_url)
 
 
 def repeat_refusal(image_url: str) -> Optional[str]:

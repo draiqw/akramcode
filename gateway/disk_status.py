@@ -46,9 +46,9 @@ def collect_disk_status(home: Optional[Path] = None) -> Dict[str, Any]:
     status: Dict[str, Any] = {"pressure": "unknown", "total_mb": None, "free_mb": None, "used_percent": None}
     try:
         if home is None:
-            from akramcode_constants import get_hermes_home
+            from akramcode_constants import get_akramcode_home
 
-            home = get_hermes_home()
+            home = get_akramcode_home()
         usage = shutil.disk_usage(home)
     except Exception:
         return status

@@ -35,7 +35,7 @@ from agent.turn_failure_copy import (
     provider_label_for, site_copy, stamp_failure,
 )
 from agent.turn_retry_state import TurnRetryState
-from akramcode_constants import display_hermes_home
+from akramcode_constants import display_akramcode_home
 from utils import base_url_host_matches
 
 logger = logging.getLogger("agent.conversation_loop")
@@ -319,7 +319,7 @@ def _print_nous_401_diagnostics(agent: Any, api_error: Exception) -> None:
     """Nous 401 that survived a credential refresh: likely Portal OAuth expired/revoked,
     no credits, or agent key blocked."""
     from agent.conversation_loop import _print_nous_entitlement_guidance
-    from akramcode_constants import display_hermes_home
+    from akramcode_constants import display_akramcode_home
     _body_text = ""
     try:
         _body = getattr(api_error, "body", None) or getattr(api_error, "response", None)
@@ -335,7 +335,7 @@ def _print_nous_401_diagnostics(agent: Any, api_error: Exception) -> None:
         if is_anonymous_agent(agent):
             # The free tier has no credits, no agent key and no auth.json to inspect: its session
             # ended and could not be replaced. The two doors are a sign-in or another provider.
-            _plines(agent, "   Your session ended and Hermes couldn't start a new one.",
+            _plines(agent, "   Your session ended and AkramCode couldn't start a new one.",
                     "   Sign in with a Nous account (it's free), or switch providers with /model.")
             return
     except Exception:
@@ -345,9 +345,9 @@ def _print_nous_401_diagnostics(agent: Any, api_error: Exception) -> None:
     _plines(
         agent,
         "   Troubleshooting:",
-        "     • Re-authenticate: hermes auth add nous",
+        "     • Re-authenticate: akramcode auth add nous",
         "     • Check credits / billing: https://portal.nousresearch.com",
-        f"     • Verify stored credentials: {display_hermes_home()}/auth.json",
+        f"     • Verify stored credentials: {display_akramcode_home()}/auth.json",
         "     • Switch providers temporarily: /model <model> --provider openrouter",
     )
 
@@ -356,7 +356,7 @@ def _print_anthropic_401_diagnostics(agent: Any, key: Any) -> None:
     """Anthropic 401 that survived a credential refresh: show auth method + fixes."""
     from agent.anthropic_credentials import _is_oauth_token
     from agent.azure_identity_adapter import is_token_provider
-    from akramcode_constants import display_hermes_home
+    from akramcode_constants import display_akramcode_home
     _plines(agent, "🔐 Anthropic 401 — authentication failed.")
     if is_token_provider(key):
         # Azure Foundry Entra ID: JWT minted per-request by an httpx hook; 401 = Azure
@@ -364,7 +364,7 @@ def _print_anthropic_401_diagnostics(agent: Any, key: Any) -> None:
         _plines(
             agent,
             "   Auth method: Microsoft Entra ID (httpx event hook)",
-            "   Run `hermes doctor` for credential-chain diagnostics, or",
+            "   Run `akramcode doctor` for credential-chain diagnostics, or",
             "   `az login` if your developer session expired.",
         )
     else:
@@ -374,17 +374,17 @@ def _print_anthropic_401_diagnostics(agent: Any, key: Any) -> None:
             f"   Auth method: {auth_method}",
             f"   Token prefix: {key[:12]}..." if isinstance(key, str) and len(key) > 12 else "   Token: (empty or short)",
         )
-    _dhh = display_hermes_home()
+    _dhh = display_akramcode_home()
     _plines(
         agent,
         "   Troubleshooting:",
-        f"     • Check ANTHROPIC_TOKEN in {_dhh}/.env for Hermes-managed OAuth/setup tokens",
+        f"     • Check ANTHROPIC_TOKEN in {_dhh}/.env for AkramCode-managed OAuth/setup tokens",
         f"     • Check ANTHROPIC_API_KEY in {_dhh}/.env for API keys or legacy token values",
         "     • For API keys: verify at https://platform.claude.com/settings/keys",
-        "     • Hermes login (OAuth): run 'hermes auth add anthropic' to sign in again, then retry",
-        "     • Inspect what Hermes holds: hermes auth list anthropic",
-        "     • Legacy cleanup: hermes config set ANTHROPIC_TOKEN \"\"",
-        "     • Clear stale keys: hermes config set ANTHROPIC_API_KEY \"\"",
+        "     • AkramCode login (OAuth): run 'akramcode auth add anthropic' to sign in again, then retry",
+        "     • Inspect what AkramCode holds: akramcode auth list anthropic",
+        "     • Legacy cleanup: akramcode config set ANTHROPIC_TOKEN \"\"",
+        "     • Clear stale keys: akramcode config set ANTHROPIC_API_KEY \"\"",
     )
 
 
@@ -848,21 +848,21 @@ def _print_nonretryable_auth_guidance(
             _vlines(
                 agent,
                 "   💡 Codex OAuth token was rejected (HTTP 401). Your token may have been",
-                "      refreshed by another client (Codex CLI, VS Code) or another Hermes profile.",
+                "      refreshed by another client (Codex CLI, VS Code) or another AkramCode profile.",
                 f"      Sign this profile in again: `{oauth_relogin_command(provider)}`",
             )
         elif provider == "xai-oauth":
             _vlines(
                 agent,
                 "   💡 xAI OAuth token was rejected (HTTP 401). To fix:",
-                "      re-authenticate with xAI Grok OAuth (SuperGrok / Premium+) from `hermes model`.",
+                "      re-authenticate with xAI Grok OAuth (SuperGrok / Premium+) from `akramcode model`.",
             )
         else:  # nous
             _vlines(
                 agent,
                 "   💡 Nous Portal OAuth token was rejected (HTTP 401). Your token may be",
                 "      expired, revoked, or your account may be out of credits. To fix:",
-                "      1. Re-authenticate: hermes portal",
+                "      1. Re-authenticate: akramcode portal",
                 "      2. Check your portal account: https://portal.nousresearch.com",
             )
             # ``:free`` is OpenRouter slug syntax; Nous Portal will reject the model
@@ -878,7 +878,7 @@ def _print_nonretryable_auth_guidance(
     _vlines(
         agent,
         "   💡 Your API key was rejected by the provider. Check:",
-        "      • Is the key valid? Run: hermes setup",
+        "      • Is the key valid? Run: akramcode setup",
         f"      • Does your account have access to {model}?",
     )
     if base_url_host_matches(str(base_url), "openrouter.ai"):
@@ -1013,7 +1013,7 @@ def nonretryable_client_error_result(
         if _prefix_suggestion:
             _vlines(agent, f"      Did you mean '{_prefix_suggestion}'? It looks like the vendor prefix is missing.")
     elif classified.reason not in _NONRETRYABLE_LABELS:
-        _vlines(agent, f"   💡 Fix: pick another model (/model), or check `{display_hermes_home()}/logs/agent.log`.")
+        _vlines(agent, f"   💡 Fix: pick another model (/model), or check `{display_akramcode_home()}/logs/agent.log`.")
     # A WAF/CDN block (#53099, #70566): the key never reached the provider; the usual cause
     # is the SDK User-Agent, which the per-provider extra_headers override.
     if classified.reason == FailoverReason.upstream_blocked:
@@ -1021,7 +1021,7 @@ def nonretryable_client_error_result(
             agent,
             "   💡 The endpoint's firewall/CDN blocked the request before it reached the model — your key",
             "      and model access are probably fine. Relays often reject the SDK's default User-Agent:",
-            "      set `extra_headers: {User-Agent: HermesAgent/1.0}` on the custom_providers entry,",
+            "      set `extra_headers: {User-Agent: AkramCodeAgent/1.0}` on the custom_providers entry,",
             "      or check the proxy/WAF rules and your network.",
         )
     # Content-policy blocks: the provider refused this prompt, so recovery is a rephrase
@@ -1030,13 +1030,13 @@ def nonretryable_client_error_result(
         _vlines(
             agent,
             f"   💡 {CONTENT_POLICY_NEXT_STEPS}",
-            "      To route future blocks to another provider automatically: hermes fallback add",
+            "      To route future blocks to another provider automatically: akramcode fallback add",
         )
     # TLS certificate failures are environment problems — name the knobs for each cause.
     if classified.reason == FailoverReason.ssl_cert_verification:
         _vlines(
             agent,
-            "   💡 Hermes couldn't verify the provider's security certificate. This fails the same",
+            "   💡 AkramCode couldn't verify the provider's security certificate. This fails the same",
             "      way on every retry — fix the environment, then try again:",
             "      • Corporate TLS-inspecting proxy? Ask your administrator to install",
             "        its root certificate in the operating system trust store.",

@@ -37,7 +37,7 @@ def test_provider_sdk_admission(monkeypatch, tmp_path, extra, state):
     monkeypatch.setattr(pm.client, "sync_venv", sync)
     def construct():
         if extra == "supermemory":
-            return _SupermemoryClient(api_key="k", timeout=5, container_tag="hermes")
+            return _SupermemoryClient(api_key="k", timeout=5, container_tag="akramcode")
         provider = Mem0MemoryProvider()
         provider._mode, provider._api_key = "platform", "k"
         return provider._create_backend()

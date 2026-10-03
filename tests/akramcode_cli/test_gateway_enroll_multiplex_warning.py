@@ -1,6 +1,6 @@
 """Gateway enroll: secondary-multiplex-profile warning for relay routing stamps.
 
-``hermes gateway enroll --connector-url/--wake-url`` persists GATEWAY_RELAY_URL /
+``akramcode gateway enroll --connector-url/--wake-url`` persists GATEWAY_RELAY_URL /
 GATEWAY_RELAY_WAKE_URL into the active profile's .env. Those are process-global
 deployment stamps (agent/secret_scope.py): a multiplexed gateway reads them from
 the process environment only, never from a secondary profile's isolated secret
@@ -21,7 +21,7 @@ from contextlib import redirect_stdout
 
 import pytest
 
-import hermes_constants
+import akramcode_constants
 from akramcode_cli.gateway_enroll import _warn_if_secondary_multiplex_profile
 
 
@@ -30,7 +30,7 @@ def topology(tmp_path, monkeypatch):
     """Standard multiplex layout: default root + one secondary profile."""
     root = tmp_path / "root"
     (root / "profiles" / "alice").mkdir(parents=True)
-    monkeypatch.setattr(hermes_constants, "get_default_hermes_root", lambda: root)
+    monkeypatch.setattr(akramcode_constants, "get_default_akramcode_root", lambda: root)
     monkeypatch.delenv("GATEWAY_MULTIPLEX_PROFILES", raising=False)
     return root
 
@@ -48,7 +48,7 @@ def test_fires_for_secondary_when_default_root_has_multiplex_on(topology, monkey
     (topology / "config.yaml").write_text(
         "gateway:\n  multiplex_profiles: true\n", encoding="utf-8"
     )
-    monkeypatch.setenv("HERMES_HOME", str(topology / "profiles" / "alice"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(topology / "profiles" / "alice"))
 
     fired, _ = _run()
 
@@ -62,7 +62,7 @@ def test_the_retired_opt_out_still_warns_a_secondary(topology, monkeypatch):
     (topology / "config.yaml").write_text(
         "gateway:\n  multiplex_profiles: false\n", encoding="utf-8"
     )
-    monkeypatch.setenv("HERMES_HOME", str(topology / "profiles" / "alice"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(topology / "profiles" / "alice"))
 
     fired, _ = _run()
 
@@ -73,7 +73,7 @@ def test_silent_for_default_profile_even_with_multiplex_on(topology, monkeypatch
     (topology / "config.yaml").write_text(
         "gateway:\n  multiplex_profiles: true\n", encoding="utf-8"
     )
-    monkeypatch.setenv("HERMES_HOME", str(topology))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(topology))
 
     fired, _ = _run()
 
@@ -82,7 +82,7 @@ def test_silent_for_default_profile_even_with_multiplex_on(topology, monkeypatch
 
 def test_env_override_forces_multiplex_on_without_config_flag(topology, monkeypatch):
     (topology / "config.yaml").write_text("{}\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(topology / "profiles" / "alice"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(topology / "profiles" / "alice"))
     monkeypatch.setenv("GATEWAY_MULTIPLEX_PROFILES", "true")
 
     fired, _ = _run()
@@ -95,7 +95,7 @@ def test_the_env_override_is_retired_too(topology, monkeypatch):
     (topology / "config.yaml").write_text(
         "gateway:\n  multiplex_profiles: true\n", encoding="utf-8"
     )
-    monkeypatch.setenv("HERMES_HOME", str(topology / "profiles" / "alice"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(topology / "profiles" / "alice"))
     monkeypatch.setenv("GATEWAY_MULTIPLEX_PROFILES", "false")
 
     fired, _ = _run()
@@ -112,7 +112,7 @@ def test_silent_for_unrelated_dir_named_profiles(topology, tmp_path, monkeypatch
     )
     other = tmp_path / "elsewhere" / "profiles" / "x"
     other.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(other))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(other))
 
     fired, _ = _run()
 

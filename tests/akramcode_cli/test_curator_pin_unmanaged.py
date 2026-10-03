@@ -1,12 +1,12 @@
 """Pin/unpin messaging on unmanaged skills (#92993).
 
-`hermes curator pin <name>` on an unmanaged skill (curation-eligible but no
+`akramcode curator pin <name>` on an unmanaged skill (curation-eligible but no
 `created_by` marker — the pre-marker population `list-unmanaged` shows) used
 to print "will bypass auto-transitions" and exit 0. But `curated_report()`
 only walks marker-carrying skills, so auto-transitions never consider an
 unmanaged skill at all: the pin is recorded yet inert, and the message
 claimed an effect that does not exist. The fix keeps the write (the flag
-becomes meaningful after `hermes curator adopt`) and makes the message say
+becomes meaningful after `akramcode curator adopt`) and makes the message say
 what actually happened.
 """
 

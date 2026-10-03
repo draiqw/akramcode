@@ -3,7 +3,7 @@
 Symptom (user report, July 2026): interrupting an active turn is
 unreliable — the interrupt message is sometimes "vacuumed into the void".
 
-Root cause: ``HermesCLI.chat()`` fires ``agent.interrupt(msg)`` from its
+Root cause: ``AkramCodeCLI.chat()`` fires ``agent.interrupt(msg)`` from its
 monitor loop, but only re-queued the message when the turn RESULT carried
 ``interrupted=True``. Two races defeat that:
 
@@ -33,7 +33,7 @@ from unittest.mock import MagicMock, patch
 
 
 def _make_cli():
-    """Build a HermesCLI with prompt_toolkit stubbed (same pattern as
+    """Build a AkramCodeCLI with prompt_toolkit stubbed (same pattern as
     test_cli_interrupt_drain_regression.py)."""
     _clean_config = {
         "model": {
@@ -45,7 +45,7 @@ def _make_cli():
         "agent": {},
         "terminal": {"env_type": "local"},
     }
-    clean_env = {"LLM_MODEL": "", "HERMES_MAX_ITERATIONS": ""}
+    clean_env = {"LLM_MODEL": "", "AKRAMCODE_MAX_ITERATIONS": ""}
     prompt_toolkit_stubs = {
         "prompt_toolkit": MagicMock(),
         "prompt_toolkit.history": MagicMock(),
@@ -72,7 +72,7 @@ def _make_cli():
         with patch.object(_cli_mod, "get_tool_definitions", return_value=[]), patch.dict(
             _cli_mod.__dict__, {"CLI_CONFIG": _clean_config}
         ):
-            return _cli_mod.HermesCLI()
+            return _cli_mod.AkramCodeCLI()
 
 
 class _StubAgent:
@@ -246,7 +246,7 @@ def test_chat_multimodal_note_persists_clean_input_once(tmp_path, monkeypatch):
     from akramcode_state import SessionDB
     from run_agent import AIAgent
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / ".akramcode"))
     cli = _make_cli()
     session_id = cli.session_id
     db = SessionDB(db_path=tmp_path / "state.db")
@@ -422,7 +422,7 @@ def test_close_waits_for_atomic_cli_staging_before_snapshot(tmp_path, monkeypatc
     from akramcode_state import SessionDB
     from run_agent import AIAgent
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / ".akramcode"))
     cli = _make_cli()
     session_id = cli.session_id
     db = SessionDB(db_path=tmp_path / "state.db")

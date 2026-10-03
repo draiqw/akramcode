@@ -346,11 +346,11 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--out", type=Path)
     parser.add_argument("--tag", default=os.environ.get("RELEASE_TAG"))
-    parser.add_argument("--archive", default=os.environ.get("HERMES_ARCHIVE_TAG"),
+    parser.add_argument("--archive", default=os.environ.get("AKRAMCODE_ARCHIVE_TAG"),
                         help="Attempt ref the release archive is keyed under when the payload tag is plain vX.Y.Z")
     parser.add_argument("--commit", default=os.environ.get("GITHUB_SHA"))
     parser.add_argument("--public-base", default=os.environ.get("CLOUDFLARE_R2_PUBLIC_URL"))
-    parser.add_argument("--release-epoch", type=int, default=os.environ.get("HERMES_RELEASE_EPOCH"))
+    parser.add_argument("--release-epoch", type=int, default=os.environ.get("AKRAMCODE_RELEASE_EPOCH"))
     parser.add_argument("--store-only", action="store_true")
     for name in ("identity", "publisher", "version", "self-uri", "artifact-uri"):
         parser.add_argument(f"--{name}")

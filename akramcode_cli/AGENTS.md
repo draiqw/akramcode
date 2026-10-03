@@ -4,7 +4,7 @@ Applies on top of the root `AGENTS.md`. Long-form: `docs/developer-guide/cli-int
 
 ## CLI architecture
 
-`cli.py` holds `HermesCLI` (REPL loop, config, slash dispatch); behaviour lives in mixins
+`cli.py` holds `AkramCodeCLI` (REPL loop, config, slash dispatch); behaviour lives in mixins
 `akramcode_cli/cli_commands_mixin.py`, `cli_stream_mixin.py`, `cli_status_bar_mixin.py`,
 `cli_billing_mixin.py`, `cli_tui_mixin.py` (widgets, keybindings, panels), `cli_tui_runtime_mixin.py`
 (run-loop phases: input dispatch, startup, signals, shutdown), `cli_init_mixin.py` (the `__init__`
@@ -19,18 +19,18 @@ Moved bodies late-bind cli-level names via `from cli import ...` at call time, s
 handles input + autocomplete; `KawaiiSpinner` (`agent/display.py`) animates API calls and prints
 the `┊` activity feed. `load_cli_config()` in `cli.py` merges CLI defaults + user YAML.
 
-`akramcode_cli/gateway.py` is the `hermes gateway` facade (process discovery, PM-aware systemd unit
+`akramcode_cli/gateway.py` is the `akramcode gateway` facade (process discovery, PM-aware systemd unit
 generation/refresh, command dispatch); topical siblings re-exported by the facade include
 `gateway_launchd.py` (macOS LaunchAgent backend), `gateway_setup_wizard.py`
-(`hermes gateway setup`: `_PLATFORMS` registry, status table, per-platform prompts, service offer),
+(`akramcode gateway setup`: `_PLATFORMS` registry, status table, per-platform prompts, service offer),
 `gateway_windows*.py`, `gateway_supervised_restart.py`, `gateway_migrate*.py`, `gateway_multiplex_*.py`,
 `gateway_enroll.py`, `gateway_command_errors.py`. Sibling bodies read facade names through `_gw()`
 (late binding on `akramcode_cli.gateway`), so monkeypatch on the facade; mutable state such as
 `_resolved_launchd_domain` stays a facade global.
 `process_command()` resolves the canonical name via `resolve_command()` then dispatches through
-`HermesCLI._SLASH_DISPATCH` (`canonical -> (method name, pass_arg)`), falling back to a
+`AkramCodeCLI._SLASH_DISPATCH` (`canonical -> (method name, pass_arg)`), falling back to a
 `_handle_<name>_command` method by naming convention. **There is no `elif` ladder — do not add one.**
-Skill slash commands (`agent/skill_commands.py`) scan `~/.hermes/skills/` and inject as a **user
+Skill slash commands (`agent/skill_commands.py`) scan `~/.akramcode/skills/` and inject as a **user
 message**, never into the system prompt (prompt caching).
 
 Rules: all interactive menu-pickers use curses (`akramcode_cli/curses_ui.py`; example
@@ -83,7 +83,7 @@ archive_after_days, backup.*`.
   `{"description", "prompt", "url", "password": True, "category": provider|tool|messaging|setting}`.
   Non-secret settings go in config.yaml; if internal code needs an env mirror, bridge it in code
   (`gateway_timeout`; `terminal.cwd` → `TERMINAL_CWD`). `MESSAGING_CWD` is removed and `TERMINAL_CWD`
-  in `.env` is deprecated — the loader warns; canonical is `terminal.cwd`. `hermes config
+  in `.env` is deprecated — the loader warns; canonical is `terminal.cwd`. `akramcode config
 set/get/unset <NAME>` route any bare name registered in `OPTIONAL_ENV_VARS` / `_EXTRA_ENV_KEYS`
   (or carrying a `setup_hidden_env` platform suffix) to `.env` via `config_env_routing.py` — the
   file the platform setup flows write — never to the top level of config.yaml.
@@ -97,10 +97,10 @@ set/get/unset <NAME>` route any bare name registered in `OPTIONAL_ENV_VARS` / `_
   (CI lint) rejects it, and `tests/akramcode_cli/test_config_yaml_comment_preservation.py` guards each
   path (#92554). The commented example blocks are appended only when the file is created.
 - **Three loaders — know which you're in:** `load_cli_config()` (CLI, `cli.py`); `load_config()`
-  (`hermes tools/setup`, most subcommands, `akramcode_cli/config.py`, merges `DEFAULT_CONFIG`);
+  (`akramcode tools/setup`, most subcommands, `akramcode_cli/config.py`, merges `DEFAULT_CONFIG`);
   `akramcode_cli/config_effective.py::load_user_config_effective()` (gateway runtime via
-  `gateway/run.py::_load_gateway_config`, TUI gateway `_load_cfg`, cron, `hermes send`, doctor,
-  `akram_core.hermes_time`/`akram_core.hermes_logging`: user file + managed overlay + `${VAR}` expansion + model-key
+  `gateway/run.py::_load_gateway_config`, TUI gateway `_load_cfg`, cron, `akramcode send`, doctor,
+  `akram_core.akramcode_time`/`akram_core.akramcode_logging`: user file + managed overlay + `${VAR}` expansion + model-key
   canon, NO defaults — for presence-sensitive readers). If the CLI sees a key and the gateway
   doesn't (or vice versa), you're on the wrong loader — check `DEFAULT_CONFIG` coverage. Never
   hand-roll raw-read → overlay → expand; `read_user_config_raw` is for write-back round-trips only.
@@ -117,19 +117,19 @@ set/get/unset <NAME>` route any bare name registered in `OPTIONAL_ENV_VARS` / `_
 
 Skins are **pure data** (`SkinConfig`); no code change to add one. `init_skin_from_config()` reads
 `display.skin` at startup; `get_active_skin()` (cached), `set_active_skin(name)` (`/skin`),
-`load_skin(name)` (user `~/.hermes/skins/*.yaml` → built-ins → default; missing values inherit
+`load_skin(name)` (user `~/.akramcode/skins/*.yaml` → built-ins → default; missing values inherit
 from `default`). Built-ins in `_BUILTIN_SKINS`: `default`, `ares`, `mono`, `slate`. Keys: `colors.*`
 (banner border/title/accent/dim/text, response_border), `spinner.*` (waiting/thinking faces,
 thinking_verbs, wings), `tool_prefix`, `tool_emojis`, `branding.*` (agent_name, welcome,
 response_label, prompt_symbol). Consumers: `banner.py`, `display.py`, `cli.py`. Key-by-key table
 and YAML template: `docs/user-guide/features/skins.md`.
 
-## Update pipeline (`hermes update`) — transactional; every stage guards a real field failure
+## Update pipeline (`akramcode update`) — transactional; every stage guards a real field failure
 
 Fleet-update campaign #91277 (Aug 2026). A PR that weakens a stage must answer for the failure class
 it guards. `plan → snapshot → apply → restart-per-kind → verify → report`
 
-- **Plan** (`update_inventory.py`, `hermes update --plan`): read-only inventory — install kind, all
+- **Plan** (`update_inventory.py`, `akramcode update --plan`): read-only inventory — install kind, all
   profiles, every live gateway with supervisor + running code version. Deployment kinds are
   first-class: `git` updates in place; `docker`/`nix`/`apt` are NOT in-place-updatable and the
   updater reports the correct external command instead of fighting the deployment model.
@@ -143,30 +143,30 @@ it guards. `plan → snapshot → apply → restart-per-kind → verify → repo
   (`_should_zip_fallback_on_update_error`, argv-classified; a dependency-install failure must never
   trigger a tree-clobbering re-download), REFUSES a dirty working tree (`-uall` + a pre-swap TOCTOU
   re-check — but classifies a `!!` line by whether the swap would destroy it: an ignored path under a
-  root entry the ZIP does not ship (`.bytecode-fingerprint`, `.hermes-bootstrap-complete`,
-  `hermes_agent.egg-info/`; tracked root entries stand in for the ZIP set before the download, the
+  root entry the ZIP does not ship (`.bytecode-fingerprint`, `.akramcode-bootstrap-complete`,
+  `akramcode_agent.egg-info/`; tracked root entries stand in for the ZIP set before the download, the
   re-check gets the real one), a nested `__pycache__`/`node_modules`, or a `_ZIP_PRESERVED_NESTED`
   output is admitted; other ignored files under shipped dirs still block), and grafts the live nested
   build outputs (`_ZIP_PRESERVED_NESTED`: `apps/desktop/{release,dist,node_modules,build}`,
-  `akramcode_cli/web_dist`, `ui-tui/{dist,node_modules,packages/hermes-ink/dist}`, `web/node_modules`,
+  `akramcode_cli/web_dist`, `ui-tui/{dist,node_modules,packages/akramcode-ink/dist}`, `web/node_modules`,
   `scripts/whatsapp-bridge/node_modules`) into the staged swap by hardlink (the GitHub source ZIP has
   none of them; without the graft the swap deletes them). Post-swap, the Desktop
-  rebuild decision also trusts the build stamp under HERMES_HOME, so an install that already lost
+  rebuild decision also trusts the build stamp under AKRAMCODE_HOME, so an install that already lost
   its artifacts in an earlier update is rebuilt instead of "forgotten" (#90495).
 - **Restart-per-kind**: systemd and launchd restarts are FLEET-WIDE within the updating install (every
-  `hermes-gateway*` unit / `ai.hermes.gateway*` LaunchAgent whose home is the updating root or one of its
+  `akramcode-gateway*` unit / `ai.akramcode.gateway*` LaunchAgent whose home is the updating root or one of its
   `profiles/<name>`), drain-first (SIGUSR1), with per-unit/per-label failure isolation. Restarting only the
   invoking profile's service leaves siblings on stale `sys.modules` until they crash — the largest dupe-PR
   cluster in the repo's history came from that bug. The fleet is bounded by HOME, not by namespace:
   `akramcode_cli/update_fleet_scope.py` judges every unit/label/process by the home it actually runs on
-  (live environ, unit `Environment=`, plist `HERMES_HOME`), and a runtime of another `HERMES_HOME` on the
-  same account — a sibling install, the real `hermes-gateway.service` seen from a scratch home — is named and
+  (live environ, unit `Environment=`, plist `AKRAMCODE_HOME`), and a runtime of another `AKRAMCODE_HOME` on the
+  same account — a sibling install, the real `akramcode-gateway.service` seen from a scratch home — is named and
   left alone, never restarted (#93349).
 - **Verify**: gateways stamp `code_sha`/`code_version` into `gateway_state.json` on every
   runtime-status write (`gateway/status.py`); the updater compares each live gateway against the
   fresh checkout and prints a fleet version matrix. A provably-stale gateway fails the update
   (exit 1) — automation must never treat a mixed-version fleet as healthy.
-- **Report**: every run writes a machine-readable receipt to `~/.hermes/logs/update_receipts/`
+- **Report**: every run writes a machine-readable receipt to `~/.akramcode/logs/update_receipts/`
   (`latest.json` pointer; steps, skips WITH reasons, restart outcome, plan, fleet snapshot).
   Before a source swap, the parent captures plan/snapshots/receipt and its Windows pause token.
   `update_completion.py` runs new-code PM preparation with site initialization disabled, then
@@ -192,10 +192,10 @@ matchers; parser-derived flag sets; never blanket-exclude gateway ancestors, #87
 
 ## Profiles (multi-instance)
 
-`_apply_profile_override()` in `akramcode_cli/main.py` sets `HERMES_HOME` before any module import for
-single-profile commands (`hermes -p x <cmd>`), so there `get_hermes_home()` scopes to the active
+`_apply_profile_override()` in `akramcode_cli/main.py` sets `AKRAMCODE_HOME` before any module import for
+single-profile commands (`akramcode -p x <cmd>`), so there `get_akramcode_home()` scopes to the active
 profile. The multiplex gateway and the Desktop/dashboard `serve` backend instead bind the active
-profile per activity via a contextvar override while `os.environ["HERMES_HOME"]` keeps the launch
+profile per activity via a contextvar override while `os.environ["AKRAMCODE_HOME"]` keeps the launch
 profile — a module constant or import-time read there freezes to the launch profile (rules in
 root). Profiles are independent
 islands by design — no live config inheritance; `--clone` copies at creation, minus messaging
@@ -208,7 +208,7 @@ and TUI all go through it). Clones are built in `profiles/.<name>.staging-<pid>`
 symlinked `.env`/`config.yaml` are materialized first so a clone never writes through to its source. Multiplex
 (`gateway.multiplex_profiles`) secret-scope rules: `gateway/AGENTS.md`. The served set is
 `profiles.py::profiles_to_serve(multiplex=True)` = default + every live dir under `profiles/` — live =
-carries an identity marker (`hermes_constants.named_profile_has_identity`: `config.yaml`/`.env`/`SOUL.md`/
+carries an identity marker (`akramcode_constants.named_profile_has_identity`: `config.yaml`/`.env`/`SOUL.md`/
 `profile.yaml`/`auth.json`/`state.db`) and is not tombstoned. A marker-less dir (cron/log side-effect
 shell, stray infrastructure dir) is never listed, served, ticked, `.env`-backfilled or resolvable via `-p`
 (#95188, #99392); `profile create` replaces it only when it is also tombstoned (a live marker-less dir may hold user
@@ -216,16 +216,16 @@ files — fail closed, never rmtree). A dangling symlinked marker still counts a
 `tools/bot_mode_probe._roster` (Bot Mode teammate roster, `bot_relay.deliver` target check) applies the same
 predicate. There is no allowlist (`gateway.multiplex_profile_allowlist` was retired in config v43).
 Enumeration is a pure read: never `mkdir` a profile home from a served path (`SessionDB`, logging,
-cron all go through `mkdir_under_hermes_home` / `_ensure_cron_dir`, which refuse a deleted or
+cron all go through `mkdir_under_akramcode_home` / `_ensure_cron_dir`, which refuse a deleted or
 missing named profile, #94590). Process-global per-profile slots (MCP discovery in `mcp_startup.py`,
-tool registry overlays) key on `hermes_constants.hermes_home_key()`, never a single flag.
+tool registry overlays) key on `akramcode_constants.akramcode_home_key()`, never a single flag.
 `gateway.multiplex_profiles` defaults to **on**, but `GatewayConfig` keeps an unset flag `None` and
 `gateway_multiplex_mode.resolve_multiplex_mode` settles it once per boot (called from
 `load_gateway_config_for_runner`): default profile, >= 2 profiles, no standalone secondary gateway,
 no preflight blocker, migratable host → `True`; else `False` + a logged reason. Explicit values pass
 through. CLI/dashboard readers use `default_gateway_multiplexes` (live `served_profiles` record, then
 the explicit flag) — never the merged default, which would guess a verdict only the gateway makes.
-Migration from per-profile gateways: `akramcode_cli/gateway_migrate.py` (`hermes gateway migrate
+Migration from per-profile gateways: `akramcode_cli/gateway_migrate.py` (`akramcode gateway migrate
 --multiplex`, the only mode — `--standalone` is deleted and a per-profile fleet is not a supported
 target; table-driven `_PREFLIGHT_CHECKS`; manifest `<default>/gateway_migration.json` = UNFINISHED,
 a re-run resumes from it; a named profile's `gateway install|start|run` refuse without `--force` via
@@ -233,11 +233,11 @@ a re-run resumes from it; a named profile's `gateway install|start|run` refuse w
 `web_server_gateway.py::multiplexed_profile_refusal`);
 `update_cmd_fleet._verify_fleet_after_update` calls `maybe_auto_migrate_after_update` on the success
 path only; `gateway_migrate_guards.py` holds the auto-path-only refusals (table `_AUTO_MIGRATION_GUARDS`:
-other service domain / UNIX user / HERMES_HOME outside `profiles/` — notices for the explicit command,
+other service domain / UNIX user / AKRAMCODE_HOME outside `profiles/` — notices for the explicit command,
 blockers for the hook) and the `gateway.auto_multiplex_migration` opt-out (#109954). Blockers reuse `GatewayRunner._adapter_credential_fingerprint` and `platform_binds_port`;
 "has a `/p/<profile>/` ingress" is the adapter class attribute `serves_profile_prefix` — set it on a
 new HTTP-inbound adapter when it answers the prefix, never extend a list here.
-`hermes gateway restart` for a gateway Hermes did not install (custom launchd agent / unit running
+`akramcode gateway restart` for a gateway AkramCode did not install (custom launchd agent / unit running
 `gateway run --external-supervisor`): `gateway_supervised_restart.py` — the gateway's SELF-declared
 supervisor (control-socket `identify` answering anything but `manual`, OR the argv marker) decides; hand back via SIGUSR1 and wait
 for a fresh supervised PID, never stop + foreground `run_gateway` (that stamps the CLI's PID and wedges
@@ -249,7 +249,7 @@ never a dir-owner fallback), `gateway_launchd.py::generate_launchd_plist` (`gui/
 `~/Library/LaunchAgents` glob; the whole launchd backend — plist refresh, `launchctl` bootstrap/kickstart,
 `launchd_start/stop/restart/status`, detached-process degrade — lives in that sibling, with the domain cache
 `_resolved_launchd_domain` staying a facade global), Windows Scheduled Task and the Desktop-spawned backend all carry the
-profile's `HERMES_HOME` (and `HOME` for the service user) explicitly — a supervisor starts with an
+profile's `AKRAMCODE_HOME` (and `HOME` for the service user) explicitly — a supervisor starts with an
 empty environment, so the env override that makes `-p` work interactively does not exist there. A
 change to install/restart/status regenerates and diffs every kind; both user and system units are
 recorded when both exist. Process liveness is `(pid, start_time)` or the canonical matchers
@@ -273,13 +273,13 @@ The sign-in itself is one composition: `anon_auth.run_sign_in()` yields `SignInS
 across both waits, persists only after a completed promotion **and** a token grant, runs
 `settle_after_upgrade` exactly once per completion, and never lets a persist or settle failure
 escape as an exception — it becomes `Failed`. Every state carries its own `.copy` (the chat form,
-which never contains a raw exception, a URL or a `hermes` verb) and `.copy_terminal`, so no caller
+which never contains a raw exception, a URL or a `akramcode` verb) and `.copy_terminal`, so no caller
 maps a reason to a string. `cancelled()` stops an attempt; `cancel_wins_after_promotion` decides
 what happens when the server had already completed the transfer — the desktop keeps `True` (a
 DELETE means "not on this machine"), the gateway passes `False` (a supersede must not discard a
 transfer the user actually approved). `scope` is entered only around the precondition and persist
 blocks, never across a `yield` or a network wait, because `run_in_executor` does not carry
-contextvars. `upgrade_guest` (`hermes auth upgrade`), the CLI `/login` handler and the desktop
+contextvars. `upgrade_guest` (`akramcode auth upgrade`), the CLI `/login` handler and the desktop
 promotion poller are renderers over it; a surface that needs the cancel check and the save to be
 atomic passes `persist_guard`. The desktop's plain "connect another Nous account" device-code login
 is a separate path (`_nous_plain_poller`) and must stay one.

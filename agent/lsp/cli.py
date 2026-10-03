@@ -1,4 +1,4 @@
-"""``hermes lsp`` CLI subcommand: status / list / install / install-all / restart / which.
+"""``akramcode lsp`` CLI subcommand: status / list / install / install-all / restart / which.
 
 Handlers live here (not in ``akramcode_cli/main.py``) so the LSP module ships self-contained.
 """
@@ -29,7 +29,7 @@ _COMMANDS = {name: handler for name, _, _, handler in _SUBCOMMANDS}
 
 
 def register_subparser(subparsers: argparse._SubParsersAction) -> None:
-    """Wire the ``hermes lsp`` subcommand tree into the main argparse."""
+    """Wire the ``akramcode lsp`` subcommand tree into the main argparse."""
     parser = subparsers.add_parser(
         "lsp",
         help="Language Server Protocol management",
@@ -44,7 +44,7 @@ def register_subparser(subparsers: argparse._SubParsersAction) -> None:
 
 
 def run_lsp_command(args: argparse.Namespace) -> int:
-    """Top-level dispatcher for ``hermes lsp <subcommand>``."""
+    """Top-level dispatcher for ``akramcode lsp <subcommand>``."""
     sub = getattr(args, "lsp_command", None) or "status"
     try:
         handler = _COMMANDS.get(sub)

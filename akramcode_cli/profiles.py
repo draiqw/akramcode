@@ -1,4 +1,4 @@
-"""Profile management for multiple isolated Hermes instances."""
+"""Profile management for multiple isolated AkramCode instances."""
 
 import contextlib
 import json
@@ -54,7 +54,7 @@ _CLONE_ALL_STRIP: list[str] = [
 ]
 
 # Infrastructure excluded from --clone-all ONLY when the source is the default profile
-# (``~/.hermes``): git checkout (+ ~3 GB venv), worktrees, sibling profiles, shared bins,
+# (``~/.akramcode``): git checkout (+ ~3 GB venv), worktrees, sibling profiles, shared bins,
 # npm packages, and the managed local-models trees — GGUF weights (tens of GB), the
 # llama.cpp runtime binaries and the managed Node install, all re-downloadable on demand
 # and resolved from the default root only. Named profiles never hold these at root, so the
@@ -63,19 +63,19 @@ _CLONE_ALL_STRIP: list[str] = [
 # a clone must run. The runtime trio is ``LOCAL_RUNTIME_ROOT_DIRS``, shared with
 # ``akramcode_cli.backup._EXCLUDED_ROOT_DIRS`` so the two lists cannot drift.
 _CLONE_ALL_DEFAULT_EXCLUDE_ROOT: frozenset[str] =  frozenset({
-    "hermes-agent",
+    "akramcode-agent",
     ".worktrees",
     "profiles",
     "bin",
     "node_modules",
     # Managed runtime trees — install artifacts, never profile state
     # (install/profile bucket split; see test_install_bucket_separation).
-    ".hermes-runtime",
+    ".akramcode-runtime",
     "node",
 }) | LOCAL_RUNTIME_ROOT_DIRS
 
 # Per-profile history excluded from --clone-all for ANY source: SQLite session store
-# (+wal/shm, can reach many GB), session dirs, `hermes backup` archives, quick-backup
+# (+wal/shm, can reach many GB), session dirs, `akramcode backup` archives, quick-backup
 # snapshots, checkpoints. Inheriting them is never useful (restoring one inside the
 # clone would resurrect the SOURCE profile's state) and can balloon the copy by tens of GB.
 # ``cron`` is scheduled work bound to the source profile and its origin channel: a clone
@@ -86,8 +86,8 @@ _CLONE_ALL_HISTORY_EXCLUDE_ROOT: frozenset[str] = frozenset({
     "cron",
 })
 
-# Marker written by `hermes profile create --no-skills`. When present at a profile root,
-# seed_profile_skills() callers (fresh-create, `hermes update` all-profile sync, the
+# Marker written by `akramcode profile create --no-skills`. When present at a profile root,
+# seed_profile_skills() callers (fresh-create, `akramcode update` all-profile sync, the
 # dashboard) skip bundled-skill seeding. Delete the file to opt back in.
 NO_BUNDLED_SKILLS_MARKER = ".no-bundled-skills"
 
@@ -98,7 +98,7 @@ PROFILE_ROLES = frozenset({SETUP_ROLE})
 
 # Header seeded into a profile's empty .env so it owns a credentials file from day one.
 _PLACEHOLDER_ENV = (
-    "# Per-profile secrets for this Hermes profile.\n"
+    "# Per-profile secrets for this AkramCode profile.\n"
     "# API keys and tokens set here override the shell environment.\n"
     "# Behavioral settings belong in config.yaml, not here.\n"
 )
@@ -130,7 +130,7 @@ def _clone_all_copytree_ignore(source_dir: Path):
     only when the source is the default profile (see the two exclude sets above)."""
     source_resolved = source_dir.resolve()
     root_exclude = set(_CLONE_ALL_HISTORY_EXCLUDE_ROOT)
-    if source_resolved == _get_default_hermes_home().resolve():
+    if source_resolved == _get_default_akramcode_home().resolve():
         root_exclude |= _CLONE_ALL_DEFAULT_EXCLUDE_ROOT
 
     def _ignore(directory: str, names: List[str]) -> set:
@@ -148,7 +148,7 @@ def _clone_all_copytree_ignore(source_dir: Path):
     return _ignore
 
 
-# Directories/files to exclude when exporting the default (~/.hermes) profile.
+# Directories/files to exclude when exporting the default (~/.akramcode) profile.
 # The default profile contains infrastructure (repo checkout, worktrees, DBs,
 # caches, binaries) that named profiles don't have.  We exclude those so the
 # export is a portable, reasonable-size archive of actual profile data.
@@ -159,12 +159,12 @@ def _clone_all_copytree_ignore(source_dir: Path):
 # artifacts here — not in a downstream copy.
 _DEFAULT_EXPORT_EXCLUDE_ROOT = DEFAULT_EXPORT_EXCLUDE_ROOT = frozenset({
     # Infrastructure
-    "hermes-agent",         # repo checkout (multi-GB)
+    "akramcode-agent",         # repo checkout (multi-GB)
     ".worktrees",           # git worktrees
     "profiles",             # other profiles — never recursive-export
     "bin",                  # installed binaries (tirith, etc.)
     "node_modules",         # npm packages
-    ".hermes-runtime",      # managed runtime tree (install artifact)
+    ".akramcode-runtime",      # managed runtime tree (install artifact)
     "node",                 # legacy pre-split managed Node tree
     # Databases & runtime state
     "state.db", "state.db-shm", "state.db-wal",
@@ -175,7 +175,7 @@ _DEFAULT_EXPORT_EXCLUDE_ROOT = DEFAULT_EXPORT_EXCLUDE_ROOT = frozenset({
     ".env",                 # API keys (dotenv)
     "auth.lock", "active_profile", ".update_check", "source-checks",
     "errors.log",
-    ".hermes_history",
+    ".akramcode_history",
     # Caches (regenerated on use)
     "image_cache", "audio_cache", "document_cache",
     "browser_screenshots", "checkpoints",
@@ -183,11 +183,11 @@ _DEFAULT_EXPORT_EXCLUDE_ROOT = DEFAULT_EXPORT_EXCLUDE_ROOT = frozenset({
     "logs",                 # gateway logs
 }) | PM_RUNTIME_ROOT_DIRS
 
-# Allow-list for ``export_profile("default")``: when HERMES_HOME equals the
+# Allow-list for ``export_profile("default")``: when AKRAMCODE_HOME equals the
 # cwd (Docker/custom deployments), the default profile home is the working
 # directory and contains arbitrary user files that should NOT be bundled
-# into the export. The set below identifies the *known Hermes profile
-# artifacts* at the root of HERMES_HOME; everything else is excluded.
+# into the export. The set below identifies the *known AkramCode profile
+# artifacts* at the root of AKRAMCODE_HOME; everything else is excluded.
 # Sensitive runtime infrastructure (``state.db``, ``logs/``, ``auth.*``,
 # other profiles) is intentionally *not* in this list so the export stays
 # a portable, credential-free snapshot of the user-facing surface
@@ -205,10 +205,10 @@ _DEFAULT_EXPORT_INCLUDE_ROOT = frozenset({
 })
 
 # Names that cannot be used as profile aliases
-_RESERVED_NAMES = frozenset({"hermes", "default", "test", "tmp", "root", "sudo"})
+_RESERVED_NAMES = frozenset({"akramcode", "default", "test", "tmp", "root", "sudo"})
 
-# Hermes subcommands that cannot be used as profile names/aliases
-_HERMES_SUBCOMMANDS = frozenset({
+# AkramCode subcommands that cannot be used as profile names/aliases
+_AKRAMCODE_SUBCOMMANDS = frozenset({
     "chat", "model", "gateway", "setup", "whatsapp", "login", "logout",
     "status", "cron", "doctor", "dump", "config", "pairing", "skills", "tools",
     "mcp", "sessions", "insights", "version", "update", "uninstall", "profile", "plugins", "honcho", "acp",
@@ -218,20 +218,20 @@ _HERMES_SUBCOMMANDS = frozenset({
 # Path helpers
 
 def _get_profiles_root() -> Path:
-    """Named-profiles root, anchored to the hermes root (NOT the current HERMES_HOME, which
+    """Named-profiles root, anchored to the akramcode root (NOT the current AKRAMCODE_HOME, which
     may itself be a profile) so ``coder profile list`` sees all profiles."""
-    return _get_default_hermes_home() / "profiles"
+    return _get_default_akramcode_home() / "profiles"
 
 
-def _get_default_hermes_home() -> Path:
-    """Default (pre-profile) HERMES_HOME: ``~/.hermes``, or HERMES_HOME itself in
+def _get_default_akramcode_home() -> Path:
+    """Default (pre-profile) AKRAMCODE_HOME: ``~/.akramcode``, or AKRAMCODE_HOME itself in
     Docker/custom deployments (e.g. ``/opt/data``)."""
-    from akramcode_constants import get_default_hermes_root
-    return get_default_hermes_root()
+    from akramcode_constants import get_default_akramcode_root
+    return get_default_akramcode_root()
 
 
 def _get_active_profile_path() -> Path:
-    return _get_default_hermes_home() / "active_profile"
+    return _get_default_akramcode_home() / "active_profile"
 
 
 def _get_wrapper_dir() -> Path:
@@ -244,26 +244,26 @@ def _wrapper_path(alias: str) -> Path:
 
 
 def _is_our_wrapper(path: Path) -> bool:
-    """True when *path* reads as a Hermes-generated wrapper (contains ``hermes -p``)."""
+    """True when *path* reads as a AkramCode-generated wrapper (contains ``akramcode -p``)."""
     try:
-        return "hermes -p" in path.read_text(encoding="utf-8-sig")
+        return "akramcode -p" in path.read_text(encoding="utf-8-sig")
     except Exception:
         return False
 
 
 def _missing_profile_error(canon: str) -> FileNotFoundError:
-    return FileNotFoundError(f"Profile '{canon}' does not exist. Create it with: hermes profile create {canon}")
+    return FileNotFoundError(f"Profile '{canon}' does not exist. Create it with: akramcode profile create {canon}")
 
 
 def _unknown_profile_error(canon: str) -> FileNotFoundError:
     """For delete/rename/export of a name that matches no profile (likely a typo)."""
-    return FileNotFoundError(f"No profile named '{canon}'. See your profiles with: hermes profile list")
+    return FileNotFoundError(f"No profile named '{canon}'. See your profiles with: akramcode profile list")
 
 
 def _profile_exists_error(canon: str) -> FileExistsError:
     return FileExistsError(
-        f"A profile named '{canon}' already exists. Switch to it with `hermes profile use {canon}`, "
-        "see all profiles with `hermes profile list`, or choose a different name."
+        f"A profile named '{canon}' already exists. Switch to it with `akramcode profile use {canon}`, "
+        "see all profiles with `akramcode profile list`, or choose a different name."
     )
 
 
@@ -283,7 +283,7 @@ def _invalid_profile_name_error(name: str) -> ValueError:
     suggestion = _suggest_profile_name(name)
     return ValueError(
         f"{name!r} is not a valid profile name. {_PROFILE_NAME_RULE} (for example: {suggestion}). "
-        f"Then run `hermes profile create {suggestion}`."
+        f"Then run `akramcode profile create {suggestion}`."
     )
 
 
@@ -326,13 +326,13 @@ def validate_profile_name(name: str) -> None:
     directory name must look like, while ingress-point normalization handles UX flexibility (see #18498).
     """
     if name == "default":
-        return  # special alias for ~/.hermes
+        return  # special alias for ~/.akramcode
     if not _PROFILE_ID_RE.match(name):
         raise _invalid_profile_name_error(name)
     if name in _RESERVED_NAMES:
         raise ValueError(
             f"Profile name {name!r} is reserved — it collides with either "
-            f"the Hermes installation itself or a common system binary.  "
+            f"the AkramCode installation itself or a common system binary.  "
             f"Pick a different name."
         )
 
@@ -361,15 +361,15 @@ def _existing_profile_dir(name: str) -> Tuple[str, Path]:
 
 
 def get_profile_dir(name: str) -> Path:
-    """Resolve a profile name to its HERMES_HOME directory."""
+    """Resolve a profile name to its AKRAMCODE_HOME directory."""
     canon = normalize_profile_name(name)
     if canon == "default":
-        return _get_default_hermes_home()
+        return _get_default_akramcode_home()
     # The name becomes a path component under profiles/; refuse anything that
     # is not a valid profile id so every caller (WS params, /p/<profile>/
     # prefixes, tool args) fails closed instead of escaping the root. The
     # regex only, not _RESERVED_NAMES: a pre-reserved-list dir like
-    # profiles/hermes may still exist and must keep resolving.
+    # profiles/akramcode may still exist and must keep resolving.
     if not _PROFILE_ID_RE.match(canon):
         raise _invalid_profile_name_error(canon)
     return _get_profiles_root() / canon
@@ -396,8 +396,8 @@ def profile_matches_home(name: str, home: "Path | None" = None) -> bool:
     try:
         target = get_profile_dir(name)
         if home is None:
-            from akramcode_constants import get_hermes_home
-            home = get_hermes_home()
+            from akramcode_constants import get_akramcode_home
+            home = get_akramcode_home()
         return Path(target).expanduser().resolve(strict=False) == Path(home).expanduser().resolve(strict=False)
     except Exception:
         return False
@@ -409,7 +409,7 @@ def _iter_named_profile_dirs(*, live_only: bool = True) -> List[Path]:
     A dir is a profile only when it carries an identity marker (``named_profile_has_identity``):
     cron/logging side-effects and pre-tombstone ghost shells leave marker-less dirs that must
     not be listed, served, ticked, or ``.env``-seeded — that seeding is what turned a ghost
-    shell into a "real" profile on the next ``hermes update`` (#95188, #94823, #99392)."""
+    shell into a "real" profile on the next ``akramcode update`` (#95188, #94823, #99392)."""
     profiles_root = _get_profiles_root()
     if not profiles_root.is_dir():
         return []
@@ -445,8 +445,8 @@ def check_alias_collision(name: str) -> Optional[str]:
         return str(exc)
     if canon in _RESERVED_NAMES:
         return f"'{canon}' is a reserved name"
-    if canon in _HERMES_SUBCOMMANDS:
-        return f"'{canon}' conflicts with a hermes subcommand"
+    if canon in _AKRAMCODE_SUBCOMMANDS:
+        return f"'{canon}' conflicts with a akramcode subcommand"
     try:
         result = subprocess.run(
             ["where" if sys.platform == "win32" else "which", canon],
@@ -482,10 +482,10 @@ def create_wrapper_script(name: str, target: Optional[str] = None) -> Optional[P
     wrapper_path = _wrapper_path(canon)
     try:
         if sys.platform == "win32":
-            wrapper_path.write_text(f"@echo off\r\nhermes -p {profile} %*\r\n", encoding="utf-8")
+            wrapper_path.write_text(f"@echo off\r\nakramcode -p {profile} %*\r\n", encoding="utf-8")
         else:
-            hermes_exe = shutil.which("hermes") or "hermes"
-            wrapper_path.write_text(f'#!/bin/sh\nexec {shlex.quote(hermes_exe)} -p {profile} "$@"\n', encoding="utf-8")
+            akramcode_exe = shutil.which("akramcode") or "akramcode"
+            wrapper_path.write_text(f'#!/bin/sh\nexec {shlex.quote(akramcode_exe)} -p {profile} "$@"\n', encoding="utf-8")
             wrapper_path.chmod(wrapper_path.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
         return wrapper_path
     except OSError as e:
@@ -519,18 +519,18 @@ def _migrate_profile_config_if_outdated(profile_dir: Path) -> None:
     profile); otherwise the first desktop/doctor view shows a scary ``v0 -> latest`` warning."""
     if not (profile_dir / "config.yaml").exists():
         return
-    # Creation must not fail over an unmigratable old config; `hermes doctor --fix` surfaces
+    # Creation must not fail over an unmigratable old config; `akramcode doctor --fix` surfaces
     # the detailed error in the target profile.
     with contextlib.suppress(Exception):
-        from akramcode_constants import reset_hermes_home_override, set_hermes_home_override
+        from akramcode_constants import reset_akramcode_home_override, set_akramcode_home_override
         from akramcode_cli.config import check_config_version, migrate_config
-        token = set_hermes_home_override(str(profile_dir))
+        token = set_akramcode_home_override(str(profile_dir))
         try:
             current_ver, latest_ver = check_config_version()
             if current_ver < latest_ver:
                 migrate_config(interactive=False, quiet=True)
         finally:
-            reset_hermes_home_override(token)
+            reset_akramcode_home_override(token)
 
 
 def find_alias_for_profile(profile_name: str) -> Optional[str]:
@@ -541,7 +541,7 @@ def find_alias_for_profile(profile_name: str) -> Optional[str]:
 
 
 # Cap on how much of a wrapper file is read when reverse-looking-up its profile. Real
-# wrappers are a few hundred bytes with the ``hermes -p X`` needle near the top; the wrapper
+# wrappers are a few hundred bytes with the ``akramcode -p X`` needle near the top; the wrapper
 # dir commonly also holds large binaries (ffmpeg, node, …) whose whole-file reads, N times,
 # dominated ``list_profiles`` (~4.5s).
 _WRAPPER_READ_LIMIT = 8192
@@ -558,7 +558,7 @@ def build_alias_map() -> dict[str, str]:
     if not wrapper_dir.is_dir():
         return result
     is_windows = sys.platform == "win32"
-    prefix = "hermes -p "
+    prefix = "akramcode -p "
     for entry in sorted(wrapper_dir.iterdir()):
         if not entry.is_file():
             continue
@@ -618,10 +618,10 @@ class ProfileInfo:
     description_auto: bool = False
     # Presentation-only display name; resolution/comparison/spawn always use ``name``.
     display_name: str = ""
-    # Bot Mode title (``profile.yaml`` ``ui_meta['hermes-bots'].title``) — the name
+    # Bot Mode title (``profile.yaml`` ``ui_meta['akramcode-bots'].title``) — the name
     # the Bots roster shows. Presentation-only, like ``display_name``.
     bot_title: str = ""
-    # Canonical ids this profile was previously known by (``hermes profile rename``
+    # Canonical ids this profile was previously known by (``akramcode profile rename``
     # appends here). Lets Bot Mode group chats re-link persisted member
     # descriptors to the renamed live profile (#110200).
     previous_names: List[str] = field(default_factory=list)
@@ -733,17 +733,17 @@ def _seed_model_config(profile_dir: Path) -> None:
     config_path = profile_dir / "config.yaml"
     if config_path.exists():
         return
-    with contextlib.suppress(Exception):  # creation must not fail over this; `hermes model` sets it later
-        from akramcode_constants import get_hermes_home
+    with contextlib.suppress(Exception):  # creation must not fail over this; `akramcode model` sets it later
+        from akramcode_constants import get_akramcode_home
         from akramcode_cli.config import atomic_config_write, read_user_config_raw
-        source = get_hermes_home() / "config.yaml"
+        source = get_akramcode_home() / "config.yaml"
         seed = launch_model_seed(read_user_config_raw(source)) if source.is_file() else {}
         if seed:
             atomic_config_write(config_path, seed)
 
 
 def _check_gateway_running(profile_dir: Path) -> bool:
-    """Gateway liveness for a profile dir, never mutating HERMES_HOME.
+    """Gateway liveness for a profile dir, never mutating AKRAMCODE_HOME.
 
     Primary signal is ``gateway.pid`` verified against the runtime lock (fails closed when
     the lock isn't held by *this* reader: dashboard as a separate s6 service, launch-service
@@ -817,7 +817,7 @@ def _walk_skill_count(skills_dir: Path) -> int:
 
 def _count_skills(profile_dir: Path) -> int:
     """Count installed skills in a profile (cached by skills-dir signature + TTL). Walks
-    synchronously when stale — detail surfaces (``hermes profile info``, ``profiles.describe``)
+    synchronously when stale — detail surfaces (``akramcode profile info``, ``profiles.describe``)
     want the fresh number; polled lists go through :func:`_cached_skill_count`."""
     skills_dir = profile_dir / "skills"
     if not skills_dir.is_dir():
@@ -854,13 +854,13 @@ def _cached_skill_count(profile_dir: Path) -> int:
             _SKILL_COUNT_NEXT_CHECK[key] = now + _SKILL_COUNT_RECHECK_SECONDS
     if due:
         threading.Thread(target=_count_skills, args=(profile_dir,),
-                         name="hermes-skill-count", daemon=True).start()
+                         name="akramcode-skill-count", daemon=True).start()
     cached = _SKILL_COUNT_CACHE.get(key)
     return cached[2] if cached is not None else 0
 
 
 # profile.yaml — per-profile metadata (description, role, etc.)
-# Deliberately tiny and separate from ``config.yaml`` (user-facing Hermes config, ~5000
+# Deliberately tiny and separate from ``config.yaml`` (user-facing AkramCode config, ~5000
 # lines of defaults): this is metadata ABOUT the profile. Missing file -> empty defaults,
 # never an error; the kanban decomposer falls back to the profile name.
 
@@ -868,15 +868,15 @@ def _cached_skill_count(profile_dir: Path) -> int:
 def read_profile_meta(profile_dir: Path) -> dict:
     """Read ``profile.yaml`` -> ``{description, description_auto, display_name,
     previous_names}`` (empty defaults when missing/unreadable). Never raises — a
-    corrupt file on one profile must not break ``hermes profile list``."""
+    corrupt file on one profile must not break ``akramcode profile list``."""
     def _read() -> dict:
         data = _load_yaml_dict(profile_dir / "profile.yaml") or {}
         ui_meta = data.get("ui_meta")
         bot_title = ""
         if isinstance(ui_meta, dict):
-            hermes_bots = ui_meta.get("hermes-bots")
-            if isinstance(hermes_bots, dict):
-                bot_title = str(hermes_bots.get("title") or "").strip()
+            akramcode_bots = ui_meta.get("akramcode-bots")
+            if isinstance(akramcode_bots, dict):
+                bot_title = str(akramcode_bots.get("title") or "").strip()
         return {
             "description": str(data.get("description") or "").strip(),
             "description_auto": bool(data.get("description_auto", False)),
@@ -1009,7 +1009,7 @@ def list_profiles(*, lazy_skill_count: bool = False) -> List[ProfileInfo]:
     ``skill_count`` is the last known value, refreshed off-request, so the request never walks
     a skill tree (#114041). Default ``False`` counts synchronously (CLI, detail views)."""
     profiles = []
-    default_home = _get_default_hermes_home()
+    default_home = _get_default_akramcode_home()
     if default_home.is_dir():
         profiles.append(_profile_info("default", default_home, is_default=True,
                                       lazy_skill_count=lazy_skill_count))
@@ -1074,7 +1074,7 @@ def profile_is_standalone(home: Path) -> bool:
         if isinstance(cfg.get("gateway"), dict):
             value = cfg["gateway"].get("standalone")
     result = _standalone_truthy(value)
-    if home == _get_default_hermes_home():
+    if home == _get_default_akramcode_home():
         if result and not _STANDALONE_WARNED:
             logger.warning(_STANDALONE_DEFAULT_WARNING)
             _STANDALONE_WARNED = True
@@ -1106,7 +1106,7 @@ _parked_default_warned: set[Path] = set()
 
 def profiles_to_serve(multiplex: bool, *, include_standalone: bool = False,
                       include_parked: bool = False) -> List[Tuple[str, Path]]:
-    """``(profile_name, hermes_home)`` pairs a gateway should serve — the single chokepoint
+    """``(profile_name, akramcode_home)`` pairs a gateway should serve — the single chokepoint
     for "which profiles does the inbound gateway handle".
 
     ``multiplex=False``: exactly one entry for the *active* profile (byte-for-byte the
@@ -1115,11 +1115,11 @@ def profiles_to_serve(multiplex: bool, *, include_standalone: bool = False,
     and parked profiles skipped). Pure directory read: never creates a profile dir (#94590).
 
     Named profiles that authored ``gateway.standalone: true`` are skipped because they opted
-    out of the host multiplexer; a ``gateway.parked`` marker (``hermes -p X gateway stop``) skips
+    out of the host multiplexer; a ``gateway.parked`` marker (``akramcode -p X gateway stop``) skips
     a profile the host would otherwise serve. Callers enumerating INSTALLED profiles pass
     ``include_standalone=True, include_parked=True``; serving/ticking callers pass neither."""
     active = get_active_profile_name() or "default"
-    default = _get_default_hermes_home()
+    default = _get_default_akramcode_home()
     if profile_is_parked(default) and default not in _parked_default_warned:
         logger.warning("Ignoring gateway.parked for the default profile; stop the host gateway instead")
         _parked_default_warned.add(default)
@@ -1135,8 +1135,8 @@ def profiles_to_serve(multiplex: bool, *, include_standalone: bool = False,
 def _resolve_clone_source(clone_from: Optional[str]) -> Path:
     """Directory to clone from: the named profile, or the active profile when ``None``."""
     if clone_from is None:
-        from akramcode_constants import get_hermes_home
-        source_dir = get_hermes_home()
+        from akramcode_constants import get_akramcode_home
+        source_dir = get_akramcode_home()
     else:
         clone_from = _canon_valid(clone_from)
         source_dir = get_profile_dir(clone_from)
@@ -1267,9 +1267,9 @@ def _bootstrap_profile_dir(profile_dir: Path, source_dir: Optional[Path],
     config files, installed skills (the dashboard's "clone from default" must keep bundled
     AND user-installed skills), and memory/identity files from *source_dir*.
 
-    ``sync_imports`` also copies the source's ``import-sync.json`` (the ``hermes import-agent``
+    ``sync_imports`` also copies the source's ``import-sync.json`` (the ``akramcode import-agent``
     manifest) so the clone stays registered against the same external Claude Code / Codex trees
-    and ``hermes -p <clone> import-agent --sync`` keeps pulling from them. The link is to the
+    and ``akramcode -p <clone> import-agent --sync`` keeps pulling from them. The link is to the
     external tree, never to the source profile: both profiles stay independent islands."""
     profile_dir.mkdir(parents=True, exist_ok=True)
     for subdir in _PROFILE_DIRS:
@@ -1305,7 +1305,7 @@ def create_profile(
     sections, pairing/session state — unless ``clone_channels`` opts in: a copied bot credential
     makes two gateways fight over one bot (``akramcode_cli.profile_channels``; callers list what
     was left behind with ``channel_platforms_configured(source_dir)``).
-    ``no_skills`` creates an empty profile and writes a marker so ``hermes update`` skips
+    ``no_skills`` creates an empty profile and writes a marker so ``akramcode update`` skips
     re-seeding its skills; it is mutually exclusive with the clone options, which copy skills.
     ``sync_imports`` (``--clone`` only; ``--clone-all`` copies the file anyway) also copies the
     ``import-agent`` sync manifest so the clone can keep pulling the same external agent trees."""
@@ -1322,7 +1322,7 @@ def create_profile(
         raise ValueError("--clone-channels only applies to a clone (--clone, --clone-from or --clone-all).")
     canon = _canon_valid(name)
     if canon == "default":
-        raise ValueError("Cannot create a profile named 'default' — it is the built-in profile (~/.hermes).")
+        raise ValueError("Cannot create a profile named 'default' — it is the built-in profile (~/.akramcode).")
     profile_dir = get_profile_dir(canon)
     if profile_dir.exists() and not named_profile_has_identity(profile_dir):
         if named_profile_is_deleted(profile_dir):
@@ -1366,7 +1366,7 @@ def create_profile(
         raise
 
     # Inside a container under s6, register the gateway as a runtime s6 service so
-    # `hermes -p <profile> gateway start` supervises via `s6-svc -u` instead of a bare
+    # `akramcode -p <profile> gateway start` supervises via `s6-svc -u` instead of a bare
     # process. No-op on host (systemd/launchd/windows unit generation handles lifecycle).
     _maybe_register_gateway_service(canon)
     # A running multiplexer enumerates profiles/ at boot: ask it to serve this one now (it also
@@ -1391,7 +1391,7 @@ def _finish_profile_layout(profile_dir: Path, *, no_skills: bool, clone_all: boo
                            description: Optional[str]) -> None:
     """Seed files a fresh profile owns from day one; runs on the staging tree before publish."""
     # Seed an empty .env so the profile owns a credentials file from day one. Without it,
-    # profile-scoped env writes (dashboard Channels/Keys pages, `hermes -p <name> auth add`)
+    # profile-scoped env writes (dashboard Channels/Keys pages, `akramcode -p <name> auth add`)
     # had no file until first write and the profile silently inherited shell API keys —
     # read by users as "the new profile reads the root .env". Skipped when a clone copied one.
     _seed_file_if_missing(profile_dir / ".env", _PLACEHOLDER_ENV, 0o600)
@@ -1401,13 +1401,13 @@ def _finish_profile_layout(profile_dir: Path, *, no_skills: bool, clone_all: boo
         from akramcode_cli.default_soul import DEFAULT_SOUL_MD
         _seed_file_if_missing(profile_dir / "SOUL.md", DEFAULT_SOUL_MD)
 
-    # Opt-out marker read by seed_profile_skills() and `hermes update`'s all-profile sync
+    # Opt-out marker read by seed_profile_skills() and `akramcode update`'s all-profile sync
     # (the feature still works via the empty skills/ dir if this fails).
     if no_skills:
         _seed_file_if_missing(
             profile_dir / NO_BUNDLED_SKILLS_MARKER,
-            "This profile opted out of bundled-skill seeding (`hermes profile create --no-skills`).\n"
-            "Delete this file to re-enable sync on the next `hermes update`.\n",
+            "This profile opted out of bundled-skill seeding (`akramcode profile create --no-skills`).\n"
+            "Delete this file to re-enable sync on the next `akramcode update`.\n",
         )
 
     # Migrate config-only clones now so desktop/status don't warn that a just-created
@@ -1418,7 +1418,7 @@ def _finish_profile_layout(profile_dir: Path, *, no_skills: bool, clone_all: boo
 
     # Description last, so a partial-create failure doesn't strand a description file.
     if description and description.strip():
-        with contextlib.suppress(Exception):  # non-fatal — `hermes profile describe` works later
+        with contextlib.suppress(Exception):  # non-fatal — `akramcode profile describe` works later
             write_profile_meta(profile_dir, description=description.strip(), description_auto=False)
 
 
@@ -1447,7 +1447,7 @@ def _live_default_multiplexer() -> bool:
 
 
 def seed_profile_skills(profile_dir: Path, quiet: bool = False) -> Optional[dict]:
-    """Seed bundled skills into a profile via subprocess (sync_skills() caches HERMES_HOME at
+    """Seed bundled skills into a profile via subprocess (sync_skills() caches AKRAMCODE_HOME at
     module level). Returns the sync result dict, or None on failure. ``--no-skills`` profiles
     still run the sync: ``sync_skills()`` detects the marker and seeds only essentials."""
     project_root = Path(__file__).parent.parent.resolve()
@@ -1456,7 +1456,7 @@ def seed_profile_skills(profile_dir: Path, quiet: bool = False) -> Optional[dict
             [sys.executable, "-c",
              "import json; from tools.skills_sync import sync_skills; "
              "r = sync_skills(quiet=True); print(json.dumps(r))"],
-            env={**os.environ, "HERMES_HOME": str(profile_dir)},
+            env={**os.environ, "AKRAMCODE_HOME": str(profile_dir)},
             cwd=str(project_root),
             capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=60,
         )
@@ -1489,7 +1489,7 @@ def backfill_profile_envs(quiet: bool = False) -> List[str]:
     environment). Users can then diverge per profile from there.
     """
     backfilled: List[str] = []
-    default_env = _get_default_hermes_home() / ".env"
+    default_env = _get_default_akramcode_home() / ".env"
     for entry in _iter_named_profile_dirs():
         env_path = entry / ".env"
         if env_path.exists():
@@ -1508,28 +1508,28 @@ def backfill_profile_envs(quiet: bool = False) -> List[str]:
 
 
 _BACKEND_TOKENS = frozenset({"serve", "dashboard", "gateway"})
-_HERMES_ARGV_MARKERS = ("akramcode_cli.main", "hermes-gateway", "tui_gateway")
+_AKRAMCODE_ARGV_MARKERS = ("akramcode_cli.main", "akramcode-gateway", "tui_gateway")
 # python / python3 / python3.12 / pythonw(.exe): the interpreter basenames a
 # `#!/…/python3` console-script shim is exec'd through when something (e.g. Electron's
-# `findOnPath('hermes')`) spawns the shim by handing the interpreter its path — then the
-# OS-reported argv[0] is the interpreter, not "hermes".
+# `findOnPath('akramcode')`) spawns the shim by handing the interpreter its path — then the
+# OS-reported argv[0] is the interpreter, not "akramcode".
 _PYTHON_INTERPRETER_RE = re.compile(r"^python[\d.]*w?(\.exe)?$")
 # Console-script entry points this project ships (pyproject.toml [project.scripts]).
-# argv[1] is matched against exact names, not ``startswith("hermes")``: with a bare
-# interpreter argv[0], argv[1] can be ANY user script ("hermes-notes.py").
-_HERMES_CONSOLE_SCRIPT_NAMES = frozenset({"hermes", "hermes-agent", "hermes-acp"})
+# argv[1] is matched against exact names, not ``startswith("akramcode")``: with a bare
+# interpreter argv[0], argv[1] can be ANY user script ("akramcode-notes.py").
+_AKRAMCODE_CONSOLE_SCRIPT_NAMES = frozenset({"akramcode", "akramcode-agent", "akramcode-acp"})
 
 
-def _is_hermes_argv(argv: list) -> bool:
-    """True for a Hermes process: entrypoint marker in argv, executable named ``hermes*``,
-    or a python interpreter directly exec'ing a known ``hermes`` console-script shim."""
+def _is_akramcode_argv(argv: list) -> bool:
+    """True for a AkramCode process: entrypoint marker in argv, executable named ``akramcode*``,
+    or a python interpreter directly exec'ing a known ``akramcode`` console-script shim."""
     joined = " ".join(argv)
     exe_name = os.path.basename(argv[0]).lower()
-    if any(marker in joined for marker in _HERMES_ARGV_MARKERS) or exe_name.startswith("hermes"):
+    if any(marker in joined for marker in _AKRAMCODE_ARGV_MARKERS) or exe_name.startswith("akramcode"):
         return True
     if len(argv) >= 2 and _PYTHON_INTERPRETER_RE.match(exe_name):
         script_name = os.path.basename(str(argv[1])).lower()
-        return script_name.rsplit(".", 1)[0] in _HERMES_CONSOLE_SCRIPT_NAMES
+        return script_name.rsplit(".", 1)[0] in _AKRAMCODE_CONSOLE_SCRIPT_NAMES
     return False
 
 
@@ -1543,7 +1543,7 @@ def _argv_profile_selectors(argv: list):
 
 
 def _profile_bound_backend_pids(canon: str, profile_dir: Path) -> list[int]:
-    """PIDs of running Hermes *backends* bound to this profile (``gateway.pid`` only tracks
+    """PIDs of running AkramCode *backends* bound to this profile (``gateway.pid`` only tracks
     the messaging gateway). Tightly scoped: current-user processes, backend subcommands only
     (never an interactive ``chat``/``tui``), never this process or its ancestors. Empty when
     ``psutil`` can't inspect anything."""
@@ -1556,7 +1556,7 @@ def _profile_bound_backend_pids(canon: str, profile_dir: Path) -> list[int]:
     except OSError:
         resolved_dir = profile_dir
 
-    # Never terminate ourselves or a parent (`hermes -p <canon> profile delete` runs under
+    # Never terminate ourselves or a parent (`akramcode -p <canon> profile delete` runs under
     # the very profile it's deleting).
     skip: set[int] = {os.getpid()}
     with contextlib.suppress(Exception):
@@ -1578,16 +1578,16 @@ def _profile_bound_backend_pids(canon: str, profile_dir: Path) -> list[int]:
             if current_user is not None and info.get("username") != current_user:
                 continue
             argv = info.get("cmdline") or []
-            if not argv or not _is_hermes_argv(argv):
+            if not argv or not _is_akramcode_argv(argv):
                 continue
             if not ({tok.lower() for tok in argv} & _BACKEND_TOKENS):
                 continue
 
-            # Bound to THIS profile by selector flag, or by HERMES_HOME pointing at its dir.
+            # Bound to THIS profile by selector flag, or by AKRAMCODE_HOME pointing at its dir.
             bound = any(normalize_profile_name(sel) == canon for sel in _argv_profile_selectors(argv))
             if not bound:
                 with contextlib.suppress(Exception):  # environ() can raise AccessDenied even same-user
-                    env_home = (proc.environ() or {}).get("HERMES_HOME", "")
+                    env_home = (proc.environ() or {}).get("AKRAMCODE_HOME", "")
                     bound = bool(env_home) and Path(env_home).resolve() == resolved_dir
             if bound:
                 pids.append(pid)
@@ -1634,14 +1634,14 @@ def _stop_profile_backends(canon: str, profile_dir: Path) -> None:
 
 def _stop_bot_desktop(profile_dir: Path) -> None:
     """Stop the profile's Bot Desktop (Xvnc + Xfce launcher) before its directory is removed or renamed;
-    gateway shutdown does not reach it (its own session, its own pid file). Scoped through the hermes-home
+    gateway shutdown does not reach it (its own session, its own pid file). Scoped through the akramcode-home
     override so the runtime reads THIS profile's bot-desktop/ state, whichever profile invoked the op.
     A failure here is logged, never fatal: the profile op is what the user asked for."""
-    from akramcode_constants import reset_hermes_home_override, set_hermes_home_override
+    from akramcode_constants import reset_akramcode_home_override, set_akramcode_home_override
     from tools.bot_desktop import runtime
     if not runtime.is_supported_host():
         return
-    token = set_hermes_home_override(profile_dir)
+    token = set_akramcode_home_override(profile_dir)
     try:
         if runtime.stop():
             print("✓ Bot Desktop stopped")
@@ -1653,7 +1653,7 @@ def _stop_bot_desktop(profile_dir: Path) -> None:
     except Exception as e:
         logger.warning("Could not stop the Bot Desktop of %s: %s", profile_dir, e)
     finally:
-        reset_hermes_home_override(token)
+        reset_akramcode_home_override(token)
 
 
 def _rmtree_make_writable(func, path, exc):
@@ -1722,7 +1722,7 @@ class ProfileIdentitySettlementPending(RuntimeError):
     settled (``akramcode_cli.profile_identity.purge_profile_identity`` returned False).
 
     Subclasses ``RuntimeError`` so delete-failure handling that treats the error as fatal (the
-    CLI's ``hermes profile delete``) keeps working unchanged; surfaces that can report a partial
+    CLI's ``akramcode profile delete``) keeps working unchanged; surfaces that can report a partial
     success (the dashboard's ``DELETE /api/profiles/{name}``) catch this type — it carries the
     profile, its now-removed path, and the retry command — instead of matching on the message.
     """
@@ -1730,7 +1730,7 @@ class ProfileIdentitySettlementPending(RuntimeError):
     def __init__(self, profile: str, path: Path):
         self.profile = profile
         self.path = path
-        self.retry_command = f"hermes profile purge-identity {profile}"
+        self.retry_command = f"akramcode profile purge-identity {profile}"
         super().__init__(
             f"Profile '{profile}' was deleted, but its session/routing identity settlement is "
             f"still pending — run: {self.retry_command}")
@@ -1741,7 +1741,7 @@ def delete_profile(name: str, yes: bool = False) -> Path:
     to prevent auto-restart, gateway stopped if running)."""
     canon = normalize_profile_name(name)
     if canon == "default":
-        raise ValueError("Cannot delete the default profile (~/.hermes).\nTo remove everything, use: hermes uninstall")
+        raise ValueError("Cannot delete the default profile (~/.akramcode).\nTo remove everything, use: akramcode uninstall")
     canon, profile_dir = _existing_profile_dir(canon)
     gw_running = _check_gateway_running(profile_dir)
     wrapper_path = _get_wrapper_dir() / canon
@@ -1781,9 +1781,9 @@ def delete_profile(name: str, yes: bool = False) -> Path:
 
     # The main serve process survives this deletion. Stop only this profile's MCP
     # transports and release cached stderr handles, including completed probes.
-    from akramcode_constants import hermes_home_key
+    from akramcode_constants import akramcode_home_key
     from tools.mcp_tool_lifecycle import shutdown_mcp_servers
-    shutdown_mcp_servers(scope=hermes_home_key(profile_dir))
+    shutdown_mcp_servers(scope=akramcode_home_key(profile_dir))
 
     # Release this process's holographic memory-store connections into the profile. The
     # Desktop's main serve process opens memory_store.db for every profile and is
@@ -1854,7 +1854,7 @@ def _maybe_register_gateway_service(profile_name: str) -> None:
     """Register a profile's gateway with s6 inside the container. Best-effort: profile
     creation must not fail over a supervision-tree hiccup; `gateway start` re-registers.
 
-    Port selection: each supervised profile gateway loads its own ``HERMES_HOME`` and binds the port
+    Port selection: each supervised profile gateway loads its own ``AKRAMCODE_HOME`` and binds the port
     resolved by ``gateway/config.py`` from that profile's environment — ``API_SERVER_PORT`` (or
     ``platforms.api_server.extra.port`` in the profile's ``config.yaml``), defaulting to 8642. There is no
     ``[gateway] port`` key and no Python-side allocator (PR #30136 review item I5 retired the
@@ -1887,14 +1887,14 @@ def _cleanup_gateway_service(name: str, profile_dir: Path) -> bool:
     """Disable and remove systemd/launchd service for a profile; True when a unit was removed."""
     import platform as _platform
 
-    # The service name follows get_hermes_home(): bind the override (the seam a multiplexed
+    # The service name follows get_akramcode_home(): bind the override (the seam a multiplexed
     # dashboard/tui-gateway process reads) and mirror the env for identity-file readers, so a
     # DELETE from a multi-profile dashboard names THIS profile's unit, never the host's bare one.
-    from akramcode_constants import reset_hermes_home_override, set_hermes_home_override
-    old_home = os.environ.get("HERMES_HOME")
-    home_token = set_hermes_home_override(str(profile_dir))
+    from akramcode_constants import reset_akramcode_home_override, set_akramcode_home_override
+    old_home = os.environ.get("AKRAMCODE_HOME")
+    home_token = set_akramcode_home_override(str(profile_dir))
     try:
-        os.environ["HERMES_HOME"] = str(profile_dir)
+        os.environ["AKRAMCODE_HOME"] = str(profile_dir)
         from akramcode_cli.gateway import get_service_name, get_launchd_plist_path, user_systemd_unit_dir
 
         def _run(*cmd: str) -> None:
@@ -1930,10 +1930,10 @@ def _cleanup_gateway_service(name: str, profile_dir: Path) -> bool:
     except Exception as e:
         print(f"⚠ Service cleanup: {e}")
     finally:
-        reset_hermes_home_override(home_token)
-        os.environ.pop("HERMES_HOME", None)
+        reset_akramcode_home_override(home_token)
+        os.environ.pop("AKRAMCODE_HOME", None)
         if old_home is not None:
-            os.environ["HERMES_HOME"] = old_home
+            os.environ["AKRAMCODE_HOME"] = old_home
     return False
 
 
@@ -1946,13 +1946,13 @@ def _stop_gateway_process(profile_dir: Path) -> None:
         raw = pid_file.read_text(encoding="utf-8-sig").strip()
         data = json.loads(raw) if raw.startswith("{") else {"pid": int(raw)}
         pid = int(data["pid"])
-        # Cross-profile kill refusal: the record's hermes_home stamp names the gateway's TRUE
+        # Cross-profile kill refusal: the record's akramcode_home stamp names the gateway's TRUE
         # owner. A poisoned gateway.pid in this dir can point at another profile's live
         # gateway — killing it starts a mutual SIGTERM restart loop.
         from gateway.status import get_process_start_time, recorded_gateway_home_conflicts, terminate_pid
         if recorded_gateway_home_conflicts(data, expected_home=profile_dir):
             print(
-                f"✗ Refusing to stop PID {pid}: its recorded HERMES_HOME "
+                f"✗ Refusing to stop PID {pid}: its recorded AKRAMCODE_HOME "
                 f"belongs to a different profile than {profile_dir} "
                 "(stale/poisoned PID record, #89315)."
             )
@@ -1976,7 +1976,7 @@ def _stop_gateway_process(profile_dir: Path) -> None:
 # Active profile (sticky default)
 
 def get_active_profile(root: Path | None = None) -> str:
-    """Read the sticky active profile name (of *root*, default: this process's Hermes root)."""
+    """Read the sticky active profile name (of *root*, default: this process's AkramCode root)."""
     path = root / "active_profile" if root is not None else _get_active_profile_path()
     try:
         name = path.read_text(encoding="utf-8-sig").strip()
@@ -2011,11 +2011,11 @@ def _retarget_active_profile(old: str, new: str, message: str) -> None:
 
 
 def get_active_profile_name() -> str:
-    """Profile name inferred from HERMES_HOME: ``"default"`` when unset or ``~/.hermes``, the
-    name under ``~/.hermes/profiles/<name>``, ``"custom"`` for any other path."""
-    from akramcode_constants import get_hermes_home
-    resolved = get_hermes_home().resolve()
-    if resolved == _get_default_hermes_home().resolve():
+    """Profile name inferred from AKRAMCODE_HOME: ``"default"`` when unset or ``~/.akramcode``, the
+    name under ``~/.akramcode/profiles/<name>``, ``"custom"`` for any other path."""
+    from akramcode_constants import get_akramcode_home
+    resolved = get_akramcode_home().resolve()
+    if resolved == _get_default_akramcode_home().resolve():
         return "default"
     profiles_root = _get_profiles_root().resolve()
     try:
@@ -2028,17 +2028,17 @@ def get_active_profile_name() -> str:
 
 
 def current_profile_name(default: str | None = None) -> str | None:
-    """Identity of the profile the current task runs FOR: the ``HERMES_HOME`` override when one is
+    """Identity of the profile the current task runs FOR: the ``AKRAMCODE_HOME`` override when one is
     bound (a multiplexed cron tick, a routed gateway turn), else a launcher-pinned
-    ``HERMES_PROFILE_NAME``/``HERMES_PROFILE`` (the kanban dispatcher pins it on its workers), else
-    the name derived from the process's ``HERMES_HOME``; *default* when nothing names a profile.
+    ``AKRAMCODE_PROFILE_NAME``/``AKRAMCODE_PROFILE`` (the kanban dispatcher pins it on its workers), else
+    the name derived from the process's ``AKRAMCODE_HOME``; *default* when nothing names a profile.
 
     The env pin is read only outside an override: ``os.environ`` is the LAUNCH profile's, so under
     an override it would re-label a served profile's board writes with the host's identity.
     """
-    from akramcode_constants import get_hermes_home_override
-    if get_hermes_home_override() is None:
-        for env_name in ("HERMES_PROFILE_NAME", "HERMES_PROFILE"):
+    from akramcode_constants import get_akramcode_home_override
+    if get_akramcode_home_override() is None:
+        for env_name in ("AKRAMCODE_PROFILE_NAME", "AKRAMCODE_PROFILE"):
             value = (os.environ.get(env_name) or "").strip()
             if value:
                 return value
@@ -2052,7 +2052,7 @@ def current_profile_name(default: str | None = None) -> str | None:
 
 def _inside_git_checkout(path: Path) -> bool:
     """True when *path* lies inside a Git checkout. Walks the path's OWN resolved ancestry
-    (not cwd) so the check holds when HERMES_HOME sits in a checkout but the process runs
+    (not cwd) so the check holds when AKRAMCODE_HOME sits in a checkout but the process runs
     elsewhere (cron, service manager). Resolution failure reports True (fail closed)."""
     try:
         resolved = path.resolve()
@@ -2064,17 +2064,17 @@ def _inside_git_checkout(path: Path) -> bool:
 def _profile_export_directory() -> Path:
     """Choose an export directory that cannot become source-tree input."""
     import tempfile
-    export_dir = _get_default_hermes_home() / "profile-exports"
+    export_dir = _get_default_akramcode_home() / "profile-exports"
     if not _inside_git_checkout(export_dir):
         return export_dir
 
-    # A custom deployment may point HERMES_HOME at its source checkout: use a sibling store,
+    # A custom deployment may point AKRAMCODE_HOME at its source checkout: use a sibling store,
     # falling back to the OS temp dir only when the user's home itself is a checkout (dotfiles
-    # repo). Per-uid temp name: a fixed /tmp/hermes-profile-exports is a predictable shared
+    # repo). Per-uid temp name: a fixed /tmp/akramcode-profile-exports is a predictable shared
     # path another local user could pre-create (or symlink) first.
     uid_suffix = f"-{os.getuid()}" if hasattr(os, "getuid") else ""
     candidates = (
-        Path.home() / ".hermes-profile-exports", Path(tempfile.gettempdir()) / f"hermes-profile-exports{uid_suffix}"
+        Path.home() / ".akramcode-profile-exports", Path(tempfile.gettempdir()) / f"akramcode-profile-exports{uid_suffix}"
     )
     for candidate in candidates:
         if not _inside_git_checkout(candidate):
@@ -2118,8 +2118,8 @@ def _default_export_ignore(root_dir: Path):
 
     * **Root-level allow-list** — only entries whose name appears in ``_DEFAULT_EXPORT_INCLUDE_ROOT``
     survive. Everything else (such as an unrelated ``x11-dev/`` directory in a Docker deployment where
-    HERMES_HOME equals the cwd) is excluded. Blacklisting was tried first and proved unable to anticipate
-    every non-Hermes file the user may have lying alongside HERMES_HOME (#58394). * **Universal exclusions
+    AKRAMCODE_HOME equals the cwd) is excluded. Blacklisting was tried first and proved unable to anticipate
+    every non-AkramCode file the user may have lying alongside AKRAMCODE_HOME (#58394). * **Universal exclusions
     at any depth** — ``__pycache__``, sockets and other special files, temp files
     (:func:`_non_exportable_entries`); plus npm lockfiles, which may appear at the root.
     """
@@ -2158,7 +2158,7 @@ def _should_redact_export_file(path: Path) -> bool:
 
 
 def _scrub_export_secrets(staged: Path) -> None:
-    """Force-redact secret-shaped strings in a staged export tree (same pass as ``hermes
+    """Force-redact secret-shaped strings in a staged export tree (same pass as ``akramcode
     sessions export --redact``). Runs on the staged copy only; symlinks to text files are
     materialized when content changes so redaction never follows a link back into the source."""
     from agent.redact import redact_sensitive_text
@@ -2191,7 +2191,7 @@ def export_profile(name: str, output_path: str, extra_files: Optional[Dict[str, 
     # Archive base name without extension (.tar.gz appended by the writer).
     base = str(Path(output_path)).removesuffix(".tar.gz").removesuffix(".tgz")
 
-    # The default profile IS ~/.hermes (dir name ".hermes"), so both paths stage a filtered
+    # The default profile IS ~/.akramcode (dir name ".akramcode"), so both paths stage a filtered
     # copy under a temp dir named after the canonical id: root allow-list for default,
     # credential exclusion for named profiles.
     def _ignore_credentials(directory: str, contents: list) -> set:
@@ -2225,24 +2225,24 @@ def import_profile(archive_path: str, name: Optional[str] = None) -> Path:
     if not inferred_name:
         raise ValueError(
             "Cannot determine profile name from archive. "
-            "Specify it explicitly: hermes profile import <archive> --name <name>"
+            "Specify it explicitly: akramcode profile import <archive> --name <name>"
         )
     if archive_root is None:
         raise ValueError("Profile archive must contain exactly one top-level directory.")
 
     # Default-profile archives have "default/" at top level; importing as "default" would
-    # target ~/.hermes itself.
+    # target ~/.akramcode itself.
     canon = _canon_valid(inferred_name)
     if canon == "default":
         raise ValueError(
-            "Cannot import as 'default' — that is the built-in root profile (~/.hermes). "
-            "Specify a different name: hermes profile import <archive> --name <name>"
+            "Cannot import as 'default' — that is the built-in root profile (~/.akramcode). "
+            "Specify a different name: akramcode profile import <archive> --name <name>"
         )
     profile_dir = get_profile_dir(canon)
     if profile_dir.exists():
         raise _profile_exists_error(canon)
     _get_profiles_root().mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="hermes_profile_import_") as tmpdir:
+    with tempfile.TemporaryDirectory(prefix="akramcode_profile_import_") as tmpdir:
         staging_root = Path(tmpdir)
         safe_extract_targz(archive, staging_root)
         extracted = staging_root / archive_root
@@ -2279,11 +2279,11 @@ def _atomic_write_json(path: Path, data: dict) -> bool:
 
 def _migrate_honcho_profile_host(old_name: str, new_name: str, new_dir: Path) -> None:
     """Rename Honcho host blocks for a renamed profile without changing peers."""
-    old_host = f"hermes_{old_name}"
-    legacy_old_host = f"hermes.{old_name}"
-    new_host = f"hermes_{new_name}"
+    old_host = f"akramcode_{old_name}"
+    legacy_old_host = f"akramcode.{old_name}"
+    new_host = f"akramcode_{new_name}"
     candidates = [
-        new_dir / "honcho.json", _get_default_hermes_home() / "honcho.json", Path.home() / ".honcho" / "config.json"
+        new_dir / "honcho.json", _get_default_akramcode_home() / "honcho.json", Path.home() / ".honcho" / "config.json"
     ]
     seen: set[Path] = set()
     for path in candidates:
@@ -2309,7 +2309,7 @@ def _migrate_honcho_profile_host(old_name: str, new_name: str, new_dir: Path) ->
             continue
         block = hosts[source_host]
         if isinstance(block, dict) and "aiPeer" not in block:
-            block["aiPeer"] = old_name  # source_host is ``hermes_<old>`` or legacy ``hermes.<old>``
+            block["aiPeer"] = old_name  # source_host is ``akramcode_<old>`` or legacy ``akramcode.<old>``
         hosts[new_host] = hosts.pop(source_host)
         if _atomic_write_json(path, raw):
             print(f"✓ Honcho host updated: {source_host} → {new_host}")
@@ -2340,7 +2340,7 @@ def rename_profile(old_name: str, new_name: str) -> Path:
             raise ValueError("Display name cannot be empty.")
         cleaned = set_profile_display_name("default", new_name)
         print(f"✓ Display name set: {cleaned} (canonical id remains 'default')")
-        return _get_default_hermes_home()
+        return _get_default_akramcode_home()
     new_canon = _canon_valid(new_name)
     if new_canon == "default":
         raise ValueError("Cannot rename to 'default' — it is reserved.")
@@ -2366,7 +2366,7 @@ def rename_profile(old_name: str, new_name: str) -> Path:
     # delete_profile). A multiplexed secondary has no gateway.pid of its own, so the check above
     # reports it stopped while the default gateway still holds its adapters, cron ticker, logging
     # and SQLite handles; those re-``mkdir`` the old home the moment it moves (no tombstone →
-    # ``mkdir_under_hermes_home`` does not refuse it) and the periodic reconcile re-adopts the
+    # ``mkdir_under_akramcode_home`` does not refuse it) and the periodic reconcile re-adopts the
     # resurrected dir as a ghost served profile (#109267).
     live_mux = _live_default_multiplexer()
     if live_mux:
@@ -2376,9 +2376,9 @@ def rename_profile(old_name: str, new_name: str) -> Path:
     # 1c. Release this process's cached MCP stderr handle into the old home (same as
     # delete_profile): Windows refuses to rename a directory holding an open file, and the
     # handle would otherwise stay cached under the old key after the move.
-    from akramcode_constants import hermes_home_key
+    from akramcode_constants import akramcode_home_key
     from tools.mcp_tool_lifecycle import shutdown_mcp_servers
-    shutdown_mcp_servers(scope=hermes_home_key(old_dir))
+    shutdown_mcp_servers(scope=akramcode_home_key(old_dir))
 
     # 2. Rename directory. If the move fails (cross-device EXDEV, permissions, a racing writer),
     # undo the unroute so the profile is never stranded tombstoned-but-present.
@@ -2390,7 +2390,7 @@ def rename_profile(old_name: str, new_name: str) -> Path:
             _notify_multiplexer(old_canon)
         _maybe_register_gateway_service(old_canon)
         if service_removed:
-            print(f"⚠ The gateway service was removed. Reinstall it with: hermes -p {old_canon} gateway install")
+            print(f"⚠ The gateway service was removed. Reinstall it with: akramcode -p {old_canon} gateway install")
         raise
     print(f"✓ Renamed {old_dir.name} → {new_dir.name}")
     # The tombstone lives at profiles/.deleted/<old_name>; old_dir is gone so nothing can
@@ -2429,15 +2429,15 @@ def rename_profile(old_name: str, new_name: str) -> Path:
         _notify_multiplexer(new_canon)
     _maybe_register_gateway_service(new_canon)
     if service_removed:
-        print(f"⚠ The gateway service was removed. Reinstall it with: hermes -p {new_canon} gateway install")
+        print(f"⚠ The gateway service was removed. Reinstall it with: akramcode -p {new_canon} gateway install")
     return new_dir
 
 
 # Profile env resolution (called from _apply_profile_override)
 
 def profile_root_for_env_home(env_home: str, default_root: Path) -> Path:
-    """Hermes root named by an exported ``HERMES_HOME``: the grandparent of a profile-shaped value
-    (``<root>/profiles/<name>``, mirrors ``get_default_hermes_root()``), the value itself otherwise,
+    """AkramCode root named by an exported ``AKRAMCODE_HOME``: the grandparent of a profile-shaped value
+    (``<root>/profiles/<name>``, mirrors ``get_default_akramcode_root()``), the value itself otherwise,
     *default_root* when unset. Pure: callers pass any process's env, not only ``os.environ``."""
     env_home = env_home.strip()
     if not env_home:
@@ -2447,17 +2447,17 @@ def profile_root_for_env_home(env_home: str, default_root: Path) -> Path:
 
 
 def resolve_profile_env(profile_name: str) -> str:
-    """Resolve a profile name to a HERMES_HOME path string. Called early in the CLI entry
-    point, before hermes modules are imported, to set HERMES_HOME.
+    """Resolve a profile name to a AKRAMCODE_HOME path string. Called early in the CLI entry
+    point, before akramcode modules are imported, to set AKRAMCODE_HOME.
 
-    When HERMES_HOME is already set, the configured spelling IS the launch root (it may be a
+    When AKRAMCODE_HOME is already set, the configured spelling IS the launch root (it may be a
     junction/symlink alias of the platform default). Keep that spelling so profile re-home does not destroy
-    the launcher's lexical provenance -- the subprocess sanitizer needs it to match Hermes-owned PYTHONPATH
+    the launcher's lexical provenance -- the subprocess sanitizer needs it to match AkramCode-owned PYTHONPATH
     entries written in the same spelling (#82581 junction follow-up). Physically the paths are identical
     (junction-transparent); only the spelling is preserved.
     """
     canon = _canon_valid(profile_name)
-    root = profile_root_for_env_home(os.environ.get("HERMES_HOME", ""), _get_default_hermes_home())
+    root = profile_root_for_env_home(os.environ.get("AKRAMCODE_HOME", ""), _get_default_akramcode_home())
     if canon == "default":
         return str(root)
     profile_dir = root / "profiles" / canon

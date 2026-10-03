@@ -1,4 +1,4 @@
-"""Tests for `hermes -z --resume <session>` (#105892).
+"""Tests for `akramcode -z --resume <session>` (#105892).
 
 The oneshot path used to accept ``--resume``/``-c`` in the parser but silently drop
 them: ``_run_oneshot_from_args`` ran before any session-arg normalization and never
@@ -72,7 +72,7 @@ class TestLoadResumeTarget:
     def test_empty_session_keeps_resolved_id(self, tmp_path):
         # Chat's contract: a resumed session with no messages starts fresh (no rows to
         # replay) but the turn is recorded under the SELECTED id. Dropping the id here
-        # re-minted a session for `hermes -z "hello" -c <title> --create-if-missing`,
+        # re-minted a session for `akramcode -z "hello" -c <title> --create-if-missing`,
         # leaving the freshly created titled session empty (review on #105957).
         db = _db_with_session(tmp_path, "s1")
         try:

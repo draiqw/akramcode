@@ -1,6 +1,6 @@
 """Compaction must not deactivate the just-delivered assistant reply (#118900).
 
-Measured cause (Desktop macOS client, Hermes 0.21.4): a reply that had just
+Measured cause (Desktop macOS client, AkramCode 0.21.4): a reply that had just
 finished streaming was folded into the compaction summary by engine-driven
 preflight maintenance and its row archived (active=0). The Desktop renders the
 active set, so the reply vanished from the surface on next render while its

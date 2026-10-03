@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from cli import HermesCLI
+from cli import AkramCodeCLI
 from akramcode_cli import terminal_notify
 
 _WARP_OK = {
@@ -21,7 +21,7 @@ def _ring(monkeypatch, *, flag_on, env, **kwargs):
         monkeypatch.setenv(key, value)
     written = []
     monkeypatch.setattr(terminal_notify, "write_tty", written.append)
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = AkramCodeCLI.__new__(AkramCodeCLI)
     cli.bell_on_prompt = flag_on
     cli.session_id = "sess-1"
     cli._ring_bell(prompt=True, **kwargs)
@@ -30,7 +30,7 @@ def _ring(monkeypatch, *, flag_on, env, **kwargs):
 
 def test_osc9_body_emitted_and_sanitized_only_when_flag_on(monkeypatch):
     out = _ring(monkeypatch, flag_on=True, env={}, context="approval\x1b\x07\x00\x7f!")
-    assert out == "\a\x1b]9;Hermes: approval!\x07"
+    assert out == "\a\x1b]9;AkramCode: approval!\x07"
     assert _ring(monkeypatch, flag_on=False, env={}, context="approval") == ""
 
 
@@ -39,7 +39,7 @@ def test_warp_osc777_only_under_supported_warp_build(monkeypatch):
     prefix = "\x1b]777;notify;warp://cli-agent;"
     assert out.count(prefix) == 1
     payload = json.loads(out.split(prefix, 1)[1].rstrip("\x07"))
-    assert payload["agent"] == "hermes"
+    assert payload["agent"] == "akramcode"
     assert payload["event"] == "permission_request"
     assert payload["summary"] == "rm -rf build"
     assert payload["session_id"] == "sess-1"
@@ -79,7 +79,7 @@ def test_running_app_gets_bell_and_osc9_on_its_loop_never_a_second_tty_writer(mo
         loop = _Loop()
         output = _Output()
 
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = AkramCodeCLI.__new__(AkramCodeCLI)
     cli.bell_on_complete = True
     cli.session_id = "sess-1"
     cli._app = _App()
@@ -88,4 +88,4 @@ def test_running_app_gets_bell_and_osc9_on_its_loop_never_a_second_tty_writer(mo
     assert _Output.raw == []
     assert len(_Loop.queued) == 1
     _Loop.queued[0]()
-    assert _Output.raw == ["\a\x1b]9;Hermes: turn complete\x07", "<flush>"]
+    assert _Output.raw == ["\a\x1b]9;AkramCode: turn complete\x07", "<flush>"]

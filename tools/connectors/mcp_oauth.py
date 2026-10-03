@@ -20,7 +20,7 @@ URL_TIMEOUT_SECONDS = 30.0
 
 
 def probe_with_rollback(
-        server_name: str, cfg: dict, hermes_home: str, flow, reconnect_live: bool, *,
+        server_name: str, cfg: dict, akramcode_home: str, flow, reconnect_live: bool, *,
         on_commit: Optional[Callable[[], None]] = None) -> None:
     """Roll back failures through initialize; commit authorization before tool discovery.
 
@@ -28,10 +28,10 @@ def probe_with_rollback(
     values there, so they land with the authorization and never before it."""
     from akramcode_cli.mcp_config import _oauth_tokens_present, _probe_single_server
     from tools.mcp_dashboard_oauth import exception_message
-    from tools.mcp_oauth import HermesTokenStorage, login_connect_timeout
+    from tools.mcp_oauth import AkramCodeTokenStorage, login_connect_timeout
     from tools.mcp_oauth_manager import get_manager
     manager = get_manager()
-    storage = HermesTokenStorage(server_name)
+    storage = AkramCodeTokenStorage(server_name)
     # An attempt that replaced a still-running one starts from that one's half-written files, so
     # it carries the older attempt's snapshot: the state from before either of them.
     backup = getattr(flow, "inherited_backup", None) or storage.snapshot()
@@ -46,13 +46,13 @@ def probe_with_rollback(
         # ``manager.remove`` cleared the pre-attempt tokens, so anything on disk now is this
         # attempt's grant, and it is not being kept: put the snapshot back. A newer attempt for
         # the same server owns the token files; an older one must not write over it.
-        if flow is not None and _ACTIVE.get((hermes_home, server_name)) not in (None, flow):
+        if flow is not None and _ACTIVE.get((akramcode_home, server_name)) not in (None, flow):
             return
         storage.restore(backup)
-        manager.restore_entry(server_name, previous_entry, hermes_home=hermes_home)
+        manager.restore_entry(server_name, previous_entry, akramcode_home=akramcode_home)
 
     try:
-        previous_entry = manager.remove(server_name, hermes_home=hermes_home)
+        previous_entry = manager.remove(server_name, akramcode_home=akramcode_home)
         tools = _probe_single_server(
             server_name, cfg, connect_timeout=login_connect_timeout(cfg), details=details)
         if not _oauth_tokens_present(server_name):
@@ -89,7 +89,7 @@ class AttemptCanceled(RuntimeError):
 # committed with everything kept. A worker parked inside the token request cannot be interrupted;
 # it is stopped here, at the one point where its result would be adopted.
 _COMMIT_GUARD = threading.Lock()
-# (hermes home, server) -> the newest card attempt. A retry or a new operation replaces an attempt
+# (akramcode home, server) -> the newest card attempt. A retry or a new operation replaces an attempt
 # whose worker is still waiting on the browser; the older one is canceled so it cannot commit later.
 _ACTIVE: Dict[tuple, Any] = {}
 
@@ -146,7 +146,7 @@ def _reuse_saved_authorization(
 
 
 def run_worker(
-        hermes_home: str, server_name: str, cfg: dict, reconnect_live: bool, *,
+        akramcode_home: str, server_name: str, cfg: dict, reconnect_live: bool, *,
         flow, on_done: Optional[Callable[[], None]] = None,
         env: Optional[Dict[str, str]] = None, on_commit: Optional[Callable[[], None]] = None,
         reuse_saved: bool = False) -> None:
@@ -156,7 +156,7 @@ def run_worker(
     so the configuration can reference them before anything is saved. ``reuse_saved`` is the
     card's rule: a server whose saved tokens still work connects with no consent step. The RPC
     session surface keeps it off, because its caller waits for an authorization URL."""
-    from akramcode_constants import reset_hermes_home_override, set_hermes_home_override
+    from akramcode_constants import reset_akramcode_home_override, set_akramcode_home_override
     try:
         from agent.secret_scope import (
             build_profile_secret_scope, reset_secret_scope, set_secret_scope)
@@ -164,19 +164,19 @@ def run_worker(
         from tools.mcp_oauth import force_interactive_oauth
         home_token = secret_token = None
         try:
-            home_token = set_hermes_home_override(hermes_home)
+            home_token = set_akramcode_home_override(akramcode_home)
             secret_token = set_secret_scope(
-                {**build_profile_secret_scope(Path(hermes_home)), **(env or {})}, profile_home=hermes_home)
+                {**build_profile_secret_scope(Path(akramcode_home)), **(env or {})}, profile_home=akramcode_home)
             if not (reuse_saved and flow is not None
                     and _reuse_saved_authorization(server_name, cfg, flow, on_commit)):
                 with force_interactive_oauth(), dashboard_oauth_flow(flow):
                     probe_with_rollback(
-                        server_name, cfg, hermes_home, flow, reconnect_live, on_commit=on_commit)
+                        server_name, cfg, akramcode_home, flow, reconnect_live, on_commit=on_commit)
         finally:
             if secret_token is not None:
                 reset_secret_scope(secret_token)
             if home_token is not None:
-                reset_hermes_home_override(home_token)
+                reset_akramcode_home_override(home_token)
     except Exception as exc:
         from tools.mcp_dashboard_oauth import exception_message
         msg = exception_message(exc)
@@ -191,8 +191,8 @@ def run_worker(
         if flow is not None:
             flow.mark_worker_done()
             with _COMMIT_GUARD:
-                if _ACTIVE.get((hermes_home, server_name)) is flow:
-                    _ACTIVE.pop((hermes_home, server_name), None)
+                if _ACTIVE.get((akramcode_home, server_name)) is flow:
+                    _ACTIVE.pop((akramcode_home, server_name), None)
         if on_done is not None:
             on_done()
 
@@ -219,7 +219,7 @@ def _start_loopback_receiver(flow) -> "http.server.HTTPServer":
                 self.send_response(404)
                 self.end_headers()
                 return
-            body = b"<h1>Authorization received</h1><p>You can close this tab and return to Hermes.</p>"
+            body = b"<h1>Authorization received</h1><p>You can close this tab and return to AkramCode.</p>"
             status = 200
             try:
                 flow.deliver_callback(**_parse_redirect_query(parsed.query))
@@ -302,7 +302,7 @@ def start(
 
     ``cfg`` is an install's in-memory configuration; without it the saved one is authorized."""
     from akramcode_cli.mcp_config import _get_mcp_servers
-    from akramcode_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
     from tools.mcp_dashboard_oauth import DashboardOAuthFlow
     from tui_gateway import mcp_oauth_sessions
 
@@ -312,20 +312,20 @@ def start(
     if not cfg.get("url"):
         raise RuntimeError(f"'{server_name}' is a stdio server: it takes env keys, not OAuth")
     cfg["auth"] = "oauth"
-    hermes_home = str(get_hermes_home().expanduser().resolve(strict=False))
+    akramcode_home = str(get_akramcode_home().expanduser().resolve(strict=False))
     flow = DashboardOAuthFlow(
         flow_id=secrets.token_urlsafe(24), server_name=server_name, profile=None,
-        hermes_home=hermes_home, redirect_uri="", reconnect_live=False)
+        akramcode_home=akramcode_home, redirect_uri="", reconnect_live=False)
     with _COMMIT_GUARD:
-        older = _ACTIVE.get((hermes_home, server_name))
-        _ACTIVE[(hermes_home, server_name)] = flow
+        older = _ACTIVE.get((akramcode_home, server_name))
+        _ACTIVE[(akramcode_home, server_name)] = flow
     if older is not None and not older.worker_done:
         flow.inherited_backup = getattr(older, "backup", None)
         cancel_attempt(older)
     httpd = choose_callback_receiver(flow, cfg, client_redirect_uri)
     mcp_oauth_sessions.register_flow(flow, httpd=httpd)
     threading.Thread(
-        target=run_worker, args=(hermes_home, server_name, cfg, False),
+        target=run_worker, args=(akramcode_home, server_name, cfg, False),
         kwargs={"flow": flow, "on_done": lambda: mcp_oauth_sessions.finish_flow(flow.flow_id),
                 "reuse_saved": True,
                 **({"env": env, "on_commit": on_commit} if env or on_commit else {})},

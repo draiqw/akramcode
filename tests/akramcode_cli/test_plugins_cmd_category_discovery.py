@@ -20,7 +20,7 @@ def _make_plugin_dir(parent: Path, name: str, manifest: dict) -> Path:
     """Create a minimal plugin directory with a plugin.yaml."""
     d = parent / name
     d.mkdir(parents=True, exist_ok=True)
-    import akram_core.hermes_yaml as yaml
+    import akram_core.akramcode_yaml as yaml
     (d / "plugin.yaml").write_text(yaml.safe_dump(manifest), encoding="utf-8")
     (d / "__init__.py").write_text("def register(ctx): pass\n", encoding="utf-8")
     return d
@@ -66,7 +66,7 @@ class TestReadManifestInfo:
 
         d = tmp_path / "my-plugin"
         d.mkdir()
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
         (d / "plugin.yml").write_text(yaml.safe_dump({"name": "my-plugin"}), encoding="utf-8")
         result = _read_manifest_info(d, "")
         assert result is not None
@@ -118,7 +118,7 @@ class TestDiscoverAllPlugins:
         # 3 levels: should NOT be found
         deep = tmp_path / "a" / "b" / "c"
         deep.mkdir(parents=True)
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
         (deep / "plugin.yaml").write_text(
             yaml.safe_dump({"name": "too-deep"}), encoding="utf-8"
         )
@@ -135,7 +135,7 @@ class TestDiscoverAllPlugins:
     def test_bundled_model_providers_skipped(self, mock_user_dir, mock_bundled_dir, tmp_path):
         """``plugins/model-providers/`` has its own provider registry loader.
 
-        Bundled providers should not appear in ``hermes plugins list`` as
+        Bundled providers should not appear in ``akramcode plugins list`` as
         general opt-in plugins, or users get a misleading enable/disable
         surface for providers selected via ``model.provider`` / ``--provider``.
         Same rationale as the existing bundled memory/context_engine skip.
@@ -174,8 +174,8 @@ class TestDiscoverAllPlugins:
         self, mock_user_dir, mock_bundled_dir, tmp_path
     ):
         """The model-providers skip only applies to *bundled* — a user plugin
-        at ``~/.hermes/plugins/model-providers/<x>/`` is still discovered so
-        ``hermes plugins list`` shows what the user installed."""
+        at ``~/.akramcode/plugins/model-providers/<x>/`` is still discovered so
+        ``akramcode plugins list`` shows what the user installed."""
         from akramcode_cli.plugins_cmd import _discover_all_plugins
 
         bundled = tmp_path / "bundled"

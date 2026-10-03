@@ -197,7 +197,7 @@ class ConnectionWakeResult(Result):
 
 
 method("connectors.operation.wake", params=ConnectionOperationParams, result=ConnectionWakeResult,
-       doc="The browser leg came back (hermes://connections/done): read the accounts now, not at the next tick.")
+       doc="The browser leg came back (akramcode://connections/done): read the accounts now, not at the next tick.")
 
 
 class ConnectionAnswerStatus(WireEnum):

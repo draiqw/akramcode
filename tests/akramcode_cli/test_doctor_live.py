@@ -1,4 +1,4 @@
-"""Tests for ``hermes doctor --live`` — opt-in bounded real-call tool-backend probes.
+"""Tests for ``akramcode doctor --live`` — opt-in bounded real-call tool-backend probes.
 
 All probes are mocked at the HTTP/client layer; no real network calls are made.
 """
@@ -159,7 +159,7 @@ class TestBrowserAvailable:
 
     def _block_path_and_node_modules_checks(self, monkeypatch, tmp_path):
         monkeypatch.setattr("shutil.which", lambda *a, **k: None)
-        monkeypatch.setattr("akramcode_cli.doctor.HERMES_HOME", tmp_path / "home")
+        monkeypatch.setattr("akramcode_cli.doctor.AKRAMCODE_HOME", tmp_path / "home")
         monkeypatch.setattr("akramcode_cli.doctor.PROJECT_ROOT", tmp_path / "root")
 
     def test_true_when_installed_browser_resolves(self, monkeypatch, tmp_path):

@@ -14,7 +14,7 @@ from gateway.session import SessionSource, build_session_key
 
 @pytest.fixture(autouse=True)
 def _isolated_active_session_registry(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / ".akramcode"))
 
 
 class _FakeAdapter:

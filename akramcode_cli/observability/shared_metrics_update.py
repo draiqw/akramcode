@@ -1,15 +1,15 @@
-"""Shared-metrics facts for ``hermes update`` runs and Desktop self-updates.
+"""Shared-metrics facts for ``akramcode update`` runs and Desktop self-updates.
 
-``hermes.update.run`` / ``hermes.update.stage`` are DERIVED from the final update receipt in the
+``akramcode.update.run`` / ``akramcode.update.stage`` are DERIVED from the final update receipt in the
 process that finalizes it (``update_receipt.finalize_update_receipt``): the receipt already carries
 the outcome, the stage marks with timestamps, the admission refusal and the fleet matrix, so no
 stage is instrumented for metrics. A pre-pull interpreter must never import pulled code, so when
 it is the finalizer it parks the receipt under the store dir (stdlib-only code in update_receipt)
-and :func:`report_pending_updates` records it on the next Hermes start.
+and :func:`report_pending_updates` records it on the next AkramCode start.
 
-Desktop's packaged updaters (electron-updater, App Installer, Store) never run ``hermes update``;
+Desktop's packaged updaters (electron-updater, App Installer, Store) never run ``akramcode update``;
 Desktop reports their outcome through the ``shared_metrics.update_run`` RPC instead. Desktop's
-source-checkout hand-off DOES run ``hermes update``; that receipt is tagged ``initiator=desktop``
+source-checkout hand-off DOES run ``akramcode update``; that receipt is tagged ``initiator=desktop``
 and counted here, never by the RPC, so no run is counted twice.
 """
 
@@ -33,7 +33,7 @@ PENDING_DIRNAME = "pending_updates"
 RECORDED_DIRNAME = "recorded_updates"
 _RECORDED_KEEP = 64
 _UPDATE_ID = re.compile(r"[0-9a-f]{8,64}")
-# Receipt pm/Desktop outcome words → hermes.update.run outcome; anything else failed.
+# Receipt pm/Desktop outcome words → akramcode.update.run outcome; anything else failed.
 _RUN_OUTCOMES = {"success": "success", "refused": "refused", "noop": "noop"}
 _FLEET_BAD_STATES = frozenset({"stale", "down"})
 # Desktop mechanism (updater strategy kind) → apply_mode.
@@ -105,7 +105,7 @@ def _apply_mode(receipt: dict[str, Any], stages: list[dict[str, Any]]) -> str:
 
 
 def update_receipt_fields(receipt: dict[str, Any]) -> tuple[dict[str, str], list[dict[str, str]]] | None:
-    """Bounded hermes.update.run + hermes.update.stage dimensions for one FINAL receipt."""
+    """Bounded akramcode.update.run + akramcode.update.stage dimensions for one FINAL receipt."""
     from .shared_metrics_contract import update_duration_bucket, version_age_bucket
 
     if not isinstance(receipt, dict) or not receipt.get("finished_at"):
@@ -150,11 +150,11 @@ def _collection_on() -> bool:
 
 def _claim_update_id(update_id: Any) -> tuple[bool, Path | None]:
     """``(first, latch)``: first is False when this profile already counted ``update_id``."""
-    from akramcode_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
 
     if not isinstance(update_id, str) or not _UPDATE_ID.fullmatch(update_id):
         return True, None  # nothing stable to dedupe on
-    directory = get_hermes_home() / "telemetry" / "shared_metrics" / RECORDED_DIRNAME
+    directory = get_akramcode_home() / "telemetry" / "shared_metrics" / RECORDED_DIRNAME
     directory.mkdir(parents=True, exist_ok=True)
     latch = directory / update_id
     try:
@@ -214,11 +214,11 @@ def purge_pending_updates(home: Path) -> None:
 def report_pending_updates() -> None:
     """Record receipts a pre-pull interpreter parked (it must not import pulled code). Never raises."""
     try:
-        from akramcode_constants import get_hermes_home
+        from akramcode_constants import get_akramcode_home
 
         from .shared_metrics_process import _claim, settle_claim
 
-        directory = pending_updates_dir(get_hermes_home())
+        directory = pending_updates_dir(get_akramcode_home())
         if not directory.is_dir():
             return
         for path in sorted(directory.iterdir()):
@@ -240,7 +240,7 @@ def report_pending_updates() -> None:
 def desktop_update_fields(
     *, outcome: Any, failed_stage: Any, duration_ms: Any, mechanism: Any, from_commit_date: Any = None,
 ) -> dict[str, str]:
-    """hermes.update.run dims for a Desktop packaged self-update (RPC-reported)."""
+    """akramcode.update.run dims for a Desktop packaged self-update (RPC-reported)."""
     from .shared_metrics_contract import (
         DESKTOP_UPDATE_STAGES, UPDATE_OUTCOMES, update_duration_bucket, version_age_bucket,
     )

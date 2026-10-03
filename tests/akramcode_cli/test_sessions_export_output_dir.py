@@ -1,4 +1,4 @@
-"""`hermes sessions export` single-file formats accept a directory as OUTPUT."""
+"""`akramcode sessions export` single-file formats accept a directory as OUTPUT."""
 
 import json
 import sys
@@ -20,7 +20,7 @@ class _FakeDB:
 
 def _export(monkeypatch, *argv):
     monkeypatch.setattr(akramcode_state, "SessionDB", lambda *args, **kwargs: _FakeDB())
-    monkeypatch.setattr(sys, "argv", ["hermes", "sessions", "export", "--session-id", "sess", *argv])
+    monkeypatch.setattr(sys, "argv", ["akramcode", "sessions", "export", "--session-id", "sess", *argv])
     main_mod.main()
 
 
@@ -30,7 +30,7 @@ def test_jsonl_export_into_directory_writes_default_named_file(monkeypatch, tmp_
 
     _export(monkeypatch, f"{out_dir}/")
 
-    written = out_dir / "hermes_session_sess-123.jsonl"
+    written = out_dir / "akramcode_session_sess-123.jsonl"
     assert json.loads(written.read_text(encoding="utf-8"))["id"] == "sess-123"
 
 
@@ -40,4 +40,4 @@ def test_jsonl_export_to_file_path_is_unchanged(monkeypatch, tmp_path):
     _export(monkeypatch, str(target))
 
     assert json.loads(target.read_text(encoding="utf-8"))["id"] == "sess-123"
-    assert target.is_file() and not (tmp_path / "hermes_session_sess-123.jsonl").exists()
+    assert target.is_file() and not (tmp_path / "akramcode_session_sess-123.jsonl").exists()

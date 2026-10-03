@@ -51,7 +51,7 @@ def _resolve_busy_timeout_ms() -> int:
     shared cross-profile dispatch bus, so worker stampedes are expected; a
     long timeout lets WAL serialize writers instead of surfacing transient
     ``database is locked`` failures."""
-    return _kb._env_int("HERMES_KANBAN_BUSY_TIMEOUT_MS", DEFAULT_BUSY_TIMEOUT_MS, minimum=1)
+    return _kb._env_int("AKRAMCODE_KANBAN_BUSY_TIMEOUT_MS", DEFAULT_BUSY_TIMEOUT_MS, minimum=1)
 
 
 def _sqlite_connect(path: Path) -> sqlite3.Connection:
@@ -170,7 +170,7 @@ def _dispatch_tick_lock(db_path: Path):
     gateway's async watcher must never stall; the loser retries next interval.
     Without ``fcntl``/``msvcrt`` it degrades to a no-op (yields ``True``).
 
-    Motivation (issue #35240): a ``hermes gateway run --replace`` / ``gateway restart`` invoked from a shell
+    Motivation (issue #35240): a ``akramcode gateway run --replace`` / ``gateway restart`` invoked from a shell
     on a systemd/launchd host can leave an orphan gateway whose dispatcher escapes the service cgroup,
     survives ``systemctl restart``, and becomes a *second* long-lived writer on the same ``kanban.db``. The
     startup guard (``_guard_supervised_gateway_conflict``) blocks the common way an orphan is born, but this
@@ -571,7 +571,7 @@ def repair_db(db_path: Optional[Path] = None, *, board: Optional[str] = None) ->
     Same policy as :func:`_guard_existing_db_is_healthy` (quarantine BEFORE
     any mutation; REINDEX under the init flock; anything non-index stays
     corrupt), but returns a :class:`RepairResult` instead of raising so
-    ``hermes kanban repair`` can pick its exit code. ``OperationalError``
+    ``akramcode kanban repair`` can pick its exit code. ``OperationalError``
     (locked/busy) still propagates raw: a locked healthy DB must not be
     quarantined."""
     path = db_path if db_path is not None else _kb.kanban_db_path(board=board)
@@ -670,7 +670,7 @@ def connect(db_path: Optional[Path] = None, *, board: Optional[str] = None) -> s
     every connection so a re-created file stays robust; the first connection
     per path auto-runs :func:`init_db`, later ones skip via
     ``_INITIALIZED_PATHS``. Path: explicit ``db_path``, else ``board``, else
-    :func:`kanban_db_path` (``HERMES_KANBAN_DB`` -> ``HERMES_KANBAN_BOARD`` ->
+    :func:`kanban_db_path` (``AKRAMCODE_KANBAN_DB`` -> ``AKRAMCODE_KANBAN_BOARD`` ->
     ``<root>/kanban/current`` -> ``default``)."""
     path = db_path if db_path is not None else _kb.kanban_db_path(board=board)
     from agent.delegation_context import kanban_path_is_fenced
@@ -688,7 +688,7 @@ def connect(db_path: Optional[Path] = None, *, board: Optional[str] = None) -> s
 
     # Fast path: once THIS process has initialized this path, skip the
     # cross-process init lock. Taking it on every connect let a single stalled
-    # holder (e.g. an external `hermes kanban list` mid-integrity-probe) block
+    # holder (e.g. an external `akramcode kanban list` mid-integrity-probe) block
     # the gateway dispatcher's next-tick connect() forever, and steady-state has
     # nothing for it to protect (no schema/migration writes).
     resolved = str(path.resolve())
@@ -768,7 +768,7 @@ def init_db(db_path: Optional[Path] = None, *, board: Optional[str] = None) -> P
 
 
 # Nullable/defaulted columns of the v1 ``tasks`` CREATE TABLE that external
-# harnesses seeding a board with a reduced schema have omitted. Hermes's own
+# harnesses seeding a board with a reduced schema have omitted. AkramCode's own
 # DBs always carry them, so this is a no-op there; without it a board that
 # also has ``task_runs`` fails every ``connect()`` inside
 # ``_backfill_legacy_inflight_runs`` ("no such column: claim_lock") — before
@@ -1207,7 +1207,7 @@ def write_txn(conn: sqlite3.Connection, *, allow_nested: bool = False):
                 "(savepoint semantics; the inner RELEASE is not durable until "
                 "the outer transaction commits)."
             )
-        savepoint = f"hermes_nested_{secrets.token_hex(8)}"
+        savepoint = f"akramcode_nested_{secrets.token_hex(8)}"
         conn.execute(f"SAVEPOINT {savepoint}")
         try:
             yield conn

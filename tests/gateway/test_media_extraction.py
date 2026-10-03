@@ -26,10 +26,10 @@ class TestMediaExtraction:
         )
 
         capture_name = "computer_use_0123456789abcdef0123456789abcdef.png"
-        canonical = rf"C:\Users\Alice\AppData\Local\hermes\cache\images\{capture_name}"
+        canonical = rf"C:\Users\Alice\AppData\Local\akramcode\cache\images\{capture_name}"
         response = (
             "Here is the screenshot.\n"
-            f"MEDIA:/Users/Alice/AppData/Local/hermes/cache/images/{capture_name}"
+            f"MEDIA:/Users/Alice/AppData/Local/akramcode/cache/images/{capture_name}"
         )
         messages = [
             {
@@ -55,8 +55,8 @@ class TestMediaExtraction:
         )
 
         capture_name = "computer_use_fedcba9876543210fedcba9876543210.jpg"
-        canonical = rf"D:\Hermes Data\cache\images\{capture_name}"
-        response = f'MEDIA:"/Users/Alice/Hermes Data/cache/images/{capture_name}"'
+        canonical = rf"D:\AkramCode Data\cache\images\{capture_name}"
+        response = f'MEDIA:"/Users/Alice/AkramCode Data/cache/images/{capture_name}"'
         messages = [
             {
                 "role": "tool",
@@ -88,7 +88,7 @@ class TestMediaExtraction:
         )
 
         capture_name = "computer_use_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.png"
-        canonical = rf"C:\Users\Alice\AppData\Local\hermes\cache\images\{capture_name}"
+        canonical = rf"C:\Users\Alice\AppData\Local\akramcode\cache\images\{capture_name}"
         messages = [
             {
                 "role": "tool",
@@ -151,7 +151,7 @@ class TestMediaExtraction:
         )
 
         capture_name = "computer_use_dddddddddddddddddddddddddddddddd.png"
-        canonical = rf"C:\Users\Alice\AppData\Local\hermes\cache\images\{capture_name}"
+        canonical = rf"C:\Users\Alice\AppData\Local\akramcode\cache\images\{capture_name}"
         payload = _json.dumps(
             {
                 "summary": f"capture\n  (shareable screenshot saved to {canonical})",
@@ -159,7 +159,7 @@ class TestMediaExtraction:
             }
         )
         truncated = payload[:-5]  # starts with '{' but no longer parses
-        response = f"MEDIA:/Users/Alice/AppData/Local/hermes/cache/images/{capture_name}"
+        response = f"MEDIA:/Users/Alice/AppData/Local/akramcode/cache/images/{capture_name}"
         messages = [
             {"role": "tool", "name": "computer_use", "content": truncated},
         ]
@@ -372,9 +372,9 @@ caption
         assert tags == [], f"generated image re-emitted after compression: {tags}"
 
 
-    
-    
-    
+
+
+
 
 
 

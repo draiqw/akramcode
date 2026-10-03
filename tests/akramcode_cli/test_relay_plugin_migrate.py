@@ -1,4 +1,4 @@
-"""``hermes update`` / ``hermes migrate relay``: legacy ``HERMES_NEMO_RELAY_ATIF_*``/``ATOF_*`` vars
+"""``akramcode update`` / ``akramcode migrate relay``: legacy ``AKRAMCODE_NEMO_RELAY_ATIF_*``/``ATOF_*`` vars
 become a validated ``relay-plugins.toml`` per profile home, selected from ``.env``."""
 
 from __future__ import annotations
@@ -16,14 +16,14 @@ from akramcode_cli.relay_plugin_cutover import RELAY_PLUGINS_CONFIG_ENV, configu
 nemo_relay = pytest.importorskip("nemo_relay")
 
 LEGACY_ENV = """OPENAI_API_KEY=sk-test
-HERMES_NEMO_RELAY_ATOF_ENABLED=1
-HERMES_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY={home}/telemetry/atof
-HERMES_NEMO_RELAY_ATOF_FILENAME=hermes-atof.jsonl
-HERMES_NEMO_RELAY_ATOF_MODE=append
-HERMES_NEMO_RELAY_ATIF_ENABLED=1
-HERMES_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY={home}/telemetry/atif
-HERMES_NEMO_RELAY_ATIF_FILENAME_TEMPLATE=trajectory-{{session_id}}.json
-HERMES_NEMO_RELAY_ATIF_SUBAGENT_EXPORT_MODE=all
+AKRAMCODE_NEMO_RELAY_ATOF_ENABLED=1
+AKRAMCODE_NEMO_RELAY_ATOF_OUTPUT_DIRECTORY={home}/telemetry/atof
+AKRAMCODE_NEMO_RELAY_ATOF_FILENAME=akramcode-atof.jsonl
+AKRAMCODE_NEMO_RELAY_ATOF_MODE=append
+AKRAMCODE_NEMO_RELAY_ATIF_ENABLED=1
+AKRAMCODE_NEMO_RELAY_ATIF_OUTPUT_DIRECTORY={home}/telemetry/atif
+AKRAMCODE_NEMO_RELAY_ATIF_FILENAME_TEMPLATE=trajectory-{{session_id}}.json
+AKRAMCODE_NEMO_RELAY_ATIF_SUBAGENT_EXPORT_MODE=all
 """
 
 
@@ -38,10 +38,10 @@ def _parse_env(path: Path) -> dict[str, str]:
 
 @pytest.fixture
 def profile_env(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     return home
 
 
@@ -55,7 +55,7 @@ def test_legacy_env_becomes_validated_toml_selected_from_env(profile_env):
     toml_path = profile_env / RELAY_PLUGINS_TOML_NAME
     document = tomllib.loads(toml_path.read_text(encoding="utf-8"))
     sink = document["components"][0]["config"]["atof"]["sinks"][0]
-    assert sink["type"] == "file" and sink["filename"] == "hermes-atof.jsonl"
+    assert sink["type"] == "file" and sink["filename"] == "akramcode-atof.jsonl"
     assert document["components"][0]["config"]["atif"]["filename_template"] == "trajectory-{session_id}.json"
     # Relay accepts the complete document generated from the legacy settings.
     report = nemo_relay.plugin.validate_exact(document)
@@ -66,7 +66,7 @@ def test_legacy_env_becomes_validated_toml_selected_from_env(profile_env):
     assert env[RELAY_PLUGINS_CONFIG_ENV] == str(toml_path)
     assert env["OPENAI_API_KEY"] == "sk-test"
     assert configured_legacy_relay_env_vars(env) == ()
-    assert "# migrated to relay-plugins.toml: HERMES_NEMO_RELAY_ATOF_ENABLED=1" in (profile_env / ".env").read_text(encoding="utf-8")
+    assert "# migrated to relay-plugins.toml: AKRAMCODE_NEMO_RELAY_ATOF_ENABLED=1" in (profile_env / ".env").read_text(encoding="utf-8")
     assert migrate_profile_relay_env(profile_env).skipped_reason == "no legacy exporter variables"
 
 

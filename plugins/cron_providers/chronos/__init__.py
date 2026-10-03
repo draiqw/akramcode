@@ -115,7 +115,7 @@ class ChronosCronScheduler(CronScheduler):
 
     def _note_identity_rejected(self) -> None:
         """403 invalid_client is deterministic: NAS maps the bearer to a provisioned instance via an
-        ``agent:*`` client or the hosted bootstrap session, and a plain ``hermes auth`` login is
+        ``agent:*`` client or the hosted bootstrap session, and a plain ``akramcode auth`` login is
         neither — re-logging in cannot fix it, which is what users try first (#97494). Without
         NAS the jobs have no trigger at all (the misfire sweep runs them ``misfire_grace_minutes``
         late), so the built-in ticker takes over this process's fires."""
@@ -126,11 +126,11 @@ class ChronosCronScheduler(CronScheduler):
         logger.warning(
             "Chronos: NAS rejected this agent's Nous credential for agent-cron (403 invalid_client). "
             "The Nous token in auth.json is not this instance's provisioned identity (an agent:* client "
-            "or the hosted bootstrap session), so no job can be armed. A normal `hermes auth` re-login "
+            "or the hosted bootstrap session), so no job can be armed. A normal `akramcode auth` re-login "
             "cannot fix this; the hosted credential has to be restored from the Nous Portal. Falling back "
             "to the built-in cron ticker for this process so scheduled jobs keep firing on time.")
         if self._stop_event is None:
-            return  # start() never ran (e.g. a CLI `hermes cron add`); nothing to tick here
+            return  # start() never ran (e.g. a CLI `akramcode cron add`); nothing to tick here
         from agent.memory_provider import spawn_context_thread
         from cron.scheduler_provider import InProcessCronScheduler
         spawn_context_thread(

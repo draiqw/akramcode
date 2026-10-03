@@ -26,7 +26,7 @@ def _prompt_count(db: SessionDB) -> int:
 
 
 def test_prompt_snapshots_are_deduplicated_and_hydrated_for_readers(db):
-    prompt = "You are Hermes.\n" + ("Follow the profile policy.\n" * 5)
+    prompt = "You are AkramCode.\n" + ("Follow the profile policy.\n" * 5)
     db.create_session(
         "s1",
         "telegram",
@@ -63,7 +63,7 @@ def test_route_changes_keep_the_prompt_and_replacement_collects_orphans(db):
     shared_prompt = "Model: x-ai/grok-4.5\nProvider: nous"
     db.create_session(
         "s1",
-        "hermes_browser",
+        "akramcode_browser",
         model="x-ai/grok-4.5",
         model_config={"_branched_from": "parent"},
         system_prompt=shared_prompt,

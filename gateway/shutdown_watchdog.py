@@ -3,7 +3,7 @@
 A frozen asyncio loop takes every asyncio-based recovery path down with it, and launchd/systemd
 KeepAlive only restarts a *dead* process. Hence: (1) an OS-thread shutdown watchdog that dumps
 stacks and ``os._exit``s past ``restart_drain_timeout + grace``; (2) a heartbeat file at
-``<HERMES_HOME>/state/gateway.heartbeat`` so supervisors can tell "process alive" from "loop
+``<AKRAMCODE_HOME>/state/gateway.heartbeat`` so supervisors can tell "process alive" from "loop
 frozen"; (3) a lifetime thread watchdog that hard-exits when the loop is too frozen to run its
 own callbacks; (4) a self-rescheduling floor timer that keeps the selector timeout finite."""
 
@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
 from gateway.restart import GATEWAY_SERVICE_RESTART_EXIT_CODE
-from akramcode_constants import get_hermes_home, get_process_hermes_home
+from akramcode_constants import get_akramcode_home, get_process_akramcode_home
 from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)
@@ -157,7 +157,7 @@ def _hard_exit(exit_code: int) -> None:
 def _mark_exited_quietly(exit_code: int, reason: str) -> None:
     """Best-effort terminal stamp on BOTH lifecycle records before ``os._exit`` skips teardown:
     the lifecycle ledger (so the next boot names the watchdog, not SIGKILL/OOM) and
-    ``gateway_state.json`` (so ``hermes gateway status`` and every other reader of that file stop
+    ``gateway_state.json`` (so ``akramcode gateway status`` and every other reader of that file stop
     seeing ``running`` for a process the watchdog killed — #113372). The runtime-status write goes
     LAST: it is the record housekeeping refreshes, so nothing may overwrite it after we stamp it."""
     with contextlib.suppress(Exception):
@@ -175,13 +175,13 @@ def _mark_exited_quietly(exit_code: int, reason: str) -> None:
             gateway_state="degraded", exit_reason=reason, wait_timeout=0.25, **restart)
 
 
-def _process_hermes_home() -> Path:
-    """HERMES_HOME for process-level identity files (ignore profile overrides)."""
-    return get_process_hermes_home() if os.environ.get("HERMES_HOME", "").strip() else get_hermes_home()
+def _process_akramcode_home() -> Path:
+    """AKRAMCODE_HOME for process-level identity files (ignore profile overrides)."""
+    return get_process_akramcode_home() if os.environ.get("AKRAMCODE_HOME", "").strip() else get_akramcode_home()
 
 
 def _home(home: Optional[Path]) -> Path:
-    return home if home is not None else _process_hermes_home()
+    return home if home is not None else _process_akramcode_home()
 
 
 def get_loop_heartbeat_path(home: Optional[Path] = None) -> Path:
@@ -189,7 +189,7 @@ def get_loop_heartbeat_path(home: Optional[Path] = None) -> Path:
 
 
 def get_loop_tick_socket_path(home: Optional[Path] = None, pid: Optional[int] = None) -> Path:
-    """``<HERMES_HOME>/state/gateway.loop-tick.<pid>.sock`` — PID-suffixed so a stale node from a
+    """``<AKRAMCODE_HOME>/state/gateway.loop-tick.<pid>.sock`` — PID-suffixed so a stale node from a
     dead process is never mistaken for this gateway's witness. Served by the loop itself
     (``_tick_socket_handler``), so an answer proves the loop dispatches; the heartbeat cannot.
 

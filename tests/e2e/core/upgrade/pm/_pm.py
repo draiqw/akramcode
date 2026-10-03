@@ -2,17 +2,17 @@
 
 Built on ``_helpers`` (bwrap sandbox, allowlisted env) and ``_install_helpers`` (local bare origin,
 HEAD's own ``scripts/install.sh``). Every cell starts from a real install and then drives the real
-user entry points (``hermes update``, ``hermes pm ...``, ``hermes doctor``, ``hermes gateway ...``).
+user entry points (``akramcode update``, ``akramcode pm ...``, ``akramcode doctor``, ``akramcode gateway ...``).
 
 What a PM install looks like on disk, and what the cells read back:
 
-* ``$HERMES_HOME/installs/<key>/facts.json`` names the selected dependency generation
+* ``$AKRAMCODE_HOME/installs/<key>/facts.json`` names the selected dependency generation
   (``packages.venv.environment``) and its recorded extras;
-* ``$HERMES_HOME/installs/<key>/environments/<gen>/{venv,workspace}`` are the generations;
-* ``$HERMES_HOME/installs/<key>/source-completion-pending`` is the owed update tail.
+* ``$AKRAMCODE_HOME/installs/<key>/environments/<gen>/{venv,workspace}`` are the generations;
+* ``$AKRAMCODE_HOME/installs/<key>/source-completion-pending`` is the owed update tail.
 
 A PM generation is keyed on the bytes of ``uv.lock`` (plus extras, Python, plugin members), so a
-release that changes ``uv.lock`` is what makes ``hermes update`` build a NEW generation.
+release that changes ``uv.lock`` is what makes ``akramcode update`` build a NEW generation.
 ``publish_dependency_release`` publishes exactly that: ``uv.lock`` plus a trailing TOML comment,
 which ``uv sync --locked`` accepts unchanged but which moves the generation key.
 """
@@ -52,14 +52,14 @@ def configure(sb: I.Sandbox, base_url: str, extra: str = "", env_extra: str = ""
     ver = ok(sb.run([sb.python, "-c",
                      "from akramcode_cli.config_defaults import DEFAULT_CONFIG as D; print(D['_config_version'])"]))
     version = int(ver.stdout.strip().splitlines()[-1])
-    (sb.hermes_home / "config.yaml").write_text(I.provider_config(base_url, version, extra), encoding="utf-8")
-    (sb.hermes_home / ".env").write_text(f"OPENAI_API_KEY={I.FAKE_KEY}\n{env_extra}", encoding="utf-8")
+    (sb.akramcode_home / "config.yaml").write_text(I.provider_config(base_url, version, extra), encoding="utf-8")
+    (sb.akramcode_home / ".env").write_text(f"OPENAI_API_KEY={I.FAKE_KEY}\n{env_extra}", encoding="utf-8")
 
 
 def state_dir(sb: I.Sandbox) -> Path:
     from pm.environments import install_key
 
-    return sb.hermes_home / "installs" / install_key(sb.checkout)
+    return sb.akramcode_home / "installs" / install_key(sb.checkout)
 
 
 def facts(sb: I.Sandbox) -> dict:
@@ -81,10 +81,10 @@ def pending_marker(sb: I.Sandbox) -> Path:
 
 
 def lazy_env(sb: I.Sandbox) -> dict[str, str]:
-    """The sandbox env WITHOUT the suite-wide ``HERMES_DISABLE_LAZY_INSTALLS``: a real user's
+    """The sandbox env WITHOUT the suite-wide ``AKRAMCODE_DISABLE_LAZY_INSTALLS``: a real user's
     launch, which finishes an owed source-update tail before it imports the app."""
     env = dict(sb.env)
-    env.pop("HERMES_DISABLE_LAZY_INSTALLS", None)
+    env.pop("AKRAMCODE_DISABLE_LAZY_INSTALLS", None)
     return env
 
 
@@ -106,7 +106,7 @@ def managed_imports(sb: I.Sandbox, *modules: str) -> dict[str, str]:
 
 
 def update(sb: I.Sandbox, *, env: dict[str, str] | None = None) -> subprocess.CompletedProcess:
-    return run_env(sb, [sb.hermes, "update", "--yes", "--branch", "main"], env or sb.env, timeout=UPDATE_TIMEOUT)
+    return run_env(sb, [sb.akramcode, "update", "--yes", "--branch", "main"], env or sb.env, timeout=UPDATE_TIMEOUT)
 
 
 def publish_dependency_release(origin: Path, scratch: Path, n: int) -> str:
@@ -125,7 +125,7 @@ def diagnostics(sb: I.Sandbox, *cps: subprocess.CompletedProcess) -> str:
         parts.append(f"--- facts.json unreadable: {exc}")
     parts.append(f"--- generations --- {generations(sb)}")
     parts.append(f"--- pending marker --- {pending_marker(sb).exists()}")
-    receipts = sorted((sb.hermes_home / "logs").glob("*.log")) if (sb.hermes_home / "logs").is_dir() else []
+    receipts = sorted((sb.akramcode_home / "logs").glob("*.log")) if (sb.akramcode_home / "logs").is_dir() else []
     for log in receipts:
         text = log.read_text(encoding="utf-8", errors="replace")
         parts.append(f"--- {log.name} (tail) ---\n{text[-2500:]}")
@@ -157,20 +157,20 @@ def arm_pending_tail(sb: I.Sandbox) -> None:
 
 
 class Gateway:
-    """``hermes gateway run`` in the sandbox (the user's foreground/systemd ``ExecStart``)."""
+    """``akramcode gateway run`` in the sandbox (the user's foreground/systemd ``ExecStart``)."""
 
     def __init__(self, sb: I.Sandbox, env: dict[str, str], log: Path, argv0: list[str] | None = None):
         self.sb, self.log = sb, log
-        (sb.hermes_home / "gateway_state.json").unlink(missing_ok=True)
+        (sb.akramcode_home / "gateway_state.json").unlink(missing_ok=True)
         self._out = log.open("w")
         self.proc = subprocess.Popen(
-            H.sandbox_argv([*(argv0 or []), sb.hermes, "gateway", "run"], writable=[sb.root]),
+            H.sandbox_argv([*(argv0 or []), sb.akramcode, "gateway", "run"], writable=[sb.root]),
             env=env, cwd=str(sb.root), stdin=subprocess.DEVNULL, stdout=self._out, stderr=subprocess.STDOUT,
             text=True, start_new_session=True)
 
     def state(self) -> str:
         try:
-            return json.loads((self.sb.hermes_home / "gateway_state.json").read_text(encoding="utf-8")).get(
+            return json.loads((self.sb.akramcode_home / "gateway_state.json").read_text(encoding="utf-8")).get(
                 "gateway_state", "")
         except (OSError, ValueError):
             return ""
@@ -236,11 +236,11 @@ def process_files(pid: int) -> tuple[str, list[str], dict[str, str]]:
 
 
 def turn(sb: I.Sandbox, provider, marker: str) -> subprocess.CompletedProcess:
-    """One real ``hermes -z`` turn through the loopback provider; the request must carry ``marker``."""
+    """One real ``akramcode -z`` turn through the loopback provider; the request must carry ``marker``."""
     n = len(provider.main_requests())
-    cp = run_env(sb, [sb.hermes, "-z", marker], lazy_env(sb), timeout=600)
+    cp = run_env(sb, [sb.akramcode, "-z", marker], lazy_env(sb), timeout=600)
     new = provider.main_requests()[n:]
     assert cp.returncode == 0 and len(new) == 1 and marker in json.dumps(new[0]["messages"]), (
-        f"`hermes -z` did not reach the provider ({len(new)} requests)\n"
+        f"`akramcode -z` did not reach the provider ({len(new)} requests)\n"
         + diagnostics(sb, cp))
     return cp

@@ -56,7 +56,7 @@ def _notify_session_boundary(event_type: str, session_id: str | None, platform: 
             invoke_hook(event_type, session_id=session_id, platform=_resolve_agent_platform(platform))
 
 
-_SESSION_OWNERSHIP_UNAVAILABLE = "Hermes could not safely reserve this session. Try again."
+_SESSION_OWNERSHIP_UNAVAILABLE = "AkramCode could not safely reserve this session. Try again."
 _AUTOMATIC_SESSION_END_REASONS = frozenset({"ws_orphan_reap", "ws_disconnect", "idle_timeout", "lru_evict", "tui_shutdown"})
 
 
@@ -554,9 +554,9 @@ def _pop_session_by_id(sid: str) -> dict | None:
     with _sessions_lock:
         session = _sessions.pop(sid, None)
         if session is not None:
-            from akramcode_constants import get_hermes_home
+            from akramcode_constants import get_akramcode_home
 
-            home = str(Path(session.get("profile_home") or get_hermes_home()).resolve())
+            home = str(Path(session.get("profile_home") or get_akramcode_home()).resolve())
             last_active = time.time() if session.get("running") else float(session.get("last_active") or 0)
             _closed_session_activity[home] = max(_closed_session_activity.get(home, 0), last_active)
             session["_closing"] = True
@@ -712,7 +712,7 @@ def _interrupt_session_turn(
         # live TUI/desktop turn is the same "loop is gone" event for plugins holding per-turn external
         # resources. Observer-only; dispatch failures never break the interrupt.
         # Every caller (session.interrupt RPC, orphan/idle reapers, lease takeover) is off-turn, so bind the
-        # SESSION's profile as _finalize_session does or an observer's get_hermes_home() names the launch
+        # SESSION's profile as _finalize_session does or an observer's get_akramcode_home() names the launch
         # profile (#125063). hydrate_secrets=False: observer-only, /stop must stay fast.
         try:
             from akramcode_cli.plugins import invoke_hook as _invoke_hook
@@ -1024,7 +1024,7 @@ def _close_sessions_for_transport(transport, *, end_reason: str = "ws_disconnect
                 claimed_for_teardown = _pop_session_by_id(sid)
             else:
                 # Point at the drop sentinel (NOT real stdio) so _ws_session_is_orphaned recognizes it; standalone
-                # `hermes --tui` keeps real _stdio. UNLESS another window (pop-out viewer) still shows the session:
+                # `akramcode --tui` keeps real _stdio. UNLESS another window (pop-out viewer) still shows the session:
                 # re-bind to the most recent surviving viewer instead.
                 viewers = current.get("viewers") or {}
                 # See #83716.

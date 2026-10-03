@@ -383,7 +383,7 @@ A turn already in the ledger is redelivered by the ledger sweep, which also clea
 
 ### Stuck-Loop Detection (`_suspend_stuck_loop_sessions`)
 
-Counts consecutive restarts via a JSON file (`{HERMES_HOME}/restart_counts.json`). If a
+Counts consecutive restarts via a JSON file (`{AKRAMCODE_HOME}/restart_counts.json`). If a
 session has been active across 3+ consecutive restarts, it's auto-suspended so the user
 gets a clean slate.
 
@@ -419,7 +419,7 @@ Written at the end of a graceful shutdown. On next startup:
   were already drained, so no sessions are stuck.
 - Then delete the marker.
 
-This prevents unwanted auto-resets after `hermes update`, `hermes gateway restart`,
+This prevents unwanted auto-resets after `akramcode update`, `akramcode gateway restart`,
 or `/restart`.
 
 ---

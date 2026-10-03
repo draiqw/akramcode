@@ -25,7 +25,7 @@ class TestConfigEnvOverrides(unittest.TestCase):
 
 
     @patch.dict(os.environ, {
-        "EMAIL_ADDRESS": "hermes@test.com",
+        "EMAIL_ADDRESS": "akramcode@test.com",
         "EMAIL_PASSWORD": "secret",
         "EMAIL_IMAP_HOST": "imap.test.com",
         "EMAIL_SMTP_HOST": "smtp.test.com",
@@ -164,7 +164,7 @@ class TestDispatchMessage(unittest.TestCase):
         """Create an EmailAdapter with mocked env vars."""
         from gateway.config import PlatformConfig
         with patch.dict(os.environ, {
-            "EMAIL_ADDRESS": "hermes@test.com",
+            "EMAIL_ADDRESS": "akramcode@test.com",
             "EMAIL_PASSWORD": "secret",
             "EMAIL_IMAP_HOST": "imap.test.com",
             "EMAIL_IMAP_PORT": "993",
@@ -184,8 +184,8 @@ class TestDispatchMessage(unittest.TestCase):
 
         msg_data = {
             "uid": b"1",
-            "sender_addr": "hermes@test.com",
-            "sender_name": "Hermes",
+            "sender_addr": "akramcode@test.com",
+            "sender_name": "AkramCode",
             "subject": "Test",
             "message_id": "<msg1@test.com>",
             "in_reply_to": "",
@@ -386,7 +386,7 @@ class TestDispatchDefersToGatewayAuthorization(unittest.TestCase):
         from plugins.platforms.email.adapter import EmailAdapter
         with tempfile.TemporaryDirectory() as pairing_dir, \
                 patch("gateway.pairing.PAIRING_DIR", Path(pairing_dir)), \
-                patch.dict(os.environ, {"EMAIL_ADDRESS": "hermes@test.com", "EMAIL_PASSWORD": "secret",
+                patch.dict(os.environ, {"EMAIL_ADDRESS": "akramcode@test.com", "EMAIL_PASSWORD": "secret",
                                         "EMAIL_IMAP_HOST": "imap.test.com", "EMAIL_SMTP_HOST": "smtp.test.com",
                                         **(env or {})}):
             adapter = EmailAdapter(PlatformConfig(enabled=True, extra=dict(extra or {})))
@@ -469,7 +469,7 @@ class TestThreadContext(unittest.TestCase):
     def _make_adapter(self):
         from gateway.config import PlatformConfig
         with patch.dict(os.environ, {
-            "EMAIL_ADDRESS": "hermes@test.com",
+            "EMAIL_ADDRESS": "akramcode@test.com",
             "EMAIL_PASSWORD": "secret",
             "EMAIL_IMAP_HOST": "imap.test.com",
             "EMAIL_SMTP_HOST": "smtp.test.com",
@@ -507,7 +507,7 @@ class TestSendMethods(unittest.TestCase):
     def _make_adapter(self):
         from gateway.config import PlatformConfig
         with patch.dict(os.environ, {
-            "EMAIL_ADDRESS": "hermes@test.com",
+            "EMAIL_ADDRESS": "akramcode@test.com",
             "EMAIL_PASSWORD": "secret",
             "EMAIL_IMAP_HOST": "imap.test.com",
             "EMAIL_SMTP_HOST": "smtp.test.com",
@@ -579,7 +579,7 @@ class TestConnectDisconnect(unittest.TestCase):
     def _make_adapter(self):
         from gateway.config import PlatformConfig
         with patch.dict(os.environ, {
-            "EMAIL_ADDRESS": "hermes@test.com",
+            "EMAIL_ADDRESS": "akramcode@test.com",
             "EMAIL_PASSWORD": "secret",
             "EMAIL_IMAP_HOST": "imap.test.com",
             "EMAIL_SMTP_HOST": "smtp.test.com",
@@ -619,7 +619,7 @@ class TestFetchNewMessages(unittest.TestCase):
     def _make_adapter(self):
         from gateway.config import PlatformConfig
         with patch.dict(os.environ, {
-            "EMAIL_ADDRESS": "hermes@test.com",
+            "EMAIL_ADDRESS": "akramcode@test.com",
             "EMAIL_PASSWORD": "secret",
             "EMAIL_IMAP_HOST": "imap.test.com",
             "EMAIL_SMTP_HOST": "smtp.test.com",
@@ -664,7 +664,7 @@ class TestPollLoop(unittest.TestCase):
     def _make_adapter(self):
         from gateway.config import PlatformConfig
         with patch.dict(os.environ, {
-            "EMAIL_ADDRESS": "hermes@test.com",
+            "EMAIL_ADDRESS": "akramcode@test.com",
             "EMAIL_PASSWORD": "secret",
             "EMAIL_IMAP_HOST": "imap.test.com",
             "EMAIL_SMTP_HOST": "smtp.test.com",
@@ -858,7 +858,7 @@ class TestReconnectSeenUidsRestore(unittest.TestCase):
     def _make_adapter(self):
         from gateway.config import PlatformConfig
         with patch.dict(os.environ, {
-            "EMAIL_ADDRESS": "hermes@test.com",
+            "EMAIL_ADDRESS": "akramcode@test.com",
             "EMAIL_PASSWORD": "secret",
             "EMAIL_IMAP_HOST": "imap.test.com",
             "EMAIL_SMTP_HOST": "smtp.test.com",
@@ -927,7 +927,7 @@ class TestSendEmailStandalone(unittest.TestCase):
     """Test the standalone _send_email function in send_message_tool."""
 
     @patch.dict(os.environ, {
-        "EMAIL_ADDRESS": "hermes@test.com",
+        "EMAIL_ADDRESS": "akramcode@test.com",
         "EMAIL_PASSWORD": "secret",
         "EMAIL_SMTP_HOST": "smtp.test.com",
         "EMAIL_SMTP_PORT": "587",
@@ -946,7 +946,7 @@ class TestSendEmailStandalone(unittest.TestCase):
             mock_smtp.return_value = mock_server
 
             result = asyncio.run(
-                _send_email({"address": "hermes@test.com", "smtp_host": "smtp.test.com"}, "user@test.com", "Hello")
+                _send_email({"address": "akramcode@test.com", "smtp_host": "smtp.test.com"}, "user@test.com", "Hello")
             )
 
             self.assertTrue(result["success"])
@@ -958,14 +958,14 @@ class TestSendEmailStandalone(unittest.TestCase):
             self.assertEqual(send_call["Subject"], t("platform.email.standalone_subject"))
             self.assertIn("Date", send_call)
             self.assertEqual(send_call["To"], "user@test.com")
-            self.assertEqual(send_call["From"], "hermes@test.com")
+            self.assertEqual(send_call["From"], "akramcode@test.com")
 
 
 class TestSmtpConnectionCleanup(unittest.TestCase):
     """Verify SMTP connections are closed even when send_message raises."""
 
     @patch.dict(os.environ, {
-        "EMAIL_ADDRESS": "hermes@test.com",
+        "EMAIL_ADDRESS": "akramcode@test.com",
         "EMAIL_PASSWORD": "secret",
         "EMAIL_IMAP_HOST": "imap.test.com",
         "EMAIL_SMTP_HOST": "smtp.test.com",
@@ -978,7 +978,7 @@ class TestSmtpConnectionCleanup(unittest.TestCase):
 
 
     @patch.dict(os.environ, {
-        "EMAIL_ADDRESS": "hermes@test.com",
+        "EMAIL_ADDRESS": "akramcode@test.com",
         "EMAIL_PASSWORD": "secret",
         "EMAIL_IMAP_HOST": "imap.test.com",
         "EMAIL_SMTP_HOST": "smtp.test.com",
@@ -1002,7 +1002,7 @@ class TestImapConnectionCleanup(unittest.TestCase):
     """Verify IMAP connections are closed even when fetch raises."""
 
     @patch.dict(os.environ, {
-        "EMAIL_ADDRESS": "hermes@test.com",
+        "EMAIL_ADDRESS": "akramcode@test.com",
         "EMAIL_PASSWORD": "secret",
         "EMAIL_IMAP_HOST": "imap.test.com",
         "EMAIL_IMAP_PORT": "993",
@@ -1014,7 +1014,7 @@ class TestImapConnectionCleanup(unittest.TestCase):
         return EmailAdapter(PlatformConfig(enabled=True))
 
     @patch.dict(os.environ, {
-        "EMAIL_ADDRESS": "hermes@test.com",
+        "EMAIL_ADDRESS": "akramcode@test.com",
         "EMAIL_PASSWORD": "secret",
         "EMAIL_IMAP_HOST": "imap.test.com",
         "EMAIL_IMAP_PORT": "993",
@@ -1051,7 +1051,7 @@ class TestImapIdExtensionForNetEase(unittest.TestCase):
     def _make_adapter(self):
         from gateway.config import PlatformConfig
         with patch.dict(os.environ, {
-            "EMAIL_ADDRESS": "hermes@163.com",
+            "EMAIL_ADDRESS": "akramcode@163.com",
             "EMAIL_PASSWORD": "secret",
             "EMAIL_IMAP_HOST": "imap.163.com",
             "EMAIL_SMTP_HOST": "smtp.163.com",
@@ -1084,7 +1084,7 @@ class TestImapIdExtensionForNetEase(unittest.TestCase):
             "LOGIN so 163/NetEase mailbox does not return 'Unsafe Login'.",
         )
         payload = id_calls[0].args[1]
-        self.assertIn("hermes-agent", payload)
+        self.assertIn("akramcode-agent", payload)
 
         names = [c[0] for c in mock_imap.method_calls]
         self.assertIn("login", names)
@@ -1097,7 +1097,7 @@ class TestConnectSmtp(unittest.TestCase):
     def _make_adapter(self, port="587"):
         from gateway.config import PlatformConfig
         with patch.dict(os.environ, {
-            "EMAIL_ADDRESS": "hermes@test.com",
+            "EMAIL_ADDRESS": "akramcode@test.com",
             "EMAIL_PASSWORD": "secret",
             "EMAIL_IMAP_HOST": "imap.test.com",
             "EMAIL_SMTP_HOST": "smtp.test.com",
@@ -1156,7 +1156,7 @@ class TestConnectionConfigResolution(unittest.TestCase):
         from gateway.config import PlatformConfig
         from plugins.platforms.email.adapter import EmailAdapter
         with patch.dict(os.environ, {
-            "EMAIL_ADDRESS": "hermes@test.com",
+            "EMAIL_ADDRESS": "akramcode@test.com",
             "EMAIL_PASSWORD": "secret",
             "EMAIL_IMAP_HOST": "",
             "EMAIL_SMTP_HOST": "smtp.test.com",

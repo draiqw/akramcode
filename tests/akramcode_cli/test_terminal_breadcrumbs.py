@@ -1,7 +1,7 @@
-"""Tests for akramcode_cli/terminal_breadcrumbs.py — per-terminal ``hermes -c``.
+"""Tests for akramcode_cli/terminal_breadcrumbs.py — per-terminal ``akramcode -c``.
 
 Covers terminal id derivation (tty vs env vars vs none), breadcrumb
-write/read roundtrip under a temp HERMES_HOME, stale-session fallback
+write/read roundtrip under a temp AKRAMCODE_HOME, stale-session fallback
 (breadcrumb pointing at a deleted session), compression-tip projection,
 and the session.terminal_continue config gate.
 """
@@ -27,10 +27,10 @@ TERMINAL_ENV_VARS = (
 )
 
 @pytest.fixture
-def hermes_home(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+def akramcode_home(tmp_path, monkeypatch):
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     return home
 
 @pytest.fixture
@@ -72,7 +72,7 @@ def test_terminal_id_none_when_no_identity(monkeypatch, no_terminal_env):
 
 # ---------------------------------------------------------- write / read
 
-def test_breadcrumb_roundtrip(hermes_home, monkeypatch, no_terminal_env):
+def test_breadcrumb_roundtrip(akramcode_home, monkeypatch, no_terminal_env):
     _fake_tty(monkeypatch)
     tb.write_breadcrumb("20260815_120000_abc123", cwd="/tmp/project")
     crumb = tb.read_breadcrumb()
@@ -80,16 +80,16 @@ def test_breadcrumb_roundtrip(hermes_home, monkeypatch, no_terminal_env):
     assert crumb["session_id"] == "20260815_120000_abc123"
     assert crumb["cwd"] == "/tmp/project"
     assert isinstance(crumb["ts"], float)
-    files = list((hermes_home / "terminal-sessions").iterdir())
+    files = list((akramcode_home / "terminal-sessions").iterdir())
     assert [f.name for f in files] == ["tty-dev-pts-7"]
 
-def test_write_skipped_without_terminal_identity(hermes_home, monkeypatch, no_terminal_env):
+def test_write_skipped_without_terminal_identity(akramcode_home, monkeypatch, no_terminal_env):
     _fake_no_tty(monkeypatch)
     tb.write_breadcrumb("20260815_120000_abc123")
-    assert not (hermes_home / "terminal-sessions").exists()
+    assert not (akramcode_home / "terminal-sessions").exists()
     assert tb.read_breadcrumb() is None
 
-def test_two_terminals_do_not_clobber(hermes_home, monkeypatch, no_terminal_env):
+def test_two_terminals_do_not_clobber(akramcode_home, monkeypatch, no_terminal_env):
     _fake_tty(monkeypatch, "/dev/pts/1")
     tb.write_breadcrumb("session-one")
     _fake_tty(monkeypatch, "/dev/pts/2")
@@ -98,9 +98,9 @@ def test_two_terminals_do_not_clobber(hermes_home, monkeypatch, no_terminal_env)
     _fake_tty(monkeypatch, "/dev/pts/1")
     assert tb.read_breadcrumb()["session_id"] == "session-one"
 
-def test_stale_breadcrumb_ignored_and_pruned(hermes_home, monkeypatch, no_terminal_env):
+def test_stale_breadcrumb_ignored_and_pruned(akramcode_home, monkeypatch, no_terminal_env):
     _fake_tty(monkeypatch, "/dev/pts/1")
-    directory = hermes_home / "terminal-sessions"
+    directory = akramcode_home / "terminal-sessions"
     directory.mkdir(parents=True)
     stale = directory / "tty-dev-pts-1"
     stale.write_text(
@@ -115,9 +115,9 @@ def test_stale_breadcrumb_ignored_and_pruned(hermes_home, monkeypatch, no_termin
     tb.write_breadcrumb("fresh")
     assert not stale.exists()
 
-def test_corrupt_breadcrumb_returns_none(hermes_home, monkeypatch, no_terminal_env):
+def test_corrupt_breadcrumb_returns_none(akramcode_home, monkeypatch, no_terminal_env):
     _fake_tty(monkeypatch, "/dev/pts/1")
-    directory = hermes_home / "terminal-sessions"
+    directory = akramcode_home / "terminal-sessions"
     directory.mkdir(parents=True)
     (directory / "tty-dev-pts-1").write_text("not json{")
     assert tb.read_breadcrumb() is None
@@ -131,22 +131,22 @@ def _make_session(home: Path, session_id: str):
     db.create_session(session_id, "cli")
     db.close()
 
-def test_resolve_picks_this_terminals_session(hermes_home, monkeypatch, no_terminal_env):
+def test_resolve_picks_this_terminals_session(akramcode_home, monkeypatch, no_terminal_env):
     _fake_tty(monkeypatch, "/dev/pts/5")
-    _make_session(hermes_home, "20260815_100000_aaaaaa")
-    _make_session(hermes_home, "20260815_110000_bbbbbb")  # newer, other terminal
+    _make_session(akramcode_home, "20260815_100000_aaaaaa")
+    _make_session(akramcode_home, "20260815_110000_bbbbbb")  # newer, other terminal
     tb.write_breadcrumb("20260815_100000_aaaaaa")
     assert tb.resolve_breadcrumb_session() == "20260815_100000_aaaaaa"
 
-def test_resolve_falls_back_when_session_deleted(hermes_home, monkeypatch, no_terminal_env):
+def test_resolve_falls_back_when_session_deleted(akramcode_home, monkeypatch, no_terminal_env):
     _fake_tty(monkeypatch, "/dev/pts/5")
-    _make_session(hermes_home, "20260815_110000_bbbbbb")
+    _make_session(akramcode_home, "20260815_110000_bbbbbb")
     tb.write_breadcrumb("20260815_100000_deleted")  # never existed / deleted
     assert tb.resolve_breadcrumb_session() is None
 
-def test_resolve_projects_through_compression_chain(hermes_home, monkeypatch, no_terminal_env):
+def test_resolve_projects_through_compression_chain(akramcode_home, monkeypatch, no_terminal_env):
     _fake_tty(monkeypatch, "/dev/pts/5")
-    _make_session(hermes_home, "20260815_100000_parent")
+    _make_session(akramcode_home, "20260815_100000_parent")
     tb.write_breadcrumb("20260815_100000_parent")
 
     from akramcode_state import SessionDB
@@ -161,7 +161,7 @@ def test_resolve_projects_through_compression_chain(hermes_home, monkeypatch, no
 # ------------------------------------------------------------ config gate
 
 def test_config_gate_off_disables_writes_and_resolution(
-    hermes_home, monkeypatch, no_terminal_env
+    akramcode_home, monkeypatch, no_terminal_env
 ):
     _fake_tty(monkeypatch, "/dev/pts/9")
     import akramcode_cli.config as config_mod
@@ -170,7 +170,7 @@ def test_config_gate_off_disables_writes_and_resolution(
         config_mod, "load_config", lambda: {"session": {"terminal_continue": False}}
     )
     tb.write_breadcrumb("20260815_120000_abc123")
-    assert not (hermes_home / "terminal-sessions").exists()
+    assert not (akramcode_home / "terminal-sessions").exists()
     # Even with a pre-existing breadcrumb, resolution must decline
     monkeypatch.setattr(config_mod, "load_config", lambda: {})
     tb.write_breadcrumb("20260815_120000_abc123")

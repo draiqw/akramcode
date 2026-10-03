@@ -263,7 +263,7 @@ def _parked_agent(loop, started: asyncio.Event, release: threading.Event) -> Mag
     agent.session_completion_tokens = 0
     agent.session_total_tokens = 0
     agent._last_compaction_in_place = False
-    agent._hermes_api_runtime = {}
+    agent._akramcode_api_runtime = {}
 
     def _park(user_message=None, conversation_history=None, task_id=None):
         loop.call_soon_threadsafe(started.set)

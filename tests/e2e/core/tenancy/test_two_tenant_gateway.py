@@ -5,7 +5,7 @@ with profile A's terminal settings", "my secondary profile answered with the lau
 "deleting a profile killed the shared gateway", "a restart re-pinned one profile's env for all"
 (#89315, #101719, #105396, #111151, #102769, #107692).
 
-Harness: a real ``hermes gateway run`` child process with ``gateway.multiplex_profiles: true`` serving
+Harness: a real ``akramcode gateway run`` child process with ``gateway.multiplex_profiles: true`` serving
 the launch profile ``default`` plus ``alpha`` and ``beta``. Each profile owns its own loopback provider
 (accepting only its own key), and a distinct value for EVERY per-profile knob: provider key (same env
 var NAME, different value), API-server key, a non-secret .env marker, model id, MEMORY.md, SOUL.md,
@@ -35,7 +35,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from . import _helpers as H
 
@@ -95,7 +95,7 @@ class MultiplexGateway:
     def chat(self, prefix: str, api_key: str, text: str) -> tuple[int, Any]:
         req = urllib.request.Request(
             f"http://127.0.0.1:{self.port}{prefix}/v1/chat/completions",
-            data=json.dumps({"model": "hermes", "messages": [{"role": "user", "content": text}]}).encode(),
+            data=json.dumps({"model": "akramcode", "messages": [{"role": "user", "content": text}]}).encode(),
             headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
         )
         try:
@@ -198,12 +198,12 @@ def test_multiplexed_gateway_never_crosses_tenants(fleet, request: pytest.Fixtur
             assert len(route.srv.requests) == seen, f"{owner.name}'s key drove {route.name}'s provider"  # type: ignore[union-attr]
 
     # Phase 3: profile churn next to the live host never restarts or kills it.
-    created = H.run_hermes(["profile", "create", "gamma"], home)
+    created = H.run_akramcode(["profile", "create", "gamma"], home)
     assert created.returncode == 0, created.stderr[-2000:]
-    attach = H.run_hermes(["-p", "gamma", "gateway", "run"], home, timeout=150)
+    attach = H.run_akramcode(["-p", "gamma", "gateway", "run"], home, timeout=150)
     assert "[harness] killed" not in attach.stderr, "`-p gamma gateway run` started a second gateway"
     assert gw.proc.pid == host_pid and gw.proc.poll() is None, "profile create/attach replaced the host"  # type: ignore[union-attr]
-    deleted = H.run_hermes(["profile", "delete", "gamma", "--yes"], home)
+    deleted = H.run_akramcode(["profile", "delete", "gamma", "--yes"], home)
     assert deleted.returncode == 0, deleted.stderr[-2000:]
     assert gw.proc.pid == host_pid and gw.proc.poll() is None, f"profile delete killed the host\n{gw.tail()}"  # type: ignore[union-attr]
     _turns(gw, tenants, ["alpha", "beta"])

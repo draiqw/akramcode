@@ -1,11 +1,11 @@
-"""Model-provider plugins as first-class citizens of ``hermes auth`` and the credential pool.
+"""Model-provider plugins as first-class citizens of ``akramcode auth`` and the credential pool.
 
 A ``plugins/model-providers/<name>/`` profile (``providers.base.ProviderProfile``) is mirrored into
 ``akramcode_cli.auth.PROVIDER_REGISTRY`` with the ``auth_type`` it declares, so ``resolve_provider()``
 accepts it whatever its auth shape. Non-api-key plugins own their login through two optional profile
 callables that core consults BEFORE any built-in, name-keyed path:
 
-- ``auth_handler(action, args) -> bool`` for ``hermes auth add|status|logout|refresh <name>``
+- ``auth_handler(action, args) -> bool`` for ``akramcode auth add|status|logout|refresh <name>``
   (``args`` is the parsed CLI namespace; truthy = the plugin owned the action, falsy = built-in path).
 - ``refresh_credential(entry) -> Mapping | None`` for the credential pool: given the pooled
   ``PooledCredential`` it returns the rotated fields (``access_token``, ``refresh_token``,
@@ -64,7 +64,7 @@ def register_plugin_provider(pp: Any) -> None:
 
 
 def _user_owns_alias(pp: Any, alias: str) -> bool:
-    """True when *alias* resolves to the ``$HERMES_HOME`` plugin *pp* in the ``providers`` layer."""
+    """True when *alias* resolves to the ``$AKRAMCODE_HOME`` plugin *pp* in the ``providers`` layer."""
     try:
         from providers import get_provider_profile, provider_source
     except Exception:
@@ -76,7 +76,7 @@ def _user_owns_alias(pp: Any, alias: str) -> bool:
 def mirror_aliases(pconfig: Any, pp: Any) -> None:
     """Point ``pp.aliases`` at *pconfig* so ``resolve_provider()`` resolves them too.
 
-    A bundled plugin never steals an alias another row already holds; a ``$HERMES_HOME`` plugin
+    A bundled plugin never steals an alias another row already holds; a ``$AKRAMCODE_HOME`` plugin
     whose alias the ``providers`` layer already resolves to it does — the same ownership rule as
     :func:`override_registry_row`, otherwise the alias kept resolving to the built-in row while
     ``providers.get_provider_profile`` followed the user's profile (#116668).
@@ -89,7 +89,7 @@ def mirror_aliases(pconfig: Any, pp: Any) -> None:
 
 
 def override_registry_row(pconfig: Any, pp: Any) -> None:
-    """A ``$HERMES_HOME`` plugin re-registering a name that already has a row wins for the fields
+    """A ``$AKRAMCODE_HOME`` plugin re-registering a name that already has a row wins for the fields
     it declares — ``display_name``, ``base_url`` and, on api-key rows, ``env_vars`` (#48450, #116668). ``register_provider()``
     is last-writer-wins for the profile; without this the runtime kept reading the built-in
     endpoint. In place, so alias rows sharing the object follow; idempotent, so re-sync is free.
@@ -178,7 +178,7 @@ def is_refreshable_oauth_provider(provider: str) -> bool:
 
 
 def dispatch_plugin_auth(action: str, args: Any, provider: str) -> bool:
-    """Offer ``hermes auth <action> <provider>`` to the provider's ``auth_handler``.
+    """Offer ``akramcode auth <action> <provider>`` to the provider's ``auth_handler``.
 
     True = the plugin owned the action (core prints nothing more). False = run the built-in path. A
     handler exception becomes a readable ``SystemExit`` naming provider and action.
@@ -207,7 +207,7 @@ def plugin_missing_auth_handler_error(provider: str, action: str) -> Optional[Sy
         return None
     return SystemExit(
         f"Provider '{provider}' declares auth_type '{profile.auth_type}' but its plugin ships no "
-        f"auth_handler, so `hermes auth {action} {provider}` cannot be handled. Add "
+        f"auth_handler, so `akramcode auth {action} {provider}` cannot be handled. Add "
         "`auth_handler=` to its ProviderProfile (see the model-provider plugin guide).")
 
 
@@ -243,4 +243,4 @@ def get_plugin_oauth_auth_status(provider_id: str) -> dict[str, Any]:
         "configured": True, "provider": provider_id, "logged_in": bool(live),
         "needs_refresh": bool(refreshable), "accounts": len(entries),
         "base_url": next((e.base_url for e in live + refreshable if e.base_url), "") or "",
-        "hint": "" if live else f"Run `hermes auth add {provider_id}` to sign in."}
+        "hint": "" if live else f"Run `akramcode auth add {provider_id}` to sign in."}

@@ -1,4 +1,4 @@
-import type { GoalSnapshot } from '@hermes/shared/gateway-events'
+import type { GoalSnapshot } from '@akramcode/shared/gateway-events'
 import { useStore } from '@nanostores/react'
 import { atom } from 'nanostores'
 

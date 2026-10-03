@@ -28,4 +28,4 @@ def assemble_image(root: Path) -> None:
 
 
 if __name__ == "__main__":
-    assemble_image(Path("/opt/hermes"))
+    assemble_image(Path("/opt/akramcode"))

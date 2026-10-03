@@ -68,7 +68,7 @@ def _new_runtime_ids(params: dict) -> tuple[str, str]:
 
 
 def _profile_build_scope(profile_home):
-    """Bind HERMES_HOME + secret + terminal scope for an agent build: the same composition a turn
+    """Bind AKRAMCODE_HOME + secret + terminal scope for an agent build: the same composition a turn
     binds (``_session_profile_runtime_scope``). Home alone leaves ``get_secret()`` on the LAUNCH
     ``.env``; home + secrets alone leaves ``_make_agent``'s terminal probing on the launch process's
     ambient ``TERMINAL_*`` (a ``terminal.backend: docker`` secondary built a ``local`` agent)."""
@@ -351,7 +351,7 @@ def _create_overrides(params: dict) -> tuple:
 def _create_session(rid, params: dict, *, copy_parent_history: bool = False) -> dict:
     """``session.create``; ``copy_parent_history`` (``session.branch_stored``) reads the parent's
     transcript server-side and omits it from the reply."""
-    # ``profile`` (app-global remote mode): stored so the build and every turn re-bind HERMES_HOME.
+    # ``profile`` (app-global remote mode): stored so the build and every turn re-bind AKRAMCODE_HOME.
     profile_home = _profile_home(profile := (params.get("profile") or "").strip() or None)
     # Reject an incoherent model×provider pair BEFORE any state exists: minting it only defers the
     # failure to the first turn's provider 404 (#96817). Custom/unknown providers stay permissive.
@@ -988,7 +988,7 @@ def _resume_eager(ctx: _Resume) -> dict:
                     session["composer_override_profile"] = (
                         model_config.get("composer_override_profile")
                         if stored_runtime_overrides.get("model_override") else None)
-                # Each turn re-binds HERMES_HOME (mid-turn memory/skills reads); lease claimed lazily on turn 1.
+                # Each turn re-binds AKRAMCODE_HOME (mid-turn memory/skills reads); lease claimed lazily on turn 1.
                 if ctx.profile_home is not None:
                     session["profile_home"] = str(ctx.profile_home)
                 session.update(display_history_prefix=display_history_prefix, active_session_lease=None)
@@ -1106,7 +1106,7 @@ def _(rid, params: dict) -> dict:
         return err
     current = str(params.get("current_session_id") or "")
     # ``_finalized`` sessions linger until the reaper pops them (they inflated the footer). Do NOT filter on
-    # the WS-detached sentinel: detached is attachable until grace-reap, and ``hermes --tui`` rides stdio.
+    # the WS-detached sentinel: detached is attachable until grace-reap, and ``akramcode --tui`` rides stdio.
     # Keep insertion order (focused must not jump).
     rows = [_session_live_item(sid, session, current) for sid, session in snapshot if not session.get("_finalized")]
     return _ok(rid, {"sessions": rows})
@@ -1144,7 +1144,7 @@ def _(rid, params: dict) -> dict:
         if db is None:
             return _db_unavailable_error(rid, code=5036)
         try:
-            home = Path(profile_home) if profile_home is not None else get_hermes_home()
+            home = Path(profile_home) if profile_home is not None else get_akramcode_home()
             deleted = db.delete_session(target, sessions_dir=home / "sessions", exclude_active_write_guards=True)
         except SessionActiveWriteGuardError:
             return _err(rid, 4023, "cannot delete an active session")
@@ -1943,7 +1943,7 @@ def _(rid, params: dict, session: dict) -> dict:
     )
     project = _project_info_for_cwd(_display_session_cwd(session))
     lines = [
-        "Hermes TUI Status", "", *status_lines(fields, "session_id", "path"),
+        "AkramCode TUI Status", "", *status_lines(fields, "session_id", "path"),
         *([f"Project: {project['name']}"] if project else []),
         *status_lines(fields, "title", "model", "created", "last_activity", "tokens", "agent_running")]
     return _ok(rid, {"output": "\n".join(lines)})
@@ -2128,14 +2128,14 @@ def _(rid, params: dict, session: dict) -> dict:
         return _save_via_compute_host(rid, params)
     agent = session["agent"]
     # Classic CLI /save: under the profile home, with the system prompt (dashboard parity). The SESSION's
-    # profile: this handler runs unscoped, so get_hermes_home() alone names the launch profile.
+    # profile: this handler runs unscoped, so get_akramcode_home() alone names the launch profile.
     home = session.get("profile_home")
-    saved_dir = (Path(home) if home else get_hermes_home()) / "sessions" / "saved"
+    saved_dir = (Path(home) if home else get_akramcode_home()) / "sessions" / "saved"
     try:
         saved_dir.mkdir(parents=True, exist_ok=True)
     except Exception as e:
         return _err(rid, 5011, f"failed to create save directory {saved_dir}: {e}")
-    path = saved_dir / f"hermes_conversation_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    path = saved_dir / f"akramcode_conversation_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
     with session["history_lock"]:
         messages = list(session.get("history", []))
     # Prefer the agent's session_start (classic CLI export); else the gateway created_at.

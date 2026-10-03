@@ -1,4 +1,4 @@
-"""ACP model picker: deduplicated ``provider:model`` rows from the Hermes inventory + named endpoints."""
+"""ACP model picker: deduplicated ``provider:model`` rows from the AkramCode inventory + named endpoints."""
 
 from __future__ import annotations
 

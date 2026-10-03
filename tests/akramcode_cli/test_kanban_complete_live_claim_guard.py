@@ -2,7 +2,7 @@
 neither owns the run nor asked for an operator override (issue #111764).
 
 A claim-less completion (a human at the CLI, an orchestrator session — anything
-without ``HERMES_KANBAN_*`` env) used to be authorised by task status alone, so it
+without ``AKRAMCODE_KANBAN_*`` env) used to be authorised by task status alone, so it
 marked a ``running`` card done and ``_end_run`` closed the dispatcher worker's run
 row while that worker kept executing. The guard mirrors ``request_review``'s: a
 ``running`` task under a live claim needs ``expected_run_id`` or ``force=True``.
@@ -22,9 +22,9 @@ from akramcode_cli import kanban_db_connect as kbc
 
 @pytest.fixture
 def conn(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     db_path = kb.kanban_db_path(board="default")
     kb._INITIALIZED_PATHS.discard(str(db_path.resolve()))

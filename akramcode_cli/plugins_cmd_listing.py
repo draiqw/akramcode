@@ -1,4 +1,4 @@
-"""Read-only presentation: ``hermes plugins list``, ``show`` and ``compat``.
+"""Read-only presentation: ``akramcode plugins list``, ``show`` and ``compat``.
 
 Sibling of :mod:`akramcode_cli.plugins_cmd` (the facade re-exports the names other modules use and is
 imported late here, never at module level).
@@ -18,7 +18,7 @@ def _pc():
 
 
 def _filter_plugin_entries(entries: list, args: Any, enabled: set, disabled: set) -> list:
-    """Apply ``hermes plugins list`` CLI filters."""
+    """Apply ``akramcode plugins list`` CLI filters."""
     filtered = entries
     if getattr(args, "no_bundled", False) or getattr(args, "user", False):
         filtered = [entry for entry in filtered if entry[3] != "bundled"]
@@ -43,7 +43,7 @@ def cmd_list(args: Any | None = None) -> None:
     entries = _pc()._discover_all_plugins()
     if not entries:
         console.print("[dim]No plugins installed.[/dim]")
-        console.print("[dim]Install with:[/dim] hermes plugins install owner/repo")
+        console.print("[dim]Install with:[/dim] akramcode plugins install owner/repo")
         return
 
     enabled = _pc()._get_enabled_set()
@@ -108,9 +108,9 @@ def cmd_list(args: Any | None = None) -> None:
     for line in removed_lines:
         console.print(line)
     console.print()
-    console.print("[dim]Compact view:[/dim] hermes plugins list --plain --no-bundled")
-    console.print("[dim]Interactive toggle:[/dim] hermes plugins")
-    console.print("[dim]Enable/disable:[/dim] hermes plugins enable/disable <name>")
+    console.print("[dim]Compact view:[/dim] akramcode plugins list --plain --no-bundled")
+    console.print("[dim]Interactive toggle:[/dim] akramcode plugins")
+    console.print("[dim]Enable/disable:[/dim] akramcode plugins enable/disable <name>")
     console.print("[dim]Plugins are opt-in by default — only 'enabled' plugins load.[/dim]")
 
 
@@ -120,7 +120,7 @@ def cmd_show(name: str) -> None:
     match = _pc()._find_plugin_entry(name)
     if match is None:
         console.print(f"[red]Plugin '{name}' not found.[/red]")
-        _pc()._fail(console, "[dim]List installed plugins:[/dim] hermes plugins list")
+        _pc()._fail(console, "[dim]List installed plugins:[/dim] akramcode plugins list")
 
     pname, version, description, source, dir_path, key = match
     manifest = _pc()._read_manifest(Path(dir_path)) if dir_path else {}

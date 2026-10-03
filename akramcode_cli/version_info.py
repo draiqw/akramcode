@@ -1,4 +1,4 @@
-"""Canonical runtime identity for Hermes.
+"""Canonical runtime identity for AkramCode.
 
 Resolution order:
 1. Install stamp (``install-stamp.json``) — written at build time by
@@ -76,9 +76,9 @@ def _resolve_repo_dir() -> Path | None:
         return repo_dir
     # The PROCESS home: this is the running code's identity and is cached
     # process-wide, so a profile's context-local override must not pick it.
-    from akramcode_constants import get_process_hermes_home
+    from akramcode_constants import get_process_akramcode_home
 
-    candidate = get_process_hermes_home() / "hermes-agent"
+    candidate = get_process_akramcode_home() / "akramcode-agent"
     if (candidate / ".git").exists():
         return candidate
     return None
@@ -98,7 +98,7 @@ def _calver_release_version(repo_dir: Path) -> tuple[str, int] | None:
     Releases before semver tags existed are tagged ``vYYYY.M.D`` only; the
     version users actually run is in that tag's pyproject. Without this, a
     checkout past such a release would compare as "unknown" against plugins'
-    ``requires_hermes``.
+    ``requires_akramcode``.
     """
     described = _run_git(repo_dir, "describe", "--tags", "--long", "--match", "v2[0-9][0-9][0-9].*", "HEAD")
     if not described:

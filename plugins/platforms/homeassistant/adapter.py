@@ -80,8 +80,8 @@ def _connect_error_detail(exc: BaseException) -> str:
             and getattr(os_error, "errno", None) == errno.EHOSTUNREACH):
         return (
             f"{text} — macOS Local Network Privacy is blocking this launchd gateway from the LAN. "
-            "Run `hermes gateway install` to regenerate the launchd job, then `hermes gateway restart`. "
-            "https://github.com/NousResearch/hermes-agent/issues/71206"
+            "Run `akramcode gateway install` to regenerate the launchd job, then `akramcode gateway restart`. "
+            "https://github.com/NousResearch/akramcode-agent/issues/71206"
         )
     return text
 
@@ -365,7 +365,7 @@ _is_connected = _env_is_connected("HASS_TOKEN")
 
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the Hermes plugin system."""
+    """Plugin entry point — called by the AkramCode plugin system."""
     ctx.register_platform(
         name="homeassistant", label="Home Assistant", adapter_factory=HomeAssistantAdapter,
         check_fn=check_ha_requirements, validate_config=validate_ha_config, is_connected=_is_connected,

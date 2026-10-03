@@ -13,7 +13,7 @@ from unittest.mock import patch
 def test_activate_rescans_through_state_endpoint_when_supervisor_is_none(
     tmp_path, monkeypatch
 ):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / ".akramcode"))
     from akramcode_cli.web_routers import local_models as lm
 
     staged = tmp_path / "models"
@@ -61,7 +61,7 @@ def test_activate_rescans_through_state_endpoint_when_supervisor_is_none(
 def test_activate_skips_rescan_when_owned_server_already_lists_the_model(
     tmp_path, monkeypatch
 ):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / ".akramcode"))
     from akramcode_cli.web_routers import local_models as lm
 
     calls = {"refresh": 0}

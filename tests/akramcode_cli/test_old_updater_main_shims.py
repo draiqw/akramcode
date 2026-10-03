@@ -24,7 +24,7 @@ def test_historical_main_data_and_skipped_probes_preserve_caller_shapes(historic
     assert tmp_path / main._BYTECODE_FINGERPRINT_FILE == (
         tmp_path / main_web_build._BYTECODE_FINGERPRINT_FILE
     )
-    failed = ["hermes.exe"]
+    failed = ["akramcode.exe"]
     try:
         raise main.ShimQuarantineError(failed)
     except main.ShimQuarantineError as exc:
@@ -39,7 +39,7 @@ def test_historical_main_data_and_skipped_probes_preserve_caller_shapes(historic
     # None means indeterminate to the historical repair caller, NOT healthy [].
     assert main._detect_broken_lazy_refresh_imports(prefix, env=env) is None
     assert main._resolve_install_target_python(prefix, env) is None
-    moved = [(tmp_path / "hermes.exe", tmp_path / "hermes.exe.old")]
+    moved = [(tmp_path / "akramcode.exe", tmp_path / "akramcode.exe.old")]
     before = list(moved)
     assert main._restore_quarantined_exes(moved) is None
     assert moved == before

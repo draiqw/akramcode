@@ -9,18 +9,18 @@ from contextlib import contextmanager
 from typing import Any
 
 from agent.redact import redact_sensitive_text
-from akramcode_constants import reset_hermes_home_override, set_hermes_home_override
+from akramcode_constants import reset_akramcode_home_override, set_akramcode_home_override
 from utils import is_truthy_value
 
 
 @contextmanager
 def _owning_home(home):
-    token = set_hermes_home_override(str(home)) if home is not None else None
+    token = set_akramcode_home_override(str(home)) if home is not None else None
     try:
         yield
     finally:
         if token is not None:
-            reset_hermes_home_override(token)
+            reset_akramcode_home_override(token)
 
 
 def visible_commentary(text: str, *, strip_thinking=None) -> str:

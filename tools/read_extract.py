@@ -144,7 +144,7 @@ def _anydoc_missing_error(path: str) -> str:
     return (
         f"Cannot convert {path!r}: this format needs the optional anydoc "
         "converter, which is not installed (install blocked or first "
-        "attempt failed; retried every 5 minutes). Run `hermes pm repair` "
+        "attempt failed; retried every 5 minutes). Run `akramcode pm repair` "
         "to restore firecrawl-anydoc, or convert the file "
         "yourself via terminal (e.g. libreoffice --headless --convert-to "
         "txt).")

@@ -148,7 +148,7 @@ async def test_session_hygiene_preserves_transcript_when_no_rotation(monkeypatch
         }
     )
 
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_akramcode_home", tmp_path)
     monkeypatch.setattr(gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "fake"})
     monkeypatch.setattr(
         "agent.model_metadata.get_model_context_length",
@@ -275,7 +275,7 @@ async def test_session_hygiene_preserves_transcript_when_in_place_configured_but
         }
     )
 
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_akramcode_home", tmp_path)
     monkeypatch.setattr(gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "fake"})
     monkeypatch.setattr(
         "agent.model_metadata.get_model_context_length",
@@ -312,7 +312,7 @@ async def test_session_hygiene_timeout_continues_to_agent_and_sets_cooldown(monk
     timeout must fence its eventual commit, continue to the live agent, and
     clean up the temporary agent only after the worker actually returns.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     fake_dotenv = types.ModuleType("dotenv")
     fake_dotenv.load_dotenv = lambda *args, **kwargs: None
     monkeypatch.setitem(sys.modules, "dotenv", fake_dotenv)
@@ -415,7 +415,7 @@ async def test_session_hygiene_timeout_continues_to_agent_and_sets_cooldown(monk
         }
     )
 
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_akramcode_home", tmp_path)
     monkeypatch.setattr(gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "fake"})
     monkeypatch.setattr(
         "agent.model_metadata.get_model_context_length",
@@ -489,7 +489,7 @@ async def test_session_hygiene_forces_in_place_compaction_with_bound_session_db(
     monkeypatch.setitem(sys.modules, "dotenv", fake_dotenv)
 
     stored_system_prompt = (
-        "You are Hermes.\n\n"
+        "You are AkramCode.\n\n"
         "<memory_provider_context>\n"
         "Pinboard provider instructions\n"
         "</memory_provider_context>"
@@ -578,7 +578,7 @@ async def test_session_hygiene_forces_in_place_compaction_with_bound_session_db(
         }
     )
 
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_akramcode_home", tmp_path)
     monkeypatch.setattr(
         gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "fake"}
     )
@@ -714,7 +714,7 @@ async def test_session_hygiene_honors_configurable_hard_message_limit(
         }
     )
 
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_akramcode_home", tmp_path)
     monkeypatch.setattr(
         gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "fake"}
     )
@@ -817,7 +817,7 @@ def _make_cooldown_runner(monkeypatch, tmp_path, agent_cls, session_db, session_
         }
     )
 
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_akramcode_home", tmp_path)
     monkeypatch.setattr(gateway_run, "_resolve_runtime_agent_kwargs", lambda: {"api_key": "fake"})
     monkeypatch.setattr(
         "agent.model_metadata.get_model_context_length",

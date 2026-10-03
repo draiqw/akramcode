@@ -67,7 +67,7 @@ def _rewind_via(surface: str, db: SessionDB, sid: str, n: int):
 
 @pytest.fixture()
 def db(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     from tui_gateway import server
     handle = SessionDB(db_path=tmp_path / "state.db")
     monkeypatch.setattr(server, "_db", handle)

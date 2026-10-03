@@ -67,7 +67,7 @@ class TestOllamaCloudModelCatalog:
         """provider_model_ids('ollama-cloud') should call fetch_ollama_cloud_models()."""
         from akramcode_cli.models import provider_model_ids
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
         monkeypatch.setenv("OLLAMA_API_KEY", "test-key")
 
         mock_mdev = {
@@ -93,7 +93,7 @@ class TestOllamaCloudModelPicker:
         """Ollama Cloud should show non-zero model count in provider picker."""
         from akramcode_cli.model_switch import list_authenticated_providers
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
         monkeypatch.setenv("OLLAMA_API_KEY", "test-key")
 
         mock_mdev = {
@@ -130,7 +130,7 @@ class TestOllamaCloudMergedDiscovery:
         """Live API models appear first, models.dev additions fill gaps."""
         from akramcode_cli.models import fetch_ollama_cloud_models
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
         monkeypatch.setenv("OLLAMA_API_KEY", "test-key")
 
         mock_mdev = {
@@ -157,7 +157,7 @@ class TestOllamaCloudMergedDiscovery:
         """Without API key, only models.dev results are returned."""
         from akramcode_cli.models import fetch_ollama_cloud_models
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
         monkeypatch.delenv("OLLAMA_API_KEY", raising=False)
 
         mock_mdev = {
@@ -179,7 +179,7 @@ class TestOllamaCloudMergedDiscovery:
         import time
         from akramcode_cli.models import fetch_ollama_cloud_models
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
         monkeypatch.setenv("OLLAMA_API_KEY", "test-key")
         cache = tmp_path / "ollama_cloud_models_cache.json"
         cache.write_text(json.dumps({"models": ["live-only", "shared"], "cached_at": time.time() - 7200}))
@@ -247,7 +247,7 @@ class TestOllamaCloudSuffixStripping:
         """Live API returns clean ID; mdev has :cloud variant — result has exactly one entry."""
         from akramcode_cli.models import fetch_ollama_cloud_models
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
         monkeypatch.setenv("OLLAMA_API_KEY", "test-key")
 
         mock_mdev = {

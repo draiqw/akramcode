@@ -65,8 +65,8 @@ class RunIdempotencyStore:
     def __init__(self, db_path: str = None):
         if db_path is None:
             try:
-                from akramcode_cli.config import get_hermes_home
-                db_path = str(get_hermes_home() / "runs_idempotency.db")
+                from akramcode_cli.config import get_akramcode_home
+                db_path = str(get_akramcode_home() / "runs_idempotency.db")
             except Exception:
                 db_path = ":memory:"
         self._db_path = None if db_path == ":memory:" else db_path

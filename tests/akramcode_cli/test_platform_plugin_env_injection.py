@@ -1,6 +1,6 @@
 """User-installed platform plugins feed OPTIONAL_ENV_VARS like bundled ones (#46600, redo of #46964).
 
-The Desktop Gateway form and ``hermes config`` render env fields from ``OPTIONAL_ENV_VARS``; before
+The Desktop Gateway form and ``akramcode config`` render env fields from ``OPTIONAL_ENV_VARS``; before
 this, only ``plugins/platforms/*`` in the repo was scanned, so a third-party platform's
 ``requires_env`` prompts/descriptions/password flags never reached the UI.
 """
@@ -14,7 +14,7 @@ def _manifest(path, text):
 
 
 def test_user_platform_plugins_inject_env_metadata_but_non_platforms_do_not(monkeypatch, tmp_path):
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "akramcode-home"
     _manifest(home / "plugins" / "demo-platform", (
         "name: demo-platform\nkind: platform\nlabel: Demo Platform\n"
         "requires_env:\n  - name: DEMO_PLATFORM_TOKEN\n    description: Token for the demo platform\n"
@@ -24,7 +24,7 @@ def test_user_platform_plugins_inject_env_metadata_but_non_platforms_do_not(monk
         "name: nested-platform\nrequires_env:\n  - NESTED_PLATFORM_SECRET\n"))
     _manifest(home / "plugins" / "ignore-me", "name: ignore-me\nkind: backend\nrequires_env:\n  - IGNORE_ME_TOKEN\n")
     keys = ["DEMO_PLATFORM_TOKEN", "DEMO_PLATFORM_ROOM", "NESTED_PLATFORM_SECRET", "IGNORE_ME_TOKEN"]
-    monkeypatch.setattr(config_mod, "get_hermes_home", lambda: home)
+    monkeypatch.setattr(config_mod, "get_akramcode_home", lambda: home)
     for key in keys:
         monkeypatch.delitem(config_mod.OPTIONAL_ENV_VARS, key, raising=False)
 

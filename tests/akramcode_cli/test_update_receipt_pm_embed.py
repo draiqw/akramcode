@@ -18,9 +18,9 @@ import akramcode_cli.update_receipt as ur
 
 @pytest.fixture
 def homed(tmp_path, monkeypatch):
-    import hermes_constants
+    import akramcode_constants
 
-    monkeypatch.setattr(hermes_constants, "get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr(akramcode_constants, "get_akramcode_home", lambda: tmp_path)
     import pm.receipt as pm_receipt_mod
 
     monkeypatch.setattr(pm_receipt_mod, "_receipt_dir", lambda: tmp_path / "logs" / "update_receipts")

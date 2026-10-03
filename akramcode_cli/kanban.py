@@ -1,4 +1,4 @@
-"""``hermes kanban …`` — dispatch (``kanban_command``), task-verb handlers, ``run_slash`` for ``/kanban``.
+"""``akramcode kanban …`` — dispatch (``kanban_command``), task-verb handlers, ``run_slash`` for ``/kanban``.
 DB work lives in ``kanban_db``; siblings: ``kanban_parser`` (argparse, re-exported ``build_parser``),
 ``kanban_output`` (text/--json), ``kanban_boards`` (``boards …``), ``kanban_ops`` (dispatch/daemon/
 tail/watch/gc/repair).
@@ -96,14 +96,14 @@ def _parse_branch_flag(value: Optional[str]) -> Optional[str]:
     return branch
 
 
-def _check_dispatcher_presence(hermes_home: Optional[Path] = None) -> tuple[bool, str]:
+def _check_dispatcher_presence(akramcode_home: Optional[Path] = None) -> tuple[bool, str]:
     """``(running, message)`` for the "will anything dispatch this?" warning: True when a gateway is
-    alive for this HERMES_HOME with ``kanban.dispatch_in_gateway`` on, else False + human guidance.
+    alive for this AKRAMCODE_HOME with ``kanban.dispatch_in_gateway`` on, else False + human guidance.
     Fails OPEN (probe/config errors -> ``(True, "")``) — a missed warning beats crying wolf.
-    ``hermes_home`` scopes the probe to a profile dir (dashboard backend); CLI callers pass None.
+    ``akramcode_home`` scopes the probe to a profile dir (dashboard backend); CLI callers pass None.
 
     The dashboard plugin API passes it because the dashboard backend process can be running under a
-    different HERMES_HOME than the profile the request targets, which otherwise produced a "no gateway is
+    different AKRAMCODE_HOME than the profile the request targets, which otherwise produced a "no gateway is
     running" warning against a perfectly healthy profile gateway (#71211). CLI callers leave it ``None`` and
     keep the existing process-level behavior.
     """
@@ -112,7 +112,7 @@ def _check_dispatcher_presence(hermes_home: Optional[Path] = None) -> tuple[bool
 
         # Same ladder as the dashboard status endpoints so PID-file-less / cross-container gateways
         # aren't misreported; use_cache=False because this one-shot probe must see the state now.
-        liveness = resolve_gateway_liveness(profile_dir=hermes_home, use_cache=False)
+        liveness = resolve_gateway_liveness(profile_dir=akramcode_home, use_cache=False)
     except Exception:
         return (True, "")  # can't probe — silent
     if liveness.probe_error:  # resolver swallows per-rung failures; "can't tell" != "no gateway"
@@ -125,9 +125,9 @@ def _check_dispatcher_presence(hermes_home: Optional[Path] = None) -> tuple[bool
         return (False, "Gateway is running but kanban.dispatch_in_gateway=false in "
                 "config.yaml — the task will sit in 'ready' until you flip it "
                 "back on and restart the gateway, OR run the legacy "
-                "standalone daemon (`hermes kanban daemon --force`).")
+                "standalone daemon (`akramcode kanban daemon --force`).")
     return (False, "No gateway is running — the task will sit in 'ready' until you "
-            "start it. Run:\n    hermes gateway start\n"
+            "start it. Run:\n    akramcode gateway start\n"
             "The gateway hosts an embedded dispatcher (tick interval 60s by "
             "default); your task will be picked up on the next tick after "
             "the gateway comes up.")
@@ -136,15 +136,15 @@ def _check_dispatcher_presence(hermes_home: Optional[Path] = None) -> tuple[bool
 # --- Command dispatch ---
 
 def kanban_command(args: argparse.Namespace) -> int:
-    """Entry point from ``hermes kanban …``; returns a shell-style exit code."""
+    """Entry point from ``akramcode kanban …``; returns a shell-style exit code."""
     action = getattr(args, "kanban_action", None)
     if not action:
         parser = getattr(args, "_kanban_parser", None)
         if parser is not None:
             parser.print_help()
         else:
-            print("usage: hermes kanban <action> [options]\n"
-                  "Run 'hermes kanban --help' for the full list of actions.", file=sys.stderr)
+            print("usage: akramcode kanban <action> [options]\n"
+                  "Run 'akramcode kanban --help' for the full list of actions.", file=sys.stderr)
         return 0
 
     # Fast-fail for UX only; the durable trust boundary is in kanban_db, since children can
@@ -157,7 +157,7 @@ def kanban_command(args: argparse.Namespace) -> int:
     if action == "boards":
         return _dispatch_boards(args)
 
-    # `--board <slug>` pins HERMES_KANBAN_BOARD for the duration of this call so it inherits the
+    # `--board <slug>` pins AKRAMCODE_KANBAN_BOARD for the duration of this call so it inherits the
     # exact resolution the dispatcher uses for workers.
     board_override = getattr(args, "board", None)
     board_scope = contextlib.nullcontext()
@@ -172,7 +172,7 @@ def kanban_command(args: argparse.Namespace) -> int:
         # create an empty board.
         if normed != kb.DEFAULT_BOARD and not kb.board_exists(normed):
             return _err(f"kanban: board {normed!r} does not exist. "
-                        f"Create it with `hermes kanban boards create {normed}`.")
+                        f"Create it with `akramcode kanban boards create {normed}`.")
         board_scope = kb.scoped_current_board(normed)
 
     with board_scope:
@@ -181,7 +181,7 @@ def kanban_command(args: argparse.Namespace) -> int:
         if action == "repair":
             return _cmd_repair(args)
         # init_db is idempotent (one sqlite_master SELECT when tables exist) and prevents
-        # "no such table: tasks" on first use from a fresh HERMES_HOME.
+        # "no such table: tasks" on first use from a fresh AKRAMCODE_HOME.
         try:
             kb.init_db()
         except Exception as exc:
@@ -296,11 +296,11 @@ def _cmd_init(args: argparse.Namespace) -> int:
         for name in profiles:
             print(f"  {name}")
     else:
-        print("No profiles found under ~/.hermes/profiles/.\n"
-              "Create one with `hermes -p <name> setup` before assigning tasks.")
+        print("No profiles found under ~/.akramcode/profiles/.\n"
+              "Create one with `akramcode -p <name> setup` before assigning tasks.")
     print(
         "\nNext step: start the gateway so ready tasks actually get picked up.\n"
-        "  hermes gateway start\n\n"
+        "  akramcode gateway start\n\n"
         "The gateway hosts an embedded dispatcher that ticks every 60 seconds\n"
         "by default (config: kanban.dispatch_interval_seconds). Without a\n"
         "running gateway, tasks stay in 'ready' forever."
@@ -322,7 +322,7 @@ def _cmd_assignees(args: argparse.Namespace) -> int:
     if _json_out(args, data):
         return 0
     if not data:
-        print("(no assignees — create a profile with `hermes -p <name> setup`)")
+        print("(no assignees — create a profile with `akramcode -p <name> setup`)")
         return 0
     print(f"{'NAME':20s}  {'ON DISK':8s}  COUNTS")
     for entry in data:
@@ -374,7 +374,7 @@ def _cmd_create(args: argparse.Namespace) -> int:
             goal_max_turns=getattr(args, "goal_max_turns", None),
             completion_contract=getattr(args, "completion_contract", None),
             initial_status=getattr(args, "initial_status", "running"),
-            creator_task_id=(os.environ.get("HERMES_KANBAN_TASK")
+            creator_task_id=(os.environ.get("AKRAMCODE_KANBAN_TASK")
                              if is_dispatcher_owned_worker_context() else None),
         )
         task = kb.get_task(conn, task_id)
@@ -437,7 +437,7 @@ def _cmd_list(args: argparse.Namespace) -> int:
     if len(all_boards) > 1:
         other_count = len(all_boards) - 1
         print(f"Board: {kb.get_current_board()} ({other_count} other board{'s' if other_count != 1 else ''} — "
-              f"`hermes kanban boards list`)\n")
+              f"`akramcode kanban boards list`)\n")
     if not tasks:
         print("(no matching tasks)")
         return 0
@@ -708,7 +708,7 @@ def _cmd_link(args: argparse.Namespace) -> int:
     # ownership with its run id; linking a foreign task never needs one.
     expected_child_run_id = (
         _worker_run_id_for(args.child_id)
-        if args.child_id == os.environ.get("HERMES_KANBAN_TASK") else None)
+        if args.child_id == os.environ.get("AKRAMCODE_KANBAN_TASK") else None)
     with kbc.connect_closing() as conn:
         gated = kb.link_tasks(conn, args.parent_id, args.child_id,
                               expected_child_run_id=expected_child_run_id)
@@ -718,7 +718,7 @@ def _cmd_link(args: argparse.Namespace) -> int:
             f"Note: {args.child_id} was ready and is now todo — parent "
             f"{args.parent_id} is not done yet. The ready -> running claim "
             f"re-checks parents, so the child only runs after the parent "
-            f"completes; use `hermes kanban unlink {args.parent_id} {args.child_id}` "
+            f"completes; use `akramcode kanban unlink {args.parent_id} {args.child_id}` "
             f"to run it now."
         )
     return 0
@@ -812,11 +812,11 @@ def _cmd_attach_rm(args: argparse.Namespace) -> int:
 
 
 def _worker_run_id_for(task_id: str) -> Optional[int]:
-    env_tid = os.environ.get("HERMES_KANBAN_TASK")
+    env_tid = os.environ.get("AKRAMCODE_KANBAN_TASK")
     if env_tid and env_tid != task_id:
         raise ValueError(f"worker is scoped to task {env_tid}; refusing to mutate {task_id}")
-    raw = os.environ.get("HERMES_KANBAN_RUN_ID")
-    if os.environ.get("HERMES_KANBAN_TASK") != task_id or not raw:
+    raw = os.environ.get("AKRAMCODE_KANBAN_RUN_ID")
+    if os.environ.get("AKRAMCODE_KANBAN_TASK") != task_id or not raw:
         return None
     try:
         return int(raw)
@@ -923,7 +923,7 @@ def _cmd_complete(args: argparse.Namespace) -> int:
                                         force=bool(getattr(args, "force", False)))
             except kb.LiveClaimError:
                 fail_msg[tid] = (f"cannot complete {tid}: a live worker is running it. Wait for the "
-                                 f"worker, `hermes kanban reclaim {tid}` to release it, or re-run with "
+                                 f"worker, `akramcode kanban reclaim {tid}` to release it, or re-run with "
                                  f"--force to close its run and complete anyway.")
                 return False
             except kb.EmptyCompletionError as empty_err:
@@ -937,7 +937,7 @@ def _cmd_complete(args: argparse.Namespace) -> int:
                 if blockers:
                     detail = ", ".join(f"{pid} ({status})" for pid, status in blockers)
                     fail_msg[tid] = (f"cannot complete {tid}: unsatisfied parent dependencies: {detail}; "
-                                     f"complete the parents first, or `hermes kanban unlink <parent> {tid}`.")
+                                     f"complete the parents first, or `akramcode kanban unlink <parent> {tid}`.")
             return done
 
         return _bulk_apply(ids, op, lambda tid: f"Completed {tid}", fail_msg.__getitem__)
@@ -1017,7 +1017,7 @@ def _cmd_schedule(args: argparse.Namespace) -> int:
 
 
 def _cmd_unblock(args: argparse.Namespace) -> int:
-    if os.environ.get("HERMES_KANBAN_TASK"):
+    if os.environ.get("AKRAMCODE_KANBAN_TASK"):
         return _err("kanban unblock is orchestrator-only; workers must hand off their assigned task")
     ids, rc = _require_ids(args)
     if rc:

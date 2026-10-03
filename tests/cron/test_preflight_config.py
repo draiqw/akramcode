@@ -69,9 +69,9 @@ def _run_job_patched(job, tmp_path, *, resolve=None, skill_view=None):
     """
     fake_db = MagicMock()
     patches = [
-        patch("cron.scheduler._hermes_home", tmp_path),
+        patch("cron.scheduler._akramcode_home", tmp_path),
         patch("cron.scheduler_delivery._resolve_origin", return_value=None),
-        patch("akramcode_cli.env_loader.load_hermes_dotenv"),
+        patch("akramcode_cli.env_loader.load_akramcode_dotenv"),
         patch("akramcode_cli.env_loader.reset_secret_source_cache"),
         patch("akramcode_state.registry.acquire", return_value=fake_db),
         patch("tools.mcp_tool_discovery.discover_mcp_tools", return_value=[]),
@@ -138,9 +138,9 @@ class TestMissingProviderKeyBlocks:
             fake_db = MagicMock()
             for _tick in range(2):
                 fresh = [j for j in cron_jobs.load_jobs() if j["id"] == job["id"]][0]
-                with patch("cron.scheduler._hermes_home", tmp_path), \
+                with patch("cron.scheduler._akramcode_home", tmp_path), \
                      patch("cron.scheduler_delivery._resolve_origin", return_value=None), \
-                     patch("akramcode_cli.env_loader.load_hermes_dotenv"), \
+                     patch("akramcode_cli.env_loader.load_akramcode_dotenv"), \
                      patch("akramcode_cli.env_loader.reset_secret_source_cache"), \
                      patch("akramcode_state.registry.acquire", return_value=fake_db), \
                      patch("tools.mcp_tool_discovery.discover_mcp_tools", return_value=[]), \
@@ -271,9 +271,9 @@ class TestOptOut:
             fake_db = MagicMock()
             for _tick in range(2):
                 fresh = [j for j in cron_jobs.load_jobs() if j["id"] == job["id"]][0]
-                with patch("cron.scheduler._hermes_home", tmp_path), \
+                with patch("cron.scheduler._akramcode_home", tmp_path), \
                      patch("cron.scheduler_delivery._resolve_origin", return_value=None), \
-                     patch("akramcode_cli.env_loader.load_hermes_dotenv"), \
+                     patch("akramcode_cli.env_loader.load_akramcode_dotenv"), \
                      patch("akramcode_cli.env_loader.reset_secret_source_cache"), \
                      patch("akramcode_state.registry.acquire", return_value=fake_db), \
                      patch("tools.mcp_tool_discovery.discover_mcp_tools", return_value=[]), \

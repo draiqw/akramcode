@@ -38,19 +38,19 @@ def _event(text: str) -> MessageEvent:
 
 def _runner_with_store(tmp_path, monkeypatch):
     """Minimal GatewayRunner harness driving the real /model handler."""
-    import akram_core.hermes_yaml as _yaml
+    import akram_core.akramcode_yaml as _yaml
 
     import gateway.run as gateway_run
     from gateway.run import GatewayRunner
     from akramcode_cli.model_switch import ModelSwitchResult
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    akramcode_home = tmp_path / ".akramcode"
+    akramcode_home.mkdir()
+    (akramcode_home / "config.yaml").write_text(
         _yaml.safe_dump({"model": {"default": "old-model", "provider": "openrouter"}}),
         encoding="utf-8",
     )
-    monkeypatch.setattr(gateway_run, "_hermes_home", hermes_home)
+    monkeypatch.setattr(gateway_run, "_akramcode_home", akramcode_home)
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr(
         "akramcode_cli.model_switch.switch_model",
@@ -65,8 +65,8 @@ def _runner_with_store(tmp_path, monkeypatch):
             provider_label="OpenRouter",
         ),
     )
-    monkeypatch.setattr("hermes_constants.get_hermes_home", lambda: hermes_home)
-    monkeypatch.setattr("akramcode_cli.config.get_hermes_home", lambda: hermes_home)
+    monkeypatch.setattr("akramcode_constants.get_akramcode_home", lambda: akramcode_home)
+    monkeypatch.setattr("akramcode_cli.config.get_akramcode_home", lambda: akramcode_home)
     # No expensive-model confirmation detour.
     monkeypatch.setattr(
         "akramcode_cli.model_cost_guard.expensive_model_warning",

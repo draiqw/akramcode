@@ -18,7 +18,7 @@ def main():
     args = parser.parse_args()
     if not args.child:
         with tempfile.TemporaryDirectory(prefix="kanban-identity-") as home:
-            env = {"HOME": home, "HERMES_HOME": home + "/hermes", "PATH": os.defpath,
+            env = {"HOME": home, "AKRAMCODE_HOME": home + "/akramcode", "PATH": os.defpath,
                    "LANG": "C.UTF-8", "TZ": "UTC", "PYTHONDONTWRITEBYTECODE": "1"}
             return subprocess.run(
                 [sys.executable, str(Path(__file__).resolve()), "--repo", str(args.repo), "--child"],

@@ -53,11 +53,11 @@ def test_historical_payload_maps_to_takeover_request_schema(tmp_path, desktop, r
     # The retired updater reaches the takeover through the NEW tree's hand-off module; this
     # checkout is the whole tree the child sees (CI has no editable finder for the source).
     shutil.copy2(source / "akramcode_cli/update_handoff.py", package / "update_handoff.py")
-    # write_handoff resolves the home through hermes_constants; the child tree is the whole
+    # write_handoff resolves the home through akramcode_constants; the child tree is the whole
     # sys.path (CI has no editable finder), so give it the one name the hand-off reads.
-    (root / "hermes_constants.py").write_text(
+    (root / "akramcode_constants.py").write_text(
         "import os\nfrom pathlib import Path\n"
-        "def get_hermes_home():\n    return Path(os.environ['HERMES_HOME'])\n", encoding="utf-8",
+        "def get_akramcode_home():\n    return Path(os.environ['AKRAMCODE_HOME'])\n", encoding="utf-8",
     )
     program = root / "historical.py"
     program.write_text(
@@ -68,8 +68,8 @@ def test_historical_payload_maps_to_takeover_request_schema(tmp_path, desktop, r
         "raise SystemExit(code)\n", encoding="utf-8",
     )
     env = {key: value for key, value in os.environ.items()
-           if not key.startswith(('HERMES_', 'PYTHON', 'UV_'))}
-    env.update(HOME=str(home), HERMES_HOME=str(home))
+           if not key.startswith(('AKRAMCODE_', 'PYTHON', 'UV_'))}
+    env.update(HOME=str(home), AKRAMCODE_HOME=str(home))
     result = subprocess.run([sys.executable, "-B", str(program)], env=env,
                             capture_output=True, text=True, timeout=30)
     assert result.returncode == 0, result.stdout + result.stderr
@@ -80,7 +80,7 @@ def test_historical_payload_maps_to_takeover_request_schema(tmp_path, desktop, r
 
 @pytest.mark.live_system_guard_bypass
 def test_shipped_post_swap_argv_enters_takeover_before_current_cli(tmp_path):
-    """The 2026.9.21 updater starts HEAD as ``hermes update <flags> --post-swap FILE``.
+    """The 2026.9.21 updater starts HEAD as ``akramcode update <flags> --post-swap FILE``.
 
     That command must reach the historical takeover before current launch preparation or
     argparse: both belong to the replacement updater and may require dependencies the old
@@ -92,10 +92,10 @@ def test_shipped_post_swap_argv_enters_takeover_before_current_cli(tmp_path):
     package.mkdir(parents=True)
     (package / "__init__.py").write_text("", encoding="utf-8")
     (package / "main.py").write_text(
-        "import akram_core.hermes_bootstrap\nraise AssertionError('current CLI parsed a legacy continuation')\n",
+        "import akram_core.akramcode_bootstrap\nraise AssertionError('current CLI parsed a legacy continuation')\n",
         encoding="utf-8",
     )
-    for relative in ("akram_core.hermes_bootstrap.py", "akramcode_cli/update_handoff.py", "akramcode_cli/_old_updater.py"):
+    for relative in ("akram_core.akramcode_bootstrap.py", "akramcode_cli/update_handoff.py", "akramcode_cli/_old_updater.py"):
         shutil.copy2(source / relative, root / relative)
     (package / "_update_takeover.py").write_text(
         "import json, sys\nfrom pathlib import Path\n"
@@ -120,8 +120,8 @@ def test_shipped_post_swap_argv_enters_takeover_before_current_cli(tmp_path):
     }
     handoff.write_text(json.dumps(payload), encoding="utf-8")
     env = {key: value for key, value in os.environ.items()
-           if not key.startswith(("HERMES_", "PYTHON", "UV_"))}
-    env.update(HOME=str(home), HERMES_HOME=str(home))
+           if not key.startswith(("AKRAMCODE_", "PYTHON", "UV_"))}
+    env.update(HOME=str(home), AKRAMCODE_HOME=str(home))
     result = subprocess.run(
         [sys.executable, "-B", "-m", "akramcode_cli.main", "update", "--yes",
          "--no-gateway-restart", "--branch", "main", "--post-swap", str(handoff)],
@@ -153,7 +153,7 @@ def test_takeover_waits_propagates_status_and_never_reenters_old_code(tmp_path, 
         "assert request['pre_update_snapshot_id'] == 'preserve-snapshot'\n"
         "assert request['gateway_mode'] == True\n"
         "assert request['pre_update_version'] == 'old-version'\n"
-        "assert request['home'] == os.environ['HERMES_HOME']\n"
+        "assert request['home'] == os.environ['AKRAMCODE_HOME']\n"
         "with Path(request['home'], 'runs').open('a') as stream: stream.write('child\\n')\n"
         f"Path(sys.argv[2]).write_text(json.dumps({{'resume_handled': True}}), encoding={encoding!r})\n"
         f"raise SystemExit({status})\n", encoding="utf-8",
@@ -173,21 +173,21 @@ def test_takeover_waits_propagates_status_and_never_reenters_old_code(tmp_path, 
         "def cleanup():\n"
         "    assert not _windows_gateway_resume['resume_needed']\n"
         "    assert 'old_only' in sys.modules\n"
-        "    Path(os.environ['HERMES_HOME'], 'cleanup').write_text('ran')\n"
+        "    Path(os.environ['AKRAMCODE_HOME'], 'cleanup').write_text('ran')\n"
         "atexit.register(cleanup)\n"
         "try:\n    stop_for_relaunch()\n"
         "finally:\n    stop_for_relaunch()\n"
         "raise AssertionError('old updater resumed')\n", encoding="utf-8",
     )
     env = {key: value for key, value in os.environ.items()
-           if not key.startswith(('HERMES_', 'PYTHON', 'UV_'))}
-    env.update(HOME=str(home), HERMES_HOME=str(home), PYTHONPATH="/not/the/new/source")
+           if not key.startswith(('AKRAMCODE_', 'PYTHON', 'UV_'))}
+    env.update(HOME=str(home), AKRAMCODE_HOME=str(home), PYTHONPATH="/not/the/new/source")
     result = subprocess.run([sys.executable, "-B", str(program)], env=env,
                             capture_output=True, text=True, timeout=30)
     assert result.returncode == status, result.stdout + result.stderr
     assert (home / "runs").read_text() == "child\n"
     assert (home / "cleanup").read_text() == "ran"
-    assert "run `hermes` again" not in result.stderr
+    assert "run `akramcode` again" not in result.stderr
 
 
 # Only the copied shim and JSON probe run; this temp checkout has no real updater.
@@ -228,8 +228,8 @@ def test_only_known_early_updater_restarts_with_original_arguments(tmp_path, pos
         "raise AssertionError('old updater resumed')\n", encoding="utf-8",
     )
     env = {key: value for key, value in os.environ.items()
-           if not key.startswith(("HERMES_", "PYTHON", "UV_"))}
-    env.update(HOME=str(home), HERMES_HOME=str(home))
+           if not key.startswith(("AKRAMCODE_", "PYTHON", "UV_"))}
+    env.update(HOME=str(home), AKRAMCODE_HOME=str(home))
     result = subprocess.run([sys.executable, "-B", *argv], env=env,
                             capture_output=True, text=True, timeout=30)
     assert result.returncode == 0, result.stdout + result.stderr
@@ -275,14 +275,14 @@ def test_atexit_recovers_only_stopped_serves_after_cached_update(tmp_path, ackno
         "        _relaunch_stopped_serves(token)\n"
         "        if not token['pending']:\n            _relaunch_stopped_serves(token)\n"
         "    finally:\n"
-        "        Path(os.environ['HERMES_HOME'], 'token.json').write_text(json.dumps(token))\n"
+        "        Path(os.environ['AKRAMCODE_HOME'], 'token.json').write_text(json.dumps(token))\n"
         "atexit.register(cleanup)\n"
         "stop_for_relaunch()\n"
         "raise AssertionError('old updater resumed')\n", encoding="utf-8",
     )
     env = {key: value for key, value in os.environ.items()
-           if not key.startswith(("HERMES_", "PYTHON", "UV_"))}
-    env.update(HOME=str(home), HERMES_HOME=str(home))
+           if not key.startswith(("AKRAMCODE_", "PYTHON", "UV_"))}
+    env.update(HOME=str(home), AKRAMCODE_HOME=str(home))
     result = subprocess.run([sys.executable, "-B", str(program)], env=env,
                             capture_output=True, text=True, timeout=30)
     assert result.returncode == 7, result.stdout + result.stderr
@@ -308,7 +308,7 @@ def test_serve_resume_child_reuses_respawn_without_updater_or_supervisors(tmp_pa
         entries += [
             dict(entries[0]),
             {"purpose": "serve", "profile": "desktop", "port": 0},
-            {"purpose": "serve", "profile": "foreign", "port": 8121, "hermes_home": str(tmp_path / "foreign")},
+            {"purpose": "serve", "profile": "foreign", "port": 8121, "akramcode_home": str(tmp_path / "foreign")},
             {"purpose": "gateway", "profile": "not-serve", "port": 8122},
             {"purpose": "serve", "profile": "boolean-port", "port": True},
             {"purpose": "serve", "profile": "invalid-port", "port": 65536},
@@ -333,20 +333,20 @@ def test_serve_resume_child_reuses_respawn_without_updater_or_supervisors(tmp_pa
         "try:\n    runpy.run_path(sys.argv[0], run_name='__main__')\n"
         "finally:\n"
         "    assert not any(name in sys.modules for name in ('akramcode_cli.update_cmd', 'akramcode_cli.update_receipt', 'akramcode_cli.main'))\n"
-        "    Path(os.environ['HERMES_HOME'], 'commands.json').write_text(json.dumps(calls))\n",
+        "    Path(os.environ['AKRAMCODE_HOME'], 'commands.json').write_text(json.dumps(calls))\n",
         encoding="utf-8",
     )
     env = {key: value for key, value in os.environ.items()
-           if not key.startswith(("HERMES_", "PYTHON", "UV_"))}
-    env.update(HOME=str(home), HERMES_HOME=str(home))
+           if not key.startswith(("AKRAMCODE_", "PYTHON", "UV_"))}
+    env.update(HOME=str(home), AKRAMCODE_HOME=str(home))
     result = subprocess.run([sys.executable, "-I", "-B", "-X", "utf8", str(program)],
                             env=env, capture_output=True, text=True, timeout=30)
     assert result.returncode == int(spawn_fails or discarded), result.stdout + result.stderr
     assert json.loads(result_path.read_text()) == {"serves_handled": True}
     commands = json.loads((home / "commands.json").read_text())
     assert commands == [
-        [sys.executable, str(root / "hermes"), "serve", "--host", "127.0.0.1", "--port", "8119"],
-        [sys.executable, str(root / "hermes"), "--profile", "ops team 日本", "dashboard",
+        [sys.executable, str(root / "akramcode"), "serve", "--host", "127.0.0.1", "--port", "8119"],
+        [sys.executable, str(root / "akramcode"), "--profile", "ops team 日本", "dashboard",
          "--host", "::1", "--port", "8120", "--no-open"],
     ]
     assert ("probe spawn failed" in result.stdout) is spawn_fails
@@ -358,8 +358,8 @@ def test_serve_resume_child_leaves_token_unhandled_when_imports_fail(tmp_path):
     context.write_text(json.dumps({"root": str(tmp_path), "home": str(tmp_path),
                                   "stopped_serves": {"pending": True, "entries": []}}))
     env = {key: value for key, value in os.environ.items()
-           if not key.startswith(("HERMES_", "PYTHON", "UV_"))}
-    env.update(HOME=str(tmp_path), HERMES_HOME=str(tmp_path))
+           if not key.startswith(("AKRAMCODE_", "PYTHON", "UV_"))}
+    env.update(HOME=str(tmp_path), AKRAMCODE_HOME=str(tmp_path))
     # -S and an empty checkout make application imports genuinely unavailable;
     # this is not a mocked exception or a path into the real update machinery.
     result = subprocess.run(

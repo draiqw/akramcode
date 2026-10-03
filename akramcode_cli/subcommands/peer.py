@@ -1,12 +1,12 @@
-"""``hermes peer`` — bot-to-bot DMs across machines/gateways.
+"""``akramcode peer`` — bot-to-bot DMs across machines/gateways.
 
-A *peer* is another Hermes gateway running the ``api_server`` platform; its stock
+A *peer* is another AkramCode gateway running the ``api_server`` platform; its stock
 API is the transport (no new server surface). ``dm`` resolves the remote canonical
 "Bot Chat" session (creating it when missing) and runs ONE synchronous turn — the
-cross-machine twin of ``hermes -p <bot> chat --in ~ -c "Bot Chat"``. ``run``/``status``
+cross-machine twin of ``akramcode -p <bot> chat --in ~ -c "Bot Chat"``. ``run``/``status``
 /``stop`` do the same turn through the async Runs API. Peer labels/URLs live in
-config.yaml (``bot_peers``); the key lives in ``~/.hermes/.env`` as
-``HERMES_PEER_<NAME>_KEY``. ``<peer>/<profile>`` targets the ``/p/<profile>/`` mirror.
+config.yaml (``bot_peers``); the key lives in ``~/.akramcode/.env`` as
+``AKRAMCODE_PEER_<NAME>_KEY``. ``<peer>/<profile>`` targets the ``/p/<profile>/`` mirror.
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ LIST_TIMEOUT_S = 30
 
 
 def _peer_key_env(name: str) -> str:
-    return f"HERMES_PEER_{name.upper().replace('-', '_')}_KEY"
+    return f"AKRAMCODE_PEER_{name.upper().replace('-', '_')}_KEY"
 
 
 def _load_peers() -> dict:
@@ -69,11 +69,11 @@ def _request(
     data = json.dumps(body).encode("utf-8") if body is not None else None
     request_headers = {
         "Authorization": f"Bearer {key}", "Content-Type": "application/json",
-        "User-Agent": "hermes-peer-dm"}
+        "User-Agent": "akramcode-peer-dm"}
     if headers:
         request_headers.update(headers)
     req = urllib.request.Request(url, data=data, method=method, headers=request_headers)
-    # The peer URL is user-registered (``hermes peer add``); a redirect to a
+    # The peer URL is user-registered (``akramcode peer add``); a redirect to a
     # different origin must not carry the Authorization: Bearer key with it —
     # a compromised/MITM'd peer could otherwise harvest it. open_credentialed_url
     # strips non-safelisted headers across a cross-origin redirect.
@@ -132,10 +132,10 @@ def _ensure_bot_chat(base: str, key: str) -> str:
             raise RuntimeError(
                 f"Peer already has a '{BOT_CHAT_TITLE}' session but it is hidden and the "
                 f"peer's gateway is too old to expose hidden sessions to this lookup "
-                f"(HTTP 400: {detail}). Update the peer's hermes-agent, or unhide the "
+                f"(HTTP 400: {detail}). Update the peer's akramcode-agent, or unhide the "
                 f"session there: PATCH /api/sessions/<id> {{\"hidden\": false}}.") from exc
         raise
-    # Real api_server wraps the row: {"object": "hermes.session", "session": {...}}.
+    # Real api_server wraps the row: {"object": "akramcode.session", "session": {...}}.
     session = created.get("session") if isinstance(created.get("session"), dict) else created
     session_id = str(session.get("id") or session.get("session_id") or "")
     if not session_id:
@@ -150,7 +150,7 @@ def _parse_target(target: str) -> tuple[str, str | None]:
     peer = peer.strip()
     profile = profile.strip() or None
     if not peer:
-        raise ValueError("Peer name required (hermes peer dm <peer>[/<agent>] ...)")
+        raise ValueError("Peer name required (akramcode peer dm <peer>[/<agent>] ...)")
     if profile and not _PROFILE_RE.match(profile):
         raise ValueError(f"Invalid agent/profile name: {profile!r}")
     return peer, profile
@@ -171,12 +171,12 @@ def _resolve_peer_target(target: str) -> tuple[str, str | None, dict, str]:
     peer_name, profile = _parse_target(target)
     peer = _load_peers().get(peer_name)
     if not isinstance(peer, dict) or not peer.get("url"):
-        raise LookupError(f"No peer named '{peer_name}'. Run: hermes peer list")
+        raise LookupError(f"No peer named '{peer_name}'. Run: akramcode peer list")
     key = _peer_secret(peer_name)
     if not key:
         raise PermissionError(
-            f"No API key for peer '{peer_name}'. Set it: hermes peer add {peer_name} "
-            f"--url <url> --key <key> (or add {_peer_key_env(peer_name)}=<key> to ~/.hermes/.env)")
+            f"No API key for peer '{peer_name}'. Set it: akramcode peer add {peer_name} "
+            f"--url <url> --key <key> (or add {_peer_key_env(peer_name)}=<key> to ~/.akramcode/.env)")
     return peer_name, profile, peer, key
 
 
@@ -239,12 +239,12 @@ def _peer_add(args) -> int:
         from akramcode_cli.config import save_env_value
 
         save_env_value(_peer_key_env(name), key)
-        print(f"Peer '{name}' saved ({url}) — key stored as {_peer_key_env(name)} in ~/.hermes/.env")
+        print(f"Peer '{name}' saved ({url}) — key stored as {_peer_key_env(name)} in ~/.akramcode/.env")
     else:
         print(
             f"Peer '{name}' saved ({url}). No key given — set the peer's API_SERVER_KEY with:\n"
-            f"  hermes peer add {name} --url {url} --key <key>\n"
-            f"  (or add {_peer_key_env(name)}=<key> to ~/.hermes/.env)")
+            f"  akramcode peer add {name} --url {url} --key <key>\n"
+            f"  (or add {_peer_key_env(name)}=<key> to ~/.akramcode/.env)")
     return 0
 
 
@@ -263,7 +263,7 @@ def _peer_remove(args) -> int:
 def _peer_list(args) -> int:
     peers = _load_peers()
     if not peers:
-        print("No peers registered. Add one: hermes peer add <name> --url http://host:port --key <API_SERVER_KEY>")
+        print("No peers registered. Add one: akramcode peer add <name> --url http://host:port --key <API_SERVER_KEY>")
         return 0
     for name in sorted(peers):
         entry = peers[name] if isinstance(peers[name], dict) else {}
@@ -299,7 +299,7 @@ def _peer_run_ctl(args, action: str, peer_name: str, profile: str | None, base: 
 
 
 def _turn_body(message: str, *, message_key: str, **extra) -> dict:
-    """Request body for one turn. ``author`` is added only when a dispatcher set HERMES_TURN_AUTHOR."""
+    """Request body for one turn. ``author`` is added only when a dispatcher set AKRAMCODE_TURN_AUTHOR."""
     from agent.turn_author import turn_author_from_env
 
     body = {message_key: message, **extra}
@@ -365,7 +365,7 @@ def _peer_dm(args, message: str, peer_name: str, profile: str | None, base: str,
                   file=sys.stderr)
             return 1
         return _peer_failure(peer_name, exc)
-    if result.get("object") == "hermes.session.chat.queued":
+    if result.get("object") == "akramcode.session.chat.queued":
         # The peer's Bot Chat is open in its Desktop and that turn outlasted the peer's wait: the
         # message is in the open chat and is answered there, so a resend would run it twice.
         queued_in = result.get("session_id") or session_id
@@ -379,7 +379,7 @@ def _peer_dm(args, message: str, peer_name: str, profile: str | None, base: str,
     # the turn stays in the peer's own transcript, the sending agent never
     # sees NO_REPLY/[SILENT] as a real reply. Same rule as the gateway's live
     # Bot Chat completion, the Desktop bot_relay.deliver RPC and the one-shot
-    # local `hermes chat -Q` transport (tools/bot_mode_dm.py) — this is the
+    # local `akramcode chat -Q` transport (tools/bot_mode_dm.py) — this is the
     # 4th Bot Mode delivery door and was missing the same check.
     from gateway.response_filters import is_intentional_silence_response
     if is_intentional_silence_response(reply):
@@ -399,7 +399,7 @@ def cmd_peer(args) -> int:
     if action in _REGISTRY_ACTIONS:
         return _REGISTRY_ACTIONS[action](args)
     if action not in {"dm", "run", "status", "stop"}:
-        print("Unknown peer action. See: hermes peer --help", file=sys.stderr)
+        print("Unknown peer action. See: akramcode peer --help", file=sys.stderr)
         return 2
     try:
         peer_name, profile, peer, key = _resolve_peer_target(args.target)
@@ -423,23 +423,23 @@ def cmd_peer(args) -> int:
 def build_peer_parser(subparsers) -> None:
     """Attach the ``peer`` subcommand to ``subparsers``."""
     parser = subparsers.add_parser(
-        "peer", help="Bot-to-bot DMs across machines (peer Hermes gateways)",
-        description="Register other Hermes gateways as peers and message their agents. "
-            "'hermes peer dm <peer>[/<agent>] \"...\"' delivers into the remote "
+        "peer", help="Bot-to-bot DMs across machines (peer AkramCode gateways)",
+        description="Register other AkramCode gateways as peers and message their agents. "
+            "'akramcode peer dm <peer>[/<agent>] \"...\"' delivers into the remote "
             "agent's canonical Bot Chat over the peer's API server and prints "
-            "the reply — the cross-machine twin of 'hermes -p <bot> chat'. "
+            "the reply — the cross-machine twin of 'akramcode -p <bot> chat'. "
             "The peer must run the api_server platform; its API_SERVER_KEY is "
-            "stored locally as a credential in ~/.hermes/.env.",
+            "stored locally as a credential in ~/.akramcode/.env.",
         epilog=(
             "Examples:\n"
-            "  hermes peer add spark --url http://spark.lan:8377 --key <API_SERVER_KEY>\n"
-            "  hermes peer list\n"
-            '  hermes peer dm spark "Message from 🤖 dixie (@dixie): disk status?"\n'
-            '  hermes peer dm spark/researcher "..."   # named profile on a multiplexed peer\n'
-            "  hermes peer run spark --idempotency-key ticket-123 < long-task.txt\n"
-            "  hermes peer status spark run_abc123\n"
-            "  hermes peer stop spark run_abc123\n"
-            "  hermes peer remove spark\n"
+            "  akramcode peer add spark --url http://spark.lan:8377 --key <API_SERVER_KEY>\n"
+            "  akramcode peer list\n"
+            '  akramcode peer dm spark "Message from 🤖 dixie (@dixie): disk status?"\n'
+            '  akramcode peer dm spark/researcher "..."   # named profile on a multiplexed peer\n'
+            "  akramcode peer run spark --idempotency-key ticket-123 < long-task.txt\n"
+            "  akramcode peer status spark run_abc123\n"
+            "  akramcode peer stop spark run_abc123\n"
+            "  akramcode peer remove spark\n"
             "\n"
             "Exit codes: 0 ok, 1 delivery/peer error, 2 usage error."),
         formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -448,7 +448,7 @@ def build_peer_parser(subparsers) -> None:
     add_p = peer_sub.add_parser("add", aliases=["set"], help="Register (or update) a peer gateway")
     add_p.add_argument("name", help="Peer name (lowercase slug, e.g. spark, homelab)")
     add_p.add_argument("--url", required=True, help="Peer gateway base URL, e.g. http://spark.lan:8377")
-    add_p.add_argument("--key", default="", help="The peer's API_SERVER_KEY (stored in ~/.hermes/.env)")
+    add_p.add_argument("--key", default="", help="The peer's API_SERVER_KEY (stored in ~/.akramcode/.env)")
     add_p.add_argument("--note", default="", help="Optional description")
 
     peer_sub.add_parser("list", aliases=["ls"], help="List registered peers")
@@ -460,7 +460,7 @@ def build_peer_parser(subparsers) -> None:
         sp = peer_sub.add_parser(name, help=help)
         sp.add_argument("target", help="<peer> or <peer>/<agent> (named profile on a multiplexed peer)")
         if run_id:
-            sp.add_argument("run_id", help="Run ID returned by 'hermes peer run'")
+            sp.add_argument("run_id", help="Run ID returned by 'akramcode peer run'")
         else:
             sp.add_argument("message", nargs="?", default=None, help="Message text (or stdin)")
             if name == "run":

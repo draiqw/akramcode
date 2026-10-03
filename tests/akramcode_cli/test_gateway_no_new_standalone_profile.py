@@ -1,9 +1,9 @@
 """A named profile cannot create a NEW standalone gateway — multiplexer running or not (#109417).
 
-One gateway per host serves every profile. ``hermes -p X gateway install|start`` used to refuse only
+One gateway per host serves every profile. ``akramcode -p X gateway install|start`` used to refuse only
 while a live multiplexer already served X; on a host with no multiplexer running (or one that had not
 rescanned yet) it wrote a brand-new per-profile unit. Now every named profile is refused without
-``--force`` and pointed at ``hermes gateway install`` (default) / ``hermes gateway migrate --multiplex``;
+``--force`` and pointed at ``akramcode gateway install`` (default) / ``akramcode gateway migrate --multiplex``;
 ``--force`` stays the one escape and a ``--force``-installed service stays startable without it. The
 dashboard ``/api/gateway/start`` twin (``multiplexed_profile_refusal``) applies the same rule.
 """
@@ -23,16 +23,16 @@ import pytest
 def quiet_host(tmp_path, monkeypatch):
     """Two named profiles under one root, no gateway running anywhere, systemd units under tmp."""
     import akramcode_cli.gateway as gw
-    import hermes_constants
+    import akramcode_constants
 
-    root = tmp_path / "hermes"
+    root = tmp_path / "akramcode"
     (root / "config.yaml").parent.mkdir(parents=True)
     (root / "config.yaml").write_text("model: {default: x}\n")
     for name in ("coder", "ops"):
         (root / "profiles" / name).mkdir(parents=True)
         (root / "profiles" / name / "config.yaml").write_text("{}\n")
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
-    monkeypatch.setattr(hermes_constants, "_default_hermes_root_memo", None)
+    monkeypatch.setattr(akramcode_constants, "_default_akramcode_root_memo", None)
     monkeypatch.setattr(gw, "supports_systemd_services", lambda: True)
     monkeypatch.setattr(gw, "_service_backend", lambda: "systemd")
     monkeypatch.setattr(gw, "refuses_container_user_scope_install", lambda system: False)
@@ -45,8 +45,8 @@ def quiet_host(tmp_path, monkeypatch):
 
     def use(profile: str | None) -> None:
         home = root if profile is None else root / "profiles" / profile
-        monkeypatch.setenv("HERMES_HOME", str(home))
-        hermes_constants._default_hermes_root_memo = None
+        monkeypatch.setenv("AKRAMCODE_HOME", str(home))
+        akramcode_constants._default_akramcode_root_memo = None
 
     return root, calls, use
 
@@ -70,8 +70,8 @@ def test_named_profile_install_and_start_refuse_without_force_when_no_multiplexe
             code, out = _run(getattr(gw, f"_cmd_{verb}"), force=False)
             assert code == gw.GATEWAY_FATAL_CONFIG_EXIT_CODE, (profile, verb)
             assert f"Profile '{profile}' does not get a gateway of its own" in out
-            assert "hermes gateway install" in out and "hermes gateway migrate --multiplex" in out
-            assert f"hermes -p {profile} gateway install --force" in out
+            assert "akramcode gateway install" in out and "akramcode gateway migrate --multiplex" in out
+            assert f"akramcode -p {profile} gateway install --force" in out
             assert "already serves" not in out  # nothing is running: this is the no-multiplexer form
         assert not gw.get_systemd_unit_path(system=False).exists()
         # Dashboard twin: same rule, same pointers, `stop` untouched (nothing serves the profile).
@@ -88,9 +88,9 @@ def test_named_profile_install_and_start_refuse_without_force_when_no_multiplexe
 
     # Control: a live multiplexer serving the profile still prints the served-by form.
     use("coder")
-    (root / "gateway.pid").write_text(json.dumps({"pid": os.getpid(), "hermes_home": str(root)}))
+    (root / "gateway.pid").write_text(json.dumps({"pid": os.getpid(), "akramcode_home": str(root)}))
     (root / "gateway_state.json").write_text(json.dumps(
-        {"pid": os.getpid(), "hermes_home": str(root), "gateway_state": "running",
+        {"pid": os.getpid(), "akramcode_home": str(root), "gateway_state": "running",
          "served_profiles": ["default", "coder"]}))
     import gateway.status as status
     real_cmdline = status._read_process_cmdline

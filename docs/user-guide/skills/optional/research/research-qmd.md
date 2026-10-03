@@ -14,19 +14,19 @@ Hybrid local search over notes, docs, and transcripts.
 
 | | |
 |---|---|
-| Source | Optional — install with `hermes skills install official/research/qmd` |
+| Source | Optional — install with `akramcode skills install official/research/qmd` |
 | Path | `optional-skills/research/qmd` |
 | Version | `1.0.0` |
-| Author | Hermes Agent + Teknium |
+| Author | AkramCode Agent + Teknium |
 | License | MIT |
 | Platforms | macos, linux |
 | Tags | `Search`, `Knowledge-Base`, `RAG`, `Notes`, `MCP`, `Local-AI` |
-| Related skills | [`obsidian`](../../bundled/note-taking/note-taking-obsidian.md), [`hermes-agent`](../../bundled/autonomous-ai-agents/autonomous-ai-agents-hermes-agent.md), [`arxiv`](../../bundled/research/research-arxiv.md) |
+| Related skills | [`obsidian`](../../bundled/note-taking/note-taking-obsidian.md), [`akramcode-agent`](../../bundled/autonomous-ai-agents/autonomous-ai-agents-akramcode-agent.md), [`arxiv`](../../bundled/research/research-arxiv.md) |
 
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Hermes loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that AkramCode loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 # QMD — Query Markup Documents
@@ -238,13 +238,13 @@ qmd multi-get "journals/*.md" --json  # Batch retrieve by glob
 ## MCP Integration (Recommended)
 
 qmd exposes an MCP server that provides search tools directly to
-Hermes Agent via the native MCP client. This is the preferred
+AkramCode Agent via the native MCP client. This is the preferred
 integration — once configured, the agent gets qmd tools automatically
 without needing to load this skill.
 
 ### Option A: Stdio Mode (Simple)
 
-Add to `~/.hermes/config.yaml`:
+Add to `~/.akramcode/config.yaml`:
 
 ```yaml
 mcp_servers:
@@ -272,7 +272,7 @@ qmd mcp --http --daemon
 # Runs on http://localhost:8181 by default
 ```
 
-Then configure Hermes Agent to connect via HTTP:
+Then configure AkramCode Agent to connect via HTTP:
 
 ```yaml
 mcp_servers:
@@ -309,9 +309,9 @@ cat > ~/Library/LaunchAgents/com.qmd.daemon.plist << 'EOF'
   <key>KeepAlive</key>
   <true/>
   <key>StandardOutPath</key>
-  <string>/Users/YOU/.hermes/cache/scratch/qmd-daemon.log</string>
+  <string>/Users/YOU/.akramcode/cache/scratch/qmd-daemon.log</string>
   <key>StandardErrorPath</key>
-  <string>/Users/YOU/.hermes/cache/scratch/qmd-daemon.log</string>
+  <string>/Users/YOU/.akramcode/cache/scratch/qmd-daemon.log</string>
 </dict>
 </plist>
 EOF

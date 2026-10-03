@@ -14,7 +14,7 @@ import types
 import pytest
 
 from agent.onboarding import PROFILE_BUILD_FLAG, profile_build_directive
-from akram_core.hermes_yaml import safe_dump, safe_load
+from akram_core.akramcode_yaml import safe_dump, safe_load
 from tui_gateway import server
 
 
@@ -29,11 +29,11 @@ def _session(agent, history=None):
 
 @pytest.fixture()
 def onboarding_home(monkeypatch, tmp_path):
-    """A HERMES_HOME whose config.yaml offers profile builds (the default mode)."""
+    """A AKRAMCODE_HOME whose config.yaml offers profile builds (the default mode)."""
     (tmp_path / "config.yaml").write_text(
         safe_dump({"onboarding": {"profile_build": "ask"}})
     )
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     return tmp_path
 
 

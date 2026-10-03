@@ -28,10 +28,10 @@ def test_agent_context_follows_the_platform(platform, expected):
 
 def test_cron_session_disables_supermemory_writes(tmp_path, monkeypatch):
     """Through the real bundled provider: the scheduler's kwargs must switch writes off,
-    an interactive session's must leave them on (empty hermes_home → config defaults)."""
+    an interactive session's must leave them on (empty akramcode_home → config defaults)."""
     from plugins.memory.supermemory import SupermemoryMemoryProvider
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     monkeypatch.delenv("SUPERMEMORY_API_KEY", raising=False)
     by_platform = {}
     for platform in ("cron", "cli"):

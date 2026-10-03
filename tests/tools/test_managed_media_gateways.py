@@ -205,7 +205,7 @@ def test_managed_fal_submit_uses_gateway_origin_and_nous_token(monkeypatch):
         "image_generation_tool.py",
     )
     monkeypatch.setattr(image_generation_tool.uuid, "uuid4", lambda: "fal-submit-123")
-    
+
     image_generation_tool._submit_fal_request(
         "fal-ai/flux-2-pro",
         {"prompt": "test prompt", "num_images": 1},
@@ -264,7 +264,7 @@ def test_transcription_uses_model_specific_response_formats(monkeypatch, tmp_pat
     whisper_capture = {}
     _install_fake_tools_package()
     _install_fake_openai_module(whisper_capture, transcription_response="hello from whisper")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     # The managed audio route is the stored "nous" selection (strict model);
     # a stored "openai" selection now means direct credentials only.
     (tmp_path / "config.yaml").write_text("stt:\n  provider: nous\n")

@@ -31,17 +31,17 @@ def _fresh_heal_latch(monkeypatch):
 
 
 @pytest.fixture
-def profiles_on_disk(tmp_path, monkeypatch, _isolate_hermes_home):
+def profiles_on_disk(tmp_path, monkeypatch, _isolate_akramcode_home):
     from akramcode_cli import profiles
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
 
-    default_home = get_hermes_home()
+    default_home = get_akramcode_home()
     profiles_root = default_home / "profiles"
     worker_home = profiles_root / "worker"
     for home in (default_home, worker_home):
         home.mkdir(parents=True, exist_ok=True)
         (home / "config.yaml").write_text("{}\n", encoding="utf-8")
-    monkeypatch.setattr(profiles, "_get_default_hermes_home", lambda: default_home)
+    monkeypatch.setattr(profiles, "_get_default_akramcode_home", lambda: default_home)
     monkeypatch.setattr(profiles, "_get_profiles_root", lambda: profiles_root)
     return {"default": default_home, "worker": worker_home}
 
@@ -55,9 +55,9 @@ def client(monkeypatch, profiles_on_disk):
 
     import akramcode_state
     from akramcode_cli.web_server import _SESSION_HEADER_NAME, _SESSION_TOKEN, app
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
 
-    monkeypatch.setattr(akramcode_state, "DEFAULT_DB_PATH", get_hermes_home() / "state.db")
+    monkeypatch.setattr(akramcode_state, "DEFAULT_DB_PATH", get_akramcode_home() / "state.db")
     http = TestClient(app)
     http.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN
     return http

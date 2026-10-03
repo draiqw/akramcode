@@ -12,8 +12,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 root, n = sys.argv[1], int(sys.argv[2])
 sys.path.insert(0, root)
-os.environ["HERMES_HOME"] = tempfile.mkdtemp(prefix="hh-")
-os.environ["HERMES_STREAM_RETRIES"] = "0"
+os.environ["AKRAMCODE_HOME"] = tempfile.mkdtemp(prefix="hh-")
+os.environ["AKRAMCODE_STREAM_RETRIES"] = "0"
 
 
 def jwt(exp, sub="acct-A"):

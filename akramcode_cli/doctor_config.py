@@ -1,4 +1,4 @@
-"""Configuration-file checks for hermes doctor: .env, config.yaml validation, drift, deprecations.
+"""Configuration-file checks for akramcode doctor: .env, config.yaml validation, drift, deprecations.
 Split out of ``akramcode_cli/doctor.py``."""
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from akramcode_cli.doctor_report import (
 
 
 def _has_provider_env_config(content: str) -> bool:
-    """Return True when ~/.hermes/.env contains provider auth/base URL settings."""
+    """Return True when ~/.akramcode/.env contains provider auth/base URL settings."""
     from akramcode_cli.doctor import _PROVIDER_ENV_HINTS
     return any(key in content for key in _PROVIDER_ENV_HINTS)
 
@@ -27,11 +27,11 @@ _DEPRECATED_CONFIG_KEYS: tuple[tuple[str, str, str], ...] = (
 
 
 # Deprecated env vars (checked in the .env FILE, not process env, so config→env bridges like terminal.cwd →
-# TERMINAL_CWD do not false-positive). HERMES_TOOL_PROGRESS is silently ignored since the v12 config floor
-# removed its only consumer; HERMES_TOOL_PROGRESS_MODE is still read by the gateway as a back-compat fallback.
+# TERMINAL_CWD do not false-positive). AKRAMCODE_TOOL_PROGRESS is silently ignored since the v12 config floor
+# removed its only consumer; AKRAMCODE_TOOL_PROGRESS_MODE is still read by the gateway as a back-compat fallback.
 _DEPRECATED_ENV_VARS: tuple[tuple[str, str], ...] = (
-    ("HERMES_TOOL_PROGRESS", "display.tool_progress in config.yaml — ignored/unsupported since config floor v12"),
-    ("HERMES_TOOL_PROGRESS_MODE", "display.tool_progress in config.yaml"),
+    ("AKRAMCODE_TOOL_PROGRESS", "display.tool_progress in config.yaml — ignored/unsupported since config floor v12"),
+    ("AKRAMCODE_TOOL_PROGRESS_MODE", "display.tool_progress in config.yaml"),
     ("TERMINAL_CWD", "terminal.cwd in config.yaml"), ("MESSAGING_CWD", "terminal.cwd in config.yaml"),
     ("QQ_HOME_CHANNEL", "QQBOT_HOME_CHANNEL"), ("QQ_HOME_CHANNEL_NAME", "QQBOT_HOME_CHANNEL_NAME"),
 )
@@ -55,7 +55,7 @@ def collect_deprecated_env_vars(env_map: dict | None) -> list[tuple[str, str]]:
 
 
 def collect_relay_plugin_cutover_findings(raw_config: dict | None, env_map: dict | None) -> list[tuple[str, str]]:
-    """Return actionable findings for the removed Hermes Relay plugin."""
+    """Return actionable findings for the removed AkramCode Relay plugin."""
     from akramcode_cli.relay_plugin_cutover import (LEGACY_RELAY_EXPORT_ENV_VARS, RELAY_PLUGINS_CONFIG_ENV,
                                                  configured_legacy_relay_env_vars, legacy_relay_plugin_keys)
     findings: list[tuple[str, str]] = []
@@ -72,7 +72,7 @@ def collect_relay_plugin_cutover_findings(raw_config: dict | None, env_map: dict
             if name not in effective_env and os.environ.get(name) is not None:
                 effective_env[name] = os.environ[name]
     if not str(effective_env.get(RELAY_PLUGINS_CONFIG_ENV, "")).strip():
-        findings += [(name, f"run `hermes migrate relay` to generate relay-plugins.toml and set {RELAY_PLUGINS_CONFIG_ENV}; "
+        findings += [(name, f"run `akramcode migrate relay` to generate relay-plugins.toml and set {RELAY_PLUGINS_CONFIG_ENV}; "
                             "this legacy variable is now ignored and does not configure an exporter")
                      for name in configured_legacy_relay_env_vars(effective_env)]
     return findings
@@ -98,7 +98,7 @@ def report_deprecated_config_and_env(raw_config: dict | None = None, env_map: di
 
 @doctor_check("Relay plugin check failed: {e}")
 def _check_relay_plugins(should_fix: bool, f: Finding) -> None:
-    """Name the plugins.toml files Relay applies to Hermes, including ones outside the Hermes home."""
+    """Name the plugins.toml files Relay applies to AkramCode, including ones outside the AkramCode home."""
     from agent.relay_runtime import resolve_plugin_sources
     try:
         sources = resolve_plugin_sources()
@@ -108,7 +108,7 @@ def _check_relay_plugins(should_fix: bool, f: Finding) -> None:
         check_ok("NeMo Relay is not available on this platform")
         return
     except Exception as exc:
-        check_warn("Relay plugin configuration could not be read", "(Hermes runs without Relay plugins)")
+        check_warn("Relay plugin configuration could not be read", "(AkramCode runs without Relay plugins)")
         _relay_info_lines(cause for cause in (exc, exc.__cause__) if cause is not None)
         f.manual_issues.append("Fix the Relay plugin configuration shown under NeMo Relay Plugins.")
         return
@@ -116,13 +116,13 @@ def _check_relay_plugins(should_fix: bool, f: Finding) -> None:
         check_ok("No Relay plugin files found")
         return
     if sources.errors:
-        check_warn("Relay will reject this plugin configuration", "(Hermes runs without Relay plugins)")
+        check_warn("Relay will reject this plugin configuration", "(AkramCode runs without Relay plugins)")
         f.manual_issues.append("Fix the Relay plugin configuration shown under NeMo Relay Plugins.")
     else:
         # Validation cannot load dynamic plugins, so Relay reports what it cannot confirm as a warning.
         report = check_warn if sources.warnings else check_ok
         if sources.enabled:
-            report("Relay plugins enabled", "(applies to every profile a Hermes process hosts)")
+            report("Relay plugins enabled", "(applies to every profile a AkramCode process hosts)")
         else:
             report("Relay plugin files found, nothing enabled")
     _relay_info_lines((*sources.config_paths, *sources.errors, *sources.warnings))
@@ -135,7 +135,7 @@ def _relay_info_lines(lines) -> None:
 
 
 def managed_scope_check() -> None:
-    """Report the active managed scope (resolved dir + pinned key counts); silent when none. A HERMES_MANAGED_DIR
+    """Report the active managed scope (resolved dir + pinned key counts); silent when none. A AKRAMCODE_MANAGED_DIR
     override is surfaced too — a redirected scope is the documented foot-gun (docs/design/managed-scope.md §7)."""
     managed_dir = None
     with warn_on_error(""):  # diagnostics must never crash
@@ -145,8 +145,8 @@ def managed_scope_check() -> None:
         return
     n_cfg, n_env = len(managed_scope.managed_config_keys()), len(managed_scope.load_managed_env())
     check_ok(f"Managed scope active: {n_cfg} config key(s), {n_env} env key(s) pinned by {managed_dir}")
-    if os.environ.get("HERMES_MANAGED_DIR", "").strip():
-        check_info(f"managed dir set via HERMES_MANAGED_DIR={managed_dir}")
+    if os.environ.get("AKRAMCODE_MANAGED_DIR", "").strip():
+        check_info(f"managed dir set via AKRAMCODE_MANAGED_DIR={managed_dir}")
 
 
 @doctor_check("MCP security check failed: {e}")
@@ -169,10 +169,10 @@ def _check_mcp_security(should_fix: bool, f: Finding) -> None:
 
 @doctor_check()
 def _check_env_file(should_fix: bool, f: Finding) -> None:
-    """Managed scope plus ~/.hermes/.env presence and provider credentials."""
-    from akramcode_cli.doctor import HERMES_HOME, PROJECT_ROOT, _DHH
+    """Managed scope plus ~/.akramcode/.env presence and provider credentials."""
+    from akramcode_cli.doctor import AKRAMCODE_HOME, PROJECT_ROOT, _DHH
     managed_scope_check()
-    env_path = HERMES_HOME / '.env'
+    env_path = AKRAMCODE_HOME / '.env'
     if env_path.exists():
         check_ok(f"{_DHH}/.env file exists")
         # UTF-8 first; latin-1 fallback for Windows Notepad/cp1252 files (matches env_loader._load_dotenv_with_fallback).
@@ -181,7 +181,7 @@ def _check_env_file(should_fix: bool, f: Finding) -> None:
         except UnicodeDecodeError:
             content = env_path.read_text(encoding="latin-1")
         if not check_bool(_has_provider_env_config(content), "API key or custom endpoint configured", f"No API key found in {_DHH}/.env"):
-            f.issues.append("Run 'hermes setup' to configure API keys")
+            f.issues.append("Run 'akramcode setup' to configure API keys")
     elif (PROJECT_ROOT / '.env').exists():  # project root as fallback
         check_ok(".env file exists (in project directory)")
     else:
@@ -193,11 +193,11 @@ def _check_env_file(should_fix: bool, f: Finding) -> None:
             with warn_on_error(""):
                 os.chmod(str(env_path), 0o600)
             check_ok(f"Created empty {_DHH}/.env")
-            check_info("Run 'hermes setup' to configure API keys")
+            check_info("Run 'akramcode setup' to configure API keys")
             f.fixed += 1
         else:
-            check_info("Run 'hermes setup' to create one")
-            f.issues.append("Run 'hermes setup' to create .env")
+            check_info("Run 'akramcode setup' to create one")
+            f.issues.append("Run 'akramcode setup' to create .env")
 
 
 def _known_provider_ids(cfg: dict) -> tuple[set, list, object, object, object]:
@@ -281,7 +281,7 @@ def _validate_model_config(config_path, issues: list) -> None:
         known_list = ", ".join(sorted(known_providers)) if known_providers else "(unavailable)"
         _fail_and_issue(f"model.provider '{provider_raw}' is not a recognised provider", f"(known: {known_list})",
                         f"model.provider '{provider_raw}' is unknown. Valid providers: {known_list}. "
-                        f"Fix: run 'hermes config set model.provider <valid_provider>'", issues)
+                        f"Fix: run 'akramcode config set model.provider <valid_provider>'", issues)
     policy_id = str(runtime_provider or catalog_provider or "").strip().lower()
     accepts_vendor_slug = policy_id in _VENDOR_SLUG_PROVIDERS or policy_id == "custom" or policy_id.startswith("custom:")
     # openai-api pointed at a non-OpenAI endpoint (local router, proxy) is an aggregator in all but name:
@@ -300,9 +300,9 @@ def _validate_model_config(config_path, issues: list) -> None:
         with warn_on_error(""):
             if not _provider_has_credentials(runtime_provider):
                 _fail_and_issue(f"model.provider '{runtime_provider}' is set but no API key is configured",
-                                f"(add it to {_DHH}/.env or run 'hermes setup')",
-                                f"No credentials found for provider '{runtime_provider}'. Run 'hermes setup' or set the provider's "
-                                f"API key in {_DHH}/.env, or switch providers with 'hermes config set model.provider <name>'", issues)
+                                f"(add it to {_DHH}/.env or run 'akramcode setup')",
+                                f"No credentials found for provider '{runtime_provider}'. Run 'akramcode setup' or set the provider's "
+                                f"API key in {_DHH}/.env, or switch providers with 'akramcode config set model.provider <name>'", issues)
 
 
 def _validate_auxiliary_config(config_path, issues: list) -> None:
@@ -335,8 +335,8 @@ def _validate_auxiliary_config(config_path, issues: list) -> None:
 @doctor_check()
 def _check_config_file(should_fix: bool, f: Finding) -> None:
     """config.yaml presence (project cli-config.yaml as fallback); model/provider validation."""
-    from akramcode_cli.doctor import HERMES_HOME, PROJECT_ROOT, _DHH
-    config_path = HERMES_HOME / 'config.yaml'
+    from akramcode_cli.doctor import AKRAMCODE_HOME, PROJECT_ROOT, _DHH
+    config_path = AKRAMCODE_HOME / 'config.yaml'
     if config_path.exists():
         check_ok(f"{_DHH}/config.yaml exists")
         with warn_on_error("Could not validate model/provider config"):
@@ -361,7 +361,7 @@ def _drift_config_version(f: Finding, should_fix: bool, config_path) -> None:
     if check_bool(current_ver >= latest_ver, f"Config version up to date (v{current_ver})", outdated):
         return
     if not should_fix:
-        f.issues.append("Run 'hermes doctor --fix' or 'hermes setup' to migrate config")
+        f.issues.append("Run 'akramcode doctor --fix' or 'akramcode setup' to migrate config")
         return
     try:
         migrate_config(interactive=False, quiet=False)
@@ -369,7 +369,7 @@ def _drift_config_version(f: Finding, should_fix: bool, config_path) -> None:
         f.fixed += 1
     except Exception as mig_err:
         check_warn(f"Auto-migration failed: {mig_err}")
-        f.issues.append("Run 'hermes setup' to migrate config")
+        f.issues.append("Run 'akramcode setup' to migrate config")
 
 
 def _drift_stale_root_keys(f: Finding, should_fix: bool, config_path) -> None:
@@ -381,7 +381,7 @@ def _drift_stale_root_keys(f: Finding, should_fix: bool, config_path) -> None:
         return
     check_warn(f"Stale root-level config keys: {', '.join(stale_root_keys)}", "(should be under 'model:' section)")
     if not should_fix:
-        f.issues.append("Stale root-level provider/base_url in config.yaml — run 'hermes doctor --fix'")
+        f.issues.append("Stale root-level provider/base_url in config.yaml — run 'akramcode doctor --fix'")
         return
     # Coerce scalar/None ``model:`` into a dict before mutation (setdefault would hand back a scalar).
     raw_model = raw_config.get("model")
@@ -397,16 +397,16 @@ def _drift_stale_root_keys(f: Finding, should_fix: bool, config_path) -> None:
 
 
 def _drift_max_iterations_ghost(f: Finding, should_fix: bool, config_path) -> None:
-    """A stale HERMES_MAX_ITERATIONS in .env shadows agent.max_turns in config.yaml.
+    """A stale AKRAMCODE_MAX_ITERATIONS in .env shadows agent.max_turns in config.yaml.
 
-    The setup wizard used to dual-write the budget. The gateway bridge derives HERMES_MAX_ITERATIONS from
+    The setup wizard used to dual-write the budget. The gateway bridge derives AKRAMCODE_MAX_ITERATIONS from
     agent.max_turns, but if it bails on an earlier config-parse error the .env value silently wins. Read the
     .env FILE (load_env), not get_env_value/os.environ, which the bridge may have overridden already.
     """
     from akramcode_cli.doctor import _DHH
-    # Detect stale HERMES_MAX_ITERATIONS ghost in .env shadowing agent.max_turns in config.yaml (issue
+    # Detect stale AKRAMCODE_MAX_ITERATIONS ghost in .env shadowing agent.max_turns in config.yaml (issue
     # #17534). The setup wizard used to dual-write the iteration budget to both stores; users who later edit
-    # only config.yaml are left with a .env ghost. The gateway bridge normally derives HERMES_MAX_ITERATIONS
+    # only config.yaml are left with a .env ghost. The gateway bridge normally derives AKRAMCODE_MAX_ITERATIONS
     # from agent.max_turns at startup, but if that bridge bails (any earlier config-parse error), the stale
     # .env value silently wins and the agent runs at the wrong budget — e.g. config says 400 but the
     # activity line reads N/90.
@@ -416,19 +416,19 @@ def _drift_max_iterations_ghost(f: Finding, should_fix: bool, config_path) -> No
     cfg_max_turns = agent_cfg.get("max_turns") if isinstance(agent_cfg, dict) else None
     if cfg_max_turns is None:
         cfg_max_turns = raw_config.get("max_turns")  # legacy root-level key counts too
-    env_ghost = load_env().get("HERMES_MAX_ITERATIONS")
+    env_ghost = load_env().get("AKRAMCODE_MAX_ITERATIONS")
     if cfg_max_turns is None or env_ghost is None or str(cfg_max_turns).strip() == str(env_ghost).strip():
         return
-    check_warn(f"HERMES_MAX_ITERATIONS={env_ghost} in .env shadows agent.max_turns={cfg_max_turns} in config.yaml",
-               "(stale ghost from an earlier `hermes setup` run)")
+    check_warn(f"AKRAMCODE_MAX_ITERATIONS={env_ghost} in .env shadows agent.max_turns={cfg_max_turns} in config.yaml",
+               "(stale ghost from an earlier `akramcode setup` run)")
     if not should_fix:
-        f.issues.append("Stale HERMES_MAX_ITERATIONS in .env shadows config.yaml — run 'hermes doctor --fix'")
-    elif remove_env_value("HERMES_MAX_ITERATIONS"):
-        check_ok(f"Removed stale HERMES_MAX_ITERATIONS from .env (config.yaml agent.max_turns={cfg_max_turns} is now authoritative)")
+        f.issues.append("Stale AKRAMCODE_MAX_ITERATIONS in .env shadows config.yaml — run 'akramcode doctor --fix'")
+    elif remove_env_value("AKRAMCODE_MAX_ITERATIONS"):
+        check_ok(f"Removed stale AKRAMCODE_MAX_ITERATIONS from .env (config.yaml agent.max_turns={cfg_max_turns} is now authoritative)")
         f.fixed += 1
     else:
-        check_warn("Could not remove HERMES_MAX_ITERATIONS from .env")
-        f.manual_issues.append(f"Manually delete the HERMES_MAX_ITERATIONS line from {_DHH}/.env — config.yaml agent.max_turns is authoritative.")
+        check_warn("Could not remove AKRAMCODE_MAX_ITERATIONS from .env")
+        f.manual_issues.append(f"Manually delete the AKRAMCODE_MAX_ITERATIONS line from {_DHH}/.env — config.yaml agent.max_turns is authoritative.")
 
 
 def _drift_deprecations(f: Finding, should_fix: bool, config_path) -> None:
@@ -525,12 +525,12 @@ def _check_channel_record_hygiene() -> None:
 
 @doctor_check()
 def _check_config_drift(should_fix: bool, f: Finding) -> None:
-    """Config version, stale root keys, HERMES_MAX_ITERATIONS ghost, deprecations, structure.
+    """Config version, stale root keys, AKRAMCODE_MAX_ITERATIONS ghost, deprecations, structure.
 
     Each step is independent and best-effort: a failure in one never hides the next.
     """
-    from akramcode_cli.doctor import HERMES_HOME
-    config_path = HERMES_HOME / 'config.yaml'
+    from akramcode_cli.doctor import AKRAMCODE_HOME
+    config_path = AKRAMCODE_HOME / 'config.yaml'
     if not config_path.exists():
         config_path = None
     for step in _CONFIG_DRIFT_STEPS if config_path else (_drift_deprecations,):

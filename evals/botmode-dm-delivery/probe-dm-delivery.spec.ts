@@ -17,19 +17,19 @@ test.beforeAll(async () => {
   const sandbox = createSandbox('dm-delivery')
   const mock = await startMockServer({ holdFirstCompletionContaining: 'CLI_OWNER_HOLD' })
   for (const name of ['default', 'alpha', 'beta']) {
-    const home = name === 'default' ? sandbox.hermesHome : path.join(sandbox.hermesHome, 'profiles', name)
+    const home = name === 'default' ? sandbox.akramcodeHome : path.join(sandbox.akramcodeHome, 'profiles', name)
     fs.mkdirSync(home, { recursive: true })
     writeMockProviderConfig(home, mock.url)
     writeEnvFile(home)
     fs.writeFileSync(path.join(home, 'SOUL.md'), `# ${name}\nA Bot Mode teammate.\n`)
-    fs.writeFileSync(path.join(home, 'profile.yaml'), 'name: ' + name + '\nui_meta:\n  hermes-bots: {}\n')
+    fs.writeFileSync(path.join(home, 'profile.yaml'), 'name: ' + name + '\nui_meta:\n  akramcode-bots: {}\n')
   }
   const bin = path.join(sandbox.root, 'bin')
   fs.mkdirSync(bin)
-  fs.writeFileSync(path.join(bin, 'hermes'), `#!/bin/sh\ncd ${repo}\nexec ${python} -m akramcode_cli.main "$@"\n`, { mode: 0o755 })
-  env = buildAppEnv(sandbox, { HOME: sandbox.root, HERMES_DESKTOP_PYTHON: python,
-    HERMES_DESKTOP_HERMES: path.join(bin, 'hermes'), PATH: `${bin}:${process.env.PATH}`,
-    PYTHONPATH: repo, HERMES_SINGLE_QUERY_LINGER_SECONDS: '30' })
+  fs.writeFileSync(path.join(bin, 'akramcode'), `#!/bin/sh\ncd ${repo}\nexec ${python} -m akramcode_cli.main "$@"\n`, { mode: 0o755 })
+  env = buildAppEnv(sandbox, { HOME: sandbox.root, AKRAMCODE_DESKTOP_PYTHON: python,
+    AKRAMCODE_DESKTOP_AKRAMCODE: path.join(bin, 'akramcode'), PATH: `${bin}:${process.env.PATH}`,
+    PYTHONPATH: repo, AKRAMCODE_SINGLE_QUERY_LINGER_SECONDS: '30' })
   const { app, page } = await launchDesktop(env)
   fixture = { app, page, sandbox, mock, mockUrl: mock.url, cleanup: async () => {
     await app.close().catch(() => undefined)
@@ -46,15 +46,15 @@ test('cron output waits for a CLI-only owner and arrives after owner release', a
   test.setTimeout(240_000)
   const output = fs.openSync(path.join(evidence, 'cli-owner.log'), 'w')
   const child = spawn(python, ['-m', 'akramcode_cli.main', '-p', 'beta', 'chat', '--in', '~', '-c', 'Bot Chat', '--create-if-missing', '-Q', '-q', 'CLI_OWNER_HOLD'], { cwd: repo, env, stdio: ['ignore', output, output] })
-  const cronEnv = { ...env, HERMES_HOME: fixture.sandbox.hermesHome }
+  const cronEnv = { ...env, AKRAMCODE_HOME: fixture.sandbox.akramcodeHome }
   try {
     await fixture.mock.waitForHeldCompletion()
     const script = 'import json; from cron.scheduler_delivery import _deliver_to_bot_chat; j={"id":"cli-residual","name":"CLI residual","execution_id":"fixed-execution"}; result=_deliver_to_bot_chat(j,"CLI_OWNER_CRON_SENTINEL","beta"); print(json.dumps({"result":result,"job":j}))'
-    const setup = process.env.BOT_DM_EXCEPTION ? 'from pathlib import Path; from cron.bot_chat_delivery import defer; from hermes_constants import get_hermes_home; defer("e"*64,{"id":"exception-head"},"EXCEPTION_MUST_NOT_RUN","beta",get_hermes_home()/"profiles"/"beta"); ' : ''
+    const setup = process.env.BOT_DM_EXCEPTION ? 'from pathlib import Path; from cron.bot_chat_delivery import defer; from akramcode_constants import get_akramcode_home; defer("e"*64,{"id":"exception-head"},"EXCEPTION_MUST_NOT_RUN","beta",get_akramcode_home()/"profiles"/"beta"); ' : ''
     const result = JSON.parse(execFileSync(python, ['-c', setup + script], { env: cronEnv, cwd: repo, encoding: 'utf8', timeout: 30_000 }))
     console.log('CLI_OWNER_CRON_ADMISSION', JSON.stringify(result))
     fs.writeFileSync(path.join(evidence, 'cli-owner-admission.json'), JSON.stringify(result, null, 2))
-    if (process.env.BOT_DM_CORRUPT) fs.writeFileSync(path.join(fixture.sandbox.hermesHome, 'cron', 'bot_chat_pending', 'broken.json'), '{')
+    if (process.env.BOT_DM_CORRUPT) fs.writeFileSync(path.join(fixture.sandbox.akramcodeHome, 'cron', 'bot_chat_pending', 'broken.json'), '{')
     fixture.mock.releaseHeldStream()
     await expect.poll(() => child.exitCode, { timeout: 60_000 }).toBe(0)
     fs.mkdirSync(path.join(fixture.sandbox.root, 'changed-launch-home'), { recursive: true })
@@ -89,7 +89,7 @@ async function openBot(name: string) {
 }
 
 function dbMessages(name: string) {
-  const home = name === 'default' ? fixture.sandbox.hermesHome : path.join(fixture.sandbox.hermesHome, 'profiles', name)
+  const home = name === 'default' ? fixture.sandbox.akramcodeHome : path.join(fixture.sandbox.akramcodeHome, 'profiles', name)
   return JSON.parse(execFileSync(python, ['-c', 'import sqlite3,json,sys; c=sqlite3.connect(sys.argv[1]); print(json.dumps(c.execute("select role,content from messages").fetchall()))', path.join(home, 'state.db')], { env, cwd: repo, encoding: 'utf8' })) as string[][]
 }
 

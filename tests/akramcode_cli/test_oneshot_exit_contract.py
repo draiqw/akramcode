@@ -1,4 +1,4 @@
-"""``hermes -z`` exit-code contract: the outcome is judged from the turn result, not from
+"""``akramcode -z`` exit-code contract: the outcome is judged from the turn result, not from
 whether any text was printed (#111770 — an incomplete or failed run that left an explanation on
 stdout used to exit 0, so scripts treated a half-done job as success)."""
 
@@ -8,7 +8,7 @@ import akramcode_cli.oneshot as oneshot
 
 
 def _run(monkeypatch, tmp_path, response, result):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     usage = tmp_path / "usage.json"
     with mock.patch.object(oneshot, "_run_agent", return_value=(response, dict(result))):
         code = oneshot.run_oneshot("q", usage_file=str(usage))

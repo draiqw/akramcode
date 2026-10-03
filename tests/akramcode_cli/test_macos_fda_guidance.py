@@ -1,7 +1,7 @@
 """macOS Full Disk Access onboarding guidance (issue #52010 follow-up).
 
 One FDA grant silences every per-folder TCC prompt permanently. Doctor reports
-the state and prints the one-switch setup; ``hermes setup`` surfaces the same
+the state and prints the one-switch setup; ``akramcode setup`` surfaces the same
 tip at onboarding. The probe reads the FDA-gated TCC db directory, which
 returns EPERM (no dialog) without the grant; any other error is indeterminate
 and must stay silent. The probe is gated on the real host, so the macOS

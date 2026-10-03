@@ -3,7 +3,7 @@
 Covers the three seams the integration relies on:
 
 * Mode detection — ``browser.backend: browser-use`` in config (set via the
-  ``hermes tools`` picker); off by default.
+  ``akramcode tools`` picker); off by default.
 * Tool-surface swap — when the mode is on, ``check_browser_requirements``
   returns False so every legacy ``browser_*`` tool (including
   browser_cdp/browser_dialog, whose check_fns funnel through it) is hidden,
@@ -145,8 +145,8 @@ class TestSubprocessEnvironment:
 
         browser_tool = ModuleType("tools.browser_tool")
         browser_tool._build_browser_env = lambda: {
-            "PYTHONPATH": "/hermes:/hermes/venv/lib/site-packages",
-            "PYTHONHOME": "/hermes/venv",
+            "PYTHONPATH": "/akramcode:/akramcode/venv/lib/site-packages",
+            "PYTHONHOME": "/akramcode/venv",
             "KEEP_ME": "yes",
         }
         monkeypatch.setitem(sys.modules, "tools.browser_tool", browser_tool)
@@ -524,7 +524,7 @@ class TestBackendCdpResolution:
         assert "BU_CDP_WS" not in env and "BU_CDP_URL" not in env
 
     def test_picker_managed_selection_resolves_gateway_provider(self, monkeypatch):
-        """``cloud_provider: nous`` (the `hermes tools` managed row) must resolve through the
+        """``cloud_provider: nous`` (the `akramcode tools` managed row) must resolve through the
         provider: the picker never writes the legacy ``use_gateway`` flag, and the direct-API
         branch leaves browser_exec with no CDP endpoint at all (#108310)."""
         import tools.browser_tool as bt  # noqa: F401 — imported for parity with sibling tests
@@ -583,26 +583,26 @@ class TestOwnTabPreamble:
     def test_named_shared_browser_gets_preamble(self, tmp_path, monkeypatch):
         result = self._run(tmp_path, monkeypatch, session="r7k2", shared_cdp="http://127.0.0.1:9222")
         assert result["success"] is True
-        assert "_hermes_ensure_own_tab" in result["output"]
+        assert "_akramcode_ensure_own_tab" in result["output"]
         # model code still present, after the preamble
-        assert result["output"].index("_hermes_ensure_own_tab") < result["output"].index("print('payload')")
+        assert result["output"].index("_akramcode_ensure_own_tab") < result["output"].index("print('payload')")
 
     def test_named_packaged_chromium_skips_preamble(self, tmp_path, monkeypatch):
         """Each named session launches its own packaged Chromium — nothing to share a tab with."""
         result = self._run(tmp_path, monkeypatch, session="r7k2")
         assert result["success"] is True
-        assert "_hermes_ensure_own_tab" not in result["output"]
+        assert "_akramcode_ensure_own_tab" not in result["output"]
 
     def test_unnamed_session_gets_no_preamble(self, tmp_path, monkeypatch):
         result = self._run(tmp_path, monkeypatch, session="")
         assert result["success"] is True
-        assert "_hermes_ensure_own_tab" not in result["output"]
+        assert "_akramcode_ensure_own_tab" not in result["output"]
 
     def test_named_provider_browser_skips_preamble(self, tmp_path, monkeypatch):
         """Per-name provider browsers are private — preamble would leak a tab."""
         result = self._run(tmp_path, monkeypatch, session="r7k2", provider=True)
         assert result["success"] is True
-        assert "_hermes_ensure_own_tab" not in result["output"]
+        assert "_akramcode_ensure_own_tab" not in result["output"]
 
     def test_sentinel_never_reaches_subprocess_env(self, tmp_path, monkeypatch):
 
@@ -612,7 +612,7 @@ class TestOwnTabPreamble:
             bt_session, "_get_session_info",
             lambda key: {"cdp_url": "wss://browser.example/cdp/" + key},
         )
-        cli = _fake_cli(tmp_path, 'cat > /dev/null\necho "sentinel:${_HERMES_BU_PRIVATE_BROWSER:-unset}"\n')
+        cli = _fake_cli(tmp_path, 'cat > /dev/null\necho "sentinel:${_AKRAMCODE_BU_PRIVATE_BROWSER:-unset}"\n')
         monkeypatch.setattr(bu_cli, "_find_cli", lambda: [cli])
         result = json.loads(bu_cli.browser_exec("print(1)", session="r7k2"))
         assert "sentinel:unset" in result["output"]
@@ -626,7 +626,7 @@ class TestOwnTabPreamble:
 
 
 class TestProviderPickerIntegration:
-    """The `hermes tools` Browser Automation picker row (browser_backend
+    """The `akramcode tools` Browser Automation picker row (browser_backend
     marker) must enter/leave CLI mode cleanly and highlight correctly."""
 
     def _rows(self):
@@ -950,7 +950,7 @@ class TestBrowserExec:
 
 class TestDefaultDowngradeNotice:
     def _isolate(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
         monkeypatch.setattr("akramcode_cli.config.read_raw_config", lambda: {})
 
     def test_notice_when_default_and_cli_missing(self, tmp_path, monkeypatch):
@@ -970,7 +970,7 @@ class TestDefaultDowngradeNotice:
         assert bu_cli.default_downgrade_notice() is None
 
     def test_no_notice_on_explicit_backend(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
         monkeypatch.setattr(
             "akramcode_cli.config.read_raw_config",
             lambda: {"browser": {"backend": bu_cli.BACKEND_DISABLED}},
@@ -980,7 +980,7 @@ class TestDefaultDowngradeNotice:
 
 
 class TestLightpandaBackendResolution:
-    """browser.engine: lightpanda in Browser Use mode — Hermes spawns
+    """browser.engine: lightpanda in Browser Use mode — AkramCode spawns
     ``lightpanda serve`` through the same _get_session_info machinery and
     exports its endpoint, but only when nothing with higher precedence
     (BU_CDP_* env, a CDP override, a cloud provider) claimed the session."""
@@ -1078,7 +1078,7 @@ class TestLightpandaPreamble:
         monkeypatch.setattr(bu_cli, "_find_cli", lambda: [cli])
         result = json.loads(bu_cli.browser_exec("print('payload')", session="r7k2"))
         assert result["success"] is True
-        assert "_hermes_ensure_own_tab" not in result["output"]
+        assert "_akramcode_ensure_own_tab" not in result["output"]
         assert "print('payload')" in result["output"]
 
 

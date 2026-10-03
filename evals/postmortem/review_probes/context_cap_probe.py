@@ -11,11 +11,11 @@ root, tag = sys.argv[1:3]
 sys.path.insert(0, root)
 os.chdir(root)
 for k in list(os.environ):
-    if any(s in k for s in ('API_KEY','TOKEN','SECRET')) or k.startswith('HERMES_'):
+    if any(s in k for s in ('API_KEY','TOKEN','SECRET')) or k.startswith('AKRAMCODE_'):
         os.environ.pop(k, None)
 home = tempfile.mkdtemp(prefix='cap-review-')
-os.environ['HERMES_HOME'] = home
-os.environ['HERMES_DISABLE_REDACTION'] = 'true'
+os.environ['AKRAMCODE_HOME'] = home
+os.environ['AKRAMCODE_DISABLE_REDACTION'] = 'true'
 import akram_core.akramcode_yaml as yaml
 cfg = {'model': {'default': 'anthropic/claude-fable-5.1', 'provider':'openai-compat', 'base_url':'http://127.0.0.1:1/v1', 'context_length':1000000}, 'compression':{'threshold':0.85}, 'delegation': {}}
 if len(sys.argv)>3:

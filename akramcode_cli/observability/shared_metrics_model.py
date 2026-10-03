@@ -25,7 +25,7 @@ QUICK_ABANDON_NS = 60 * 1_000_000_000
 _WINDOW_THRESHOLDS = (
     (32_000, "lt_32k"), (128_000, "32k_to_128k"), (256_000, "128k_to_256k"), (1_000_000, "256k_to_1m"),
 )
-# The rejections Hermes answers with a forced (overflow-triggered) compression.
+# The rejections AkramCode answers with a forced (overflow-triggered) compression.
 _LIMIT_ERROR_CLASSES = frozenset({"context_overflow", "payload_too_large"})
 # Unattended runs have no user to interrupt or abandon them.
 _UNATTENDED_ENTRYPOINTS = frozenset({"background", "batch", "delegated", "scheduled_task"})
@@ -135,7 +135,7 @@ def tool_call_issue(
     """The first problem with one emitted call, most severe first; ``none`` when clean.
 
     Empty arguments are only an issue when the tool declares required parameters: for a
-    parameterless tool Hermes's normalization to ``{}`` is exactly what the model meant.
+    parameterless tool AkramCode's normalization to ``{}`` is exactly what the model meant.
     """
     if name not in valid_names:
         return "unknown_tool"
@@ -155,9 +155,9 @@ def tool_call_issue(
 
 
 def record_tool_call_quality(agent: Any, tool_calls: Iterable[Any], repaired_ids: frozenset[int] | set[int]) -> None:
-    """Count every tool call one primary response emitted, before Hermes normalizes it.
+    """Count every tool call one primary response emitted, before AkramCode normalizes it.
 
-    ``repaired_ids`` holds ``id(tc)`` of calls whose name Hermes auto-repaired; streamed calls
+    ``repaired_ids`` holds ``id(tc)`` of calls whose name AkramCode auto-repaired; streamed calls
     whose argument JSON was repaired carry ``function.args_repaired``. No-op unless enabled.
     """
     try:
@@ -186,21 +186,21 @@ def record_tool_call_quality(agent: Any, tool_calls: Iterable[Any], repaired_ids
 
 def record_model_friction(
     signal: str, *, session_id: Any = None, agent: Any = None, provider: Any = None, model: Any = None,
-    hermes_home: Any = None, turns: int = 1,
+    akramcode_home: Any = None, turns: int = 1,
 ) -> None:
     """Count one user friction action against the model that produced the session's last turn.
     ``turns``: how many turns an /undo removed (their tokens count as wasted).
 
     Falls back to ``agent`` (or ``provider``/``model``) when this process never saw the session's
-    turns (restart, remote compute host). ``hermes_home`` binds the owning profile for callers that
+    turns (restart, remote compute host). ``akramcode_home`` binds the owning profile for callers that
     run outside it (multiplexed gateway, Desktop sessions of a secondary profile).
     """
     token = None
     try:
-        if hermes_home:
-            from akramcode_constants import set_hermes_home_override
+        if akramcode_home:
+            from akramcode_constants import set_akramcode_home_override
 
-            token = set_hermes_home_override(str(hermes_home))
+            token = set_akramcode_home_override(str(akramcode_home))
         from .relay_shared_metrics import enabled, record_session_friction
 
         if signal not in contract.FRICTION_SIGNALS or not enabled():
@@ -213,6 +213,6 @@ def record_model_friction(
         logger.debug("Shared-metrics %s friction not recorded", signal, exc_info=True)
     finally:
         if token is not None:
-            from akramcode_constants import reset_hermes_home_override
+            from akramcode_constants import reset_akramcode_home_override
 
-            reset_hermes_home_override(token)
+            reset_akramcode_home_override(token)

@@ -22,12 +22,12 @@ class _DummyCLI:
         return None
 
 def _real_finalize(cli_obj):
-    """Call the real HermesCLI.finalize_preloaded_skills on a dummy object."""
+    """Call the real AkramCodeCLI.finalize_preloaded_skills on a dummy object."""
     return _REAL_FINALIZE(cli_obj)
 
 def _capture_real_finalize():
     import cli as cli_mod
-    return cli_mod.HermesCLI.__dict__["finalize_preloaded_skills"]
+    return cli_mod.AkramCodeCLI.__dict__["finalize_preloaded_skills"]
 
 _REAL_FINALIZE = _capture_real_finalize()
 
@@ -40,15 +40,15 @@ def test_main_applies_preloaded_skills_to_system_prompt(monkeypatch):
         created["cli"] = _DummyCLI(**kwargs)
         return created["cli"]
 
-    monkeypatch.setattr(cli_mod, "HermesCLI", fake_cli)
+    monkeypatch.setattr(cli_mod, "AkramCodeCLI", fake_cli)
     monkeypatch.setattr(
         cli_mod,
         "build_preloaded_skills_prompt",
-        lambda skills, task_id=None, excluded_loaded_names=None: ("skill prompt", ["hermes-agent-dev", "github-auth"], []),
+        lambda skills, task_id=None, excluded_loaded_names=None: ("skill prompt", ["akramcode-agent-dev", "github-auth"], []),
     )
 
     with pytest.raises(SystemExit):
-        cli_mod.main(skills="hermes-agent-dev,github-auth", list_tools=True)
+        cli_mod.main(skills="akramcode-agent-dev,github-auth", list_tools=True)
 
     cli_obj = created["cli"]
     # The preload now runs in a background thread and is folded in at agent
@@ -56,7 +56,7 @@ def test_main_applies_preloaded_skills_to_system_prompt(monkeypatch):
     # the finalize explicitly — the same call _init_agent makes.
     _real_finalize(cli_obj)
     assert cli_obj.system_prompt == "base prompt\n\nskill prompt"
-    assert cli_obj.preloaded_skills == ["hermes-agent-dev", "github-auth"]
+    assert cli_obj.preloaded_skills == ["akramcode-agent-dev", "github-auth"]
 
 def test_main_raises_for_unknown_preloaded_skill(monkeypatch):
     import cli as cli_mod
@@ -67,7 +67,7 @@ def test_main_raises_for_unknown_preloaded_skill(monkeypatch):
         created["cli"] = _DummyCLI(**kwargs)
         return created["cli"]
 
-    monkeypatch.setattr(cli_mod, "HermesCLI", fake_cli)
+    monkeypatch.setattr(cli_mod, "AkramCodeCLI", fake_cli)
     monkeypatch.setattr(
         cli_mod,
         "build_preloaded_skills_prompt",

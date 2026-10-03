@@ -1,15 +1,15 @@
-"""Home scoping for ``hermes update``'s fleet restart (#93349).
+"""Home scoping for ``akramcode update``'s fleet restart (#93349).
 
-The restart phase enumerates ``hermes-gateway*``/``hermes-serve*`` units, ``ai.hermes.gateway*``
+The restart phase enumerates ``akramcode-gateway*``/``akramcode-serve*`` units, ``ai.akramcode.gateway*``
 LaunchAgents and every ``gateway run`` process on the host. Those are HOST-wide namespaces: a
-second Hermes install (another ``HERMES_HOME`` root under the same account, its own checkout and
+second AkramCode install (another ``AKRAMCODE_HOME`` root under the same account, its own checkout and
 venv) shares them, and the update used to restart that install's gateway too — including the
-account's real ``hermes-gateway.service`` when a scratch home ran ``hermes update``.
+account's real ``akramcode-gateway.service`` when a scratch home ran ``akramcode update``.
 
 The fleet an update owns is the set of homes its plan inventories: the updating root plus every
 ``<root>/profiles/<name>``. Ownership is judged from what a runtime actually runs on — the live
-process environment (``HERMES_HOME``/``HOME``, via ``_hermes_home_for_pid``), the unit's declared
-``Environment=`` or the plist's pinned ``HERMES_HOME`` — never from a unit label or an argv
+process environment (``AKRAMCODE_HOME``/``HOME``, via ``_akramcode_home_for_pid``), the unit's declared
+``Environment=`` or the plist's pinned ``AKRAMCODE_HOME`` — never from a unit label or an argv
 substring. Unknown ownership is left alone: a restart we cannot prove is ours is somebody else's
 outage.
 """
@@ -32,8 +32,8 @@ def update_scope_homes() -> set[Path]:
     """Resolved homes the running update owns: the invoking home, the install root and its profiles."""
     homes: set[Path] = set()
     with suppress(Exception):
-        from akramcode_constants import get_hermes_home
-        if (home := _resolved(get_hermes_home())) is not None:
+        from akramcode_constants import get_akramcode_home
+        if (home := _resolved(get_akramcode_home())) is not None:
             homes.add(home)
     with suppress(Exception):
         from akramcode_cli.update_receipt import _profile_homes
@@ -61,15 +61,15 @@ def _ledger_gateway_home(pid: int) -> str | None:
         from akramcode_cli.process_identity import ledger_entries
         for entry in ledger_entries(verified_only=True):
             if entry.get("pid") == pid and entry.get("purpose") == "gateway":
-                return entry.get("hermes_home") or None
+                return entry.get("akramcode_home") or None
     return None
 
 
 def gateway_pid_in_update_scope(pid: int, scope: set[Path] | None = None) -> bool | None:
     """Does gateway *pid* run on a home this update owns? ``None`` when its home cannot be read."""
-    from akramcode_cli.dashboard_procs import _hermes_home_for_pid
+    from akramcode_cli.dashboard_procs import _akramcode_home_for_pid
     try:
-        home = _hermes_home_for_pid(pid)
+        home = _akramcode_home_for_pid(pid)
     except Exception:
         home = None
     home = home or _ledger_gateway_home(pid)
@@ -91,23 +91,23 @@ def partition_gateway_pids_by_scope(pids, scope: set[Path] | None = None) -> tup
             home = None
             if verdict is False:
                 with suppress(Exception):
-                    from akramcode_cli.dashboard_procs import _hermes_home_for_pid
-                    home = _hermes_home_for_pid(pid)
+                    from akramcode_cli.dashboard_procs import _akramcode_home_for_pid
+                    home = _akramcode_home_for_pid(pid)
             foreign.append((pid, home))
     return owned, foreign
 
 
-def systemd_unit_hermes_home(scope_cmd: list, svc_name: str) -> str | None:
+def systemd_unit_akramcode_home(scope_cmd: list, svc_name: str) -> str | None:
     """Home the systemd unit *svc_name* runs on: its live MainPID's environment first, then the
-    unit's declared ``Environment=HERMES_HOME``; for a user-scope unit that declares none, the
+    unit's declared ``Environment=AKRAMCODE_HOME``; for a user-scope unit that declares none, the
     user's own default home. ``None`` when nothing readable names a home."""
     from akramcode_cli.update_cmd_fleet import _systemctl, _unit_main_pid
 
     pid = _unit_main_pid(scope_cmd, svc_name)
     if pid > 0:
         with suppress(Exception):
-            from akramcode_cli.dashboard_procs import _hermes_home_for_pid
-            if (home := _hermes_home_for_pid(pid)) is not None:
+            from akramcode_cli.dashboard_procs import _akramcode_home_for_pid
+            if (home := _akramcode_home_for_pid(pid)) is not None:
                 return home
     try:
         shown = _systemctl(list(scope_cmd) + ["show", svc_name, "--property=Environment", "--value"], timeout=10)
@@ -122,25 +122,25 @@ def systemd_unit_hermes_home(scope_cmd: list, svc_name: str) -> str | None:
         tokens = env_line.split()
     for token in tokens:
         key, sep, value = token.partition("=")
-        if sep and key == "HERMES_HOME" and value.strip():
+        if sep and key == "AKRAMCODE_HOME" and value.strip():
             return value.strip()
     if "--user" in scope_cmd:
-        return str(Path.home() / ".hermes")
+        return str(Path.home() / ".akramcode")
     return None
 
 
 def systemd_unit_in_update_scope(scope_cmd: list, svc_name: str, scope: set[Path] | None = None) -> bool | None:
     """Does unit *svc_name* belong to this update? ``None`` = ownership unreadable (leave it alone)."""
-    home = systemd_unit_hermes_home(scope_cmd, svc_name)
+    home = systemd_unit_akramcode_home(scope_cmd, svc_name)
     if home is None:
         return None
     return home_in_update_scope(home, scope)
 
 
 def launchd_label_foreign_home(label: str, scope: set[Path] | None = None) -> str | None:
-    """The HERMES_HOME a derived launchd label's installed plist pins when that home is NOT one of
+    """The AKRAMCODE_HOME a derived launchd label's installed plist pins when that home is NOT one of
     this update's — labels are account-global, so root B's default profile derives the same bare
-    ``ai.hermes.gateway`` root A installed. ``None`` = ours, or no/unreadable plist (the locate step
+    ``ai.akramcode.gateway`` root A installed. ``None`` = ours, or no/unreadable plist (the locate step
     decides whether a job exists; only a proven foreign home is refused)."""
     import plistlib
     with suppress(Exception):
@@ -149,7 +149,7 @@ def launchd_label_foreign_home(label: str, scope: set[Path] | None = None) -> st
         if not plist_path.exists():
             return None
         data = plistlib.loads(plist_path.read_bytes())
-        pinned = str(data["EnvironmentVariables"]["HERMES_HOME"])
+        pinned = str(data["EnvironmentVariables"]["AKRAMCODE_HOME"])
         return None if home_in_update_scope(pinned, scope) else pinned
     return None
 
@@ -157,5 +157,5 @@ def launchd_label_foreign_home(label: str, scope: set[Path] | None = None) -> st
 def describe_skipped_runtime(kind: str, name: str, home: str | None) -> str:
     """One notice line for a runtime the update leaves alone (foreign home or unreadable ownership)."""
     if home is None:
-        return f"  ↷ {name}: {kind} whose Hermes home could not be read — left alone (not restarted)"
-    return f"  ↷ {name}: {kind} of another Hermes home ({home}) — left alone (not restarted)"
+        return f"  ↷ {name}: {kind} whose AkramCode home could not be read — left alone (not restarted)"
+    return f"  ↷ {name}: {kind} of another AkramCode home ({home}) — left alone (not restarted)"

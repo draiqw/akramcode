@@ -53,7 +53,7 @@ class GatewayLoginCommandsMixin:
         executor = getattr(self, "_login_exec", None)
         if executor is None or getattr(executor, "_shutdown", False):
             executor = self._login_exec = concurrent.futures.ThreadPoolExecutor(
-                max_workers=1, thread_name_prefix="hermes-login")
+                max_workers=1, thread_name_prefix="akramcode-login")
         return executor
 
     async def _run_login_blocking(self, func):

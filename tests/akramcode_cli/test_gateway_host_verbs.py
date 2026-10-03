@@ -61,13 +61,13 @@ def _write_record(pid: int, home: Path, profiles: tuple[str, ...]) -> None:
 @pytest.fixture
 def host_owner(tmp_path, monkeypatch):
     """A REAL live process published as the host gateway, answering identify for three profiles."""
-    monkeypatch.setenv("HERMES_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
+    monkeypatch.setenv("AKRAMCODE_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
     child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
     home = tmp_path / "root"
     _write_record(child.pid, home, ("default", "ops", "coder"))
     monkeypatch.setattr(
         "gateway.control_socket.identify_gateway",
-        lambda dialled, **kw: {"pid": child.pid, "hermes_home": str(home),
+        lambda dialled, **kw: {"pid": child.pid, "akramcode_home": str(home),
                                "served_profiles": ["default", "ops", "coder"]})
     try:
         yield SimpleNamespace(pid=child.pid, home=home, proc=child)
@@ -102,19 +102,19 @@ def test_named_profile_start_all_starts_the_default_host_service(monkeypatch, tm
     """With no live owner, `-p X gateway start --all` must start the host root, never X's gateway.
 
     Skipping the generic named-profile guard alone is insufficient on Windows: the Windows backend
-    derives its Scheduled Task name, launcher HERMES_HOME and detached child from the active home.
+    derives its Scheduled Task name, launcher AKRAMCODE_HOME and detached child from the active home.
     """
-    import hermes_constants
+    import akramcode_constants
 
-    root = tmp_path / "hermes"
+    root = tmp_path / "akramcode"
     named = root / "profiles" / "leinad"
     root.mkdir()
     named.mkdir(parents=True)
     (root / "config.yaml").write_text("{}\n", encoding="utf-8")
     (named / "config.yaml").write_text("{}\n", encoding="utf-8")
 
-    monkeypatch.setenv("HERMES_HOME", str(named))
-    hermes_constants._default_hermes_root_memo = None
+    monkeypatch.setenv("AKRAMCODE_HOME", str(named))
+    akramcode_constants._default_akramcode_root_memo = None
     monkeypatch.setattr(
         gw, "_guard_named_profile_under_multiplexer",
         lambda **k: pytest.fail("the generic profile guard pre-empted start --all"),
@@ -128,8 +128,8 @@ def test_named_profile_start_all_starts_the_default_host_service(monkeypatch, tm
     def _observe(step):
         calls.append((
             step,
-            Path(hermes_constants.get_hermes_home()),
-            os.environ.get("HERMES_HOME"),
+            Path(akramcode_constants.get_akramcode_home()),
+            os.environ.get("AKRAMCODE_HOME"),
         ))
 
     def _kill(**kwargs):
@@ -158,8 +158,8 @@ def test_named_profile_start_all_starts_the_default_host_service(monkeypatch, tm
         ("start", root, str(root)),
     ]
     # The CLI's named-profile scope is restored after the host-scoped operation.
-    assert hermes_constants.get_hermes_home() == named
-    assert os.environ["HERMES_HOME"] == str(named)
+    assert akramcode_constants.get_akramcode_home() == named
+    assert os.environ["AKRAMCODE_HOME"] == str(named)
 
 
 def test_named_profile_restart_all_with_host_down_restarts_the_default_root(monkeypatch, tmp_path):
@@ -172,9 +172,9 @@ def test_named_profile_restart_all_with_host_down_restarts_the_default_root(monk
     CLI already loaded X's ``.env`` into ``os.environ``, and an in-process ``run_gateway`` served the
     default profile with X's credentials.
     """
-    import hermes_constants
+    import akramcode_constants
 
-    root = tmp_path / "hermes"
+    root = tmp_path / "akramcode"
     named = root / "profiles" / "leinad"
     named.mkdir(parents=True)
     (root / "config.yaml").write_text("{}\n", encoding="utf-8")
@@ -186,8 +186,8 @@ def test_named_profile_restart_all_with_host_down_restarts_the_default_root(monk
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "leinad-telegram")
     monkeypatch.setenv("OPENAI_API_KEY", "leinad-openai")
 
-    monkeypatch.setenv("HERMES_HOME", str(named))
-    hermes_constants._default_hermes_root_memo = None
+    monkeypatch.setenv("AKRAMCODE_HOME", str(named))
+    akramcode_constants._default_akramcode_root_memo = None
     monkeypatch.setattr(gw, "_host_multiplexer_for_all_verb", lambda: None)
     monkeypatch.setattr(gw, "_stop_installed_service", lambda system: False)
     monkeypatch.setattr(gw, "kill_gateway_processes", lambda **k: 0)
@@ -210,12 +210,12 @@ def test_named_profile_restart_all_with_host_down_restarts_the_default_root(monk
     assert cmd[-3:] == ["gateway", "run", "--replace"]
     assert "--profile" not in cmd
     env = kwargs["env"]
-    assert Path(env["HERMES_HOME"]) == root
+    assert Path(env["AKRAMCODE_HOME"]) == root
     assert env.get("DISCORD_BOT_TOKEN") == "root-discord"
     assert "TELEGRAM_BOT_TOKEN" not in env and "OPENAI_API_KEY" not in env, \
         "the host child inherited the named profile's credentials"
-    assert hermes_constants.get_hermes_home() == named
-    assert not hermes_constants.process_hermes_home_is_pinned()
+    assert akramcode_constants.get_akramcode_home() == named
+    assert not akramcode_constants.process_akramcode_home_is_pinned()
 
 
 def test_restart_all_refuses_to_sweep_a_host_multiplexer_owned_by_another_profile(
@@ -225,7 +225,7 @@ def test_restart_all_refuses_to_sweep_a_host_multiplexer_owned_by_another_profil
 
     monkeypatch.setattr(gw, "kill_gateway_processes", _never)
     monkeypatch.setattr(gw, "_stop_installed_service", lambda system: False)
-    monkeypatch.setattr("gateway.status._get_process_hermes_home",
+    monkeypatch.setattr("gateway.status._get_process_akramcode_home",
                         lambda: Path(tmp_path / "root" / "profiles" / "ops"))
 
     with pytest.raises(SystemExit) as exc:
@@ -240,7 +240,7 @@ def test_restart_all_does_not_attach_to_the_process_it_just_stopped(
     Without both, the re-entered ``gateway run`` read the corpse's record, decided ATTACH and
     exited 0 — a restart that silently left the host with no gateway at all.
     """
-    monkeypatch.setattr("gateway.status._get_process_hermes_home", lambda: host_owner.home)
+    monkeypatch.setattr("gateway.status._get_process_akramcode_home", lambda: host_owner.home)
     monkeypatch.setattr(gw, "_stop_installed_service", lambda system: False)
     monkeypatch.setattr(gw, "kill_gateway_processes", lambda **k: 1)
     monkeypatch.setattr(gw, "_wait_for_api_server_port_free", lambda *a, **k: None)

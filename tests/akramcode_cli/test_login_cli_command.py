@@ -126,8 +126,8 @@ def test_the_handler_never_calls_input_and_uses_the_short_timeout(monkeypatch):
     assert seen == [{"timeout_seconds": 8.0}]
 
 def test_the_command_resolves_through_the_cli_fallback():
-    from cli import HermesCLI
-    assert HermesCLI._slash_handler("login") == ("_handle_login_command", True)
+    from cli import AkramCodeCLI
+    assert AkramCodeCLI._slash_handler("login") == ("_handle_login_command", True)
 
 def test_the_drain_writes_to_the_console_captured_at_start(monkeypatch):
     old_buf, new_buf = StringIO(), StringIO()

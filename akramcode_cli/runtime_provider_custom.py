@@ -201,7 +201,7 @@ def _get_named_custom_provider(requested_provider: str) -> Optional[Dict[str, An
     if isinstance(config.get("custom_providers"), dict):
         logger.warning("custom_providers in config.yaml is a dict, not a list. "
                        "Each entry must be prefixed with '-' in YAML. "
-                       "Run 'hermes doctor' for details.")
+                       "Run 'akramcode doctor' for details.")
         return None
     custom_providers = rp.get_compatible_custom_providers(config)
     return _match_legacy_custom_provider(requested_norm, custom_providers) if custom_providers else None
@@ -321,7 +321,7 @@ def canonical_custom_identity(*, base_url: Optional[str] = None, config_provider
         except Exception:
             candidate = ""
     if not candidate:
-        candidate = os.environ.get("HERMES_INFERENCE_PROVIDER", "").strip()
+        candidate = os.environ.get("AKRAMCODE_INFERENCE_PROVIDER", "").strip()
     candidate_norm = _normalize_custom_provider_name(candidate)
     # A bare/non-routable candidate cannot heal a bare custom override.
     if not candidate_norm or candidate_norm in {"custom", "auto", "openrouter"}:

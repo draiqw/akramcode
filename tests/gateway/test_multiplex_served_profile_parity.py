@@ -16,7 +16,7 @@ from agent.secret_scope import set_multiplex_active
 from gateway.config import Platform, PlatformConfig
 from gateway.run import GatewayRunner, _profile_runtime_scope
 from gateway.session import SessionSource
-from hermes_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 
 
 class RecordingAdapter:
@@ -27,22 +27,22 @@ class RecordingAdapter:
         self._active_sessions, self._pending_messages, self._session_tasks = {}, {}, {}
 
     async def send(self, chat_id, content, metadata=None, **kw):
-        self.calls.append(("send", str(get_hermes_home())))
+        self.calls.append(("send", str(get_akramcode_home())))
         return SimpleNamespace(success=True, error=None)
 
     async def send_private_notice(self, chat_id, user_id, content, metadata=None, **kw):
-        self.calls.append(("send_private_notice", str(get_hermes_home())))
+        self.calls.append(("send_private_notice", str(get_akramcode_home())))
         return SimpleNamespace(success=True, error=None)
 
     async def handle_message(self, event):
-        self.calls.append(("handle_message", str(get_hermes_home())))
+        self.calls.append(("handle_message", str(get_akramcode_home())))
         event._gateway_accepted = True
 
 
 @pytest.fixture
 def served(tmp_path, monkeypatch):
     """Default host + served profile ``alpha``; the runner is the default multiplexer."""
-    root = tmp_path / "hermes"
+    root = tmp_path / "akramcode"
     alpha = root / "profiles" / "alpha"
     alpha.mkdir(parents=True)
     (root / "config.yaml").write_text(
@@ -50,9 +50,9 @@ def served(tmp_path, monkeypatch):
     (alpha / "config.yaml").write_text("display:\n  background_process_notifications: 'off'\n")
     (root / ".env").write_text("")
     (alpha / ".env").write_text("")
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(root))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setattr("hermes_constants.get_default_hermes_root", lambda: root)
+    monkeypatch.setattr("akramcode_constants.get_default_akramcode_root", lambda: root)
     set_multiplex_active(True)
 
     runner = GatewayRunner.__new__(GatewayRunner)

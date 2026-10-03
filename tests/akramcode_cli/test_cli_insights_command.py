@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from cli import HermesCLI
+from cli import AkramCodeCLI
 from akramcode_cli.main_agent_cmds import cmd_insights
 from akramcode_state import _default_db_path
 
@@ -30,7 +30,7 @@ class _InsightsEngineStub:
 
 
 def _run_show_insights(command: str):
-    cli_obj = HermesCLI.__new__(HermesCLI)
+    cli_obj = AkramCodeCLI.__new__(AkramCodeCLI)
     db = MagicMock()
     _InsightsEngineStub.calls = []
     with patch("akramcode_state.SessionDB", return_value=db), \
@@ -58,7 +58,7 @@ def test_cli_insights_keeps_days_flag_and_source(capsys):
 def test_insights_skips_open_when_store_missing(capsys):
     # Fresh install: no state.db yet → no open at all (a read-only open needs an existing file).
     _default_db_path().unlink()
-    for run in (lambda: HermesCLI.__new__(HermesCLI)._show_insights("/insights 7"),
+    for run in (lambda: AkramCodeCLI.__new__(AkramCodeCLI)._show_insights("/insights 7"),
                 lambda: cmd_insights(SimpleNamespace(days=30, source=None))):
         with patch("akramcode_state.SessionDB") as ctor:
             run()
@@ -67,7 +67,7 @@ def test_insights_skips_open_when_store_missing(capsys):
 
 
 def test_show_insights_opens_read_only():
-    cli_obj = HermesCLI.__new__(HermesCLI)
+    cli_obj = AkramCodeCLI.__new__(AkramCodeCLI)
     db = MagicMock()
     with patch("akramcode_state.SessionDB", return_value=db) as ctor, \
          patch("agent.insights.InsightsEngine", _InsightsEngineStub):

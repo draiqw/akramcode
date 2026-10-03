@@ -140,7 +140,7 @@ def test_execution_ledger_follows_the_current_profile_home(monkeypatch, tmp_path
 
     current_home = {"path": tmp_path / "default"}
     monkeypatch.setattr(executions, "EXECUTIONS_FILE", None)
-    monkeypatch.setattr(executions, "get_hermes_home", lambda: current_home["path"])
+    monkeypatch.setattr(executions, "get_akramcode_home", lambda: current_home["path"])
 
     default_row = executions.create_execution("default-job", source="builtin")
     current_home["path"] = tmp_path / "worker"
@@ -247,11 +247,11 @@ def test_recovery_does_not_mark_live_process_execution_unknown(monkeypatch, tmp_
 
 
 def test_restart_marks_interrupted_execution_unknown_without_requeue(tmp_path):
-    """Real temp-HERMES_HOME subprocess restart: in-flight is audit-only unknown."""
+    """Real temp-AKRAMCODE_HOME subprocess restart: in-flight is audit-only unknown."""
     home = tmp_path / "home"
     repo = Path(__file__).resolve().parents[2]
     env = os.environ.copy()
-    env["HERMES_HOME"] = str(home)
+    env["AKRAMCODE_HOME"] = str(home)
     env["PYTHONPATH"] = str(repo)
 
     create = subprocess.run(
@@ -501,9 +501,9 @@ def test_history_orders_by_instant_across_dst_fall_back(monkeypatch, tmp_path):
     new_york = ZoneInfo("America/New_York")
     first_pass = datetime(2026, 11, 1, 1, 50, tzinfo=new_york, fold=0)
     second_pass = datetime(2026, 11, 1, 1, 10, tzinfo=new_york, fold=1)
-    monkeypatch.setattr(executions, "_hermes_now", lambda: first_pass)
+    monkeypatch.setattr(executions, "_akramcode_now", lambda: first_pass)
     earlier = executions.create_execution("dst-job", source="builtin")
-    monkeypatch.setattr(executions, "_hermes_now", lambda: second_pass)
+    monkeypatch.setattr(executions, "_akramcode_now", lambda: second_pass)
     later = executions.create_execution("dst-job", source="builtin")
     assert later["claimed_at"] < earlier["claimed_at"]
 

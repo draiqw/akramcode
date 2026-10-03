@@ -1,7 +1,7 @@
 # Configuration, Toolsets & Voice
 
-Edit with `hermes config edit` or `hermes config set section.key value`.
-Full reference: https://hermes-agent.nousresearch.com/docs/user-guide/configuration
+Edit with `akramcode config edit` or `akramcode config set section.key value`.
+Full reference: https://akramcode-agent.nousresearch.com/docs/user-guide/configuration
 
 ### Config Sections (most-used keys)
 
@@ -21,12 +21,12 @@ Full reference: https://hermes-agent.nousresearch.com/docs/user-guide/configurat
 | `checkpoints` | `enabled`, `max_snapshots` (50) |
 | `curator` | `enabled`, `consolidate` (false, opt-in aux-model consolidation), `interval_hours`, `stale_after_days` |
 
-`hermes config check` reports sections missing from an older config.
+`akramcode config check` reports sections missing from an older config.
 
 ### Toolsets
 
-Enable/disable via `hermes tools` (interactive) or `hermes tools enable/disable NAME`.
-Full enumeration: `TOOLSETS` dict in `toolsets.py` (`_HERMES_CORE_TOOLS` is the default bundle most platforms inherit).
+Enable/disable via `akramcode tools` (interactive) or `akramcode tools enable/disable NAME`.
+Full enumeration: `TOOLSETS` dict in `toolsets.py` (`_AKRAMCODE_CORE_TOOLS` is the default bundle most platforms inherit).
 
 | Toolset | What it provides |
 |---------|-----------------|

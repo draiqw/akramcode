@@ -12,13 +12,13 @@ import shutil
 import pytest
 
 import agent.i18n as i18n
-from cli import HermesCLI
+from cli import AkramCodeCLI
 from akramcode_cli import cli_billing_mixin as bm
 
 
 @pytest.fixture
 def cli():
-    obj = HermesCLI.__new__(HermesCLI)
+    obj = AkramCodeCLI.__new__(AkramCodeCLI)
     obj._app = None
     return obj
 
@@ -33,14 +33,14 @@ def overlay_locales(tmp_path, monkeypatch):
         "cli:\n  billing:\n    choice_add_funds: 充值\n    charge_failed_card_declined: 卡被拒绝\n",
         encoding="utf-8")
     monkeypatch.setattr(i18n, "_locales_dir", lambda: fake)
-    monkeypatch.delenv("HERMES_LANGUAGE", raising=False)
+    monkeypatch.delenv("AKRAMCODE_LANGUAGE", raising=False)
     i18n.reset_language_cache()
     yield fake
     i18n.reset_language_cache()
 
 
 def _use(monkeypatch, lang: str) -> None:
-    monkeypatch.setenv("HERMES_LANGUAGE", lang)
+    monkeypatch.setenv("AKRAMCODE_LANGUAGE", lang)
     i18n.reset_language_cache()
 
 

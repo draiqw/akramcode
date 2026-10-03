@@ -183,8 +183,8 @@ test('web rejects missing icons and compiler failures without publishing stale s
 function tuiSource(source) {
   put(source, 'package.json', '{"private":true}')
   put(source, 'ui-tui/package.json', '{"type":"module"}')
-  put(source, 'ui-tui/src/entry.tsx', '#!/usr/bin/env node\nimport { answer } from "@hermes/ink"; console.log(answer);')
-  put(source, 'ui-tui/packages/hermes-ink/src/entry-exports.ts', 'import devtools from "react-devtools-core"; devtools.initialize(); export const answer: string = "prepared source";')
+  put(source, 'ui-tui/src/entry.tsx', '#!/usr/bin/env node\nimport { answer } from "@akramcode/ink"; console.log(answer);')
+  put(source, 'ui-tui/packages/akramcode-ink/src/entry-exports.ts', 'import devtools from "react-devtools-core"; devtools.initialize(); export const answer: string = "prepared source";')
 }
 
 test('TUI uses prepared workspace-local tools from an unrelated cwd and publishes a relocatable module product', () => {
@@ -277,7 +277,7 @@ test('built TUI stays current after documentation, test and unrelated recipe cha
   const before = readFileSync(entry)
   for (const name of [
     'ui-tui/README.md', 'ui-tui/src/__tests__/new.test.ts', 'ui-tui/src/value.spec.ts',
-    'ui-tui/packages/hermes-ink/src/value.test.ts', 'apps/shared/src/value.test.ts',
+    'ui-tui/packages/akramcode-ink/src/value.test.ts', 'apps/shared/src/value.test.ts',
     'apps/shared/README.md', 'scripts/build/web.mjs', 'scripts/build/desktop.mjs',
     'scripts/build/README.md', 'scripts/build/node-deps.mjs',
   ]) {
@@ -325,9 +325,9 @@ test('TUI freshness invalidates source, configuration and compiler inputs and da
   }
   for (const name of [
     'ui-tui/src/value.ts', 'apps/shared/src/value.ts',
-    'ui-tui/packages/hermes-ink/src/entry-exports.ts',
-    'ui-tui/tsconfig.json', 'ui-tui/packages/hermes-ink/tsconfig.json', 'apps/shared/tsconfig.json',
-    'ui-tui/package.json', 'ui-tui/packages/hermes-ink/package.json', 'apps/shared/package.json',
+    'ui-tui/packages/akramcode-ink/src/entry-exports.ts',
+    'ui-tui/tsconfig.json', 'ui-tui/packages/akramcode-ink/tsconfig.json', 'apps/shared/tsconfig.json',
+    'ui-tui/package.json', 'ui-tui/packages/akramcode-ink/package.json', 'apps/shared/package.json',
     'tsconfig.json', 'package.json', 'package-lock.json', '.npmrc', 'pm/lock.json',
     'scripts/build/tui.mjs', 'scripts/build/frontend-common.mjs', 'scripts/build/freshness.mjs',
   ]) {

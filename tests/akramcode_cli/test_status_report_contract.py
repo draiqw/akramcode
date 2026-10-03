@@ -26,7 +26,7 @@ TITLE = "Distinctive status title"
 CREATED = datetime(2031, 3, 14, 15, 9)
 UPDATED = datetime(2031, 3, 15, 1, 5)
 TOKENS = 1_234_567
-HOME = "~/.hermes-status-contract"
+HOME = "~/.akramcode-status-contract"
 
 COMMON_VALUES = (
     SESSION_ID, MODEL, PROVIDER, TITLE,
@@ -99,7 +99,7 @@ def _render_tui() -> str:
 
 
 def test_three_status_surfaces_report_the_same_common_fields():
-    with patch("hermes_constants.display_hermes_home", return_value=HOME), \
+    with patch("akramcode_constants.display_akramcode_home", return_value=HOME), \
          patch("tools.approval_context._get_approval_mode", side_effect=RuntimeError("n/a")):
         outputs = {"cli": _render_cli(), "gateway": _render_gateway(), "tui": _render_tui()}
 

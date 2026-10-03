@@ -1,4 +1,4 @@
-"""Runtime-backed validation behind ``hermes plugins doctor``: every manifest/import/registration
+"""Runtime-backed validation behind ``akramcode plugins doctor``: every manifest/import/registration
 check routes through the real runtime contracts instead of a parallel scanner."""
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from types import SimpleNamespace
 from typing import Any, Literal
 from unittest.mock import patch
 
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 
 
 class _DoctorLoadError(RuntimeError):
@@ -32,13 +32,13 @@ def _doctor_runtime(plugin_path: Path):
     """Load one plugin through the real runtime and restore global state afterwards.
 
     Private Doctor machinery, not a plugin test framework. Registration code runs under a temporary
-    HERMES_HOME with outbound socket connects blocked.
+    AKRAMCODE_HOME with outbound socket connects blocked.
     """
     stack = ExitStack()
     try:
         # The temp dir enters the stack FIRST so any failure below (ENOSPC / KeyboardInterrupt in
-        # copytree) removes it instead of stranding a hermes-plugin-doctor-* directory.
-        home = Path(stack.enter_context(tempfile.TemporaryDirectory(prefix="hermes-plugin-doctor-")))
+        # copytree) removes it instead of stranding a akramcode-plugin-doctor-* directory.
+        home = Path(stack.enter_context(tempfile.TemporaryDirectory(prefix="akramcode-plugin-doctor-")))
         bundled = home / "bundled-plugins"
         plugins_root = home / "plugins"
         bundled.mkdir(parents=True)
@@ -48,9 +48,9 @@ def _doctor_runtime(plugin_path: Path):
             plugin_path, copied,
             ignore=shutil.ignore_patterns(".git", "__pycache__", ".pytest_cache", "*.pyc"))
         stack.enter_context(patch.dict(os.environ, {
-            "HERMES_HOME": str(home),
-            "HERMES_BUNDLED_PLUGINS": str(bundled),
-            "HERMES_ENABLE_PROJECT_PLUGINS": "0",
+            "AKRAMCODE_HOME": str(home),
+            "AKRAMCODE_BUNDLED_PLUGINS": str(bundled),
+            "AKRAMCODE_ENABLE_PROJECT_PLUGINS": "0",
         }, clear=False))
         stack.enter_context(patch.object(socket, "create_connection", _deny_network))
         stack.enter_context(patch.object(socket.socket, "connect", _deny_network))
@@ -68,7 +68,7 @@ def _doctor_runtime(plugin_path: Path):
     try:
         manifests = manager._scan_directory(plugins_root, source="user")
         if not manifests:
-            raise _DoctorLoadError(f"Hermes discovery found no valid plugin manifest under {copied}")
+            raise _DoctorLoadError(f"AkramCode discovery found no valid plugin manifest under {copied}")
         if len(manifests) != 1:
             raise _DoctorLoadError(
                 f"Expected one plugin manifest, discovered {len(manifests)} under {copied}")
@@ -91,7 +91,7 @@ def _doctor_runtime(plugin_path: Path):
             registered_hooks=tuple(loaded.hooks_registered), registered_providers=())
     finally:
         # Dispose the plugin's own registrations FIRST, while the temporary
-        # HERMES_HOME still exists. This runs the host-owned ctx.on_unload(...)
+        # AKRAMCODE_HOME still exists. This runs the host-owned ctx.on_unload(...)
         # callbacks — e.g. closing a SQLite handle a context-engine plugin
         # opened under that home. Without it the DB stays open and stack.close()
         # below (TemporaryDirectory removal) fails with WinError 32 on Windows
@@ -126,7 +126,7 @@ def _doctor_runtime(plugin_path: Path):
 
 
 def _is_plugin_module(name: str) -> bool:
-    return name == "hermes_plugins" or name.startswith("hermes_plugins.")
+    return name == "akramcode_plugins" or name.startswith("akramcode_plugins.")
 
 
 @contextmanager
@@ -245,14 +245,14 @@ def resolve_plugin_path(target: str | os.PathLike[str] | None = None) -> Path:
 
     candidates: list[Path] = []
     if _is_plugin_id(raw):
-        candidates.append(get_hermes_home() / "plugins" / raw)
+        candidates.append(get_akramcode_home() / "plugins" / raw)
         try:
             from akramcode_cli.plugins import get_bundled_plugins_dir
             bundled = get_bundled_plugins_dir()
             candidates += [bundled / raw, bundled / "platforms" / raw, bundled / "model-providers" / raw]
         except Exception:
             pass
-        candidates.append(Path.cwd() / ".hermes" / "plugins" / raw)
+        candidates.append(Path.cwd() / ".akramcode" / "plugins" / raw)
     for candidate in candidates:
         if _holds_plugin(candidate):
             return candidate.resolve()
@@ -280,7 +280,7 @@ def _check_manifest_v2(report: "DoctorReport", manifest: Any) -> None:
     mv = getattr(manifest, "manifest_version", 1)
     if mv > SUPPORTED_MANIFEST_VERSION:
         report.warning(
-            f"manifest_version {mv} is newer than this Hermes supports "
+            f"manifest_version {mv} is newer than this AkramCode supports "
             f"({SUPPORTED_MANIFEST_VERSION}); unknown fields are ignored")
 
     api_version = getattr(manifest, "api_version", None)
@@ -320,8 +320,8 @@ def _check_manifest_v2(report: "DoctorReport", manifest: Any) -> None:
     if missing:
         report.warning(
             "declared python_dependencies not installed: " + ", ".join(missing)
-            + " — install and enable the plugin with hermes plugins. "
-            "For an enabled plugin, run hermes pm repair, then restart Hermes.")
+            + " — install and enable the plugin with akramcode plugins. "
+            "For an enabled plugin, run akramcode pm repair, then restart AkramCode.")
 
     schema = getattr(manifest, "config_schema", {}) or {}
     if schema:
@@ -333,7 +333,7 @@ def _check_manifest_v2(report: "DoctorReport", manifest: Any) -> None:
 
 
 def doctor_plugin(target: str | os.PathLike[str] | None = None) -> DoctorReport:
-    """Validate one plugin through Hermes' real scanner and registration path."""
+    """Validate one plugin through AkramCode' real scanner and registration path."""
     try:
         path = resolve_plugin_path(target)
     except FileNotFoundError as exc:

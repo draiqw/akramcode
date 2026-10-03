@@ -56,9 +56,9 @@ def test_run_job_bounds_sessiondb_finalization(tmp_path):
     job = {"id": "cleanup-sessiondb-hang", "name": "test", "prompt": "hello"}
 
     try:
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._akramcode_home", tmp_path), \
              patch("cron.scheduler_delivery._resolve_origin", return_value=None), \
-             patch("akramcode_cli.env_loader.load_hermes_dotenv"), \
+             patch("akramcode_cli.env_loader.load_akramcode_dotenv"), \
              patch("akramcode_cli.env_loader.reset_secret_source_cache"), \
              patch("akramcode_state.registry.acquire", return_value=fake_db), \
              patch("akramcode_cli.runtime_provider.resolve_runtime_provider", return_value=_RUNTIME), \
@@ -137,9 +137,9 @@ def test_dispatch_guard_releases_after_sessiondb_finalization_hang(tmp_path):
     sched._running_job_ids.clear()
 
     try:
-        with patch("cron.scheduler._hermes_home", tmp_path), \
+        with patch("cron.scheduler._akramcode_home", tmp_path), \
              patch("cron.scheduler_delivery._resolve_origin", return_value=None), \
-             patch("akramcode_cli.env_loader.load_hermes_dotenv"), \
+             patch("akramcode_cli.env_loader.load_akramcode_dotenv"), \
              patch("akramcode_cli.env_loader.reset_secret_source_cache"), \
              patch("akramcode_state.registry.acquire", return_value=fake_db), \
              patch("akramcode_cli.runtime_provider.resolve_runtime_provider", return_value=_RUNTIME), \

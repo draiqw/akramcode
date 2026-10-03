@@ -71,9 +71,9 @@ def _emit_every_model_metric(provider, model) -> dict:
 
 
 _MODEL_METRICS = {
-    "hermes.model_route.count", "hermes.model_tokens.sum", "hermes.context_peak.count",
-    "hermes.fallback.count", "hermes.model_switch.count", "hermes.setup.completed",
-    "hermes.model_friction.count", "hermes.model_tool_quality.count",
+    "akramcode.model_route.count", "akramcode.model_tokens.sum", "akramcode.context_peak.count",
+    "akramcode.fallback.count", "akramcode.model_switch.count", "akramcode.setup.completed",
+    "akramcode.model_friction.count", "akramcode.model_tool_quality.count",
 }
 
 
@@ -84,7 +84,7 @@ def test_user_named_models_never_leave_in_any_model_metric(direct_runtime, tmp_p
     """Local-server aliases of ``custom``, a missing provider and unknown ids all read custom/unknown
     with model ``custom`` in every provider/model-bearing metric; the raw id is nowhere."""
     snapshot = _emit_every_model_metric(provider, SECRET)
-    rows = _all_rows(tmp_path / "hermes-home")
+    rows = _all_rows(tmp_path / "akramcode-home")
 
     assert SECRET not in json.dumps(rows) + json.dumps(snapshot)
     assert _MODEL_METRICS <= {name for name, _ in rows}
@@ -99,7 +99,7 @@ def test_user_named_models_never_leave_in_any_model_metric(direct_runtime, tmp_p
 
 def test_shipped_provider_and_public_model_are_reported_as_is(direct_runtime, tmp_path):
     snapshot = _emit_every_model_metric("openrouter", PUBLIC)
-    rows = _all_rows(tmp_path / "hermes-home")
+    rows = _all_rows(tmp_path / "akramcode-home")
 
     assert snapshot["main_provider"] == "openrouter"
     assert _MODEL_METRICS <= {name for name, _ in rows}
@@ -112,7 +112,7 @@ def test_shipped_provider_and_public_model_are_reported_as_is(direct_runtime, tm
 
 
 def test_user_provider_plugin_name_and_model_never_leave(direct_runtime, tmp_path, monkeypatch):
-    """A ``$HERMES_HOME/plugins/model-providers`` profile joins PROVIDER_REGISTRY under a name (and
+    """A ``$AKRAMCODE_HOME/plugins/model-providers`` profile joins PROVIDER_REGISTRY under a name (and
     aliases) the user chose: every metric, the provider-setup marker and the snapshot read
     ``custom``/``custom``. An in-tree provider plugin (``deepinfra``) keeps its public name."""
     from akramcode_cli import auth, auth_plugin_providers, models_catalog_static as mcs
@@ -122,7 +122,7 @@ def test_user_provider_plugin_name_and_model_never_leave(direct_runtime, tmp_pat
     for mod, attr in ((auth, "PROVIDER_REGISTRY"), (auth_plugin_providers, "PLUGIN_MIRRORED_PROVIDERS"),
                       (mcs, "CANONICAL_PROVIDERS"), (mcs, "_canonical_slugs"), (mcs, "_PROVIDER_LABELS")):
         monkeypatch.setattr(mod, attr, type(getattr(mod, attr))(getattr(mod, attr)))  # no registry leak
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "akramcode-home"
     plugin = home / "plugins" / "model-providers" / "acmecorp-internal"
     plugin.mkdir(parents=True)
     (plugin / "plugin.yaml").write_text("name: acmecorp-internal\nkind: model-provider\n")
@@ -145,7 +145,7 @@ def test_user_provider_plugin_name_and_model_never_leave(direct_runtime, tmp_pat
     assert markers and not any("acme" in m for m in markers)
     assert "acme" not in json.dumps(rows) + json.dumps(snapshot)
     assert snapshot["main_provider"] == "custom"
-    assert _MODEL_METRICS | {"hermes.provider_setup.count"} <= {name for name, _ in rows}
+    assert _MODEL_METRICS | {"akramcode.provider_setup.count"} <= {name for name, _ in rows}
     for name, dims in rows:
         for key in (*_PROVIDER_FIELDS, "to_provider"):
             if dims.get(key) not in (None, "openrouter"):
@@ -198,13 +198,13 @@ def test_tui_switch_before_first_prompt_blames_the_configured_route(
     """With no agent yet and ``--provider``, switch_away names the model the session was launched on
     with ITS provider, never the target provider."""
     provider, model, base_url = configured
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "akramcode-home"
     home.mkdir(parents=True, exist_ok=True)
     (home / "config.yaml").write_text(
         f"model:\n  provider: {provider}\n  default: {model}\n" + (f"  base_url: {base_url}\n" if base_url else ""))
     import tui_gateway.server as server
 
-    monkeypatch.setattr(server, "_hermes_home", home)  # captured at first import
+    monkeypatch.setattr(server, "_akramcode_home", home)  # captured at first import
     result = SimpleNamespace(
         success=True, new_model="gpt-5", target_provider="openai", base_url="https://api.openai.com/v1",
         api_key="k", api_mode="chat_completions", warning_message="", error_message="")
@@ -212,9 +212,9 @@ def test_tui_switch_before_first_prompt_blames_the_configured_route(
     server._apply_model_switch("", {"agent": None}, "gpt-5 --provider openai", confirm_expensive_model=True)
     _flush()
 
-    assert _stored_values(tmp_path, "hermes.model_friction.count") == [
+    assert _stored_values(tmp_path, "akramcode.model_friction.count") == [
         ({"model": expected[1], "provider": expected[0], "signal": "switch_away"}, 1)]
-    assert _stored_values(tmp_path, "hermes.model_switch.count") == [
+    assert _stored_values(tmp_path, "akramcode.model_switch.count") == [
         ({"execution_surface": "tui", "from_provider": expected[0], "to_provider": "openai"}, 1)]
 
 
@@ -264,9 +264,9 @@ def test_gateway_switch_reports_the_configured_route_not_the_switch_default(
     cfg.write_text("model:\n" + model_block)
     _gateway_switch(_gateway_runner(), cfg)
 
-    assert _stored_values(tmp_path, "hermes.model_friction.count") == [
+    assert _stored_values(tmp_path, "akramcode.model_friction.count") == [
         ({"model": expected[1], "provider": expected[0], "signal": "switch_away"}, 1)]
-    assert _stored_values(tmp_path, "hermes.model_switch.count") == [
+    assert _stored_values(tmp_path, "akramcode.model_switch.count") == [
         ({"execution_surface": "gateway", "from_provider": expected[0], "to_provider": "anthropic"}, 1)]
 
 
@@ -277,8 +277,8 @@ def test_multiplexed_gateway_switch_records_in_the_owning_profile(direct_runtime
     cfg.write_text(f"model:\n  provider: openrouter\n  default: {PUBLIC}\n")
     _gateway_switch(_gateway_runner(multiplex_home=home_b), cfg)
 
-    assert not _all_rows(tmp_path / "hermes-home")
-    assert sorted(name for name, _ in _all_rows(home_b)) == ["hermes.model_friction.count", "hermes.model_switch.count"]
+    assert not _all_rows(tmp_path / "akramcode-home")
+    assert sorted(name for name, _ in _all_rows(home_b)) == ["akramcode.model_friction.count", "akramcode.model_switch.count"]
 
 
 def _cli(db):
@@ -312,13 +312,13 @@ def test_cli_undo_counts_friction_only_when_something_was_undone(direct_runtime,
     failed._cmd_undo("/undo")
     _flush()
     assert len(failed.conversation_history) == 2
-    assert not _stored_values(tmp_path, "hermes.model_friction.count")
+    assert not _stored_values(tmp_path, "akramcode.model_friction.count")
 
     done = _cli(None)
     done._cmd_undo("/undo")
     _flush()
     assert done.conversation_history == []
-    assert _stored_values(tmp_path, "hermes.model_friction.count") == [
+    assert _stored_values(tmp_path, "akramcode.model_friction.count") == [
         ({"model": PUBLIC, "provider": "openrouter", "signal": "undo"}, 1)]
 
 
@@ -333,7 +333,7 @@ def test_cli_undo_n_counts_the_user_turns_actually_undone_not_compaction_handoff
         {"role": "user", "content": "q2"}, {"role": "assistant", "content": "a2"}]
     cli._cmd_undo("/undo 5")
     _flush()
-    assert sum(value for _, value in _stored_values(tmp_path, "hermes.wasted_tokens.count")) == 2
+    assert sum(value for _, value in _stored_values(tmp_path, "akramcode.wasted_tokens.count")) == 2
 
 
 def test_context_peak_is_one_row_per_conversation_across_compression_rotation(direct_runtime, tmp_path):
@@ -351,10 +351,10 @@ def test_context_peak_is_one_row_per_conversation_across_compression_rotation(di
     lifecycle.finalize_session(session_id="child")
     lifecycle.finalize_session(session_id="s1")
     _flush()
-    assert not _stored_values(tmp_path, "hermes.context_peak.count"), "emitted before the lineage closed"
+    assert not _stored_values(tmp_path, "akramcode.context_peak.count"), "emitted before the lineage closed"
     lifecycle.finalize_session(session_id="s1c")
     _flush()
 
-    assert _stored_values(tmp_path, "hermes.context_peak.count") == [
+    assert _stored_values(tmp_path, "akramcode.context_peak.count") == [
         ({"limit_hit": "no", "model": PUBLIC, "peak_fill_bucket": "75_to_90", "provider": "openrouter",
           "window_bucket": "128k_to_256k"}, 1)]

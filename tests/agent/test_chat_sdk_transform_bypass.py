@@ -31,9 +31,9 @@ def _wire_body() -> dict:
     """Production-shaped chat body: content parts incl. an image, a tool_calls turn, a tool
     result, function tool schemas, and a caller-populated extra_body (reasoning/provider)."""
     return {
-        "model": "hermes-4-70b",
+        "model": "akramcode-4-70b",
         "messages": [
-            {"role": "system", "content": "You are Hermes."},
+            {"role": "system", "content": "You are AkramCode."},
             {"role": "user", "content": [
                 {"type": "text", "text": "look at this"},
                 {"type": "image_url", "image_url": {"url": "https://e.example/i.png", "detail": "low"}},

@@ -45,8 +45,8 @@ def test_placeholder_keys_resolve_as_unconfigured(tmp_path, monkeypatch):
     placeholder (the sibling resolution path) behaves exactly like no credential at all."""
     import uuid
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
-    (tmp_path / "hermes").mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode"))
+    (tmp_path / "akramcode").mkdir(parents=True, exist_ok=True)
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     monkeypatch.setenv("XAI_API_KEY", "your_key_here")
 

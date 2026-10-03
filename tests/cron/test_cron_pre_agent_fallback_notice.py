@@ -24,10 +24,10 @@ def _run(tmp_path, *, response: str, primary_fails: bool):
         return {"api_key": "k", "base_url": "https://example.invalid/v1",
                 "provider": kwargs.get("requested") or "openai-codex", "api_mode": "chat_completions"}
 
-    with patch("cron.scheduler._hermes_home", tmp_path), \
-         patch("cron.scheduler._get_hermes_home", return_value=tmp_path), \
+    with patch("cron.scheduler._akramcode_home", tmp_path), \
+         patch("cron.scheduler._get_akramcode_home", return_value=tmp_path), \
          patch("cron.scheduler_delivery._resolve_origin", return_value=None), \
-         patch("akramcode_cli.env_loader.load_hermes_dotenv"), \
+         patch("akramcode_cli.env_loader.load_akramcode_dotenv"), \
          patch("akramcode_cli.env_loader.reset_secret_source_cache"), \
          patch("akramcode_state.registry.acquire", return_value=MagicMock()), \
          patch("akramcode_cli.runtime_provider.resolve_runtime_provider", side_effect=_resolve), \

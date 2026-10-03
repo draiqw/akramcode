@@ -20,7 +20,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 from akram_core.akramcode_startup_watchdog import report_startup_progress
 from akramcode_state.holders import read_only_db_uri
 from akramcode_state.common import (
@@ -66,7 +66,7 @@ _REPAIR_BACKUP_MIN_FREE_BYTES = 256 * 1024 * 1024  # 256 MiB absolute floor
 _REPAIR_BACKUP_FREE_FRACTION = 0.02  # plus 2% of the volume
 _FTS_TABLES = ("messages_fts", "messages_fts_trigram", "messages_fts_cjk")
 _MANUAL_RECOVER_HINT = ("Free disk space, then retry (or recover manually with "
-                        "`hermes sessions recover --source {db_path} --inspect-only` first).")
+                        "`akramcode sessions recover --source {db_path} --inspect-only` first).")
 
 
 def _sidecars(db_path: Path):
@@ -392,14 +392,14 @@ def _persistent_repair_attempts_exhausted(db_path: Path) -> bool:
 
 
 def _persistent_repair_exhausted_error(db_path: Path) -> str:
-    """The stable operator-facing diagnostic for an exhausted repair budget. The ``hermes`` commands
-    carry the profile selector: a bare ``hermes`` follows ``active_profile`` (#105887)."""
+    """The stable operator-facing diagnostic for an exhausted repair budget. The ``akramcode`` commands
+    carry the profile selector: a bare ``akramcode`` follows ``active_profile`` (#105887)."""
     from akramcode_constants import profile_cli_selector
     profile_arg = profile_cli_selector()
     return (f"automatic repair has already failed {_MAX_PERSISTENT_REPAIR_ATTEMPTS} times on this exact file — the "
             f"corruption is beyond the schema/FTS repair strategies (likely b-tree page damage). Manual recovery "
-            f"required: restore a backup, or salvage with `hermes {profile_arg}sessions recover --source {db_path} "
-            f"--inspect-only`, then (if it reports recoverable) `hermes {profile_arg}sessions recover --source {db_path} "
+            f"required: restore a backup, or salvage with `akramcode {profile_arg}sessions recover --source {db_path} "
+            f"--inspect-only`, then (if it reports recoverable) `akramcode {profile_arg}sessions recover --source {db_path} "
             f"--output recovered-state.db` (recovery snapshots the damaged file first, then runs the page-level "
             f"`.recover` lane on the copy; do NOT point a raw `sqlite3` shell at the live database). "
             f"Delete {_repair_ledger_path(db_path).name} to force another automatic attempt.")
@@ -490,7 +490,7 @@ def _backup_db_file(db_path: Path) -> "Tuple[Optional[Path], Optional[str]]":
     partials, deleted intact copies) and dedupe could return one with no real forensic copy on disk.
 
     Refusal reasons (``_backup_free_space_error`` / ``_MANUAL_RECOVER_HINT``) point operators at the safe lane,
-    `hermes sessions recover --source <db> --inspect-only`, never at a raw sqlite3 shell on the live file.
+    `akramcode sessions recover --source <db> --inspect-only`, never at a raw sqlite3 shell on the live file.
 
     See #69603.
     """
@@ -539,8 +539,8 @@ def preflight_db_writability(db_path: Path, *, db_label: str = "state.db") -> No
 
     A stray read-only ``state.db`` / ``-wal`` / ``-shm`` (sudo run, restored backup, copied dotfiles) otherwise
     surfaces as an opaque "attempt to write a readonly database" inside ``_init_schema``, and the obvious wrong
-    "fix" (deleting the ``-wal``) loses committed transactions. ``chmod u+rw`` repair only inside the Hermes home
-    tree (Hermes owns those files; ``chmod`` fails on files the user doesn't own, bounding the repair exactly);
+    "fix" (deleting the ``-wal``) loses committed transactions. ``chmod u+rw`` repair only inside the AkramCode home
+    tree (AkramCode owns those files; ``chmod`` fails on files the user doesn't own, bounding the repair exactly);
     otherwise fail fast naming the file and command. Never deletes/truncates a WAL sidecar — once writable, the
     normal open checkpoints it. ``:memory:``/``file:`` skipped. Shared with ``kanban_db``.
 
@@ -550,7 +550,7 @@ def preflight_db_writability(db_path: Path, *, db_label: str = "state.db") -> No
         return
     home: Optional[Path] = None
     with contextlib.suppress(Exception):  # pragma: no cover - defensive
-        home = Path(get_hermes_home()).resolve()
+        home = Path(get_akramcode_home()).resolve()
     # SQLite needs a writable directory in every journal mode (WAL/SHM sidecars, or the DELETE-mode journal).
     sidecars = (db_path.with_name(db_path.name + "-wal"), db_path.with_name(db_path.name + "-shm"))
     for p, is_dir in [(db_path.parent, True), *((p, False) for p in (db_path, *sidecars) if p.is_file())]:
@@ -568,7 +568,7 @@ def preflight_db_writability(db_path: Path, *, db_label: str = "state.db") -> No
         wal_note = (" Do NOT delete the -wal file — it contains committed data that "
                     "will be merged into the database once it is writable." if p.name.endswith("-wal") else "")
         raise sqlite3.OperationalError(
-            f"{db_label} is not writable: {'directory' if is_dir else 'file'} {p} is read-only for this user. Hermes "
+            f"{db_label} is not writable: {'directory' if is_dir else 'file'} {p} is read-only for this user. AkramCode "
             f"needs read-write access to open the database. Fix with: chmod u+rw{x} '{p}' (files owned by another "
             f"user may need sudo/chown).{wal_note}")
 
@@ -697,7 +697,7 @@ def _schema_not_built(exc: BaseException) -> bool:
     return any(m in str(exc).lower() for m in ("no such table", "no such column"))
 
 
-# Hermes-owned FTS5 objects: the virtual tables and their shadow b-trees. Full-matched, so a
+# AkramCode-owned FTS5 objects: the virtual tables and their shadow b-trees. Full-matched, so a
 # user-created lookalike (``archive_fts_data``) is not swept into the rebuildable set.
 _FTS_OBJECT_RE = re.compile(
     r"messages_fts(_trigram|_cjk)?(_data|_idx|_content|_docsize|_config|_segdir|_segments)?"
@@ -802,7 +802,7 @@ def _db_opens_cleanly(db_path: Path) -> Optional[str]:
             # would, so a stale ``_idx`` row at the next segid (IntegrityError "constraint failed", the #100227
             # class: integrity_check and MATCH both clean, every real append fails) is hit here rather than
             # by the user's next message.
-            probe_session_id = f"_hermes_fts_health_probe_{time.time_ns()}"
+            probe_session_id = f"_akramcode_fts_health_probe_{time.time_ns()}"
             try:
                 conn.execute("BEGIN IMMEDIATE")
                 conn.execute("INSERT INTO sessions (id, source, started_at) VALUES (?, ?, ?)",
@@ -905,7 +905,7 @@ def repair_state_db_schema(db_path: Path, *, backup: bool = True) -> Dict[str, A
         # exclusive guard in the locked routine excludes writers through promotion and sees DELETE-mode readers too.
         elif _live_writer_holds_db(db_path):
             _repair_skip(report, "skipped", "a live writer still holds state.db; skipped schema surgery to avoid tearing "
-                         "b-tree pages under a concurrent writer. Stop the gateway (hermes gateway stop) and retry.")
+                         "b-tree pages under a concurrent writer. Stop the gateway (akramcode gateway stop) and retry.")
         else:
             # Probe journal mode BEFORE surgery: a rebuilt file comes back in the default (delete) mode and nothing
             # else records the flip. Unprobeable (damaged file) -> database.journal_mode is the restore target.

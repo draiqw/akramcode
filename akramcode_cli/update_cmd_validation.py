@@ -22,13 +22,13 @@ def _critical_module_import_failures(
     from akramcode_cli.update_cmd import _UPDATE_CRITICAL_MODULES
     from akramcode_constants import FIRST_PARTY_MODULE_ROOTS
     import secrets
-    marker = f"__HERMES_IMPORT_HEALTH_{secrets.token_hex(16)}__"
+    marker = f"__AKRAMCODE_IMPORT_HEALTH_{secrets.token_hex(16)}__"
     probe = (
         "import importlib, json, sys\n"
         # Importing akramcode_cli.main runs the startup dotenv load, which pulls external secret
         # sources (op/bws/command helpers, up to 120s each) unless argv says ``update``. The
         # probe only checks importability, so it inherits the updater's own argv contract.
-        "sys.argv = ['hermes', 'update']\n"
+        "sys.argv = ['akramcode', 'update']\n"
         "failures = []\n"
         "for name in %r:\n"
         "    try:\n"
@@ -37,7 +37,7 @@ def _critical_module_import_failures(
         # A missing *third-party* module means deps aren't installed, not a skewed checkout;
         # only our own packages count. Roots come from akramcode_constants so the user hint can't drift.
         "        missing = (getattr(exc, 'name', '') or '').split('.')[0]\n"
-        "        if missing in %r or missing.startswith('hermes_') or %r:\n"
+        "        if missing in %r or missing.startswith('akramcode_') or %r:\n"
         "            failures.append((name, type(exc).__name__, str(exc)))\n"
         "    except ImportError as exc:\n"
         "        failures.append((name, type(exc).__name__, str(exc)))\n"

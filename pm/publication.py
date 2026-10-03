@@ -66,7 +66,7 @@ class PluginSelection:
         self.configs = selection_snapshot()
         self.home = Path(selection["home"]).resolve()
         if not self.home.is_relative_to(dependency_home_root().resolve()):
-            raise ValueError("config path is outside Hermes state")
+            raise ValueError("config path is outside AkramCode state")
         self.path = self.home / "config.yaml"
         self.previous = read_bytes_or_none(self.path)
         expected = selection.get("expected_config")

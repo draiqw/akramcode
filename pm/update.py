@@ -1,4 +1,4 @@
-"""hermes pm update: resolve the latest versions and re-pin the lockfile.
+"""akramcode pm update: resolve the latest versions and re-pin the lockfile.
 
 Each Package subclass declares how to find its own latest via
 ``latest_versions(target)`` (see pm/package.py); this module is the driver:
@@ -186,7 +186,7 @@ def resolve_package(package, targets: list[str], locked: Optional[str], *, artif
 # Upstream index helpers (small GETs; used by package latest_versions())
 # ---------------------------------------------------------------------------
 
-_UA = {"User-Agent": "hermes-pm"}
+_UA = {"User-Agent": "akramcode-pm"}
 
 
 def _github_headers() -> dict:

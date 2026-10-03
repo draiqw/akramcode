@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_cold_setup_uses_exact_lock_values(tmp_path, missing_target, real_bash):
     checkout = tmp_path / "checkout"
     (checkout / "pm").mkdir(parents=True)
-    shutil.copy2(ROOT / "setup-hermes.sh", checkout / "setup-hermes.sh")
+    shutil.copy2(ROOT / "setup-akramcode.sh", checkout / "setup-akramcode.sh")
     # The bootstrap reads the artifact mirror beside the lock before selecting a pin.
     shutil.copy2(ROOT / "pm" / "artifact-mirror.json", checkout / "pm" / "artifact-mirror.json")
     lock = json.loads((ROOT / "pm" / "lock.json").read_text(encoding="utf-8"))
@@ -44,10 +44,10 @@ def test_cold_setup_uses_exact_lock_values(tmp_path, missing_target, real_bash):
     return 37
 }
 ''', encoding="utf-8")
-    env = dict(os.environ, HOME=tmp_path.as_posix(), HERMES_HOME=(tmp_path / "home").as_posix(),
-               HERMES_RUNTIME_DIR=(tmp_path / "tools").as_posix(), BASH_ENV=hook.as_posix(),
+    env = dict(os.environ, HOME=tmp_path.as_posix(), AKRAMCODE_HOME=(tmp_path / "home").as_posix(),
+               AKRAMCODE_RUNTIME_DIR=(tmp_path / "tools").as_posix(), BASH_ENV=hook.as_posix(),
                PROBE_ARGS=args.as_posix(), PROBE_DOWNLOAD=corrupt.as_posix())
-    result = subprocess.run([real_bash, str(checkout / "setup-hermes.sh")], cwd=tmp_path,
+    result = subprocess.run([real_bash, str(checkout / "setup-akramcode.sh")], cwd=tmp_path,
                             env=env, capture_output=True, text=True, encoding="utf-8", timeout=30)
     assert result.returncode != 0, result.stdout + result.stderr
     if missing_target:

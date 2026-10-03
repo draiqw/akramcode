@@ -1,7 +1,7 @@
 """Nous free tier on the read-only display surfaces and the keepalive.
 
-Contract (R-USR-1): wherever a free-tier identity renders (``hermes auth status nous``,
-``hermes auth list``, ``hermes status``, ``hermes portal info``) the user sees the free-tier label
+Contract (R-USR-1): wherever a free-tier identity renders (``akramcode auth status nous``,
+``akramcode auth list``, ``akramcode status``, ``akramcode portal info``) the user sees the free-tier label
 plus the upgrade hint, and never the internal identity vocabulary. A real account keeps its normal
 rendering. The keepalive has nothing to keep alive for the free tier and must not start a thread.
 """
@@ -28,7 +28,7 @@ from akramcode_cli import (
     status_auth,
 )
 from akramcode_cli.auth import _load_auth_store  # noqa: F401  (store import name kept for parity with core tests)
-from hermes_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 
 WELCOME = "https://welcome-api.nousresearch.com/v1"
 # Words that must never appear on a user-facing free-tier surface.
@@ -44,7 +44,7 @@ def _jwt(**claims) -> str:
 
 
 def _write_auth(nous_state: dict) -> None:
-    home = Path(get_hermes_home())
+    home = Path(get_akramcode_home())
     home.mkdir(parents=True, exist_ok=True)
     (home / "auth.json").write_text(json.dumps({"active_provider": "nous", "providers": {"nous": nous_state}}))
 
@@ -59,8 +59,8 @@ def _guest_state() -> dict:
 
 def _account_state() -> dict:
     return {
-        "auth_method": "oauth_device_code", "client_id": "hermes-cli",
-        "access_token": _jwt(sub="nas_user:real", client_id="hermes-cli", account_tier="standard", paid_access=True),
+        "auth_method": "oauth_device_code", "client_id": "akramcode-cli",
+        "access_token": _jwt(sub="nas_user:real", client_id="akramcode-cli", account_tier="standard", paid_access=True),
         "refresh_token": "rt_live", "expires_at": "2030-01-01T00:00:00+00:00",
         "portal_base_url": "https://portal.nousresearch.com", "inference_base_url": "https://inference-api.nousresearch.com/v1",
     }
@@ -68,8 +68,8 @@ def _account_state() -> dict:
 
 @pytest.fixture
 def isolated_store(monkeypatch, tmp_path):
-    monkeypatch.setenv("HERMES_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
-    monkeypatch.setenv("HERMES_GUEST_ONBOARDING", "1")
+    monkeypatch.setenv("AKRAMCODE_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
+    monkeypatch.setenv("AKRAMCODE_GUEST_ONBOARDING", "1")
     for var in ("OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "NOUS_API_KEY"):
         monkeypatch.delenv(var, raising=False)
     # No network: the account lookup is derived from the JWT the store already holds.
@@ -91,7 +91,7 @@ def _render_all(capsys) -> dict[str, str]:
     out["auth list"] = capsys.readouterr().out
     ctx = SimpleNamespace(config={}, nous_logged_in=False, nous_inference_present=False, nous_account_info=None)
     status_auth._render_auth_providers(ctx)
-    out["hermes status"] = capsys.readouterr().out
+    out["akramcode status"] = capsys.readouterr().out
     portal_cli._cmd_status(SimpleNamespace())
     out["portal info"] = capsys.readouterr().out
     return out
@@ -166,7 +166,7 @@ def test_no_chat_copy_of_any_sign_in_state_leaks_a_terminal_verb_or_a_forbidden_
         "retry_after": 0.0,
     }
     forbidden = re.compile(r"claim|nous portal|anonymous|guest", re.IGNORECASE)
-    terminal_or_url = re.compile(r"hermes |https?://", re.IGNORECASE)
+    terminal_or_url = re.compile(r"akramcode |https?://", re.IGNORECASE)
 
     for state_type in anon_auth.SignInState.__subclasses__():
         kwargs = {field.name: placeholders[field.name] for field in dataclasses.fields(state_type)}

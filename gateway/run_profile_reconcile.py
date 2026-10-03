@@ -345,7 +345,7 @@ def _for_each_served_profile(runner, body) -> None:
     """Run ``body(profile_label)`` once per served profile, inside that profile's runtime scope.
 
     Housekeeping runs on a bare thread with no turn on the stack, so nothing binds a profile for it:
-    ``get_hermes_home()`` and ``get_secret()`` see the LAUNCH profile's values, and under
+    ``get_akramcode_home()`` and ``get_secret()`` see the LAUNCH profile's values, and under
     ``gateway.multiplex_profiles`` a fail-closed credential read logs ``no profile secret scope on a
     multiplexed call`` on every tick (the skills-sync pulls resolved Nous credentials this way, four
     WARNINGs per hourly tick per chore). A single-profile gateway runs ``body`` once, unscoped:
@@ -378,7 +378,7 @@ def profile_scoped_chore(runner, chore):
 
 
 def migrate_profile_identity_verb(runner):
-    """Build the ``migrate-profile-identity`` control-verb handler for ``hermes profile rename``
+    """Build the ``migrate-profile-identity`` control-verb handler for ``akramcode profile rename``
     (#111926). The live multiplexer owns the routing index in memory and writes it back
     periodically, so a CLI-side rewrite of ``agent:<old>:*`` would be clobbered on the next save;
     the CLI therefore asks this process to rekey both durable stores AND ``SessionStore._entries``.
@@ -420,7 +420,7 @@ def migrate_profile_identity_verb(runner):
 
 
 def purge_profile_identity_verb(runner):
-    """Build the ``purge-profile-identity`` control-verb handler for ``hermes profile delete``
+    """Build the ``purge-profile-identity`` control-verb handler for ``akramcode profile delete``
     (#111926, delete side). The live multiplexer owns the routing index in memory and writes it back
     periodically, so a CLI-side DELETE of ``agent:<name>:*`` rows would be undone by its next save;
     the CLI therefore asks this process to drop the durable rows AND ``SessionStore._entries``.

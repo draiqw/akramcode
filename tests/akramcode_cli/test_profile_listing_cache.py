@@ -4,7 +4,7 @@ The listing is the shared body of ``GET /api/profiles`` and JSON-RPC ``profiles.
 Bots roster polls every 5s per connection, and it parsed three YAML files per profile every time —
 including an installer-seeded ``config.yaml`` (the annotated template, ~119KB) for two strings.
 
-The memo must be invisible: every edit has to show up on the very next read, or `hermes profile
+The memo must be invisible: every edit has to show up on the very next read, or `akramcode profile
 list` and the roster paint stale names and models. Only derived values are cached — the raw
 readers keep their uncached contract, because callers write those documents back.
 """

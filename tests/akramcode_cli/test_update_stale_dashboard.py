@@ -1,6 +1,6 @@
-"""Tests for the stale-dashboard handling run at the end of ``hermes update``.
+"""Tests for the stale-dashboard handling run at the end of ``akramcode update``.
 
-``hermes update`` detects ``hermes dashboard`` processes left over from the
+``akramcode update`` detects ``akramcode dashboard`` processes left over from the
 previous version and kills them (SIGTERM + SIGKILL grace, or ``taskkill /F``
 on Windows).  Without this, the running backend silently serves stale Python
 against a freshly-updated JS bundle, producing 401s / empty data.
@@ -92,13 +92,13 @@ def _write_valid_ssh_backend_lock(tmp_path, monkeypatch) -> int:
         "pid": pid,
         "port": 46369,
         "profile": "default",
-        "hermesPath": "/opt/hermes/bin/hermes",
-        "hermesHome": str(tmp_path),
+        "akramcodePath": "/opt/akramcode/bin/akramcode",
+        "akramcodeHome": str(tmp_path),
         "logPath": f"{tmp_path}/desktop-ssh/{ownership_id}/{spawn_nonce}.log",
         "startedAt": "2026-08-21T15:27:39Z",
     }))
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.delenv("HERMES_DESKTOP_CHILD_PID", raising=False)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
+    monkeypatch.delenv("AKRAMCODE_DESKTOP_CHILD_PID", raising=False)
     return pid
 
 
@@ -150,7 +150,7 @@ class TestFindStaleDashboardPids:
                 returncode=0,
                 stdout="\n".join([
                     _ps_line(os.getpid(), "python3 -m akramcode_cli.main dashboard"),
-                    _ps_line(12345, "hermes dashboard --port 9119"),
+                    _ps_line(12345, "akramcode dashboard --port 9119"),
                 ]) + "\n",
                 stderr="",
             )
@@ -227,13 +227,13 @@ class TestKillStaleDashboardPosix:
 
         def fake_run(args, *a, **kw):
             calls.append(list(args))
-            if args == ["systemctl", "--user", "list-unit-files", "hermes-dashboard.service", "--no-legend", "--no-pager"]:
-                return MagicMock(returncode=0, stdout="hermes-dashboard.service enabled enabled\n", stderr="")
-            if args == ["systemctl", "--user", "is-active", "hermes-dashboard.service"]:
+            if args == ["systemctl", "--user", "list-unit-files", "akramcode-dashboard.service", "--no-legend", "--no-pager"]:
+                return MagicMock(returncode=0, stdout="akramcode-dashboard.service enabled enabled\n", stderr="")
+            if args == ["systemctl", "--user", "is-active", "akramcode-dashboard.service"]:
                 return MagicMock(returncode=0, stdout="active\n", stderr="")
-            if args == ["systemctl", "--user", "is-enabled", "hermes-dashboard.service"]:
+            if args == ["systemctl", "--user", "is-enabled", "akramcode-dashboard.service"]:
                 return MagicMock(returncode=0, stdout="enabled\n", stderr="")
-            if args == ["systemctl", "--user", "restart", "hermes-dashboard.service"]:
+            if args == ["systemctl", "--user", "restart", "akramcode-dashboard.service"]:
                 return MagicMock(returncode=0, stdout="", stderr="")
             raise AssertionError(f"unexpected subprocess.run call: {args}")
 
@@ -242,7 +242,7 @@ class TestKillStaleDashboardPosix:
              patch("os.kill") as kill:
             _kill_stale_dashboard_processes(restart_managed=True)
 
-        assert ["systemctl", "--user", "restart", "hermes-dashboard.service"] in calls
+        assert ["systemctl", "--user", "restart", "akramcode-dashboard.service"] in calls
         assert all(call[:1] != ["sudo"] and call[:2] == ["systemctl", "--user"] for call in calls)
         kill.assert_not_called()
 
@@ -266,7 +266,7 @@ class TestKillStaleDashboardWindows:
         with patch("akramcode_cli.main_dashboard._find_stale_dashboard_pids",
                    return_value=[12345, 12346]), \
              patch("gateway.status.get_process_start_time", return_value=123), \
-             patch("akramcode_cli._subprocess_compat.pid_is_hermes", return_value=True), \
+             patch("akramcode_cli._subprocess_compat.pid_is_akramcode", return_value=True), \
              patch("subprocess.run", side_effect=fake_run) as mock_run:
             _kill_stale_dashboard_processes()
 
@@ -287,7 +287,7 @@ class TestDashboardUpdateCleanup:
 
     def test_all_failed_stops_do_not_claim_the_dashboard_was_stopped(self, capsys, monkeypatch, tmp_path):
         own_home = tmp_path / "profiles" / "work"
-        monkeypatch.setenv("HERMES_HOME", str(own_home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(own_home))
         with patch(
             "akramcode_cli.main._kill_stale_dashboard_processes",
             return_value={"matched": [12345], "killed": [], "failed": [(12345, "denied")],
@@ -322,22 +322,22 @@ class TestSupervisedBackendRestart:
         with patch.object(main_dashboard, "_restart_managed_dashboard_service", return_value=False), \
              patch.object(live, "_find_stale_dashboard_pids", return_value=[4321]), \
              patch.object(main_dashboard, "_get_pid_cgroup_path",
-                          return_value="/system.slice/hermes-serve.service"), \
+                          return_value="/system.slice/akramcode-serve.service"), \
              patch.object(main_dashboard, "_get_systemd_service_for_pid",
-                          return_value="hermes-serve.service"), \
+                          return_value="akramcode-serve.service"), \
              patch.object(main_dashboard, "_try_restart_systemd_service", return_value=True) as restart, \
              patch("os.kill", side_effect=fake_kill), \
              patch("time.sleep"):
             _kill_stale_dashboard_processes(restart_managed=True)
 
         restart.assert_called_once_with(
-            "hermes-serve.service", "/system.slice/hermes-serve.service"
+            "akramcode-serve.service", "/system.slice/akramcode-serve.service"
         )
         # Supervised restart succeeded — no manual hint.
         assert "when you're ready" not in capsys.readouterr().out
 
     def test_already_restarted_unit_is_left_untouched(self):
-        """Review on #83595: hermes update's systemd fleet-restart loop may
+        """Review on #83595: akramcode update's systemd fleet-restart loop may
         already have restarted this PID's owning unit directly (e.g. a
         Serve-only install). Passing it via already_restarted_units must
         skip killing/restarting it again here."""
@@ -346,14 +346,14 @@ class TestSupervisedBackendRestart:
         with patch.object(main_dashboard, "_restart_managed_dashboard_service", return_value=False), \
              patch.object(live, "_find_stale_dashboard_pids", return_value=[4321]), \
              patch.object(main_dashboard, "_get_pid_cgroup_path",
-                          return_value="/system.slice/hermes-serve.service"), \
+                          return_value="/system.slice/akramcode-serve.service"), \
              patch.object(main_dashboard, "_get_systemd_service_for_pid",
-                          return_value="hermes-serve.service"), \
+                          return_value="akramcode-serve.service"), \
              patch.object(main_dashboard, "_try_restart_systemd_service") as restart, \
              patch("os.kill") as kill, \
              patch("time.sleep"):
             result = _kill_stale_dashboard_processes(
-                restart_managed=True, already_restarted_units={"hermes-serve"}
+                restart_managed=True, already_restarted_units={"akramcode-serve"}
             )
 
         kill.assert_not_called()
@@ -368,7 +368,7 @@ class TestSupervisedBackendRestart:
         backend supervises it; any other unit is not restarted and the backend is respawned from
         its argv instead."""
         live = self._live()
-        argv = ["hermes", "dashboard", "--port", "8300"]
+        argv = ["akramcode", "dashboard", "--port", "8300"]
         unit_cgroup = "/system.slice/hosted-compute-agent.service"
         probes: list[list[str]] = []
 
@@ -386,7 +386,7 @@ class TestSupervisedBackendRestart:
              patch.object(main_dashboard, "_pid_unified_cgroup_entries", lambda pid: iter([unit_cgroup])), \
              patch.object(main_dashboard, "_run_probe", side_effect=fake_probe), \
              patch.object(main_dashboard, "_dashboard_cmdline_for_pid", return_value=argv), \
-             patch("akramcode_cli.dashboard_procs._hermes_home_for_pid", return_value=None), \
+             patch("akramcode_cli.dashboard_procs._akramcode_home_for_pid", return_value=None), \
              patch.object(live, "_respawn_dashboard_processes", return_value=[]) as respawn, \
              patch("os.kill", side_effect=fake_kill), \
              patch("time.sleep"):
@@ -435,7 +435,7 @@ class TestManualBackendRespawn:
     def test_non_orphan_fixed_port_still_respawns(self, capsys):
         """A supervised-by-shell dashboard with a fixed port is still restarted."""
         live = self._live()
-        argv = ["hermes", "dashboard", "--port", "8300"]
+        argv = ["akramcode", "dashboard", "--port", "8300"]
 
         def fake_kill(pid, sig):
             if sig == 0:
@@ -446,7 +446,7 @@ class TestManualBackendRespawn:
              patch.object(main_dashboard, "_get_pid_cgroup_path", return_value=None), \
              patch.object(main_dashboard, "_get_systemd_service_for_pid", return_value=None), \
              patch.object(main_dashboard, "_dashboard_cmdline_for_pid", return_value=argv), \
-             patch("akramcode_cli.dashboard_procs._hermes_home_for_pid", return_value=None), \
+             patch("akramcode_cli.dashboard_procs._akramcode_home_for_pid", return_value=None), \
              patch.object(live, "_respawn_dashboard_processes", return_value=[]) as respawn, \
              patch("os.kill", side_effect=fake_kill), \
              patch("time.sleep"):
@@ -474,7 +474,7 @@ class TestManualBackendRespawn:
              patch.object(main_dashboard, "_get_pid_cgroup_path", return_value=None), \
              patch.object(main_dashboard, "_get_systemd_service_for_pid", return_value=None), \
              patch.object(main_dashboard, "_dashboard_cmdline_for_pid", return_value=argv), \
-             patch("akramcode_cli.dashboard_procs._hermes_home_for_pid", return_value=None), \
+             patch("akramcode_cli.dashboard_procs._akramcode_home_for_pid", return_value=None), \
              patch.object(live, "_respawn_dashboard_processes") as respawn, \
              patch("os.kill", side_effect=fake_kill), \
              patch("time.sleep"):
@@ -490,7 +490,7 @@ class TestManualBackendRespawn:
     def test_respawn_adds_no_open_to_dashboard_commands(self, tmp_path, monkeypatch):
         """Respawned `dashboard` argv gains --no-open; `serve` argv untouched."""
         live = self._live()
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / ".akramcode"))
         spawned: list[list[str]] = []
 
         class _FakePopen:
@@ -503,30 +503,30 @@ class TestManualBackendRespawn:
         with patch.object(live.subprocess, "Popen", _FakePopen), \
              patch.object(live.time, "sleep"):
             failed = live._respawn_dashboard_processes([
-                ["hermes", "dashboard", "--port", "8300"],
-                ["hermes", "serve", "--host", "0.0.0.0"],
+                ["akramcode", "dashboard", "--port", "8300"],
+                ["akramcode", "serve", "--host", "0.0.0.0"],
             ])
 
         assert failed == []
-        assert spawned[0] == ["hermes", "dashboard", "--port", "8300", "--no-open"]
-        assert spawned[1] == ["hermes", "serve", "--host", "0.0.0.0"]
+        assert spawned[0] == ["akramcode", "dashboard", "--port", "8300", "--no-open"]
+        assert spawned[1] == ["akramcode", "serve", "--host", "0.0.0.0"]
 
     def test_respawn_failure_returned(self, tmp_path, monkeypatch, capsys):
         live = self._live()
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / ".akramcode"))
 
         with patch.object(live.subprocess, "Popen", side_effect=OSError("no such file")), \
              patch.object(live.time, "sleep"):
-            failed = live._respawn_dashboard_processes([["hermes", "serve"]])
+            failed = live._respawn_dashboard_processes([["akramcode", "serve"]])
 
-        assert failed == [["hermes", "serve"]]
+        assert failed == [["akramcode", "serve"]]
 
     def test_pre_takeover_interpreter_launcher_argv_is_rebuilt(self, tmp_path, monkeypatch):
         """A kernel-captured ``[old venv python, launcher, ...]`` argv is respawned through
         this install's launcher command instead of being replayed verbatim after the PM
         takeover rewrote the launcher into a shell shim (#124778)."""
         live = self._live()
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / ".akramcode"))
         spawned: list[list[str]] = []
 
         class _FakePopen:
@@ -537,7 +537,7 @@ class TestManualBackendRespawn:
                 return None
 
         captured = [
-            "/old/venv/bin/python", "/home/u/.local/bin/hermes",
+            "/old/venv/bin/python", "/home/u/.local/bin/akramcode",
             "dashboard", "--no-open", "--host", "127.0.0.1", "--port", "34553",
         ]
         from akramcode_cli import _launchers
@@ -558,7 +558,7 @@ class TestManualBackendRespawn:
         must surface as a failure, never as ``✓ restarted`` (#124778), reported with the
         caller's argv so it matches the stopped PID's cmdline (#109290)."""
         live = self._live()
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / ".akramcode"))
 
         class _DyingPopen:
             returncode = 1
@@ -571,10 +571,10 @@ class TestManualBackendRespawn:
 
         with patch.object(live.subprocess, "Popen", _DyingPopen), \
              patch.object(live.time, "sleep"):
-            failed = live._respawn_dashboard_processes([["hermes", "dashboard", "--port", "8300"]])
+            failed = live._respawn_dashboard_processes([["akramcode", "dashboard", "--port", "8300"]])
 
         out = capsys.readouterr().out
-        assert failed == [["hermes", "dashboard", "--port", "8300"]]
+        assert failed == [["akramcode", "dashboard", "--port", "8300"]]
         assert "✓ restarted" not in out
         assert "✗ failed to restart" in out
 
@@ -591,14 +591,14 @@ class TestFilterDashboardRespawnCandidates:
             "serve", "--host", "127.0.0.1", "--port", "0",
         ]
         assert _filter_dashboard_respawn_candidates([
-            (42, argv, "/home/u/.hermes/profiles/mini-cat"),
+            (42, argv, "/home/u/.akramcode/profiles/mini-cat"),
         ]) == []
 
     def test_skips_legacy_dashboard_port_zero(self):
         from akramcode_cli.dashboard_procs import _filter_dashboard_respawn_candidates
 
         argv = [
-            "hermes", "--profile", "coder",
+            "akramcode", "--profile", "coder",
             "dashboard", "--no-open", "--host", "127.0.0.1", "--port", "0",
         ]
         assert _filter_dashboard_respawn_candidates([(7, argv, None)]) == []
@@ -606,7 +606,7 @@ class TestFilterDashboardRespawnCandidates:
     def test_skips_serve_port_equals_zero(self):
         from akramcode_cli.dashboard_procs import _filter_dashboard_respawn_candidates
 
-        argv = ["hermes", "serve", "--port=0"]
+        argv = ["akramcode", "serve", "--port=0"]
         assert _filter_dashboard_respawn_candidates([(1, argv, None)]) == []
 
 
@@ -624,9 +624,9 @@ class TestFilterDashboardRespawnCandidates:
     def test_caps_one_per_profile(self):
         from akramcode_cli.dashboard_procs import _filter_dashboard_respawn_candidates
 
-        a = ["hermes", "--profile", "coder", "dashboard", "--port", "8300"]
-        b = ["hermes", "--profile", "coder", "dashboard", "--port", "8301"]
-        c = ["hermes", "--profile", "writer", "dashboard", "--port", "8302"]
+        a = ["akramcode", "--profile", "coder", "dashboard", "--port", "8300"]
+        b = ["akramcode", "--profile", "coder", "dashboard", "--port", "8301"]
+        c = ["akramcode", "--profile", "writer", "dashboard", "--port", "8302"]
         out = _filter_dashboard_respawn_candidates([
             (1, a, None),
             (2, b, None),
@@ -634,12 +634,12 @@ class TestFilterDashboardRespawnCandidates:
         ])
         assert out == [a, c]
 
-    def test_caps_one_per_hermes_home(self):
+    def test_caps_one_per_akramcode_home(self):
         from akramcode_cli.dashboard_procs import _filter_dashboard_respawn_candidates
 
-        home = "/tmp/hermes-home-a"
-        a = ["hermes", "dashboard", "--port", "8300"]
-        b = ["hermes", "dashboard", "--port", "8301"]
+        home = "/tmp/akramcode-home-a"
+        a = ["akramcode", "dashboard", "--port", "8300"]
+        b = ["akramcode", "dashboard", "--port", "8301"]
         out = _filter_dashboard_respawn_candidates(
             [
                 (1, a, home),
@@ -652,20 +652,20 @@ class TestFilterDashboardRespawnCandidates:
     def test_profile_flag_and_profiles_home_share_cap(self):
         from akramcode_cli.dashboard_procs import _filter_dashboard_respawn_candidates
 
-        a = ["hermes", "--profile", "coder", "dashboard", "--port", "8300"]
-        b = ["hermes", "dashboard", "--port", "8301"]
+        a = ["akramcode", "--profile", "coder", "dashboard", "--port", "8300"]
+        b = ["akramcode", "dashboard", "--port", "8301"]
         out = _filter_dashboard_respawn_candidates([
             (1, a, None),
-            (2, b, "/home/u/.hermes/profiles/coder"),
+            (2, b, "/home/u/.akramcode/profiles/coder"),
         ])
         assert out == [a]
 
     def test_default_profile_same_root_home_caps(self):
         from akramcode_cli.dashboard_procs import _filter_dashboard_respawn_candidates
 
-        a = ["hermes", "--profile", "default", "dashboard", "--port", "8300"]
-        b = ["hermes", "dashboard", "--port", "8301"]
-        home = "/home/u/.hermes"
+        a = ["akramcode", "--profile", "default", "dashboard", "--port", "8300"]
+        b = ["akramcode", "dashboard", "--port", "8301"]
+        home = "/home/u/.akramcode"
         out = _filter_dashboard_respawn_candidates(
             [
                 (1, a, home),
@@ -676,7 +676,7 @@ class TestFilterDashboardRespawnCandidates:
         assert out == [a]
 
     def test_foreign_home_backend_is_not_replayed(self):
-        """A backend from another HERMES_HOME is never respawned (#94030).
+        """A backend from another AKRAMCODE_HOME is never respawned (#94030).
 
         Its supervisor/user owns its lifecycle; an argv-only replay would
         run on the updating install's home and steal the foreign install's
@@ -685,14 +685,14 @@ class TestFilterDashboardRespawnCandidates:
         """
         from akramcode_cli.dashboard_procs import _filter_dashboard_respawn_candidates
 
-        a = ["hermes", "dashboard", "--port", "8300"]
-        b = ["hermes", "dashboard", "--port", "8301"]
+        a = ["akramcode", "dashboard", "--port", "8300"]
+        b = ["akramcode", "dashboard", "--port", "8301"]
         out = _filter_dashboard_respawn_candidates(
             [
-                (1, a, "/home/u/.hermes"),
-                (2, b, "/work/project/.hermes"),
+                (1, a, "/home/u/.akramcode"),
+                (2, b, "/work/project/.akramcode"),
             ],
-            own_home="/home/u/.hermes",
+            own_home="/home/u/.akramcode",
         )
         assert out == [a]
 
@@ -701,27 +701,27 @@ class TestFilterDashboardRespawnCandidates:
         from akramcode_cli.dashboard_procs import _filter_dashboard_respawn_candidates
 
         argv = [
-            "/Users/u/.hermes-sidecar/hermes-agent/venv/bin/python",
+            "/Users/u/.akramcode-sidecar/akramcode-agent/venv/bin/python",
             "-m", "akramcode_cli.main",
             "serve", "--host", "127.0.0.1", "--port", "9118", "--skip-build",
         ]
         out = _filter_dashboard_respawn_candidates(
-            [(15364, argv, "/Users/u/.hermes-lifeos")],
-            own_home="/Users/u/.hermes",
+            [(15364, argv, "/Users/u/.akramcode-lifeos")],
+            own_home="/Users/u/.akramcode",
         )
         assert out == []
 
-    def test_matching_hermes_home_is_kept(self):
+    def test_matching_akramcode_home_is_kept(self):
         from akramcode_cli.dashboard_procs import _filter_dashboard_respawn_candidates
 
-        argv = ["hermes", "serve", "--host", "127.0.0.1", "--port", "9118"]
+        argv = ["akramcode", "serve", "--host", "127.0.0.1", "--port", "9118"]
         out = _filter_dashboard_respawn_candidates(
-            [(15364, argv, "/Users/u/.hermes")],
-            own_home="/Users/u/.hermes",
+            [(15364, argv, "/Users/u/.akramcode")],
+            own_home="/Users/u/.akramcode",
         )
         assert out == [argv]
 
-    def test_symlinked_hermes_home_compares_equal(self, tmp_path):
+    def test_symlinked_akramcode_home_compares_equal(self, tmp_path):
         from akramcode_cli.dashboard_procs import _filter_dashboard_respawn_candidates
 
         real = tmp_path / "real-home"
@@ -732,7 +732,7 @@ class TestFilterDashboardRespawnCandidates:
         except (OSError, NotImplementedError):
             pytest.skip("symlinks unavailable on this platform")
 
-        argv = ["hermes", "serve", "--port", "9118"]
+        argv = ["akramcode", "serve", "--port", "9118"]
         out = _filter_dashboard_respawn_candidates(
             [(15364, argv, str(real))],
             own_home=str(link),
@@ -740,32 +740,32 @@ class TestFilterDashboardRespawnCandidates:
         assert out == [argv]
 
     def test_unknown_home_stays_eligible(self):
-        """Unreadable HERMES_HOME (env probe failed) keeps pre-#94030 behaviour."""
+        """Unreadable AKRAMCODE_HOME (env probe failed) keeps pre-#94030 behaviour."""
         from akramcode_cli.dashboard_procs import _filter_dashboard_respawn_candidates
 
-        argv = ["hermes", "dashboard", "--port", "8300"]
+        argv = ["akramcode", "dashboard", "--port", "8300"]
         out = _filter_dashboard_respawn_candidates(
             [(1, argv, None)],
-            own_home="/home/u/.hermes",
+            own_home="/home/u/.akramcode",
         )
         assert out == [argv]
 
-    def test_own_home_defaults_to_get_hermes_home(self, monkeypatch):
+    def test_own_home_defaults_to_get_akramcode_home(self, monkeypatch):
         from pathlib import Path
 
-        import hermes_constants
+        import akramcode_constants
         from akramcode_cli.dashboard_procs import _filter_dashboard_respawn_candidates
 
         monkeypatch.setattr(
-            hermes_constants, "get_hermes_home", lambda: Path("/home/u/.hermes")
+            akramcode_constants, "get_akramcode_home", lambda: Path("/home/u/.akramcode")
         )
-        argv = ["hermes", "serve", "--port", "9118"]
+        argv = ["akramcode", "serve", "--port", "9118"]
         foreign = _filter_dashboard_respawn_candidates([
-            (1, argv, "/Users/u/.hermes-lifeos"),
+            (1, argv, "/Users/u/.akramcode-lifeos"),
         ])
         assert foreign == []
         own = _filter_dashboard_respawn_candidates([
-            (1, argv, "/home/u/.hermes"),
+            (1, argv, "/home/u/.akramcode"),
         ])
         assert own == [argv]
 
@@ -810,13 +810,13 @@ class TestCmdlineCapture:
 
         def fake_run(args, *a, **kw):
             assert args == ["ps", "-p", "888", "-o", "command="]
-            return MagicMock(returncode=0, stdout="hermes serve --port 8300\n", stderr="")
+            return MagicMock(returncode=0, stdout="akramcode serve --port 8300\n", stderr="")
 
         with patch.object(live.os.path, "exists", return_value=False), \
              patch("subprocess.run", side_effect=fake_run):
             argv = main_dashboard._dashboard_cmdline_for_pid(888)
 
-        assert argv == ["hermes", "serve", "--port", "8300"]
+        assert argv == ["akramcode", "serve", "--port", "8300"]
 
     @pytest.mark.platforms("windows")
     def test_returns_none_on_windows(self):
@@ -862,7 +862,7 @@ class TestLaunchdSupervisedBackends:
     fails with "port already in use" and the backend that IS running is no longer supervised."""
 
     ARGV = [
-        "/opt/hermes/venv/bin/python", "-m", "akramcode_cli.main",
+        "/opt/akramcode/venv/bin/python", "-m", "akramcode_cli.main",
         "dashboard", "--host", "0.0.0.0", "--port", "9119", "--no-open", "--skip-build",
     ]
 
@@ -881,7 +881,7 @@ class TestLaunchdSupervisedBackends:
              patch.object(main_dashboard, "_loaded_launchd_backend_jobs", return_value=jobs), \
              patch.object(main_dashboard, "_restart_launchd_job", return_value=restart_ok) as restart, \
              patch("akramcode_cli.dashboard_procs._process_ancestors", return_value=[]), \
-             patch("akramcode_cli.dashboard_procs._hermes_home_for_pid", return_value=None), \
+             patch("akramcode_cli.dashboard_procs._akramcode_home_for_pid", return_value=None), \
              patch.object(live, "_respawn_dashboard_processes", return_value=[]) as respawn, \
              patch("os.kill", side_effect=self._fake_kill), \
              patch("time.sleep"):
@@ -895,25 +895,25 @@ class TestLaunchdSupervisedBackends:
         is kickstarted; an argv respawn would recreate the port conflict. A failed kickstart counts
         the PID as unrecovered and prints the manual command; a loaded job with a different argv
         and PID leaves the manual-backend respawn untouched (control)."""
-        job = ("system", "ai.hermes.dashboard", list(self.ARGV), None)
+        job = ("system", "ai.akramcode.dashboard", list(self.ARGV), None)
         result, restart, respawn = self._run(9102, [job])
         respawn.assert_not_called()
-        restart.assert_called_once_with("system", "ai.hermes.dashboard", None)
+        restart.assert_called_once_with("system", "ai.akramcode.dashboard", None)
         assert result["killed"] == [9102] and result["unrecovered"] == []
         assert "when you're ready" not in capsys.readouterr().out
 
-        result, restart, respawn = self._run(9103, [("gui/501", "ai.hermes.dashboard", list(self.ARGV), 9103)],
+        result, restart, respawn = self._run(9103, [("gui/501", "ai.akramcode.dashboard", list(self.ARGV), 9103)],
                                              restart_ok=False)
         respawn.assert_not_called()
         assert result["unrecovered"] == [9103]
-        assert "run: launchctl kickstart -k gui/501/ai.hermes.dashboard" in capsys.readouterr().out
+        assert "run: launchctl kickstart -k gui/501/ai.akramcode.dashboard" in capsys.readouterr().out
 
         # A LaunchDaemon lives in the system domain: kickstart needs root, so a non-root hint says sudo.
         with patch("akramcode_cli.dashboard_procs.os.geteuid", return_value=501, create=True):  # windows-footgun: ok — patch target string, create=True
-            self._run(9105, [("system", "ai.hermes.serve", list(self.ARGV), None)], restart_ok=False)
-        assert "run: sudo launchctl kickstart -k system/ai.hermes.serve" in capsys.readouterr().out
+            self._run(9105, [("system", "ai.akramcode.serve", list(self.ARGV), None)], restart_ok=False)
+        assert "run: sudo launchctl kickstart -k system/ai.akramcode.serve" in capsys.readouterr().out
 
-        other = ("gui/501", "ai.hermes.other", ["hermes", "dashboard", "--port", "8300"], 777)
+        other = ("gui/501", "ai.akramcode.other", ["akramcode", "dashboard", "--port", "8300"], 777)
         result, restart, respawn = self._run(9104, [other])
         restart.assert_not_called()
         respawn.assert_called_once_with([list(self.ARGV)])
@@ -924,20 +924,20 @@ class TestLaunchdSupervisedBackends:
         ancestor (exec-less ``/bin/sh -c`` wrapper plist) or by exact argv (the detached copy),
         never otherwise."""
         uid = 501
-        backend_argv = ["/opt/hermes/venv/bin/python", "-m", "akramcode_cli.main", "dashboard", "--port", "9119"]
-        serve_argv = ["/opt/hermes/venv/bin/python", "-m", "akramcode_cli.main", "serve", "--port", "8642"]
+        backend_argv = ["/opt/akramcode/venv/bin/python", "-m", "akramcode_cli.main", "dashboard", "--port", "9119"]
+        serve_argv = ["/opt/akramcode/venv/bin/python", "-m", "akramcode_cli.main", "serve", "--port", "8642"]
         jobs = [
-            (f"user/{uid}", "ai.hermes.dashboard", backend_argv, 4242),
-            ("system", "ai.hermes.serve", serve_argv, None),
+            (f"user/{uid}", "ai.akramcode.dashboard", backend_argv, 4242),
+            ("system", "ai.akramcode.serve", serve_argv, None),
         ]
 
         owning = main_dashboard._launchd_job_owning_backend
-        assert owning(4242, ["something", "else"], jobs) == (f"user/{uid}", "ai.hermes.dashboard", 4242)
-        assert owning(9999, ["python"], jobs, ancestors=[4242, 1]) == (f"user/{uid}", "ai.hermes.dashboard", 4242)
-        assert owning(9999, serve_argv, jobs) == ("system", "ai.hermes.serve", None)
+        assert owning(4242, ["something", "else"], jobs) == (f"user/{uid}", "ai.akramcode.dashboard", 4242)
+        assert owning(9999, ["python"], jobs, ancestors=[4242, 1]) == (f"user/{uid}", "ai.akramcode.dashboard", 4242)
+        assert owning(9999, serve_argv, jobs) == ("system", "ai.akramcode.serve", None)
         # An earlier detached respawn runs the plist argv plus the ``--no-open`` the respawn path
         # appends; it must still be attributed to the job, or every update respawns it again.
-        assert owning(9999, backend_argv + ["--no-open"], jobs) == (f"user/{uid}", "ai.hermes.dashboard", 4242)
+        assert owning(9999, backend_argv + ["--no-open"], jobs) == (f"user/{uid}", "ai.akramcode.dashboard", 4242)
         assert owning(9999, serve_argv[:-1] + ["8643"], jobs) is None
         assert owning(9999, None, jobs) is None
         assert owning(4242, None, []) is None

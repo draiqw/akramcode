@@ -296,7 +296,7 @@ class TestSwitchModelDirectAliasOverride:
         from akramcode_cli.config import load_config
 
         monkeypatch.setenv("PROVIDER_B_KEY", "sk-provider-b")
-        (Path(os.environ["HERMES_HOME"]) / "config.yaml").write_text(
+        (Path(os.environ["AKRAMCODE_HOME"]) / "config.yaml").write_text(
             "model:\n  provider: provider-a\n  default: old-model\n"
             "providers:\n"
             "  provider-a:\n    base_url: https://api-a.example.com/v1\n"
@@ -374,7 +374,7 @@ class TestSwitchModelDirectAliasOverride:
         from akramcode_cli.config import load_config
         from akramcode_cli.model_switch import DirectAlias
 
-        (Path(os.environ["HERMES_HOME"]) / "config.yaml").write_text(
+        (Path(os.environ["AKRAMCODE_HOME"]) / "config.yaml").write_text(
             "model:\n  provider: custom:corp-llm\n  default: old-model\n"
             "providers:\n  provider-a:\n    base_url: https://api-a.example.com/v1\n"
             "custom_providers:\n  - name: corp-llm\n"

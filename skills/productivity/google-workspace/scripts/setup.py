@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Google Workspace OAuth2 setup for Hermes Agent.
+"""Google Workspace OAuth2 setup for AkramCode Agent.
 
 Fully non-interactive — designed to be driven by the agent via terminal commands.
 The agent mediates between this script and the user (works on CLI, Telegram, Discord, etc.)
@@ -35,17 +35,17 @@ except ImportError:
     # A copied skill must not install into an unrelated Python environment.
     pm = None
 
-# Ensure sibling modules (_hermes_home) are importable when run standalone.
+# Ensure sibling modules (_akramcode_home) are importable when run standalone.
 _SCRIPTS_DIR = str(Path(__file__).resolve().parent)
 if _SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _SCRIPTS_DIR)
 
-from _hermes_home import display_hermes_home, get_hermes_home
+from _akramcode_home import display_akramcode_home, get_akramcode_home
 
-HERMES_HOME = get_hermes_home()
-TOKEN_PATH = HERMES_HOME / "google_token.json"
-CLIENT_SECRET_PATH = HERMES_HOME / "google_client_secret.json"
-PENDING_AUTH_PATH = HERMES_HOME / "google_oauth_pending.json"
+AKRAMCODE_HOME = get_akramcode_home()
+TOKEN_PATH = AKRAMCODE_HOME / "google_token.json"
+CLIENT_SECRET_PATH = AKRAMCODE_HOME / "google_client_secret.json"
+PENDING_AUTH_PATH = AKRAMCODE_HOME / "google_oauth_pending.json"
 
 SCOPES = [
     "https://www.googleapis.com/auth/gmail.readonly",
@@ -91,28 +91,28 @@ def _format_missing_scopes(missing_scopes: list[str]) -> str:
     return (
         "Token is valid but missing required Google Workspace scopes:\n"
         f"{bullets}\n"
-        "Run the Google Workspace setup again from this same Hermes profile to refresh consent."
+        "Run the Google Workspace setup again from this same AkramCode profile to refresh consent."
     )
 
 
 def install_deps():
-    """Sync Hermes' declared Google extra, ready for the next process."""
+    """Sync AkramCode' declared Google extra, ready for the next process."""
     if pm is None:
-        print("ERROR: Run this script in the Hermes environment; use hermes setup first.")
+        print("ERROR: Run this script in the AkramCode environment; use akramcode setup first.")
         return False
     try:
         pm.sync_venv(["google"], explicit=True)
     except Exception as exc:
         print(f"ERROR: Failed to install Google dependencies: {exc}")
         return False
-    print("Google dependencies synced. Restart Hermes, then rerun setup to continue OAuth.")
+    print("Google dependencies synced. Restart AkramCode, then rerun setup to continue OAuth.")
     return True
 
 
 def _ensure_deps():
     """Let PM check imports and stop if activation needs a new process."""
     if pm is None:
-        print("ERROR: Run this script in the Hermes environment; use hermes setup first.")
+        print("ERROR: Run this script in the AkramCode environment; use akramcode setup first.")
         sys.exit(1)
     try:
         pm.ensure_import("google")
@@ -218,7 +218,7 @@ def check_auth(quiet: bool = False):
 
 
 def store_client_secret(path: str):
-    """Copy and validate client_secret.json to Hermes home."""
+    """Copy and validate client_secret.json to AkramCode home."""
     src = Path(path).expanduser().resolve()
     if not src.exists():
         print(f"ERROR: File not found: {src}")
@@ -378,7 +378,7 @@ def exchange_auth_code(code: str):
     TOKEN_PATH.write_text(json.dumps(token_payload, indent=2), encoding="utf-8")
     PENDING_AUTH_PATH.unlink(missing_ok=True)
     print(f"OK: Authenticated. Token saved to {TOKEN_PATH}")
-    print(f"Profile-scoped token location: {display_hermes_home()}/google_token.json")
+    print(f"Profile-scoped token location: {display_akramcode_home()}/google_token.json")
 
 
 def revoke():
@@ -415,7 +415,7 @@ def revoke():
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Google Workspace OAuth setup for Hermes")
+    parser = argparse.ArgumentParser(description="Google Workspace OAuth setup for AkramCode")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--check", action="store_true", help="Check if auth is valid (exit 0=yes, 1=no)")
     group.add_argument("--check-live", action="store_true", help="Check auth with a real API call (detects disabled_client)")

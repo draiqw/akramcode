@@ -67,7 +67,7 @@ _UPDATE_RETRY_RECOVERED = False
 
 
 def _should_skip_external_secret_sources() -> bool:
-    """True inside any ``hermes update`` process (and its import probes).
+    """True inside any ``akramcode update`` process (and its import probes).
 
     Every dotenv load in the process — ``akramcode_cli.main``, ``run_agent``, ``cli`` — consults
     this, so the updater never resolves external secret sources: on Windows they map
@@ -203,11 +203,11 @@ def _marker_owner_is_live(marker: Path) -> bool:
     return False
 
 
-# ``hermes update`` writes this into the git dir right before git moves the checkout and removes it
+# ``akramcode update`` writes this into the git dir right before git moves the checkout and removes it
 # once git has exited (a kill is the only exit that keeps it). Git rewrites the tree file by file and
 # moves HEAD last, so an update killed in between leaves HEAD on the old commit with a prefix of the
-# files already new; that mixed tree fails at import in every entry point, ``hermes update`` included.
-INTERRUPTED_PULL_MARKER = "hermes-update-pull"
+# files already new; that mixed tree fails at import in every entry point, ``akramcode update`` included.
+INTERRUPTED_PULL_MARKER = "akramcode-update-pull"
 # A fast-forward takes seconds; past this a "live" owner pid is a recycled one.
 _INTERRUPTED_PULL_MAX_AGE_SECONDS = 10 * 60
 # The user (or a killed updater) is mid-operation: its own state files own the tree.
@@ -331,7 +331,7 @@ def _paths_git_wrote(git, root: Path, pre: str, target: str) -> tuple[list[str],
 # the user's CLI) restore one at a time: the claim holder owns the git index, the rest wait for it and
 # relaunch from its tree. An OS lock, not a pid file: the kernel drops it with its owner, so a dead
 # launch's claim is broken without a check-then-unlink race.
-_RESTORE_CLAIM = "hermes-update-pull.claim"
+_RESTORE_CLAIM = "akramcode-update-pull.claim"
 _RESTORE_CLAIM_WAIT_SECONDS = 10.0
 _merge_advice_shown = False
 
@@ -396,7 +396,7 @@ def _held_open(path: Path) -> bool:
     Best effort, not exact: Linux answers through /proc, but a live git that owns ``index.lock`` without
     an open fd (``commit`` waiting in the editor, or between closing the lock and renaming it) reads as
     dead; Windows refuses to unlink a file another process has open, so the caller's unlink is its probe;
-    macOS/BSD have no portable check at all. The claim only orders Hermes launches, so on those paths a
+    macOS/BSD have no portable check at all. The claim only orders AkramCode launches, so on those paths a
     live git's lock can be removed; its command then fails and the marker stays for the next launch.
     """
     proc = Path("/proc")
@@ -432,7 +432,7 @@ def _release_dead_index_lock(git_dir: Path) -> bool:
 
 
 def restore_interrupted_pull(project_root: Path | None = None) -> bool:
-    """Put back the files a killed ``hermes update`` had half-moved to the new commit.
+    """Put back the files a killed ``akramcode update`` had half-moved to the new commit.
 
     Returns True when the tree changed under this process: modules it already imported may be the
     half-written ones, so the caller must relaunch (``relaunch_after_restore``).
@@ -440,12 +440,12 @@ def restore_interrupted_pull(project_root: Path | None = None) -> bool:
     Fast path (no marker) is one or two ``stat`` calls. Acts only when the marker's owner is gone,
     HEAD is still the pre-pull commit and no merge/rebase is in progress; then every path git wrote
     (the target's content, or torn on the way there) returns to HEAD (the commit the venv was built
-    for), so the install is whole again and ``hermes update`` redoes the update from the start. Local
+    for), so the install is whole again and ``akramcode update`` redoes the update from the start. Local
     edits are never touched; the updater's autostash (if any) stays in ``git stash list``. Concurrent
     launches take turns (``_restore_claim``); a launch that waited out another's restore relaunches.
 
     Limits, by design: a torn ``akramcode_cli/__init__.py``, ``akram_core.akramcode_bootstrap.py``, ``agent/__init__.py``
-    or ``agent/jiter_preload.py`` (imported before the ``hermes-agent`` hook) fails before this runs. A file git also changes that the user deleted, emptied or cut to a prefix of git's version
+    or ``agent/jiter_preload.py`` (imported before the ``akramcode-agent`` hook) fails before this runs. A file git also changes that the user deleted, emptied or cut to a prefix of git's version
     looks exactly like git's own half-written file and is restored too, as is a user edit to a
     conflicted path or, on git < 2.38, to a path both sides of a custom-branch merge changed.
     """
@@ -456,15 +456,15 @@ def restore_interrupted_pull(project_root: Path | None = None) -> bool:
             return False
         with _restore_claim(marker.parent) as claimed:
             if not claimed:
-                print("⚠ Another Hermes launch is still repairing the checkout after an interrupted "
-                      "`hermes update`; if this one fails, launch again in a moment.", file=sys.stderr)
+                print("⚠ Another AkramCode launch is still repairing the checkout after an interrupted "
+                      "`akramcode update`; if this one fails, launch again in a moment.", file=sys.stderr)
                 return False
             if not marker.is_file():
                 return True  # another launch finished while this one started: rerun from its tree
             return _restore_holding_claim(root, marker)
     except (OSError, subprocess.SubprocessError, ValueError) as exc:
         # Never block launch: the import that follows surfaces any real breakage.
-        print(f"⚠ Could not check for an interrupted `hermes update`: {exc}", file=sys.stderr)
+        print(f"⚠ Could not check for an interrupted `akramcode update`: {exc}", file=sys.stderr)
     return False
 
 
@@ -498,13 +498,13 @@ def _restore_holding_claim(root: Path, marker: Path) -> bool:
                 and merge_head.read_text(encoding="utf-8-sig").strip() == target):
             # The killed updater's own merge: its conflict markers may sit in startup modules.
             _merge_advice_shown = True
-            print(f"⚠ A killed `hermes update` left its merge unfinished. Run `git -C {root} merge --abort`, "
+            print(f"⚠ A killed `akramcode update` left its merge unfinished. Run `git -C {root} merge --abort`, "
                   "then launch again." + (f" Your local changes are in its stash ({stash})." if stash else ""),
                   file=sys.stderr)
         return False
     # A killed claim holder's own git child can still be writing; scanning under it reads half a tree.
     if not _release_dead_index_lock(git_dir):
-        print("⚠ A running git holds the index after an interrupted `hermes update`; the next launch "
+        print("⚠ A running git holds the index after an interrupted `akramcode update`; the next launch "
               "finishes the restore.", file=sys.stderr)
         return False
     written = _paths_git_wrote(git, root, pre, target)
@@ -514,7 +514,7 @@ def _restore_holding_claim(root: Path, marker: Path) -> bool:
         return False
     restore, added, new_dirs = written
     if restore or added:
-        print("⚠ A previous `hermes update` was killed while git was writing the new code — "
+        print("⚠ A previous `akramcode update` was killed while git was writing the new code — "
               f"restoring the checkout to {pre[:10]}...", file=sys.stderr)
         failed = _put_back_paths(git, root, restore, added)
         if failed:
@@ -530,7 +530,7 @@ def _restore_holding_claim(root: Path, marker: Path) -> bool:
     marker.unlink()
     if not restore and not added:
         return False  # the killed git never reached the tree: nothing to put back
-    print("  ✓ Checkout restored; `hermes update` updates it again.", file=sys.stderr)
+    print("  ✓ Checkout restored; `akramcode update` updates it again.", file=sys.stderr)
     if stash:
         print(f"  Your local changes are still in the update's stash ({stash}).", file=sys.stderr)
     return True
@@ -638,16 +638,16 @@ def recover_if_needed(project_root: Path | None = None, argv: list[str] | None =
         if any(_marker_owner_is_live(marker) for marker in markers):
             return False
         if not explicit and any(_read_marker_attempts(marker) >= _EARLY_CORE_INSTALL_MAX_ATTEMPTS for marker in markers):
-            print("hermes: automatic dependency repair retry limit reached; run `hermes pm repair`", file=sys.stderr)
+            print("akramcode: automatic dependency repair retry limit reached; run `akramcode pm repair`", file=sys.stderr)
             return False
         from pm.recovery import repair_dependencies
 
-        print("hermes: repairing the recorded dependency environment...", file=sys.stderr)
+        print("akramcode: repairing the recorded dependency environment...", file=sys.stderr)
         repair_dependencies(root)
         for marker in markers:
             marker.unlink(missing_ok=True)
         _UPDATE_RETRY_RECOVERED = args[:1] == ["update"]
-        print("hermes: dependency environment repaired", file=sys.stderr)
+        print("akramcode: dependency environment repaired", file=sys.stderr)
         return True
     except Exception as exc:
         from pm.environments import install_state_permission_message
@@ -656,7 +656,7 @@ def recover_if_needed(project_root: Path | None = None, argv: list[str] | None =
             raise  # The bootstrap or PM CLI reports the access error once.
         for marker in markers:
             _count_failed_attempt(marker)
-        print(f"hermes: dependency repair failed: {exc}; run `hermes pm repair`", file=sys.stderr)
+        print(f"akramcode: dependency repair failed: {exc}; run `akramcode pm repair`", file=sys.stderr)
         return False
     finally:
         os.close(lock)

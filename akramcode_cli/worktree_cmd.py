@@ -1,4 +1,4 @@
-"""``hermes worktree`` — audit (``list [--json] [--older-than DAYS]``) and reclaim
+"""``akramcode worktree`` — audit (``list [--json] [--older-than DAYS]``) and reclaim
 (``prune [--dry-run] [--json] [--older-than DAYS] [--trees-only | --branches-only]``)
 accumulated git worktrees/branches. ``--json`` output is the only thing written to stdout in
 that mode so scripts can consume it."""
@@ -40,14 +40,14 @@ def _list(worktree_gc, repo_root: str, args) -> int:
             print(f"{r.name[:32]:32} {r.age_days:>5.1f}d {_fmt_size(r.size_mb):>6} {r.verdict:13} {r.reason}")
         print(
             f"\n{len(records)} tree(s), {_fmt_size(total_mb)} total — "
-            f"{_fmt_size(reapable_mb)} reclaimable now via `hermes worktree prune`.")
+            f"{_fmt_size(reapable_mb)} reclaimable now via `akramcode worktree prune`.")
     if external:
         print(f"\n{len(external)} externally-registered worktree(s) (never touched by prune):")
         for e in external:
             state = "MISSING" if e.missing else ("locked" if e.locked else "ok")
             print(f"  {e.path}  [{e.branch or '?'}]  {state}")
         if any(e.missing and not e.locked for e in external):
-            print("  Stale registrations (MISSING) are cleaned by `hermes worktree prune` (metadata only).")
+            print("  Stale registrations (MISSING) are cleaned by `akramcode worktree prune` (metadata only).")
     deletable = [b for b in branch_records if b.verdict == "delete"]
     if deletable:
         print(f"{len(deletable)} local branch(es) fully merged/patch-equivalent upstream would also be deleted.")

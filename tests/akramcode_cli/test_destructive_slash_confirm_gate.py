@@ -28,9 +28,9 @@ class TestUserConfigMerge:
     user didn't override)."""
 
     def test_existing_user_config_without_key_gets_default(self, tmp_path, monkeypatch):
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
 
-        home = tmp_path / ".hermes"
+        home = tmp_path / ".akramcode"
         home.mkdir()
         cfg_path = home / "config.yaml"
         legacy = {
@@ -38,7 +38,7 @@ class TestUserConfigMerge:
         }
         cfg_path.write_text(yaml.safe_dump(legacy))
 
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(home))
         import importlib
         import akramcode_cli.config as cfg_mod
         importlib.reload(cfg_mod)

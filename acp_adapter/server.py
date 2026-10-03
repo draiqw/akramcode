@@ -1,4 +1,4 @@
-"""ACP agent server — exposes Hermes Agent via the Agent Client Protocol."""
+"""ACP agent server — exposes AkramCode Agent via the Agent Client Protocol."""
 
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ from acp_adapter.session import SessionManager, SessionState, _expand_acp_enable
 from acp_adapter.tools import build_tool_complete, build_tool_start, coerce_tool_args
 from agent.context_compressor import (COMPRESSED_SUMMARY_METADATA_KEY, ContextCompressor)
 from agent.interrupt_compat import request_hard_interrupt
-from tools.approval_context import reset_hermes_interactive_context, set_hermes_interactive_context
+from tools.approval_context import reset_akramcode_interactive_context, set_akramcode_interactive_context
 
 logger = logging.getLogger(__name__)
 
@@ -91,9 +91,9 @@ def _history_summary_meta(message: dict[str, Any], text: str) -> dict[str, Any] 
         # Flagged but unclassified (prefix drift): the flag only marks summaries -> standalone.
         kind = "standalone"
     if kind == "standalone":
-        return {"hermes": {"compactionSummary": True}}
+        return {"akramcode": {"compactionSummary": True}}
     if kind == "merged":
-        return {"hermes": {"containsCompactionSummary": True}}
+        return {"akramcode": {"containsCompactionSummary": True}}
     return None
 
 
@@ -230,8 +230,8 @@ class _TurnCallbacks:
     tool_call_meta: Any = None
 
 
-class HermesACPAgent(SlashCommandsMixin, acp.Agent):
-    """ACP Agent implementation wrapping Hermes AIAgent."""
+class AkramCodeACPAgent(SlashCommandsMixin, acp.Agent):
+    """ACP Agent implementation wrapping AkramCode AIAgent."""
 
     _EDIT_APPROVAL_POLICY_CONFIG_ID = "edit_approval_policy"
     _EDIT_APPROVAL_POLICY_DEFAULT = "ask"
@@ -296,8 +296,8 @@ class HermesACPAgent(SlashCommandsMixin, acp.Agent):
         return policy, state.cwd
 
     def _build_model_state(self, state: SessionState) -> SessionModelState | None:
-        """Authenticated providers + models, from the shared Hermes inventory (same substrate
-        as ``hermes model``/TUI/dashboard) so the selector isn't just the current curated list."""
+        """Authenticated providers + models, from the shared AkramCode inventory (same substrate
+        as ``akramcode model``/TUI/dashboard) so the selector isn't just the current curated list."""
         model = str(state.model or getattr(state.agent, "model", "") or "").strip()
         provider = getattr(state.agent, "provider", None) or detect_provider() or "openrouter"
         try:
@@ -383,13 +383,13 @@ class HermesACPAgent(SlashCommandsMixin, acp.Agent):
             await self._send(state.session_id, update, fail_msg="Failed to send ACP usage update for session %s")
 
     def _provenance_meta(
-        self, acp_session_id: str, current_hermes_session_id: str, previous_hermes_session_id: Optional[str] = None
+        self, acp_session_id: str, current_akramcode_session_id: str, previous_akramcode_session_id: Optional[str] = None
     ) -> Optional[dict]:
-        """Best-effort ``_meta.hermes.sessionProvenance`` for an ACP session."""
+        """Best-effort ``_meta.akramcode.sessionProvenance`` for an ACP session."""
         try:
             return session_provenance_meta(
-                self.session_manager._get_db(), acp_session_id, current_hermes_session_id,
-                previous_hermes_session_id=previous_hermes_session_id,
+                self.session_manager._get_db(), acp_session_id, current_akramcode_session_id,
+                previous_akramcode_session_id=previous_akramcode_session_id,
             )
         except Exception:
             logger.debug("Could not build ACP session provenance for %s", acp_session_id, exc_info=True)
@@ -397,9 +397,9 @@ class HermesACPAgent(SlashCommandsMixin, acp.Agent):
 
     async def _send_session_info_update(
         self, session_id: str, *,
-        current_hermes_session_id: Optional[str] = None, previous_hermes_session_id: Optional[str] = None,
+        current_akramcode_session_id: Optional[str] = None, previous_akramcode_session_id: Optional[str] = None,
     ) -> None:
-        """Session metadata update; pass ``previous_hermes_session_id`` when the internal head
+        """Session metadata update; pass ``previous_akramcode_session_id`` when the internal head
         rotated (compression split) so provenance flags the reason."""
         if not self._conn:
             return
@@ -417,7 +417,7 @@ class HermesACPAgent(SlashCommandsMixin, acp.Agent):
             title=title if isinstance(title, str) and title.strip() else None,
             updated_at=datetime.now(timezone.utc).isoformat(),
             field_meta=self._provenance_meta(
-                session_id, current_hermes_session_id or session_id, previous_hermes_session_id
+                session_id, current_akramcode_session_id or session_id, previous_akramcode_session_id
             ),
         )
         await self._send(
@@ -539,7 +539,7 @@ class HermesACPAgent(SlashCommandsMixin, acp.Agent):
 
         return InitializeResponse(
             protocol_version=acp.PROTOCOL_VERSION,
-            agent_info=Implementation(name="hermes-agent", version=get_version_info().base_version),
+            agent_info=Implementation(name="akramcode-agent", version=get_version_info().base_version),
             agent_capabilities=AgentCapabilities(
                 load_session=True,
                 prompt_capabilities=PromptCapabilities(image=True),
@@ -759,16 +759,16 @@ class HermesACPAgent(SlashCommandsMixin, acp.Agent):
         ContextVar writes are isolated from concurrent sessions.
 
         Approval routing is thread-local, so it MUST be bound here, not on the loop thread.
-        Interactive routing is a ``tools.approval`` contextvar, not ``HERMES_INTERACTIVE`` in
+        Interactive routing is a ``tools.approval`` contextvar, not ``AKRAMCODE_INTERACTIVE`` in
         os.environ, so concurrent workers can't race a global flag onto the non-interactive
         auto-approve path (GHSA-96vc-wcxf-jjff)."""
         agent = state.agent
         with contextlib.ExitStack() as stack:
-            # HERMES_SESSION_KEY scopes per-session caches (interactive sudo password) to this
+            # AKRAMCODE_SESSION_KEY scopes per-session caches (interactive sudo password) to this
             # session, not the reused thread. ``cwd`` pins what the system prompt reports as the
-            # working directory — otherwise it advertises the Hermes workspace while tools are
+            # working directory — otherwise it advertises the AkramCode workspace while tools are
             # rooted at the client's project and edits land outside it. ``cron_session=""`` masks
-            # any leaked process-global HERMES_CRON_SESSION.
+            # any leaked process-global AKRAMCODE_CRON_SESSION.
             def _session_context() -> Callable[[], None]:
                 from gateway.session_context import clear_session_vars, set_session_vars
 
@@ -795,10 +795,10 @@ class HermesACPAgent(SlashCommandsMixin, acp.Agent):
                 _bind_guarded(stack, "approval callback", _approval)
             if edit_approval_requester:
                 _bind_guarded(stack, "edit approval requester", _edit_approval)
-            stack.callback(reset_hermes_interactive_context, set_hermes_interactive_context(True))
+            stack.callback(reset_akramcode_interactive_context, set_akramcode_interactive_context(True))
             # Tools tag side-effects with the ACP session (``kanban_create``); save/restore it.
-            stack.callback(_restore_env, "HERMES_SESSION_ID", os.environ.get("HERMES_SESSION_ID"))
-            os.environ["HERMES_SESSION_ID"] = session_id
+            stack.callback(_restore_env, "AKRAMCODE_SESSION_ID", os.environ.get("AKRAMCODE_SESSION_ID"))
+            os.environ["AKRAMCODE_SESSION_ID"] = session_id
 
             # Auto-titling fires in the turn prologue; push the title now as a session-info update.
             def _notify_title_update(_title: str, _source: str) -> None:
@@ -816,7 +816,7 @@ class HermesACPAgent(SlashCommandsMixin, acp.Agent):
                 return {"final_response": f"Error: {e}", "messages": state.history}
 
     async def prompt(self, prompt: list[PromptBlock], session_id: str, **kwargs: Any) -> PromptResponse:
-        """Run Hermes on the user's prompt and stream events back to the editor."""
+        """Run AkramCode on the user's prompt and stream events back to the editor."""
         state = await asyncio.to_thread(self.session_manager.get_session, session_id)
         if state is None:
             logger.error("prompt: session %s not found", session_id)
@@ -869,7 +869,7 @@ class HermesACPAgent(SlashCommandsMixin, acp.Agent):
         try:
             # ACP `session_id` is the stable handle; agent.session_id is the internal head that
             # compression may rotate — snapshot it to detect rotation after the turn.
-            pre_turn_hermes_id = getattr(state.agent, "session_id", None)
+            pre_turn_akramcode_id = getattr(state.agent, "session_id", None)
             # Fresh context copy: concurrent sessions on the shared executor must not share ContextVars.
             ctx = contextvars.copy_context()
             result = await loop.run_in_executor(_executor, ctx.run, _run_agent)
@@ -880,7 +880,7 @@ class HermesACPAgent(SlashCommandsMixin, acp.Agent):
                 state.current_prompt_text = ""
             return PromptResponse(stop_reason="end_turn")
 
-        return await self._finish_turn(state, session_id, conn, result, pre_turn_hermes_id, cbs.streamed)
+        return await self._finish_turn(state, session_id, conn, result, pre_turn_akramcode_id, cbs.streamed)
 
     def _flush_turn_tool_calls(
         self, cbs: _TurnCallbacks, session_id: str, conn: Any, loop: asyncio.AbstractEventLoop
@@ -946,7 +946,7 @@ class HermesACPAgent(SlashCommandsMixin, acp.Agent):
         return cbs
 
     async def _finish_turn(
-        self, state: SessionState, session_id: str, conn: Any, result: dict, pre_turn_hermes_id: Any,
+        self, state: SessionState, session_id: str, conn: Any, result: dict, pre_turn_akramcode_id: Any,
         streamed_message: bool,
     ) -> PromptResponse:
         """Persist, emit provenance/final text, drain queued prompts, report usage."""
@@ -958,12 +958,12 @@ class HermesACPAgent(SlashCommandsMixin, acp.Agent):
                 self.session_manager.save_session(session_id)
 
             # Head rotated (compression split): emit provenance so clients can render the boundary.
-            post_turn_hermes_id = getattr(state.agent, "session_id", None)
-            if conn and post_turn_hermes_id and pre_turn_hermes_id and post_turn_hermes_id != pre_turn_hermes_id:
+            post_turn_akramcode_id = getattr(state.agent, "session_id", None)
+            if conn and post_turn_akramcode_id and pre_turn_akramcode_id and post_turn_akramcode_id != pre_turn_akramcode_id:
                 try:
                     await self._send_session_info_update(
-                        session_id, current_hermes_session_id=post_turn_hermes_id,
-                        previous_hermes_session_id=pre_turn_hermes_id,
+                        session_id, current_akramcode_session_id=post_turn_akramcode_id,
+                        previous_akramcode_session_id=pre_turn_akramcode_id,
                     )
                 except Exception:
                     logger.debug("Could not emit ACP provenance update after rotation for %s", session_id, exc_info=True)
@@ -1040,7 +1040,7 @@ class HermesACPAgent(SlashCommandsMixin, acp.Agent):
                     self._switch_model, state, model_id, keep_endpoint=True)
             except ModelRejected as exc:
                 # A model no provider can serve is a bad ``modelId`` param (-32602), not an agent
-                # internal error (-32603): the client attributes it to the request, not to Hermes (#72439).
+                # internal error (-32603): the client attributes it to the request, not to AkramCode (#72439).
                 # Only the switch_model rejection maps here; a ValueError from the rebuild itself
                 # (disabled provider, context window below the floor) stays on the -32603 path.
                 from acp.exceptions import RequestError
@@ -1074,7 +1074,7 @@ class HermesACPAgent(SlashCommandsMixin, acp.Agent):
     async def set_config_option(
         self, config_id: str, session_id: str, value: str, **kwargs: Any
     ) -> SetSessionConfigOptionResponse | None:
-        """Accept ACP config option updates even when Hermes has no typed ACP config surface yet."""
+        """Accept ACP config option updates even when AkramCode has no typed ACP config surface yet."""
         state = await asyncio.to_thread(self.session_manager.get_session, session_id)
         if state is None:
             logger.warning("Session %s: config update requested for missing session", session_id)

@@ -1,7 +1,7 @@
 """Regressions for the context-engine host contract.
 
 These tests pin the five generic host-side guarantees that external context
-engine plugins (e.g. hermes-lcm) rely on:
+engine plugins (e.g. akramcode-lcm) rely on:
 
 1. ``_transition_context_engine_session`` drives the full lifecycle
    (on_session_end → on_session_reset → on_session_start → optional

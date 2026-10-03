@@ -21,8 +21,8 @@ _PROBE_KEY = "probe-sentinel"
 
 
 class _FakeNativeClient:
-    HERMES_SKIP_TRANSPORT_WRAP = True
-    HERMES_SKIP_ASYNC_WRAP = True
+    AKRAMCODE_SKIP_TRANSPORT_WRAP = True
+    AKRAMCODE_SKIP_ASYNC_WRAP = True
 
     def __init__(self, **kwargs):
         self.kwargs = kwargs

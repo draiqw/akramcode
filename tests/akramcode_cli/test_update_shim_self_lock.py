@@ -10,16 +10,16 @@ from pathlib import Path
 
 from akramcode_cli import main_install_repair
 from akramcode_cli import main as cli_main
-from hermes_constants import venv_bin_dir
+from akramcode_constants import venv_bin_dir
 import pytest
 
 
 def test_pending_rename_filter_drops_only_our_shim_pairs():
-    shims = [Path(r"C:\hermes\venv\Scripts\hermes.exe")]
+    shims = [Path(r"C:\akramcode\venv\Scripts\akramcode.exe")]
     entries = [
         r"\??\C:\other\thing.dll", r"!\??\C:\other\thing.dll.bak",
-        r"\??\C:\hermes\venv\Scripts\hermes.exe",
-        r"!\??\C:\hermes\venv\Scripts\hermes.exe.old.1755624735000",
+        r"\??\C:\akramcode\venv\Scripts\akramcode.exe",
+        r"!\??\C:\akramcode\venv\Scripts\akramcode.exe.old.1755624735000",
     ]
     kept, removed = main_install_repair._filter_pending_shim_renames(entries, shims)
     assert removed == 1
@@ -27,8 +27,8 @@ def test_pending_rename_filter_drops_only_our_shim_pairs():
 
 
 def test_pending_rename_filter_keeps_a_shim_pair_with_a_foreign_target():
-    shims = [Path(r"C:\hermes\venv\Scripts\hermes.exe")]
-    entries = [r"\??\C:\hermes\venv\Scripts\hermes.exe", r"!\??\C:\somewhere\else.exe"]
+    shims = [Path(r"C:\akramcode\venv\Scripts\akramcode.exe")]
+    entries = [r"\??\C:\akramcode\venv\Scripts\akramcode.exe", r"!\??\C:\somewhere\else.exe"]
     assert main_install_repair._filter_pending_shim_renames(entries, shims) == (entries, 0)
 
 

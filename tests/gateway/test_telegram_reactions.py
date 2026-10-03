@@ -151,14 +151,14 @@ async def test_clear_reactions_handles_api_error_gracefully(monkeypatch):
 
 def test_config_bridges_telegram_reactions(monkeypatch, tmp_path):
     """gateway/config.py bridges telegram.reactions to TELEGRAM_REACTIONS env var."""
-    import akram_core.hermes_yaml as yaml
+    import akram_core.akramcode_yaml as yaml
     config_file = tmp_path / "config.yaml"
     config_file.write_text(yaml.safe_dump({
         "telegram": {
             "reactions": True,
         },
     }))
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     # Use setenv (not delenv) so monkeypatch registers cleanup even when
     # the var doesn't exist yet — load_gateway_config will overwrite it.
     monkeypatch.setenv("TELEGRAM_REACTIONS", "")

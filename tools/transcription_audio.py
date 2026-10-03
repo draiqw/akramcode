@@ -126,7 +126,7 @@ def _prepare_audio_for_transcription(file_path: str) -> tuple[Optional[str], Opt
             return None, None, _error_result(
                 "Unsupported format: .silk. Install the optional 'pilk' dependency to enable WeChat voice transcription."
             )
-    temp_dir = tempfile.mkdtemp(prefix="hermes-silk-")
+    temp_dir = tempfile.mkdtemp(prefix="akramcode-silk-")
     converted_path = os.path.join(temp_dir, f"{audio_path.stem}.wav")
     try:
         import pilk
@@ -251,7 +251,7 @@ def _trim_silence_for_cloud_stt(file_path: str, stt_config: Dict[str, Any]) -> O
         f"silenceremove="
         f"start_periods=1:start_threshold={threshold_db}dB:start_silence={keep_seconds}:"
         f"stop_periods=-1:stop_threshold={threshold_db}dB:stop_silence={keep_seconds}")
-    work_dir = tempfile.mkdtemp(prefix="hermes-stt-trim-")
+    work_dir = tempfile.mkdtemp(prefix="akramcode-stt-trim-")
     trimmed_path = os.path.join(work_dir, f"{Path(file_path).stem or 'audio'}-trimmed.m4a")
     # Scale the all-silence guard with keep_ms: output that is solely kept pause must never upload as "speech".
     min_result_seconds = max(_CLOUD_TRIM_MIN_RESULT_SECONDS, 2 * keep_seconds)

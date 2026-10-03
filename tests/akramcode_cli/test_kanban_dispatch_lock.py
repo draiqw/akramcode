@@ -1,6 +1,6 @@
 """Tests for the kanban dispatcher single-writer lock (issue #35240).
 
-A ``hermes gateway run --replace`` / ``gateway restart`` from a shell on a
+A ``akramcode gateway run --replace`` / ``gateway restart`` from a shell on a
 systemd/launchd host can leave an orphan dispatcher that escapes the
 service cgroup, survives ``systemctl restart``, and becomes a second
 long-lived writer on the same ``kanban.db`` — the documented root cause of
@@ -23,10 +23,10 @@ from akramcode_cli import kanban_db_dispatch as kbd
 
 @pytest.fixture
 def kanban_home(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_KANBAN_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_KANBAN_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     db_path = kb.kanban_db_path(board="default")
     kb._INITIALIZED_PATHS.discard(str(db_path.resolve()))

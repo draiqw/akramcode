@@ -37,7 +37,7 @@ def _is_historical_update_frame(frame: Any) -> bool:
 def in_historical_update() -> bool:
     """True when an ancestor frame is a historical updater entrypoint.
 
-    The current tree's updater sets ``_hermes_current_updater_frame`` in its
+    The current tree's updater sets ``_akramcode_current_updater_frame`` in its
     entrypoints; no historical on-disk version contains that local, so its
     presence proves the caller is current code that must keep running rather
     than hand control to a takeover child.
@@ -46,7 +46,7 @@ def in_historical_update() -> bool:
     try:
         while frame is not None:
             if (_is_historical_update_frame(frame)
-                    and "_hermes_current_updater_frame" not in frame.f_code.co_varnames):
+                    and "_akramcode_current_updater_frame" not in frame.f_code.co_varnames):
                 return True
             frame = frame.f_back
     finally:
@@ -110,9 +110,9 @@ def _historical_context() -> tuple[dict, list[dict], Any]:
 def _run_child(request: dict) -> tuple[int, dict]:
     """One JSON exchange; the old process never imports the updated graph."""
     root = Path(__file__).resolve().parents[1]
-    home = os.environ.get("HERMES_HOME")
+    home = os.environ.get("AKRAMCODE_HOME")
     constants = sys.modules.get("akramcode_constants")
-    override = vars(constants).get("_HERMES_HOME_OVERRIDE") if constants else None
+    override = vars(constants).get("_AKRAMCODE_HOME_OVERRIDE") if constants else None
     if override is not None:
         value = override.get()
         if isinstance(value, (str, Path)) and value:
@@ -121,12 +121,12 @@ def _run_child(request: dict) -> tuple[int, dict]:
     env = {key: value for key, value in os.environ.items()
            if not key.startswith(("PYTHON", "UV_")) and key != "VIRTUAL_ENV"}
     if home:
-        env["HERMES_HOME"] = home
-    env.setdefault("HERMES_UPDATE_HANDOFF_PID", str(os.getpid()))
+        env["AKRAMCODE_HOME"] = home
+    env.setdefault("AKRAMCODE_UPDATE_HANDOFF_PID", str(os.getpid()))
     # Everything the user saw so far came from the OLD updater; say so before the
     # new one (package manager) takes over, so logs show where the switch happened.
     print("→ Handing off to the new updater (package manager) for the rest of this update...", flush=True)
-    with tempfile.TemporaryDirectory(prefix="hermes-update-takeover-") as directory:
+    with tempfile.TemporaryDirectory(prefix="akramcode-update-takeover-") as directory:
         context = Path(directory) / "request.json"
         result = Path(directory) / "result.json"
         context.write_text(json.dumps(request), encoding="utf-8")
@@ -150,8 +150,8 @@ def stop_for_relaunch(*, incomplete: bool = False) -> NoReturn:
         # A newly retired completion hook has no complete captured worklist.
         # It must not start another update or invent a successful receipt.
         print(
-            "You're updating from an older version of Hermes Agent. "
-            "To complete this update, run `hermes update` again.",
+            "You're updating from an older version of AkramCode Agent. "
+            "To complete this update, run `akramcode update` again.",
             file=sys.stderr,
         )
         raise SystemExit(1)

@@ -22,7 +22,7 @@ _PLUGIN_ROW = [("demo", "1.0.0", "demo plugin", "user", "/tmp/demo-plugin", "dem
 def _patch_minimal_hub_dependencies(monkeypatch, *, check_fn, discover_all_plugins=None):
     monkeypatch.setattr(web_server, "_get_dashboard_plugins", lambda force_rescan=False: [])
     monkeypatch.setattr(_web_server_memory, "_discover_memory_provider_statuses", lambda: [])
-    monkeypatch.setattr(_cfg_mod, "get_hermes_home", lambda: Path("/tmp/hermes-home"))
+    monkeypatch.setattr(_cfg_mod, "get_akramcode_home", lambda: Path("/tmp/akramcode-home"))
     monkeypatch.setattr(_cfg_mod, "load_config", lambda: {"dashboard": {"hidden_plugins": []}})
 
     monkeypatch.setattr(
@@ -103,7 +103,7 @@ def test_plugins_hub_cold_cache_schedules_background_probe(monkeypatch):
     # auth requirement.
     refreshed = _web_server_dashboard._merged_plugins_hub(force_refresh=True)
     assert refreshed["plugins"][0]["auth_required"] is True
-    assert refreshed["plugins"][0]["auth_command"] == "hermes auth demo"
+    assert refreshed["plugins"][0]["auth_command"] == "akramcode auth demo"
 
 
 
@@ -120,7 +120,7 @@ def test_plugins_hub_uses_cached_failed_check_fn_verdict(monkeypatch):
     payload = _web_server_dashboard._merged_plugins_hub(force_refresh=True)
 
     assert payload["plugins"][0]["auth_required"] is True
-    assert payload["plugins"][0]["auth_command"] == "hermes auth demo"
+    assert payload["plugins"][0]["auth_command"] == "akramcode auth demo"
 
 
 

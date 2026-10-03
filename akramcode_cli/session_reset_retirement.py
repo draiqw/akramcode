@@ -2,15 +2,15 @@
 
 Core stopped rotating gateway conversations on timers (1d5d059410) and reads nothing under
 ``session_reset``. A household that relied on it silently gets conversations that never end and
-a bill that grows with them, so gateway startup and ``hermes doctor`` say so. The
-``hermes-session-reset-policy`` catalog plugin reads the top-level block unchanged, which is why
+a bill that grows with them, so gateway startup and ``akramcode doctor`` say so. The
+``akramcode-session-reset-policy`` catalog plugin reads the top-level block unchanged, which is why
 this module reports and never rewrites or drops the key.
 """
 from __future__ import annotations
 
 from typing import Any, Optional, Tuple
 
-PLUGIN_NAME = "hermes-session-reset-policy"
+PLUGIN_NAME = "akramcode-session-reset-policy"
 _TIMED_MODES = frozenset({"idle", "daily", "both"})
 
 
@@ -44,5 +44,5 @@ def format_notice(path: str, mode: str) -> str:
     move = "" if path == "session_reset" else " (move the block to top-level session_reset first)"
     return (
         f"{path}.mode: {mode} is no longer applied: gateway conversations reset only on /new or "
-        f"/reset. To keep idle/daily resets, run `hermes plugins install {PLUGIN_NAME}`{move}."
+        f"/reset. To keep idle/daily resets, run `akramcode plugins install {PLUGIN_NAME}`{move}."
     )

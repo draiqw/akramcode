@@ -14,8 +14,8 @@ def test_chromium_resolves_installed_binary_without_mutation(tmp_path, monkeypat
 
     home = tmp_path / "home"
     store = home / "tools"
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(store))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_RUNTIME_DIR", str(store))
     monkeypatch.delenv("AGENT_BROWSER_EXECUTABLE_PATH", raising=False)
     lock = pm.Lockfile(paths.lockfile_path())
     target = pm.current_target()
@@ -47,8 +47,8 @@ def test_chromium_override_wins_without_installing(tmp_path, monkeypatch):
     from akramcode_cli.browser_runtime import chromium_executable
 
     store = tmp_path / "missing-store"
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(store))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("AKRAMCODE_RUNTIME_DIR", str(store))
     override = str(tmp_path / "external browser")
     monkeypatch.setenv("AGENT_BROWSER_EXECUTABLE_PATH", override)
 

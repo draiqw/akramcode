@@ -20,8 +20,8 @@ def test_write_source_stamp_records_live_checkout_identity_atomically(tmp_path):
     repo = tmp_path / "repo"
     repo.mkdir()
     _git(repo, "init", "-q")
-    _git(repo, "config", "user.name", "Hermes Test")
-    _git(repo, "config", "user.email", "hermes@example.invalid")
+    _git(repo, "config", "user.name", "AkramCode Test")
+    _git(repo, "config", "user.email", "akramcode@example.invalid")
     (repo / "tracked").write_text("release\n", encoding="utf-8")
     _git(repo, "add", "tracked")
     _git(repo, "commit", "-qm", "release")
@@ -49,8 +49,8 @@ def test_stale_source_stamp_defers_to_live_checkout(tmp_path, monkeypatch):
     repo = tmp_path / "repo"
     repo.mkdir()
     _git(repo, "init", "-q")
-    _git(repo, "config", "user.name", "Hermes Test")
-    _git(repo, "config", "user.email", "hermes@example.invalid")
+    _git(repo, "config", "user.name", "AkramCode Test")
+    _git(repo, "config", "user.email", "akramcode@example.invalid")
     (repo / "tracked").write_text("release\n", encoding="utf-8")
     _git(repo, "add", "tracked")
     _git(repo, "commit", "-qm", "release")
@@ -59,7 +59,7 @@ def test_stale_source_stamp_defers_to_live_checkout(tmp_path, monkeypatch):
 
     (repo / "tracked").write_text("manual pull\n", encoding="utf-8")
     _git(repo, "commit", "-qam", "manual pull")
-    monkeypatch.setenv("HERMES_INSTALL_ROOT", str(repo))
+    monkeypatch.setenv("AKRAMCODE_INSTALL_ROOT", str(repo))
     monkeypatch.setattr("akramcode_cli.version_info._resolve_repo_dir", lambda: repo)
     _reset_version_info_cache()
 

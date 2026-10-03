@@ -811,7 +811,7 @@ class TestCatalogProviderAlias:
         assert info is not None and info.provider_id == "deepseek" and info.context_window == 128000
 
     def test_mistyped_alias_warns_once_and_keeps_the_configured_slug(self, caplog):
-        """``catalog_provider: deepsek`` is neither a Hermes provider id nor a models.dev id: warn
+        """``catalog_provider: deepsek`` is neither a AkramCode provider id nor a models.dev id: warn
         once (per process, like the unknown-key warning) and keep ``ModelInfo.provider_id`` on the
         configured slug instead of leaking the typo as a vendor id."""
         import logging
@@ -881,14 +881,14 @@ class TestModelOverrides:
         assert result["context_window"] == 524288
 
     def test_provider_key_accepts_either_id_space(self):
-        """Override keyed by Hermes id resolves for models.dev id and back."""
+        """Override keyed by AkramCode id resolves for models.dev id and back."""
         overrides = {
             "copilot": {
                 "my-model": {"context_window": 111111},
             },
         }
         with self._setup_overrides(overrides):
-            # Caller passes the models.dev id; config keyed by Hermes id.
+            # Caller passes the models.dev id; config keyed by AkramCode id.
             result = _explicit_model_override("github-copilot", "my-model")
         assert result is not None
         assert result["context_window"] == 111111
@@ -899,7 +899,7 @@ class TestModelOverrides:
             },
         }
         with self._setup_overrides(overrides):
-            # Caller passes the Hermes id; config keyed by models.dev id.
+            # Caller passes the AkramCode id; config keyed by models.dev id.
             result = _explicit_model_override("copilot", "my-model")
         assert result is not None
         assert result["context_window"] == 222222
@@ -1265,7 +1265,7 @@ class TestModelOverrides:
 
         import akramcode_cli.config as hc
 
-        home = tmp_path / "hermes"
+        home = tmp_path / "akramcode"
         home.mkdir()
         (home / "config.yaml").write_text(
             "model_overrides:\n"
@@ -1274,7 +1274,7 @@ class TestModelOverrides:
             "      context_window: 524288\n",
             encoding="utf-8",
         )
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(home))
 
         # Reset caches that memoize config paths (the override layer has
         # no local cache — it rides load_config_readonly's mtime cache).

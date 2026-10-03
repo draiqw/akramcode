@@ -47,10 +47,10 @@ def kanban_root(tmp_path, monkeypatch):
     def _use(name: str) -> Path:
         root = tmp_path / name
         root.mkdir(exist_ok=True)
-        monkeypatch.setenv("HERMES_HOME", str(root))
-        monkeypatch.setenv("HERMES_KANBAN_HOME", str(root))
-        for var in ("HERMES_KANBAN_DB", "HERMES_KANBAN_WORKSPACES_ROOT",
-                    "HERMES_KANBAN_ATTACHMENTS_ROOT", "HERMES_KANBAN_BOARD"):
+        monkeypatch.setenv("AKRAMCODE_HOME", str(root))
+        monkeypatch.setenv("AKRAMCODE_KANBAN_HOME", str(root))
+        for var in ("AKRAMCODE_KANBAN_DB", "AKRAMCODE_KANBAN_WORKSPACES_ROOT",
+                    "AKRAMCODE_KANBAN_ATTACHMENTS_ROOT", "AKRAMCODE_KANBAN_BOARD"):
             monkeypatch.delenv(var, raising=False)
         kb._INITIALIZED_PATHS.clear()
         return root
@@ -358,5 +358,5 @@ def test_import_rejects_a_future_format_version(kanban_root, tmp_path):
         tf.add(staged / "alpha", arcname="alpha")
 
     kanban_root("target")
-    with pytest.raises(ValueError, match="newer than this Hermes"):
+    with pytest.raises(ValueError, match="newer than this AkramCode"):
         kt.import_board(str(bumped))

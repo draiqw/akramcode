@@ -172,7 +172,7 @@ class OpenRouterVideoGenProvider(VideoGenProvider):
 
     def _headers(self, api_key: str) -> Dict[str, str]:
         return {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json",
-                "HTTP-Referer": "https://github.com/NousResearch/hermes-agent", "X-Title": "Hermes Agent"}
+                "HTTP-Referer": "https://github.com/NousResearch/akramcode-agent", "X-Title": "AkramCode Agent"}
 
     def _session(self) -> Any:
         import requests
@@ -298,7 +298,7 @@ class OpenRouterVideoGenProvider(VideoGenProvider):
         except Exception as exc:  # noqa: BLE001
             return fail(f"Could not resolve OpenRouter credentials: {exc}", "missing_credentials")
         if not api_key:
-            return fail("No OpenRouter credential: set OPENROUTER_API_KEY or run `hermes auth add openrouter`",
+            return fail("No OpenRouter credential: set OPENROUTER_API_KEY or run `akramcode auth add openrouter`",
                         "missing_credentials")
         # Resolved once: a rotating pool must not submit under one key and poll or download under another.
         headers = self._headers(api_key)

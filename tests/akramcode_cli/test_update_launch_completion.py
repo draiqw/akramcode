@@ -50,15 +50,15 @@ def _self_checkout(tmp_path, monkeypatch):
     (root / ".git").mkdir()
     (root / "pyproject.toml").write_text("[project]\nname='example'\n")
     (root / "install-stamp.json").write_text(json.dumps({"updateMechanism": "self"}))
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.delenv("HERMES_DISABLE_LAZY_INSTALLS", raising=False)
+    monkeypatch.delenv("AKRAMCODE_DISABLE_LAZY_INSTALLS", raising=False)
     return root
 
 
 @pytest.mark.parametrize("argv", [["--version"], ["-V"], ["--help"], ["-p", "work", "-h"]])
 def test_metadata_query_never_waits_on_source_completion(tmp_path, monkeypatch, argv):
-    """`hermes --version` offline must answer from the tree, not run a network-bound sync."""
+    """`akramcode --version` offline must answer from the tree, not run a network-bound sync."""
     import pm
 
     root = _self_checkout(tmp_path, monkeypatch)
@@ -84,12 +84,12 @@ def test_failed_completion_tail_is_retried_without_rebuilding_dependencies(tmp_p
 
     monkeypatch.setattr(pm, "sync_venv", sync)
     completion_tail.exit_code = 1
-    with pytest.raises(RuntimeError, match="run `hermes update`"):
+    with pytest.raises(RuntimeError, match="run `akramcode update`"):
         venv_sync.prepare_launch(root, [])
     assert len(syncs) == 1 and len(completion_tail) == 1
     assert pm.venv_is_current()
 
-    with pytest.raises(RuntimeError, match="run `hermes update`"):
+    with pytest.raises(RuntimeError, match="run `akramcode update`"):
         venv_sync.prepare_launch(root, [])
     assert len(syncs) == 1, "current dependencies were rebuilt for a tail retry"
     assert len(completion_tail) == 2
@@ -170,9 +170,9 @@ def test_first_launch_syncs_without_marker_then_uses_completion_fact(tmp_path, m
     (root / "pyproject.toml").write_text("[project]\nname='example'\n")
     (root / "uv.lock").write_text("lock\n")
     (root / "install-stamp.json").write_text(json.dumps({"updateMechanism": "self"}))
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.delenv("HERMES_DISABLE_LAZY_INSTALLS", raising=False)
+    monkeypatch.delenv("AKRAMCODE_DISABLE_LAZY_INSTALLS", raising=False)
     fact = runtime_facts_path(root)
     calls = []
     monkeypatch.setattr(pm, "venv_is_current", lambda **kw: fact.is_file())
@@ -226,9 +226,9 @@ def test_non_self_or_pm_launch_cannot_trigger_update(tmp_path, monkeypatch, owne
     (root / "pyproject.toml").write_text("[project]\n")
     if owner:
         (root / "install-stamp.json").write_text(json.dumps({"updateMechanism": owner}))
-    monkeypatch.delenv("HERMES_DISABLE_LAZY_INSTALLS", raising=False)
+    monkeypatch.delenv("AKRAMCODE_DISABLE_LAZY_INSTALLS", raising=False)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
     monkeypatch.setattr(pm, "venv_is_current", lambda **kw: pytest.fail("unowned launch reached PM"))
     assert venv_sync.prepare_launch(root, argv) is None
 
@@ -240,9 +240,9 @@ def test_failed_launch_keeps_previous_completion_and_retries(tmp_path, monkeypat
     (root / ".git").mkdir()
     (root / "pyproject.toml").write_text("[project]\n")
     (root / "install-stamp.json").write_text(json.dumps({"updateMechanism": "self"}))
-    monkeypatch.delenv("HERMES_DISABLE_LAZY_INSTALLS", raising=False)
+    monkeypatch.delenv("AKRAMCODE_DISABLE_LAZY_INSTALLS", raising=False)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
     fact = runtime_facts_path(root)
     fact.parent.mkdir(parents=True)
     previous = '{"packages":{"venv":{"stamp":"previous","extras":["all","anthropic"]}}}'
@@ -266,9 +266,9 @@ def test_blessed_legacy_install_is_adopted_before_sync(tmp_path, monkeypatch, co
     from akramcode_cli import _launchers
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     home = tmp_path / "home"
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.delenv("HERMES_DISABLE_LAZY_INSTALLS", raising=False)
-    root = home / "hermes-agent"
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
+    monkeypatch.delenv("AKRAMCODE_DISABLE_LAZY_INSTALLS", raising=False)
+    root = home / "akramcode-agent"
     root.mkdir(parents=True)
     (root / ".git").mkdir()
     (root / "pyproject.toml").write_text("[project]\n")
@@ -283,7 +283,7 @@ def test_blessed_legacy_install_is_adopted_before_sync(tmp_path, monkeypatch, co
 
 def test_relaunch_runs_zip_launchers_and_preserves_interpreter_options(tmp_path):
     import zipfile
-    launcher = tmp_path / "hermes.exe"
+    launcher = tmp_path / "akramcode.exe"
     with zipfile.ZipFile(launcher, "w") as archive:
         archive.writestr("__main__.py", "import json,sys; print(json.dumps([sys.argv[1:], sys.stdout.write_through, sys.flags.utf8_mode]))")
     original = [sys.executable, "-u", "-X", "utf8", str(launcher), "arg with spaces"]
@@ -302,7 +302,7 @@ def test_live_old_update_blocks_launch_sync(tmp_path, monkeypatch):
     (root / "install-stamp.json").write_text(json.dumps({"updateMechanism": "self"}))
     marker = root / ".update-incomplete"
     marker.write_text(f"pid={os.getpid()}\n")
-    monkeypatch.delenv("HERMES_DISABLE_LAZY_INSTALLS", raising=False)
+    monkeypatch.delenv("AKRAMCODE_DISABLE_LAZY_INSTALLS", raising=False)
     monkeypatch.setattr(pm, "venv_is_current", lambda **kw: False)
     monkeypatch.setattr(pm, "sync_venv", lambda *a, **kw: pytest.fail("raced old updater"))
     with pytest.raises(RuntimeError, match="still running"):
@@ -338,10 +338,10 @@ def test_launch_under_the_owning_update_does_not_run_the_tail_again(tmp_path, mo
 
 
 @pytest.mark.parametrize("marker,value,owed_by_cli", [
-    ("HERMES_SUPERVISED_CHILD", "1", True),
-    ("HERMES_S6_SUPERVISED_CHILD", "true", True),
-    ("HERMES_SUPERVISED_CHILD", "0", False),
-    ("HERMES_SUPERVISED_CHILD", "false", False),
+    ("AKRAMCODE_SUPERVISED_CHILD", "1", True),
+    ("AKRAMCODE_S6_SUPERVISED_CHILD", "true", True),
+    ("AKRAMCODE_SUPERVISED_CHILD", "0", False),
+    ("AKRAMCODE_SUPERVISED_CHILD", "false", False),
 ])
 def test_supervised_launch_leaves_a_pending_tail_to_the_cli(
     tmp_path, monkeypatch, capsys, completion_tail, marker, value, owed_by_cli
@@ -350,7 +350,7 @@ def test_supervised_launch_leaves_a_pending_tail_to_the_cli(
 
     systemd/launchd/s6 restart the gateway under a policy; with a marker that never
     clears, each boot would rebuild the completion environment until the disk fills.
-    The obligation stays with `hermes update`. An off value (`0`/`false`) is not a
+    The obligation stays with `akramcode update`. An off value (`0`/`false`) is not a
     supervised launch and still repays the tail.
     """
     import pm
@@ -362,8 +362,8 @@ def test_supervised_launch_leaves_a_pending_tail_to_the_cli(
     pending.write_text("owed\n")
     monkeypatch.setattr(pm, "venv_is_current", lambda **kw: True)
     monkeypatch.setattr(_launchers, "resolve_store_python", lambda _: Path(sys.executable))
-    monkeypatch.delenv("HERMES_SUPERVISED_CHILD", raising=False)
-    monkeypatch.delenv("HERMES_S6_SUPERVISED_CHILD", raising=False)
+    monkeypatch.delenv("AKRAMCODE_SUPERVISED_CHILD", raising=False)
+    monkeypatch.delenv("AKRAMCODE_S6_SUPERVISED_CHILD", raising=False)
     monkeypatch.setenv(marker, value)
 
     assert venv_sync.prepare_launch(root, ["gateway", "run"]) is None
@@ -371,7 +371,7 @@ def test_supervised_launch_leaves_a_pending_tail_to_the_cli(
         assert completion_tail == []
         assert pending.is_file(), "a supervised child discharged an obligation the CLI still owes"
         out, err = capsys.readouterr()
-        assert out == "" and err.count("run `hermes update`") == 1
+        assert out == "" and err.count("run `akramcode update`") == 1
     else:
         assert len(completion_tail) == 1
         assert not pending.is_file()
@@ -396,7 +396,7 @@ def test_supervised_launch_with_stale_dependencies_still_syncs(
     monkeypatch.setattr(pm, "venv_is_current", lambda **kw: False)
     monkeypatch.setattr(pm, "sync_venv", lambda *a, **kw: syncs.append(a))
     monkeypatch.setattr(_launchers, "resolve_store_python", lambda _: Path(sys.executable))
-    monkeypatch.setenv("HERMES_SUPERVISED_CHILD", "1")
+    monkeypatch.setenv("AKRAMCODE_SUPERVISED_CHILD", "1")
 
     venv_sync.prepare_launch(root, ["gateway", "run"])
     assert syncs, "a supervised child booted on a stale dependency graph without syncing"

@@ -11,24 +11,24 @@ from agent.model_metadata import MINIMUM_CONTEXT_LENGTH
 
 @pytest.fixture
 def _isolate(tmp_path, monkeypatch):
-    """Isolate HERMES_HOME so tests don't touch real config."""
-    home = tmp_path / ".hermes"
+    """Isolate AKRAMCODE_HOME so tests don't touch real config."""
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
 
 
 @pytest.fixture
 def cli_obj(_isolate):
-    """Create a minimal HermesCLI instance for banner testing."""
+    """Create a minimal AkramCodeCLI instance for banner testing."""
     with patch("cli.load_cli_config", return_value={
         "display": {"tool_progress": "new"},
         "terminal": {},
     }), patch("cli.get_tool_definitions", return_value=[]), \
          patch("akramcode_cli.banner.build_welcome_banner"):
-        from cli import HermesCLI
-        obj = HermesCLI.__new__(HermesCLI)
+        from cli import AkramCodeCLI
+        obj = AkramCodeCLI.__new__(AkramCodeCLI)
         obj.model = "test-model"
-        obj.enabled_toolsets = ["hermes-core"]
+        obj.enabled_toolsets = ["akramcode-core"]
         obj.compact = False
         obj.console = MagicMock()
         obj.session_id = None
@@ -47,7 +47,7 @@ class TestLowContextWarning:
     """Tests that the CLI warns about low context lengths."""
 
     def test_warning_for_below_minimum_context(self, cli_obj):
-        """Warning shown when context is below Hermes' minimum."""
+        """Warning shown when context is below AkramCode' minimum."""
         cli_obj.agent.context_compressor.context_length = 32768
         with patch("cli.get_tool_definitions", return_value=[]), \
              patch("akramcode_cli.banner.build_welcome_banner"):
@@ -62,7 +62,7 @@ class TestLowContextWarning:
 
 
     def test_no_warning_at_boundary(self, cli_obj):
-        """No warning at exactly Hermes' minimum context length."""
+        """No warning at exactly AkramCode' minimum context length."""
         cli_obj.agent.context_compressor.context_length = MINIMUM_CONTEXT_LENGTH
         with patch("cli.get_tool_definitions", return_value=[]), \
              patch("akramcode_cli.banner.build_welcome_banner"):

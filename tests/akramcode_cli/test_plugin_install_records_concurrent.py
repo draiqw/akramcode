@@ -30,7 +30,7 @@ def _publish(tmp_path: Path, home: Path, name: str, old: dict, new: dict) -> sub
     (staged / "plugin.yaml").write_text(f"name: {name}\n", encoding="utf-8")
     project = tmp_path / "project"
     project.mkdir(exist_ok=True)
-    env = {**os.environ, "HERMES_HOME": str(home), "PYTHONPATH": str(Path(__file__).resolve().parents[2])}
+    env = {**os.environ, "AKRAMCODE_HOME": str(home), "PYTHONPATH": str(Path(__file__).resolve().parents[2])}
     return subprocess.run(
         [sys.executable, "-c", PROGRAM, str(project), str(staged), str(home / "plugins" / name),
          json.dumps(old), json.dumps(new)],

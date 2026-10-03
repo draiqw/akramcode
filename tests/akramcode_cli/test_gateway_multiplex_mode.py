@@ -1,6 +1,6 @@
 """``gateway.multiplex_profiles`` defaults to ON, but an UNSET flag is settled at boot by
 ``akramcode_cli.gateway_multiplex_mode.resolve_multiplex_mode`` — the same preflight
-``hermes gateway migrate --multiplex`` runs — so flipping the default can never make a default
+``akramcode gateway migrate --multiplex`` runs — so flipping the default can never make a default
 gateway double-bind a fleet that still runs per-profile gateways.
 
 The service layer is faked through ``gateway_migrate``'s ``_installed_services`` / ``_live_gateway_pid``
@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-import hermes_constants
+import akramcode_constants
 from gateway.config import GatewayConfig, load_gateway_config
 from akramcode_cli import gateway_migrate as gm
 from akramcode_cli import gateway_multiplex_mode as mode
@@ -25,18 +25,18 @@ from akramcode_cli import gateway_multiplex_mode as mode
 @pytest.fixture
 def fleet(tmp_path, monkeypatch):
     """default + coder + ops with distinct bot tokens; nothing runs a gateway unless a test says so."""
-    root = tmp_path / "hermes"
+    root = tmp_path / "akramcode"
     for sub in ("profiles/coder", "profiles/ops"):
         (root / sub).mkdir(parents=True)
     (root / "config.yaml").write_text("model:\n  default: x\n", encoding="utf-8")
     (root / ".env").write_text("TELEGRAM_BOT_TOKEN=111111:default-token\n", encoding="utf-8")
     (root / "profiles/coder/.env").write_text("TELEGRAM_BOT_TOKEN=222222:coder-token\n", encoding="utf-8")
     (root / "profiles/ops/.env").write_text("DISCORD_BOT_TOKEN=ops-discord-333333\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(root))
     monkeypatch.delenv("GATEWAY_MULTIPLEX_PROFILES", raising=False)
     for name in ("TELEGRAM_BOT_TOKEN", "DISCORD_BOT_TOKEN", "API_SERVER_KEY", "WEBHOOK_ENABLED"):
         monkeypatch.delenv(name, raising=False)
-    monkeypatch.setattr(hermes_constants, "_default_hermes_root_memo", None)
+    monkeypatch.setattr(akramcode_constants, "_default_akramcode_root_memo", None)
     services: dict[str, list] = {}
     pids: dict[str, int] = {}
     monkeypatch.setattr(gm, "_installed_services", lambda home: services.get(_name(home), []))
@@ -46,7 +46,7 @@ def fleet(tmp_path, monkeypatch):
 
 
 def _name(home: Path) -> str:
-    return hermes_constants.profile_name_for_home(home) or "default"
+    return akramcode_constants.profile_name_for_home(home) or "default"
 
 
 def test_default_config_is_on_but_the_loader_leaves_an_unset_flag_undecided():
@@ -150,7 +150,7 @@ def test_explicit_true_is_never_second_guessed_and_explicit_false_is_retired(fle
 
 
 def test_migration_plan_treats_the_unset_default_as_not_yet_multiplexed(fleet):
-    """The fleet the boot guard refuses is exactly the one ``hermes gateway migrate --multiplex`` folds:
+    """The fleet the boot guard refuses is exactly the one ``akramcode gateway migrate --multiplex`` folds:
     an unset flag must not read as "already multiplexed" or the migration would short-circuit."""
     root, services, pids = fleet
     pids.update({"coder": 4101, "ops": 4102})
@@ -165,9 +165,9 @@ def test_live_record_outranks_the_raw_flag_for_other_processes(fleet, monkeypatc
     reading config; a gateway that stayed standalone recorded an empty served set."""
     root, _services, _pids = fleet
     import gateway.status as status
-    monkeypatch.setattr(status, "_read_process_cmdline", lambda pid: "hermes gateway run")
-    (root / "gateway.pid").write_text(json.dumps({"pid": os.getpid(), "hermes_home": str(root)}))
-    record = {"pid": os.getpid(), "hermes_home": str(root), "gateway_state": "running", "served_profiles": []}
+    monkeypatch.setattr(status, "_read_process_cmdline", lambda pid: "akramcode gateway run")
+    (root / "gateway.pid").write_text(json.dumps({"pid": os.getpid(), "akramcode_home": str(root)}))
+    record = {"pid": os.getpid(), "akramcode_home": str(root), "gateway_state": "running", "served_profiles": []}
     (root / "gateway_state.json").write_text(json.dumps(record))
     assert mode.default_gateway_multiplexes(root) is False
     record["served_profiles"] = ["default", "coder", "ops"]
@@ -176,7 +176,7 @@ def test_live_record_outranks_the_raw_flag_for_other_processes(fleet, monkeypatc
 
 
 def test_guard_refusal_is_recorded_in_runtime_status_and_cleared_on_default(tmp_path, monkeypatch):
-    """A guard refusal must be visible to `hermes gateway status`, not only in the boot log; a later
+    """A guard refusal must be visible to `akramcode gateway status`, not only in the boot log; a later
     boot that multiplexes clears it (a stale reason would misdescribe the live gateway)."""
     from gateway import status as gw_status
     from akramcode_cli.gateway_multiplex_mode import MultiplexDecision, record_multiplex_decision

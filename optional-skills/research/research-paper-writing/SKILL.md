@@ -8,7 +8,7 @@ license: MIT
 dependencies: [semanticscholar, arxiv, habanero, requests, scipy, numpy, matplotlib, SciencePlots]
 platforms: [linux, macos]
 metadata:
-  hermes:
+  akramcode:
     tags: [Research, Paper Writing, Experiments, ML, AI, NeurIPS, ICML, ICLR, ACL, AAAI, COLM, LaTeX, Citations, Statistical Analysis]
     category: research
     related_skills: [arxiv, subagent-driven-development]
@@ -912,8 +912,8 @@ When responding to actual reviews (post-submission), rebuttals are a distinct sk
 ```
 > R1-W1: "The paper lacks comparison with Method X."
 
-We thank the reviewer for this suggestion. We have added a comparison with 
-Method X in Table 3 (revised). Our method outperforms X by 3.2pp on [metric] 
+We thank the reviewer for this suggestion. We have added a comparison with
+Method X in Table 3 (revised). Our method outperforms X by 3.2pp on [metric]
 (p<0.05). We note that X requires 2x our compute budget.
 ```
 
@@ -1364,26 +1364,26 @@ The main pipeline above targets empirical ML papers. Other paper types require d
 
 ---
 
-## Hermes Agent Integration
+## AkramCode Agent Integration
 
-This skill is designed for the Hermes agent. It uses Hermes tools, delegation, scheduling, and memory for the full research lifecycle.
+This skill is designed for the AkramCode agent. It uses AkramCode tools, delegation, scheduling, and memory for the full research lifecycle.
 
 ### Related Skills
 
-Compose this skill with other Hermes skills for specific phases:
+Compose this skill with other AkramCode skills for specific phases:
 
 | Skill | When to Use | How to Load |
 |-------|-------------|-------------|
 | **arxiv** | Phase 1 (Literature Review): searching arXiv, generating BibTeX, finding related papers via Semantic Scholar | `skill_view("arxiv")` |
 | **subagent-driven-development** | Phase 5 (Drafting): parallel section writing with 2-stage review (spec compliance then quality) | `skill_view("subagent-driven-development")` |
-| **plan** | Phase 0 (Setup): creating structured plans before execution. Writes to `.hermes/plans/` | `skill_view("plan")` |
+| **plan** | Phase 0 (Setup): creating structured plans before execution. Writes to `.akramcode/plans/` | `skill_view("plan")` |
 | **qmd** | Phase 1 (Literature): searching local knowledge bases (notes, transcripts, docs) via hybrid BM25+vector search | Install: `skill_manage("install", "qmd")` |
 | **diagramming** | Phase 4-5: creating Excalidraw-based figures and architecture diagrams | `skill_view("diagramming")` |
 | **data-science** | Phase 4 (Analysis): Jupyter live kernel for interactive analysis and visualization | `skill_view("data-science")` |
 
 **This skill supersedes `ml-paper-writing`** — it contains all of ml-paper-writing's content plus the full experiment/analysis pipeline and autoreason methodology.
 
-### Hermes Tools Reference
+### AkramCode Tools Reference
 
 | Tool | Usage in This Pipeline |
 |------|----------------------|
@@ -1398,7 +1398,7 @@ Compose this skill with other Hermes skills for specific phases:
 | **`memory`** | Persist key decisions across sessions: contribution framing, venue choice, reviewer feedback. |
 | **`cronjob`** | Schedule experiment monitoring, deadline countdowns, automated arXiv checks. |
 | **`clarify`** | Ask the user targeted questions when blocked (venue choice, contribution framing). |
-| **cron `deliver:`** | Notify the user when experiments complete or drafts are ready even if they're not in chat — schedule the check as a cron job with a messaging `deliver:` target (the agent no longer has a `send_message` tool; outbound delivery is handled by cron/`hermes send`). |
+| **cron `deliver:`** | Notify the user when experiments complete or drafts are ready even if they're not in chat — schedule the check as a cron job with a messaging `deliver:` target (the agent no longer has a `send_message` tool; outbound delivery is handled by cron/`akramcode send`). |
 
 ### Tool Usage Patterns
 
@@ -1414,14 +1414,14 @@ terminal("ps aux | grep <pattern>")
 
 **Parallel section drafting** (using delegation):
 ```
-delegate_task("Draft the Methods section based on these experiment scripts and configs. 
-  Include: pseudocode, all hyperparameters, architectural details sufficient for 
+delegate_task("Draft the Methods section based on these experiment scripts and configs.
+  Include: pseudocode, all hyperparameters, architectural details sufficient for
   reproduction. Write in LaTeX using the neurips2025 template conventions.")
 
-delegate_task("Draft the Related Work section. Use web_search and web_extract to 
+delegate_task("Draft the Related Work section. Use web_search and web_extract to
   find papers. Verify every citation via Semantic Scholar. Group by methodology.")
 
-delegate_task("Draft the Experiments section. Read all result files in results/. 
+delegate_task("Draft the Experiments section. Read all result files in results/.
   State which claim each experiment supports. Include error bars and significance.")
 ```
 
@@ -1438,7 +1438,7 @@ results = sch.search_paper("attention mechanism transformers", limit=5)
 for paper in results:
     doi = paper.externalIds.get('DOI', 'N/A')
     if doi != 'N/A':
-        bibtex = requests.get(f"https://doi.org/{doi}", 
+        bibtex = requests.get(f"https://doi.org/{doi}",
                               headers={"Accept": "application/x-bibtex"}).text
         print(bibtex)
 ```
@@ -1448,7 +1448,7 @@ for paper in results:
 **`memory` tool** — persist key decisions (bounded: ~2200 chars for MEMORY.md):
 
 ```
-memory("add", "Paper: autoreason. Venue: NeurIPS 2025 (9 pages). 
+memory("add", "Paper: autoreason. Venue: NeurIPS 2025 (9 pages).
   Contribution: structured refinement works when generation-evaluation gap is wide.
   Key results: Haiku 42/42, Sonnet 3/5, S4.6 constrained 2/3.
   Status: Phase 5 — drafting Methods section.")
@@ -1487,7 +1487,7 @@ cronjob("create", {
     1. ps aux | grep run_experiment
     2. tail -30 logs/experiment_haiku.log
     3. ls results/haiku_baselines/
-    4. If complete: read results, compute Borda scores, 
+    4. If complete: read results, compute Borda scores,
        git add -A && git commit -m 'Add Haiku results' && git push
     5. Report: table of results, key finding, next step
     6. If nothing changed: respond with [SILENT]"
@@ -1500,9 +1500,9 @@ cronjob("create", {
 ```
 cronjob("create", {
   "schedule": "0 9 * * *",  # Daily at 9am
-  "prompt": "NeurIPS 2025 deadline: May 22. Today is {date}. 
-    Days remaining: {compute}. 
-    Check todo list — are we on track? 
+  "prompt": "NeurIPS 2025 deadline: May 22. Today is {date}.
+    Days remaining: {compute}.
+    Check todo list — are we on track?
     If <7 days: warn user about remaining tasks."
 })
 ```

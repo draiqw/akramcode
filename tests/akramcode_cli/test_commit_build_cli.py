@@ -36,12 +36,12 @@ def test_sealed_cli_never_checks_or_spawns_updater(payload, tmp_path, args):
     root, source = payload
     home = tmp_path / "home"
     home.mkdir()
-    env = {**os.environ, "HERMES_HOME": str(home), "HERMES_INSTALL_ROOT": str(root)}
+    env = {**os.environ, "AKRAMCODE_HOME": str(home), "AKRAMCODE_INSTALL_ROOT": str(root)}
     # Real imports and parser, no admission mocks. Audit attempts even if a caller swallows the error.
     script = f"""
 import json, sys
 sys.path[:0] = [{str(root)!r}, {str(source)!r}]
-sys.argv = ['hermes', *{args!r}]
+sys.argv = ['akramcode', *{args!r}]
 attempts = []
 def audit(event, args):
     if event in ('socket.connect', 'subprocess.Popen', 'os.system'):

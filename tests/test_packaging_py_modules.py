@@ -21,7 +21,7 @@ PACKAGES = ("agent", "tools", "akramcode_cli", "gateway", "tui_gateway", "cron",
 
 
 def _root_py_modules() -> set[str]:
-    spec = importlib.util.spec_from_file_location("_hermes_setup_py", REPO_ROOT / "setup.py")
+    spec = importlib.util.spec_from_file_location("_akramcode_setup_py", REPO_ROOT / "setup.py")
     mod = importlib.util.module_from_spec(spec)
     saved = sys.argv
     sys.argv = ["setup.py", "--name"]  # setup() must not try to build anything on import

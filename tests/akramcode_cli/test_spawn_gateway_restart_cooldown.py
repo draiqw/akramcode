@@ -41,7 +41,7 @@ class TestRepeatRestartWithinCooldown:
         "akramcode_cli.web_server_gateway._gateway_subcommand",
         return_value=["gateway", "restart"],
     )
-    @patch("akramcode_cli.web_server_gateway._spawn_hermes_action")
+    @patch("akramcode_cli.web_server_gateway._spawn_akramcode_action")
     @patch("akramcode_cli.web_server_gateway._ACTION_PROCS", {})
     def test_second_request_after_the_child_exits_is_coalesced(
         self, mock_spawn, mock_subcmd
@@ -68,7 +68,7 @@ class TestRepeatRestartWithinCooldown:
         "akramcode_cli.web_server_gateway._gateway_subcommand",
         return_value=["gateway", "restart"],
     )
-    @patch("akramcode_cli.web_server_gateway._spawn_hermes_action")
+    @patch("akramcode_cli.web_server_gateway._spawn_akramcode_action")
     @patch("akramcode_cli.web_server_gateway._ACTION_PROCS", {})
     def test_a_storm_of_requests_produces_exactly_one_restart(
         self, mock_spawn, mock_subcmd
@@ -96,7 +96,7 @@ class TestRepeatRestartWithinCooldown:
         "akramcode_cli.web_server_gateway._gateway_subcommand",
         return_value=["gateway", "restart"],
     )
-    @patch("akramcode_cli.web_server_gateway._spawn_hermes_action")
+    @patch("akramcode_cli.web_server_gateway._spawn_akramcode_action")
     @patch("akramcode_cli.web_server_gateway._ACTION_PROCS", {})
     def test_cooldown_survives_the_action_table_being_cleared(
         self, mock_spawn, mock_subcmd
@@ -130,7 +130,7 @@ class TestCooldownReleases:
         "akramcode_cli.web_server_gateway._gateway_subcommand",
         return_value=["gateway", "restart"],
     )
-    @patch("akramcode_cli.web_server_gateway._spawn_hermes_action")
+    @patch("akramcode_cli.web_server_gateway._spawn_akramcode_action")
     @patch("akramcode_cli.web_server_gateway._ACTION_PROCS", {})
     def test_request_after_the_window_starts_a_real_restart(
         self, mock_spawn, mock_subcmd
@@ -150,7 +150,7 @@ class TestCooldownReleases:
         assert reused is False
         assert second.pid == 2
 
-    @patch("akramcode_cli.web_server_gateway._spawn_hermes_action")
+    @patch("akramcode_cli.web_server_gateway._spawn_akramcode_action")
     @patch("akramcode_cli.web_server_gateway._ACTION_PROCS", {})
     def test_a_different_profile_is_never_coalesced(self, mock_spawn):
         """Two profiles are two services; one's restart is not the other's."""
@@ -180,7 +180,7 @@ class TestExistingBehaviourIsPreserved:
         "akramcode_cli.web_server_gateway._gateway_subcommand",
         return_value=["gateway", "restart"],
     )
-    @patch("akramcode_cli.web_server_gateway._spawn_hermes_action")
+    @patch("akramcode_cli.web_server_gateway._spawn_akramcode_action")
     def test_live_child_is_still_reused_without_consulting_the_clock(
         self, mock_spawn, mock_subcmd
     ):
@@ -208,7 +208,7 @@ class TestExistingBehaviourIsPreserved:
         "akramcode_cli.web_server_gateway._gateway_subcommand",
         return_value=["gateway", "restart"],
     )
-    @patch("akramcode_cli.web_server_gateway._spawn_hermes_action")
+    @patch("akramcode_cli.web_server_gateway._spawn_akramcode_action")
     def test_live_child_for_another_profile_still_raises(self, mock_spawn, mock_subcmd):
         from akramcode_cli.web_server import _spawn_gateway_restart
 

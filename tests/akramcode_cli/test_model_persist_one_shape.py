@@ -13,7 +13,7 @@ from __future__ import annotations
 import asyncio
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from akramcode_cli.model_switch import ModelSwitchResult
 
@@ -41,8 +41,8 @@ _RESULT = ModelSwitchResult(
 def seeded_home(tmp_path, monkeypatch):
     import cli
     (tmp_path / "config.yaml").write_text(_SEED, encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.setattr(cli, "_hermes_home", tmp_path)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
+    monkeypatch.setattr(cli, "_akramcode_home", tmp_path)
     return tmp_path
 
 
@@ -79,7 +79,7 @@ def _via_dashboard(home):
                          ids=["cli", "gateway", "tui", "dashboard"])
 def test_every_persist_surface_writes_the_same_model_block(seeded_home, monkeypatch, surface):
     monkeypatch.setattr("akramcode_cli.model_switch.switch_model", lambda **_kw: _RESULT)
-    monkeypatch.setattr("cli.HermesCLI._persist_model_switch_to_session", lambda *a, **k: None)
+    monkeypatch.setattr("cli.AkramCodeCLI._persist_model_switch_to_session", lambda *a, **k: None)
     monkeypatch.setattr("akramcode_cli.cli_model_switch_mixin._print_switch_summary", lambda *a, **k: None)
     monkeypatch.setattr("akramcode_cli.model_selection_guards.combined_selection_warning",
                         lambda *a, **k: None, raising=False)
@@ -149,28 +149,28 @@ def test_provider_switch_drops_the_key_env_pointer_but_a_same_route_repick_keeps
     persist_model_selection(same_route)
     assert _model_block(seeded_home)["key_env"] == "CUSTOM_BOX_API_KEY"
 
-    # Registry providers get the pointer too (Desktop stores e.g. HERMES_CUSTOM_LMSTUDIO_API_KEY
+    # Registry providers get the pointer too (Desktop stores e.g. AKRAMCODE_CUSTOM_LMSTUDIO_API_KEY
     # as model.key_env with provider lmstudio, #106336): a same-route model re-pick keeps it.
     (seeded_home / "config.yaml").write_text(
         seed.replace("provider: custom\n", "provider: lmstudio\n")
-            .replace("CUSTOM_BOX_API_KEY", "HERMES_CUSTOM_LMSTUDIO_API_KEY"), encoding="utf-8")
+            .replace("CUSTOM_BOX_API_KEY", "AKRAMCODE_CUSTOM_LMSTUDIO_API_KEY"), encoding="utf-8")
     persist_model_selection(ModelSwitchResult(
         success=True, new_model="qwen3-8b", target_provider="lmstudio",
         base_url="http://localhost:1234/v1", api_mode="openai_chat", is_global=True))
     block = _model_block(seeded_home)
     assert block["default"] == "qwen3-8b"
-    assert block["key_env"] == "HERMES_CUSTOM_LMSTUDIO_API_KEY"
+    assert block["key_env"] == "AKRAMCODE_CUSTOM_LMSTUDIO_API_KEY"
 
 
 def test_gateway_persists_to_the_profile_config_it_was_given(tmp_path, monkeypatch):
     """Multiplexed gateway: the write lands in the routed profile's config.yaml, never the
-    process-level HERMES_HOME."""
+    process-level AKRAMCODE_HOME."""
     from gateway.slash_commands_model import _persist_model_switch_to_config
     process_home, profile_home = tmp_path / "default", tmp_path / "profiles" / "named"
     for home in (process_home, profile_home):
         home.mkdir(parents=True)
         (home / "config.yaml").write_text("model:\n  default: old\n  provider: openai-codex\n")
-    monkeypatch.setenv("HERMES_HOME", str(process_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(process_home))
     asyncio.run(_persist_model_switch_to_config(_RESULT, profile_home / "config.yaml"))
     assert _model_block(profile_home)["default"] == "claude-haiku"
     assert _model_block(process_home)["default"] == "old"

@@ -12,7 +12,7 @@ from akramcode_state import SessionDB
 
 @pytest.mark.parametrize("legacy_enabled", [False, True])
 def test_persistence_never_snapshots_but_explicit_save_works(tmp_path, monkeypatch, legacy_enabled):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     (tmp_path / "config.yaml").write_text(
         f"sessions:\n  write_json_snapshots: {str(legacy_enabled).lower()}\n", encoding="utf-8")
     db = SessionDB(db_path=tmp_path / "state.db")

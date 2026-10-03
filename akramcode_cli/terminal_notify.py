@@ -4,7 +4,7 @@ OSC 9 (``ESC ] 9 ; <body> BEL``): Ghostty, iTerm2, Kitty and WezTerm raise an OS
 others drop it. OSC 777 (``ESC ] 777 ; notify ; warp://cli-agent ; <json> BEL``): Warp's
 structured CLI-agent protocol (tab status + notification mailbox).
 
-Inside the running CLI, ``HermesCLI._ring_bell`` sends ``notification_sequence()`` through the
+Inside the running CLI, ``AkramCodeCLI._ring_bell`` sends ``notification_sequence()`` through the
 prompt_toolkit output on the app loop (a second writer on the tty would splice into an in-flight kitty
 pet frame). ``write_tty`` is the no-app path: ``/dev/tty`` because ``patch_stdout``'s wrapper strips raw
 escapes, falling back to ``sys.stdout`` when ``/dev/tty`` can't be opened (Windows, no controlling
@@ -61,7 +61,7 @@ def warp_osc777(event: str, detail: str, session_id: str = "") -> str:
     except ValueError:
         advertised = 1
     cwd = os.getcwd()
-    payload = {"v": min(advertised, _WARP_PROTOCOL_VERSION), "agent": "hermes", "event": event,
+    payload = {"v": min(advertised, _WARP_PROTOCOL_VERSION), "agent": "akramcode", "event": event,
                "session_id": session_id, "cwd": cwd, "project": os.path.basename(cwd)}
     payload["summary" if event == "permission_request" else "response"] = detail[:200]
     return f"\x1b]777;notify;warp://cli-agent;{json.dumps(payload, separators=(',', ':'))}\x07"
@@ -69,7 +69,7 @@ def warp_osc777(event: str, detail: str, session_id: str = "") -> str:
 
 def notification_sequence(context: str, *, prompt: bool, session_id: str = "", detail: str = "") -> str:
     """OSC 9 (plus Warp OSC 777 when supported) for a blocking prompt or turn end."""
-    seq = osc9(f"Hermes: {context}")
+    seq = osc9(f"AkramCode: {context}")
     if warp_supported():
         event = "permission_request" if prompt else "stop"
         seq += warp_osc777(event, detail or context, session_id)

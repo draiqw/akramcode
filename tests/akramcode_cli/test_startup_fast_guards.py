@@ -4,7 +4,7 @@ Two invariants, each of which has been broken before:
 
 1. IMPORT WEIGHT: _startup_fast must stay stdlib-only. The whole point of
    the module is to run before main.py's heavy import wall; one careless
-   ``from akramcode_cli.config import ...`` silently makes `hermes --version`
+   ``from akramcode_cli.config import ...`` silently makes `akramcode --version`
    slow again for everyone (the regression would be invisible — everything
    still works, just 40x slower).
 
@@ -46,14 +46,14 @@ def test_cli_starts_from_a_deleted_cwd(tmp_path):
     """A child spawned into a directory that was removed since (a cron delivery from a reaped
     kanban workspace) must still reach argv parsing: a relative ``sys.path`` entry made
     ``ensure_project_root_on_path`` die in ``realpath`` → ``getcwd`` (#102941)."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
     gone = tmp_path / "scratch"
     gone.mkdir()
     # The child needs the checkout on sys.path by absolute name; the cwd is exactly what is gone.
-    env = {**os.environ, "HERMES_HOME": str(home), "TERMUX_VERSION": "",
+    env = {**os.environ, "AKRAMCODE_HOME": str(home), "TERMUX_VERSION": "",
            "PYTHONPATH": os.pathsep.join(p for p in (str(REPO_ROOT), os.environ.get("PYTHONPATH")) if p)}
-    env.pop("HERMES_DEV", None)
+    env.pop("AKRAMCODE_DEV", None)
     fd = os.open(gone, os.O_RDONLY)
     try:
         gone.rmdir()
@@ -66,7 +66,7 @@ def test_cli_starts_from_a_deleted_cwd(tmp_path):
     finally:
         os.close(fd)
     assert result.returncode == 0, result.stderr
-    assert "Hermes Agent v" in result.stdout
+    assert "AkramCode Agent v" in result.stdout
     assert "FileNotFoundError" not in result.stderr
 
 
@@ -95,7 +95,7 @@ def test_startup_fast_import_weight():
 
 def _run_version(env_overrides: dict) -> subprocess.CompletedProcess:
     env = {**os.environ, **env_overrides}
-    env.pop("HERMES_DEV", None)
+    env.pop("AKRAMCODE_DEV", None)
     return subprocess.run(
         [sys.executable, "-m", "akramcode_cli.main", "--version"],
         capture_output=True,
@@ -110,27 +110,27 @@ def _run_version(env_overrides: dict) -> subprocess.CompletedProcess:
 
 def test_fast_version_parity_on_termux(tmp_path):
     """The historical Termux path — the one eb4040242 broke."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
     result = _run_version(
-        {"HERMES_HOME": str(home), "TERMUX_VERSION": "0.118"}
+        {"AKRAMCODE_HOME": str(home), "TERMUX_VERSION": "0.118"}
     )
     assert result.returncode == 0, result.stderr
-    assert "Hermes Agent v" in result.stdout
+    assert "AkramCode Agent v" in result.stdout
     assert "Traceback" not in result.stderr
 
 
 def test_fast_version_reports_install_method_stamp(tmp_path):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
     (home / ".install_method").write_text("git\n", encoding="utf-8")
-    result = _run_version({"HERMES_HOME": str(home)})
+    result = _run_version({"AKRAMCODE_HOME": str(home)})
     assert result.returncode == 0, result.stderr
     assert "Install method: git" in result.stdout
 
 
-def test_literal_tilde_hermes_home_expands_before_any_reader(tmp_path):
-    """A literal ``~`` in HERMES_HOME (fish, or any quoted value) is expanded at process entry.
+def test_literal_tilde_akramcode_home_expands_before_any_reader(tmp_path):
+    """A literal ``~`` in AKRAMCODE_HOME (fish, or any quoted value) is expanded at process entry.
 
     Before the fix ``Path("~/.x")`` was relative, so the real CLI resolved it against cwd and
     scaffolded a full home under ``<cwd>/~/.x``. The negative assertion on cwd is the
@@ -140,8 +140,8 @@ def test_literal_tilde_hermes_home_expands_before_any_reader(tmp_path):
     cwd = tmp_path / "project"
     fake_home.mkdir()
     cwd.mkdir()
-    env = {**os.environ, "HOME": str(fake_home), "USERPROFILE": str(fake_home), "HERMES_HOME": "~/.x"}
-    env.pop("HERMES_DEV", None)
+    env = {**os.environ, "HOME": str(fake_home), "USERPROFILE": str(fake_home), "AKRAMCODE_HOME": "~/.x"}
+    env.pop("AKRAMCODE_DEV", None)
     env["PYTHONPATH"] = str(REPO_ROOT)
     result = subprocess.run(
         [sys.executable, "-m", "akramcode_cli.main", "config", "path"],
@@ -151,33 +151,33 @@ def test_literal_tilde_hermes_home_expands_before_any_reader(tmp_path):
     assert result.stdout.strip() == str(fake_home / ".x" / "config.yaml")
     assert not (cwd / "~").exists(), sorted(p.name for p in cwd.iterdir())
 
-    # Raw-reader observable: the ~30 ``os.environ["HERMES_HOME"]`` readers in akramcode_cli/ never
-    # call the resolver, so the entry-point hunk in main.py (not hermes_constants) must have
+    # Raw-reader observable: the ~30 ``os.environ["AKRAMCODE_HOME"]`` readers in akramcode_cli/ never
+    # call the resolver, so the entry-point hunk in main.py (not akramcode_constants) must have
     # rewritten the env var by the time the module import finishes.
     probe = subprocess.run(
-        [sys.executable, "-c", "import akramcode_cli.main, os; print(os.environ['HERMES_HOME'])"],
+        [sys.executable, "-c", "import akramcode_cli.main, os; print(os.environ['AKRAMCODE_HOME'])"],
         capture_output=True, text=True, timeout=120, cwd=cwd, env=env,
     )
     assert probe.returncode == 0, probe.stderr
     assert probe.stdout.strip() == str(fake_home / ".x")
 
 
-def test_normalize_hermes_home_env_rewrites_tilde_and_leaves_absolute_alone(tmp_path, monkeypatch):
+def test_normalize_akramcode_home_env_rewrites_tilde_and_leaves_absolute_alone(tmp_path, monkeypatch):
     from akramcode_cli import _startup_fast
 
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
-    monkeypatch.setenv("HERMES_HOME", "~/.x")
-    _startup_fast.normalize_hermes_home_env()
-    assert os.environ["HERMES_HOME"] == str(tmp_path / ".x")
+    monkeypatch.setenv("AKRAMCODE_HOME", "~/.x")
+    _startup_fast.normalize_akramcode_home_env()
+    assert os.environ["AKRAMCODE_HOME"] == str(tmp_path / ".x")
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "abs"))
-    _startup_fast.normalize_hermes_home_env()
-    assert os.environ["HERMES_HOME"] == str(tmp_path / "abs")
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "abs"))
+    _startup_fast.normalize_akramcode_home_env()
+    assert os.environ["AKRAMCODE_HOME"] == str(tmp_path / "abs")
 
-    monkeypatch.delenv("HERMES_HOME")
-    _startup_fast.normalize_hermes_home_env()
-    assert "HERMES_HOME" not in os.environ
+    monkeypatch.delenv("AKRAMCODE_HOME")
+    _startup_fast.normalize_akramcode_home_env()
+    assert "AKRAMCODE_HOME" not in os.environ
 
 
 @pytest.mark.platforms("linux")
@@ -190,12 +190,12 @@ def test_bootstrap_preserves_live_cwd_and_recovers_deleted_cwd(tmp_path, remove_
         "os.chdir(sys.argv[1])\n"
         "if sys.argv[2] == 'deleted':\n"
         "    os.rmdir(sys.argv[1])\n"
-        "import akram_core.hermes_bootstrap\n"
+        "import akram_core.akramcode_bootstrap\n"
         "print(os.getcwd())\n"
     )
-    env = {**os.environ, "HERMES_HOME": str(tmp_path / ".hermes"),
+    env = {**os.environ, "AKRAMCODE_HOME": str(tmp_path / ".akramcode"),
            "PYTHONPATH": str(REPO_ROOT)}
-    env.pop("HERMES_DEV", None)
+    env.pop("AKRAMCODE_DEV", None)
     result = subprocess.run(
         [sys.executable, "-c", probe, str(cwd), "deleted" if remove_cwd else "live"],
         stdin=subprocess.DEVNULL, capture_output=True, text=True,
@@ -207,12 +207,12 @@ def test_bootstrap_preserves_live_cwd_and_recovers_deleted_cwd(tmp_path, remove_
 
 
 def test_fast_version_parity(tmp_path):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    result = _run_version({"HERMES_HOME": str(home)})
+    result = _run_version({"AKRAMCODE_HOME": str(home)})
     assert result.returncode == 0, result.stderr
     out = result.stdout
-    for field in ("Hermes Agent v", "Install directory:", "Python:", "OpenAI SDK:"):
+    for field in ("AkramCode Agent v", "Install directory:", "Python:", "OpenAI SDK:"):
         assert field in out, f"fast --version output missing {field!r}:\n{out}"
     assert "Traceback" not in result.stderr
 
@@ -222,6 +222,6 @@ def test_termux_chat_shortcut_leaves_subcommands_to_dispatch(monkeypatch, argv):
     from akramcode_cli import main
 
     monkeypatch.setenv("PREFIX", "/data/data/com.termux/files/usr")
-    monkeypatch.delenv("HERMES_TERMUX_DISABLE_FAST_CLI", raising=False)
-    monkeypatch.setattr(sys, "argv", ["hermes", *argv])
+    monkeypatch.delenv("AKRAMCODE_TERMUX_DISABLE_FAST_CLI", raising=False)
+    monkeypatch.setattr(sys, "argv", ["akramcode", *argv])
     assert main._try_termux_fast_cli_launch() is False

@@ -1,4 +1,4 @@
-"""``hermes plugins install``: dependency/env consent, the atomic clone-scan-publish installer core, and
+"""``akramcode plugins install``: dependency/env consent, the atomic clone-scan-publish installer core, and
 the dashboard/TUI non-interactive install.
 
 Sibling of :mod:`akramcode_cli.plugins_cmd` (the facade re-exports the names other modules use and is
@@ -74,7 +74,7 @@ def _install_plugin_python_deps(
             if node_reason:
                 console.print(f"[yellow]⚠[/yellow] Node deps: {node_reason}")
         else:
-            console.print("[dim]Skipped Node deps — run `hermes plugins install` again to retry.[/dim]\n")
+            console.print("[dim]Skipped Node deps — run `akramcode plugins install` again to retry.[/dim]\n")
 
     if not has_python:
         return True, None
@@ -98,18 +98,18 @@ def _consent_python_deps(plugin_name: str, deps: tuple[str, ...], console) -> tu
     if not (sys.stdin.isatty() and sys.stdout.isatty()):
         console.print(
             "[dim]Non-interactive install — skipping dependency install. "
-            "Run `hermes plugins enable` when ready to prepare them.[/dim]\n"
+            "Run `akramcode plugins enable` when ready to prepare them.[/dim]\n"
         )
         return False, "dependency install skipped (non-interactive)"
     try:
         answer = input(
-            "  Prepare these with Hermes through PM now? [y/N]: "
+            "  Prepare these with AkramCode through PM now? [y/N]: "
         ).strip().lower()
     except (EOFError, KeyboardInterrupt):
         answer = ""
     if answer not in {"y", "yes"}:
         console.print(
-            "[dim]Skipped — run `hermes plugins enable` when ready "
+            "[dim]Skipped — run `akramcode plugins enable` when ready "
             "to prepare them.[/dim]\n"
         )
         return False, "dependency install declined"
@@ -137,7 +137,7 @@ def _prompt_plugin_env_vars(manifest: dict, console) -> None:
     if not missing:
         return
     from akramcode_cli.config import save_env_value
-    from akramcode_constants import display_hermes_home
+    from akramcode_constants import display_akramcode_home
     plugin_name = manifest.get("name", "this plugin")
     console.print(f"\n[bold]{plugin_name}[/bold] requires the following environment variables:\n")
     for spec in missing:
@@ -150,15 +150,15 @@ def _prompt_plugin_env_vars(manifest: dict, console) -> None:
         try:
             value = (_pc().masked_secret_prompt if spec.get("secret", False) else line_input)(f"  {name}: ").strip()
         except (EOFError, KeyboardInterrupt):
-            console.print(f"\n[dim]  Skipped (you can set these later in {display_hermes_home()}/.env)[/dim]")
+            console.print(f"\n[dim]  Skipped (you can set these later in {display_akramcode_home()}/.env)[/dim]")
             return
 
         if value:
             save_env_value(name, value)
             os.environ[name] = value
-            console.print(f"  [green]✓[/green] Saved to {display_hermes_home()}/.env")
+            console.print(f"  [green]✓[/green] Saved to {display_akramcode_home()}/.env")
         else:
-            console.print(f"  [dim]  Skipped (set {name} in {display_hermes_home()}/.env later)[/dim]")
+            console.print(f"  [dim]  Skipped (set {name} in {display_akramcode_home()}/.env later)[/dim]")
 
     console.print()
 
@@ -186,7 +186,7 @@ def _check_manifest_version(manifest: dict, plugin_name: str) -> None:
     reason = manifest_version_error(manifest, plugin_name)
     if reason:
         from akramcode_cli.config import recommended_update_command
-        raise _pc().PluginOperationError(f"{reason} Run {recommended_update_command()} to update Hermes.")
+        raise _pc().PluginOperationError(f"{reason} Run {recommended_update_command()} to update AkramCode.")
 
 
 def _read_manifest_for_install(plugin_dir: Path) -> dict:
@@ -222,7 +222,7 @@ def _probe_readable(path: Path) -> None:
 
 
 def _ensure_tree_readable(root: Path, plugins_dir: Path) -> None:
-    """Refuse to ship a tree Hermes cannot read back. A clone can land unreadable (Windows ACL
+    """Refuse to ship a tree AkramCode cannot read back. A clone can land unreadable (Windows ACL
     inheritance -> WinError 5, a mode-000 file) and discovery would then skip the plugin forever
     (#111804); repair ``u+rX`` where the OS supports it, otherwise fail before anything moves."""
     paths = [root]
@@ -256,7 +256,7 @@ def _refuse_unavailable_portable_plugin(plugin_name: str, tree: Path) -> None:
     from akramcode_platform.resolver.availability import availability
 
     try:
-        package = load_agent_plugin(tree, tree.parent / ".hermes-install-data")
+        package = load_agent_plugin(tree, tree.parent / ".akramcode-install-data")
     except ValueError as exc:
         raise _pc().PluginOperationError(f"Plugin '{plugin_name}' is unavailable: {exc}.") from exc
     for server_name, server_decl in package.server_declarations.items():
@@ -354,7 +354,7 @@ def _install_plugin_core(
         if target.exists() and not force:
             raise _pc().PluginOperationError(
                 f"Plugin '{plugin_name}' already exists. Use force reinstall "
-                f"or run `hermes plugins update {plugin_name}`.")
+                f"or run `akramcode plugins update {plugin_name}`.")
         prior = old_metadata.get(plugin_name)
         if target.exists() and requested_revision is None and isinstance(prior, dict) and prior.get("pinned") is True:
             raise _pc().PluginOperationError(
@@ -369,7 +369,7 @@ def _install_plugin_core(
         # Saved update_url tag (settled: claims vs provenance): the
         # manifest's update_url is COPIED into the row at install. Check
         # time compares manifest vs tag; a mismatch is needs-fixing and
-        # only `hermes plugins trust-update-url` moves the tag.
+        # only `akramcode plugins trust-update-url` moves the tag.
         if manifest.get("update_url"):
             from akramcode_cli.plugins_updates import https_update_url
             try:
@@ -445,7 +445,7 @@ def cmd_install(
         console.print(f"[bold]{entry.name}[/bold] [cyan]\\[{entry.tier}][/cyan] [dim]pinned @ {entry.sha[:8]}[/dim]")
         console.print(catalog.entry_capability_summary(entry))
     else:
-        console.print("[yellow]Warning:[/yellow] custom (unreviewed) source — not from the Hermes catalog.")
+        console.print("[yellow]Warning:[/yellow] custom (unreviewed) source — not from the AkramCode catalog.")
     if allow_removed:
         console.print(
             "[bold red]WARNING:[/bold red] [red]--allow-removed set — skipping the catalog kill-list check. "
@@ -489,7 +489,7 @@ def cmd_install(
     if not _pc()._looks_like_plugin_dir(target):
         console.print(
             f"[yellow]Warning:[/yellow] {installed_name} doesn't contain plugin.yaml, "
-            f"plugin.json, or __init__.py. It may not be a valid Hermes plugin.")
+            f"plugin.json, or __init__.py. It may not be a valid AkramCode plugin.")
     _prompt_plugin_env_vars(installed_manifest, console)
 
     from pm.workspace import enabled_plugin_dirs
@@ -544,7 +544,7 @@ def cmd_install(
     else:
         console.print(
             f"[dim]Plugin installed but not enabled. "
-            f"Run `hermes plugins enable {installed_name}` to activate.[/dim]")
+            f"Run `akramcode plugins enable {installed_name}` to activate.[/dim]")
 
     # Non-interactive installs and declines leave declared capabilities ungranted (fail closed).
     declared_caps = _pc()._declared_capabilities_from_manifest(installed_manifest, installed_name)
@@ -570,11 +570,11 @@ def dashboard_install_plugin(
     if catalog_name:
         entry = catalog.get_live_catalog_entry(catalog_name)
         if entry is None:
-            return {"ok": False, "error": f"'{catalog_name}' is not in the Hermes plugin catalog."}
+            return {"ok": False, "error": f"'{catalog_name}' is not in the AkramCode plugin catalog."}
         warnings.extend(_known_issue_warnings(entry))
         identifier = entry.install_identifier
     else:
-        warnings.append("Custom (unreviewed) source — not from the Hermes catalog.")
+        warnings.append("Custom (unreviewed) source — not from the AkramCode catalog.")
     try:
         git_url = _pc()._resolve_git_url(identifier)[0]
         if git_url.startswith(("http://", "file://")):

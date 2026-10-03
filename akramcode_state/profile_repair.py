@@ -1,5 +1,5 @@
 """Crossed-profile durable state in ONE ``state.db`` — finders and fixers for
-``hermes sessions repair-profiles`` (#88715 PR-6).
+``akramcode sessions repair-profiles`` (#88715 PR-6).
 
 Every ``state.db`` belongs to exactly one profile (``<root>/state.db`` → ``default``,
 ``<root>/profiles/<name>/state.db`` → ``name``) and every gateway session key encodes the profile

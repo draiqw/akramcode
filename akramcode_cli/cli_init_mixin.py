@@ -1,6 +1,6 @@
-"""HermesCLI constructor phases: display options, model/provider routing, turn limits, toolsets, checkpoints, prompt/reasoning, runtime state, session store and UI state.
+"""AkramCodeCLI constructor phases: display options, model/provider routing, turn limits, toolsets, checkpoints, prompt/reasoning, runtime state, session store and UI state.
 
-Mixin split out of ``cli.py``; bound onto ``HermesCLI`` via the MRO.
+Mixin split out of ``cli.py``; bound onto ``AkramCodeCLI`` via the MRO.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ logger = logging.getLogger("cli")
 
 
 class CLIInitMixin:
-    """HermesCLI constructor phases: display options, model/provider routing, turn limits, toolsets, checkpoints, prompt/reasoning, runtime state, session store and UI state."""
+    """AkramCodeCLI constructor phases: display options, model/provider routing, turn limits, toolsets, checkpoints, prompt/reasoning, runtime state, session store and UI state."""
 
     def _init_display_options(self, verbose, compact):
         """Display-related config: compact/tool-progress/focus view, bells, streaming, previews, stream buffers."""
@@ -117,7 +117,7 @@ class CLIInitMixin:
         # resume must not clobber an explicit -m with the session's stored model.
         self._explicit_model_override = bool(model)
         self.model = model or _config_model or ""
-        _cfg_provider = _model_config.get("provider") or os.getenv("HERMES_INFERENCE_PROVIDER")
+        _cfg_provider = _model_config.get("provider") or os.getenv("AKRAMCODE_INFERENCE_PROVIDER")
         _startup_provider_override = _startup_base_url_override = _startup_api_key_override = ""
         if self.model:
             from akramcode_cli.model_switch import resolve_startup_model_route
@@ -205,7 +205,7 @@ class CLIInitMixin:
         from akramcode_cli.config import resolve_turn_limit as _resolve_turn_limit
         self.max_turns = _resolve_turn_limit(next(
             (v for v in (max_turns, CLI_CONFIG["agent"].get("max_turns"), CLI_CONFIG.get("max_turns")) if v is not None),
-            os.getenv("HERMES_MAX_ITERATIONS"),
+            os.getenv("AKRAMCODE_MAX_ITERATIONS"),
         ))
         self.run_budget_seconds = run_budget if run_budget is not None else CLI_CONFIG["agent"].get("run_budget_seconds")
 
@@ -244,7 +244,7 @@ class CLIInitMixin:
         self.checkpoint_max_file_size_mb = cp_cfg.get("max_file_size_mb", 10)
         self.pass_session_id = pass_session_id
         # --ignore-rules: AIAgent skips context files (AGENTS.md/SOUL.md/...) and memory.
-        self.ignore_rules = ignore_rules or is_truthy_value(os.environ.get("HERMES_IGNORE_RULES"))
+        self.ignore_rules = ignore_rules or is_truthy_value(os.environ.get("AKRAMCODE_IGNORE_RULES"))
 
     def _init_prompt_and_reasoning(self, reasoning):
         """Ephemeral system prompt/prefill, reasoning + service tier, OpenRouter routing knobs, fallback chain."""
@@ -252,7 +252,7 @@ class CLIInitMixin:
         # Env var wins, then akramcode_cli.personality (single owner of overlay resolution).
         from akramcode_cli.personality import available_personalities, resolve_ephemeral_system_prompt
 
-        self.system_prompt = os.getenv("HERMES_EPHEMERAL_SYSTEM_PROMPT", "") or resolve_ephemeral_system_prompt(CLI_CONFIG)
+        self.system_prompt = os.getenv("AKRAMCODE_EPHEMERAL_SYSTEM_PROMPT", "") or resolve_ephemeral_system_prompt(CLI_CONFIG)
         self.personalities = available_personalities(CLI_CONFIG)
 
         self.prefill_messages = _load_prefill_messages(_resolve_prefill_messages_file(CLI_CONFIG))
@@ -296,7 +296,7 @@ class CLIInitMixin:
 
     def _init_runtime_state(self, resume):
         """Session store + all per-run mutable state (queues, overlays, pet/voice/status-bar fields)."""
-        from cli import _hermes_home
+        from cli import _akramcode_home
         # A signature change across turns (/model, credential rotation) rebuilds the agent.
         self._active_agent_route_signature = None
         self.agent: Optional[Any] = None  # initialized on first use
@@ -315,7 +315,7 @@ class CLIInitMixin:
         self.session_id = resume or new_session_id(self.session_start)
         getattr(self, "_write_terminal_breadcrumb", lambda: None)()
 
-        self._history_file = _hermes_home / ".hermes_history"
+        self._history_file = _akramcode_home / ".akramcode_history"
         self._last_invalidate: float | None = None  # throttles UI repaints (None = never; monotonic epoch is arbitrary)
         self._init_ui_state()
 

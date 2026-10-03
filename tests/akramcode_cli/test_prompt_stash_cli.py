@@ -1,8 +1,8 @@
-"""Tests for the Ctrl+S prompt stash wiring inside HermesCLI.
+"""Tests for the Ctrl+S prompt stash wiring inside AkramCodeCLI.
 
 The state machine itself is covered by tests/akramcode_cli/test_prompt_stash.py. These
 tests verify the cli.py side:
-  - HermesCLI.__init__ creates a PromptStash
+  - AkramCodeCLI.__init__ creates a PromptStash
   - the layout hook makes room for the stash browse panel
   - _render_stash_panel renders bounded, display-width-correct rows
   - the status-bar indicator appears / disappears with stash contents
@@ -20,7 +20,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 def _make_cli(**kwargs):
-    """Create a HermesCLI with prompt_toolkit stubbed out."""
+    """Create a AkramCodeCLI with prompt_toolkit stubbed out."""
     _clean_config = {
         "model": {
             "default": "anthropic/claude-opus-4.6",
@@ -31,7 +31,7 @@ def _make_cli(**kwargs):
         "agent": {},
         "terminal": {"env_type": "local"},
     }
-    clean_env = {"LLM_MODEL": "", "HERMES_MAX_ITERATIONS": ""}
+    clean_env = {"LLM_MODEL": "", "AKRAMCODE_MAX_ITERATIONS": ""}
     prompt_toolkit_stubs = {
         "prompt_toolkit": MagicMock(),
         "prompt_toolkit.history": MagicMock(),
@@ -58,7 +58,7 @@ def _make_cli(**kwargs):
         with patch.object(_cli_mod, "get_tool_definitions", return_value=[]), patch.dict(
             _cli_mod.__dict__, {"CLI_CONFIG": _clean_config}
         ):
-            return _cli_mod.HermesCLI(**kwargs)
+            return _cli_mod.AkramCodeCLI(**kwargs)
 
 @pytest.fixture(scope="module")
 def cli():

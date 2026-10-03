@@ -1,4 +1,4 @@
-"""``hermes chat -Q`` passes the dispatcher's HERMES_TURN_AUTHOR to ``run_conversation`` as ``turn_author``.
+"""``akramcode chat -Q`` passes the dispatcher's AKRAMCODE_TURN_AUTHOR to ``run_conversation`` as ``turn_author``.
 
 A bot-to-bot delivery runs the recipient's turn as a ``-Q`` subprocess with that variable set.
 A human's ``-Q`` run has it unset and the turn stays unattributed.
@@ -20,12 +20,12 @@ AUTHOR = {"id": "bot:coder", "name": "coder", "is_bot": True}
 
 @pytest.fixture(autouse=True)
 def _plain_one_shot_env(monkeypatch):
-    monkeypatch.delenv("HERMES_KANBAN_GOAL_MODE", raising=False)
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+    monkeypatch.delenv("AKRAMCODE_KANBAN_GOAL_MODE", raising=False)
+    monkeypatch.delenv("AKRAMCODE_KANBAN_TASK", raising=False)
 
 
 def _run(monkeypatch, env_value, run_conversation=None):
-    """One quiet turn with HERMES_TURN_AUTHOR set to ``env_value`` (unset for None); returns the recorded call kwargs."""
+    """One quiet turn with AKRAMCODE_TURN_AUTHOR set to ``env_value`` (unset for None); returns the recorded call kwargs."""
     if env_value is None:
         monkeypatch.delenv(TURN_AUTHOR_ENV, raising=False)
     else:
@@ -65,15 +65,15 @@ def test_quiet_one_shot_consumes_the_variable_before_the_turn(monkeypatch):
 def test_quiet_one_shot_resumes_nested_notify_on_this_session_not_parent(monkeypatch, capsys):
     """A nested Bot Mode completion keyed to B wakes B even when the parent env still names A.
 
-    ``chat -Q`` used to inherit the dispatcher's HERMES_SESSION_KEY and exit after the
+    ``chat -Q`` used to inherit the dispatcher's AKRAMCODE_SESSION_KEY and exit after the
     dispatch ack, so C's reply was saved but B never resumed.
     """
     from tools.approval_context import get_current_session_key
     from tools.process_registry import process_registry
 
-    monkeypatch.delenv("HERMES_KANBAN_GOAL_MODE", raising=False)
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
-    monkeypatch.setenv("HERMES_SESSION_KEY", "session-A")
+    monkeypatch.delenv("AKRAMCODE_KANBAN_GOAL_MODE", raising=False)
+    monkeypatch.delenv("AKRAMCODE_KANBAN_TASK", raising=False)
+    monkeypatch.setenv("AKRAMCODE_SESSION_KEY", "session-A")
     calls = []
 
     def run_conversation(**kwargs):
@@ -229,7 +229,7 @@ def _quiet_policy(tmp_path, monkeypatch, setting):
     import json
     home = tmp_path / f"home-{setting}"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     display = {} if setting is None else {"suppress_warning_notifications": setting}
     (home / "config.yaml").write_text(json.dumps({"display": display}))
 

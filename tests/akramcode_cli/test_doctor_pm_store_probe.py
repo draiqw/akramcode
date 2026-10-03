@@ -30,9 +30,9 @@ def tool_store(tmp_path, monkeypatch):
     primary = tmp_path / "payload" / "tools"
     primary.mkdir(parents=True)
     (primary.parent / "manifest.json").write_text("{}", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(primary))
-    monkeypatch.setenv("HERMES_DISABLE_LAZY_INSTALLS", "1")
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_RUNTIME_DIR", str(primary))
+    monkeypatch.setenv("AKRAMCODE_DISABLE_LAZY_INSTALLS", "1")
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     lock_path = tmp_path / "lock.json"
     monkeypatch.setattr(paths, "lockfile_path", lambda: lock_path)

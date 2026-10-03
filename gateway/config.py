@@ -12,7 +12,7 @@ from dataclasses import asdict, dataclass, field, fields, is_dataclass
 from typing import Dict, List, Optional, Any, Callable
 from enum import Enum
 
-from akramcode_cli.config import get_hermes_home
+from akramcode_cli.config import get_akramcode_home
 from agent.secret_scope import current_secret_scope, get_secret as _get_secret
 from gateway.shutdown_watchdog import (
     DEFAULT_LOOP_WATCHDOG_INTERVAL_S,
@@ -73,7 +73,7 @@ def _env_on_all_adapters_down_override() -> "str | None":
 
     ``None`` when unset, blank, or unrecognized so the caller keeps the config.yaml value
     (env > config > default). Launchers without a supervising service manager (the desktop app
-    spawns ``hermes serve`` directly) set ``stay_alive``: a failure exit there only severs the
+    spawns ``akramcode serve`` directly) set ``stay_alive``: a failure exit there only severs the
     UI's websocket connections and drops in-flight assistant messages (#118080).
     """
     raw = os.getenv("GATEWAY_ON_ALL_ADAPTERS_DOWN")
@@ -447,7 +447,7 @@ class PlatformConfig:
         data = _coerce_dict(data)
         home = data.get("home_channel")
         # Adapters read their settings from ``extra`` (``config.extra.get("port")``), but users
-        # write them where the docs and ``hermes config set platforms.webhook.port`` put them:
+        # write them where the docs and ``akramcode config set platforms.webhook.port`` put them:
         # directly under the platform block. Promote every non-typed top-level key so neither
         # spelling is silently dropped (#10206); an explicit ``extra:`` value wins on a clash.
         extra = {**{k: v for k, v in data.items() if k not in cls._TYPED_KEYS}, **_coerce_dict(data.get("extra", {}))}
@@ -588,7 +588,7 @@ class GatewayConfig:
     platforms: Dict[Platform, PlatformConfig] = field(default_factory=dict)
     reset_triggers: List[str] = field(default_factory=lambda: ["/new", "/reset"])
     quick_commands: Dict[str, Any] = field(default_factory=dict)  # slash commands that bypass the agent loop
-    sessions_dir: Path = field(default_factory=lambda: get_hermes_home() / "sessions")
+    sessions_dir: Path = field(default_factory=lambda: get_akramcode_home() / "sessions")
     # Legacy sessions.json mirror of the routing index (primary: state.db) for external tooling / downgrades.
     # The primary copy lives in state.db (gateway_routing table, #9006). Default True for backward
     # compatibility with external tooling and downgrade safety; set gateway.write_sessions_json: false in
@@ -612,7 +612,7 @@ class GatewayConfig:
     # verbatim. Every reader tests truthiness, so an unresolved ``None`` never multiplexes by accident.
     multiplex_profiles: Optional[bool] = None
     # Public HTTPS endpoint for scoped RoomLink calls (an API key alone must never advertise a
-    # route); HERMES_ROOM_LINK_URL overrides.
+    # route); AKRAMCODE_ROOM_LINK_URL overrides.
     room_link_url: Optional[str] = None
     systemd_watchdog_seconds: int = 0  # opt-in; zero keeps Type=simple and disables sd_notify
     # In-process loop liveness watchdog: after consecutive missed probes it dumps all-thread stacks
@@ -632,7 +632,7 @@ class GatewayConfig:
     # What happens when the LAST messaging adapter goes down. ``exit`` (default) shuts the gateway
     # down with the failure verdict so a supervising service manager (systemd/launchd) restarts it;
     # ``stay_alive`` keeps the process running and leaves recovery to the reconnect watcher — for
-    # launchers with no supervisor (the desktop app spawns ``hermes serve`` directly), where a
+    # launchers with no supervisor (the desktop app spawns ``akramcode serve`` directly), where a
     # failure exit only severs the UI's websockets and drops in-flight assistant messages (#118080).
     # Retryable failures are recoverable in both modes; non-retryable adapter loss always exits.
     on_all_adapters_down: str = "exit"  # "exit" | "stay_alive"; GATEWAY_ON_ALL_ADAPTERS_DOWN overrides
@@ -796,7 +796,7 @@ class GatewayConfig:
             platforms=by_platform("platforms", PlatformConfig.from_dict, dicts_only=True),
             reset_triggers=data.get("reset_triggers", ["/new", "/reset"]),
             quick_commands=_coerce_dict(data.get("quick_commands", {})),
-            sessions_dir=Path(data["sessions_dir"]) if "sessions_dir" in data else get_hermes_home() / "sessions",
+            sessions_dir=Path(data["sessions_dir"]) if "sessions_dir" in data else get_akramcode_home() / "sessions",
             **{name: _coerce_bool(data.get(name), default) for name, default in _TOPLEVEL_BOOL_DEFAULTS.items()},
             stt_enabled=_coerce_bool(stt_setting("stt_enabled", "enabled"), True),
             stt_echo_transcripts=_coerce_bool(stt_setting("stt_echo_transcripts", "echo_transcripts"), True),
@@ -838,10 +838,10 @@ class GatewayConfig:
 
 
 def load_gateway_config() -> GatewayConfig:
-    """Load gateway configuration. Priority: env > ~/.hermes/config.yaml > legacy gateway.json > defaults."""
+    """Load gateway configuration. Priority: env > ~/.akramcode/config.yaml > legacy gateway.json > defaults."""
     from gateway import config_loader
 
-    _home = get_hermes_home()
+    _home = get_akramcode_home()
     gw_data = config_loader.load_legacy_gateway_json(_home)
     try:
         config_loader.load_yaml_layer(_home, gw_data)

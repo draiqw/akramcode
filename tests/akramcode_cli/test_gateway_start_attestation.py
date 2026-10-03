@@ -83,16 +83,16 @@ def test_report_gateway_start_failure_is_loud_not_checkmark(monkeypatch, tmp_pat
         gateway_windows, "_wait_for_gateway_ready", lambda *a, **k: []
     )
     monkeypatch.setattr(
-        "akramcode_cli.config.get_hermes_home", lambda: str(tmp_path)
+        "akramcode_cli.config.get_akramcode_home", lambda: str(tmp_path)
     )
     monkeypatch.setattr(gateway_windows, "is_task_registered", lambda: True)
-    monkeypatch.setattr(gateway_windows, "get_task_name", lambda: "Hermes_Gateway_x")
+    monkeypatch.setattr(gateway_windows, "get_task_name", lambda: "AkramCode_Gateway_x")
 
     gateway_windows._report_gateway_start("direct spawn (PID 7)")
     out = capsys.readouterr().out
     assert "✓" not in out
     assert "FAILED" in out
-    assert "schtasks /Run /TN Hermes_Gateway_x" in out
+    assert "schtasks /Run /TN AkramCode_Gateway_x" in out
 
 
 # ---------------------------------------------------------------------------
@@ -102,7 +102,7 @@ def test_report_gateway_start_failure_is_loud_not_checkmark(monkeypatch, tmp_pat
 
 @pytest.fixture
 def attest_home(monkeypatch, tmp_path):
-    monkeypatch.setattr("akramcode_cli.config.get_hermes_home", lambda: str(tmp_path))
+    monkeypatch.setattr("akramcode_cli.config.get_akramcode_home", lambda: str(tmp_path))
     monkeypatch.setattr(gateway_windows, "is_task_registered", lambda: False)
     return tmp_path
 
@@ -155,11 +155,11 @@ def test_attestation_silent_after_clean_ledger_exit(attest_home):
 def test_attestation_warning_includes_schtasks_recovery(monkeypatch, attest_home):
     monkeypatch.setattr(gateway_windows, "is_task_registered", lambda: True)
     monkeypatch.setattr(
-        gateway_windows, "get_task_name", lambda: "Hermes_Gateway_arthur_tutor"
+        gateway_windows, "get_task_name", lambda: "AkramCode_Gateway_arthur_tutor"
     )
     gateway_windows._write_start_attestation([888], "direct spawn (PID 888)")
     warning = gateway_windows.check_start_attestation(current_pids=[])
-    assert "schtasks /Run /TN Hermes_Gateway_arthur_tutor" in warning
+    assert "schtasks /Run /TN AkramCode_Gateway_arthur_tutor" in warning
 
 
 def test_attestation_tolerates_missing_and_garbage_marker(attest_home):
@@ -179,7 +179,7 @@ def test_breakaway_fallback_warns_even_on_success(monkeypatch, attest_home, caps
         gateway_windows, "_wait_for_gateway_ready", lambda *a, **k: [99]
     )
     monkeypatch.setattr(gateway_windows, "is_task_registered", lambda: True)
-    monkeypatch.setattr(gateway_windows, "get_task_name", lambda: "Hermes_Gateway")
+    monkeypatch.setattr(gateway_windows, "get_task_name", lambda: "AkramCode_Gateway")
     gateway_windows._LAST_SPAWN_BREAKAWAY_FALLBACK["fallback"] = True
     try:
         gateway_windows._report_gateway_start("direct spawn (PID 99)")
@@ -188,7 +188,7 @@ def test_breakaway_fallback_warns_even_on_success(monkeypatch, attest_home, caps
     out = capsys.readouterr().out
     assert "✓" in out
     assert "could not break away" in out
-    assert "schtasks /Run /TN Hermes_Gateway" in out
+    assert "schtasks /Run /TN AkramCode_Gateway" in out
 
 
 # ---------------------------------------------------------------------------
@@ -197,7 +197,7 @@ def test_breakaway_fallback_warns_even_on_success(monkeypatch, attest_home, caps
 
 
 def test_attested_probe_fails_closed_without_a_well_formed_dead_attestation(attest_home):
-    """``hermes update`` uses this probe to override Desktop-owned lifecycle suppression
+    """``akramcode update`` uses this probe to override Desktop-owned lifecycle suppression
     (#109538), so only a *detectable* death may read True: no marker, malformed ``pids``,
     a gateway alive now, or a clean ledger exit all read False. The probe must also be
     read-only — consuming the marker here would silence the CLI-start warning that reports

@@ -24,7 +24,7 @@ import os
 from unittest.mock import patch
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from akramcode_cli.config import (
     _MISSING,
@@ -37,11 +37,11 @@ from akramcode_cli.config import (
 
 
 @pytest.fixture(autouse=True)
-def _isolated_hermes_home(tmp_path):
-    """Point HERMES_HOME at a temp dir so tests never touch real config."""
+def _isolated_akramcode_home(tmp_path):
+    """Point AKRAMCODE_HOME at a temp dir so tests never touch real config."""
     env_file = tmp_path / ".env"
     env_file.touch()
-    with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}):
+    with patch.dict(os.environ, {"AKRAMCODE_HOME": str(tmp_path)}):
         yield tmp_path
 
 
@@ -79,16 +79,16 @@ PROVIDER_CONFIG = {
 # ---------------------------------------------------------------------------
 
 class TestUnescapedDottedModelKeys:
-    def test_set_hits_existing_literal_key_no_phantom(self, _isolated_hermes_home):
-        _write_config(_isolated_hermes_home, PROVIDER_CONFIG)
+    def test_set_hits_existing_literal_key_no_phantom(self, _isolated_akramcode_home):
+        _write_config(_isolated_akramcode_home, PROVIDER_CONFIG)
         set_config_value("providers.myprov.models.grok-4.6.supports_vision", "true")
-        saved = _read_config(_isolated_hermes_home)
+        saved = _read_config(_isolated_akramcode_home)
         models = saved["providers"]["myprov"]["models"]
         assert models["grok-4.6"]["supports_vision"] is True
         assert "grok-4" not in models  # no phantom sibling
 
-    def test_get_reads_real_dotted_key(self, _isolated_hermes_home, capsys):
-        _write_config(_isolated_hermes_home, PROVIDER_CONFIG)
+    def test_get_reads_real_dotted_key(self, _isolated_akramcode_home, capsys):
+        _write_config(_isolated_akramcode_home, PROVIDER_CONFIG)
         args = argparse.Namespace(
             config_command="get",
             key="providers.myprov.models.grok-4.6.context_length",
@@ -97,7 +97,7 @@ class TestUnescapedDottedModelKeys:
         config_command(args)
         assert capsys.readouterr().out.strip() == "500000"
 
-    def test_unset_removes_real_dotted_key_field(self, _isolated_hermes_home):
+    def test_unset_removes_real_dotted_key_field(self, _isolated_akramcode_home):
         cfg = {
             "providers": {
                 "myprov": {
@@ -110,39 +110,39 @@ class TestUnescapedDottedModelKeys:
                 }
             }
         }
-        _write_config(_isolated_hermes_home, cfg)
+        _write_config(_isolated_akramcode_home, cfg)
         args = argparse.Namespace(
             config_command="unset",
             key="providers.myprov.models.grok-4.6.supports_vision",
         )
         config_command(args)
-        saved = _read_config(_isolated_hermes_home)
+        saved = _read_config(_isolated_akramcode_home)
         target = saved["providers"]["myprov"]["models"]["grok-4.6"]
         assert "supports_vision" not in target
         assert target["context_length"] == 500000
 
     def test_set_refuses_phantom_when_dotted_sibling_exists(
-        self, _isolated_hermes_home, capsys
+        self, _isolated_akramcode_home, capsys
     ):
         """Soju06's suggestion on #84064: creating a NEW nested mapping that
         shadows an existing dotted literal key fails loudly instead of
         silently writing a phantom."""
-        _write_config(_isolated_hermes_home, PROVIDER_CONFIG)
+        _write_config(_isolated_akramcode_home, PROVIDER_CONFIG)
         with pytest.raises(SystemExit):
             set_config_value("providers.myprov.models.grok-4.7.context_length", "128000")
         err = capsys.readouterr().err
         assert "Refusing to create nested key" in err
         assert "grok-4" in err
         # Config untouched.
-        saved = _read_config(_isolated_hermes_home)
+        saved = _read_config(_isolated_akramcode_home)
         assert "grok-4" not in saved["providers"]["myprov"]["models"]
 
-    def test_escaped_form_creates_new_dotted_key(self, _isolated_hermes_home):
-        _write_config(_isolated_hermes_home, PROVIDER_CONFIG)
+    def test_escaped_form_creates_new_dotted_key(self, _isolated_akramcode_home):
+        _write_config(_isolated_akramcode_home, PROVIDER_CONFIG)
         set_config_value(
             "providers.myprov.models.grok-4\\.7.context_length", "128000"
         )
-        saved = _read_config(_isolated_hermes_home)
+        saved = _read_config(_isolated_akramcode_home)
         assert saved["providers"]["myprov"]["models"]["grok-4.7"] == {
             "context_length": 128000
         }
@@ -153,23 +153,23 @@ class TestUnescapedDottedModelKeys:
 # ---------------------------------------------------------------------------
 
 class TestMatrixRoomIds:
-    def test_set_existing_room_id_key(self, _isolated_hermes_home):
+    def test_set_existing_room_id_key(self, _isolated_akramcode_home):
         _write_config(
-            _isolated_hermes_home,
+            _isolated_akramcode_home,
             {"matrix": {"channel_prompts": {"!TestRoom:example.org": "old"}}},
         )
         set_config_value("matrix.channel_prompts.!TestRoom:example.org", "be brief")
-        saved = _read_config(_isolated_hermes_home)
+        saved = _read_config(_isolated_akramcode_home)
         prompts = saved["matrix"]["channel_prompts"]
         assert prompts["!TestRoom:example.org"] == "be brief"
         assert "!TestRoom:example" not in prompts
 
-    def test_escaped_creates_new_room_id_key(self, _isolated_hermes_home):
-        _write_config(_isolated_hermes_home, {"matrix": {"channel_prompts": {}}})
+    def test_escaped_creates_new_room_id_key(self, _isolated_akramcode_home):
+        _write_config(_isolated_akramcode_home, {"matrix": {"channel_prompts": {}}})
         set_config_value(
             "matrix.channel_prompts.!TestRoom:example\\.org", "be brief"
         )
-        saved = _read_config(_isolated_hermes_home)
+        saved = _read_config(_isolated_akramcode_home)
         assert saved["matrix"]["channel_prompts"]["!TestRoom:example.org"] == "be brief"
 
 
@@ -179,10 +179,10 @@ class TestMatrixRoomIds:
 
 class TestCustomProvidersListIndex:
     def test_set_updates_existing_dotted_model_under_list_index(
-        self, _isolated_hermes_home
+        self, _isolated_akramcode_home
     ):
         _write_config(
-            _isolated_hermes_home,
+            _isolated_akramcode_home,
             {
                 "custom_providers": [
                     {
@@ -195,24 +195,24 @@ class TestCustomProvidersListIndex:
         set_config_value(
             "custom_providers.0.models.qwen3.5:4b.context_length", "65536"
         )
-        saved = _read_config(_isolated_hermes_home)
+        saved = _read_config(_isolated_akramcode_home)
         models = saved["custom_providers"][0]["models"]
         assert models["qwen3.5:4b"]["context_length"] == 65536
         assert "qwen3" not in models
 
     def test_escaped_creates_absent_dotted_model_under_list_index(
-        self, _isolated_hermes_home
+        self, _isolated_akramcode_home
     ):
         """#91095 follow-up: creation of a NOT-yet-existing dotted key must be
         possible via escaping, even under a list index."""
         _write_config(
-            _isolated_hermes_home,
+            _isolated_akramcode_home,
             {"custom_providers": [{"name": "Local Ollama", "models": {}}]},
         )
         set_config_value(
             "custom_providers.0.models.qwen3\\.5:4b.context_length", "65536"
         )
-        saved = _read_config(_isolated_hermes_home)
+        saved = _read_config(_isolated_akramcode_home)
         assert saved["custom_providers"][0]["models"]["qwen3.5:4b"] == {
             "context_length": 65536
         }
@@ -275,29 +275,29 @@ class TestDottedLeafKeys:
         }
     }
 
-    def test_set_leaf_parent_is_dotted(self, _isolated_hermes_home):
-        _write_config(_isolated_hermes_home, self.CFG)
+    def test_set_leaf_parent_is_dotted(self, _isolated_akramcode_home):
+        _write_config(_isolated_akramcode_home, self.CFG)
         set_config_value("providers.Bai.models.glm-5.3-flash.context_length", "1000000")
-        saved = _read_config(_isolated_hermes_home)
+        saved = _read_config(_isolated_akramcode_home)
         models = saved["providers"]["Bai"]["models"]
         assert models["glm-5.3-flash"]["context_length"] == 1000000
         assert "glm-5" not in models
 
-    def test_get_dotted_leaf_mapping(self, _isolated_hermes_home, capsys):
-        _write_config(_isolated_hermes_home, self.CFG)
+    def test_get_dotted_leaf_mapping(self, _isolated_akramcode_home, capsys):
+        _write_config(_isolated_akramcode_home, self.CFG)
         args = argparse.Namespace(
             config_command="get", key="providers.Bai.models.glm-5.3-flash", json=True
         )
         config_command(args)
         assert "128000" in capsys.readouterr().out
 
-    def test_unset_dotted_leaf(self, _isolated_hermes_home):
-        _write_config(_isolated_hermes_home, self.CFG)
+    def test_unset_dotted_leaf(self, _isolated_akramcode_home):
+        _write_config(_isolated_akramcode_home, self.CFG)
         args = argparse.Namespace(
             config_command="unset", key="providers.Bai.models.glm-5.3-flash"
         )
         config_command(args)
-        saved = _read_config(_isolated_hermes_home)
+        saved = _read_config(_isolated_akramcode_home)
         assert "glm-5.3-flash" not in saved.get("providers", {}).get("Bai", {}).get(
             "models", {}
         )
@@ -309,9 +309,9 @@ class TestDottedLeafKeys:
 # ---------------------------------------------------------------------------
 
 class TestBackwardCompatibility:
-    def test_plain_nested_set(self, _isolated_hermes_home):
+    def test_plain_nested_set(self, _isolated_akramcode_home):
         set_config_value("terminal.backend", "docker")
-        saved = _read_config(_isolated_hermes_home)
+        saved = _read_config(_isolated_akramcode_home)
         assert saved["terminal"]["backend"] == "docker"
 
     def test_plain_nested_get_and_unset_helpers(self):

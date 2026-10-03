@@ -20,15 +20,15 @@ from tools.approval_context import set_current_session_key
 @pytest.fixture
 def isolated_session(monkeypatch, tmp_path):
     """Give each test a fresh session_key, clean approval-state, and isolated
-    HERMES_HOME so the real user's command_allowlist doesn't leak in."""
+    AKRAMCODE_HOME so the real user's command_allowlist doesn't leak in."""
     import tools.approval as _am
     from tools import approval_context
 
     session_key = "test:session:approval_hooks"
     token = set_current_session_key(session_key)
-    monkeypatch.setenv("HERMES_SESSION_KEY", session_key)
+    monkeypatch.setenv("AKRAMCODE_SESSION_KEY", session_key)
     # Make sure we don't skip guards via yolo / approvals.mode=off
-    monkeypatch.delenv("HERMES_YOLO_MODE", raising=False)
+    monkeypatch.delenv("AKRAMCODE_YOLO_MODE", raising=False)
     # Isolate from the real user's permanent allowlist + session state
     _saved_permanent = _am._permanent_approved.copy()
     _saved_session = {k: v.copy() for k, v in _am._session_approved.items()}
@@ -47,15 +47,15 @@ def isolated_session(monkeypatch, tmp_path):
 
 
 class TestCliPathFiresHooks:
-    """CLI-interactive approval path: HERMES_INTERACTIVE is set, the
+    """CLI-interactive approval path: AKRAMCODE_INTERACTIVE is set, the
     prompt_dangerous_approval() result decides the outcome."""
 
     def test_pre_and_post_fire_with_expected_kwargs(
         self, isolated_session, monkeypatch
     ):
-        monkeypatch.setenv("HERMES_INTERACTIVE", "1")
-        monkeypatch.delenv("HERMES_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("HERMES_EXEC_ASK", raising=False)
+        monkeypatch.setenv("AKRAMCODE_INTERACTIVE", "1")
+        monkeypatch.delenv("AKRAMCODE_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("AKRAMCODE_EXEC_ASK", raising=False)
         # approvals.mode=manual so we actually reach the prompt site
         monkeypatch.setattr(approval_context, "_get_approval_mode", lambda: "manual")
 
@@ -94,9 +94,9 @@ class TestCliPathFiresHooks:
         assert post_kwargs["command"] == "rm -rf /tmp/test-hook"
 
     def test_deny_reported_to_post_hook(self, isolated_session, monkeypatch):
-        monkeypatch.setenv("HERMES_INTERACTIVE", "1")
-        monkeypatch.delenv("HERMES_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("HERMES_EXEC_ASK", raising=False)
+        monkeypatch.setenv("AKRAMCODE_INTERACTIVE", "1")
+        monkeypatch.delenv("AKRAMCODE_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("AKRAMCODE_EXEC_ASK", raising=False)
         monkeypatch.setattr(approval_context, "_get_approval_mode", lambda: "manual")
 
         captured = []
@@ -123,9 +123,9 @@ class TestCliPathFiresHooks:
         """A crashing plugin must never prevent the approval flow from
         reaching the user. Hooks are observer-only and safety-critical
         behavior must be preserved."""
-        monkeypatch.setenv("HERMES_INTERACTIVE", "1")
-        monkeypatch.delenv("HERMES_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("HERMES_EXEC_ASK", raising=False)
+        monkeypatch.setenv("AKRAMCODE_INTERACTIVE", "1")
+        monkeypatch.delenv("AKRAMCODE_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("AKRAMCODE_EXEC_ASK", raising=False)
         monkeypatch.setattr(approval_context, "_get_approval_mode", lambda: "manual")
 
         def boom(hook_name, **kwargs):
@@ -145,10 +145,10 @@ class TestCliPathFiresHooks:
 
 class TestSmartModeFiresHooks:
     def _configure(self, monkeypatch, verdict):
-        monkeypatch.setenv("HERMES_INTERACTIVE", "1")
-        monkeypatch.setenv("HERMES_EXEC_ASK", "1")
-        monkeypatch.delenv("HERMES_GATEWAY_SESSION", raising=False)
-        monkeypatch.delenv("HERMES_CRON_SESSION", raising=False)
+        monkeypatch.setenv("AKRAMCODE_INTERACTIVE", "1")
+        monkeypatch.setenv("AKRAMCODE_EXEC_ASK", "1")
+        monkeypatch.delenv("AKRAMCODE_GATEWAY_SESSION", raising=False)
+        monkeypatch.delenv("AKRAMCODE_CRON_SESSION", raising=False)
         monkeypatch.setattr(approval_module, "_YOLO_MODE_FROZEN", False)
         monkeypatch.setattr(approval_context, "_get_approval_mode", lambda: "smart")
         monkeypatch.setattr(approval_smart, "_smart_approve", lambda *_: verdict)
@@ -309,9 +309,9 @@ class TestSmartModeFiresHooks:
         self, isolated_session, monkeypatch, guard, first_value, second_value
     ):
         verdicts = iter(("approve", "deny"))
-        monkeypatch.setenv("HERMES_INTERACTIVE", "1")
-        monkeypatch.setenv("HERMES_EXEC_ASK", "1")
-        monkeypatch.delenv("HERMES_GATEWAY_SESSION", raising=False)
+        monkeypatch.setenv("AKRAMCODE_INTERACTIVE", "1")
+        monkeypatch.setenv("AKRAMCODE_EXEC_ASK", "1")
+        monkeypatch.delenv("AKRAMCODE_GATEWAY_SESSION", raising=False)
         monkeypatch.setattr(approval_module, "_YOLO_MODE_FROZEN", False)
         monkeypatch.setattr(approval_context, "_get_approval_mode", lambda: "smart")
         monkeypatch.setattr(approval_smart, "_smart_approve", lambda *_: next(verdicts))

@@ -1,6 +1,6 @@
 """End-to-end integration test for the destructive-slash inline-skip path.
 
-Drives ``HermesCLI.process_command("/reset now")`` against a minimal stand-in
+Drives ``AkramCodeCLI.process_command("/reset now")`` against a minimal stand-in
 and verifies:
 
 1. ``new_session`` was invoked (the command actually ran)
@@ -18,9 +18,9 @@ from unittest.mock import patch
 
 
 def _make_cli_stub():
-    """Build a minimal HermesCLI-shaped object that can run ``process_command``
+    """Build a minimal AkramCodeCLI-shaped object that can run ``process_command``
     for the destructive-slash branches without spinning up a real TUI."""
-    from cli import HermesCLI
+    from cli import AkramCodeCLI
 
     new_session_calls = []
 
@@ -43,14 +43,14 @@ def _make_cli_stub():
         _session_db=None,
     )
     # Bind the methods we need under test.
-    self_._split_destructive_skip = HermesCLI._split_destructive_skip
-    self_._confirm_destructive_slash = HermesCLI._confirm_destructive_slash.__get__(
+    self_._split_destructive_skip = AkramCodeCLI._split_destructive_skip
+    self_._confirm_destructive_slash = AkramCodeCLI._confirm_destructive_slash.__get__(
         self_, type(self_)
     )
-    self_._slash_handler = HermesCLI._slash_handler
-    self_._slash_metrics_surface = HermesCLI._slash_metrics_surface
-    self_._cmd_new = HermesCLI._cmd_new.__get__(self_, type(self_))
-    self_.process_command = HermesCLI.process_command.__get__(self_, type(self_))
+    self_._slash_handler = AkramCodeCLI._slash_handler
+    self_._slash_metrics_surface = AkramCodeCLI._slash_metrics_surface
+    self_._cmd_new = AkramCodeCLI._cmd_new.__get__(self_, type(self_))
+    self_.process_command = AkramCodeCLI.process_command.__get__(self_, type(self_))
     return self_, new_session_calls
 
 
@@ -88,7 +88,7 @@ def test_new_without_skip_token_still_consults_modal():
 
     Sanity check that we haven't accidentally short-circuited the normal path.
     """
-    from cli import HermesCLI
+    from cli import AkramCodeCLI
 
     new_session_calls = []
     modal_calls = []
@@ -113,17 +113,17 @@ def test_new_without_skip_token_still_consults_modal():
         _pending_title=None,
         _session_db=None,
     )
-    self_._split_destructive_skip = HermesCLI._split_destructive_skip
-    self_._normalize_slash_confirm_choice = HermesCLI._normalize_slash_confirm_choice.__get__(
+    self_._split_destructive_skip = AkramCodeCLI._split_destructive_skip
+    self_._normalize_slash_confirm_choice = AkramCodeCLI._normalize_slash_confirm_choice.__get__(
         self_, type(self_)
     )
-    self_._confirm_destructive_slash = HermesCLI._confirm_destructive_slash.__get__(
+    self_._confirm_destructive_slash = AkramCodeCLI._confirm_destructive_slash.__get__(
         self_, type(self_)
     )
-    self_._slash_handler = HermesCLI._slash_handler
-    self_._slash_metrics_surface = HermesCLI._slash_metrics_surface
-    self_._cmd_new = HermesCLI._cmd_new.__get__(self_, type(self_))
-    self_.process_command = HermesCLI.process_command.__get__(self_, type(self_))
+    self_._slash_handler = AkramCodeCLI._slash_handler
+    self_._slash_metrics_surface = AkramCodeCLI._slash_metrics_surface
+    self_._cmd_new = AkramCodeCLI._cmd_new.__get__(self_, type(self_))
+    self_.process_command = AkramCodeCLI.process_command.__get__(self_, type(self_))
 
     with patch(
         "cli.load_cli_config",

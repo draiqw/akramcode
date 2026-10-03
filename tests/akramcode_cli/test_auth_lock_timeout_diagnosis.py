@@ -52,7 +52,7 @@ def test_lock_timeout_without_a_holder_stays_silent_about_one(tmp_path, monkeypa
 
     message = str(excinfo.value)
     assert str(auth_path.with_suffix(".lock")) in message
-    assert "another hermes process" not in message  # no holder detected: no one to blame
+    assert "another akramcode process" not in message  # no holder detected: no one to blame
 
 
 @pytest.mark.skipif(os.name != "posix", reason="holder liveness probe is POSIX-only (os.kill sig 0)")

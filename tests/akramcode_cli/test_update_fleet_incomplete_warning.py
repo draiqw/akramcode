@@ -14,14 +14,14 @@ pytestmark = pytest.mark.platforms("linux")
 
 
 def test_launchd_labels_get_launchctl_hint(capsys):
-    _warn_incomplete_gateway_fleet_restart(["ai.hermes.gateway-merit-ops"])
+    _warn_incomplete_gateway_fleet_restart(["ai.akramcode.gateway-merit-ops"])
     out = capsys.readouterr().out
     assert "Update incomplete" in out
     assert "launchctl kickstart -k" in out
 
 
 def test_systemd_units_keep_systemctl_hint(capsys):
-    _warn_incomplete_gateway_fleet_restart(["hermes-gateway-coder"])
+    _warn_incomplete_gateway_fleet_restart(["akramcode-gateway-coder"])
     out = capsys.readouterr().out
     assert "systemctl" in out
     assert "launchctl" not in out

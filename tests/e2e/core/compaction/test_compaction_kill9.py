@@ -85,12 +85,12 @@ print("CHILD-FINISHED", result.status, flush=True)
 
 
 def _child_env(home: Path) -> dict:
-    # Probe hygiene: tmp HOME/HERMES_HOME, no provider keys. The in-test db guard detects pytest by
-    # process ancestry and would read this tmp $HOME/.hermes as the production root; the documented
+    # Probe hygiene: tmp HOME/AKRAMCODE_HOME, no provider keys. The in-test db guard detects pytest by
+    # process ancestry and would read this tmp $HOME/.akramcode as the production root; the documented
     # child-process escape hatch is safe because every path here lives under tmp_path.
     env = {k: v for k, v in os.environ.items() if not k.endswith("_API_KEY")}
-    env.update(HOME=str(home), HERMES_HOME=str(home / ".hermes"), PYTHONPATH=str(REPO), PYTHONUNBUFFERED="1",
-               HERMES_STATE_DB_GUARD_BYPASS="1")
+    env.update(HOME=str(home), AKRAMCODE_HOME=str(home / ".akramcode"), PYTHONPATH=str(REPO), PYTHONUNBUFFERED="1",
+               AKRAMCODE_STATE_DB_GUARD_BYPASS="1")
     return env
 
 
@@ -118,7 +118,7 @@ def _integrity(db_path: Path) -> str:
 def test_kill9_mid_compaction_leaves_state_consistent_and_resumable(make_scenario, provider, tmp_path, point):
     server, dispatch = provider
     home = tmp_path / "home"
-    sc = make_scenario("good", threshold_tokens=HIGH_THRESHOLD, name="home/.hermes")
+    sc = make_scenario("good", threshold_tokens=HIGH_THRESHOLD, name="home/.akramcode")
     specs = generate_transcript(41, 9, tmp_path / "work", kinds=("tools", "parallel", "chat"))
     for spec in specs[:6]:
         sc.run_turn(spec)

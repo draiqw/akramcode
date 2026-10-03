@@ -13,7 +13,7 @@ def add_accept_hooks_flag(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--accept-hooks", action="store_true", default=argparse.SUPPRESS,
         help="Auto-approve unseen shell hooks without a TTY prompt "
-            "(equivalent to HERMES_ACCEPT_HOOKS=1 / hooks_auto_accept: true).")
+            "(equivalent to AKRAMCODE_ACCEPT_HOOKS=1 / hooks_auto_accept: true).")
 
 
 def add_yes_flag(parser: argparse.ArgumentParser, help: str = "Skip confirmation prompt") -> None:

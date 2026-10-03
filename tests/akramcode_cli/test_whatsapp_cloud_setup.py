@@ -92,20 +92,20 @@ class TestWabaIdValidator:
 
 @pytest.fixture
 def isolated_home(tmp_path, monkeypatch):
-    """Redirect HERMES_HOME so save_env_value writes into a temp .env."""
+    """Redirect AKRAMCODE_HOME so save_env_value writes into a temp .env."""
     home = tmp_path / "home"
-    hermes = home / ".hermes"
-    hermes.mkdir(parents=True)
+    akramcode = home / ".akramcode"
+    akramcode.mkdir(parents=True)
     monkeypatch.setattr(Path, "home", lambda: home)
-    monkeypatch.setenv("HERMES_HOME", str(hermes))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode))
     for key in list(os.environ):
         if key.startswith("WHATSAPP_CLOUD_"):
             monkeypatch.delenv(key, raising=False)
-    return hermes
+    return akramcode
 
 
-def _env_value(hermes_home: Path, key: str) -> str | None:
-    env_file = hermes_home / ".env"
+def _env_value(akramcode_home: Path, key: str) -> str | None:
+    env_file = akramcode_home / ".env"
     if not env_file.exists():
         return None
     for line in env_file.read_text().splitlines():

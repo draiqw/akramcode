@@ -15,7 +15,7 @@ def test_stamp_uses_built_commit_even_with_dispatch_sha_and_refuses_mismatch(tmp
     repo.mkdir()
     for relative in ('scripts/write_install_stamp.py',
                      'akramcode_cli/__init__.py', 'akramcode_cli/update_channel.py', 'akramcode_cli/release_channels.py',
-                     'pm/paths.py', 'pm/environments.py', 'akramcode_cli/steward.py', 'hermes_constants.py'):
+                     'pm/paths.py', 'pm/environments.py', 'akramcode_cli/steward.py', 'akramcode_constants.py'):
         dest = repo / relative
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / relative, dest)
@@ -40,10 +40,10 @@ def test_stamp_uses_built_commit_even_with_dispatch_sha_and_refuses_mismatch(tmp
     git('commit', '-qm', 'feature')
     feature = git('rev-parse', 'HEAD')
     out = tmp_path / 'stamp.json'
-    env = {k: v for k, v in os.environ.items() if not k.startswith(('GITHUB_', 'HERMES_BUILD_', 'HERMES_PAYLOAD_'))}
+    env = {k: v for k, v in os.environ.items() if not k.startswith(('GITHUB_', 'AKRAMCODE_BUILD_', 'AKRAMCODE_PAYLOAD_'))}
     env.update({'GITHUB_SHA': main, 'GITHUB_REF_NAME': 'main',
-                'HERMES_BUILD_COMMIT': feature, 'HERMES_DESKTOP_VARIANT': 'bundled',
-                'HERMES_HOME': str(tmp_path / 'home')})
+                'AKRAMCODE_BUILD_COMMIT': feature, 'AKRAMCODE_DESKTOP_VARIANT': 'bundled',
+                'AKRAMCODE_HOME': str(tmp_path / 'home')})
     command = [sys.executable, '-I', '-S', str(repo / 'scripts/write_install_stamp.py'),
                '--output', str(out), '--base-version', '0.28.0', '--distance', '0',
                '--update-mechanism', 'app-installer']
@@ -67,10 +67,10 @@ def test_stamp_uses_built_commit_even_with_dispatch_sha_and_refuses_mismatch(tmp
         assert result.returncode != 0 and 'checkout' in result.stderr.lower()
         assert out.read_bytes() == before
     git('checkout', '-q', 'feature')
-    for extra in ({'HERMES_BUILD_COMMIT': feature[:8]}, {'HERMES_PAYLOAD_TAG': 'v1.2.3'},
-                  {'HERMES_BUILD_COMMIT': ' ' + feature}):
+    for extra in ({'AKRAMCODE_BUILD_COMMIT': feature[:8]}, {'AKRAMCODE_PAYLOAD_TAG': 'v1.2.3'},
+                  {'AKRAMCODE_BUILD_COMMIT': ' ' + feature}):
         assert run(override=extra).returncode != 0
         assert out.read_bytes() == before
-    result = run('--commit', feature, override={'HERMES_BUILD_COMMIT': '', 'HERMES_PAYLOAD_TAG': 'v1.2.3'})
+    result = run('--commit', feature, override={'AKRAMCODE_BUILD_COMMIT': '', 'AKRAMCODE_PAYLOAD_TAG': 'v1.2.3'})
     assert result.returncode == 0, result.stderr
     assert json.loads(out.read_text(encoding='utf-8'))['tag'] == 'v1.2.3'

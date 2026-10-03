@@ -1301,13 +1301,13 @@ def test_default_db_path_never_names_the_master_session_store(tmp_path, monkeypa
     is shared across profiles (one file at the install root) but is not the
     SessionDB file the root gateway owns.
     """
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".akramcode"
     profile_home = root / "profiles" / "bot1"
     profile_home.mkdir(parents=True)
 
-    monkeypatch.setenv("HERMES_HOME", str(profile_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(profile_home))
     from_profile = rooms.default_db_path()
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(root))
     from_root = rooms.default_db_path()
 
     assert from_profile == from_root, "one coordination file per install"

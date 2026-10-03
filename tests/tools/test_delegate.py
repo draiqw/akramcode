@@ -77,7 +77,7 @@ class TestStripBlockedTools(unittest.TestCase):
     def test_mixed_composite_is_subtracted_at_child_assembly(self):
         """A mixed platform bundle must not re-expose blocked leaf tools.
 
-        ``hermes-cli`` contains both allowed tools and every sensitive
+        ``akramcode-cli`` contains both allowed tools and every sensitive
         delegate tool, so it cannot be dropped wholesale. Child construction
         must instead pass exact one-tool deny toolsets to AIAgent, where
         model_tools applies them after resolving the composite.
@@ -85,7 +85,7 @@ class TestStripBlockedTools(unittest.TestCase):
         import model_tools
 
         parent = _make_mock_parent()
-        parent.enabled_toolsets = ["hermes-cli"]
+        parent.enabled_toolsets = ["akramcode-cli"]
         parent.disabled_toolsets = ["browser"]
 
         with patch("run_agent.AIAgent") as MockAgent:
@@ -130,7 +130,7 @@ class TestStripBlockedTools(unittest.TestCase):
         import model_tools
 
         parent = _make_mock_parent()
-        parent.enabled_toolsets = ["hermes-cli"]
+        parent.enabled_toolsets = ["akramcode-cli"]
         parent.disabled_toolsets = ["delegation", "browser"]
 
         with (
@@ -353,7 +353,7 @@ class TestDelegateTask(unittest.TestCase):
                 goal="Stay on chat completions",
                 context=None,
                 toolsets=None,
-                model="hermes-4-405b",
+                model="akramcode-4-405b",
                 max_iterations=10,
                 parent_agent=parent,
                 task_count=1,
@@ -361,14 +361,14 @@ class TestDelegateTask(unittest.TestCase):
 
             _, kwargs = MockAgent.call_args
             self.assertEqual(kwargs["provider"], "nous")
-            self.assertEqual(kwargs["model"], "hermes-4-405b")
+            self.assertEqual(kwargs["model"], "akramcode-4-405b")
             self.assertEqual(kwargs["api_mode"], "chat_completions")
 
         with patch("run_agent.AIAgent") as MockAgent:
             mock_child = MagicMock()
             MockAgent.return_value = mock_child
             parent.api_mode = "chat_completions"
-            parent.model = "hermes-4-405b"
+            parent.model = "akramcode-4-405b"
 
             _build_child_agent(
                 task_index=0,
@@ -1070,10 +1070,10 @@ class TestChildCredentialPoolResolution(unittest.TestCase):
     def test_named_custom_child_pool_follows_requested_provider_not_endpoint_order(self):
         """#45763 (salvage #89021): two named custom providers on one gateway URL keep separate pools; the child
         leases the pool of the identity it inherited, not the first entry registered for that URL."""
-        from hermes_constants import get_hermes_home
+        from akramcode_constants import get_akramcode_home
 
         url = "https://gateway.invalid/v1"
-        get_hermes_home().joinpath("config.yaml").write_text(
+        get_akramcode_home().joinpath("config.yaml").write_text(
             f"providers:\n  claude-ai:\n    api: {url}\n  open-ai:\n    api: {url}\n", encoding="utf-8",
         )
         parent = _make_mock_parent()

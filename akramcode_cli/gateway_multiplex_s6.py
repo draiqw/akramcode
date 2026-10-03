@@ -2,8 +2,8 @@
 
 Inside the official image every profile has an s6 slot (``/run/service/gateway-<profile>``). The
 container's boot (``akramcode_cli/container_boot.py``) registers every NAMED slot down and lets the
-root slot inherit their autostart intent; ``hermes gateway migrate --multiplex`` (and the hook
-``hermes update`` runs) must be able to do the same thing to a slot that is UP, from inside the
+root slot inherit their autostart intent; ``akramcode gateway migrate --multiplex`` (and the hook
+``akramcode update`` runs) must be able to do the same thing to a slot that is UP, from inside the
 running container, without a container restart. Both paths decide "which named intents fold into
 the root slot" through :func:`fold_named_slot_intent` so they can never disagree.
 """
@@ -36,7 +36,7 @@ def fold_named_slot_intent(default_prior_state: Optional[str],
 
     A named slot is never booted from its own intent (a started named slot IS a second gateway on
     this host); its ``running`` intent moves to the root slot, which is the process that serves it.
-    Without the fold an image only ever driven as ``hermes -p coder gateway start`` came up with
+    Without the fold an image only ever driven as ``akramcode -p coder gateway start`` came up with
     ZERO gateways: no root state, every named slot registered down, every action "registered".
     """
     folded = tuple(sorted(name for name, prior in named_states if prior in AUTOSTART_STATES))
@@ -52,7 +52,7 @@ def named_slot_name(profile: str) -> str:
 def running_named_slots(profiles: Sequence[str], manager=None) -> list[str]:
     """Named profiles whose s6 slot is UP right now — the only s6 state that is a second gateway.
 
-    A registered-down slot (what boot leaves behind) is a start target for ``hermes -p X gateway
+    A registered-down slot (what boot leaves behind) is a start target for ``akramcode -p X gateway
     start``, not a running gateway, and must never veto the multiplex default.
     """
     manager = manager or _manager()

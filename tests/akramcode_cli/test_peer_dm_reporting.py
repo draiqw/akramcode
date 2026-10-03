@@ -1,4 +1,4 @@
-"""What ``hermes peer dm`` tells the sender when the turn does not come back.
+"""What ``akramcode peer dm`` tells the sender when the turn does not come back.
 
 A peer DM is one synchronous ``POST /api/sessions/{id}/chat`` with a 600 s client timeout, and the
 receiving gateway runs the turn to completion whatever the client does. So a timeout while awaiting

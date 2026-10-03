@@ -1,6 +1,6 @@
 """Tests: plugin provenance reconciliation — the 2x2.
 
-Row-presence says "hermes installed this"; `.git`-presence cross-checks
+Row-presence says "akramcode installed this"; `.git`-presence cross-checks
 it. The reconciliation IS the disambiguation (settled 2026-09-03,
 plugin-auto-update plan Task 1):
   row+git   = git install         (updatable via the recorded source)

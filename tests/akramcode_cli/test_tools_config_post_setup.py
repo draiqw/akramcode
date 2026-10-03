@@ -53,7 +53,7 @@ def test_browser_setup_respects_provider_and_native_owner(monkeypatch, capsys, p
 
 @pytest.mark.parametrize("status", [200, 503])
 def test_camofox_setup_leaves_external_server_and_config_owned_by_user(monkeypatch, capsys, status):
-    from akramcode_cli.config import get_hermes_home
+    from akramcode_cli.config import get_akramcode_home
     from akramcode_cli.tools_config_post_setup import _POST_SETUP_READY
 
     class Health(BaseHTTPRequestHandler):
@@ -66,7 +66,7 @@ def test_camofox_setup_leaves_external_server_and_config_owned_by_user(monkeypat
         def log_message(self, format, *args):
             pass
 
-    config_path = get_hermes_home() / "config.yaml"
+    config_path = get_akramcode_home() / "config.yaml"
     config_path.write_text("browser:\n  cloud_provider: camofox\n", encoding="utf-8")
     before = config_path.read_bytes()
     with ThreadingHTTPServer(("127.0.0.1", 0), Health) as server:
@@ -75,7 +75,7 @@ def test_camofox_setup_leaves_external_server_and_config_owned_by_user(monkeypat
         monkeypatch.setenv("CAMOFOX_URL", f"http://127.0.0.1:{server.server_port}")
         try:
             with (
-                patch("hermes_constants.find_node_executable", return_value="/external/npm"),
+                patch("akramcode_constants.find_node_executable", return_value="/external/npm"),
                 patch("subprocess.run") as run,
                 patch("pm.ensure") as ensure,
             ):
@@ -110,21 +110,21 @@ def test_importable_sdk_does_not_bypass_pm_constraints(monkeypatch, capsys, key,
     output = capsys.readouterr().out
     if refused:
         assert "outside frozen feature set" in output
-        assert "Retry with: hermes tools" in output
-        assert "Restart Hermes" not in output
+        assert "Retry with: akramcode tools" in output
+        assert "Restart AkramCode" not in output
     else:
-        assert "Restart Hermes" in output
+        assert "Restart AkramCode" in output
 
 
 @pytest.mark.parametrize("failure", [None, "sdk", "admission"])
 def test_langfuse_setup_uses_plugin_admission_and_preserves_config_on_refusal(
     monkeypatch, tmp_path, capsys, failure,
 ):
-    from akramcode_cli.config import get_hermes_home, read_raw_config
+    from akramcode_cli.config import get_akramcode_home, read_raw_config
 
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(tmp_path / "runtime"))
+    monkeypatch.setenv("AKRAMCODE_RUNTIME_DIR", str(tmp_path / "runtime"))
     monkeypatch.setitem(sys.modules, "langfuse", ModuleType("langfuse"))
-    config_path = get_hermes_home() / "config.yaml"
+    config_path = get_akramcode_home() / "config.yaml"
     config_path.write_text(
         "plugins:\n  enabled: [other]\n  disabled: [langfuse, observability/langfuse]\n",
         encoding="utf-8",
@@ -160,7 +160,7 @@ def test_langfuse_setup_uses_plugin_admission_and_preserves_config_on_refusal(
         output = capsys.readouterr().out
         assert "refused" in output
         if failure == "sdk":
-            assert "Retry with: hermes tools" in output
+            assert "Retry with: akramcode tools" in output
     else:
         plugin_config = read_raw_config()["plugins"]
         assert set(plugin_config["enabled"]) == {"other", "observability/langfuse"}

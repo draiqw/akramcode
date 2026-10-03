@@ -16,7 +16,7 @@ import sys
 
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from tests.pm._fixtures import _wheel, isolated_python as isolated_python
 
@@ -142,7 +142,7 @@ def publish_plugins(world: PluginWorld, plugins: dict[str, list[str]]) -> Path:
 
 @pytest.fixture
 def boot(plugin_world, monkeypatch):
-    """``boot(environment)``: this test process imports from ``environment`` the way a Hermes process
+    """``boot(environment)``: this test process imports from ``environment`` the way a AkramCode process
     booted on it does. Adoption rewrites sys.path and PATH (monkeypatch restores both); modules
     imported from the world are forgotten afterwards, so a later test imports its own."""
     from pm.environments import site_packages, venv_bin_dir
@@ -164,12 +164,12 @@ def plugin_world(tmp_path, monkeypatch, isolated_python):
     world = PluginWorld(tmp_path)
     uv = shutil.which("uv")
     assert uv, "real uv is required for the plugin lifecycle"
-    for key in ("HERMES_MANAGED_MODE", "HERMES_INSTALL_ROOT", "VIRTUAL_ENV"):
+    for key in ("AKRAMCODE_MANAGED_MODE", "AKRAMCODE_INSTALL_ROOT", "VIRTUAL_ENV"):
         monkeypatch.delenv(key, raising=False)
-    for key, value in {"HOME": tmp_path, "USERPROFILE": tmp_path, "HERMES_HOME": world.home,
-                       "HERMES_RUNTIME_DIR": tmp_path / "store", "UV_CACHE_DIR": tmp_path / "cache",
+    for key, value in {"HOME": tmp_path, "USERPROFILE": tmp_path, "AKRAMCODE_HOME": world.home,
+                       "AKRAMCODE_RUNTIME_DIR": tmp_path / "store", "UV_CACHE_DIR": tmp_path / "cache",
                        "XDG_CONFIG_HOME": tmp_path / "config", "XDG_CONFIG_DIRS": tmp_path / "config",
-                       "HERMES_DISABLE_LAZY_INSTALLS": "1", "UV_OFFLINE": "1"}.items():
+                       "AKRAMCODE_DISABLE_LAZY_INSTALLS": "1", "UV_OFFLINE": "1"}.items():
         monkeypatch.setenv(key, str(value))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     monkeypatch.setattr(paths, "repo_root", lambda: world.core)

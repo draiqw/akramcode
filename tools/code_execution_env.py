@@ -18,10 +18,10 @@ logger = logging.getLogger("tools.code_execution_tool")
 _IS_WINDOWS = platform.system() == "Windows"
 
 # Scrub order: secret-substring block first; whatever is left must match a safe
-# prefix, the exact-name HERMES_ allowlist, or (Windows) an OS-essential name.
-# The broad "HERMES_" prefix is deliberately NOT safe — it leaked config vars
-# without a secret substring (HERMES_BASE_URL, HERMES_KANBAN_DB, *_WEBHOOK).
-# HERMES_RPC_SOCKET / HERMES_RPC_DIR / TZ / HOME are injected after scrubbing.
+# prefix, the exact-name AKRAMCODE_ allowlist, or (Windows) an OS-essential name.
+# The broad "AKRAMCODE_" prefix is deliberately NOT safe — it leaked config vars
+# without a secret substring (AKRAMCODE_BASE_URL, AKRAMCODE_KANBAN_DB, *_WEBHOOK).
+# AKRAMCODE_RPC_SOCKET / AKRAMCODE_RPC_DIR / TZ / HOME are injected after scrubbing.
 _SAFE_ENV_PREFIXES = ("PATH", "HOME", "USER", "LANG", "LC_", "TERM", "TMPDIR", "TMP", "TEMP", "SHELL",
                       "LOGNAME", "XDG_", "PYTHONPATH", "VIRTUAL_ENV", "CONDA")
 # "PASS" is intentionally absent: it false-positives on BYPASS_CACHE /
@@ -30,11 +30,11 @@ _SECRET_SUBSTRINGS = ("KEY", "TOKEN", "SECRET", "PASSWORD", "CREDENTIAL", "PASSW
                       "WEBHOOK", "CREDS", "BEARER", "APIKEY")
 
 # Non-secret runtime-location flags that repo-root modules a sandbox script
-# imports may read at import time. HERMES_DELEGATED_CHILD_CONTEXT must ride
-# along or a child that imports Hermes code loses the Kanban mutation guard
-# while still inheriting HERMES_HOME.
-_HERMES_CHILD_ALLOWED = frozenset({
-    "HERMES_HOME", "HERMES_PROFILE", "HERMES_CONFIG", "HERMES_ENV", "HERMES_DELEGATED_CHILD_CONTEXT",
+# imports may read at import time. AKRAMCODE_DELEGATED_CHILD_CONTEXT must ride
+# along or a child that imports AkramCode code loses the Kanban mutation guard
+# while still inheriting AKRAMCODE_HOME.
+_AKRAMCODE_CHILD_ALLOWED = frozenset({
+    "AKRAMCODE_HOME", "AKRAMCODE_PROFILE", "AKRAMCODE_CONFIG", "AKRAMCODE_ENV", "AKRAMCODE_DELEGATED_CHILD_CONTEXT",
 })
 
 # Windows-only: without these the CRT itself fails — socket.socket() raises
@@ -55,7 +55,7 @@ def _scrub_child_env(source_env, is_passthrough=None, is_windows=None):
     Rules, in order: (1) passthrough vars (skill/config-declared) resolve
     through the active profile secret scope — an absent scoped value is
     omitted; (2) secret-substring names are blocked; (3) safe prefixes pass;
-    (4) operational HERMES_* pass by exact name; (5) on Windows the
+    (4) operational AKRAMCODE_* pass by exact name; (5) on Windows the
     OS-essential allowlist passes by exact name.
     """
     try:
@@ -69,9 +69,9 @@ def _scrub_child_env(source_env, is_passthrough=None, is_windows=None):
     if is_windows is None:
         is_windows = _IS_WINDOWS
     scrubbed = {}
-    # Non-secret HERMES_* vars no allowlist admits are dropped on purpose; a script importing a
+    # Non-secret AKRAMCODE_* vars no allowlist admits are dropped on purpose; a script importing a
     # repo module that reads one would see it silently unset — log the drop, point at the opt-in.
-    _dropped_hermes = []
+    _dropped_akramcode = []
     for k, v in source_env.items():
         if is_passthrough(k):
             resolved = resolve_passthrough_value(k, v)
@@ -81,21 +81,21 @@ def _scrub_child_env(source_env, is_passthrough=None, is_windows=None):
         if any(s in k.upper() for s in _SECRET_SUBSTRINGS):
             continue
         if (any(k.startswith(p) for p in _SAFE_ENV_PREFIXES)
-                or k in _HERMES_CHILD_ALLOWED
+                or k in _AKRAMCODE_CHILD_ALLOWED
                 or (is_windows and k.upper() in _WINDOWS_ESSENTIAL_ENV_VARS)):
             scrubbed[k] = v
-        elif k.startswith("HERMES_"):
-            _dropped_hermes.append(k)
+        elif k.startswith("AKRAMCODE_"):
+            _dropped_akramcode.append(k)
     # Declared names only the bound profile scope holds (a routed profile's own .env / sources
     # never enter the process env) — the loop above sees only names ``source_env`` carries.
     scrubbed.update((k, v) for k, v in scoped_passthrough_additions(scrubbed).items() if is_passthrough(k))
-    if _dropped_hermes:
+    if _dropped_akramcode:
         logger.debug(
-            "execute_code: dropped %d non-allowlisted HERMES_* var(s) from the "
+            "execute_code: dropped %d non-allowlisted AKRAMCODE_* var(s) from the "
             "sandbox child env (%s). This is intentional hardening (#27303); if "
             "a sandbox script legitimately needs one, declare it via "
             "env_passthrough in the skill/config so it passes by explicit opt-in.",
-            len(_dropped_hermes), ", ".join(sorted(_dropped_hermes)),
+            len(_dropped_akramcode), ", ".join(sorted(_dropped_akramcode)),
         )
     # delegate_task children are marked by a ContextVar, not os.environ, and the sandbox crosses
     # a process boundary: strip dispatcher-owned Kanban vars AFTER the scrub so an explicit
@@ -105,9 +105,9 @@ def _scrub_child_env(source_env, is_passthrough=None, is_windows=None):
     )
     scoped = delegated_child_subprocess_env(source_env)
     # Preserve location only when carrying the descendant fence, not for arbitrary
-    # non-allowlisted HERMES_* values in otherwise ordinary execution environments.
+    # non-allowlisted AKRAMCODE_* values in otherwise ordinary execution environments.
     if scoped.get(DELEGATED_CHILD_ENV_MARKER):
-        for key in (DELEGATED_CHILD_ENV_MARKER, "HERMES_KANBAN_DB", "HERMES_KANBAN_BOARD"):
+        for key in (DELEGATED_CHILD_ENV_MARKER, "AKRAMCODE_KANBAN_DB", "AKRAMCODE_KANBAN_BOARD"):
             if key in scoped:
                 scrubbed[key] = scoped[key]
     return delegated_child_subprocess_env(scrubbed)
@@ -116,16 +116,16 @@ def _scrub_child_env(source_env, is_passthrough=None, is_windows=None):
 def _build_child_env(*, rpc_endpoint: str, rpc_token: str, tmpdir: str,
                      child_python: str) -> Dict[str, str]:
     """Build the scrubbed child environment both execution paths share."""
-    from akramcode_constants import apply_scratch_tmp_env, apply_subprocess_home_env, get_hermes_home_override
+    from akramcode_constants import apply_scratch_tmp_env, apply_subprocess_home_env, get_akramcode_home_override
     child_env = _scrub_child_env(os.environ)
-    child_env["HERMES_RPC_SOCKET"] = rpc_endpoint
-    child_env["HERMES_RPC_TOKEN"] = rpc_token
+    child_env["AKRAMCODE_RPC_SOCKET"] = rpc_endpoint
+    child_env["AKRAMCODE_RPC_TOKEN"] = rpc_token
     child_env["PYTHONDONTWRITEBYTECODE"] = "1"
     # Force UTF-8 stdio and default file encoding: on Windows sys.stdout is bound to the console
     # code page (cp1252) and print("→") raises; harmless under a C/POSIX locale (containers).
     child_env["PYTHONIOENCODING"] = "utf-8"
     child_env["PYTHONUTF8"] = "1"
-    # Only TZ reaches the child; HERMES_TIMEZONE is an internal setting (and under the multiplexed
+    # Only TZ reaches the child; AKRAMCODE_TIMEZONE is an internal setting (and under the multiplexed
     # gateway holds only the default profile's value — akram_core.akramcode_time resolves the routed profile's).
     from akram_core.akramcode_time import get_timezone_name
 
@@ -134,27 +134,27 @@ def _build_child_env(*, rpc_endpoint: str, rpc_token: str, tmpdir: str,
     # preserves the OS-configured local timezone for the child process.
     if _tz_name and not _IS_WINDOWS:
         child_env["TZ"] = _tz_name
-    child_env.pop("HERMES_TIMEZONE", None)
+    child_env.pop("AKRAMCODE_TIMEZONE", None)
     apply_subprocess_home_env(child_env)
     # Multiplexed gateway/Desktop (#110303): the server process env carries the machine-default
-    # HERMES_HOME, but this turn runs under a per-profile override (ContextVar bound per turn).
+    # AKRAMCODE_HOME, but this turn runs under a per-profile override (ContextVar bound per turn).
     # The scrub above passed the stale default through; rewrite it so skill scripts see the
     # active profile's home — the same per-turn rewrite apply_subprocess_home_env does for HOME.
     # No override (dedicated per-profile process) → leave the inherited value untouched.
-    _home_override = get_hermes_home_override()
+    _home_override = get_akramcode_home_override()
     if _home_override:
-        child_env["HERMES_HOME"] = _home_override
+        child_env["AKRAMCODE_HOME"] = _home_override
         apply_scratch_tmp_env(child_env)  # TMPDIR follows the routed home, like HOME does
-    # PYTHONPATH: the staging dir (hermes_tools.py) must always be importable even when project
-    # mode changes CWD. Hermes's root is added ONLY when the child runs in Hermes's Python env —
-    # exposing Hermes's site-packages to an external interpreter can mix incompatible compiled
-    # extensions (3.12 NumPy under a 3.9 venv). Inherited Hermes-owned entries are stripped first.
-    # Before re-injecting PYTHONPATH, strip Hermes-owned entries that leaked through _scrub_child_env
+    # PYTHONPATH: the staging dir (akramcode_tools.py) must always be importable even when project
+    # mode changes CWD. AkramCode's root is added ONLY when the child runs in AkramCode's Python env —
+    # exposing AkramCode's site-packages to an external interpreter can mix incompatible compiled
+    # extensions (3.12 NumPy under a 3.9 venv). Inherited AkramCode-owned entries are stripped first.
+    # Before re-injecting PYTHONPATH, strip AkramCode-owned entries that leaked through _scrub_child_env
     # (PYTHONPATH is in _SAFE_ENV_PREFIXES so it passes the scrub). External project interpreters
-    # must not inherit Hermes dependencies (#74817). PM's own interpreter, however, can be a
+    # must not inherit AkramCode dependencies (#74817). PM's own interpreter, however, can be a
     # bare bundled Python whose dependencies live in the selected generation, not sys.prefix.
     from tools.environments.local_pythonpath import (
-        _strip_hermes_owned_pythonpath, _validated_runtime_venv, _same_path,
+        _strip_akramcode_owned_pythonpath, _validated_runtime_venv, _same_path,
     )
     _runtime_path = None
     if child_python == sys.executable:
@@ -168,18 +168,18 @@ def _build_child_env(*, rpc_endpoint: str, rpc_token: str, tmpdir: str,
             if any(_same_path(Path(entry), candidate)
                    for entry in child_env.get("PYTHONPATH", "").split(os.pathsep) if entry):
                 _runtime_path = str(candidate)
-    _strip_hermes_owned_pythonpath(child_env)
+    _strip_akramcode_owned_pythonpath(child_env)
     _existing_pp = child_env.get("PYTHONPATH", "")
     _pp_parts = [tmpdir]
     if _runtime_path is not None:
         _pp_parts.append(_runtime_path)
-    if _uses_hermes_python_environment(child_python):
+    if _uses_akramcode_python_environment(child_python):
         _pp_parts.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     elif child_python not in _external_env_logged:
         # Surface once per interpreter so "import akramcode_constants fails" is diagnosable.
         _external_env_logged.add(child_python)
-        logger.info("execute_code: child interpreter %s is outside the Hermes "
-                    "environment; hermes root omitted from PYTHONPATH", child_python)
+        logger.info("execute_code: child interpreter %s is outside the AkramCode "
+                    "environment; akramcode root omitted from PYTHONPATH", child_python)
     if _existing_pp:
         _pp_parts.append(_existing_pp)
     child_env["PYTHONPATH"] = os.pathsep.join(_pp_parts)
@@ -192,7 +192,7 @@ _PROBE_CACHE_MAX = 32
 _usable_python_cache: dict = {}
 _python_prefix_cache: dict = {}
 
-# Interpreter paths already reported as outside the Hermes environment.
+# Interpreter paths already reported as outside the AkramCode environment.
 _external_env_logged: set = set()
 
 
@@ -242,10 +242,10 @@ def _python_environment_prefix(python_path: str) -> str:
     return ""
 
 
-def _uses_hermes_python_environment(python_path: str) -> bool:
-    """Whether *python_path* belongs to Hermes's active Python environment. Short-circuits when
+def _uses_akramcode_python_environment(python_path: str) -> bool:
+    """Whether *python_path* belongs to AkramCode's active Python environment. Short-circuits when
     it IS the running interpreter (by path or realpath — covers ``uv run`` venvs) so no probe
-    runs on the default strict path and a flaky probe can never drop the hermes root."""
+    runs on the default strict path and a flaky probe can never drop the akramcode root."""
     if python_path == sys.executable or os.path.realpath(python_path) == os.path.realpath(sys.executable):
         return True
     return _python_environment_prefix(python_path) == os.path.realpath(sys.prefix)

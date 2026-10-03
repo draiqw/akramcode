@@ -26,9 +26,9 @@ def client(tmp_path, monkeypatch):
     from akramcode_state import SessionDB
 
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     monkeypatch.setattr("akramcode_state.DEFAULT_DB_PATH", home / "state.db")
 
     db = SessionDB(home / "state.db")

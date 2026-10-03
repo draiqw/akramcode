@@ -1,4 +1,4 @@
-"""Plugin catalog — curated, Nous-approved Hermes plugins shipped with the repo.
+"""Plugin catalog — curated, Nous-approved AkramCode plugins shipped with the repo.
 
 Mirrors the ``optional-mcps/`` MCP-catalog pattern: one YAML file per entry under the in-tree
 ``plugin-catalog/`` directory, pinned to an exact 40-character commit SHA. Presence in the directory IS
@@ -8,7 +8,7 @@ the human-merged approval gate; SHA bumps are new, re-reviewed PRs; ``removed.ya
 
 Live refresh: the docs build publishes the same data as ONE JSON document
 (``website/scripts/extract-plugins.py`` → ``/docs/api/plugin-catalog.json``, like the skills index), so
-an installed Hermes sees new entries and removals without updating. A fetch failure reuses the last valid
+an installed AkramCode sees new entries and removals without updating. A fetch failure reuses the last valid
 cached copy regardless of age, then falls back to the in-tree copy when no valid cache exists.
 """
 
@@ -31,7 +31,7 @@ CATALOG_TIERS = ("official", "community")
 # Browse taxonomy for the catalog page / picker. Entries without one land on the Desktop shelf
 # (the common case for community submissions); "general" is for plugins that fit no shelf.
 CATALOG_CATEGORIES = ("desktop", "memory", "platform", "web", "tools", "voice", "automation", "models", "general")
-LIVE_CATALOG_URL = "https://hermes-agent.nousresearch.com/docs/api/plugin-catalog.json"
+LIVE_CATALOG_URL = "https://akramcode-agent.nousresearch.com/docs/api/plugin-catalog.json"
 LIVE_CATALOG_TTL_SECONDS = 6 * 60 * 60
 # Offline pins expire, but cached removals remain a permanent kill list.
 LIVE_CATALOG_MAX_STALE_SECONDS = 24 * 60 * 60
@@ -80,7 +80,7 @@ class PluginCatalogEntry:
     maintainer: str
     tier: str = "community"
     category: str = "desktop"
-    requires_hermes: str = ""
+    requires_akramcode: str = ""
     subdir: str = ""
     docs_url: str = ""
     version: str = ""            # human label for the pinned sha ("1.4.0"); cosmetic, never parsed
@@ -103,7 +103,7 @@ class PluginCatalogEntry:
         return {
             "name": self.name, "repo": self.repo, "sha": self.sha, "description": self.description,
             "maintainer": self.maintainer, "tier": self.tier, "category": self.category,
-            "requires_hermes": self.requires_hermes,
+            "requires_akramcode": self.requires_akramcode,
             "subdir": self.subdir, "docs_url": self.docs_url, "version": self.version, "image": self.image,
             "screenshots": list(self.screenshots), "readme": self.readme,
             "platforms": list(self.platforms), "title": self.title, "onboarding": self.onboarding,
@@ -164,7 +164,7 @@ def entry_from_mapping(data: Any, label: str) -> Optional[PluginCatalogEntry]:
         name=name, repo=repo, sha=sha,
         description=str(data.get("description") or "").strip(),
         maintainer=str(data.get("maintainer") or "").strip(), tier=tier, category=category,
-        requires_hermes=str(data.get("requires_hermes") or "").strip(),
+        requires_akramcode=str(data.get("requires_akramcode") or "").strip(),
         subdir=str(data.get("subdir") or "").strip(), docs_url=str(data.get("docs_url") or "").strip(),
         version=version, image=image, screenshots=screenshots, readme=data.get("readme") is not False,
         platforms=_str_list(data.get("platforms")),
@@ -308,14 +308,14 @@ def match_removed(
 # ── Live catalog ─────────────────────────────────────────────────────────────
 
 def _live_cache_path() -> Path:
-    from akramcode_constants import get_hermes_home
-    return get_hermes_home() / "cache" / "plugin-catalog.json"
+    from akramcode_constants import get_akramcode_home
+    return get_akramcode_home() / "cache" / "plugin-catalog.json"
 
 
 def invalidate_live_cache_for_home(home: Path) -> None:
     """Best-effort removal of the cached live catalog under *home* (any profile's home).
 
-    ``hermes update`` drops it for every profile after the checkout changes: a snapshot fetched
+    ``akramcode update`` drops it for every profile after the checkout changes: a snapshot fetched
     before the bump would otherwise out-vote the newer in-tree catalog (pins the update just
     changed, entries it just added) for the rest of :data:`LIVE_CATALOG_TTL_SECONDS` (#119340).
     The next :func:`fetch_live_catalog` re-fetches the published doc, or falls back to the
@@ -352,7 +352,7 @@ def _stale_live_cache(cache: Path) -> Optional[Dict[str, Any]]:
 
 def fetch_live_catalog(*, force: bool = False) -> Optional[Dict[str, Any]]:
     """The published ``plugin-catalog.json`` (``{"entries": [...], "removed": [...]}``), cached under
-    ``HERMES_HOME/cache`` for :data:`LIVE_CATALOG_TTL_SECONDS`. ``None`` on ANY failure — callers fall
+    ``AKRAMCODE_HOME/cache`` for :data:`LIVE_CATALOG_TTL_SECONDS`. ``None`` on ANY failure — callers fall
     back to the in-tree catalog. A failed network attempt is remembered for
     :data:`LIVE_CATALOG_FAILURE_TTL_SECONDS` so a dead host costs one timeout per TTL window, not one
     per call (``force`` bypasses both caches)."""
@@ -367,7 +367,7 @@ def fetch_live_catalog(*, force: bool = False) -> Optional[Dict[str, Any]]:
         return _stale_live_cache(cache)
     try:
         import httpx
-        from akramcode_constants import mkdir_under_hermes_home
+        from akramcode_constants import mkdir_under_akramcode_home
         from utils import atomic_write_text
 
         resp = httpx.get(LIVE_CATALOG_URL, timeout=_REQUEST_TIMEOUT, follow_redirects=True)
@@ -377,7 +377,7 @@ def fetch_live_catalog(*, force: bool = False) -> Optional[Dict[str, Any]]:
         data = resp.json()
         if not isinstance(data, dict) or not isinstance(data.get("entries"), list):
             raise ValueError("unexpected live catalog payload")
-        mkdir_under_hermes_home(cache.parent)
+        mkdir_under_akramcode_home(cache.parent)
         # Atomic: a concurrent reader (gateway, TUI, a second CLI) must never see a half-written
         # document, which would read as a fetch failure and start its own 60 s failure window.
         atomic_write_text(cache, json.dumps(data), tmp_prefix=f"{cache.name}.tmp-")
@@ -395,7 +395,7 @@ def in_tree_catalog_time() -> Optional[float]:
     """Commit time (epoch) of the last change to this checkout's ``plugin-catalog/``, or ``None`` when
     the install is not a git checkout (a release/pip install cannot be newer than the published doc).
     On a git checkout whose path history is unreadable without network — the treeless ``tree:0`` layout
-    ``hermes update`` produces — the newest checked-out catalog file's mtime stands in for it, so a
+    ``akramcode update`` produces — the newest checked-out catalog file's mtime stands in for it, so a
     freshly updated checkout still outranks a doc fetched before the bump. Resolved once per process."""
     global _in_tree_catalog_time
     if _in_tree_catalog_time != -1.0:
@@ -418,7 +418,7 @@ def in_tree_catalog_time() -> Optional[float]:
         if resolved is None:
             # "History unreadable without network" must not collapse into "not a git checkout":
             # ``None`` feeds the frozen-copy rule that defers to the live doc, which would let a
-            # cache fetched before ``hermes update`` re-pin the old sha on exactly the installs
+            # cache fetched before ``akramcode update`` re-pin the old sha on exactly the installs
             # that just bumped it. A treeless clone still has its checked-out files — only the
             # historical trees are missing — and their mtime dates the checkout that wrote them.
             resolved = _catalog_worktree_mtime()
@@ -468,7 +468,7 @@ def _prefer_in_tree_entry(tree: PluginCatalogEntry, live: PluginCatalogEntry, tr
 
 def load_catalog_live() -> List[PluginCatalogEntry]:
     """Entries from the live (or cached) catalog, else the in-tree catalog. When both name an entry at
-    different pins the NEWER source supplies it — right after ``hermes update`` bumps an in-tree pin,
+    different pins the NEWER source supplies it — right after ``akramcode update`` bumps an in-tree pin,
     a cache fetched before the bump must not re-install the old one (see :func:`_prefer_in_tree_entry`)."""
     data = fetch_live_catalog()
     if data is None:
@@ -523,8 +523,8 @@ def entry_capability_summary(entry: PluginCatalogEntry) -> str:
     bits.append(f"This plugin {'; '.join(parts) if parts else 'declares no tools, hooks, middleware, or env vars'}.")
     if entry.platforms:
         bits.append(f"Platforms: {', '.join(entry.platforms)}.")
-    if entry.requires_hermes:
-        bits.append(f"Requires Hermes {entry.requires_hermes}.")
+    if entry.requires_akramcode:
+        bits.append(f"Requires AkramCode {entry.requires_akramcode}.")
     if entry.known_issues:
         # #124058: informational — the catalog documents traps (unsupported
         # install-method/mode combinations); surface them at install prompts

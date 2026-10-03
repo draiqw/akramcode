@@ -1,4 +1,4 @@
-"""Backup and import commands for hermes CLI."""
+"""Backup and import commands for akramcode CLI."""
 
 import json
 import logging
@@ -18,8 +18,8 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from akramcode_constants import (
-    LOCAL_RUNTIME_ROOT_DIRS, _get_platform_default_hermes_home, get_default_hermes_root, get_hermes_home,
-    display_hermes_home,
+    LOCAL_RUNTIME_ROOT_DIRS, _get_platform_default_akramcode_home, get_default_akramcode_root, get_akramcode_home,
+    display_akramcode_home,
 )
 from akramcode_state.dbfile import RETIRED_GENERATION_DIR_SUFFIX
 from akramcode_state.holders import read_only_db_uri
@@ -50,25 +50,25 @@ def _foreign_db_holder_pids(db_path: Path) -> Optional[List[int]]:
 
 # --- Exclusion rules ---
 
-# Where ``hermes backup --quick`` / ``/snapshot`` / the pre-update safety net write state
+# Where ``akramcode backup --quick`` / ``/snapshot`` / the pre-update safety net write state
 # snapshots (see ``create_quick_snapshot``); defined here because the exclusion set needs it.
 _QUICK_SNAPSHOTS_DIR = "state-snapshots"
 
 
 def _snapshot_recovery_hint() -> str:
-    """How to restore a state snapshot. There is no `hermes snapshot` subcommand — only the /snapshot
-    slash command inside a `hermes` session (akramcode_cli/commands.py)."""
-    return ("To restore a newer snapshot, start `hermes` in a terminal and run `/snapshot list`, then "
+    """How to restore a state snapshot. There is no `akramcode snapshot` subcommand — only the /snapshot
+    slash command inside a `akramcode` session (akramcode_cli/commands.py)."""
+    return ("To restore a newer snapshot, start `akramcode` in a terminal and run `/snapshot list`, then "
             "`/snapshot restore <id>` (CLI only).")
 
-# Directory names to skip (matched against each path component). ``hermes-agent`` only matches at
-# the root (``_should_exclude``) so skill dirs like ``skills/.../hermes-agent/`` survive. The
-# dependency/cache entries matter: one plugin venv or pip/uv cache under HERMES_HOME walked
+# Directory names to skip (matched against each path component). ``akramcode-agent`` only matches at
+# the root (``_should_exclude``) so skill dirs like ``skills/.../akramcode-agent/`` survive. The
+# dependency/cache entries matter: one plugin venv or pip/uv cache under AKRAMCODE_HOME walked
 # file-by-file balloons a backup to hundreds of thousands of entries ("backup stuck for days").
 # Mostly mirrors ``agent.skill_utils.EXCLUDED_SKILL_DIRS``; ``.cache`` is backup-only. ``.archive``
 # is deliberately NOT excluded: the curator's ``skills/.archive/`` holds restorable user skills.
 _EXCLUDED_DIRS = {
-    "hermes-agent",     # the codebase repo — re-clone instead
+    "akramcode-agent",     # the codebase repo — re-clone instead
     "__pycache__",      # bytecode caches — regenerated on import
     ".git",             # nested git dirs (profiles shouldn't have these, but safety)
     "node_modules",     # js deps — reinstalled on demand
@@ -87,7 +87,7 @@ _EXCLUDED_DIRS = {
     ".cache", ".tox", ".nox", ".pytest_cache", ".mypy_cache", ".ruff_cache",
 }
 
-# Hermes-managed runtime downloads are regenerable. Match only profile roots:
+# AkramCode-managed runtime downloads are regenerable. Match only profile roots:
 # a deeper directory of the same name (such as a skill's models/) is user data.
 _EXCLUDED_ROOT_DIRS = LOCAL_RUNTIME_ROOT_DIRS | (PM_RUNTIME_ROOT_DIRS - {"cache"})
 
@@ -135,7 +135,7 @@ _EXCLUDED_PREFIXES = (
     f"state.db{RETIRED_GENERATION_DIR_SUFFIX}",
 )
 
-# Files ``hermes import`` must never overwrite, matched by basename so root and named profiles are
+# Files ``akramcode import`` must never overwrite, matched by basename so root and named profiles are
 # both covered. They hold runtime state namespaced to the SOURCE machine: ``gateway_state.json``
 # drives the container-boot reconciler (a foreign value leaves the gateway stuck "starting" and
 # disconnected from the Nous portal); PID/lock/registry files reference source PIDs. Mirrors
@@ -160,14 +160,14 @@ _ZIP_MEMBER_READ_ERRORS: tuple[type[BaseException], ...] = (
 # excluded browser-profile/ snapshot) but must come back owner-only.
 _SECRET_FILE_NAMES = {".env", "auth.json", "state.db", "vault.key", "vault.json.enc"}
 
-# Reserved archive subtree for memory-provider state OUTSIDE HERMES_HOME (e.g. ~/.honcho, via
+# Reserved archive subtree for memory-provider state OUTSIDE AKRAMCODE_HOME (e.g. ~/.honcho, via
 # MemoryProvider.backup_paths()), stored and restored relative to the user's home; paths not
 # under home are skipped.
 _EXTERNAL_PREFIX = "_external/"
 
 
 class BackupInProgressError(RuntimeError):
-    """Raised when another process already owns the Hermes backup slot."""
+    """Raised when another process already owns the AkramCode backup slot."""
 
 
 class _SQLiteSnapshotError(RuntimeError):
@@ -175,9 +175,9 @@ class _SQLiteSnapshotError(RuntimeError):
 
 
 @contextmanager
-def _backup_operation_lock(hermes_home: Path, timeout_seconds: float = 0.25):
+def _backup_operation_lock(akramcode_home: Path, timeout_seconds: float = 0.25):
     """Acquire one cross-process backup slot for full and quick snapshots."""
-    lock_path = hermes_home / ".backup.lock"
+    lock_path = akramcode_home / ".backup.lock"
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     handle = lock_path.open("a+b")
     acquired = False
@@ -203,7 +203,7 @@ def _backup_operation_lock(hermes_home: Path, timeout_seconds: float = 0.25):
                 acquired = True
             except OSError:
                 if time.monotonic() >= deadline:
-                    raise BackupInProgressError("another Hermes backup is already running")
+                    raise BackupInProgressError("another AkramCode backup is already running")
                 time.sleep(0.05)
         yield
     finally:
@@ -308,30 +308,30 @@ def _is_link_path(path: Path) -> bool:
 
 
 def _should_exclude(rel_path: Path) -> bool:
-    """Return True if *rel_path* (relative to hermes root) should be skipped."""
+    """Return True if *rel_path* (relative to akramcode root) should be skipped."""
     parts = rel_path.parts
     if _in_excluded_root_dir(rel_path):
         return True
-    # ``hermes-agent`` only matches at the root level; nested same-named dirs are preserved.
-    if any(p in _EXCLUDED_DIRS and (p != "hermes-agent" or p == parts[0]) for p in parts):
+    # ``akramcode-agent`` only matches at the root level; nested same-named dirs are preserved.
+    if any(p in _EXCLUDED_DIRS and (p != "akramcode-agent" or p == parts[0]) for p in parts):
         return True
     name = rel_path.name
     return name in _EXCLUDED_NAMES or name.startswith(_EXCLUDED_PREFIXES) or name.endswith(_EXCLUDED_SUFFIXES)
 
 
-def _iter_backup_files(hermes_root: Path, out_path: Path, skipped_dirs: Optional[set] = None):
+def _iter_backup_files(akramcode_root: Path, out_path: Path, skipped_dirs: Optional[set] = None):
     """Yield ``(abs_path, rel_path)`` for every file a full backup should hold.
 
     The one owner of the walk policy (directory pruning so os.walk never descends a multi-GB
-    excluded tree, the root-only ``hermes-agent`` carve-out, root runtime trees, per-file rules),
-    shared by ``hermes backup`` and the pre-update path so they can never drift.
+    excluded tree, the root-only ``akramcode-agent`` carve-out, root runtime trees, per-file rules),
+    shared by ``akramcode backup`` and the pre-update path so they can never drift.
     """
-    for dirpath, dirnames, filenames in os.walk(hermes_root, followlinks=False):
-        rel_dir = Path(dirpath).relative_to(hermes_root)
+    for dirpath, dirnames, filenames in os.walk(akramcode_root, followlinks=False):
+        rel_dir = Path(dirpath).relative_to(akramcode_root)
         is_root = rel_dir == Path(".")
         kept = [
             d for d in dirnames
-            if (d not in _EXCLUDED_DIRS or (d == "hermes-agent" and not is_root))
+            if (d not in _EXCLUDED_DIRS or (d == "akramcode-agent" and not is_root))
             and not _in_excluded_root_dir(rel_dir / d)]
         if skipped_dirs is not None:
             skipped_dirs.update(str(rel_dir / d) for d in set(dirnames) - set(kept))
@@ -339,9 +339,9 @@ def _iter_backup_files(hermes_root: Path, out_path: Path, skipped_dirs: Optional
         dirnames[:] = [name for name in kept if not _is_link_path(Path(dirpath) / name)]
         for fname in filenames:
             rel = rel_dir / fname
-            fpath = hermes_root / rel
+            fpath = akramcode_root / rel
             # zipfile.write() follows file symlinks, so skip links before any archive write can
-            # copy data from outside HERMES_HOME; never archive the output zip into itself.
+            # copy data from outside AKRAMCODE_HOME; never archive the output zip into itself.
             if _should_exclude(rel):
                 continue
             if _is_non_regular_path(fpath):
@@ -394,7 +394,7 @@ def is_zeroed_sqlite_file(path: Path, *, probe_bytes: int = 100, force: bool = F
 _SQLITE_HEADER = b"SQLite format 3\0"
 
 # Above this size ``PRAGMA integrity_check`` (walks every b-tree page — minutes of pegged CPU on a
-# 30 GB state.db, reading as a hung ``hermes update``) is replaced by the O(1) header+schema probe.
+# 30 GB state.db, reading as a hung ``akramcode update``) is replaced by the O(1) header+schema probe.
 # Default ceiling above which ``PRAGMA integrity_check`` is skipped in favour of the (O(1)) header +
 # structural probe. Sessions databases in the tens of GB are normal for heavy users, so the size-unbounded
 # check is never an acceptable default on the update path. See #70553.
@@ -540,7 +540,7 @@ def _print_capped(header: str, lines: List[str], indent: str) -> None:
 
 # --- Backup ---
 
-_RUN_BACKUP_PREFIX = "hermes-backup-"
+_RUN_BACKUP_PREFIX = "akramcode-backup-"
 
 
 def _resolve_backup_output_path(output: Optional[str]) -> Path:
@@ -584,35 +584,35 @@ def _collect_external_entries() -> tuple[list[tuple[Path, str]], list[str]]:
 
 
 def run_backup(args) -> bool:
-    """Create a zip backup of the Hermes home directory.
+    """Create a zip backup of the AkramCode home directory.
 
     True when every selected file landed in the archive (or there was nothing to back up); False
     when the zip was written but is incomplete — it is kept so the rest can still be restored, and
     the caller turns False into exit status 1 so a cron/systemd timer never publishes a "successful"
     archive that is missing state.db. Hard failures keep raising ``SystemExit``.
     """
-    hermes_root = get_default_hermes_root()
+    akramcode_root = get_default_akramcode_root()
 
-    if not hermes_root.is_dir():
-        print(f"Error: Hermes home directory not found at {hermes_root}")
+    if not akramcode_root.is_dir():
+        print(f"Error: AkramCode home directory not found at {akramcode_root}")
         sys.exit(1)
 
     try:
-        with _backup_operation_lock(hermes_root):
-            return _run_backup_locked(args, hermes_root)
+        with _backup_operation_lock(akramcode_root):
+            return _run_backup_locked(args, akramcode_root)
     except BackupInProgressError as exc:
         print(f"Error: {exc}")
         raise SystemExit(2) from exc
 
 
-def _run_backup_locked(args, hermes_root: Path) -> bool:
+def _run_backup_locked(args, akramcode_root: Path) -> bool:
     """Write a full backup while the cross-process backup slot is held."""
     out_path = _resolve_backup_output_path(args.output)
     scan_started = time.monotonic()
     logger.info("backup phase=scan status=started")
-    print(f"Scanning {display_hermes_home()} ...")
+    print(f"Scanning {display_akramcode_home()} ...")
     skipped_dirs: set = set()
-    files_to_add: list[tuple[Path, Path]] = list(_iter_backup_files(hermes_root, out_path, skipped_dirs))
+    files_to_add: list[tuple[Path, Path]] = list(_iter_backup_files(akramcode_root, out_path, skipped_dirs))
     external_to_add, skipped_external = _collect_external_entries()
     if not files_to_add and not external_to_add:
         logger.info("backup phase=scan status=empty duration_ms=%.1f", (time.monotonic() - scan_started) * 1000)
@@ -655,7 +655,7 @@ def _run_backup_locked(args, hermes_root: Path) -> bool:
           f"  Compressed:  {_format_size(zip_size)}\n"
           f"  Time:        {elapsed:.1f}s")
     if external_to_add:
-        print(f"\n  Included {len(external_to_add)} memory-provider file(s) stored outside {display_hermes_home()}.")
+        print(f"\n  Included {len(external_to_add)} memory-provider file(s) stored outside {display_akramcode_home()}.")
     if skipped_external:
         print(f"\n  Skipped {len(skipped_external)} memory-provider path(s) outside your home directory "
               "(not portable):\n" + "\n".join(f"    {p}" for p in sorted(skipped_external)[:10]))
@@ -664,7 +664,7 @@ def _run_backup_locked(args, hermes_root: Path) -> bool:
     if errors:
         _print_capped(f"\n  Archive kept, but {len(errors)} file(s) could not be added:", errors, "  ")
     else:
-        print(f"\nRestore with: hermes import {out_path.name}")
+        print(f"\nRestore with: akramcode import {out_path.name}")
     # Prune only after a complete archive: a timer hitting the same unreadable file every run must
     # not rotate the last good backups out in favour of incomplete ones.
     keep = getattr(args, "keep", 0)  # 0 / absent: never prune (non-CLI callers)
@@ -700,7 +700,7 @@ def _find_corrupt_members(zf: zipfile.ZipFile, members: List[str]) -> List[str]:
 
 
 def _import_skipped(rel: str) -> bool:
-    """True for a HERMES_HOME-relative member the import deliberately does not restore: runtime
+    """True for a AKRAMCODE_HOME-relative member the import deliberately does not restore: runtime
     state (``_IMPORT_SKIP_NAMES``), PM-local interpreter/dependency roots, or an archived SQLite
     WAL/SHM/journal. A ``.db`` member is page-restored into the live file, and a sidecar from a
     different image would replay a foreign WAL on next open (older archives may ship these)."""
@@ -717,7 +717,7 @@ def _import_member_rel(member: str, prefix: str) -> tuple[str, bool]:
     """Classify an archive member exactly as the restore does: return ``(rel, skipped)``.
 
     ``_external/`` members are home-relative and never skipped; every other member is
-    HERMES_HOME-relative after stripping the archive ``prefix``. Shared by the integrity
+    AKRAMCODE_HOME-relative after stripping the archive ``prefix``. Shared by the integrity
     pre-flight and ``_import_members`` so the two cannot disagree on what gets restored."""
     if member.startswith(_EXTERNAL_PREFIX):
         return member[len(_EXTERNAL_PREFIX):], False
@@ -726,7 +726,7 @@ def _import_member_rel(member: str, prefix: str) -> tuple[str, bool]:
 
 
 def run_import(args) -> Optional[int]:
-    """Restore a Hermes backup; return 1 on damaged archives or incomplete restores."""
+    """Restore a AkramCode backup; return 1 on damaged archives or incomplete restores."""
     zip_path = Path(args.zipfile).expanduser().resolve()
 
     if not zip_path.is_file():
@@ -738,11 +738,11 @@ def run_import(args) -> Optional[int]:
         sys.exit(1)
 
     # The restore target must be the home the command operates under — the
-    # same path printed as "Target:" via display_hermes_home(). Resolving
-    # through get_default_hermes_root() instead maps a profile home
+    # same path printed as "Target:" via display_akramcode_home(). Resolving
+    # through get_default_akramcode_root() instead maps a profile home
     # (<root>/profiles/<name>) back to <root>, silently retargeting the
     # restore at the live root while the profile directory stays empty.
-    hermes_root = get_hermes_home()
+    akramcode_root = get_akramcode_home()
 
     with zipfile.ZipFile(zip_path, "r") as zf:
         # Validate
@@ -756,18 +756,18 @@ def run_import(args) -> Optional[int]:
         file_count = len(members)
 
         print(f"Backup contains {file_count} files")
-        print(f"Target: {display_hermes_home()}")
+        print(f"Target: {display_akramcode_home()}")
 
         if prefix:
             print(f"Detected archive prefix: {prefix!r} (will be stripped)")
 
         # Check for existing installation
-        has_config = (hermes_root / "config.yaml").exists()
-        has_env = (hermes_root / ".env").exists()
+        has_config = (akramcode_root / "config.yaml").exists()
+        has_env = (akramcode_root / ".env").exists()
 
         if (has_config or has_env) and not args.force:
             print()
-            print("Warning: Target directory already has Hermes configuration.")
+            print("Warning: Target directory already has AkramCode configuration.")
             print("Importing will overwrite existing files with backup contents.")
             print()
             try:
@@ -790,7 +790,7 @@ def run_import(args) -> Optional[int]:
 
         # Extract
         print(f"\nImporting {file_count} files ...")
-        hermes_root.mkdir(parents=True, exist_ok=True)
+        akramcode_root.mkdir(parents=True, exist_ok=True)
 
         errors = []
         restored = 0
@@ -809,7 +809,7 @@ def run_import(args) -> Optional[int]:
         for member in members:
             # External memory-provider state captured under the reserved
             # ``_external/`` arc prefix restores to its original home-relative
-            # location (e.g. ~/.honcho/config.json), NOT under HERMES_HOME.
+            # location (e.g. ~/.honcho/config.json), NOT under AKRAMCODE_HOME.
             if member.startswith(_EXTERNAL_PREFIX):
                 ext_rel = member[len(_EXTERNAL_PREFIX):]
                 if not ext_rel:
@@ -879,11 +879,11 @@ def run_import(args) -> Optional[int]:
                 skipped_runtime.append(rel)
                 continue
 
-            target = hermes_root.joinpath(*parts)
+            target = akramcode_root.joinpath(*parts)
 
             # Security: reject absolute paths and traversals
             try:
-                target.resolve().relative_to(hermes_root.resolve())
+                target.resolve().relative_to(akramcode_root.resolve())
             except ValueError:
                 errors.append(f"  {rel}: path traversal blocked")
                 continue
@@ -914,12 +914,12 @@ def run_import(args) -> Optional[int]:
         # Summary
         print()
         print(f"Import {'incomplete' if errors else 'complete'}: {restored} files restored in {elapsed:.1f}s")
-        print(f"  Target: {display_hermes_home()}")
+        print(f"  Target: {display_akramcode_home()}")
 
         if restored_external:
             print(
                 f"\n  Restored {restored_external} memory-provider file(s) to "
-                f"their original location(s) outside {display_hermes_home()}."
+                f"their original location(s) outside {display_akramcode_home()}."
             )
 
         if errors:
@@ -955,7 +955,7 @@ def run_import(args) -> Optional[int]:
                 print(f"    ... and {len(skipped_runtime) - 10} more")
 
         # Post-import: restore profile wrapper scripts
-        profiles_dir = hermes_root / "profiles"
+        profiles_dir = akramcode_root / "profiles"
         restored_profiles = []
         if profiles_dir.is_dir():
             try:
@@ -993,19 +993,19 @@ def run_import(args) -> Optional[int]:
                 # akramcode_cli.profiles might not be available (fresh install)
                 if any(profiles_dir.iterdir()):
                     print("\n  Profiles detected but aliases could not be created.")
-                    print("  Run: hermes profile list  (after installing hermes)")
+                    print("  Run: akramcode profile list  (after installing akramcode)")
 
         # Guidance
         print()
-        if not (hermes_root / "hermes-agent").is_dir():
-            print("Note: The hermes-agent codebase was not included in the backup.")
-            print("  If this is a fresh install, run: hermes update")
+        if not (akramcode_root / "akramcode-agent").is_dir():
+            print("Note: The akramcode-agent codebase was not included in the backup.")
+            print("  If this is a fresh install, run: akramcode update")
 
         if restored_profiles:
             gw_profiles = [n for n, _ in restored_profiles]
             print("\nTo re-enable gateway services for profiles:")
             for pname in gw_profiles:
-                print(f"  hermes -p {pname} gateway install")
+                print(f"  akramcode -p {pname} gateway install")
 
         # Bring the restored install to life: the backup may contain bot
         # tokens and registered cron jobs, but they're inert without a
@@ -1013,7 +1013,7 @@ def run_import(args) -> Optional[int]:
         # platform-less gateway is a supported mode, so this is safe even
         # for backups with no messaging config). Best-effort and prompt-free;
         # failures print a manual fallback and never fail the import.
-        native_default = _get_platform_default_hermes_home()
+        native_default = _get_platform_default_akramcode_home()
         default_has_install = any(
             (native_default / marker).exists()
             for marker in ("config.yaml", ".env", "state.db")
@@ -1023,13 +1023,13 @@ def run_import(args) -> Optional[int]:
         # would shadow or hijack the machine's primary install. Only revive
         # the service automatically when the restore landed in the default
         # home, or when no other install exists on this machine.
-        if hermes_root != native_default and default_has_install:
+        if akramcode_root != native_default and default_has_install:
             print(
                 "\nRestored into a non-default home; leaving the gateway service "
                 "alone to avoid clashing with the install at "
                 f"{native_default}."
             )
-            print("To start a gateway for this home, run:  hermes gateway install")
+            print("To start a gateway for this home, run:  akramcode gateway install")
         else:
             try:
                 from akramcode_cli.gateway import ensure_gateway_service, _is_service_running
@@ -1039,28 +1039,28 @@ def run_import(args) -> Optional[int]:
                     ensure_gateway_service(context="import")
             except Exception:
                 print("\nStart the gateway to activate cron jobs and messaging:")
-                print("  hermes gateway install")
+                print("  akramcode gateway install")
 
         if errors:
             print(f"Import incomplete: {len(errors)} file(s) were not restored (see Warnings above). "
                   "Fix the cause and re-run the import.")
             return 1
-        print("Done. Your Hermes configuration has been restored.")
+        print("Done. Your AkramCode configuration has been restored.")
 
 
 
-# --- Quick state snapshots (used by /snapshot slash command and hermes backup --quick) ---
+# --- Quick state snapshots (used by /snapshot slash command and akramcode backup --quick) ---
 
-# Critical state files (relative to HERMES_HOME) for quick snapshots; everything else is
+# Critical state files (relative to AKRAMCODE_HOME) for quick snapshots; everything else is
 # regeneratable or managed separately (skills, repo, sessions/). Entries may be files OR
 # directories (recursive); missing entries are skipped. Pairing data lives in platform JSON blobs
-# outside state.db, so it is listed explicitly — ``hermes update`` snapshots this set (#15733).
+# outside state.db, so it is listed explicitly — ``akramcode update`` snapshots this set (#15733).
 _QUICK_STATE_FILES = (
     "state.db", "config.yaml", ".env", "auth.json", "cron/jobs.json", "cron/executions.db",
     "gateway_state.json", "channel_directory.json", "channel_aliases.json", "processes.json",
     "gateway/discord_message_recovery.db",  # Discord reconnect replay ledger
     # Per-profile user stores, destroyed if the update flow replaces the file and the post-update
-    # schema-init re-creates an empty one (#52889). Skipped when outside HERMES_HOME.
+    # schema-init re-creates an empty one (#52889). Skipped when outside AKRAMCODE_HOME.
     "projects.db",                      # per-profile project store
     "response_store.db",                # gateway conversation history / tool payloads
     "memory_store.db",                  # holographic memory facts/entities
@@ -1076,8 +1076,8 @@ _QUICK_STATE_FILES = (
 _QUICK_DEFAULT_KEEP = 20
 
 
-def _quick_snapshot_root(hermes_home: Optional[Path] = None) -> Path:
-    home = hermes_home or get_hermes_home()
+def _quick_snapshot_root(akramcode_home: Optional[Path] = None) -> Path:
+    home = akramcode_home or get_akramcode_home()
     return home / _QUICK_SNAPSHOTS_DIR
 
 
@@ -1145,22 +1145,22 @@ def _prune_incomplete_zips(backup_dir: Path, prefix: str, what: str) -> int:
 
 
 def _create_prefixed_full_backup(
-    hermes_home: Optional[Path], prefix: str, keep: int, what: str, prune_what: str) -> Optional[Path]:
-    """Write ``<HERMES_HOME>/backups/<prefix><timestamp>.zip`` and prune older same-prefix zips.
+    akramcode_home: Optional[Path], prefix: str, keep: int, what: str, prune_what: str) -> Optional[Path]:
+    """Write ``<AKRAMCODE_HOME>/backups/<prefix><timestamp>.zip`` and prune older same-prefix zips.
     Returns the path, or ``None`` if nothing to back up, the write failed, or the archive is
     incomplete (kept as ``<prefix><timestamp>.incomplete.zip``, excluded from retention).
     Never raises."""
-    hermes_root = hermes_home or get_default_hermes_root()
-    if not hermes_root.is_dir():
+    akramcode_root = akramcode_home or get_default_akramcode_root()
+    if not akramcode_root.is_dir():
         return None
-    backup_dir = hermes_root / _PRE_UPDATE_BACKUPS_DIR
+    backup_dir = akramcode_root / _PRE_UPDATE_BACKUPS_DIR
     try:
         backup_dir.mkdir(parents=True, exist_ok=True)
     except OSError as exc:
         logger.warning("Could not create %s backup dir %s: %s", what, backup_dir, exc)
         return None
     out_path = backup_dir / f"{prefix}{datetime.now().strftime('%Y-%m-%d-%H%M%S')}.zip"
-    if _write_full_zip_backup(out_path, hermes_root) is None:
+    if _write_full_zip_backup(out_path, akramcode_root) is None:
         # Incomplete runs publish straight to ``*.incomplete.zip`` (all-failed runs are discarded);
         # cap those salvages at one without letting them rotate complete backups out.
         _prune_incomplete_zips(backup_dir, prefix, prune_what)
@@ -1170,39 +1170,39 @@ def _create_prefixed_full_backup(
 
 
 def create_pre_update_backup(
-    hermes_home: Optional[Path] = None, keep: int = _PRE_UPDATE_DEFAULT_KEEP) -> Optional[Path]:
+    akramcode_home: Optional[Path] = None, keep: int = _PRE_UPDATE_DEFAULT_KEEP) -> Optional[Path]:
     """Full zip backup to ``backups/pre-update-<timestamp>.zip``, auto-pruned; ``None`` if nothing
     was found, the backup failed, or it was incomplete (salvage kept as ``*.incomplete.zip``).
-    Never raises — ``hermes update`` continues anyway."""
-    return _create_prefixed_full_backup(hermes_home, _PRE_UPDATE_PREFIX, max(keep, 1), "pre-update", "backup")
+    Never raises — ``akramcode update`` continues anyway."""
+    return _create_prefixed_full_backup(akramcode_home, _PRE_UPDATE_PREFIX, max(keep, 1), "pre-update", "backup")
 
 
 def create_pre_migration_backup(
-    hermes_home: Optional[Path] = None, keep: int = _PRE_MIGRATION_DEFAULT_KEEP) -> Optional[Path]:
-    """Full zip backup to ``backups/pre-migration-<timestamp>.zip`` before ``hermes claw migrate``
-    (same dir as update backups so listings/``hermes import`` find it); ``None`` if nothing was
+    akramcode_home: Optional[Path] = None, keep: int = _PRE_MIGRATION_DEFAULT_KEEP) -> Optional[Path]:
+    """Full zip backup to ``backups/pre-migration-<timestamp>.zip`` before ``akramcode claw migrate``
+    (same dir as update backups so listings/``akramcode import`` find it); ``None`` if nothing was
     found, the write failed, or it was incomplete (salvage kept as ``*.incomplete.zip``). Never
     raises."""
     return _create_prefixed_full_backup(
-        hermes_home, _PRE_MIGRATION_PREFIX, max(keep, 0), "pre-migration", "pre-migration backup")
+        akramcode_home, _PRE_MIGRATION_PREFIX, max(keep, 0), "pre-migration", "pre-migration backup")
 
 
 # ---------------------------------------------------------------------------
-# Quick state snapshots (used by /snapshot slash command and hermes backup --quick)
+# Quick state snapshots (used by /snapshot slash command and akramcode backup --quick)
 # ---------------------------------------------------------------------------
 
 def create_quick_snapshot(
     label: Optional[str] = None,
-    hermes_home: Optional[Path] = None,
+    akramcode_home: Optional[Path] = None,
     keep: Optional[int] = None,
     max_file_size: Optional[int] = None,
 ) -> Optional[str]:
     """Create one atomic quick snapshot while holding the shared backup slot."""
-    home = hermes_home or get_hermes_home()
+    home = akramcode_home or get_akramcode_home()
     with _backup_operation_lock(home):
         return _create_quick_snapshot_locked(
             label=label,
-            hermes_home=home,
+            akramcode_home=home,
             keep=keep,
             max_file_size=max_file_size,
         )
@@ -1210,7 +1210,7 @@ def create_quick_snapshot(
 
 def _create_quick_snapshot_locked(
     label: Optional[str] = None,
-    hermes_home: Optional[Path] = None,
+    akramcode_home: Optional[Path] = None,
     keep: Optional[int] = None,
     max_file_size: Optional[int] = None,
 ) -> Optional[str]:
@@ -1223,16 +1223,16 @@ def _create_quick_snapshot_locked(
         max_file_size: When set, individual files larger than this many bytes
             are skipped (with a printed warning) instead of copied. Used by
             the pre-update safety snapshot so a multi-GB ``state.db`` can
-            never stall ``hermes update`` or silently eat disk — the small
+            never stall ``akramcode update`` or silently eat disk — the small
             pairing/cron/config files the snapshot exists to protect are
             always captured. ``None`` (default) copies everything, which
-            preserves manual ``/snapshot`` and ``hermes backup --quick``
+            preserves manual ``/snapshot`` and ``akramcode backup --quick``
             behavior.
 
     Returns:
         Snapshot ID (timestamp-based), or None if no files found.
     """
-    home = hermes_home or get_hermes_home()
+    home = akramcode_home or get_akramcode_home()
     root = _quick_snapshot_root(home)
 
     def _too_large(path: Path, rel_name: str) -> bool:
@@ -1453,10 +1453,10 @@ def _create_quick_snapshot_locked(
 
 def list_quick_snapshots(
     limit: int = 20,
-    hermes_home: Optional[Path] = None,
+    akramcode_home: Optional[Path] = None,
 ) -> List[Dict[str, Any]]:
     """List existing quick state snapshots, most recent first."""
-    root = _quick_snapshot_root(hermes_home)
+    root = _quick_snapshot_root(akramcode_home)
     if not root.exists():
         return []
 
@@ -1479,14 +1479,14 @@ def list_quick_snapshots(
 
 def restore_quick_snapshot(
     snapshot_id: str,
-    hermes_home: Optional[Path] = None,
+    akramcode_home: Optional[Path] = None,
 ) -> bool:
     """Restore state from a quick snapshot.
 
     Overwrites current state files with the snapshot's copies.
     Returns True if at least one file was restored.
     """
-    home = hermes_home or get_hermes_home()
+    home = akramcode_home or get_akramcode_home()
     root = _quick_snapshot_root(home)
 
     # Security: reject snapshot_id values that contain path separators or
@@ -1590,9 +1590,9 @@ def _count_cron_jobs(path: Path) -> Optional[int]:
 
 def restore_cron_jobs_if_emptied(
     snapshot_id: str,
-    hermes_home: Optional[Path] = None,
+    akramcode_home: Optional[Path] = None,
 ) -> Optional[Dict[str, Any]]:
-    """Safety net for silent cron-job loss across ``hermes update``.
+    """Safety net for silent cron-job loss across ``akramcode update``.
 
     Config-version migrations have been observed to leave ``cron/jobs.json``
     valid-but-empty after an update, silently dropping every scheduled job
@@ -1613,7 +1613,7 @@ def restore_cron_jobs_if_emptied(
     Args:
         snapshot_id: The pre-update quick-snapshot id (from
             :func:`create_quick_snapshot`).
-        hermes_home: Override for the Hermes home directory (tests).
+        akramcode_home: Override for the AkramCode home directory (tests).
 
     Returns:
         ``None`` when no action was taken (the common, healthy path). On a
@@ -1623,7 +1623,7 @@ def restore_cron_jobs_if_emptied(
     if not snapshot_id:
         return None
 
-    home = hermes_home or get_hermes_home()
+    home = akramcode_home or get_akramcode_home()
     live_path = home / _CRON_JOBS_REL
 
     live_count = _count_cron_jobs(live_path)
@@ -1708,9 +1708,9 @@ def _prompt_degraded(job: Dict[str, Any]) -> bool:
 
 def restore_cron_prompt_fields_if_degraded(
     snapshot_id: str,
-    hermes_home: Optional[Path] = None,
+    akramcode_home: Optional[Path] = None,
 ) -> Optional[Dict[str, Any]]:
-    """Safety net for field-level cron-job degradation across ``hermes update``.
+    """Safety net for field-level cron-job degradation across ``akramcode update``.
 
     A writer active during the update's mutation window replaced every
     agent-job ``prompt`` with the job's own ``name`` while the job COUNT
@@ -1736,7 +1736,7 @@ def restore_cron_prompt_fields_if_degraded(
     Args:
         snapshot_id: The pre-update quick-snapshot id (from
             :func:`create_quick_snapshot`).
-        hermes_home: Override for the Hermes home directory (tests/siblings).
+        akramcode_home: Override for the AkramCode home directory (tests/siblings).
 
     Returns:
         ``None`` when no action was taken (the common, healthy path). On a
@@ -1746,7 +1746,7 @@ def restore_cron_prompt_fields_if_degraded(
     if not snapshot_id:
         return None
 
-    home = hermes_home or get_hermes_home()
+    home = akramcode_home or get_akramcode_home()
     live_path = home / _CRON_JOBS_REL
     snap_path = _quick_snapshot_root(home) / snapshot_id / _CRON_JOBS_REL
 
@@ -1824,7 +1824,7 @@ def restore_cron_prompt_fields_all_profiles(
     restored: list[Dict[str, Any]] = []
     if not profile_snapshots:
         return restored
-    home = invoking_home or get_hermes_home()
+    home = invoking_home or get_akramcode_home()
     by_name = dict(_sibling_profile_homes(home))
     for name, snap_id in profile_snapshots.items():
         profile_home = by_name.get(name)
@@ -1832,7 +1832,7 @@ def restore_cron_prompt_fields_all_profiles(
             continue
         try:
             result = restore_cron_prompt_fields_if_degraded(
-                snap_id, hermes_home=profile_home
+                snap_id, akramcode_home=profile_home
             )
         except Exception as exc:
             logger.debug(
@@ -1857,13 +1857,13 @@ def _sibling_profile_homes(invoking_home: Path) -> list[tuple[str, Path]]:
     homes: list[tuple[str, Path]] = []
     try:
         from akramcode_cli.profiles import (
-            _get_default_hermes_home,
+            _get_default_akramcode_home,
             _get_profiles_root,
             _PROFILE_ID_RE,
         )
 
         invoking = invoking_home.resolve()
-        default_home = _get_default_hermes_home()
+        default_home = _get_default_akramcode_home()
         if default_home.is_dir() and default_home.resolve() != invoking:
             homes.append(("default", default_home))
         root = _get_profiles_root()
@@ -1896,12 +1896,12 @@ def create_pre_update_snapshots_all_profiles(
     siblings that snapshotted successfully. Never raises.
     """
     results: Dict[str, str] = {}
-    home = invoking_home or get_hermes_home()
+    home = invoking_home or get_akramcode_home()
     for name, profile_home in _sibling_profile_homes(home):
         try:
             snap_id = create_quick_snapshot(
                 label="pre-update",
-                hermes_home=profile_home,
+                akramcode_home=profile_home,
                 keep=keep,
                 max_file_size=max_file_size,
             )
@@ -1962,9 +1962,9 @@ def _set_config_path_value(data: Dict[str, Any], dotted: Tuple[str, ...], value:
 
 def restore_config_model_settings_if_rewritten(
     snapshot_id: str,
-    hermes_home: Optional[Path] = None,
+    akramcode_home: Optional[Path] = None,
 ) -> Optional[Dict[str, Any]]:
-    """Safety net for silent config.yaml model/MoA loss across ``hermes update``.
+    """Safety net for silent config.yaml model/MoA loss across ``akramcode update``.
 
     Desktop update/repair cycles have been observed to rewrite user-set
     ``model.provider``/``model.default`` and drop the ``moa:`` section
@@ -1983,7 +1983,7 @@ def restore_config_model_settings_if_rewritten(
     Args:
         snapshot_id: The pre-update quick-snapshot id (from
             :func:`create_quick_snapshot`).
-        hermes_home: Override for the Hermes home directory (tests/siblings).
+        akramcode_home: Override for the AkramCode home directory (tests/siblings).
 
     Returns:
         ``None`` when no action was taken (the common, healthy path). On a
@@ -1993,7 +1993,7 @@ def restore_config_model_settings_if_rewritten(
     if not snapshot_id:
         return None
 
-    home = hermes_home or get_hermes_home()
+    home = akramcode_home or get_akramcode_home()
     live_path = home / "config.yaml"
     snap_path = _quick_snapshot_root(home) / snapshot_id / "config.yaml"
 
@@ -2055,7 +2055,7 @@ def restore_config_model_settings_all_profiles(
     restored: list[Dict[str, Any]] = []
     if not profile_snapshots:
         return restored
-    home = invoking_home or get_hermes_home()
+    home = invoking_home or get_akramcode_home()
     by_name = dict(_sibling_profile_homes(home))
     for name, snap_id in profile_snapshots.items():
         profile_home = by_name.get(name)
@@ -2063,7 +2063,7 @@ def restore_config_model_settings_all_profiles(
             continue
         try:
             result = restore_config_model_settings_if_rewritten(
-                snap_id, hermes_home=profile_home
+                snap_id, akramcode_home=profile_home
             )
         except Exception as exc:
             logger.debug(
@@ -2094,14 +2094,14 @@ def restore_cron_jobs_all_profiles(
     restored: list[Dict[str, Any]] = []
     if not profile_snapshots:
         return restored
-    home = invoking_home or get_hermes_home()
+    home = invoking_home or get_akramcode_home()
     by_name = dict(_sibling_profile_homes(home))
     for name, snap_id in profile_snapshots.items():
         profile_home = by_name.get(name)
         if profile_home is None:
             continue
         try:
-            result = restore_cron_jobs_if_emptied(snap_id, hermes_home=profile_home)
+            result = restore_cron_jobs_if_emptied(snap_id, akramcode_home=profile_home)
         except Exception as exc:
             logger.debug("Cron restore check for profile %s failed: %s", name, exc)
             continue
@@ -2139,20 +2139,20 @@ def _prune_quick_snapshots(root: Path, keep: int = _QUICK_DEFAULT_KEEP) -> int:
 
 def prune_quick_snapshots(
     keep: int = _QUICK_DEFAULT_KEEP,
-    hermes_home: Optional[Path] = None,
+    akramcode_home: Optional[Path] = None,
 ) -> int:
     """Manually prune quick snapshots. Returns count deleted."""
-    return _prune_quick_snapshots(_quick_snapshot_root(hermes_home), keep=keep)
+    return _prune_quick_snapshots(_quick_snapshot_root(akramcode_home), keep=keep)
 
 
 def run_quick_backup(args) -> None:
-    """CLI entry point for hermes backup --quick."""
+    """CLI entry point for akramcode backup --quick."""
     label = getattr(args, "label", None)
     snap_id = create_quick_snapshot(label=label)
     if snap_id:
         print(f"State snapshot created: {snap_id}")
         snaps = list_quick_snapshots()
-        print(f"  {len(snaps)} snapshot(s) stored in {display_hermes_home()}/state-snapshots/")
+        print(f"  {len(snaps)} snapshot(s) stored in {display_akramcode_home()}/state-snapshots/")
         print(f"  Restore with: /snapshot restore {snap_id}")
     else:
         print("No state files found to snapshot.")
@@ -2162,21 +2162,21 @@ def run_quick_backup(args) -> None:
 # Shared full-zip backup helper
 # ---------------------------------------------------------------------------
 
-def _write_full_zip_backup(out_path: Path, hermes_root: Path) -> Optional[Path]:
+def _write_full_zip_backup(out_path: Path, akramcode_root: Path) -> Optional[Path]:
     """Single-flight wrapper for automatic full zip backups."""
     try:
-        with _backup_operation_lock(hermes_root):
-            return _write_full_zip_backup_locked(out_path, hermes_root)
+        with _backup_operation_lock(akramcode_root):
+            return _write_full_zip_backup_locked(out_path, akramcode_root)
     except BackupInProgressError as exc:
         logger.warning("Full-zip backup skipped: %s", exc)
         return None
 
 
-def _write_full_zip_backup_locked(out_path: Path, hermes_root: Path) -> Optional[Path]:
+def _write_full_zip_backup_locked(out_path: Path, akramcode_root: Path) -> Optional[Path]:
     scan_started = time.monotonic()
     logger.info("automatic backup phase=scan status=started")
     try:
-        files_to_add = list(_iter_backup_files(hermes_root, out_path))
+        files_to_add = list(_iter_backup_files(akramcode_root, out_path))
     except OSError as exc:
         logger.warning("Full-zip backup: walk failed: %s", exc)
         return None

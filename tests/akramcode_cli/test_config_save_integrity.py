@@ -5,7 +5,7 @@ import os
 import shutil
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 import akramcode_cli.config as config_mod
 from akramcode_cli.config import DEFAULT_CONFIG, load_config, migrate_config, read_raw_config, save_config
@@ -26,8 +26,8 @@ approvals:
 @pytest.fixture
 def home(tmp_path, monkeypatch):
     from tui_gateway import server
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
     server._cfg_cache = server._cfg_sig = server._cfg_path = None
     (tmp_path / "config.yaml").write_text(_CONFIG, encoding="utf-8")
     yield tmp_path
@@ -187,7 +187,7 @@ def test_save_refusal_for_bad_yaml_asks_for_an_edit_not_a_retry(home):
     cfg["display"]["skin"] = "ares"
     with pytest.raises(RuntimeError, match="has a formatting error") as refusal:
         save_config(cfg)
-    assert "hermes config edit" in str(refusal.value) and "Try again" not in str(refusal.value)
+    assert "akramcode config edit" in str(refusal.value) and "Try again" not in str(refusal.value)
     assert (home / "config.yaml").read_text(encoding="utf-8") == "model: [unclosed\n"
 
 
@@ -196,7 +196,7 @@ def test_authored_nulls_survive_config_writes(tmp_path, monkeypatch, operation):
     from akramcode_cli.resource_limits import configured_nofile_soft_limit
     from agent.agent_runtime_helpers import prompt_caching_disabled_from_config
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     config_path = tmp_path / "config.yaml"
     seed = {
         "_config_version": DEFAULT_CONFIG["_config_version"] - (operation == "migrate"),

@@ -14,10 +14,10 @@ class _StubAgent:
 def _build(monkeypatch, tmp_path, *, primary_fails: bool):
     from tui_gateway import server
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.setenv("HERMES_IGNORE_RULES", "1")
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_IGNORE_RULES", "1")
     (tmp_path / "config.yaml").write_text("model:\n  default: gpt-5.6-sol\n  provider: openai-codex\n")
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
     monkeypatch.setattr(server, "_get_db", lambda: None)
     monkeypatch.setattr(server, "_load_fallback_model",
                         lambda: [{"provider": "anthropic", "model": "claude-sonnet-5", "api_key": "fb"}])
@@ -52,10 +52,10 @@ def test_fallback_build_survives_model_string_shorthand(monkeypatch, tmp_path):
     build while it names the primary in the notice."""
     from tui_gateway import server
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.setenv("HERMES_IGNORE_RULES", "1")
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_IGNORE_RULES", "1")
     (tmp_path / "config.yaml").write_text("model: gpt-5.6-sol\n", encoding="utf-8")
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
     monkeypatch.setattr(server, "_get_db", lambda: None)
     monkeypatch.setattr(server, "_load_fallback_model",
                         lambda: [{"provider": "anthropic", "model": "claude-sonnet-5", "api_key": "fb"}])

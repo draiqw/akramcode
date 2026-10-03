@@ -61,7 +61,7 @@ def _is_ephemeral_scaffolding(msg: Any) -> bool:
 
 
 def _safe_session_filename_component(session_id: str) -> str:
-    """Path-safe component for a (possibly untrusted ``X-Hermes-Session-Id``) ID: non ``[A-Za-z0-9_-]`` → ``_``,
+    """Path-safe component for a (possibly untrusted ``X-AkramCode-Session-Id``) ID: non ``[A-Za-z0-9_-]`` → ``_``,
     capped, plus a content hash when changed so distinct IDs cannot collide."""
     raw = str(session_id or "").strip()
     sanitized = re.sub(r"[^\w-]", "_", raw).strip("._")[:96] or "session"
@@ -352,7 +352,7 @@ def _db_flush_failed(agent, e: Exception, batch_rows: List[Dict[str, Any]], adop
     from akramcode_state.errors import CompressionSessionClosedError
     agent._last_persistence_error_cause = classify_persistence_error(e)
     if agent._last_persistence_error_cause == "session_row_missing":
-        # The session row was removed under this live agent (`hermes sessions delete`, the Desktop/web
+        # The session row was removed under this live agent (`akramcode sessions delete`, the Desktop/web
         # delete, bulk prune, a profile-repair move, an in-place store rebuild — none visible to the
         # cached agent, so the cached `_session_db_created` flag is stale and every later append hits
         # the FK). The deletion already erased the session's message rows with it, so the durable

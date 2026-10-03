@@ -307,8 +307,8 @@ class SessionSessionsMixin:
         ``<root>/profiles/<name>/state.db`` → name): a gateway serving a NON-launch profile opens that
         profile's store. None outside the profile tree — NULL beats a fabricated owner."""
         try:
-            from akramcode_constants import get_default_hermes_root
-            root = get_default_hermes_root().resolve()
+            from akramcode_constants import get_default_akramcode_root
+            root = get_default_akramcode_root().resolve()
             parent = Path(self.db_path).resolve().parent
             if parent == root:
                 return "default"
@@ -1108,7 +1108,7 @@ class SessionSessionsMixin:
                     merged[key] = tip_row[key]
             if merged.get("title") is None:
                 # The title is carried root->tip AFTER the publish transaction; a rotation cut off in
-                # between leaves it on the ended root, and exact-title lookups (`hermes peer dm` ->
+                # between leaves it on the ended root, and exact-title lookups (`akramcode peer dm` ->
                 # canonical "Bot Chat") must still see the lineage under its name (#106165).
                 merged["title"] = s.get("title")
             merged["_lineage_root_id"] = s["id"]
@@ -1510,7 +1510,7 @@ class SessionSessionsMixin:
         workspace_key: str = None,
     ) -> List[Dict[str, Any]]:
         """Sessions MRU-first with a computed ``last_active``; ``workspace_key`` scopes to one workspace
-        so ``hermes -c``/``--resume`` picks its last session. ``source`` may be one label or several."""
+        so ``akramcode -c``/``--resume`` picks its last session. ``source`` may be one label or several."""
         where_clauses = []
         params: list = []
         if source:

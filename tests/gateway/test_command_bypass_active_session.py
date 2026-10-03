@@ -277,15 +277,15 @@ class TestBypassWithBotnameSuffix:
 
     @pytest.mark.asyncio
     async def test_stop_with_botname(self):
-        """/stop@MyHermesBot must bypass the guard."""
+        """/stop@MyAkramCodeBot must bypass the guard."""
         adapter = _make_adapter()
         sk = _session_key()
         adapter._active_sessions[sk] = asyncio.Event()
 
-        await adapter.handle_message(_make_event("/stop@MyHermesBot"))
+        await adapter.handle_message(_make_event("/stop@MyAkramCodeBot"))
 
         assert sk not in adapter._pending_messages, (
-            "/stop@MyHermesBot was queued instead of bypassing"
+            "/stop@MyAkramCodeBot was queued instead of bypassing"
         )
         assert any("handled:stop" in r for r in adapter.sent_responses)
 

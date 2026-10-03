@@ -6,16 +6,16 @@ from typing import Callable, List, Optional
 from akramcode_cli.platforms import PLATFORMS
 from akramcode_cli.toolset_scope import toolset_allowed_for_platform
 
-_NO_TOOLS = "the agent will have no tools on this platform. Run `hermes tools` to reconfigure."
+_NO_TOOLS = "the agent will have no tools on this platform. Run `akramcode tools` to reconfigure."
 
 
 def parse_platform_toolsets_value(value: object) -> Optional[List[str]]:
     """The toolset list a saved ``platform_toolsets.<platform>`` value encodes, or None.
 
-    Older ``hermes config set`` builds stored a bare ``[...]`` argument as a plain string, so an
+    Older ``akramcode config set`` builds stored a bare ``[...]`` argument as a plain string, so an
     explicit selection like ``'["browser", "terminal"]'`` parses as str, not list (#115866).
     Every reader and writer of the section goes through this one parser so the runtime,
-    ``hermes doctor`` and ``hermes plugins enable`` agree on what the user configured. Any other
+    ``akramcode doctor`` and ``akramcode plugins enable`` agree on what the user configured. Any other
     shape (null, scalar, unparseable string) is None: the caller decides how to report it.
     """
     if isinstance(value, list):
@@ -32,7 +32,7 @@ def parse_platform_toolsets_value(value: object) -> Optional[List[str]]:
 
 def _platform_default_toolset(platform: object) -> str:
     info = PLATFORMS.get(platform)
-    return info.default_toolset if info is not None else f"hermes-{platform}"
+    return info.default_toolset if info is not None else f"akramcode-{platform}"
 
 
 def _platform_default_is_valid(
@@ -41,7 +41,7 @@ def _platform_default_is_valid(
     if is_valid_toolset(default_toolset) and is_allowed_for_platform(default_toolset, str(platform)):
         return True
     # Dynamic plugin platforms are resolved by toolsets.resolve_toolset() even though their synthesized
-    # hermes-<platform> name is not in TOOLSETS.
+    # akramcode-<platform> name is not in TOOLSETS.
     try:
         from gateway.platform_registry import platform_registry
 
@@ -53,7 +53,7 @@ def _platform_default_is_valid(
 def saved_toolset_resolver(config: dict) -> Callable[[str], bool]:
     """``is_valid_toolset`` for a saved ``platform_toolsets`` list, mirroring what
     ``tools_config._get_platform_tools`` lets through: registered toolsets, any configured MCP server
-    (a disabled one is inactive, not a typo), ``hermes-<platform>`` plugin-platform bundles and the
+    (a disabled one is inactive, not a typo), ``akramcode-<platform>`` plugin-platform bundles and the
     ``no_mcp`` sentinel. The manifest scan and the plugin lookup (which may run plugin discovery)
     happen only for a name the cheaper checks cannot place."""
     from functools import cache
@@ -68,7 +68,7 @@ def saved_toolset_resolver(config: dict) -> Callable[[str], bool]:
     def platform_bundles() -> frozenset:
         from akramcode_cli.config import _platform_plugin_manifests
 
-        return frozenset(f"hermes-{name}" for name, _manifest in _platform_plugin_manifests())
+        return frozenset(f"akramcode-{name}" for name, _manifest in _platform_plugin_manifests())
 
     @cache
     def plugin_names() -> frozenset:
@@ -85,7 +85,7 @@ def validate_platform_toolsets(
     is_allowed_for_platform: Callable[[str, str], bool] = toolset_allowed_for_platform,
 ) -> List[str]:
     """Return human-readable warnings for a ``platform_toolsets`` mapping.
-    Reports: a toolset name ``is_valid_toolset`` rejects (suggesting ``hermes-<platform>`` when that
+    Reports: a toolset name ``is_valid_toolset`` rejects (suggesting ``akramcode-<platform>`` when that
     would have been valid); a non-empty mapping resolving to zero valid toolsets (agent would start with
     no tools); a platform with no valid toolsets, checked per-platform because the global net is
     suppressed once any platform is valid; and non-list platform values, which fall back to the platform
@@ -113,7 +113,7 @@ def validate_platform_toolsets(
                 value_detail = f"invalid {type(raw).__name__} toolset value"
             warnings.append(
                 f"platform '{platform}' has {value_detail} — "
-                f"{fallback_detail}. Run `hermes tools` to configure explicitly.")
+                f"{fallback_detail}. Run `akramcode tools` to configure explicitly.")
             if platform_valid_count == 0:
                 warnings.append(f"platform '{platform}' has no valid toolsets configured — {_NO_TOOLS}")
             continue
@@ -139,5 +139,5 @@ def validate_platform_toolsets(
     if valid_count == 0:
         warnings.append(
             "platform_toolsets resolves to zero valid toolsets — the agent will "
-            "have no tools. Run `hermes tools` to reconfigure.")
+            "have no tools. Run `akramcode tools` to reconfigure.")
     return warnings

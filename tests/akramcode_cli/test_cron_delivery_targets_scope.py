@@ -24,7 +24,7 @@ pytest.importorskip("fastapi")
 
 
 def test_delivery_targets_route_binds_profile_scope(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     (tmp_path / ".env").write_text("TELEGRAM_HOME_CHANNEL=12345\n")
 
     from agent import secret_scope

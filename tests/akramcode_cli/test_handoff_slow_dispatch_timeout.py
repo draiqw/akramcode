@@ -5,7 +5,7 @@ Bug shape (live-reproduced on main @1c5ee5815f): /handoff poll-waited a flat
 60s for a TERMINAL state. The gateway watcher claims within seconds, but the
 dispatch is a FULL synthetic agent turn (whole transcript replay + delivery)
 that routinely exceeds 60s. The CLI then printed "Timed out waiting for the
-gateway. Is `hermes gateway` running?" (false diagnosis), called
+gateway. Is `akramcode gateway` running?" (false diagnosis), called
 fail_handoff() on the RUNNING row (stomping the gateway's claim), and claimed
 "Your CLI session is intact" after switch_session had already re-pointed the
 session. The gateway later overwrote failed -> completed: split-brain.
@@ -33,7 +33,7 @@ from akramcode_state import SessionDB
 
 @pytest.fixture()
 def db(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / ".akramcode"))
     d = SessionDB(db_path=tmp_path / "state.db")
     yield d
     d.close()

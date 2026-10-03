@@ -70,9 +70,9 @@ class TestParseFrontmatter:
         assert fm["description"] == "A test."
         assert "# Body" in body
 
-        nested = "---\nname: test\nmetadata:\n  hermes:\n    tags: [a, b]\n---\n\nBody.\n"
+        nested = "---\nname: test\nmetadata:\n  akramcode:\n    tags: [a, b]\n---\n\nBody.\n"
         fm, _ = _parse_frontmatter(nested)
-        assert fm["metadata"]["hermes"]["tags"] == ["a", "b"]
+        assert fm["metadata"]["akramcode"]["tags"] == ["a", "b"]
 
 
     def test_utf8_bom_frontmatter(self):
@@ -333,7 +333,7 @@ class TestSkillView:
             _make_skill(
                 tmp_path,
                 "my-skill",
-                frontmatter_extra="metadata:\n  hermes:\n    tags: [fine-tuning, llm]\n",
+                frontmatter_extra="metadata:\n  akramcode:\n    tags: [fine-tuning, llm]\n",
             )
             # The on-disk directory ("alias-dir") differs from the skill's
             # frontmatter name ("real-skill-name"). skills_list() exposes the
@@ -780,7 +780,7 @@ class TestSkillViewPrerequisites:
 name: legacy-flat
 description: Legacy flat skill.
 metadata:
-  hermes:
+  akramcode:
     tags: [legacy, flat]
 required_environment_variables:
   - name: LEGACY_KEY

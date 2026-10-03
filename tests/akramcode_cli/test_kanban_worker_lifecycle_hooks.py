@@ -31,11 +31,11 @@ WORKER_HOOKS = (
 
 @pytest.fixture
 def kanban_home(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     # Crash detection acts immediately in these tests (no launch grace).
-    monkeypatch.setenv("HERMES_KANBAN_CRASH_GRACE_SECONDS", "0")
+    monkeypatch.setenv("AKRAMCODE_KANBAN_CRASH_GRACE_SECONDS", "0")
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
     return home

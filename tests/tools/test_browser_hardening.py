@@ -137,7 +137,7 @@ class TestTruncateSnapshot:
         from pathlib import Path
         from tools.browser_tool_snapshot import _store_full_snapshot
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
         snapshot = "\n".join(f"- line {i}" for i in range(50))
         # No secret-like content, so redact_sensitive_text leaves it
         # unchanged and the digest is predictable from the raw text.

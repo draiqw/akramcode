@@ -1,4 +1,4 @@
-"""``hermes verify`` subcommand parser.
+"""``akramcode verify`` subcommand parser.
 
 Follows the pattern of ``akramcode_cli/subcommands/doctor.py``: parser built
 here, handler injected to avoid importing ``main``.
@@ -11,7 +11,7 @@ from typing import Callable
 from akramcode_cli.subcommands._shared import add_json_flag
 
 # Keep in sync with agent/verify/runner.py defaults; not imported here to
-# avoid paying an extra module import on every `hermes` invocation.
+# avoid paying an extra module import on every `akramcode` invocation.
 DEFAULT_PHASE_TIMEOUT = 600.0
 DEFAULT_READY_TIMEOUT = 60.0
 
@@ -21,7 +21,7 @@ def build_verify_parser(subparsers, *, cmd_verify: Callable) -> None:
     verify_parser = subparsers.add_parser(
         "verify", help="Detect a project's run recipe and smoke-test it",
         description="Detect how the current project is built, tested, and started "
-            "(or load the saved manifest at .hermes/environment.json), then "
+            "(or load the saved manifest at .akramcode/environment.json), then "
             "run a verification pass: bootstrap -> build -> test -> start in "
             "background -> poll readiness -> teardown.")
     verify_parser.add_argument(
@@ -31,7 +31,7 @@ def build_verify_parser(subparsers, *, cmd_verify: Callable) -> None:
         help="Only detect and print the recipe as JSON; run nothing")
     verify_parser.add_argument(
         "--save", action="store_true",
-        help="Save the recipe as .hermes/environment.json in the project")
+        help="Save the recipe as .akramcode/environment.json in the project")
     verify_parser.add_argument(
         "--skip-start", action="store_true",
         help="Run command phases but skip starting the app / readiness poll")

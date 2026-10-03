@@ -3,7 +3,7 @@
 Adversarial regressions for the catalog picker, the context probe, the auxiliary Codex client and
 the image plugin behind a custom Codex gateway. Every case records each outbound request and
 asserts that no ``Authorization`` header reaches a host other than the credential's own route —
-including the ``model.base_url``-only gateway shape (``HERMES_CODEX_BASE_URL`` unset), an env/route
+including the ``model.base_url``-only gateway shape (``AKRAMCODE_CODEX_BASE_URL`` unset), an env/route
 mismatch, opaque and JWT-shaped gateway keys, a pool-selected credential, and the direct-ChatGPT
 positive control.
 """
@@ -40,9 +40,9 @@ _REPO = Path(__file__).resolve().parents[2]
 
 def _home(monkeypatch) -> Path:
     import os
-    home = Path(os.environ["HERMES_HOME"])
+    home = Path(os.environ["AKRAMCODE_HOME"])
     home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.delenv("HERMES_CODEX_BASE_URL", raising=False)
+    monkeypatch.delenv("AKRAMCODE_CODEX_BASE_URL", raising=False)
     return home
 
 
@@ -50,7 +50,7 @@ def _write_config(home: Path, *, base_url: str = "") -> None:
     model = {"provider": "openai-codex", "default": "gpt-5.5"}
     if base_url:
         model["base_url"] = base_url
-    import akram_core.hermes_yaml as yaml
+    import akram_core.akramcode_yaml as yaml
     (home / "config.yaml").write_text(yaml.safe_dump({"model": model}))  # load cache keys on stat
 
 
@@ -125,7 +125,7 @@ def test_picker_pool_row_with_its_own_gateway_url(monkeypatch, picker_http):
 def test_picker_uses_the_route_base_not_a_mismatched_env(monkeypatch, picker_http):
     """env/route mismatch: the caller's resolved route wins over a stale process env — the
     credential is composed with the base it was resolved with, not an ambient re-read."""
-    monkeypatch.setenv("HERMES_CODEX_BASE_URL", OTHER_GW)
+    monkeypatch.setenv("AKRAMCODE_CODEX_BASE_URL", OTHER_GW)
     from akramcode_cli.codex_models import get_codex_model_ids
 
     get_codex_model_ids(access_token=JWT, base_url=GW)
@@ -134,7 +134,7 @@ def test_picker_uses_the_route_base_not_a_mismatched_env(monkeypatch, picker_htt
 
 
 def test_setup_flow_status_carries_the_pool_entry_route(monkeypatch):
-    """``hermes model`` → Codex reads the token from the auth status; the status must carry the
+    """``akramcode model`` → Codex reads the token from the auth status; the status must carry the
     host that token routes to (model.base_url gateway), not leave the caller to assume chatgpt.com."""
     home = _home(monkeypatch)
     _write_config(home, base_url=GW)
@@ -157,7 +157,7 @@ def test_setup_flow_status_carries_a_pool_row_own_gateway_url(monkeypatch):
 
 
 def test_model_setup_flow_catalog_goes_to_the_pool_entry_gateway(monkeypatch, picker_http):
-    """``hermes model`` → OpenAI Codex with a pooled gateway key: the model list is fetched from
+    """``akramcode model`` → OpenAI Codex with a pooled gateway key: the model list is fetched from
     the gateway that key routes to, not chatgpt.com."""
     home = _home(monkeypatch)
     _write_config(home, base_url=GW)
@@ -181,7 +181,7 @@ def test_cli_default_model_swap_asks_the_session_route(monkeypatch, picker_http)
 
     from akramcode_cli.cli_model_switch_mixin import CLIModelSwitchMixin
 
-    monkeypatch.setenv("HERMES_CODEX_BASE_URL", OTHER_GW)
+    monkeypatch.setenv("AKRAMCODE_CODEX_BASE_URL", OTHER_GW)
     cli = SimpleNamespace(model="", api_key=JWT, base_url=GW, _model_is_default=True,
                           _console_print=lambda *a, **kw: None)
     cli._normalize_model_for_provider = MethodType(CLIModelSwitchMixin._normalize_model_for_provider, cli)
@@ -477,7 +477,7 @@ def test_usage_forced_refresh_keeps_the_refreshed_pool_key_on_the_gateway(monkey
 
 def test_route_fallback_reads_the_profile_scoped_override_not_a_sibling_process_env(monkeypatch):
     """If route resolution itself fails, the fallback still honours only the routed profile's
-    ``HERMES_CODEX_BASE_URL`` — never a multiplexed sibling's process env."""
+    ``AKRAMCODE_CODEX_BASE_URL`` — never a multiplexed sibling's process env."""
     from agent import secret_scope
     from agent.secret_scope import reset_secret_scope, set_secret_scope
     from akramcode_cli import runtime_provider
@@ -488,8 +488,8 @@ def test_route_fallback_reads_the_profile_scoped_override_not_a_sibling_process_
 
     monkeypatch.setattr(runtime_provider, "_pool_entry_mode_and_url", _boom)
     monkeypatch.setattr(secret_scope, "_MULTIPLEX_ACTIVE", True)
-    monkeypatch.setenv("HERMES_CODEX_BASE_URL", OTHER_GW)
-    for scope, expected in [({}, GW), ({"HERMES_CODEX_BASE_URL": OTHER_GW + "/"}, OTHER_GW)]:
+    monkeypatch.setenv("AKRAMCODE_CODEX_BASE_URL", OTHER_GW)
+    for scope, expected in [({}, GW), ({"AKRAMCODE_CODEX_BASE_URL": OTHER_GW + "/"}, OTHER_GW)]:
         token = set_secret_scope(scope)
         try:
             assert _codex_pool_route_base_url(GW) == expected

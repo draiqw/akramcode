@@ -1,13 +1,13 @@
 name: antigravity-subscription-directsdk
-repo: https://github.com/soyelmismo/hermes-antigravity-subscription
+repo: https://github.com/soyelmismo/akramcode-antigravity-subscription
 sha: b7ab470b51a2915e19e4df52bb80cd5973c1b0ca
 description: >-
-  Run Hermes on an Antigravity / Gemini subscription via the official agy CLI (DirectSDK path).
+  Run AkramCode on an Antigravity / Gemini subscription via the official agy CLI (DirectSDK path).
   Streams tokens progressively, maps thinking effort, runs from a private temp directory, and aborts
   reported native tool steps. v1.0.5 prunes historical tool outputs in long sessions (caps old
   results at 300 chars, keeps the last 8 intact, 20k per-tool safety limit), declares a 200,000-token
-  context window to Hermes (overridable via ANTIGRAVITY_CONTEXT_LENGTH) so auto-compression triggers
-  at 160k tokens, and classifies agy PubSub stalls as context_overflow with should_compress so Hermes
+  context window to AkramCode (overridable via ANTIGRAVITY_CONTEXT_LENGTH) so auto-compression triggers
+  at 160k tokens, and classifies agy PubSub stalls as context_overflow with should_compress so AkramCode
   retries with a compressed session instead of failing. Disclosure: routes inference through Google's
   official agy CLI using your Antigravity/Gemini subscription; a symlink to your
   antigravity-oauth-token is placed in a per-session private temp HOME; usage counts against that
@@ -19,8 +19,8 @@ description: >-
 maintainer: soyelmismo
 tier: community
 category: models
-requires_hermes: ">=0.21.0"
-docs_url: https://github.com/soyelmismo/hermes-antigravity-subscription#readme
+requires_akramcode: ">=0.21.0"
+docs_url: https://github.com/soyelmismo/akramcode-antigravity-subscription#readme
 version: "1.0.5"
 readme: true
 platforms:

@@ -61,7 +61,7 @@ def _refresh_declared_dependencies(target: Path, staged: Path, manifest: dict, *
                 f"Node dependencies could not be refreshed: {reason}. "
                 "The installed plugin and active environment are unchanged.")
     if target.resolve() not in enabled_plugin_dirs(installing=target):
-        return  # a disabled plugin's deps are admitted (and consented) by `hermes plugins enable`
+        return  # a disabled plugin's deps are admitted (and consented) by `akramcode plugins enable`
     before, after = read_python_declaration(target), read_python_declaration(staged)
     added = tuple(spec for spec in after.install_requirements if spec not in before.install_requirements)
     if not added and not (after.is_member and not before.is_member):
@@ -69,7 +69,7 @@ def _refresh_declared_dependencies(target: Path, staged: Path, manifest: dict, *
     if not interactive:
         raise pc.PluginOperationError(
             f"The update declares new Python dependencies ({', '.join(added) or 'in its pyproject.toml'}); "
-            f"run `hermes plugins update {target.name}` in a terminal to review them.")
+            f"run `akramcode plugins update {target.name}` in a terminal to review them.")
     consented, reason = pc._consent_python_deps(manifest.get("name", target.name), added, pc._console())
     if not consented:
         raise pc.PluginOperationError(
@@ -119,8 +119,8 @@ def update_plugin(
                 feed_revision = proposed.lower()
             elif proposed not in (source, source.split("#", 1)[0]):
                 raise pc.PluginOperationError("Update feed must select a commit or the recorded Git source.")
-            if feed.get("min_hermes"):
-                pc._check_manifest_version({"requires_hermes": feed["min_hermes"]}, target.name)
+            if feed.get("min_akramcode"):
+                pc._check_manifest_version({"requires_akramcode": feed["min_akramcode"]}, target.name)
     refuse_if_installed_removed(target.name, target)
     before = tree_digest(target)
     with tempfile.TemporaryDirectory(prefix=".update-", dir=target.parent) as directory:

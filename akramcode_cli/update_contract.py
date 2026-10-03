@@ -69,7 +69,7 @@ def _steward_refusal(steward: str) -> UpdateRefusal:
         return _refusal(steward, method, lambda _command: steward_update_message(steward))
     # desktop-app and future package managers have no CLI remediation: the
     # steward's own instructions are the remediation, and
-    # recommended_update_command_for_method would falsely answer "hermes
+    # recommended_update_command_for_method would falsely answer "akramcode
     # update" for methods it doesn't know.
     command = (
         "Manage updates from within the desktop app"

@@ -84,7 +84,7 @@ class TestResolveVerifyFallback:
         assert result is False
 
 def _setup_nous_auth(
-    hermes_home: Path,
+    akramcode_home: Path,
     *,
     access_token: str = "",
     refresh_token: str = "refresh-old",
@@ -95,7 +95,7 @@ def _setup_nous_auth(
     agent_key_expires_at: str | None = None,
 ) -> None:
     access_token = access_token or _invoke_jwt(seconds=3600, scope=scope)
-    hermes_home.mkdir(parents=True, exist_ok=True)
+    akramcode_home.mkdir(parents=True, exist_ok=True)
     auth_store = {
         "version": 1,
         "active_provider": "nous",
@@ -103,7 +103,7 @@ def _setup_nous_auth(
             "nous": {
                 "portal_base_url": "https://portal.example.com",
                 "inference_base_url": "https://inference.example.com/v1",
-                "client_id": "hermes-cli",
+                "client_id": "akramcode-cli",
                 "token_type": "Bearer",
                 "scope": scope,
                 "access_token": access_token,
@@ -120,7 +120,7 @@ def _setup_nous_auth(
             }
         },
     }
-    (hermes_home / "auth.json").write_text(json.dumps(auth_store, indent=2))
+    (akramcode_home / "auth.json").write_text(json.dumps(auth_store, indent=2))
 
 def _jwt_with_claims(claims: dict) -> str:
     def _part(payload: dict) -> str:
@@ -145,16 +145,16 @@ def test_resolve_nous_runtime_credentials_prefers_invoke_jwt_and_mirrors(
 ):
     import akramcode_cli.auth as auth_mod
 
-    hermes_home = tmp_path / "hermes"
+    akramcode_home = tmp_path / "akramcode"
     token = _invoke_jwt(seconds=3600)
     _setup_nous_auth(
-        hermes_home,
+        akramcode_home,
         access_token=token,
         scope=auth_mod.DEFAULT_NOUS_SCOPE,
         expires_at=_future_iso(3600),
         expires_in=3600,
     )
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
     creds = auth_mod.resolve_nous_runtime_credentials()
 
@@ -162,7 +162,7 @@ def test_resolve_nous_runtime_credentials_prefers_invoke_jwt_and_mirrors(
     assert creds["source"] == auth_mod.NOUS_AUTH_PATH_INVOKE_JWT
     assert creds["auth_path"] == auth_mod.NOUS_AUTH_PATH_INVOKE_JWT
 
-    payload = json.loads((hermes_home / "auth.json").read_text())
+    payload = json.loads((akramcode_home / "auth.json").read_text())
     singleton = payload["providers"]["nous"]
     assert singleton["agent_key"] == token
     assert datetime.fromisoformat(singleton["agent_key_expires_at"]).timestamp() > time.time() + 300
@@ -179,8 +179,8 @@ def test_resolve_nous_runtime_credentials_invoke_jwt_is_idempotent(
     import akramcode_cli.auth as auth_mod
     import akramcode_cli.auth_nous as auth_nous
 
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
+    akramcode_home = tmp_path / "akramcode"
+    akramcode_home.mkdir(parents=True, exist_ok=True)
     exp = int(time.time() + 3600)
     expires_at = datetime.fromtimestamp(exp, tz=timezone.utc).isoformat()
     token = _jwt_with_claims({
@@ -196,7 +196,7 @@ def test_resolve_nous_runtime_credentials_invoke_jwt_is_idempotent(
             "nous": {
                 "portal_base_url": "https://portal.nousresearch.com",
                 "inference_base_url": "https://inference-api.nousresearch.com/v1",
-                "client_id": "hermes-cli",
+                "client_id": "akramcode-cli",
                 "token_type": "Bearer",
                 "scope": auth_mod.DEFAULT_NOUS_SCOPE,
                 "access_token": token,
@@ -214,11 +214,11 @@ def test_resolve_nous_runtime_credentials_invoke_jwt_is_idempotent(
             },
         },
     }
-    auth_path = hermes_home / "auth.json"
+    auth_path = akramcode_home / "auth.json"
     auth_path.write_text(json.dumps(auth_store, indent=2))
     before_content = auth_path.read_text()
     before_mtime = auth_path.stat().st_mtime_ns
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
     def _unexpected_shared_write(*args, **kwargs):
         raise AssertionError("unchanged invoke JWT resolution should not sync shared store")
@@ -257,21 +257,21 @@ def test_resolve_nous_runtime_credentials_reauths_when_invoke_scope_missing(
 ):
     import akramcode_cli.auth as auth_mod
 
-    hermes_home = tmp_path / "hermes"
+    akramcode_home = tmp_path / "akramcode"
     token = _jwt_with_claims({
         "sub": "test-user",
         "scope": "inference:mint_agent_key",
         "exp": int(time.time() + 3600),
     })
     _setup_nous_auth(
-        hermes_home,
+        akramcode_home,
         access_token=token,
         refresh_token="",
         scope="inference:mint_agent_key",
         expires_at=_future_iso(3600),
         expires_in=3600,
     )
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
     with pytest.raises(AuthError) as exc:
         auth_mod.resolve_nous_runtime_credentials()
@@ -280,7 +280,7 @@ def test_resolve_nous_runtime_credentials_reauths_when_invoke_scope_missing(
     assert exc.value.code == "nous_auth_missing_refresh_token"
     assert "missing_inference_invoke_scope" in str(exc.value)
     assert exc.value.relogin_required is True
-    payload = json.loads((hermes_home / "auth.json").read_text())
+    payload = json.loads((akramcode_home / "auth.json").read_text())
     assert payload["providers"]["nous"]["agent_key"] is None
     assert "credential_pool" not in payload or not payload["credential_pool"].get("nous")
 
@@ -292,19 +292,19 @@ def test_nous_inference_auth_logs_do_not_include_secret_values(
     import akramcode_cli.auth as auth_mod
     import akramcode_cli.auth_nous as auth_nous
 
-    hermes_home = tmp_path / "hermes"
+    akramcode_home = tmp_path / "akramcode"
     token = _invoke_jwt(seconds=3600)
     refreshed_token = _invoke_jwt(seconds=7200)
     refresh_token = "refresh-secret-token"
     _setup_nous_auth(
-        hermes_home,
+        akramcode_home,
         access_token=token,
         refresh_token=refresh_token,
         scope=auth_mod.DEFAULT_NOUS_SCOPE,
         expires_at=_future_iso(3600),
         expires_in=3600,
     )
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
     def _fake_refresh_access_token(*, client, portal_base_url, client_id, refresh_token):
         del client, portal_base_url, client_id, refresh_token
@@ -343,13 +343,13 @@ def test_get_nous_auth_status_checks_credential_pool(tmp_path, monkeypatch):
     """
     from akramcode_cli.auth import get_nous_auth_status
 
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
+    akramcode_home = tmp_path / "akramcode"
+    akramcode_home.mkdir(parents=True, exist_ok=True)
     # Empty auth store — no Nous provider entry
-    (hermes_home / "auth.json").write_text(json.dumps({
+    (akramcode_home / "auth.json").write_text(json.dumps({
         "version": 1, "providers": {},
     }))
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
     # Seed the credential pool with a Nous entry
     from agent.credential_pool import PooledCredential, load_pool
@@ -381,12 +381,12 @@ def test_get_nous_auth_status_empty_returns_not_logged_in(tmp_path, monkeypatch)
     """
     from akramcode_cli.auth import get_nous_auth_status
 
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    (hermes_home / "auth.json").write_text(json.dumps({
+    akramcode_home = tmp_path / "akramcode"
+    akramcode_home.mkdir(parents=True, exist_ok=True)
+    (akramcode_home / "auth.json").write_text(json.dumps({
         "version": 1, "providers": {},
     }))
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
     status = get_nous_auth_status()
     assert status["logged_in"] is False
@@ -398,7 +398,7 @@ def test_get_nous_auth_status_empty_returns_not_logged_in(tmp_path, monkeypatch)
 
 
 class TestLoginNousSkipKeepsCurrent:
-    """When a user runs `hermes model` → Nous Portal → Skip (keep current) after
+    """When a user runs `akramcode model` → Nous Portal → Skip (keep current) after
     a successful OAuth login, the prior provider and model MUST be preserved.
 
     Regression: previously, _update_config_for_provider was called
@@ -408,12 +408,12 @@ class TestLoginNousSkipKeepsCurrent:
     """
 
     def _setup_home_with_openrouter(self, tmp_path, monkeypatch):
-        import akram_core.hermes_yaml as yaml
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        import akram_core.akramcode_yaml as yaml
+        akramcode_home = tmp_path / "akramcode"
+        akramcode_home.mkdir(parents=True, exist_ok=True)
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
-        config_path = hermes_home / "config.yaml"
+        config_path = akramcode_home / "config.yaml"
         config_path.write_text(yaml.safe_dump({
             "model": {
                 "provider": "openrouter",
@@ -421,13 +421,13 @@ class TestLoginNousSkipKeepsCurrent:
             },
         }, sort_keys=False))
 
-        auth_path = hermes_home / "auth.json"
+        auth_path = akramcode_home / "auth.json"
         auth_path.write_text(json.dumps({
             "version": 1,
             "active_provider": "openrouter",
             "providers": {"openrouter": {"api_key": "sk-or-fake"}},
         }))
-        return hermes_home, config_path, auth_path
+        return akramcode_home, config_path, auth_path
 
     def _patch_login_internals(self, monkeypatch, *, prompt_returns):
         """Patch OAuth + model-list + prompt so _login_nous doesn't hit network."""
@@ -475,10 +475,10 @@ class TestLoginNousSkipKeepsCurrent:
     def test_skip_keep_current_preserves_provider_and_model(self, tmp_path, monkeypatch):
         """User picks Skip → config.yaml untouched, Nous creds still saved."""
         import argparse
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
         from akramcode_cli.auth import PROVIDER_REGISTRY, _login_nous
 
-        hermes_home, config_path, auth_path = self._setup_home_with_openrouter(
+        akramcode_home, config_path, auth_path = self._setup_home_with_openrouter(
             tmp_path, monkeypatch,
         )
         self._patch_login_internals(monkeypatch, prompt_returns=None)
@@ -506,10 +506,10 @@ class TestLoginNousSkipKeepsCurrent:
     def test_picking_model_switches_to_nous(self, tmp_path, monkeypatch):
         """User picks a Nous model → provider flips to nous with that model."""
         import argparse
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
         from akramcode_cli.auth import PROVIDER_REGISTRY, _login_nous
 
-        hermes_home, config_path, auth_path = self._setup_home_with_openrouter(
+        akramcode_home, config_path, auth_path = self._setup_home_with_openrouter(
             tmp_path, monkeypatch,
         )
         self._patch_login_internals(
@@ -533,14 +533,14 @@ class TestLoginNousSkipKeepsCurrent:
         """Fresh install (no prior active_provider) → Skip clears active_provider
         instead of leaving it as nous."""
         import argparse
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
         from akramcode_cli.auth import PROVIDER_REGISTRY, _login_nous
 
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        akramcode_home = tmp_path / "akramcode"
+        akramcode_home.mkdir(parents=True, exist_ok=True)
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
-        config_path = hermes_home / "config.yaml"
+        config_path = akramcode_home / "config.yaml"
         config_path.write_text(yaml.safe_dump({"model": {}}, sort_keys=False))
 
         # No auth.json yet — simulates first-run before any OAuth
@@ -552,7 +552,7 @@ class TestLoginNousSkipKeepsCurrent:
         )
         _login_nous(args, PROVIDER_REGISTRY["nous"])
 
-        auth_path = hermes_home / "auth.json"
+        auth_path = akramcode_home / "auth.json"
         auth_after = json.loads(auth_path.read_text())
         # active_provider should NOT be set to "nous" after Skip
         assert auth_after.get("active_provider") in {None, ""}
@@ -573,7 +573,7 @@ def _full_state_fixture() -> dict:
     return {
         "portal_base_url": "https://portal.example.com",
         "inference_base_url": "https://inference.example.com/v1",
-        "client_id": "hermes-cli",
+        "client_id": "akramcode-cli",
         "scope": "inference:invoke",
         "token_type": "Bearer",
         "access_token": token,
@@ -602,12 +602,12 @@ def test_persist_nous_credentials_idempotent_no_duplicate_pool_entries(tmp_path,
     """
     from akramcode_cli.auth import persist_nous_credentials, NOUS_DEVICE_CODE_SOURCE
 
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    (hermes_home / "auth.json").write_text(json.dumps({
+    akramcode_home = tmp_path / "akramcode"
+    akramcode_home.mkdir(parents=True, exist_ok=True)
+    (akramcode_home / "auth.json").write_text(json.dumps({
         "version": 1, "providers": {},
     }))
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
     first = _full_state_fixture()
     persist_nous_credentials(first)
@@ -619,7 +619,7 @@ def test_persist_nous_credentials_idempotent_no_duplicate_pool_entries(tmp_path,
     second["agent_key_expires_at"] = _future_iso(7200)
     persist_nous_credentials(second)
 
-    payload = json.loads((hermes_home / "auth.json").read_text())
+    payload = json.loads((akramcode_home / "auth.json").read_text())
 
     # providers.nous reflects the latest write (singleton semantics)
     assert payload["providers"]["nous"]["access_token"] == second_token
@@ -639,10 +639,10 @@ def test_refresh_token_reuse_detection_surfaces_actionable_message():
     """Regression for #15099.
 
     When the Nous Portal server returns ``invalid_grant`` with
-    ``error_description`` containing "reuse detected", Hermes must surface an
+    ``error_description`` containing "reuse detected", AkramCode must surface an
     actionable message explaining that an external process consumed the
     refresh token.  The default opaque "Refresh token reuse detected; please
-    re-authenticate" string led users to report this as a Hermes persistence
+    re-authenticate" string led users to report this as a AkramCode persistence
     bug when the true cause is external RT consumption (monitoring scripts,
     custom self-heal hooks).
     """
@@ -665,7 +665,7 @@ def test_refresh_token_reuse_detection_surfaces_actionable_message():
         _refresh_access_token(
             client=_FakeClient(),
             portal_base_url="https://portal.nousresearch.com",
-            client_id="hermes-cli",
+            client_id="akramcode-cli",
             refresh_token="rt_consumed_elsewhere",
         )
 
@@ -725,7 +725,7 @@ def test_refresh_token_exchange_error_classification(
         _refresh_access_token(
             client=_FakeClient(),
             portal_base_url="https://portal.nousresearch.com",
-            client_id="hermes-cli",
+            client_id="akramcode-cli",
             refresh_token="refresh-still-valid",
         )
 
@@ -756,17 +756,17 @@ def test_runtime_refresh_503_preserves_nous_oauth_credentials(
     import akramcode_cli.auth as auth_mod
     import akramcode_cli.auth_nous as auth_nous
 
-    hermes_home = tmp_path / "hermes"
+    akramcode_home = tmp_path / "akramcode"
     access_token = _invoke_jwt(seconds=3600)
     refresh_token = "refresh-still-valid"
     _setup_nous_auth(
-        hermes_home,
+        akramcode_home,
         access_token=access_token,
         refresh_token=refresh_token,
         expires_at=_future_iso(3600),
         expires_in=3600,
     )
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
     class _FakeResponse:
         def __init__(self):
@@ -828,7 +828,7 @@ def test_refresh_token_exchange_sends_refresh_token_header():
     payload = _refresh_access_token(
         client=client,
         portal_base_url="https://portal.nousresearch.com",
-        client_id="hermes-cli",
+        client_id="akramcode-cli",
         refresh_token="refresh-1",
     )
 
@@ -838,7 +838,7 @@ def test_refresh_token_exchange_sends_refresh_token_header():
     assert client.kwargs["headers"]["x-nous-refresh-token"] == "refresh-1"
     assert client.kwargs["data"] == {
         "grant_type": "refresh_token",
-        "client_id": "hermes-cli",
+        "client_id": "akramcode-cli",
     }
 
 
@@ -849,7 +849,7 @@ def test_refresh_token_exchange_sends_refresh_token_header():
 
 @pytest.fixture
 def shared_store_env(tmp_path, monkeypatch):
-    """Redirect HERMES_SHARED_AUTH_DIR to a tmp_path.
+    """Redirect AKRAMCODE_SHARED_AUTH_DIR to a tmp_path.
 
     Required for every test that exercises the shared Nous store — the
     in-auth.py seat belt refuses to touch the real user's shared store
@@ -857,19 +857,19 @@ def shared_store_env(tmp_path, monkeypatch):
     of corrupting real state.
     """
     shared_dir = tmp_path / "shared"
-    monkeypatch.setenv("HERMES_SHARED_AUTH_DIR", str(shared_dir))
+    monkeypatch.setenv("AKRAMCODE_SHARED_AUTH_DIR", str(shared_dir))
     return shared_dir
 
 def test_shared_store_seat_belt_refuses_real_home_under_pytest(monkeypatch):
-    """Without HERMES_SHARED_AUTH_DIR override, the seat belt must trip.
+    """Without AKRAMCODE_SHARED_AUTH_DIR override, the seat belt must trip.
 
     Mirrors the existing ``_auth_file_path`` seat belt: forgetting to
     redirect this store in a test must fail loudly instead of silently
-    writing to the user's real ``~/.hermes/shared/`` across CI runs.
+    writing to the user's real ``~/.akramcode/shared/`` across CI runs.
     """
     from akramcode_cli.auth import _nous_shared_store_path
 
-    monkeypatch.delenv("HERMES_SHARED_AUTH_DIR", raising=False)
+    monkeypatch.delenv("AKRAMCODE_SHARED_AUTH_DIR", raising=False)
 
     with pytest.raises(RuntimeError, match="shared Nous auth store"):
         _nous_shared_store_path()
@@ -908,7 +908,7 @@ def test_persist_nous_credentials_mirrors_to_shared_store(
     tmp_path, monkeypatch, shared_store_env,
 ):
     """persist_nous_credentials must populate BOTH per-profile auth.json
-    AND the shared store, so a future profile's `hermes auth add nous
+    AND the shared store, so a future profile's `akramcode auth add nous
     --type oauth` can one-tap import instead of redoing device-code.
     """
     from akramcode_cli.auth import (
@@ -917,17 +917,17 @@ def test_persist_nous_credentials_mirrors_to_shared_store(
         persist_nous_credentials,
     )
 
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    (hermes_home / "auth.json").write_text(
+    akramcode_home = tmp_path / "akramcode"
+    akramcode_home.mkdir(parents=True, exist_ok=True)
+    (akramcode_home / "auth.json").write_text(
         json.dumps({"version": 1, "providers": {}})
     )
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
     persist_nous_credentials(_full_state_fixture())
 
     # Per-profile auth.json populated
-    payload = json.loads((hermes_home / "auth.json").read_text())
+    payload = json.loads((akramcode_home / "auth.json").read_text())
     assert "nous" in payload.get("providers", {})
 
     # Shared store populated with the same refresh_token
@@ -971,7 +971,7 @@ def test_try_import_shared_rehydrates_on_success(shared_store_env, monkeypatch):
     assert result["agent_key"] == fresh_jwt
     # Preserved from shared state
     assert result["portal_base_url"] == "https://portal.example.com"
-    assert result["client_id"] == "hermes-cli"
+    assert result["client_id"] == "akramcode-cli"
 
 class TestStalePortalBaseUrlMigration:
     """_migrate_stale_nous_portal_url auto-corrects stale portal_base_url on load."""
@@ -979,7 +979,7 @@ class TestStalePortalBaseUrlMigration:
     def test_migrates_stale_portal_url_on_load(self, tmp_path, monkeypatch):
         from akramcode_cli.auth import _load_auth_store, DEFAULT_NOUS_PORTAL_URL
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
         auth_file = tmp_path / "auth.json"
         auth_file.write_text(json.dumps({
             "version": 1,
@@ -1004,16 +1004,16 @@ class TestStalePortalBaseUrlMigration:
         from akramcode_cli import auth as auth_mod
         import akramcode_cli.auth_nous as auth_nous
 
-        hermes_home = tmp_path / "hermes"
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        akramcode_home = tmp_path / "akramcode"
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
         _setup_nous_auth(
-            hermes_home,
+            akramcode_home,
             access_token=_invoke_jwt(seconds=-60),
             refresh_token="valid-refresh",
             expires_at=_future_iso(-60),
             expires_in=0,
         )
-        auth_file = hermes_home / "auth.json"
+        auth_file = akramcode_home / "auth.json"
         store = json.loads(auth_file.read_text())
         store["providers"]["nous"]["portal_base_url"] = (
             "http://portal.nousresearch.com"
@@ -1073,7 +1073,7 @@ def test_poll_for_token_timeout_raises_actionable_message():
         auth_mod._poll_for_token(
             client=cast(httpx.Client, _PendingClient()),
             portal_base_url="https://portal.nousresearch.com",
-            client_id="hermes-cli",
+            client_id="akramcode-cli",
             device_code="device",
             expires_in=1,
             poll_interval=1,

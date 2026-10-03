@@ -78,7 +78,7 @@ _STORE_OPENERS = (
 def test_every_store_opens_through_the_canonical_open_db(monkeypatch, tmp_path, module_name, attr):
     import importlib
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     module = importlib.import_module(module_name)
     for name in ("EXECUTIONS_FILE", "NOTEPAD_FILE", "DELIVERY_DB"):
         if hasattr(module, name):
@@ -116,7 +116,7 @@ def test_every_store_opens_through_the_canonical_open_db(monkeypatch, tmp_path, 
 def test_plugin_db_wal_goes_through_the_shared_fallback(monkeypatch, tmp_path):
     """A raw ``PRAGMA journal_mode=WAL`` bypasses the network-FS fallback and the WAL-reset-bug gate;
     plugin databases must obey the same rules as every core store."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     import akramcode_state.wal
     from plugins import plugin_storage
 

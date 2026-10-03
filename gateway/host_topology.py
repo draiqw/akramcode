@@ -1,6 +1,6 @@
 """Who owns the gateway role on THIS host, and which profiles does that one process serve?
 
-Multiplex-only (Teknium ruling): exactly ONE ``hermes gateway run`` per host, multiplexing every
+Multiplex-only (Teknium ruling): exactly ONE ``akramcode gateway run`` per host, multiplexing every
 profile. Every reporting surface (doctor, ``cron status``, ``claw``, the dashboard liveness ladder)
 used to ask a per-PROFILE question instead — "does *my* profile own a gateway process?" — and a
 profile that is SERVED by the host gateway answered "no". That produced three user-visible lies:
@@ -69,10 +69,10 @@ def _from_host_record() -> Optional[HostGatewayTopology]:
     if record.create_time is None or not hr.liveness_is_proven(record):
         return None
     from gateway.host_attach import launched_by_other_tenant, record_home
-    from akramcode_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
 
     # Another tenant root's gateway is a name collision, not this tenant's host process (#121352).
-    if launched_by_other_tenant(record.home, get_hermes_home()):
+    if launched_by_other_tenant(record.home, get_akramcode_home()):
         return None
     return HostGatewayTopology(pid=int(record.pid), profiles=tuple(record.profiles), source="host_record",
                                home=record_home(record))

@@ -1,11 +1,11 @@
-"""hermes.provider_setup.count: where connecting a model provider starts, succeeds, fails or is walked away from.
+"""akramcode.provider_setup.count: where connecting a model provider starts, succeeds, fails or is walked away from.
 
 A flow is ``started`` once the user has picked a provider. Its end is recorded by the surface that
 ran it (``completed`` / ``failed`` + a closed failure class). A flow nobody finished cannot record
 itself, so ``started`` also drops a small marker under the owning profile's store dir (the
 process-exit pattern): the finisher claims it by rename, and a marker whose process is gone (or that
 has been pending longer than any real flow takes) is reported ``abandoned`` by the next setup start
-or Hermes start in that profile. Whoever claims the marker records, so each flow ends exactly once.
+or AkramCode start in that profile. Whoever claims the marker records, so each flow ends exactly once.
 
 Only the catalog provider name leaves (custom endpoints read ``custom``); never a key, token, base
 URL or error text. Rows are saved synchronously: a setup killed right after ``started`` must still
@@ -65,25 +65,25 @@ def markers_dir(home: Path) -> Path:
 
 
 @contextlib.contextmanager
-def _bound(hermes_home: Any) -> Iterator[None]:
+def _bound(akramcode_home: Any) -> Iterator[None]:
     token = None
-    if hermes_home:
-        from akramcode_constants import set_hermes_home_override
+    if akramcode_home:
+        from akramcode_constants import set_akramcode_home_override
 
-        token = set_hermes_home_override(str(hermes_home))
+        token = set_akramcode_home_override(str(akramcode_home))
     try:
         yield
     finally:
         if token is not None:
-            from akramcode_constants import reset_hermes_home_override
+            from akramcode_constants import reset_akramcode_home_override
 
-            reset_hermes_home_override(token)
+            reset_akramcode_home_override(token)
 
 
-def collection_enabled(hermes_home: Any = None) -> bool:
+def collection_enabled(akramcode_home: Any = None) -> bool:
     """The owning profile's shared-metrics gate (cheap; lets async callers skip the thread hop)."""
     try:
-        with _bound(hermes_home):
+        with _bound(akramcode_home):
             from .relay_shared_metrics import enabled
 
             return bool(enabled())
@@ -127,10 +127,10 @@ def _save_row(fields: dict[str, str] | None) -> bool:
     return emit_saved([(PROVIDER_SETUP_MARK, fields)]) == 1
 
 
-def begin_provider_setup(surface: str, provider: Any, *, hermes_home: Any = None) -> SetupFlow | None:
+def begin_provider_setup(surface: str, provider: Any, *, akramcode_home: Any = None) -> SetupFlow | None:
     """Record ``started`` and drop the pending marker; None (no files, no rows) when collection is off."""
     try:
-        with _bound(hermes_home):
+        with _bound(akramcode_home):
             from .relay_shared_metrics import enabled
 
             if not provider or provider in _NOT_A_PROVIDER or not enabled():
@@ -139,9 +139,9 @@ def begin_provider_setup(surface: str, provider: Any, *, hermes_home: Any = None
             if fields is None:
                 return None
             from gateway.status import get_process_start_time
-            from akramcode_constants import get_hermes_home
+            from akramcode_constants import get_akramcode_home
 
-            home = get_hermes_home()
+            home = get_akramcode_home()
             report_abandoned_setups(home)
             directory = markers_dir(home)
             directory.mkdir(parents=True, exist_ok=True)
@@ -228,25 +228,25 @@ def report_abandoned_setups(home: Path) -> None:
         settle_claim(claimed, original, _save_row(fields))
 
 
-def record_provider_setup_done(surface: str, provider: Any, *, hermes_home: Any = None, background: bool = False) -> None:
+def record_provider_setup_done(surface: str, provider: Any, *, akramcode_home: Any = None, background: bool = False) -> None:
     """A setup that starts and lands in one action (an API key saved from a form): both rows at once.
     ``background`` keeps a request handler from waiting on a cold metrics runtime; the owning home is
     captured here, since a thread does not inherit the profile binding."""
     try:
-        with _bound(hermes_home):
+        with _bound(akramcode_home):
             from .relay_shared_metrics import enabled
 
             if not provider or not enabled():
                 return
-            from akramcode_constants import get_hermes_home
+            from akramcode_constants import get_akramcode_home
 
-            home = str(get_hermes_home())
+            home = str(get_akramcode_home())
 
         def run() -> None:
-            finish_provider_setup(begin_provider_setup(surface, provider, hermes_home=home), "completed")
+            finish_provider_setup(begin_provider_setup(surface, provider, akramcode_home=home), "completed")
 
         if background:
-            threading.Thread(target=run, name="hermes-setup-metrics", daemon=True).start()
+            threading.Thread(target=run, name="akramcode-setup-metrics", daemon=True).start()
         else:
             run()
     except Exception:
@@ -286,7 +286,7 @@ def record_api_key_saved(env_var: Any, value: Any, previous: Any, surface: str, 
         logger.debug("API key setup not recorded", exc_info=True)
 
 
-# ---- CLI flows (`hermes setup`, `hermes model`, first-run chat) ------------------------------
+# ---- CLI flows (`akramcode setup`, `akramcode model`, first-run chat) ------------------------------
 
 _cli = threading.local()
 
@@ -321,7 +321,7 @@ def _model_route() -> tuple[Any, ...]:
 
 @contextlib.contextmanager
 def provider_setup_surface(surface: str) -> Iterator[None]:
-    """Name the surface whose provider picker runs inside (``hermes model``, the setup wizard, the
+    """Name the surface whose provider picker runs inside (``akramcode model``, the setup wizard, the
     first-run chat prompt). The picker is shared, so only these entry points know which one it is."""
     previous = getattr(_cli, "surface", None)
     _cli.surface = surface
@@ -409,9 +409,9 @@ def web_setup_surface() -> str:
     return "desktop" if is_desktop_owned_backend() else "dashboard"
 
 
-def begin_oauth_setup(provider: str, hermes_home: Any) -> SetupFlow | None:
+def begin_oauth_setup(provider: str, akramcode_home: Any) -> SetupFlow | None:
     try:
-        return begin_provider_setup(web_setup_surface(), provider, hermes_home=hermes_home)
+        return begin_provider_setup(web_setup_surface(), provider, akramcode_home=akramcode_home)
     except Exception:
         logger.debug("OAuth setup start not recorded", exc_info=True)
         return None

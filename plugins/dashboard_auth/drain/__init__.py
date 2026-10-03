@@ -2,7 +2,7 @@
 
 Non-interactive token capability of the ``DashboardAuthProvider`` ABC (``verify_token`` +
 the ``token_auth`` middleware seam): ``nous-account-service`` provisions a per-agent unique
-secret (``HERMES_DASHBOARD_DRAIN_SECRET``, env-only — it is a credential); an inbound bearer
+secret (``AKRAMCODE_DASHBOARD_DRAIN_SECRET``, env-only — it is a credential); an inbound bearer
 is compared constant-time and vouched for as the ``drain-control`` principal. Fail-CLOSED
 entropy gate at registration (length, distinct chars, Shannon bits); interactive ABC methods
 raise. Knobs ``scope`` / ``min_secret_chars`` live under ``dashboard.drain_auth``.
@@ -115,10 +115,10 @@ def _load_config_drain_auth_section() -> dict:
 
 def _settings() -> dict:
     """Resolve DrainSecretProvider kwargs from env/config; raises ``SkipRegistration``."""
-    secret = os.environ.get("HERMES_DASHBOARD_DRAIN_SECRET", "").strip()
+    secret = os.environ.get("AKRAMCODE_DASHBOARD_DRAIN_SECRET", "").strip()
     if not secret:
         raise SkipRegistration(
-            "HERMES_DASHBOARD_DRAIN_SECRET is not set. Set a per-agent >=256-bit secret "
+            "AKRAMCODE_DASHBOARD_DRAIN_SECRET is not set. Set a per-agent >=256-bit secret "
             "(e.g. `python -c \"import secrets; print(secrets.token_urlsafe(32))\"`) to enable "
             "NAS-driven drain coordination; leave it unset to disable the drain endpoint.")
     section = _load_config_drain_auth_section()
@@ -130,14 +130,14 @@ def _settings() -> dict:
     reason = assess_secret_strength(secret, min_chars=min_chars)
     if reason is not None:
         raise SkipRegistration(
-            f"HERMES_DASHBOARD_DRAIN_SECRET rejected — {reason}. The drain endpoint stays disabled (fail-closed).",
+            f"AKRAMCODE_DASHBOARD_DRAIN_SECRET rejected — {reason}. The drain endpoint stays disabled (fail-closed).",
             level="warning")
     return {"secret": secret, "scope": scope}
 
 
 def register(ctx) -> None:
     """Register ``DrainSecretProvider`` when a strong secret is set; no-op (records a skip
-    reason) when ``HERMES_DASHBOARD_DRAIN_SECRET`` is unset or fails the entropy gate. On
+    reason) when ``AKRAMCODE_DASHBOARD_DRAIN_SECRET`` is unset or fails the entropy gate. On
     success also registers the drain route as token-authable via the generic seam."""
     global LAST_SKIP_REASON
     LAST_SKIP_REASON = ""

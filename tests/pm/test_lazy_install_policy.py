@@ -14,7 +14,7 @@ from akramcode_cli.config import get_config_path
     ("security: [\n", False),
 ])
 def test_real_policy_is_boolean_and_fails_closed(monkeypatch, capsys, content, expected):
-    monkeypatch.delenv("HERMES_DISABLE_LAZY_INSTALLS", raising=False)
+    monkeypatch.delenv("AKRAMCODE_DISABLE_LAZY_INSTALLS", raising=False)
     config = get_config_path()
     config.write_text(content, encoding="utf-8")
 
@@ -25,6 +25,6 @@ def test_real_policy_is_boolean_and_fails_closed(monkeypatch, capsys, content, e
 
 def test_internal_disable_overrides_enabled_config(monkeypatch):
     get_config_path().write_text("security:\n  allow_lazy_installs: true\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_DISABLE_LAZY_INSTALLS", "1")
+    monkeypatch.setenv("AKRAMCODE_DISABLE_LAZY_INSTALLS", "1")
 
     assert not pm.lazy_installs_allowed()

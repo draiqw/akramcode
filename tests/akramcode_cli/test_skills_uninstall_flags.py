@@ -1,5 +1,5 @@
 """
-Tests for --yes / -y flag in `hermes skills uninstall` CLI subcommand.
+Tests for --yes / -y flag in `akramcode skills uninstall` CLI subcommand.
 
 Verifies the parser registers the flag and the value reaches
 ``do_uninstall(skip_confirm=True)`` through the real ``skills_command``
@@ -29,7 +29,7 @@ def test_cli_skills_uninstall_yes_sets_skip_confirm(monkeypatch):
     """`--yes` should propagate to do_uninstall(skip_confirm=True)."""
     captured = _run_uninstall_cli(
         monkeypatch,
-        ["hermes", "skills", "uninstall", "test-skill", "--yes"],
+        ["akramcode", "skills", "uninstall", "test-skill", "--yes"],
     )
 
     assert captured["name"] == "test-skill"
@@ -42,7 +42,7 @@ def test_cli_skills_uninstall_no_flags_keeps_prompt(monkeypatch):
     """Without --yes, skip_confirm must be False (prompt preserved)."""
     captured = _run_uninstall_cli(
         monkeypatch,
-        ["hermes", "skills", "uninstall", "test-skill"],
+        ["akramcode", "skills", "uninstall", "test-skill"],
     )
 
     assert captured["name"] == "test-skill"

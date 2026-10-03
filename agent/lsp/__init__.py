@@ -1,4 +1,4 @@
-"""Language Server Protocol (LSP) integration for Hermes Agent.
+"""Language Server Protocol (LSP) integration for AkramCode Agent.
 
 Real language servers (pyright, gopls, ...) run as subprocesses and their
 ``publishDiagnostics`` feed the post-write lint delta filter of ``write_file`` /
@@ -18,7 +18,7 @@ from agent.lsp.manager import LSPService
 logger = logging.getLogger("agent.lsp")
 
 _service: Optional[LSPService] = None
-# Routed multiplex profiles (HERMES_HOME override) each get their own service: ``lsp.*`` config
+# Routed multiplex profiles (AKRAMCODE_HOME override) each get their own service: ``lsp.*`` config
 # (enabled, servers, idle timeout) is per profile, so one process-wide singleton would let the first
 # profile's settings decide whether every other profile gets diagnostics.
 _services_by_home: dict = {}
@@ -42,14 +42,14 @@ def get_service() -> Optional[LSPService]:
     profile override is bound), or None when disabled.
 
     Also registers an :mod:`atexit` hook so a clean exit tears down spawned servers:
-    without it every ``hermes chat`` exit leaks pyright processes for a few seconds
+    without it every ``akramcode chat`` exit leaks pyright processes for a few seconds
     while their stdout buffers drain.  (SIGKILL/os._exit skip atexit — fine, the
     kernel reaps the stateless servers with their parent.)
     """
     global _service
-    from akramcode_constants import get_hermes_home_override, hermes_home_key
-    if get_hermes_home_override() is not None:
-        home_key = hermes_home_key()
+    from akramcode_constants import get_akramcode_home_override, akramcode_home_key
+    if get_akramcode_home_override() is not None:
+        home_key = akramcode_home_key()
         with _service_lock:
             if home_key not in _services_by_home:
                 _services_by_home[home_key] = LSPService.create_from_config()

@@ -131,14 +131,14 @@ def test_keepalive_binds_launch_scope_for_multiplexed_singleton_refresh(tmp_path
     from agent.secret_scope import is_multiplex_active, set_multiplex_active
     from akramcode_cli.auth_nous import _nous_inference_env_override, _nous_portal_env_override
 
-    launch_home = tmp_path / ".hermes"
+    launch_home = tmp_path / ".akramcode"
     launch_home.mkdir()
     (launch_home / ".env").write_text(
         "NOUS_INFERENCE_BASE_URL=https://inference.example/v1\n"
-        "HERMES_PORTAL_BASE_URL=https://portal.example\n",
+        "AKRAMCODE_PORTAL_BASE_URL=https://portal.example\n",
         encoding="utf-8",
     )
-    monkeypatch.setenv("HERMES_HOME", str(launch_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(launch_home))
     monkeypatch.setattr("agent.credential_pool.load_pool", lambda provider: None)
     monkeypatch.setattr(
         keepalive, "get_provider_auth_state", lambda provider: {"access_token": "stored-token"}
@@ -168,12 +168,12 @@ def test_keepalive_binds_launch_scope_for_multiplexed_pool_refresh(tmp_path, mon
     """Pool refreshes run under the same launch scope as singleton refreshes."""
     from agent.secret_scope import current_secret_scope, is_multiplex_active, set_multiplex_active
 
-    launch_home = tmp_path / ".hermes"
+    launch_home = tmp_path / ".akramcode"
     launch_home.mkdir()
     (launch_home / ".env").write_text(
         "NOUS_INFERENCE_BASE_URL=https://inference.example/v1\n", encoding="utf-8"
     )
-    monkeypatch.setenv("HERMES_HOME", str(launch_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(launch_home))
     seen = []
 
     class _Entry:

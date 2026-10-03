@@ -1,6 +1,6 @@
-"""Image-authored deployment provenance for immutable Hermes runtimes.
+"""Image-authored deployment provenance for immutable AkramCode runtimes.
 
-The image bakes ``/etc/hermes/image-provenance.json`` outside ``$HERMES_HOME`` and the checkout, so a
+The image bakes ``/etc/akramcode/image-provenance.json`` outside ``$AKRAMCODE_HOME`` and the checkout, so a
 bind-mounted checkout cannot hide the build fact and env/config cannot forge it. Absence preserves every
 source/package install path. Presence fails closed: an unreadable, non-regular, or malformed marker still
 means image-managed — an integrity defect, never permission to mutate the image in place."""
@@ -13,7 +13,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Optional
 
-IMAGE_PROVENANCE_PATH = Path("/etc/hermes/image-provenance.json")
+IMAGE_PROVENANCE_PATH = Path("/etc/akramcode/image-provenance.json")
 IMAGE_PROVENANCE_SCHEMA = 1
 
 

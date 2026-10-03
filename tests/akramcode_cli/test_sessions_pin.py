@@ -42,7 +42,7 @@ def _run(monkeypatch, capsys, argv_tail, db):
     import akramcode_state
 
     monkeypatch.setattr(akramcode_state, "SessionDB", lambda *args, **kwargs: db)
-    monkeypatch.setattr(sys, "argv", ["hermes", "sessions", *argv_tail])
+    monkeypatch.setattr(sys, "argv", ["akramcode", "sessions", *argv_tail])
     try:
         main_mod.main()
         code = 0
@@ -69,7 +69,7 @@ def test_pin_multiple_ids_one_missing(monkeypatch, capsys):
     code, out = _run(monkeypatch, capsys, ["pin", "aaa", "nope", "bbb"], db)
     assert ("aaa111", True) in db.pin_calls
     assert ("bbb222", True) in db.pin_calls
-    assert "No session 'nope'" in out and "hermes sessions list" in out
+    assert "No session 'nope'" in out and "akramcode sessions list" in out
     assert code == 1
 
 def test_pinned_lists_only_pinned_rows(monkeypatch, capsys):

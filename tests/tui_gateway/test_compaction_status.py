@@ -22,8 +22,8 @@ def server():
     with patch.dict(
         "sys.modules",
         {
-            "hermes_constants": MagicMock(
-                get_hermes_home=MagicMock(return_value="/tmp/hermes_test_compaction")
+            "akramcode_constants": MagicMock(
+                get_akramcode_home=MagicMock(return_value="/tmp/akramcode_test_compaction")
             ),
             "akramcode_cli.env_loader": MagicMock(),
             "akramcode_cli.banner": MagicMock(),

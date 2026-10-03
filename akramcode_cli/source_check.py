@@ -16,7 +16,7 @@ from urllib.parse import quote
 import urllib.error
 import urllib.request
 
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 from akramcode_cli.source_releases import OFFICIAL_REPOSITORY, _GITHUB_ORIGIN, resolve_source_target
 
 logger = logging.getLogger(__name__)
@@ -129,7 +129,7 @@ def _request(url: str, accept: str = "application/vnd.github+json") -> str:
 
 
 def _request_with(url: str, accept: str, token: str | None) -> str:
-    headers = {"Accept": accept, "User-Agent": "hermes-update-check"}
+    headers = {"Accept": accept, "User-Agent": "akramcode-update-check"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
     req = urllib.request.Request(url, headers=headers)
@@ -377,7 +377,7 @@ def check_for_updates(*, install_root: Path | None = None, home: Path | None = N
                       passive: bool = False, git: str = "git") -> dict:
     """Return a presentation-ready status. Omitted branch follows the current checkout.
 
-    Only the default (running installation) may use HERMES_REVISION. An explicit
+    Only the default (running installation) may use AKRAMCODE_REVISION. An explicit
     target must never inherit the host process's embedded revision or stamp.
     """
     from akramcode_cli.config import get_project_root, require_readable_config_before_write
@@ -385,10 +385,10 @@ def check_for_updates(*, install_root: Path | None = None, home: Path | None = N
     from akramcode_cli.update_channel import install_id, resolve_update_channel
     from akramcode_cli.release_channels import validate_name
 
-    embedded = (os.environ.get("HERMES_REVISION") or None) if install_root is None else None
+    embedded = (os.environ.get("AKRAMCODE_REVISION") or None) if install_root is None else None
     root = Path(install_root if install_root is not None else get_project_root()).resolve()
-    home = Path(home if home is not None else get_hermes_home()).resolve()
-    result = {"supported": False, "hermesRoot": str(root), "behind": None, "commits": []}
+    home = Path(home if home is not None else get_akramcode_home()).resolve()
+    result = {"supported": False, "akramcodeRoot": str(root), "behind": None, "commits": []}
     unsupported = _unsupported_reason(read_install_stamp(root), root,
                                       explicit_root=install_root is not None, embedded=embedded)
     if unsupported:

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-from akramcode_constants import hermes_home_key
+from akramcode_constants import akramcode_home_key
 
 DEFAULT_MAX_BYTES = 50_000       # terminal_tool.MAX_OUTPUT_CHARS
 DEFAULT_MAX_LINES = 2000         # file_operations.MAX_LINES
@@ -34,7 +34,7 @@ def _coerce_positive_int(value: Any, default: int) -> int:
 def get_tool_output_limits() -> Dict[str, int]:
     """Resolved ``{max_bytes, max_lines, max_line_length}``; never raises. Cached per profile
     home for the process — ``_reset_tool_output_limits_cache()`` forces a fresh read."""
-    key = hermes_home_key()
+    key = akramcode_home_key()
     cached = _cached_limits.get(key)
     if cached is not None:
         return cached

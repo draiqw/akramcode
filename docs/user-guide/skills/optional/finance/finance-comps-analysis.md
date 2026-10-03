@@ -14,7 +14,7 @@ Build comparable-company valuation workbooks in Excel.
 
 | | |
 |---|---|
-| Source | Optional — install with `hermes skills install official/finance/comps-analysis` |
+| Source | Optional — install with `akramcode skills install official/finance/comps-analysis` |
 | Path | `optional-skills/finance/comps-analysis` |
 | Version | `1.0.0` |
 | Author | Anthropic (adapted by Nous Research) |
@@ -26,7 +26,7 @@ Build comparable-company valuation workbooks in Excel.
 ## Reference: full SKILL.md
 
 :::info
-The following is the complete skill definition that Hermes loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
+The following is the complete skill definition that AkramCode loads when this skill is triggered. This is what the agent sees as instructions when the skill is active.
 :::
 
 ## Environment
@@ -377,7 +377,7 @@ If you have more than 15 metrics, you're probably including noise. Edit ruthless
 
 ### Sanity Checks
 - **Margin test**: Gross margin > EBITDA margin > Net margin (always true by definition)
-- **Multiple reasonableness**: 
+- **Multiple reasonableness**:
   - EV/Revenue: typically 0.5-20x (varies widely by industry)
   - EV/EBITDA: typically 8-25x (fairly consistent across industries)
   - P/E: typically 10-50x (depends on growth rate)
@@ -562,18 +562,18 @@ Add if relevant: Asset Turnover, Inventory Turns, Backlog
 ## Section 10: Red Flags & Warning Signs
 
 ### Data Quality Issues
-🚩 Inconsistent time periods (mixing quarterly and annual)  
-🚩 Missing data without explanation  
+🚩 Inconsistent time periods (mixing quarterly and annual)
+🚩 Missing data without explanation
 🚩 Significant differences between data sources (>10% variance)
 
 ### Valuation Red Flags
-🚩 Negative EBITDA companies being valued on EBITDA multiples (use revenue multiples instead)  
-🚩 P/E ratios >100x without hypergrowth story  
+🚩 Negative EBITDA companies being valued on EBITDA multiples (use revenue multiples instead)
+🚩 P/E ratios >100x without hypergrowth story
 🚩 Margins that don't make sense for the industry
 
 ### Comparability Issues
-🚩 Different fiscal year ends (causes timing problems)  
-🚩ixing pure-play and conglomerates  
+🚩 Different fiscal year ends (causes timing problems)
+🚩ixing pure-play and conglomerates
 🚩 Materially different business models labeled as "comps"
 
 **When in doubt, exclude the company.** Better to have 3 perfect comps than 6 questionable ones.
@@ -667,9 +667,9 @@ The best comp analyses evolve with each iteration. Save templates, learn from fe
 
 ## Data sources — MCP first, web fallback
 
-Many passages below say "use the S&P Kensho MCP / Daloopa MCP / FactSet MCP". Those are commercial financial-data MCPs from the original Cowork plugin context. In Hermes:
+Many passages below say "use the S&P Kensho MCP / Daloopa MCP / FactSet MCP". Those are commercial financial-data MCPs from the original Cowork plugin context. In AkramCode:
 
-- **If you have any structured financial-data MCP configured** (Hermes supports MCP — see `native-mcp` skill), prefer it for point-in-time comps, precedent transactions, and filings.
+- **If you have any structured financial-data MCP configured** (AkramCode supports MCP — see `native-mcp` skill), prefer it for point-in-time comps, precedent transactions, and filings.
 - **Otherwise**, fall back to:
   - `web_search` / `web_extract` against SEC EDGAR (`https://www.sec.gov/cgi-bin/browse-edgar`) for US filings
   - Company IR pages for press releases, earnings decks

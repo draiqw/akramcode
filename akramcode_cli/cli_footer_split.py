@@ -7,7 +7,7 @@ agent thread flips mid-turn (``_agent_running`` → spacer, ``_spinner_text`` �
 ``_command_running`` → hint), so a row appearing between the two passes makes the summed minimum
 exceed the budget by one and stock ``HSplit`` replaces the WHOLE footer with its
 " Window too small... " placeholder (#57393) — on any terminal size, including a maximised 200×50
-pane. Hermes's throttled ``_invalidate`` can then drop the healing repaint for the length of a
+pane. AkramCode's throttled ``_invalidate`` can then drop the healing repaint for the length of a
 tool call, so the placeholder sits there looking like a geometry error.
 """
 from __future__ import annotations

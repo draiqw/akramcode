@@ -460,12 +460,12 @@ class TestMergeDecision:
 
 @pytest.fixture
 def synced_env(tmp_path, monkeypatch):
-    """A HERMES_HOME with two opted-in skills + a token-carrying identity."""
-    import hermes_constants
-    home = tmp_path / "hermes"
+    """A AKRAMCODE_HOME with two opted-in skills + a token-carrying identity."""
+    import akramcode_constants
+    home = tmp_path / "akramcode"
     skills = home / "skills"
     skills.mkdir(parents=True)
-    monkeypatch.setattr(hermes_constants, "get_hermes_home", lambda: home)
+    monkeypatch.setattr(akramcode_constants, "get_akramcode_home", lambda: home)
     monkeypatch.setattr(ssc, "_skills_dir", lambda: skills)
 
     _write_skill(skills, "alpha", body="alpha v1\n")
@@ -526,7 +526,7 @@ class TestEndToEnd:
         ssc.push_skills(client, identity=identity)
 
         # Simulate a fresh device: new skills dir, same server, same opt-in.
-        dev2 = tmp_path / "hermes2" / "skills"
+        dev2 = tmp_path / "akramcode2" / "skills"
         dev2.mkdir(parents=True)
         monkeypatch.setattr(ssc, "_skills_dir", lambda: dev2)
         monkeypatch.setattr(ssc, "read_sync_state", lambda: {"head": None, "skills": {}})
@@ -717,18 +717,18 @@ class TestSyncManifest:
 
 
 # ---------------------------------------------------------------------------
-# Env-var configuration (Hermes Cloud "on by default" via environment)
+# Env-var configuration (AkramCode Cloud "on by default" via environment)
 # ---------------------------------------------------------------------------
 
 class TestEnvConfig:
     def test_base_url_env_wins(self, monkeypatch):
-        monkeypatch.setenv("HERMES_SYNC_BASE_URL", "https://plane.example/")
+        monkeypatch.setenv("AKRAMCODE_SYNC_BASE_URL", "https://plane.example/")
         assert ssc.resolve_sync_base_url() == "https://plane.example"
 
     def test_base_url_defaults_to_production(self, monkeypatch):
         # With nothing configured a user must still reach the real plane —
         # otherwise every sync command fails with "no base URL configured".
-        monkeypatch.delenv("HERMES_SYNC_BASE_URL", raising=False)
+        monkeypatch.delenv("AKRAMCODE_SYNC_BASE_URL", raising=False)
         monkeypatch.setattr("akramcode_cli.config.load_config", lambda: {}, raising=False)
         assert ssc.resolve_sync_base_url() == ssc.DEFAULT_SYNC_BASE_URL
 
@@ -744,7 +744,7 @@ class TestEnvConfig:
         assert not ssc.DEFAULT_SYNC_BASE_URL.endswith("/")
 
     def test_config_overrides_default(self, monkeypatch):
-        monkeypatch.delenv("HERMES_SYNC_BASE_URL", raising=False)
+        monkeypatch.delenv("AKRAMCODE_SYNC_BASE_URL", raising=False)
         monkeypatch.setattr(
             "akramcode_cli.config.load_config",
             lambda: {"sync": {"base_url": "https://cfg.example/"}},
@@ -754,25 +754,25 @@ class TestEnvConfig:
 
     def test_feature_enabled_env(self, monkeypatch):
         # Default off.
-        monkeypatch.delenv("HERMES_SYNC_ENABLED", raising=False)
+        monkeypatch.delenv("AKRAMCODE_SYNC_ENABLED", raising=False)
         monkeypatch.setattr("akramcode_cli.config.load_config", lambda: {}, raising=False)
         assert ssc.sync_feature_enabled() is False
         for truthy in ("1", "true", "YES", "on"):
-            monkeypatch.setenv("HERMES_SYNC_ENABLED", truthy)
+            monkeypatch.setenv("AKRAMCODE_SYNC_ENABLED", truthy)
             assert ssc.sync_feature_enabled() is True
         for falsy in ("0", "false", "off"):
-            monkeypatch.setenv("HERMES_SYNC_ENABLED", falsy)
+            monkeypatch.setenv("AKRAMCODE_SYNC_ENABLED", falsy)
             assert ssc.sync_feature_enabled() is False
 
     def test_default_opt_in_env(self, monkeypatch):
-        monkeypatch.delenv("HERMES_SYNC_DEFAULT_OPT_IN", raising=False)
+        monkeypatch.delenv("AKRAMCODE_SYNC_DEFAULT_OPT_IN", raising=False)
         monkeypatch.setattr("akramcode_cli.config.load_config", lambda: {}, raising=False)
         assert ssc.sync_default_opt_in() is False
-        monkeypatch.setenv("HERMES_SYNC_DEFAULT_OPT_IN", "true")
+        monkeypatch.setenv("AKRAMCODE_SYNC_DEFAULT_OPT_IN", "true")
         assert ssc.sync_default_opt_in() is True
 
     def test_config_yaml_fallback_when_no_env(self, monkeypatch):
-        monkeypatch.delenv("HERMES_SYNC_ENABLED", raising=False)
+        monkeypatch.delenv("AKRAMCODE_SYNC_ENABLED", raising=False)
         monkeypatch.setattr(
             "akramcode_cli.config.load_config",
             lambda: {"sync": {"enabled": True}},
@@ -782,7 +782,7 @@ class TestEnvConfig:
 
     def test_env_overrides_config_yaml(self, monkeypatch):
         # Env wins over config.yaml (operator override precedence).
-        monkeypatch.setenv("HERMES_SYNC_ENABLED", "false")
+        monkeypatch.setenv("AKRAMCODE_SYNC_ENABLED", "false")
         monkeypatch.setattr(
             "akramcode_cli.config.load_config",
             lambda: {"sync": {"enabled": True}},
@@ -816,7 +816,7 @@ class TestEnvConfig:
 class TestDeviceName:
     def test_default_is_hostname_seeded(self, tmp_path, monkeypatch):
         monkeypatch.setattr(ssc, "_skills_dir", lambda: tmp_path)
-        monkeypatch.delenv("HERMES_SYNC_DEVICE_NAME", raising=False)
+        monkeypatch.delenv("AKRAMCODE_SYNC_DEVICE_NAME", raising=False)
         monkeypatch.setattr(
             "socket.gethostname", lambda: "bens-macbook.local", raising=False
         )
@@ -831,18 +831,18 @@ class TestDeviceName:
     def test_existing_file_wins_over_default_and_env(self, tmp_path, monkeypatch):
         monkeypatch.setattr(ssc, "_skills_dir", lambda: tmp_path)
         (tmp_path / ".sync_device_id").write_text("Explicit Name", encoding="utf-8")
-        monkeypatch.setenv("HERMES_SYNC_DEVICE_NAME", "cloud-seed")
+        monkeypatch.setenv("AKRAMCODE_SYNC_DEVICE_NAME", "cloud-seed")
         assert ssc.stable_device_id() == "Explicit Name"
 
     def test_env_seeds_first_use(self, tmp_path, monkeypatch):
-        # Hermes Cloud path: HERMES_SYNC_DEVICE_NAME seeds the first-use label.
+        # AkramCode Cloud path: AKRAMCODE_SYNC_DEVICE_NAME seeds the first-use label.
         monkeypatch.setattr(ssc, "_skills_dir", lambda: tmp_path)
-        monkeypatch.setenv("HERMES_SYNC_DEVICE_NAME", "hermes-cloud-ben-1")
-        assert ssc.stable_device_id() == "hermes-cloud-ben-1"
+        monkeypatch.setenv("AKRAMCODE_SYNC_DEVICE_NAME", "akramcode-cloud-ben-1")
+        assert ssc.stable_device_id() == "akramcode-cloud-ben-1"
         # persisted so it stays stable even if the env later changes
-        assert (tmp_path / ".sync_device_id").read_text() == "hermes-cloud-ben-1"
-        monkeypatch.setenv("HERMES_SYNC_DEVICE_NAME", "changed")
-        assert ssc.stable_device_id() == "hermes-cloud-ben-1"
+        assert (tmp_path / ".sync_device_id").read_text() == "akramcode-cloud-ben-1"
+        monkeypatch.setenv("AKRAMCODE_SYNC_DEVICE_NAME", "changed")
+        assert ssc.stable_device_id() == "akramcode-cloud-ben-1"
 
     def test_set_device_name_overwrites(self, tmp_path, monkeypatch):
         monkeypatch.setattr(ssc, "_skills_dir", lambda: tmp_path)

@@ -9,7 +9,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
 
-import akram_core.hermes_yaml
+import akram_core.akramcode_yaml
 import pytest
 
 from tests.ci.desktop_release_roles import (
@@ -26,7 +26,7 @@ ALL_JOBS = ','.join(JOB_GROUPS)
 
 
 def smoke_workflow():
-    return akram_core.hermes_yaml.safe_load((ROOT / '.github/workflows/desktop-bundle-smoke.yml').read_text(encoding='utf-8-sig'))
+    return akram_core.akramcode_yaml.safe_load((ROOT / '.github/workflows/desktop-bundle-smoke.yml').read_text(encoding='utf-8-sig'))
 
 
 def smoke_fetch_script():
@@ -164,7 +164,7 @@ def test_signature_cache_saves_only_in_the_writable_build():
     setup = next(step for step in assembly['steps'] if step.get('uses') == './.github/actions/setup-pm')
     assert setup['with']['cache-python'] is False
     assert setup['with']['save-tools-cache'] is False and setup['with']['save-node-cache'] is False
-    action = akram_core.hermes_yaml.safe_load((ROOT / '.github/actions/setup-pm/action.yml').read_text())
+    action = akram_core.akramcode_yaml.safe_load((ROOT / '.github/actions/setup-pm/action.yml').read_text())
     tools = next(step for step in action['runs']['steps'] if step.get('id') == 'tools-cache')
     # The assembly's save-tools-cache: false must turn the tool cache save off.
     enabled = {'cache': 'true', 'save-tools-cache': 'true'}
@@ -215,7 +215,7 @@ def test_smoke_matrix_native_routes_and_driver_only_dependencies():
             chat = next(step for step in job['steps'] if step.get('id') == verdict)
             assert 'continue-on-error' not in chat
 
-    recorder = akram_core.hermes_yaml.safe_load((ROOT / '.github/actions/e2e-screen-record/action.yml').read_text())
+    recorder = akram_core.akramcode_yaml.safe_load((ROOT / '.github/actions/e2e-screen-record/action.yml').read_text())
     assert all(not step.get('uses', '').startswith('actions/cache') for step in recorder['runs']['steps'])
     assert 'save-cache' not in recorder['inputs']
     # ffmpeg comes from the PM toolchain: the action must verify, not install.
@@ -227,7 +227,7 @@ def test_smoke_matrix_native_routes_and_driver_only_dependencies():
         assert 'ffmpeg' not in run or 'winget' not in run and 'brew install' not in run and 'apt-get' not in run, \
             f"step {step.get('name')} installs ffmpeg through an OS package manager"
 
-    workflows = [workflow] + [akram_core.hermes_yaml.safe_load((ROOT / '.github/workflows' / name).read_text(encoding='utf-8-sig'))
+    workflows = [workflow] + [akram_core.akramcode_yaml.safe_load((ROOT / '.github/workflows' / name).read_text(encoding='utf-8-sig'))
                              for name in ('install-e2e-run.yml', 'install-e2e-macos-run.yml', 'install-e2e-windows-run.yml')]
     for document in workflows:
         # A job that never checks out (the smoke admission job's bare case
@@ -249,12 +249,12 @@ def test_smoke_matrix_native_routes_and_driver_only_dependencies():
 
 
 def transport_env(tmp_path, server, *, commit=False):
-    return dict(HERMES_PAYLOAD_TAG='' if commit else TAG, HERMES_BUILD_COMMIT=SHA if commit else '',
+    return dict(AKRAMCODE_PAYLOAD_TAG='' if commit else TAG, AKRAMCODE_BUILD_COMMIT=SHA if commit else '',
                 RELEASE_TAG='' if commit else TAG, RELEASE_COMMIT=SHA, COMMIT_BUILD=str(commit).lower(),
-                PUBLIC_BASE=f'http://127.0.0.1:{server.server_port}/hermes-releases',
-                CLOUDFLARE_R2_PUBLIC_URL=f'http://127.0.0.1:{server.server_port}/hermes-releases',
+                PUBLIC_BASE=f'http://127.0.0.1:{server.server_port}/akramcode-releases',
+                CLOUDFLARE_R2_PUBLIC_URL=f'http://127.0.0.1:{server.server_port}/akramcode-releases',
                 CLOUDFLARE_R2_ACCOUNT_ID='loopback', CLOUDFLARE_R2_ACCESS_KEY_ID='test-inert',
-                CLOUDFLARE_R2_SECRET_ACCESS_KEY='test-inert', CLOUDFLARE_R2_BUCKET='hermes-releases',
+                CLOUDFLARE_R2_SECRET_ACCESS_KEY='test-inert', CLOUDFLARE_R2_BUCKET='akramcode-releases',
                 RELEASE_PHASE='', SMOKE_ROOT=str(tmp_path / 'smoke'), GITHUB_OUTPUT=str(tmp_path / 'output'))
 
 
@@ -266,7 +266,7 @@ def test_public_smoke_fetches_the_receipt_bound_native_format(tmp_path, r2_serve
     release = tmp_path / 'apps/desktop/release'
     release.mkdir(parents=True)
     suffix = f'mac-{arch}.{fmt}' if platform == 'darwin' else ('win.msixbundle' if fmt == 'msixbundle' else f'win-{arch}.msix')
-    filename = f'HermesBundled-0.28.0-{suffix}'
+    filename = f'AkramCodeBundled-0.28.0-{suffix}'
     payload = b'transport fixture only: not a deployable package'
     (release / filename).write_bytes(payload)
     (release / ('Store-' + filename)).write_bytes(b'not eligible')
@@ -276,7 +276,7 @@ def test_public_smoke_fetches_the_receipt_bound_native_format(tmp_path, r2_serve
     if platform == 'darwin':
         # The producer stages all of its formats together; smoke selects one.
         for ext in ('dmg', 'zip', 'zip.blockmap'):
-            (release / f'HermesBundled-0.28.0-mac-{arch}.{ext}').write_bytes(payload)
+            (release / f'AkramCodeBundled-0.28.0-mac-{arch}.{ext}').write_bytes(payload)
         (release / f'{arch}-canary-mac.yml').write_bytes(payload)
     staged = shell_step(tmp_path, r2_server, '', '', {**env, 'TARGET': f'{platform}-{arch}'},
                         script=stage_step(jobs[producer])['run'])
@@ -300,7 +300,7 @@ def test_public_smoke_fetches_the_receipt_bound_native_format(tmp_path, r2_serve
 @pytest.mark.parametrize('fault', ['missing', 'ambiguous', 'wrong-commit', 'corrupt'])
 def test_download_faults_never_export_an_accepted_artifact(tmp_path, r2_server, fault):
     env = transport_env(tmp_path, r2_server, commit=True)
-    filename = 'HermesBundled-0.28.0-win-x64.msix'
+    filename = 'AkramCodeBundled-0.28.0-win-x64.msix'
     payload = b'inert integrity fixture'
     row = {'path': filename, 'size': len(payload), 'sha256': hashlib.sha256(payload).hexdigest()}
     receipt = {'schema': 2, 'commit': 'b' * 40 if fault == 'wrong-commit' else SHA,
@@ -310,7 +310,7 @@ def test_download_faults_never_export_an_accepted_artifact(tmp_path, r2_server, 
     if fault == 'missing':
         receipt['files'] = [{**row, 'path': 'Store-' + filename}]
     elif fault == 'ambiguous':
-        second = 'HermesBundled-0.29.0-win-x64.msix'
+        second = 'AkramCodeBundled-0.29.0-win-x64.msix'
         receipt['files'].append({**row, 'path': second})
         r2_server.store[prefix + second] = (payload, '"e"')
     r2_server.store[prefix + 'handoff-win32-x64.json'] = (json.dumps(receipt).encode(), '"e"')
@@ -392,8 +392,8 @@ def test_stable_phase_and_canary_gates_require_smoke_but_preserve_other_phases(t
 
 def test_canary_publisher_consumes_staged_bytes_and_writes_pointer_last(tmp_path, r2_server):
     tag = 'v0.28.1+canary.20260818T101010Z'
-    env = {**transport_env(tmp_path, r2_server), 'HERMES_DESKTOP_VARIANT': 'bundled',
-           'HERMES_PAYLOAD_TAG': tag, 'RELEASE_TAG': tag}
+    env = {**transport_env(tmp_path, r2_server), 'AKRAMCODE_DESKTOP_VARIANT': 'bundled',
+           'AKRAMCODE_PAYLOAD_TAG': tag, 'RELEASE_TAG': tag}
     # Use the real assembly identity derivation with a stable base available.
     for file in ['scripts/msix-shared.mjs', 'scripts/release-content-types.json',
                  'apps/desktop/product-identity.cjs', 'apps/desktop/package.json']:
@@ -426,7 +426,7 @@ def test_canary_publisher_consumes_staged_bytes_and_writes_pointer_last(tmp_path
     bundle = release / filename
     with zipfile.ZipFile(bundle, 'w') as archive:
         archive.writestr('AppxMetadata/AppxBundleManifest.xml',
-                         '<Bundle><Identity Name="NousResearch.HermesBundledCanary" '
+                         '<Bundle><Identity Name="NousResearch.AkramCodeBundledCanary" '
                          'Publisher="CN=Nous Research Inc., O=Nous Research Inc., L=Austin, S=Texas, C=US" '
                          f'Version="{version}"/></Bundle>')
     tested_bytes = bundle.read_bytes()
@@ -454,13 +454,13 @@ def test_canary_publisher_consumes_staged_bytes_and_writes_pointer_last(tmp_path
 
     # The publication job must refuse an ambiguous envelope, even when a
     # caller accidentally broadens the receipt selector in future.
-    (tmp_path / 'staged/HermesBundled-0.29.0.0-win.msixbundle').write_bytes(tested_bytes)
+    (tmp_path / 'staged/AkramCodeBundled-0.29.0.0-win.msixbundle').write_bytes(tested_bytes)
     before = len(writes)
     refused = shell_step(tmp_path, r2_server, publisher,
                          'Publish identical tested bytes without rebuilding', env)
     assert refused.returncode != 0
     assert len([row for row in r2_server.requests if row[0] == 'PUT']) == before
-    (tmp_path / 'staged/HermesBundled-0.29.0.0-win.msixbundle').unlink()
+    (tmp_path / 'staged/AkramCodeBundled-0.29.0.0-win.msixbundle').unlink()
 
     # Filename, tag base, and baked identity must still agree. Reading the
     # accepted assembly version is not permission to trust arbitrary metadata.
@@ -478,8 +478,8 @@ def test_canary_publisher_consumes_staged_bytes_and_writes_pointer_last(tmp_path
         assert refused.returncode != 0, field
         assert len([row for row in r2_server.requests if row[0] == 'PUT']) == before
     staged_bundle.write_bytes(tested_bytes)
-    for wrong in ['HermesBundled-0.29.0.0-win.msixbundle', 'HermesBundled-0.28.1.65536-win.msixbundle',
-                  'HermesBundled-0.28.1-canary.20260818101010-win.msixbundle']:
+    for wrong in ['AkramCodeBundled-0.29.0.0-win.msixbundle', 'AkramCodeBundled-0.28.1.65536-win.msixbundle',
+                  'AkramCodeBundled-0.28.1-canary.20260818101010-win.msixbundle']:
         renamed = staged_bundle.rename(staged_bundle.with_name(wrong))
         refused = shell_step(tmp_path, r2_server, publisher,
                              'Publish identical tested bytes without rebuilding', env)

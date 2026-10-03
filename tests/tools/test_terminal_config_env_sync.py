@@ -9,7 +9,7 @@ at startup, by THREE separate code paths:
                           platforms)
   3. akramcode_cli/config.py:set_config_value
                        -> bridges via the canonical ``TERMINAL_CONFIG_ENV_MAP``
-                          (one-shot when the user runs ``hermes config set …``)
+                          (one-shot when the user runs ``akramcode config set …``)
 
 If any one of these is missing a key, the corresponding config.yaml setting
 silently does nothing for that entry-point.  This bug already shipped once
@@ -59,7 +59,7 @@ def _gateway_env_map() -> dict[str, str]:
     _bridge_terminal_config_to_env(recorder)  # empty: writes nothing
     # A bridge that stopped consulting its config would make the probe below vacuous.
     assert len(recorder.seen) > 1, "gateway bridge looked up no terminal keys"
-    probe = "/hermes-bridge-probe"  # absolute, so the cwd placeholder skip never fires
+    probe = "/akramcode-bridge-probe"  # absolute, so the cwd placeholder skip never fires
     candidates = set(_cli_env_map()) | set(hc_config.TERMINAL_CONFIG_ENV_MAP) | recorder.seen
     bridged: dict[str, str] = {}
     with patch.dict(os.environ):  # restores the process env on exit
@@ -74,7 +74,7 @@ def _gateway_env_map() -> dict[str, str]:
 
 
 def _save_config_env_sync_keys() -> set[str]:
-    """terminal config keys bridged by ``hermes config set foo bar``.
+    """terminal config keys bridged by ``akramcode config set foo bar``.
 
     ``set_config_value`` no longer carries its own ``_config_to_env_sync``
     dict — it bridges through the canonical ``TERMINAL_CONFIG_ENV_MAP`` via
@@ -135,7 +135,7 @@ def test_cli_and_gateway_env_maps_agree():
 
 
 def test_save_config_set_bridges_every_cli_terminal_key():
-    """``hermes config set terminal.X`` must propagate every key the CLI
+    """``akramcode config set terminal.X`` must propagate every key the CLI
     startup path bridges, so a config-set value takes effect without restart.
     """
     save_keys = _save_config_env_sync_keys()
@@ -143,7 +143,7 @@ def test_save_config_set_bridges_every_cli_terminal_key():
     exempt = _CLI_ONLY_OK | {"cwd", "home_mode"}
     missing = (set(_cli_env_map()) - exempt) - save_keys
     assert not missing, (
-        f"`hermes config set terminal.X` doesn't sync these keys to .env: "
+        f"`akramcode config set terminal.X` doesn't sync these keys to .env: "
         f"{sorted(missing)}.  Add them to TERMINAL_CONFIG_ENV_MAP in "
         f"akramcode_cli/config.py (set_config_value bridges through it)."
     )

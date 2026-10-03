@@ -1,5 +1,5 @@
-#!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/_hermes-python" "$0" "$@"'
-"""Hermes Agent release entrypoint.
+#!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/_akramcode-python" "$0" "$@"'
+"""AkramCode Agent release entrypoint.
 
 Stable releases use the ``release``, ``publish``, and ``abandon`` subcommands.
 Canary, commit, and dynamic-channel operations retain their top-level flags.
@@ -228,7 +228,7 @@ def parse_coauthors(body: str) -> list:
         return []
     # AI/bot emails to ignore in co-author trailers
     _ignored_emails = {"noreply@anthropic.com", "noreply@github.com",
-                       "cursoragent@cursor.com", "hermes@nousresearch.com"}
+                       "cursoragent@cursor.com", "akramcode@nousresearch.com"}
     _ignored_names = re.compile(r"^(Claude|Copilot|Cursor Agent|GitHub Actions?|dependabot|renovate)", re.IGNORECASE)
     pattern = re.compile(r"Co-authored-by:\s*(.+?)\s*<([^>]+)>", re.IGNORECASE)
     results = []
@@ -309,7 +309,7 @@ def generate_changelog(commits, tag_name, semver, repo_url="https://github.com/d
     # Header
     now = datetime.now()
     date_str = now.strftime("%B %d, %Y")
-    lines.append(f"# Hermes Agent v{semver} ({tag_name})")
+    lines.append(f"# AkramCode Agent v{semver} ({tag_name})")
     lines.append("")
     lines.append(f"**Release Date:** {date_str}")
     lines.append("")
@@ -321,12 +321,12 @@ def generate_changelog(commits, tag_name, semver, repo_url="https://github.com/d
     # ones; the release body links point at the R2 public URL). A release
     # whose matrix never finishes keeps the link — visibly unfinished,
     # and it points at the run that stopped.
-    lines.append("<!-- HERMES_BUILDS_TABLE -->")
+    lines.append("<!-- AKRAMCODE_BUILDS_TABLE -->")
     lines.append("")
 
     if first_release:
         lines.append("> 🎉 **First official release!** This marks the beginning of regular weekly releases")
-        lines.append("> for Hermes Agent. See below for everything included in this initial release.")
+        lines.append("> for AkramCode Agent. See below for everything included in this initial release.")
         lines.append("")
 
     all_authors = set()
@@ -439,7 +439,7 @@ def _resume_canary(tag: str, remote: str, repository: str, *, notes_file: Path |
         create = [
             "gh", "release", "create", tag, "--repo", repository,
             "--verify-tag", "--draft", "--prerelease",
-            "--title", f"Hermes Agent canary {tag}",
+            "--title", f"AkramCode Agent canary {tag}",
         ]
         create.extend(["--notes-file", str(notes_file)] if notes_file else ["--generate-notes"])
         created = subprocess.run(
@@ -535,7 +535,7 @@ def cmd_canary(args) -> None:
         return
 
     tag_result = git_result(
-        "tag", "-a", tag_name, "-m", f"Hermes Agent canary {date_utc}"
+        "tag", "-a", tag_name, "-m", f"AkramCode Agent canary {date_utc}"
     )
     if tag_result.returncode != 0:
         print(f"✗ Failed to create tag {tag_name}: {tag_result.stderr.strip()}")
@@ -608,7 +608,7 @@ def prune_old_canaries(args) -> None:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Hermes Agent Release Tool")
+    parser = argparse.ArgumentParser(description="AkramCode Agent Release Tool")
     parser.add_argument("--canary", action="store_true",
                         help="Tag + publish a stable-core canary "
                              "(v<stable>+canary.<YYYYMMDDTHHMMSSZ>); no-op when "

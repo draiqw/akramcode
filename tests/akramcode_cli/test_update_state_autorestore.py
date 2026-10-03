@@ -9,7 +9,7 @@ snapshot.
 
 Copying that image over the live path replaces only the main database file. A
 ``state.db-wal`` left behind by the *old* database — a crashed writer, or a
-second Hermes holder the updater's drain did not stop — survives the copy and is
+second AkramCode holder the updater's drain did not stop — survives the copy and is
 replayed over the fresh image on the next open. The restored file then passes
 ``PRAGMA integrity_check`` while serving the discarded database's contents, so
 the CLI prints "✓ Auto-restored from snapshot" over data the user has lost.
@@ -260,7 +260,7 @@ def test_post_update_guard_covers_sibling_profiles(tmp_path, monkeypatch, capsys
     _make_valid_snapshot(sibling_home, "20260901-pre-update", 25)
     (sibling_home / "state.db").write_bytes(b"\x00" * 4096)
 
-    monkeypatch.setattr(update_cmd, "get_hermes_home", lambda: root_home)
+    monkeypatch.setattr(update_cmd, "get_akramcode_home", lambda: root_home)
     monkeypatch.setattr(
         "akramcode_cli.backup._sibling_profile_homes",
         lambda invoking_home: [("work", sibling_home)],
@@ -291,7 +291,7 @@ def test_post_update_guard_leaves_valid_sibling_dbs_alone(tmp_path, monkeypatch,
     _make_valid_db(sibling_home / "state.db", 7)
     sibling_before = (sibling_home / "state.db").read_bytes()
 
-    monkeypatch.setattr(update_cmd, "get_hermes_home", lambda: root_home)
+    monkeypatch.setattr(update_cmd, "get_akramcode_home", lambda: root_home)
     monkeypatch.setattr(
         "akramcode_cli.backup._sibling_profile_homes",
         lambda invoking_home: [("work", sibling_home)],
@@ -317,7 +317,7 @@ def test_post_update_guard_survives_missing_sibling_snapshot(tmp_path, monkeypat
     _make_valid_db(root_home / "state.db", 10)
     (sibling_home / "state.db").write_bytes(b"\x00" * 4096)
 
-    monkeypatch.setattr(update_cmd, "get_hermes_home", lambda: root_home)
+    monkeypatch.setattr(update_cmd, "get_akramcode_home", lambda: root_home)
     monkeypatch.setattr(
         "akramcode_cli.backup._sibling_profile_homes",
         lambda invoking_home: [("work", sibling_home)],

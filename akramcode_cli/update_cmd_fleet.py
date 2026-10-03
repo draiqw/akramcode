@@ -1,4 +1,4 @@
-"""Gateway fleet restart + post-update verification for ``hermes update``.
+"""Gateway fleet restart + post-update verification for ``akramcode update``.
 
 Split out of ``akramcode_cli/update_cmd.py``; every name is re-imported there so
 ``akramcode_cli.update_cmd.<name>`` keeps resolving/monkeypatching. Origin helpers are
@@ -22,7 +22,7 @@ from akramcode_cli.update_inventory import _gateway_service_matches_profile
 # Log-record parity with the origin module.
 logger = logging.getLogger("akramcode_cli.update_cmd")
 
-# Under HERMES_HOME (not next to the venv): records the fleet-restart obligation
+# Under AKRAMCODE_HOME (not next to the venv): records the fleet-restart obligation
 # after a pull advanced HEAD; cleared only when the restart completes or nothing ran.
 # The existing ``.update-incomplete`` / ``.lazy-refresh-incomplete`` markers gate dependency/venv repair;
 # this one is the fleet-restart obligation after a git pull that advanced HEAD (#95294).
@@ -37,35 +37,35 @@ _FLEET_PROBE_SETTLE_TIMEOUT_SECONDS = 120.0
 
 _SYSTEMD_SCOPES = (("user", ["systemctl", "--user"]), ("system", ["systemctl"]))
 _LIST_GATEWAY_UNITS = [
-    "list-units", "hermes-gateway*", "hermes-serve*", "hermes-dashboard*",
+    "list-units", "akramcode-gateway*", "akramcode-serve*", "akramcode-dashboard*",
     "--plain", "--no-legend", "--no-pager",
 ]
 
 
 def _write_gateway_update_exit_code(ok: bool) -> None:
-    from akramcode_cli.update_cmd import get_hermes_home
-    path = get_hermes_home() / ".update_exit_code"
+    from akramcode_cli.update_cmd import get_akramcode_home
+    path = get_akramcode_home() / ".update_exit_code"
     with suppress(OSError):
         path.write_text("0" if ok else "1", encoding="utf-8")
 
 
 def _fleet_restart_pending_marker_path() -> Path:
-    """LEGACY per-``HERMES_HOME`` breadcrumb. Read-compat only — nothing writes it any more.
+    """LEGACY per-``AKRAMCODE_HOME`` breadcrumb. Read-compat only — nothing writes it any more.
 
     One host runs one multiplexing gateway, so the pull→restart obligation is host-scoped
     (``akramcode_cli/update_host_obligation.py``). An obligation armed by the old per-profile code
     is still read and cleared here so an in-flight update is discharged after the upgrade.
     """
-    from akramcode_cli.update_cmd import get_hermes_home
-    return get_hermes_home() / _FLEET_RESTART_PENDING_NAME
+    from akramcode_cli.update_cmd import get_akramcode_home
+    return get_akramcode_home() / _FLEET_RESTART_PENDING_NAME
 
 
 def _write_legacy_fleet_restart_pending_marker(
     *, expected_sha: str = "", runtimes: list[dict] | None = None
 ) -> bool:
-    """Arm the LEGACY per-``HERMES_HOME`` marker. True when written. Never raises.
+    """Arm the LEGACY per-``AKRAMCODE_HOME`` marker. True when written. Never raises.
 
-    Fallback only: ``$HERMES_HOME`` is writable by construction (the updater already writes its
+    Fallback only: ``$AKRAMCODE_HOME`` is writable by construction (the updater already writes its
     receipts there), so it still carries the obligation when the host state dir cannot.
     """
     path = _fleet_restart_pending_marker_path()
@@ -85,7 +85,7 @@ def _write_legacy_fleet_restart_pending_marker(
 def _write_fleet_restart_pending_marker(*, expected_sha: str = "", runtimes: list[dict] | None = None) -> None:
     """Arm the HOST pull→restart obligation. Never raises.
 
-    An unwritable host state dir (``HERMES_GATEWAY_LOCK_DIR`` on a read-only mount, a container
+    An unwritable host state dir (``AKRAMCODE_GATEWAY_LOCK_DIR`` on a read-only mount, a container
     UID that does not own ``$HOME``) must never disarm the obligation: an update interrupted
     after this point would then leave stale code running with no warning and no catch-up restart
     (#117275). The legacy per-home marker — which every reader here still honours — carries it
@@ -94,7 +94,7 @@ def _write_fleet_restart_pending_marker(*, expected_sha: str = "", runtimes: lis
     if runtimes == []:
         # An explicit empty inventory owes no restart (e.g. Desktop-hosted `serve` with no
         # gateway services). Arming the marker here leaves a breadcrumb nothing can discharge:
-        # a no-gateway host would then fail every later ``hermes update`` (#115311).
+        # a no-gateway host would then fail every later ``akramcode update`` (#115311).
         return
     from akramcode_cli.update_cmd import _m
     from akramcode_cli.update_host_obligation import host_obligation_path, write_host_obligation
@@ -114,7 +114,7 @@ def _write_fleet_restart_pending_marker(*, expected_sha: str = "", runtimes: lis
         host_obligation_path(), _fleet_restart_pending_marker_path())
     print(
         "  ⚠ Could not record the pending gateway-restart obligation (state dir not writable) — "
-        "restart gateways with `hermes gateway restart` if this update is interrupted.",
+        "restart gateways with `akramcode gateway restart` if this update is interrupted.",
         file=sys.stderr,
     )
 
@@ -188,7 +188,7 @@ def _receipt_looks_unfinished(receipt: dict) -> bool:
 
     The command boundary stamps a ``stop_reason`` on every receipt, including clean
     ones (``completed at command boundary``, ``sys.exit(0)``); it must not make a
-    successful receipt look unfinished, or the next ``hermes update`` retriggers
+    successful receipt look unfinished, or the next ``akramcode update`` retriggers
     ``fleet_restart_pending`` from pre-pull plan SHAs (#98022).
     """
     exit_code = receipt.get("exit_code")
@@ -508,7 +508,7 @@ def _update_owes_fleet_restart(*, receipt: dict | None = None, pending_manual: l
     if not _receipt_reports_stale_runtime(receipt):
         return False
     restarted_to = _receipt_restart_phase_completed(receipt)
-    # A fleet an operator has since restarted onto a moved checkout (``hermes gateway restart`` —
+    # A fleet an operator has since restarted onto a moved checkout (``akramcode gateway restart`` —
     # the remedy this warning names) has nothing of the update left to owe either.
     if restarted_to and _live_fleet_covers_receipt(restarted_to, receipt, owed, accept_states=("current", "stale")):
         return False
@@ -518,10 +518,10 @@ def _update_owes_fleet_restart(*, receipt: dict | None = None, pending_manual: l
 def _warn_pending_fleet_restart(*, startup: bool = False) -> None:
     """Print the specific interrupted-update fleet-restart warning."""
     stream = sys.stderr if startup else sys.stdout
-    print("⚠ A previous `hermes update` pulled new code but did not restart running gateways.", file=stream)
+    print("⚠ A previous `akramcode update` pulled new code but did not restart running gateways.", file=stream)
     print("  Gateways may still be serving pre-update modules (mixed sys.modules).", file=stream)
     if startup:
-        print("  Run `hermes update` or `hermes gateway restart`.", file=stream)
+        print("  Run `akramcode update` or `akramcode gateway restart`.", file=stream)
 
 
 def _warn_pending_fleet_restart_on_startup() -> None:
@@ -585,10 +585,10 @@ def _unit_main_pid(scope_cmd: list, svc_name: str) -> int:
 
 
 def _restart_systemd_gateway_units_best_effort(failed: list, listings) -> None:
-    """Restart every hermes-gateway/serve unit ONCE PER LIVE HOST PROCESS.
+    """Restart every akramcode-gateway/serve unit ONCE PER LIVE HOST PROCESS.
 
     One host runs one multiplexing gateway, so leftover per-profile units
-    (``hermes-gateway-<profile>.service``) all point at the SAME live ``MainPID``; restarting
+    (``akramcode-gateway-<profile>.service``) all point at the SAME live ``MainPID``; restarting
     each in turn restarts the host gateway N times — a self-inflicted N-fold outage triggered
     by one update. Units that share a live main PID are collapsed to one representative and the
     others are named as LEGACY units to migrate, never silently dropped.
@@ -619,7 +619,7 @@ def _restart_systemd_gateway_units_best_effort(failed: list, listings) -> None:
         print(
             f"  • {unit_key} is a legacy per-profile unit sharing one host gateway process with "
             f"{owner_key}; restarting it again would restart that process twice. Fold the units "
-            "together with: hermes gateway migrate"
+            "together with: akramcode gateway migrate"
         )
 
     for key in keys:
@@ -664,7 +664,7 @@ def _restart_identity_sha() -> str:
 
     ``_current_checkout_sha()`` is ``None`` on every non-git install (zip, pip, Docker), and an
     empty stamp can never match, so the per-host restart-once guard would be inert exactly on the
-    installs it exists for: each profile's ``hermes update`` would re-kill the one shared
+    installs it exists for: each profile's ``akramcode update`` would re-kill the one shared
     multiplexer. The obligation's own ``expected_sha`` — else the receipt's post-update identity —
     names the same pulled code.
     """
@@ -687,9 +687,9 @@ def _fleet_restart_skip_reason(plan) -> str | None:
 
     Every route (pulled, already-current, ZIP) now finishes through the same completion
     tail, so the guards the old catch-up path carried live here: one host runs ONE
-    multiplexing gateway, so a second profile's ``hermes update`` attaches to the restart the
+    multiplexing gateway, so a second profile's ``akramcode update`` attaches to the restart the
     first one already stamped (#95294), and a fleet already serving the checkout code (a
-    no-op update, a manual ``hermes gateway restart`` seconds ago) is not re-killed (#117051).
+    no-op update, a manual ``akramcode gateway restart`` seconds ago) is not re-killed (#117051).
 
     The second guard needs BOTH the pre-update plan and the live probe: the live matrix only
     lists gateways, so a planned ``serve`` still on pre-update code (or any runtime without a
@@ -769,13 +769,13 @@ def _systemctl_reset_and_restart(manage_cmd: list, svc_name: str, *, scope_cmd: 
 def _systemd_unit_owned_by_update(scope_cmd: list, svc_name: str) -> bool:
     """Gate a unit restart on the unit's home being one this update owns (#93349).
 
-    ``hermes-gateway*`` is an account-wide namespace: a second install's ``hermes update`` used
-    to drain and restart the account's real ``hermes-gateway.service`` because the unit was
+    ``akramcode-gateway*`` is an account-wide namespace: a second install's ``akramcode update`` used
+    to drain and restart the account's real ``akramcode-gateway.service`` because the unit was
     listed, not because it ran the updated code. Foreign or unreadable ownership prints a notice
     and leaves the unit alone; it is not a failed restart.
     """
-    from akramcode_cli.update_fleet_scope import describe_skipped_runtime, systemd_unit_hermes_home, home_in_update_scope
-    home = systemd_unit_hermes_home(scope_cmd, svc_name)
+    from akramcode_cli.update_fleet_scope import describe_skipped_runtime, systemd_unit_akramcode_home, home_in_update_scope
+    home = systemd_unit_akramcode_home(scope_cmd, svc_name)
     if home is not None and home_in_update_scope(home):
         return True
     print(describe_skipped_runtime("systemd unit", svc_name, home))
@@ -794,26 +794,26 @@ def _scoped_manual_gateway_pids(pids, *, keep=(), quiet: bool = False) -> list[i
     return [pid for pid in pids if pid in keep or pid in owned]
 
 
-def _is_hermes_gateway_unit(unit: str) -> bool:
-    """Exact base unit or hyphenated profile family only: ``startswith("hermes-serve")``
-    would accept ``hermes-server.service``."""
+def _is_akramcode_gateway_unit(unit: str) -> bool:
+    """Exact base unit or hyphenated profile family only: ``startswith("akramcode-serve")``
+    would accept ``akramcode-server.service``."""
     return (
         # list-units is already pattern-filtered, but keep the name gate so a stray non-gateway/serve line
         # cannot enter the restart path. See #83595.
-        unit == "hermes-gateway.service"
-        or unit.startswith("hermes-gateway-")
-        or unit == "hermes-serve.service"
-        or unit.startswith("hermes-serve-")
-        # #125297: ``hermes-dashboard*`` units are systemd-supervised dashboard backends — the
+        unit == "akramcode-gateway.service"
+        or unit.startswith("akramcode-gateway-")
+        or unit == "akramcode-serve.service"
+        or unit.startswith("akramcode-serve-")
+        # #125297: ``akramcode-dashboard*`` units are systemd-supervised dashboard backends — the
         # same fleet this pass restarts. Leaving them out meant a successful update reported
         # the dashboard ``deferred`` (still on pre-update code) while nothing ever restarted it.
-        or unit == "hermes-dashboard.service"
-        or unit.startswith("hermes-dashboard-")
+        or unit == "akramcode-dashboard.service"
+        or unit.startswith("akramcode-dashboard-")
     )
 
 
 def _for_each_systemd_gateway_unit(list_units_stdout: str, *, process_unit, on_unit_timeout) -> None:
-    """Process each hermes-gateway*/hermes-serve* unit from ``systemctl list-units``.
+    """Process each akramcode-gateway*/akramcode-serve* unit from ``systemctl list-units``.
 
     ``TimeoutExpired`` from ``process_unit`` is isolated per unit via ``on_unit_timeout``
     so one wedged systemctl call cannot abort the rest of the fleet.
@@ -825,7 +825,7 @@ def _for_each_systemd_gateway_unit(list_units_stdout: str, *, process_unit, on_u
         if not parts:
             continue
         unit = parts[0]
-        if not unit.endswith(".service") or not _is_hermes_gateway_unit(unit):
+        if not unit.endswith(".service") or not _is_akramcode_gateway_unit(unit):
             continue
         svc_name = unit.removesuffix(".service")
         try:
@@ -837,14 +837,14 @@ def _for_each_systemd_gateway_unit(list_units_stdout: str, *, process_unit, on_u
 def _service_unit_supports_graceful_sigusr1_restart(svc_name: str) -> bool:
     """Whether *svc_name* wires SIGUSR1 to a graceful drain-then-restart.
 
-    Only ``hermes-gateway*`` runs ``gateway/run.py`` (the handler); SIGUSR1 would just
-    kill ``hermes-serve*`` and burn the drain budget, so those go straight to the blunt
+    Only ``akramcode-gateway*`` runs ``gateway/run.py`` (the handler); SIGUSR1 would just
+    kill ``akramcode-serve*`` and burn the drain budget, so those go straight to the blunt
     restart. Same exact/hyphenated shape as ``_for_each_systemd_gateway_unit`` so a
-    near-prefix unit like ``hermes-gatewayd`` is never signalled.
+    near-prefix unit like ``akramcode-gatewayd`` is never signalled.
 
     See #83438.
     """
-    return svc_name == "hermes-gateway" or svc_name.startswith("hermes-gateway-")
+    return svc_name == "akramcode-gateway" or svc_name.startswith("akramcode-gateway-")
 
 
 def _warn_incomplete_gateway_fleet_restart(failed_units: list) -> None:
@@ -863,17 +863,17 @@ def _warn_incomplete_gateway_fleet_restart(failed_units: list) -> None:
         # See #88848.
         print("  Listed services may be deregistered from launchd, or still")
         print("  running pre-update code (mixed sys.modules). Recover with:")
-        print("    hermes gateway status")
+        print("    akramcode gateway status")
         print("    launchctl list | grep <label>")
         print("    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/<label>.plist")
         return
     print("  Skipped units may still be running pre-update code (mixed")
     print("  sys.modules). Restart them manually, then verify:")
-    print("    hermes gateway status")
-    if any(not name.startswith("ai.hermes.") for name in ordered):
+    print("    akramcode gateway status")
+    if any(not name.startswith("ai.akramcode.") for name in ordered):
         print("    systemctl --user restart <unit>   # user-scope")
         print("    sudo systemctl restart <unit>     # system-scope")
-    if any(name.startswith("ai.hermes.") for name in ordered):
+    if any(name.startswith("ai.akramcode.") for name in ordered):
         print("    launchctl kickstart -k gui/$UID/<label>   # macOS (or user/$UID)")
 
 
@@ -916,7 +916,7 @@ def _restart_launchd_gateway_after_update(
             print(
                 f"  ⚠ Gateway restart failed: {stderr}\n"
                 "    The gateway may be DOWN on pre-update code. "
-                "Recover manually: hermes gateway restart"
+                "Recover manually: akramcode gateway restart"
             )
             return [], [current_label]
     except (FileNotFoundError, subprocess.TimeoutExpired) as e:
@@ -926,7 +926,7 @@ def _restart_launchd_gateway_after_update(
             # The old code `pass`ed here (#74973's second silent variant); count it and tell the operator.
             "  ⚠ Could not restart the gateway "
             f"({e.__class__.__name__}: {e}).\n"
-            "    Recover manually: hermes gateway restart"
+            "    Recover manually: akramcode gateway restart"
         )
         return [], [current_label]
 
@@ -950,7 +950,7 @@ def _restart_launchd_gateway_after_update(
         return [current_label], []
     print(
         f"  ✗ {current_label} restarted but launchd is not supervising a new process for it.\n"
-        "    Check logs, then: hermes gateway restart"
+        "    Check logs, then: akramcode gateway restart"
     )
     return [], [current_label]
 
@@ -961,7 +961,7 @@ def _restart_macos_launchd_gateways(
 ) -> None:
     """Restart every launchd-managed gateway after an update (macOS).
 
-    The pull is shared across profiles, so every ``ai.hermes.gateway*`` LaunchAgent
+    The pull is shared across profiles, so every ``ai.akramcode.gateway*`` LaunchAgent
     must reload it or siblings stay on pre-update ``sys.modules`` (systemd parity).
     Invoking profile uses ``launchd_restart()``; siblings get the same drain-first
     sequence with their domain (``gui/<uid>`` vs ``user/<uid>``) resolved per label so
@@ -989,7 +989,7 @@ def _restart_macos_launchd_gateways(
     current_label = get_launchd_label()
 
     derived_labels = launchd_gateway_labels_for_install()
-    # Units labelled before the profile-name suffix scheme (ai.hermes.gateway-<hash>) are invisible
+    # Units labelled before the profile-name suffix scheme (ai.akramcode.gateway-<hash>) are invisible
     # to the derivation; legacy_launchd_labels_for_install() credits one only when its plist is
     # provably this install's, so the #41403 boundary (never touch another install's fleet) holds.
     # See #115254.
@@ -1001,7 +1001,7 @@ def _restart_macos_launchd_gateways(
         if label == current_label:
             continue
         # Labels are account-global: root B's default profile derives the same bare label root A
-        # installed. A plist pinning a foreign HERMES_HOME is another install's job (#93349).
+        # installed. A plist pinning a foreign AKRAMCODE_HOME is another install's job (#93349).
         if (foreign_home := launchd_label_foreign_home(label)) is not None:
             print(describe_skipped_runtime("launchd job", label, foreign_home))
             continue
@@ -1069,12 +1069,12 @@ _DESKTOP_SERVE_SKIP_REASON = (
     "desktop app owns and respawns this serve backend;"
     " the recovery pass must not restart it out from under its supervisor"
 )
-# NOT a claim that no supervisor exists: a systemd-launched serve sets neither HERMES_SPAWN
-# nor HERMES_PARENT_PID ("manual-serve"). Unit-backed serves are recovered by the fresh
+# NOT a claim that no supervisor exists: a systemd-launched serve sets neither AKRAMCODE_SPAWN
+# nor AKRAMCODE_PARENT_PID ("manual-serve"). Unit-backed serves are recovered by the fresh
 # child's systemd pass; survivors reported by _surviving_pre_update_serve_runtimes.
 _SERVE_SKIP_REASON = (
     "no per-profile relaunch command reaches a serve/dashboard runtime; recovered by the fresh"
-    " systemd unit pass when it owns a hermes-serve* unit, else left running for explicit"
+    " systemd unit pass when it owns a akramcode-serve* unit, else left running for explicit"
     " operator restart"
 )
 # A launchd-owned backend (#116503): the fresh child has no per-label kickstart for serve/dashboard
@@ -1094,7 +1094,7 @@ def _gateway_recovery_partition(plan, *, skip_profiles: set[str] | None = None) 
     ``(candidates, skipped)``: profile → supervisor for supervised gateways the fresh
     process may restart; every other inventoried runtime with an explicit reason so
     nothing vanishes silently. Skipped serve/dashboard is NOT unrecoverable: the fresh
-    child's ``hermes-serve*`` systemd pass enumerates units from systemd; leftovers are
+    child's ``akramcode-serve*`` systemd pass enumerates units from systemd; leftovers are
     caught by :func:`_surviving_pre_update_serve_runtimes`.
     """
     skip_profiles = skip_profiles or set()
@@ -1149,8 +1149,8 @@ def _warn_gateway_restart_phase_aborted(exc: BaseException, pids) -> None:
         print("  Any gateway still running is serving pre-update code")
         print("  (mixed sys.modules) against the updated checkout.")
     print("  Restart it manually, then verify:")
-    print("    hermes gateway restart")
-    print("    hermes gateway status")
+    print("    akramcode gateway restart")
+    print("    akramcode gateway status")
 
 
 def _drain_or_signal_gateway_for_update(
@@ -1199,7 +1199,7 @@ def _drain_or_signal_gateway_for_update(
 
 
 def _gateway_home_for_pid(pid: int):
-    """HERMES_HOME of the gateway ``pid`` per the fleet inventory, else None (own profile's file)."""
+    """AKRAMCODE_HOME of the gateway ``pid`` per the fleet inventory, else None (own profile's file)."""
     with suppress(Exception):
         from akramcode_cli.update_receipt import _profile_homes
         from gateway.status import read_runtime_status
@@ -1233,7 +1233,7 @@ def _resolve_manage_cmd(cache: dict, scope_: str, scope_cmd_: list, svc_name_: s
     Manage-units verbs on a *system* service trigger a polkit prompt for non-root
     users, which flashes and dies inside our captured 10-15s subprocess. Root → plain
     systemctl; else ``sudo -n`` blanket probe, then a targeted ``reset-failed`` probe
-    so a least-privilege sudoers entry scoped to hermes-gateway* qualifies (idempotent
+    so a least-privilege sudoers entry scoped to akramcode-gateway* qualifies (idempotent
     no-op we run before every privileged restart anyway). On None the caller must SKIP
     the restart (without draining first!). ``--no-ask-password`` prevents polkit hangs.
     """
@@ -1265,21 +1265,21 @@ def _repair_unit_without_fatal_exit_park(svc_name: str, scope: str) -> None:
     if parked:
         return
     if system and not _needs_sudo(scope) and svc_name == get_service_name():
-        # The refresh adopts the unit's HERMES_HOME into os.environ (sudo strips it); the rest of the
+        # The refresh adopts the unit's AKRAMCODE_HOME into os.environ (sudo strips it); the rest of the
         # update keeps running for the invoking profile.
-        launch_home = os.environ.get("HERMES_HOME")
+        launch_home = os.environ.get("AKRAMCODE_HOME")
         try:
             refresh_systemd_unit_if_needed(system=True)
         finally:
             if launch_home is None:
-                os.environ.pop("HERMES_HOME", None)
+                os.environ.pop("AKRAMCODE_HOME", None)
             else:
-                os.environ["HERMES_HOME"] = launch_home
+                os.environ["AKRAMCODE_HOME"] = launch_home
         return
     print(
         f"  ⚠ {svc_name} lacks RestartPreventExitStatus={GATEWAY_FATAL_CONFIG_EXIT_CODE}: a permanent refusal "
         f"(exit {GATEWAY_FATAL_CONFIG_EXIT_CODE}) would crash-loop it instead of parking.\n"
-        f"    Repair: {'sudo ' if system else ''}hermes gateway install{' --system' if system else ''}"
+        f"    Repair: {'sudo ' if system else ''}akramcode gateway install{' --system' if system else ''}"
     )
 
 
@@ -1303,7 +1303,7 @@ def _restart_one_systemd_gateway_unit(
     _manage_cmd = _resolve_manage_cmd(_manage_cmd_cache, scope, scope_cmd, svc_name)
 
     # Graceful SIGUSR1 first so in-flight runs drain: handler → request_restart(via_service=True)
-    # → drain → exit, Restart=always respawns. hermes-serve has no handler → blunt restart below.
+    # → drain → exit, Restart=always respawns. akramcode-serve has no handler → blunt restart below.
     _main_pid = 0
     if _service_unit_supports_graceful_sigusr1_restart(svc_name):
         try:
@@ -1354,13 +1354,13 @@ def _restart_one_systemd_gateway_unit(
             f"  ⚠ {svc_name} is a system service and restarting it needs root.\n"
             f"    Restart it manually to load the new version:\n"
             f"      sudo systemctl restart {svc_name}\n"
-            f"    To let `hermes update` restart it automatically, allow\n"
+            f"    To let `akramcode update` restart it automatically, allow\n"
             f"    passwordless sudo for systemctl, or run updates with sudo."
         )
         return
 
     # Blunt restart — only when the graceful path failed (no SIGUSR1 wiring, drain over
-    # budget, restart-policy mismatch). Mirrors `hermes gateway restart` (`systemd_restart()`).
+    # budget, restart-policy mismatch). Mirrors `akramcode gateway restart` (`systemd_restart()`).
     restart = _systemctl_reset_and_restart(_manage_cmd, svc_name, scope_cmd=scope_cmd)
     if restart.returncode != 0:
         failed_or_stale_units.append(svc_name)
@@ -1393,7 +1393,7 @@ def _restart_one_systemd_gateway_unit(
 def _restart_systemd_gateway_units(
     restarted_services, failed_or_stale_units, restarted_scoped_units, drain_budget, self_restart_pending=None,
 ):
-    """Restart every active hermes-gateway*/hermes-serve* systemd unit (user + system).
+    """Restart every active akramcode-gateway*/akramcode-serve* systemd unit (user + system).
 
     Settled units → ``restarted_services`` (bare) and ``restarted_scoped_units``
     (``scope/name``); failures → ``failed_or_stale_units``. Per-unit timeouts isolated.
@@ -1410,7 +1410,7 @@ def _restart_systemd_gateway_units(
         print(
             f"  ⚠ systemctl timed out listing {scope}-scope "
             f"gateway units ({exc.cmd if exc.cmd else 'unknown command'}). "
-            f"Check the gateway with: hermes gateway status"
+            f"Check the gateway with: akramcode gateway status"
         )
 
     def _on_unit_timeout(svc_name: str, exc: subprocess.TimeoutExpired) -> None:
@@ -1424,7 +1424,7 @@ def _restart_systemd_gateway_units(
             f"continuing with remaining gateways"
         )
 
-    # Enumerate every scope first: leftover per-profile units (``hermes-gateway-<profile>``)
+    # Enumerate every scope first: leftover per-profile units (``akramcode-gateway-<profile>``)
     # all point at the SAME live MainPID on a multiplexed host, and restarting each in turn
     # is an N-fold outage from one update. Units sharing a live PID collapse to one restart;
     # the others are named as legacy units to migrate, never silently dropped.
@@ -1447,7 +1447,7 @@ def _restart_systemd_gateway_units(
         print(
             f"  • {unit_key} is a legacy per-profile unit sharing one host gateway process with "
             f"{owner_key}; restarting it again would restart that process twice. Fold the units "
-            "together with: hermes gateway migrate"
+            "together with: akramcode gateway migrate"
         )
 
     for key in keys:
@@ -1610,9 +1610,9 @@ def _restart_manual_gateways(out: _GatewayRestartOutcome, _drain_budget) -> None
         unmapped_count = (len(out.killed_pids) - len(out.relaunched_profiles) - len(out.externally_supervised_profiles))
         if unmapped_count:
             print(f"  → Stopped {unmapped_count} manual gateway process(es)")
-            print("    Restart manually: hermes gateway run")
+            print("    Restart manually: akramcode gateway run")
             if unmapped_count > 1:
-                print("    (or: hermes -p <profile> gateway run  for each profile)")
+                print("    (or: akramcode -p <profile> gateway run  for each profile)")
 
 
 def _force_kill_stuck_gateways(killed_pids) -> None:
@@ -1740,7 +1740,7 @@ def _restart_gateway_fleet_after_update(_pre_update_plan, gateway_mode: bool):
         incomplete=False, phase_errors=[], pre_restart_gateway_pids=[], restarted_services=[], failed_or_stale_units=[],
         relaunched_profiles=[], externally_supervised_profiles=[], killed_pids=set(),
     )
-    # Scope-qualified twin (``user/hermes-serve`` vs ``system/hermes-serve`` are different
+    # Scope-qualified twin (``user/akramcode-serve`` vs ``system/akramcode-serve`` are different
     # processes; abort recovery needs WHICH settled). Bare names stay in
     # ``restarted_services`` for the fleet probe, receipt and summary.
     # Snapshot of gateways running before we touch anything. Stays empty until we successfully import the
@@ -1780,7 +1780,7 @@ def _restart_gateway_fleet_after_update(_pre_update_plan, gateway_mode: bool):
             out.self_restart_pending_pids,
         )
 
-        # macOS: EVERY ai.hermes.gateway* LaunchAgent (systemd parity).
+        # macOS: EVERY ai.akramcode.gateway* LaunchAgent (systemd parity).
         if is_macos():
             with suppress(FileNotFoundError, ImportError):
                 _restart_macos_launchd_gateways(
@@ -1813,22 +1813,22 @@ def _restart_gateway_fleet_after_update(_pre_update_plan, gateway_mode: bool):
 
 
 def _print_legacy_units_warning() -> None:
-    """Legacy hermes.service fights hermes-gateway.service over the bot token; warn on
+    """Legacy akramcode.service fights akramcode-gateway.service over the bot token; warn on
     every update until migrated."""
-    from akramcode_cli.gateway import (has_legacy_hermes_units, _find_legacy_hermes_units, supports_systemd_services)
-    if not (supports_systemd_services() and has_legacy_hermes_units()):
+    from akramcode_cli.gateway import (has_legacy_akramcode_units, _find_legacy_akramcode_units, supports_systemd_services)
+    if not (supports_systemd_services() and has_legacy_akramcode_units()):
         return
     print()
-    print("⚠ Legacy Hermes gateway unit(s) detected:")
-    for name, path, is_sys in _find_legacy_hermes_units():
+    print("⚠ Legacy AkramCode gateway unit(s) detected:")
+    for name, path, is_sys in _find_legacy_akramcode_units():
         scope = "system" if is_sys else "user"
         print(f"    {path}  ({scope} scope)")
     print()
-    print("  These pre-rename units (hermes.service) fight the current")
-    print("  hermes-gateway.service for the bot token and cause SIGTERM")
+    print("  These pre-rename units (akramcode.service) fight the current")
+    print("  akramcode-gateway.service for the bot token and cause SIGTERM")
     print("  flap loops. Remove them with:")
     print()
-    print("    hermes gateway migrate-legacy")
+    print("    akramcode gateway migrate-legacy")
     print()
     print("  (add `sudo` if any are in system scope)")
 
@@ -1941,12 +1941,12 @@ def _verify_fleet_after_update(restart, *, _pre_update_plan, _windows_gateway_re
         restart.incomplete = True
 
     # Success-path twin of the abort-recovery probe: the restart phase only touches
-    # units, so a unit-less `hermes serve` keeps stale sys.modules. Runs AFTER
+    # units, so a unit-less `akramcode serve` keeps stale sys.modules. Runs AFTER
     # dashboard cleanup so a respawned manual dashboard isn't a survivor. Rows feed
     # reconciliation (survivor → exit 1); ``None`` = probe failed, stays fail-closed.
     # Check if any pre-update serve/dashboard runtimes survived on pre-update code generations (#100479).
     # This is the SUCCESS-path twin of the abort-recovery probe above: the restart phase only restarts
-    # units, so an sshd-spawned `serve --isolated` or a manual `hermes serve` (no unit) is left running its
+    # units, so an sshd-spawned `serve --isolated` or a manual `akramcode serve` (no unit) is left running its
     # pre-update sys.modules graph — and its cron ticker keeps firing agent jobs that ImportError on every
     # symbol added in the pulled range. The rows also feed the plan-vs-execution reconciliation below, so a
     # survivor is escalated (exit 1) instead of merely printed.
@@ -1958,7 +1958,7 @@ def _verify_fleet_after_update(restart, *, _pre_update_plan, _windows_gateway_re
 
     print()
     print("Tip: You can now select a provider and model:")
-    print("  hermes model              # Select provider and model")
+    print("  akramcode model              # Select provider and model")
 
     # Compare every live gateway's stamped code_sha against the fresh checkout
     # instead of assuming the restart phase worked.
@@ -2010,7 +2010,7 @@ def _verify_fleet_after_update(restart, *, _pre_update_plan, _windows_gateway_re
             from akramcode_cli.update_receipt import row_is_external
             # Gateway incarnation evidence, from the post-restart fleet snapshot collected above: a
             # service can serve a profile its own name does not encode (root-home launchd label +
-            # sticky active profile, hashed custom HERMES_HOME), so the bookkeeping's service names
+            # sticky active profile, hashed custom AKRAMCODE_HOME), so the bookkeeping's service names
             # alone cannot credit the planned runtime. A profile the probe produced no row for simply
             # has no evidence — that runtime stays on the name-matching path (and logs it).
             _live_gateway_pids = _live_gateway_pids_from_fleet(_fleet_snapshot)

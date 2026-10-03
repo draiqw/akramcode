@@ -1,7 +1,7 @@
-"""``hermes gateway migrate``: preflight verdicts, apply/rollback bookkeeping, and the update hook.
+"""``akramcode gateway migrate``: preflight verdicts, apply/rollback bookkeeping, and the update hook.
 
 Service layer is faked through the module's ``_installed_services`` / ``_service_op`` seams (the same
-shape ``hermes gateway install`` tests use); the default gateway boot is faked by writing the
+shape ``akramcode gateway install`` tests use); the default gateway boot is faked by writing the
 ``served_profiles`` record the real multiplexer writes. Blockers reuse the gateway's own credential
 fingerprint and port-binding predicates, so the tests assert verdict → effect, not internal lists.
 """
@@ -15,7 +15,7 @@ from types import SimpleNamespace
 
 import pytest
 
-import hermes_constants
+import akramcode_constants
 from akramcode_cli import gateway_migrate as gm
 
 # Captured before any fixture fakes the seam: the one test that drives the real service leg.
@@ -25,18 +25,18 @@ _REAL_SERVICE_OP = gm._service_op
 @pytest.fixture
 def fleet(tmp_path, monkeypatch):
     """default + coder + ops; both secondaries run a 'live' standalone gateway with a systemd unit."""
-    root = tmp_path / "hermes"
+    root = tmp_path / "akramcode"
     for sub in ("profiles/coder", "profiles/ops"):
         (root / sub).mkdir(parents=True)
     (root / "config.yaml").write_text("model:\n  default: x\n", encoding="utf-8")
     (root / ".env").write_text("TELEGRAM_BOT_TOKEN=111111:default-token\n", encoding="utf-8")
     (root / "profiles/coder/.env").write_text("TELEGRAM_BOT_TOKEN=222222:coder-token\n", encoding="utf-8")
     (root / "profiles/ops/.env").write_text("DISCORD_BOT_TOKEN=ops-discord-333333\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(root))
     monkeypatch.delenv("GATEWAY_MULTIPLEX_PROFILES", raising=False)
     for name in ("TELEGRAM_BOT_TOKEN", "DISCORD_BOT_TOKEN", "API_SERVER_KEY", "WEBHOOK_ENABLED"):
         monkeypatch.delenv(name, raising=False)
-    monkeypatch.setattr(hermes_constants, "_default_hermes_root_memo", None)
+    monkeypatch.setattr(akramcode_constants, "_default_akramcode_root_memo", None)
 
     state = SimpleNamespace(
         # profile -> installed unit(s); a tuple is one unit, a list is every installed unit.
@@ -53,7 +53,7 @@ def fleet(tmp_path, monkeypatch):
         name = _name(home)
         state.ops.append((name, verb))
         if verb == "start" and name != "default":
-            # What the real `hermes -p <name> gateway run` checks first: is a live multiplexer
+            # What the real `akramcode -p <name> gateway run` checks first: is a live multiplexer
             # still recorded as serving me? (exit 78 if so — the unit is then parked for good).
             from akramcode_cli.gateway import named_profile_served_by_running_multiplexer
             state.refused_at_start[name] = named_profile_served_by_running_multiplexer(name)
@@ -70,10 +70,10 @@ def fleet(tmp_path, monkeypatch):
         elif verb == "enable":
             state.enabled.add((name, kind, system))
         elif verb in ("start", "restart") and name == "default":
-            (root / "gateway.pid").write_text(json.dumps({"pid": os.getpid(), "hermes_home": str(root)}))
+            (root / "gateway.pid").write_text(json.dumps({"pid": os.getpid(), "akramcode_home": str(root)}))
             runtime_path = root / "gateway_state.json"
             runtime = json.loads(runtime_path.read_text()) if runtime_path.exists() else {}
-            runtime.update({"pid": os.getpid(), "hermes_home": str(root), "gateway_state": "running"})
+            runtime.update({"pid": os.getpid(), "akramcode_home": str(root), "gateway_state": "running"})
             # Multiplex startup records ownership; standalone startup historically preserved the
             # old key, which is the stale-state half of #109473's rollback failure.
             if _config_flag(root):
@@ -82,7 +82,7 @@ def fleet(tmp_path, monkeypatch):
 
     import gateway.status as status
     # The default gateway the fixture "starts" is this process; the served probe verifies identity.
-    monkeypatch.setattr(status, "_read_process_cmdline", lambda pid: "hermes gateway run")
+    monkeypatch.setattr(status, "_read_process_cmdline", lambda pid: "akramcode gateway run")
     monkeypatch.setattr(gm, "_installed_services", lambda home: _units(state.services.get(_name(home))))
     monkeypatch.setattr(gm, "_live_gateway_pid", lambda home: state.pids.get(_name(home)))
     monkeypatch.setattr(gm, "_service_op", _service_op)
@@ -111,7 +111,7 @@ def fleet(tmp_path, monkeypatch):
 
 def _fake_spawn(state, home: Path) -> bool:
     root = state.root
-    (root / "gateway.pid").write_text(json.dumps({"pid": os.getpid(), "hermes_home": str(root)}))
+    (root / "gateway.pid").write_text(json.dumps({"pid": os.getpid(), "akramcode_home": str(root)}))
     return True
 
 
@@ -126,7 +126,7 @@ def _pid_of_started_gateway(home: Path):
 
 
 def _name(home: Path) -> str:
-    return hermes_constants.profile_name_for_home(home) or "default"
+    return akramcode_constants.profile_name_for_home(home) or "default"
 
 
 def _units(recorded) -> list:
@@ -139,7 +139,7 @@ _real_preflight = gm._preflight_apply
 
 
 def _config_flag(root: Path):
-    import akram_core.hermes_yaml as yaml
+    import akram_core.akramcode_yaml as yaml
     raw = yaml.safe_load((root / "config.yaml").read_text(encoding="utf-8")) or {}
     return (raw.get("gateway") or {}).get("multiplex_profiles")
 
@@ -448,7 +448,7 @@ def test_update_hook_refuses_to_cross_service_user_or_home_boundary(
     fleet, capsys, monkeypatch, secondary_service, secondary_uid, secondary_home, expected,
 ):
     """#109954: the unattended hook must not fold a secondary that sits behind a kernel-enforced
-    boundary (other service domain, other UNIX user, HERMES_HOME outside profiles/). It prints the
+    boundary (other service domain, other UNIX user, AKRAMCODE_HOME outside profiles/). It prints the
     boundary + the explicit command and touches nothing; the dry-run plan shows the same finding as a
     notice and the explicit command stays available."""
     fleet.services["default"] = ("systemd", False)
@@ -476,7 +476,7 @@ def test_update_hook_refuses_to_cross_service_user_or_home_boundary(
 
 def test_update_hook_still_migrates_same_user_same_scope_profiles_under_the_default_tree(fleet, capsys, monkeypatch):
     """The guard is a boundary check, not a kill switch: one user, one service domain, everything under
-    profiles/ (the shape `hermes profile create` produces) still auto-migrates."""
+    profiles/ (the shape `akramcode profile create` produces) still auto-migrates."""
     fleet.services["default"] = ("systemd", False)
     monkeypatch.setattr(gm, "_gateway_identity", lambda home, pid, service: (1000, home), raising=False)
 
@@ -521,7 +521,7 @@ def test_update_hook_folds_a_unit_less_default_when_every_secondary_shares_one_m
 
 def test_auto_multiplex_migration_false_opts_out_of_the_update_hook_but_not_the_explicit_command(fleet, capsys):
     """``gateway.auto_multiplex_migration: false`` is a durable opt-out: an otherwise-eligible fleet is
-    left alone by ``hermes update`` (no output, no ops, no flag flip), while the operator typing
+    left alone by ``akramcode update`` (no output, no ops, no flag flip), while the operator typing
     ``migrate --multiplex`` still migrates. Only the nested key counts."""
     assert gm.build_migration_plan().eligible_for_migration()  # would migrate but for the flag
     (fleet.root / "config.yaml").write_text(
@@ -562,9 +562,9 @@ def test_explicit_migrate_with_no_standalone_secondaries_still_flips_flag_and_re
 
     def _detached(home):  # no service manager anywhere -> detached start writes the served record
         fleet.services["default-detached"] = True
-        (fleet.root / "gateway.pid").write_text(json.dumps({"pid": os.getpid(), "hermes_home": str(fleet.root)}))
+        (fleet.root / "gateway.pid").write_text(json.dumps({"pid": os.getpid(), "akramcode_home": str(fleet.root)}))
         (fleet.root / "gateway_state.json").write_text(json.dumps({
-            "pid": os.getpid(), "hermes_home": str(fleet.root), "gateway_state": "running",
+            "pid": os.getpid(), "akramcode_home": str(fleet.root), "gateway_state": "running",
             "served_profiles": ["default", "coder", "ops"]}))
         return True
     monkeypatch.setattr(gm, "_spawn_detached_gateway", _detached)
@@ -716,7 +716,7 @@ def test_opt_out_reads_effective_config_managed_false_wins_and_string_false_is_f
     assert auto_migration_opted_out(fleet.root) is False
     managed = tmp_path / "managed"; managed.mkdir()
     (managed / "config.yaml").write_text("gateway:\n  auto_multiplex_migration: false\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_MANAGED_DIR", str(managed))
+    monkeypatch.setenv("AKRAMCODE_MANAGED_DIR", str(managed))
     managed_scope.invalidate_managed_cache()
     with gm._home_env(fleet.root):
         assert cfg.load_config()["gateway"]["auto_multiplex_migration"] is False
@@ -949,7 +949,7 @@ def test_plan_names_every_process_it_will_sigterm_before_it_signals_anything(fle
 
 
 def test_windows_task_detection_reads_both_the_task_and_the_startup_fallback(monkeypatch):
-    """`hermes gateway install` falls back to a Startup-folder entry when it cannot register a
+    """`akramcode gateway install` falls back to a Startup-folder entry when it cannot register a
     task; a migration that removed only the task would leave that entry launching a second
     gateway at the next logon."""
     from akramcode_cli import gateway_windows as gww

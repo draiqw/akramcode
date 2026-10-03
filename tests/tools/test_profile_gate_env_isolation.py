@@ -4,7 +4,7 @@
 decide WHO may talk to the agent. They are not credentials (no secret scrub sees them), a unit-file
 ``Environment=`` or operator export never appears in the launch ``.env`` (no name list sees them), and
 the target profile's own ``.env`` rarely defines them (its dotenv load never overwrites them) — so a
-``hermes -p B`` child built from profile A's process enforced A's channel list as its own.
+``akramcode -p B`` child built from profile A's process enforced A's channel list as its own.
 """
 
 import json
@@ -34,13 +34,13 @@ def _seen_by_child(env: dict) -> set[str]:
 
 @pytest.fixture
 def homes(tmp_path, monkeypatch):
-    """Launch home A (the process's HERMES_HOME) and routed home B; gates in the process env only."""
-    a = tmp_path / ".hermes"
+    """Launch home A (the process's AKRAMCODE_HOME) and routed home B; gates in the process env only."""
+    a = tmp_path / ".akramcode"
     b = a / "profiles" / "b"
     b.mkdir(parents=True)
     (a / ".env").write_text("A_MARKER=a\n", encoding="utf-8")
     (b / ".env").write_text("B_MARKER=b\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(a))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(a))
     for key, value in _GATES.items():
         monkeypatch.setenv(key, value)
     return a, b

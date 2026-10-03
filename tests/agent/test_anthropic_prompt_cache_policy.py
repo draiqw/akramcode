@@ -264,9 +264,9 @@ class TestThirdPartyAnthropicGateway:
         agent and the policy loads config itself."""
         import textwrap
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text(
+        akramcode_home = tmp_path / ".akramcode"
+        akramcode_home.mkdir()
+        (akramcode_home / "config.yaml").write_text(
             textwrap.dedent(
                 """
                 providers:
@@ -282,9 +282,9 @@ class TestThirdPartyAnthropicGateway:
                 """
             )
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
         # load_config's cache is keyed by resolved config path, so pointing
-        # HERMES_HOME at a fresh tempdir needs no cache invalidation.
+        # AKRAMCODE_HOME at a fresh tempdir needs no cache invalidation.
         agent = _make_agent(
             provider="custom:anthropic-proxy",
             base_url="https://gateway.example.com/anthropic",
@@ -437,9 +437,9 @@ class TestCustomProviderOpenAIWireCapability:
     ):
         import textwrap
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text(
+        akramcode_home = tmp_path / ".akramcode"
+        akramcode_home.mkdir()
+        (akramcode_home / "config.yaml").write_text(
             textwrap.dedent(
                 """
                 providers:
@@ -452,7 +452,7 @@ class TestCustomProviderOpenAIWireCapability:
                 """
             )
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
         agent = _make_agent(
             provider="edge-router",
             base_url="https://models.example.net/v1",

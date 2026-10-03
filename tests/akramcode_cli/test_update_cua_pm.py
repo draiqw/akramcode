@@ -13,7 +13,7 @@ from akramcode_cli import update_cmd_maint as update
 @pytest.fixture
 def refresh(monkeypatch):
     monkeypatch.setattr(update, "_load_updates_cfg", lambda: {"refresh_cua_driver": True})
-    monkeypatch.delenv("HERMES_CUA_DRIVER_CMD", raising=False)
+    monkeypatch.delenv("AKRAMCODE_CUA_DRIVER_CMD", raising=False)
     monkeypatch.setenv("PATH", "")
     installed = Mock(return_value=SimpleNamespace())
     ensure = Mock()
@@ -32,7 +32,7 @@ def test_cua_refresh_skips_disabled_missing_or_external_driver(
 ):
     lookup, ensure = refresh
     monkeypatch.setattr(update, "_load_updates_cfg", lambda: {"refresh_cua_driver": not disabled})
-    monkeypatch.setenv("HERMES_CUA_DRIVER_CMD", override)
+    monkeypatch.setenv("AKRAMCODE_CUA_DRIVER_CMD", override)
     lookup.return_value = SimpleNamespace() if installed else None
     host_setup = Mock(side_effect=AssertionError("unexpected host setup"))
     monkeypatch.setattr(setup, "install_cua_driver", host_setup)
@@ -65,7 +65,7 @@ def test_windows_refresh_defers_pin_and_uac_to_explicit_setup(refresh, monkeypat
     output = capsys.readouterr().out
     assert "deferred" in output.lower()
     assert "UAC" in output
-    assert "hermes computer-use install --upgrade" in output
+    assert "akramcode computer-use install --upgrade" in output
 
 
 @pytest.mark.platforms("macos")

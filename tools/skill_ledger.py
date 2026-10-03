@@ -1,9 +1,9 @@
 """Per-mutation skill audit ledger + single-edit rollback.
 
 Every skill mutation (any actor) appends one JSONL entry to
-``~/.hermes/skills/.curator_ledger.jsonl`` with before/after file manifests whose
+``~/.akramcode/skills/.curator_ledger.jsonl`` with before/after file manifests whose
 contents are stored content-addressed (sha256-deduped) under
-``~/.hermes/.curator_backups/blobs/``. JSONL, not the state DB: durable, greppable,
+``~/.akramcode/.curator_backups/blobs/``. JSONL, not the state DB: durable, greppable,
 survives DB resets. TELEMETRY, NOT A GATE: every public write path swallows and
 logs — except ``rollback_entry``, which FAILS CLOSED when its safety capture fails.
 """
@@ -24,7 +24,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +78,7 @@ def derive_actor() -> str:
 
 
 def _skills_dir() -> Path:
-    return get_hermes_home() / "skills"
+    return get_akramcode_home() / "skills"
 
 
 def ledger_path() -> Path:
@@ -86,7 +86,7 @@ def ledger_path() -> Path:
 
 
 def blobs_dir() -> Path:
-    return get_hermes_home() / ".curator_backups" / "blobs"
+    return get_akramcode_home() / ".curator_backups" / "blobs"
 
 
 def _ledger_lock():
@@ -246,7 +246,7 @@ def fill_snapshot_from_curator_backup(
     where rollback must restore them: under *root* when known (for purge that is
     ``.archive/<name>/``, NOT the live tree), else the live skills dir; the tar's leading
     package-dir segment is stripped when *root* already names the package. Every target must stay
-    under ``skills/`` and HERMES_HOME."""
+    under ``skills/`` and AKRAMCODE_HOME."""
     out = list(existing or [])
     prefixes = package_prefixes(root, skill, out)
     if not prefixes:
@@ -269,7 +269,7 @@ def fill_snapshot_from_curator_backup(
         if not parts:
             continue
         dest = (dest_root if dest_root is not None else skills).joinpath(*parts)
-        if not _is_within(skills, dest) or not _is_within(get_hermes_home(), dest):
+        if not _is_within(skills, dest) or not _is_within(get_akramcode_home(), dest):
             continue
         rel_key = _rel_posix(dest, skills)
         if rel_key is None or rel_key in have:
@@ -555,9 +555,9 @@ def get_entry(entry_id: str) -> Optional[Dict[str, Any]]:
 
 
 def _validate_entry_paths(entry: Dict[str, Any]) -> Optional[str]:
-    """Every entry path must be under HERMES_HOME — a hand-edited ledger must not
+    """Every entry path must be under AKRAMCODE_HOME — a hand-edited ledger must not
     become a write-anywhere primitive."""
-    home = get_hermes_home()
+    home = get_akramcode_home()
     for section in ("before", "after"):
         for item in entry.get(section) or []:
             p = Path(str(item.get("path", "")))

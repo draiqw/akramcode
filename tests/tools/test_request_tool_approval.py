@@ -177,8 +177,8 @@ class TestRequestToolApproval:
         monkeypatch.setattr(tools_approval_context, "_is_cron_approval_context", lambda: False)
         monkeypatch.setattr(approval, "_is_single_query_approval_context", lambda: False)
         monkeypatch.setattr(approval_context, "_get_approval_mode", lambda: "manual")
-        monkeypatch.setenv("HERMES_EXEC_ASK", "1")
-        monkeypatch.setenv("HERMES_SESSION_PLATFORM", "api_server")
+        monkeypatch.setenv("AKRAMCODE_EXEC_ASK", "1")
+        monkeypatch.setenv("AKRAMCODE_SESSION_PLATFORM", "api_server")
 
         notified = []
 
@@ -208,8 +208,8 @@ class TestRequestToolApproval:
         monkeypatch.setattr(approval, "_is_single_query_approval_context", lambda: False)
         monkeypatch.setattr(approval_context, "_get_approval_mode", lambda: "manual")
         monkeypatch.setattr(approval_context, "_get_unattended_approval_mode", lambda: "deny")
-        monkeypatch.delenv("HERMES_EXEC_ASK", raising=False)
-        monkeypatch.setenv("HERMES_SESSION_PLATFORM", "api_server")
+        monkeypatch.delenv("AKRAMCODE_EXEC_ASK", raising=False)
+        monkeypatch.setenv("AKRAMCODE_SESSION_PLATFORM", "api_server")
 
         res = request_tool_approval("home_lock", "unlock the front door", rule_key="unlock")
 

@@ -25,7 +25,7 @@ OMIT_TEMPERATURE = object()
 
 
 def _profile_user_agent() -> str:
-    """Return a ``hermes-cli/<version>`` UA string, with a stable fallback.
+    """Return a ``akramcode-cli/<version>`` UA string, with a stable fallback.
 
     Used by ``ProviderProfile.fetch_models`` so the catalog probe is not
     served the default ``Python-urllib/<ver>`` UA — some providers
@@ -33,9 +33,9 @@ def _profile_user_agent() -> str:
     """
     try:
         from akramcode_cli.version_info import get_version_info  # lazy: avoid layer cycle at import time
-        return f"hermes-cli/{get_version_info().base_version}"
+        return f"akramcode-cli/{get_version_info().base_version}"
     except Exception:
-        return "hermes-cli"
+        return "akramcode-cli"
 
 
 @dataclass
@@ -255,7 +255,7 @@ class ProviderProfile:
         through to its existing construction path.
 
         This is the hook that lets a provider ship *outside* this tree: with it,
-        a profile registered from ``~/.hermes/plugins/model-providers/`` or a
+        a profile registered from ``~/.akramcode/plugins/model-providers/`` or a
         pip entry point can supply its own transport without any core edit. See
         ``plugins/model-providers/copilot-acp/`` for the in-tree example.
         """

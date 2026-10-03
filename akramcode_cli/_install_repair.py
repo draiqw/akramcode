@@ -18,10 +18,10 @@ def _is_windows() -> bool:
 
 
 #: Launcher command names install.ps1's Set-PathVariable exposes from the
-#: managed binary dir (the default Hermes root's ``bin``, next to uv.exe)
+#: managed binary dir (the default AkramCode root's ``bin``, next to uv.exe)
 #: on the user PATH. Keep in lockstep with WINDOWS_BIN_LAUNCHERS in
 #: akramcode_cli/_launchers.py and scripts/install.ps1.
-_WINDOWS_BIN_LAUNCHERS = ("hermes", "hermes-acp")
+_WINDOWS_BIN_LAUNCHERS = ("akramcode", "akramcode-acp")
 
 
 def _normalize_windows_path(value) -> str:
@@ -59,27 +59,27 @@ def ensure_windows_bin_launchers(
     windows: bool | None = None,
     user_path_entries: list[str] | None = None,
 ) -> list[str]:
-    """Re-stage the Windows ``hermes`` launchers when they vanish or when
+    """Re-stage the Windows ``akramcode`` launchers when they vanish or when
     they still boot through the venv.
 
-    On Windows, ``hermes`` resolves through staged launchers — never
+    On Windows, ``akramcode`` resolves through staged launchers — never
     ``venv\\Scripts`` itself on PATH, which would shadow the user's
     ``python`` (#83797) — and under pm the launchers boot the pm STORE
     python with ``PYTHONPATH=<repo>;<venv>/site-packages``, never the venv
     interpreter (no-boot-through-venv; ``pyvenv.cfg`` is inert dead
     config). The canonical launcher home is
-    the managed binary dir — the default Hermes root's ``bin``
-    (``%LOCALAPPDATA%\\hermes\\bin``, next to the managed uv) — which lives
+    the managed binary dir — the default AkramCode root's ``bin``
+    (``%LOCALAPPDATA%\\akramcode\\bin``, next to the managed uv) — which lives
     OUTSIDE the git checkout so no git operation can ever touch it. It is
-    a per-machine dir shared by every profile: ``get_hermes_home()`` would
-    point inside ``profiles\\<name>`` under ``hermes -p``, so the anchor
-    here is :func:`akramcode_constants.get_default_hermes_root`.
+    a per-machine dir shared by every profile: ``get_akramcode_home()`` would
+    point inside ``profiles\\<name>`` under ``akramcode -p``, so the anchor
+    here is :func:`akramcode_constants.get_default_akramcode_root`.
 
     Earlier installer versions staged them at ``<checkout>\\bin`` instead —
-    inside the git working tree — where ``hermes update``'s pre-update
+    inside the git working tree — where ``akramcode update``'s pre-update
     autostash (``git stash push --include-untracked``) swept them off disk;
     once the desktop updater stopped re-applying stashes (``--keep-stash``)
-    nothing restored them and ``hermes`` stopped resolving in every new
+    nothing restored them and ``akramcode`` stopped resolving in every new
     terminal. That legacy location is re-staged too, during the transition,
     for installs whose user PATH still resolves through it.
 
@@ -91,7 +91,7 @@ def ensure_windows_bin_launchers(
     Two targets, two gates, both failing toward inaction:
 
     - canonical managed binary dir: only when *root* is the managed clone
-      (``root.parent == get_default_hermes_root()``), so source checkouts
+      (``root.parent == get_default_akramcode_root()``), so source checkouts
       elsewhere never gain launchers;
     - legacy ``<root>\\bin``: only when that dir is on the user PATH
       (registry value, process PATH as fallback), i.e. the install opted
@@ -110,14 +110,14 @@ def ensure_windows_bin_launchers(
 
     root = Path(root)
 
-    # Per-machine anchor: the DEFAULT Hermes root, not get_hermes_home() —
-    # under ``hermes -p <name>`` that returns ``profiles\\<name>``, which
+    # Per-machine anchor: the DEFAULT AkramCode root, not get_akramcode_home() —
+    # under ``akramcode -p <name>`` that returns ``profiles\\<name>``, which
     # would fail the managed-clone gate below and silently skip the heal
     # for profile users. The launcher dir serves the whole machine.
-    from akramcode_constants import get_default_hermes_root
+    from akramcode_constants import get_default_akramcode_root
 
     try:
-        home = Path(get_default_hermes_root())
+        home = Path(get_default_akramcode_root())
     except Exception:
         return []
 
@@ -142,7 +142,7 @@ def ensure_windows_bin_launchers(
         exe = target / f"{name}.exe"
         if not exe.exists():
             return not ((target / f"{name}.cmd").is_file()
-                        and _launcher_present(root / ".hermes" / "bin", name))
+                        and _launcher_present(root / ".akramcode" / "bin", name))
         return exe_is_venv_bound(exe, venv_dir)
 
     targets: list[Path] = []
@@ -153,7 +153,7 @@ def ensure_windows_bin_launchers(
     # override), so the healthy path must stay at a couple of stat calls.
     if _normalize_windows_path(root.parent) == _normalize_windows_path(home):
         canonical = home / "bin"
-        local = root / ".hermes" / "bin"
+        local = root / ".akramcode" / "bin"
         if any(not _launcher_present(local, name) for name in _WINDOWS_BIN_LAUNCHERS):
             # Upgrade existing PM installs too: their healthy external launcher
             # predates the exact-install command and may lack the runtime query.
@@ -207,7 +207,7 @@ def ensure_windows_bin_launchers(
         # closed/broken stderr must not turn a successful heal into a crash.
         with contextlib.suppress(OSError, ValueError):
             print(
-                "  ✓ Restored hermes launcher(s): " + ", ".join(restored),
+                "  ✓ Restored akramcode launcher(s): " + ", ".join(restored),
                 file=sys.stderr,
             )
     return restored
@@ -246,9 +246,9 @@ def migrate_windows_bin_path(
     read_user_path=None,
     write_user_path=None,
 ) -> bool:
-    """One-time PATH migration to the ``HERMES_HOME\\bin`` launcher layout.
+    """One-time PATH migration to the ``AKRAMCODE_HOME\\bin`` launcher layout.
 
-    Runs from the ``hermes update`` tail (and mirrors what install.ps1's
+    Runs from the ``akramcode update`` tail (and mirrors what install.ps1's
     Set-PathVariable does on fresh installs/repairs, which never reach
     existing installs — updates don't run install.ps1):
 
@@ -281,11 +281,11 @@ def migrate_windows_bin_path(
     root = Path(root)
 
     # Same per-machine anchor as ensure_windows_bin_launchers (see there).
-    from akramcode_constants import get_default_hermes_root
+    from akramcode_constants import get_default_akramcode_root
     from pm.environments import venv_bin_dir
 
     try:
-        home = Path(get_default_hermes_root())
+        home = Path(get_default_akramcode_root())
     except Exception:
         return False
     if _normalize_windows_path(root.parent) != _normalize_windows_path(home):
@@ -335,7 +335,7 @@ def migrate_windows_bin_path(
             return False
         with contextlib.suppress(OSError, ValueError):
             print(
-                f"  ✓ hermes launchers now resolve from {home_bin} "
+                f"  ✓ akramcode launchers now resolve from {home_bin} "
                 "(legacy PATH entries removed)",
                 file=sys.stderr,
             )

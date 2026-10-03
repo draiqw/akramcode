@@ -1,4 +1,4 @@
-"""Name what a draining gateway is waiting on while ``hermes update`` blocks on it.
+"""Name what a draining gateway is waiting on while ``akramcode update`` blocks on it.
 
 The gateway's in-band restart (SIGUSR1 → ``request_restart``) defers ``stop()`` until in-flight
 work finishes, capped by ``agent.restart_after_turn_timeout`` (30 min by default). From the
@@ -29,17 +29,17 @@ def _fmt_elapsed(seconds: object) -> str:
 def _cron_job_name(job_id: str, home: Optional[Path]) -> Optional[str]:
     """``name`` from the profile's ``jobs.json`` (None when unreadable — the id alone still identifies it)."""
     try:
-        from akramcode_constants import reset_hermes_home_override, set_hermes_home_override
+        from akramcode_constants import reset_akramcode_home_override, set_akramcode_home_override
         from cron.jobs import load_jobs
 
-        token = set_hermes_home_override(home) if home else None
+        token = set_akramcode_home_override(home) if home else None
         try:
             for job in load_jobs():
                 if str(job.get("id")) == job_id:
                     return str(job.get("name") or "") or None
         finally:
             if token is not None:
-                reset_hermes_home_override(token)
+                reset_akramcode_home_override(token)
     except Exception:
         return None
     return None

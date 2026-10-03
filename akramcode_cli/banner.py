@@ -10,7 +10,7 @@ from pathlib import Path
 from akramcode_cli import source_check
 # Historical updater import (tests/compat/old_updater_surface.json). In-tree callers use the owner.
 from akramcode_cli.source_check import _github_compare_behind  # noqa: F401
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 # rich and prompt_toolkit are imported lazily: this module sits on the TUI gateway's critical
@@ -70,14 +70,14 @@ def _skin_color(key: str, fallback: str) -> str:
 from akramcode_cli import __release_date__ as RELEASE_DATE
 from akramcode_cli.version_info import get_version_info
 
-HERMES_AGENT_LOGO = """[bold #FFD700]██╗  ██╗███████╗██████╗ ███╗   ███╗███████╗███████╗       █████╗  ██████╗ ███████╗███╗   ██╗████████╗[/]
+AKRAMCODE_AGENT_LOGO = """[bold #FFD700]██╗  ██╗███████╗██████╗ ███╗   ███╗███████╗███████╗       █████╗  ██████╗ ███████╗███╗   ██╗████████╗[/]
 [bold #FFD700]██║  ██║██╔════╝██╔══██╗████╗ ████║██╔════╝██╔════╝      ██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝[/]
 [#FFBF00]███████║█████╗  ██████╔╝██╔████╔██║█████╗  ███████╗█████╗███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║[/]
 [#FFBF00]██╔══██║██╔══╝  ██╔══██╗██║╚██╔╝██║██╔══╝  ╚════██║╚════╝██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║[/]
 [#CD7F32]██║  ██║███████╗██║  ██║██║ ╚═╝ ██║███████╗███████║      ██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║[/]
 [#CD7F32]╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝╚══════╝      ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝[/]"""
 
-HERMES_CADUCEUS = """[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⡀⠀⣀⣀⠀⢀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
+AKRAMCODE_CADUCEUS = """[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⡀⠀⣀⣀⠀⢀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
 [#CD7F32]⠀⠀⠀⠀⠀⠀⢀⣠⣴⣾⣿⣿⣇⠸⣿⣿⠇⣸⣿⣿⣷⣦⣄⡀⠀⠀⠀⠀⠀⠀[/]
 [#FFBF00]⠀⢀⣠⣴⣶⠿⠋⣩⡿⣿⡿⠻⣿⡇⢠⡄⢸⣿⠟⢿⣿⢿⣍⠙⠿⣶⣦⣄⡀⠀[/]
 [#FFBF00]⠀⠀⠉⠉⠁⠶⠟⠋⠀⠉⠀⢀⣈⣁⡈⢁⣈⣁⡀⠀⠉⠀⠙⠻⠶⠈⠉⠉⠀⠀[/]
@@ -96,7 +96,7 @@ HERMES_CADUCEUS = """[#CD7F32]⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⡀⠀⣀⣀�
 # === Skills scanning ===
 
 # Per-process caches: ``None`` until computed, then a 1-tuple ``(value,)`` so a computed ``None``
-# is distinguishable from "not yet computed". Reset by assigning ``None`` (tests, ``hermes skills``).
+# is distinguishable from "not yet computed". Reset by assigning ``None`` (tests, ``akramcode skills``).
 _available_skills_cache: Optional[tuple] = None
 _git_banner_state_cache: Optional[tuple] = None
 _latest_release_cache: Optional[tuple] = None
@@ -107,10 +107,10 @@ _UNCACHED = object()  # compute() result that must not be memoized
 def _memo(cache_name: str, compute):
     """Return the cached value under module global ``cache_name``, computing (and storing) it once.
 
-    Not consulted under a routed profile (HERMES_HOME override): every memo here is derived from the
+    Not consulted under a routed profile (AKRAMCODE_HOME override): every memo here is derived from the
     launch home (its skills tree, its checkout), and the TUI gateway calls these per profile."""
-    from akramcode_constants import get_hermes_home_override
-    if get_hermes_home_override() is not None:
+    from akramcode_constants import get_akramcode_home_override
+    if get_akramcode_home_override() is not None:
         return compute()
     cached = globals()[cache_name]
     if cached is not None:
@@ -144,14 +144,14 @@ def get_available_skills() -> Dict[str, List[str]]:
 
 
 def _resolve_repo_dir() -> Optional[Path]:
-    """The active Hermes git checkout, or None if this isn't a git install.
+    """The active AkramCode git checkout, or None if this isn't a git install.
 
-    Prefers the running code's location: ``$HERMES_HOME/hermes-agent/`` may be a stale copy
+    Prefers the running code's location: ``$AKRAMCODE_HOME/akramcode-agent/`` may be a stale copy
     carried over by ``--clone-all``.
     """
     repo_dir = Path(__file__).parent.parent.resolve()
     if not (repo_dir / ".git").exists():
-        repo_dir = get_hermes_home() / "hermes-agent"
+        repo_dir = get_akramcode_home() / "akramcode-agent"
     return repo_dir if (repo_dir / ".git").exists() else None
 
 
@@ -210,7 +210,7 @@ def format_banner_version_label() -> str:
 
     stamp = read_install_stamp(get_project_root())
     if stamp.get("distribution") == "desktop-app":
-        label = f"Hermes Agent v{get_version_info().derived_version}"
+        label = f"AkramCode Agent v{get_version_info().derived_version}"
         if stamp.get("source") == "commit-build":
             return f"{label} · commit-build · {str(stamp.get('commit') or '')[:12]}"
         if stamp.get("tag"):
@@ -223,7 +223,7 @@ def format_banner_version_label() -> str:
             return f"{label} · installer"
         return label
 
-    base = f"Hermes Agent v{get_version_info().derived_version} ({RELEASE_DATE})"
+    base = f"AkramCode Agent v{get_version_info().derived_version} ({RELEASE_DATE})"
     from akramcode_cli.config import load_config
     from akramcode_cli.update_channel import resolve_update_channel
 
@@ -403,7 +403,7 @@ _BANNER_SNAPSHOT_VERSION = 1
 
 
 def _banner_snapshot_path() -> Path:
-    return get_hermes_home() / "cache" / "banner_snapshot.json"
+    return get_akramcode_home() / "cache" / "banner_snapshot.json"
 
 
 def banner_snapshot_fingerprint() -> Optional[str]:
@@ -411,7 +411,7 @@ def banner_snapshot_fingerprint() -> Optional[str]:
     import hashlib
     def _inputs():
         from akramcode_cli.config import get_config_path
-        return (get_config_path(), get_hermes_home() / ".env")
+        return (get_config_path(), get_akramcode_home() / ".env")
     paths = _quiet(_inputs)
     if paths is None:
         return None
@@ -516,8 +516,8 @@ def _mcp_failed_line(name: str, transport: str, error: Optional[str]) -> str:
     exact next command, so 'failed' is never the whole story."""
     from rich.markup import escape
     reason = escape(" ".join(str(error or "").split())[:120]) or "no details recorded"
-    next_cmd = (f"hermes mcp login {name}" if re.search(r"\b401\b|unauthori[sz]ed", reason, re.I)
-                else f"hermes mcp test {name}")
+    next_cmd = (f"akramcode mcp login {name}" if re.search(r"\b401\b|unauthori[sz]ed", reason, re.I)
+                else f"akramcode mcp test {name}")
     return (f"[red]{name}[/] [dim]({transport})[/] [red]— could not connect:[/] {reason} "
             f"[dim]— run `{next_cmd}`[/]")
 
@@ -627,11 +627,11 @@ def _banner_left_lines(model: str, cwd: str, session_id, context_length, provide
         lines.append(f"[{accent}]MoA: {_short_label(model)}[/]{agg_str}{ctx_str}{nous_str}")
     elif not (model or "").strip() or (model or "").strip().lower() == "unknown":
         # Unconfigured install: the clearest place to say what is wrong and how to fix it.
-        lines.append(f"[bold red]no model configured[/] [dim {dim}]— run /model or hermes setup[/]")
+        lines.append(f"[bold red]no model configured[/] [dim {dim}]— run /model or akramcode setup[/]")
     else:
         model_short = model.split("/")[-1].removesuffix(".gguf")
         lines.append(f"[{accent}]{_short_label(model_short)}[/]{ctx_str}{nous_str}")
-    if os.getenv("HERMES_YOLO_MODE"):
+    if os.getenv("AKRAMCODE_YOLO_MODE"):
         lines.append(f"[bold red]⚠ YOLO mode[/] [dim {dim}]— all approval prompts bypassed[/]")
     lines.append(f"[dim {dim}]{cwd}[/]")
     if session_id:
@@ -711,7 +711,7 @@ def build_welcome_banner(
     text = _skin_color("banner_text", "#FFF8DC")
     # Use skin's custom caduceus art if provided
     _bskin = _quiet(_active_skin)
-    left_lines = ["", getattr(_bskin, "banner_hero", None) or HERMES_CADUCEUS, ""]
+    left_lines = ["", getattr(_bskin, "banner_hero", None) or AKRAMCODE_CADUCEUS, ""]
     left_lines += _banner_left_lines(model, cwd, session_id, context_length, provider, accent=accent, dim=dim,
                                      context_pinned=context_pinned)
     right_lines = _banner_tool_lines(
@@ -773,6 +773,6 @@ def build_welcome_banner(
         border_style=_skin_color("banner_border", "#CD7F32"), padding=(0, 2))
     console.print()
     if shutil.get_terminal_size().columns >= 95:
-        console.print(getattr(_bskin, "banner_logo", None) or HERMES_AGENT_LOGO)
+        console.print(getattr(_bskin, "banner_logo", None) or AKRAMCODE_AGENT_LOGO)
         console.print()
     console.print(outer_panel)

@@ -8,7 +8,7 @@ import shutil
 import subprocess
 
 logger = logging.getLogger(__name__)
-_IDENTIFIER = "com.nousresearch.hermes.managed-python"
+_IDENTIFIER = "com.nousresearch.akramcode.managed-python"
 
 
 def sign_managed_python(python: Path) -> bool:

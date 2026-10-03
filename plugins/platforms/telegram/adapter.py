@@ -301,7 +301,7 @@ def _video_thumbnail_jpeg(path: str, duration: Optional[int]) -> Optional[str]:
         if not shutil.which("ffmpeg"):
             return None
         seek = max(1, int((duration or 3) * 0.25))
-        fd, out = tempfile.mkstemp(suffix=".jpg", prefix="hermes-tg-thumb-")
+        fd, out = tempfile.mkstemp(suffix=".jpg", prefix="akramcode-tg-thumb-")
         os.close(fd)
         proc = subprocess.run(
             ["ffmpeg", "-y", "-ss", str(seek), "-i", path, "-frames:v", "1",
@@ -440,7 +440,7 @@ _UPDATER_START_TIMEOUT = 30.0  # start_polling() can hang on a degraded pool aft
 # start_polling() can also hang when the connection pool is in a degraded state after
 # _drain_polling_connections(), particularly when both primary and fallback Telegram endpoints are
 # unreachable. Bounding start_polling() prevents the reconnect ladder from stalling indefinitely and allows
-# the heartbeat loop to trigger its own recovery path. Refs: NousResearch/hermes-agent#59614
+# the heartbeat loop to trigger its own recovery path. Refs: NousResearch/akramcode-agent#59614
 _INITIAL_POLLING_PROGRESS_TIMEOUT = 60.0
 # Bounded drain (shutdown()/initialize() of the getUpdates request) so a wedged socket can't freeze
 # _polling_error_task and gate every escalation path behind its in-flight guard.
@@ -449,7 +449,7 @@ _INITIAL_POLLING_PROGRESS_TIMEOUT = 60.0
 # _drain_polling_connections() and freezing the whole reconnect ladder (the tracked _polling_error_task
 # never completes, so every escalation path stays gated behind its in-flight guard). Bound the drain so the
 # ladder always advances toward the fatal-restart escalation. Matches _UPDATER_STOP_TIMEOUT. Refs:
-# NousResearch/hermes-agent#66377
+# NousResearch/akramcode-agent#66377
 _DRAIN_TIMEOUT = 15.0
 # Wedged-recovery watchdog: healthy worst case is stop + 2x drain + start + 60s backoff ≈ 135s, so
 # 300s in flight is unambiguously stuck and the heartbeat force-escalates.
@@ -583,8 +583,8 @@ class TelegramAdapter(BasePlatformAdapter):
         self._update_admission = None
         # Completed update IDs survive adapter replacement and restarts (update_admission.py).
         # Resolved now: secondary profiles construct adapters inside their own home scope.
-        from hermes_constants import get_hermes_home
-        self._update_receipt_dir = get_hermes_home()
+        from akramcode_constants import get_akramcode_home
+        self._update_receipt_dir = get_akramcode_home()
         self._update_receipts_loaded: set = set()
         self._update_receipts_dirty: set = set()
         self._update_receipt_flush: Optional[asyncio.Task] = None
@@ -616,7 +616,7 @@ class TelegramAdapter(BasePlatformAdapter):
         self._telegram_typing_retrigger_interval: float = self._coerce_float_extra(
             "typing_retrigger_min_interval_seconds", 2.0, min_value=0.0, max_value=30.0)
         # Buffer album/photo bursts into a single MessageEvent instead of self-interrupting turns.
-        self._media_batch_delay_seconds = env_float("HERMES_TELEGRAM_MEDIA_BATCH_DELAY_SECONDS", 0.8)
+        self._media_batch_delay_seconds = env_float("AKRAMCODE_TELEGRAM_MEDIA_BATCH_DELAY_SECONDS", 0.8)
         self._pending_photo_batches: Dict[str, MessageEvent] = {}
         self._pending_photo_batch_tasks: Dict[str, asyncio.Task] = {}
         self._media_group_events: Dict[str, MessageEvent] = {}
@@ -624,10 +624,10 @@ class TelegramAdapter(BasePlatformAdapter):
         # Aggregate client-side splits of long messages into one MessageEvent; bounds are conservative
         # for Telegram's ~1 edit/s flood envelope.
         self._text_batch_delay_seconds = self._env_float_clamped(
-            "HERMES_TELEGRAM_TEXT_BATCH_DELAY_SECONDS", self._TEXT_BATCH_DEFAULT_DELAY_S,
+            "AKRAMCODE_TELEGRAM_TEXT_BATCH_DELAY_SECONDS", self._TEXT_BATCH_DEFAULT_DELAY_S,
             min_value=0.08, max_value=self._TEXT_BATCH_MAX_DELAY_S)
         self._text_batch_split_delay_seconds = self._env_float_clamped(
-            "HERMES_TELEGRAM_TEXT_BATCH_SPLIT_DELAY_SECONDS", self._TEXT_BATCH_DEFAULT_SPLIT_DELAY_S,
+            "AKRAMCODE_TELEGRAM_TEXT_BATCH_SPLIT_DELAY_SECONDS", self._TEXT_BATCH_DEFAULT_SPLIT_DELAY_S,
             min_value=self._text_batch_delay_seconds, max_value=self._TEXT_BATCH_MAX_SPLIT_DELAY_S)
         self._drop_delayed_deliveries = False
         # Held across disconnect: PTB advances the offset before our drop-guard runs, so Telegram won't
@@ -1107,7 +1107,7 @@ class TelegramAdapter(BasePlatformAdapter):
 
     @staticmethod
     def _dm_topic_fallback(metadata: Optional[Dict[str, Any]]) -> bool:
-        """True for Hermes private-chat topic lanes (``telegram_dm_topic_reply_fallback``)."""
+        """True for AkramCode private-chat topic lanes (``telegram_dm_topic_reply_fallback``)."""
         return bool(metadata and metadata.get("telegram_dm_topic_reply_fallback"))
 
     @classmethod
@@ -1138,15 +1138,15 @@ class TelegramAdapter(BasePlatformAdapter):
         """Telegram send kwargs for forum and direct-message topic routing.
 
         Forum topics use ``message_thread_id``; native Bot API DM topics opt in via explicit ``direct_messages_topic_id``
-        metadata; Hermes private-chat topic lanes are marked ``telegram_dm_topic_reply_fallback``. Anchor-less synthetic sends
-        prefer the Hermes topic's ``message_thread_id`` (the native DM-topic id renders in a different chat lane).
+        metadata; AkramCode private-chat topic lanes are marked ``telegram_dm_topic_reply_fallback``. Anchor-less synthetic sends
+        prefer the AkramCode topic's ``message_thread_id`` (the native DM-topic id renders in a different chat lane).
         ``reply_to_mode="off"`` suppresses the anchor but keeps ``message_thread_id``.
 
         Live replies send the private topic thread id together with a reply anchor. Synthetic/resumed sends
         without an anchor (loop wakeups, background-process notifications, queued follow-ups after a gateway
-        restart) prefer the Hermes topic's ``message_thread_id`` so they stay in the active topic lane
+        restart) prefer the AkramCode topic's ``message_thread_id`` so they stay in the active topic lane
         (#87051); ``direct_messages_topic_id`` is only used when no topic thread resolves, since the native
-        DM-topic id does not match the Hermes topic lane and can render the message in a different chat
+        DM-topic id does not match the AkramCode topic lane and can render the message in a different chat
         lane.
         """
         fallback = cls._dm_topic_fallback(metadata)
@@ -1154,9 +1154,9 @@ class TelegramAdapter(BasePlatformAdapter):
             if reply_to_message_id is None:
                 reply_to_message_id = cls._metadata_reply_to_message_id(metadata)
             if reply_to_message_id is None:
-                # Anchor-less synthetic send: prefer the Hermes topic thread id (see docstring).
+                # Anchor-less synthetic send: prefer the AkramCode topic thread id (see docstring).
                 # Anchor-less synthetic sends (loop wakeups, watch notifications, restart-resumed
-                # follow-ups) must stay in the active topic lane: prefer the Hermes topic thread id when it
+                # follow-ups) must stay in the active topic lane: prefer the AkramCode topic thread id when it
                 # resolves (#87051). Routing via direct_messages_topic_id here sent these to a different
                 # lane than the topic the session runs in.
                 thread_message_id = cls._message_thread_id_for_send(thread_id)
@@ -1204,7 +1204,7 @@ class TelegramAdapter(BasePlatformAdapter):
     def _prune_stale_dm_topic_binding(self, chat_id: Any, thread_id: Any, *, metadata: Optional[Dict[str, Any]] = None) -> None:
         """Drop the stale ``telegram_dm_topic_bindings`` row for a topic Telegram confirmed deleted, else
         ``_recover_telegram_topic_thread_id`` keeps steering inbound to the dead thread. Best-effort.
-        Rows are namespaced by profile: the send's ``hermes_profile`` wins over the adapter's stamp.
+        Rows are namespaced by profile: the send's ``akramcode_profile`` wins over the adapter's stamp.
 
         Without this prune the recovery logic in ``gateway.run._recover_telegram_topic_thread_id`` keeps
         steering future inbound messages to the dead thread (the bug behind #31501 — tool progress,
@@ -1212,7 +1212,7 @@ class TelegramAdapter(BasePlatformAdapter):
         topic). Best-effort: we never raise from a send-fallback path — a failed cleanup must not turn into
         a failed user-facing send.
         Under ``gateway.profile_routes`` the transport adapter may not be the profile that wrote the
-        binding, so the send's ``hermes_profile`` metadata wins over the adapter's own profile stamp;
+        binding, so the send's ``akramcode_profile`` metadata wins over the adapter's own profile stamp;
         single-profile bots fall back to ``"default"``. See #76423.
         """
         if chat_id is None or thread_id is None:
@@ -1221,7 +1221,7 @@ class TelegramAdapter(BasePlatformAdapter):
         if db is None or not hasattr(db, "delete_telegram_topic_binding"):
             return
         try:
-            profile_name = (metadata or {}).get("hermes_profile") or getattr(self, "_hermes_profile_name", None) or "default"
+            profile_name = (metadata or {}).get("akramcode_profile") or getattr(self, "_akramcode_profile_name", None) or "default"
             removed = db.delete_telegram_topic_binding(chat_id=str(chat_id), thread_id=str(thread_id), profile_name=profile_name)
         except Exception:
             logger.debug(
@@ -2550,8 +2550,8 @@ class TelegramAdapter(BasePlatformAdapter):
         message = (
             "Telegram polling could not recover after %d retries (%ds total wait). "
             "The previous gateway session is still held open on Telegram's servers, "
-            "or another process is using the same bot token. To recover: ensure no other Hermes or OpenClaw instance is running "
-            "with this token, then restart the gateway with 'hermes gateway restart'."
+            "or another process is using the same bot token. To recover: ensure no other AkramCode or OpenClaw instance is running "
+            "with this token, then restart the gateway with 'akramcode gateway restart'."
             % (MAX_CONFLICT_RETRIES, sum(10 + i * 10 for i in range(1, MAX_CONFLICT_RETRIES + 1))))
         logger.error("[%s] %s Original error: %s", self.name, message, _redact_telegram_error_text(error))
         # Snapshot whether WE transition to fatal: a concurrent retry task suspended past the entry
@@ -2678,8 +2678,8 @@ class TelegramAdapter(BasePlatformAdapter):
     def _persist_dm_topic_thread_id(self, chat_id: int, topic_name: str, thread_id: int, replace_existing: bool = False) -> None:
         """Save a newly created thread_id back into config.yaml so it survives restarts."""
         try:
-            from hermes_constants import get_hermes_home
-            config_path = get_hermes_home() / "config.yaml"
+            from akramcode_constants import get_akramcode_home
+            config_path = get_akramcode_home() / "config.yaml"
             if not config_path.exists():
                 logger.warning("[%s] Config file not found at %s, cannot persist thread_id", self.name, config_path)
                 return
@@ -3023,11 +3023,11 @@ class TelegramAdapter(BasePlatformAdapter):
         direct DNS; the getUpdates request is instrumented for polling-progress tracking."""
         # PTB's pool_timeout=1s default trips "Pool timeout" on flaky networks; safer defaults + env overrides.
         request_kwargs = {
-            "connection_pool_size": env_int("HERMES_TELEGRAM_HTTP_POOL_SIZE", 512),
-            "pool_timeout": env_float("HERMES_TELEGRAM_HTTP_POOL_TIMEOUT", 8.0),
-            "connect_timeout": env_float("HERMES_TELEGRAM_HTTP_CONNECT_TIMEOUT", 10.0),
-            "read_timeout": env_float("HERMES_TELEGRAM_HTTP_READ_TIMEOUT", 20.0),
-            "write_timeout": env_float("HERMES_TELEGRAM_HTTP_WRITE_TIMEOUT", 20.0),
+            "connection_pool_size": env_int("AKRAMCODE_TELEGRAM_HTTP_POOL_SIZE", 512),
+            "pool_timeout": env_float("AKRAMCODE_TELEGRAM_HTTP_POOL_TIMEOUT", 8.0),
+            "connect_timeout": env_float("AKRAMCODE_TELEGRAM_HTTP_CONNECT_TIMEOUT", 10.0),
+            "read_timeout": env_float("AKRAMCODE_TELEGRAM_HTTP_READ_TIMEOUT", 20.0),
+            "write_timeout": env_float("AKRAMCODE_TELEGRAM_HTTP_WRITE_TIMEOUT", 20.0),
             # PTB routes file requests to media_write_timeout; httpx budgets it per socket write (stall
             # tolerance, not bandwidth), so 60s rides out congested-link buffer stalls.
             "media_write_timeout": 60.0,
@@ -3062,10 +3062,10 @@ class TelegramAdapter(BasePlatformAdapter):
                 kwargs["limits"] = _pool_limits
             return kwargs
 
-        disable_fallback = os.getenv("HERMES_TELEGRAM_DISABLE_FALLBACK_IPS", "").strip().lower() in {"1", "true", "yes", "on"}
+        disable_fallback = os.getenv("AKRAMCODE_TELEGRAM_DISABLE_FALLBACK_IPS", "").strip().lower() in {"1", "true", "yes", "on"}
         fallback_ips = [] if disable_fallback else self._fallback_ips()
         if not fallback_ips and not disable_fallback:
-            discovery_timeout = self._env_float_clamped("HERMES_TELEGRAM_FALLBACK_DISCOVERY_TIMEOUT", 5.0, min_value=0.0)
+            discovery_timeout = self._env_float_clamped("AKRAMCODE_TELEGRAM_FALLBACK_DISCOVERY_TIMEOUT", 5.0, min_value=0.0)
             logger.warning("[%s] Discovering Telegram API fallback IPs via DNS-over-HTTPS…", self.name)
             try:
                 fallback_ips = await _await_with_thread_deadline(discover_fallback_ips(), timeout=discovery_timeout)
@@ -3116,7 +3116,7 @@ class TelegramAdapter(BasePlatformAdapter):
         """``app.initialize()`` with a bounded retry ladder; rebuilds ``self._app``/``self._bot`` from
         ``builder`` after each failed attempt; OSError when the per-attempt or total watchdog expires."""
         _max_connect = 8
-        _init_timeout = env_float("HERMES_TELEGRAM_INIT_TIMEOUT", 30.0)  # per attempt
+        _init_timeout = env_float("AKRAMCODE_TELEGRAM_INIT_TIMEOUT", 30.0)  # per attempt
         # Total watchdog: bounds the whole connect loop even if the retry loop silently stalls.
         _total_deadline = asyncio.get_running_loop().time() + _init_timeout * _max_connect + 120.0
         _timed_out = f"Telegram initialization timed out after {_max_connect} attempts ({_init_timeout:.0f}s each)"
@@ -3126,8 +3126,8 @@ class TelegramAdapter(BasePlatformAdapter):
                 if asyncio.get_running_loop().time() >= _total_deadline:
                     raise OSError(
                         f"{_timed_out} — total connect watchdog deadline ({_init_timeout * _max_connect + 120.0:.0f}s) exceeded. "
-                        f"Check network connectivity to api.telegram.org or set HERMES_TELEGRAM_HTTP_CONNECT_TIMEOUT / "
-                        f"HERMES_TELEGRAM_INIT_TIMEOUT to a lower value.")
+                        f"Check network connectivity to api.telegram.org or set AKRAMCODE_TELEGRAM_HTTP_CONNECT_TIMEOUT / "
+                        f"AKRAMCODE_TELEGRAM_INIT_TIMEOUT to a lower value.")
                 logger.warning("[%s] Connecting to Telegram (attempt %d/%d)…", self.name, _attempt + 1, _max_connect)
                 # On timeout the (possibly shielded) initialize() task is abandoned; release the half-built
                 # app's httpx client so it isn't leaked across the ladder.
@@ -3140,7 +3140,7 @@ class TelegramAdapter(BasePlatformAdapter):
                 if _attempt >= _max_connect - 1:
                     raise OSError(
                         f"{_timed_out}. Check network connectivity to api.telegram.org "
-                        f"or set HERMES_TELEGRAM_HTTP_CONNECT_TIMEOUT to a lower value.")
+                        f"or set AKRAMCODE_TELEGRAM_HTTP_CONNECT_TIMEOUT to a lower value.")
                 wait = min(2 ** _attempt, 15)
                 logger.warning(
                     "[%s] Connect attempt %d/%d timed out after %.0fs — retrying in %ds", self.name, _attempt + 1,
@@ -3202,7 +3202,7 @@ class TelegramAdapter(BasePlatformAdapter):
             raise RuntimeError(
                 "TELEGRAM_WEBHOOK_SECRET is required when TELEGRAM_WEBHOOK_URL is set. Without it, the "
                 "webhook endpoint accepts forged updates from anyone who can reach it — see "
-                "https://github.com/NousResearch/hermes-agent/security/advisories/GHSA-3vpc-7q5r-276h.\n\n"
+                "https://github.com/NousResearch/akramcode-agent/security/advisories/GHSA-3vpc-7q5r-276h.\n\n"
                 "Generate a secret and set it in your .env:\n  export TELEGRAM_WEBHOOK_SECRET=\"$(openssl rand -hex 32)\"\n\n"
                 "Then register it with Telegram when setting the webhook via setWebhook's secret_token parameter.")
         from urllib.parse import urlparse
@@ -4975,8 +4975,8 @@ class TelegramAdapter(BasePlatformAdapter):
         word = t("platform.telegram.prompt.affirm_word" if answer == "y" else "platform.telegram.prompt.negate_word")
         await self._edit_md_quiet(query, f"☤ {t('platform.telegram.prompt.update_answered', answer=f'*{word}*')}")
         try:
-            from hermes_constants import get_hermes_home
-            response_path = get_hermes_home() / ".update_response"
+            from akramcode_constants import get_akramcode_home
+            response_path = get_akramcode_home() / ".update_response"
             tmp = response_path.with_suffix(".tmp")
             tmp.write_text(answer, encoding="utf-8")
             tmp.replace(response_path)
@@ -4984,7 +4984,7 @@ class TelegramAdapter(BasePlatformAdapter):
         except Exception as exc:
             logger.error("Failed to write update response from callback: %s", exc)
 
-    # `gt:<verb>` -> (script in ~/.hermes/scripts/gmail-triage/, extra-args, success-label, is_state). The callback
+    # `gt:<verb>` -> (script in ~/.akramcode/scripts/gmail-triage/, extra-args, success-label, is_state). The callback
     # `arg` is always the first positional arg. is_state=True keeps the keyboard tappable (sticky sender rule);
     # False strips it on success (per-email one-shot).
     # The success label is a ``platform.telegram.gmail_triage.*`` catalog key, resolved per tap.
@@ -5014,15 +5014,15 @@ class TelegramAdapter(BasePlatformAdapter):
             await query.answer(text=_toast("platform.telegram.gmail_triage.unknown_verb", verb=verb))
             return
         script_name, extra_args, success_key, is_state_verb = entry
-        from hermes_constants import get_hermes_home
-        script_path = get_hermes_home() / "scripts" / "gmail-triage" / script_name
+        from akramcode_constants import get_akramcode_home
+        script_path = get_akramcode_home() / "scripts" / "gmail-triage" / script_name
         if not script_path.exists():
             await query.answer(text=_toast("platform.telegram.gmail_triage.script_missing", script=script_name))
             logger.error("[%s] gmail-triage script missing: %s", self.name, script_path)
             return
         success = False
         try:
-            # A user script under HERMES_HOME the agent can write: scrubbed like cron and quick-command scripts.
+            # A user script under AKRAMCODE_HOME the agent can write: scrubbed like cron and quick-command scripts.
             from tools.environments.local import build_subprocess_env
             proc = await asyncio.create_subprocess_exec(
                 str(script_path), arg, *extra_args, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
@@ -6104,7 +6104,7 @@ class TelegramAdapter(BasePlatformAdapter):
         bot_username = self._current_bot_username()
         bot_id = getattr(self._bot, "id", None)
         expected = f"@{bot_username}" if bot_username else None
-        # Server-side MessageEntity values are authoritative: raw substrings like "foo@hermes_bot.example"
+        # Server-side MessageEntity values are authoritative: raw substrings like "foo@akramcode_bot.example"
         # or handles inside URLs/code are not mentions.
         for source_text, entities in self._entity_sources(message):
             for entity in entities:
@@ -6445,7 +6445,7 @@ class TelegramAdapter(BasePlatformAdapter):
         # Learn the live handle BEFORE any mention gate routes on it, then drop our own echoed messages.
         # Filter out the bot's own messages (returned by getUpdates in some environments like
         # groups/supergroups where the bot can see its own messages). Without this, outbound messages are
-        # counted as incoming unread in the Hermes inbox (#52363). Otherwise a BotFather rename leaves the
+        # counted as incoming unread in the AkramCode inbox (#52363). Otherwise a BotFather rename leaves the
         # stale handle in place and the exclusive-mention gate reads a message addressed to us as one
         # addressed to some other bot.
         self._observe_bot_identity_from_message(message)
@@ -7236,7 +7236,7 @@ class TelegramAdapter(BasePlatformAdapter):
 # is needed. ──────────────────────────────────────────────────────────────────────────
 def _resolve_notifications_mode() -> str:
     """Notification mode (all/important) from env, else config.yaml display.platforms.telegram.notifications."""
-    mode = os.getenv("HERMES_TELEGRAM_NOTIFICATIONS", "")
+    mode = os.getenv("AKRAMCODE_TELEGRAM_NOTIFICATIONS", "")
     if not mode:
         try:
             from gateway.config import load_gateway_config
@@ -7371,7 +7371,7 @@ def _apply_yaml_config(yaml_cfg: dict, telegram_cfg: dict) -> dict | None:
 
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the Hermes plugin system."""
+    """Plugin entry point — called by the AkramCode plugin system."""
     ctx.register_platform(
         name="telegram", label="Telegram", adapter_factory=_build_adapter, check_fn=telegram_deps_present,
         ensure_deps_fn=check_telegram_requirements, is_connected=_is_connected, required_env=["TELEGRAM_BOT_TOKEN"],

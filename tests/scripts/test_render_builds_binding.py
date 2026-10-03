@@ -4,8 +4,8 @@ import pytest
 from tests.scripts.test_render_builds_publication import rbt
 
 SHA = 'a' * 40
-PACKAGE = 'HermesBundled-1.2.3-win-x64.msix'
-OTHER = 'HermesBundled-1.2.4-win-x64.msix'
+PACKAGE = 'AkramCodeBundled-1.2.3-win-x64.msix'
+OTHER = 'AkramCodeBundled-1.2.4-win-x64.msix'
 PREFIX = f'releases/commit/{SHA}/'
 
 

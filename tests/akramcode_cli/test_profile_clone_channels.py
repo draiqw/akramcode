@@ -1,4 +1,4 @@
-"""``hermes profile create --clone`` leaves messaging channels behind (``akramcode_cli.profile_channels``).
+"""``akramcode profile create --clone`` leaves messaging channels behind (``akramcode_cli.profile_channels``).
 
 Invariant, not snapshot: the clone's credential fingerprint set — computed by the gateway's own
 ``_adapter_credential_fingerprint`` through the migrate preflight — is DISJOINT from the source's,
@@ -11,9 +11,9 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
-import hermes_constants
+import akramcode_constants
 from akramcode_cli import gateway_migrate as gm
 from akramcode_cli.profile_channels import (
     channel_platforms_configured, shared_channel_credentials, strip_channel_config, strip_channel_env_file,
@@ -46,11 +46,11 @@ _SOURCE_CONFIG = {
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".akramcode"
     root.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(root))
-    monkeypatch.setattr(hermes_constants, "_default_hermes_root_memo", None)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(root))
+    monkeypatch.setattr(akramcode_constants, "_default_akramcode_root_memo", None)
     for name in ("TELEGRAM_BOT_TOKEN", "DISCORD_BOT_TOKEN", "API_SERVER_KEY", "WHATSAPP_ENABLED",
                  "GATEWAY_MULTIPLEX_PROFILES", "TELEGRAM_ALLOWED_USERS"):
         monkeypatch.delenv(name, raising=False)

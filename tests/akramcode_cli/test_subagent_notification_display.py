@@ -5,7 +5,7 @@ import threading
 from types import SimpleNamespace
 from unittest.mock import Mock
 
-from cli import HermesCLI
+from cli import AkramCodeCLI
 from tools.process_registry_notifications import format_process_notification
 from tui_gateway import server
 
@@ -20,7 +20,7 @@ def test_completion_display_keeps_payload_separate_across_surfaces(monkeypatch, 
                  "results": [{"task_index": 1, "status": status, "truncated": truncated, "summary": "Full result evidence"}]}
         original = copy.deepcopy(event)
         payload = format_process_notification(event)
-        cli = HermesCLI.__new__(HermesCLI)
+        cli = AkramCodeCLI.__new__(AkramCodeCLI)
         cli.session_id = event["session_key"]
         cli._pending_input = queue.Queue()
         registry = SimpleNamespace(drain_notifications=lambda **kw: [(event, payload)], completion_queue=queue.Queue())

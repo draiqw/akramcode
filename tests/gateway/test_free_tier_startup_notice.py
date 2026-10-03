@@ -39,15 +39,15 @@ def _guest_state() -> dict:
 
 
 def _account_state() -> dict:
-    return {"auth_method": "oauth", "access_token": _jwt(client_id="hermes-cli", account_tier="pro"),
+    return {"auth_method": "oauth", "access_token": _jwt(client_id="akramcode-cli", account_tier="pro"),
             "refresh_token": "rt", "expires_at": "2999-01-01T00:00:00+00:00"}
 
 
 @pytest.fixture
 def nous_runner(tmp_path, monkeypatch):
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
-    monkeypatch.setenv("HERMES_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
-    monkeypatch.setenv("HERMES_GUEST_ONBOARDING", "1")
+    monkeypatch.setattr(gateway_run, "_akramcode_home", tmp_path)
+    monkeypatch.setenv("AKRAMCODE_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
+    monkeypatch.setenv("AKRAMCODE_GUEST_ONBOARDING", "1")
     # Provider precedence gates the line and is answered from persisted state only (no network at boot).
     for var in ("OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "NOUS_API_KEY"):
         monkeypatch.delenv(var, raising=False)

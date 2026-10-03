@@ -1,8 +1,8 @@
-"""Global emergency stop (`hermes pause` / `hermes resume`) — agent/estop.py.
+"""Global emergency stop (`akramcode pause` / `akramcode resume`) — agent/estop.py.
 
 The ESTOP sentinel is a resumable pause for NEW work only: cron dispatch,
 kanban dispatch, and new gateway turns are halted while it is engaged; work
-already in flight is never touched. Removing the sentinel (`hermes resume`)
+already in flight is never touched. Removing the sentinel (`akramcode resume`)
 restores normal operation with no restart.
 
 Ported from: gastownhall/gastown estop.go (MIT); related prior art: #26778
@@ -21,9 +21,9 @@ from agent import estop
 
 
 @pytest.fixture
-def hermes_home(tmp_path, monkeypatch):
-    """Point HERMES_HOME at a temp dir and reset estop module log state."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+def akramcode_home(tmp_path, monkeypatch):
+    """Point AKRAMCODE_HOME at a temp dir and reset estop module log state."""
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     estop._logged_components.clear()
     return tmp_path
 
@@ -31,38 +31,38 @@ def hermes_home(tmp_path, monkeypatch):
 # ── sentinel create / remove ────────────────────────────────────────────────
 
 
-def test_engage_creates_sentinel_and_is_engaged(hermes_home):
+def test_engage_creates_sentinel_and_is_engaged(akramcode_home):
     assert estop.is_engaged() is False
     estop.engage()
-    assert (hermes_home / "ESTOP").exists()
+    assert (akramcode_home / "ESTOP").exists()
     assert estop.is_engaged() is True
 
 
-def test_disengage_removes_sentinel(hermes_home):
+def test_disengage_removes_sentinel(akramcode_home):
     estop.engage()
     assert estop.disengage() is True
-    assert not (hermes_home / "ESTOP").exists()
+    assert not (akramcode_home / "ESTOP").exists()
     assert estop.is_engaged() is False
     # Disengaging when not engaged is a no-op that reports False.
     assert estop.disengage() is False
 
 
-def test_reason_and_timestamp_stored(hermes_home):
+def test_reason_and_timestamp_stored(akramcode_home):
     estop.engage(reason="runaway cron fan-out")
     state = estop.get_state()
     assert state is not None
     assert state["reason"] == "runaway cron fan-out"
     assert state["engaged_at"]  # ISO timestamp string
 
-    raw = json.loads((hermes_home / "ESTOP").read_text(encoding="utf-8"))
+    raw = json.loads((akramcode_home / "ESTOP").read_text(encoding="utf-8"))
     assert raw["reason"] == "runaway cron fan-out"
 
 
 
 
-def test_corrupt_sentinel_still_engages(hermes_home):
+def test_corrupt_sentinel_still_engages(akramcode_home):
     """A hand-touched/corrupt ESTOP file must still pause (fail safe)."""
-    (hermes_home / "ESTOP").write_text("not json", encoding="utf-8")
+    (akramcode_home / "ESTOP").write_text("not json", encoding="utf-8")
     assert estop.is_engaged() is True
     state = estop.get_state()
     assert state is not None
@@ -74,7 +74,7 @@ def test_corrupt_sentinel_still_engages(hermes_home):
 
 
 
-def test_paused_reply_surfaces_reason_and_resume_hint(hermes_home):
+def test_paused_reply_surfaces_reason_and_resume_hint(akramcode_home):
     estop.engage(reason="deploy window")
     notice = estop.paused_reply()
     assert notice is not None
@@ -92,7 +92,7 @@ def test_paused_reply_surfaces_reason_and_resume_hint(hermes_home):
 # ── cron scheduler integration ──────────────────────────────────────────────
 
 
-def test_cron_tick_skips_dispatch_when_engaged(hermes_home, monkeypatch):
+def test_cron_tick_skips_dispatch_when_engaged(akramcode_home, monkeypatch):
     from cron import scheduler
 
     calls = []
@@ -108,7 +108,7 @@ def test_cron_tick_skips_dispatch_when_engaged(hermes_home, monkeypatch):
     assert calls == [], "engaged ESTOP must skip the due-job scan entirely"
 
 
-def test_cron_tick_resumes_after_disengage(hermes_home, monkeypatch):
+def test_cron_tick_resumes_after_disengage(akramcode_home, monkeypatch):
     from cron import scheduler
 
     calls = []
@@ -131,7 +131,7 @@ def test_cron_tick_resumes_after_disengage(hermes_home, monkeypatch):
 # ── kanban dispatcher integration ───────────────────────────────────────────
 
 
-def test_kanban_dispatch_blocked_when_engaged(hermes_home):
+def test_kanban_dispatch_blocked_when_engaged(akramcode_home):
     from gateway.kanban_watchers_common import _kanban_dispatch_allowed
 
     assert _kanban_dispatch_allowed() is True
@@ -165,7 +165,7 @@ class _FakeEvent:
 
 
 @pytest.mark.asyncio
-async def test_gateway_new_turn_gets_paused_reply(hermes_home):
+async def test_gateway_new_turn_gets_paused_reply(akramcode_home):
     from gateway.run import GatewayRunner
 
     runner = object.__new__(GatewayRunner)
@@ -178,7 +178,7 @@ async def test_gateway_new_turn_gets_paused_reply(hermes_home):
 
 
 @pytest.mark.asyncio
-async def test_gateway_internal_events_bypass_estop(hermes_home):
+async def test_gateway_internal_events_bypass_estop(akramcode_home):
     """Internal events (in-flight work completions) must NOT be paused."""
     from gateway.run import GatewayRunner
 
@@ -196,10 +196,10 @@ async def test_gateway_internal_events_bypass_estop(hermes_home):
     assert reply is None or "paused" not in (reply or "").lower()
 
 
-# ── CLI: hermes pause / hermes resume ───────────────────────────────────────
+# ── CLI: akramcode pause / akramcode resume ───────────────────────────────────────
 
 
-def test_cli_pause_engages_with_reason(hermes_home, capsys):
+def test_cli_pause_engages_with_reason(akramcode_home, capsys):
     from akramcode_cli.subcommands.pause import cmd_pause
 
     rc = cmd_pause(argparse.Namespace(reason="ops incident"))
@@ -209,7 +209,7 @@ def test_cli_pause_engages_with_reason(hermes_home, capsys):
     assert "paused" in capsys.readouterr().out.lower()
 
 
-def test_cli_pause_idempotent(hermes_home, capsys):
+def test_cli_pause_idempotent(akramcode_home, capsys):
     from akramcode_cli.subcommands.pause import cmd_pause
 
     assert cmd_pause(argparse.Namespace(reason=None)) == 0
@@ -217,7 +217,7 @@ def test_cli_pause_idempotent(hermes_home, capsys):
     assert estop.is_engaged() is True
 
 
-def test_cli_resume_disengages(hermes_home, capsys):
+def test_cli_resume_disengages(akramcode_home, capsys):
     from akramcode_cli.subcommands.pause import cmd_pause, cmd_resume
 
     cmd_pause(argparse.Namespace(reason=None))
@@ -231,10 +231,10 @@ def test_cli_resume_disengages(hermes_home, capsys):
 
 
 
-# ── hermes status surfacing ─────────────────────────────────────────────────
+# ── akramcode status surfacing ─────────────────────────────────────────────────
 
 
-def test_status_line_when_paused(hermes_home):
+def test_status_line_when_paused(akramcode_home):
     from akramcode_cli.status import _estop_status_line
 
     assert _estop_status_line() is None
@@ -250,9 +250,9 @@ def test_status_line_when_paused(hermes_home):
 # ── post-merge audit fixes (#81148 follow-up) ───────────────────────────────
 
 
-def test_is_engaged_fails_safe_on_stat_error(hermes_home, monkeypatch):
+def test_is_engaged_fails_safe_on_stat_error(akramcode_home, monkeypatch):
     """A stat failure must report ENGAGED (fail safe) — the pause has to
-    hold even when HERMES_HOME is misbehaving, matching the module's
+    hold even when AKRAMCODE_HOME is misbehaving, matching the module's
     corrupt-sentinel doctrine."""
     class _BoomPath:
         def exists(self):
@@ -273,7 +273,7 @@ class _FakeCmdEvent(_FakeEvent):
 
 
 @pytest.mark.asyncio
-async def test_gateway_slash_commands_bypass_estop(hermes_home):
+async def test_gateway_slash_commands_bypass_estop(akramcode_home):
     """Recognized slash commands must pass the estop gate — /pause off is
     the in-band resume path for messaging-only users, and /status, /help
     and friends must keep working while paused."""
@@ -289,7 +289,7 @@ async def test_gateway_slash_commands_bypass_estop(hermes_home):
         reply = await runner._handle_message(_FakeCmdEvent())
     except Exception:
         return
-    assert reply is None or "hermes is paused" not in (reply or "").lower()
+    assert reply is None or "akramcode is paused" not in (reply or "").lower()
 
 
 class _FakePauseEvent(_FakeEvent):
@@ -306,7 +306,7 @@ class _FakePauseEvent(_FakeEvent):
 
 
 @pytest.mark.asyncio
-async def test_gateway_pause_command_engages_and_resumes(hermes_home):
+async def test_gateway_pause_command_engages_and_resumes(akramcode_home):
     from gateway.run import GatewayRunner
 
     runner = object.__new__(GatewayRunner)
@@ -339,16 +339,16 @@ def test_pause_command_registered_for_gateway():
 
 
 def test_profile_gateway_honors_canonical_root_estop(tmp_path, monkeypatch):
-    """fleet-analyst-class: HERMES_HOME is a profile dir; pause lives at root.
+    """fleet-analyst-class: AKRAMCODE_HOME is a profile dir; pause lives at root.
 
-    A process launched with HERMES_HOME=~/.hermes/profiles/fleet-analyst must
-    still treat ~/.hermes/ESTOP as engaged. Otherwise `hermes pause` is not
+    A process launched with AKRAMCODE_HOME=~/.akramcode/profiles/fleet-analyst must
+    still treat ~/.akramcode/ESTOP as engaged. Otherwise `akramcode pause` is not
     a global emergency stop (t_7b65ff88).
     """
-    root = tmp_path / "hermes-root"
+    root = tmp_path / "akramcode-root"
     profile = root / "profiles" / "fleet-analyst"
     profile.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(profile))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(profile))
     estop._logged_components.clear()
 
     assert estop.is_engaged() is False

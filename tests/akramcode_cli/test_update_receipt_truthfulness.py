@@ -3,7 +3,7 @@
 Bug class ("update reports success while reality disagrees" — #88654,
 #88848, #91378, #91439, #91962, #92780, #92902): the updater's word must be
 backed by evidence. This suite pins the honesty contract of the receipt
-subsystem with REAL module functions against a temp HERMES_HOME — it is not
+subsystem with REAL module functions against a temp AKRAMCODE_HOME — it is not
 a fleet E2E (that lives in the CI install/update harness).
 
 Invariants pinned, and WHERE each is enforced:
@@ -13,7 +13,7 @@ Invariants pinned, and WHERE each is enforced:
    post-begin run leave a record). A begun-but-never-finalized run
    (simulated crash) writes NOTHING to disk, so the reader the Desktop
    uses (``read_latest_receipt``, surfaced via
-   ``/api/hermes/update/receipt`` — #92780) can never interpret a crash
+   ``/api/akramcode/update/receipt`` — #92780) can never interpret a crash
    as success. The HTTP-layer gating of an ``outcome == "running"``
    receipt is already pinned in test_update_receipt_endpoint.py and is
    deliberately not duplicated here.
@@ -54,11 +54,11 @@ from akramcode_cli.update_inventory import (
 
 @pytest.fixture()
 def receipt_home(tmp_path, monkeypatch):
-    """Hermetic HERMES_HOME so receipts never touch the real profile."""
-    home = tmp_path / ".hermes"
+    """Hermetic AKRAMCODE_HOME so receipts never touch the real profile."""
+    home = tmp_path / ".akramcode"
     home.mkdir()
     monkeypatch.setattr(
-        "akramcode_cli.config.get_hermes_home", lambda: home, raising=False
+        "akramcode_cli.config.get_akramcode_home", lambda: home, raising=False
     )
     ur._current.set(None)
     yield home
@@ -200,7 +200,7 @@ class TestSuccessImpliesAccounting:
             plan,
             # Serve/dashboard runtimes are reconciled in their own unit
             # vocabulary and never borrow a gateway relaunch (#100479).
-            restarted_services=["hermes-serve-ops.service"],
+            restarted_services=["akramcode-serve-ops.service"],
             relaunched_profiles=["work"],
             externally_supervised_profiles=[],
             killed_pids={101},
@@ -228,7 +228,7 @@ class TestSuccessImpliesAccounting:
             relaunched_profiles=[],
             externally_supervised_profiles=[],
             killed_pids=set(),
-            failed_units=["hermes-gateway.service"],
+            failed_units=["akramcode-gateway.service"],
         )
         assert outcomes[0]["outcome"] == "failed"
         ur.finalize_update_receipt("partial")
@@ -249,7 +249,7 @@ class TestRefusalIsNotFailure:
 
         # Run 2: a preflight refusal (venv-holder / concurrent instance).
         ur.begin_update_receipt()
-        ur.record_step("venv_preflight", False, "another hermes holds venv")
+        ur.record_step("venv_preflight", False, "another akramcode holds venv")
         refused_path = ur.finalize_pending_update_receipt(2, "sys.exit(2)")
         refused = json.loads(refused_path.read_text(encoding="utf-8"))
 
@@ -267,7 +267,7 @@ class TestRefusalIsNotFailure:
         """#91439: the refused run's receipt keeps the evidence of WHY —
         the failing preflight step is preserved, not lost."""
         ur.begin_update_receipt()
-        ur.record_step("windows_preflight", False, "hermes.exe running")
+        ur.record_step("windows_preflight", False, "akramcode.exe running")
         path = ur.finalize_pending_update_receipt(2, "concurrent instance")
         payload = json.loads(path.read_text(encoding="utf-8"))
         assert payload["steps"][0]["name"] == "windows_preflight"

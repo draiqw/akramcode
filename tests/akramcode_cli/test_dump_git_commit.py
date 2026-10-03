@@ -1,6 +1,6 @@
-"""Tests for akramcode_cli.dump._get_git_commit — git SHA resolution for ``hermes dump``.
+"""Tests for akramcode_cli.dump._get_git_commit — git SHA resolution for ``akramcode dump``.
 
-``hermes dump`` prints the running commit so support bug reports identify the
+``akramcode dump`` prints the running commit so support bug reports identify the
 exact version. Source installs resolve it live via git; packaged builds
 (Docker, Nix) use the install stamp via ``version_info`` — but ONLY when the
 requested project_root IS the running install, because version_info has no

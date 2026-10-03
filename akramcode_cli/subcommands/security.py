@@ -1,4 +1,4 @@
-"""``hermes security`` subcommand parser."""
+"""``akramcode security`` subcommand parser."""
 
 from __future__ import annotations
 
@@ -11,9 +11,9 @@ def build_security_parser(subparsers, *, cmd_security: Callable) -> None:
     """Attach the ``security`` subcommand to ``subparsers``."""
     security_parser = subparsers.add_parser(
         "security", help="Supply-chain audit (OSV.dev) for venv, plugins, and MCP servers",
-        description="On-demand vulnerability scan against OSV.dev. Covers the Hermes "
+        description="On-demand vulnerability scan against OSV.dev. Covers the AkramCode "
             "venv (installed PyPI dists), Python deps declared by plugins under "
-            "~/.hermes/plugins/, and pinned npx/uvx MCP servers in config.yaml. "
+            "~/.akramcode/plugins/, and pinned npx/uvx MCP servers in config.yaml. "
             "Does NOT scan globally-installed packages or editor/browser extensions.")
     security_subparsers = security_parser.add_subparsers(
         dest="security_command", metavar="<subcommand>")
@@ -26,7 +26,7 @@ def build_security_parser(subparsers, *, cmd_security: Callable) -> None:
         "--fail-on", default="critical", choices=["low", "moderate", "high", "critical"],
         help="Exit non-zero when any finding meets this severity (default: critical)")
     audit_parser.add_argument(
-        "--skip-venv", action="store_true", help="Skip scanning the Hermes Python venv")
+        "--skip-venv", action="store_true", help="Skip scanning the AkramCode Python venv")
     audit_parser.add_argument(
         "--skip-plugins", action="store_true", help="Skip scanning plugin requirements files")
     audit_parser.add_argument(

@@ -1,7 +1,7 @@
 """Tests for PluginContext.register_tts_provider() (issue #30398).
 
 Exercises the plugin context hook end-to-end: drops a fake plugin into
-``$HERMES_HOME/plugins/``, runs ``PluginManager().discover_and_load()``,
+``$AKRAMCODE_HOME/plugins/``, runs ``PluginManager().discover_and_load()``,
 and asserts the registration result.
 
 Mirrors the structure of
@@ -14,7 +14,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict
 
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 
 def _write_plugin(
@@ -40,8 +40,8 @@ def _write_plugin(
     return plugin_dir
 
 
-def _enable(hermes_home: Path, name: str) -> None:
-    cfg_path = hermes_home / "config.yaml"
+def _enable(akramcode_home: Path, name: str) -> None:
+    cfg_path = akramcode_home / "config.yaml"
     cfg: dict = {}
     if cfg_path.exists():
         try:
@@ -64,9 +64,9 @@ class TestRegisterTTSProvider:
         from agent import tts_registry
         tts_registry._reset_for_tests()
 
-        hermes_home = Path(os.environ["HERMES_HOME"])
+        akramcode_home = Path(os.environ["AKRAMCODE_HOME"])
         _write_plugin(
-            hermes_home / "plugins",
+            akramcode_home / "plugins",
             "my-tts-plugin",
             register_body=(
                 "from agent.tts_provider import TTSProvider\n"
@@ -78,7 +78,7 @@ class TestRegisterTTSProvider:
                 "    ctx.register_tts_provider(P())"
             ),
         )
-        _enable(hermes_home, "my-tts-plugin")
+        _enable(akramcode_home, "my-tts-plugin")
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -97,13 +97,13 @@ class TestRegisterTTSProvider:
         from agent import tts_registry
         tts_registry._reset_for_tests()
 
-        hermes_home = Path(os.environ["HERMES_HOME"])
+        akramcode_home = Path(os.environ["AKRAMCODE_HOME"])
         _write_plugin(
-            hermes_home / "plugins",
+            akramcode_home / "plugins",
             "bad-tts-plugin",
             register_body="ctx.register_tts_provider('not a provider')",
         )
-        _enable(hermes_home, "bad-tts-plugin")
+        _enable(akramcode_home, "bad-tts-plugin")
 
         with caplog.at_level("WARNING"):
             mgr = PluginManager()
@@ -126,9 +126,9 @@ class TestRegisterTTSProvider:
         from agent import tts_registry
         tts_registry._reset_for_tests()
 
-        hermes_home = Path(os.environ["HERMES_HOME"])
+        akramcode_home = Path(os.environ["AKRAMCODE_HOME"])
         _write_plugin(
-            hermes_home / "plugins",
+            akramcode_home / "plugins",
             "shadow-tts-plugin",
             register_body=(
                 "from agent.tts_provider import TTSProvider\n"
@@ -140,7 +140,7 @@ class TestRegisterTTSProvider:
                 "    ctx.register_tts_provider(P())"
             ),
         )
-        _enable(hermes_home, "shadow-tts-plugin")
+        _enable(akramcode_home, "shadow-tts-plugin")
 
         with caplog.at_level("WARNING"):
             mgr = PluginManager()

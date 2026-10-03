@@ -81,7 +81,7 @@ def build_status_fields(
     ``home`` is an explicit owning-profile path for multiplexed surfaces; omitted callers keep
     the process/current-profile lookup.
     """
-    from akramcode_constants import display_hermes_home
+    from akramcode_constants import display_akramcode_home
 
     meta = meta or {}
     if created is None or last_activity is None:
@@ -93,7 +93,7 @@ def build_status_fields(
     row_title = meta.get("title") if title is None else title
     return {
         "session_id": str(session_id or ""),
-        "path": display_hermes_home(Path(home) if home else None),
+        "path": display_akramcode_home(Path(home) if home else None),
         "title": (row_title or "").strip(),
         "model": getattr(agent, "model", None) or model or "",
         "provider": getattr(agent, "provider", None) or provider or "",

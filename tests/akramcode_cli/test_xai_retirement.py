@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from akramcode_cli.xai_retirement import (
     RetirementIssue,
@@ -17,7 +17,7 @@ from akramcode_cli.xai_retirement import (
 def test_apply_migration_preserves_long_double_quoted_scalar(tmp_path, monkeypatch):
     """Same fold-after-backslash class as #119844: the migration's own emitter must not mutate
     unrelated long quoted values while it rewrites the model key."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     value = "A" * 74 + r"D:\CentBrowserPortable " + "B" * 40
     cfg = tmp_path / "config.yaml"
     cfg.write_text(

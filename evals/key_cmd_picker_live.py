@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Live key_cmd catalog A/B: local authenticated HTTP, real helper, CLI PTY.
 
-Run with the Hermes venv Python and --repo CHECKOUT --output RECEIPT_DIR.
-No user environment/config is inherited by Hermes children. Unix PTY required.
+Run with the AkramCode venv Python and --repo CHECKOUT --output RECEIPT_DIR.
+No user environment/config is inherited by AkramCode children. Unix PTY required.
 """
 import argparse
 import http.server
@@ -124,9 +124,9 @@ def main():
         for schema in ("providers", "custom_providers"):
             for surface in ("cli", "rows"):
                 phase = f"{schema}/{surface}"
-                with tempfile.TemporaryDirectory(prefix="hermes-keycmd-live-") as tmp:
+                with tempfile.TemporaryDirectory(prefix="akramcode-keycmd-live-") as tmp:
                     home = Path(tmp)
-                    state = home / ".hermes"
+                    state = home / ".akramcode"
                     state.mkdir()
                     mint_log = home / "helper-invocations"
                     helper = home / "mint.py"
@@ -142,7 +142,7 @@ def main():
                            schema: {slug: entry} if schema == "providers" else [entry]}
                     # JSON is valid YAML; no third-party harness dependencies.
                     (state / "config.yaml").write_text(json.dumps(cfg))
-                    env = {"HOME": str(home), "HERMES_HOME": str(state),
+                    env = {"HOME": str(home), "AKRAMCODE_HOME": str(state),
                            "PATH": "/usr/bin:/bin", "TERM": "xterm-256color", "LANG": "C.UTF-8",
                            "PYTHONPATH": str(repo), "PYTHONUNBUFFERED": "1"}
                     if surface == "cli":

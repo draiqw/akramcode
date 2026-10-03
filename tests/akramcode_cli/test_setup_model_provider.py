@@ -13,7 +13,7 @@ from akramcode_cli.setup import _print_setup_summary, setup_model_provider
 
 def _clear_provider_env(monkeypatch):
     for key in (
-        "HERMES_INFERENCE_PROVIDER",
+        "AKRAMCODE_INFERENCE_PROVIDER",
         "OPENAI_BASE_URL",
         "OPENAI_API_KEY",
         "OPENROUTER_API_KEY",
@@ -40,8 +40,8 @@ def _write_aux_config(task="compression", provider="gemini", model_name="gemini-
 
 
 def test_setup_model_provider_preserves_auxiliary_choices_written_by_picker(tmp_path, monkeypatch):
-    """Aux choices made inside hermes setup must survive the wizard's final save."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    """Aux choices made inside akramcode setup must survive the wizard's final save."""
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     _clear_provider_env(monkeypatch)
 
     config = load_config()
@@ -71,7 +71,7 @@ def test_setup_summary_local_browser_unavailable_without_chromium(
     ``get_nous_subscription_features`` so the surface stays aligned with the
     runtime gate in ``tools.browser_tool_install.check_browser_requirements``.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     _clear_provider_env(monkeypatch)
 
     cfg = load_config()
@@ -98,4 +98,4 @@ def test_setup_summary_local_browser_unavailable_without_chromium(
     output = capsys.readouterr().out
 
     assert "Browser Automation (Local browser)" not in output
-    assert "hermes pm install agent-browser" in output
+    assert "akramcode pm install agent-browser" in output

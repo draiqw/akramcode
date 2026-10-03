@@ -84,7 +84,7 @@ def _credential_headers() -> dict[str, str]:
         "CF-Access-Client-Secret": "cloudflare-secret",
         "X-Custom-Auth": "tenant-secret",
         "Accept": "application/json",
-        "User-Agent": "hermes-test",
+        "User-Agent": "akramcode-test",
     }
 
 
@@ -108,7 +108,7 @@ def test_cross_host_redirect_drops_arbitrary_credentials_on_wire():
     method, headers = _RecordingHandler.requests[-1]
     assert method == "GET"
     assert headers["accept"] == "application/json"
-    assert headers["user-agent"] == "hermes-test"
+    assert headers["user-agent"] == "akramcode-test"
     for name in (
         "authorization",
         "cookie",
@@ -383,7 +383,7 @@ def test_azure_anthropic_probe_drops_api_key_and_bearer_on_redirect():
 
 def _clear_ca_bundle_env(monkeypatch) -> None:
     for name in (
-        "HERMES_CA_BUNDLE",
+        "AKRAMCODE_CA_BUNDLE",
         "SSL_CERT_FILE",
         "REQUESTS_CA_BUNDLE",
         "CURL_CA_BUNDLE",
@@ -391,7 +391,7 @@ def _clear_ca_bundle_env(monkeypatch) -> None:
         monkeypatch.delenv(name, raising=False)
 
 
-def test_hermes_owned_opener_uses_resolved_https_context(monkeypatch):
+def test_akramcode_owned_opener_uses_resolved_https_context(monkeypatch):
     import akramcode_cli.urllib_security as urllib_security
 
     context = ssl.create_default_context()
@@ -412,7 +412,7 @@ def test_hermes_owned_opener_uses_resolved_https_context(monkeypatch):
 
 
 def test_resolved_https_context_defers_to_the_platform_store(monkeypatch, tmp_path):
-    """Hermes-owned urllib openers verify against the OS certificate store.
+    """AkramCode-owned urllib openers verify against the OS certificate store.
 
     None means "urllib's default context", which — with truststore installed
     process-wide — IS the platform verifier. There is no CA-bundle ladder
@@ -423,13 +423,13 @@ def test_resolved_https_context_defers_to_the_platform_store(monkeypatch, tmp_pa
 
     assert urllib_security._resolved_https_context() is None
 
-    for var in ("HERMES_CA_BUNDLE", "SSL_CERT_FILE", "REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE"):
+    for var in ("AKRAMCODE_CA_BUNDLE", "SSL_CERT_FILE", "REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE"):
         monkeypatch.setenv(var, str(tmp_path / "nope.pem"))
     assert urllib_security._resolved_https_context() is None
 
 
 def test_resolved_https_context_installs_the_platform_verifier():
-    """Resolving trust for a Hermes opener must put truststore in force.
+    """Resolving trust for a AkramCode opener must put truststore in force.
 
     A stdlib urllib request is the call path certifi never covered (the
     llama.cpp engine download among them), so the install has to happen here

@@ -10,8 +10,8 @@ def test_installers_default_to_akram_code_and_allow_override():
     shell = (ROOT / "scripts/install.sh").read_text()
 
     assert "https://github.com/draiqw/akram-code.git" in shell
-    assert "HERMES_REPO_URL" in shell
-    assert "NousResearch/hermes-agent.git" not in shell
+    assert "AKRAMCODE_REPO_URL" in shell
+    assert "NousResearch/akramcode-agent.git" not in shell
 
 
 def test_release_workflow_checks_tag_tests_and_publishes_release():

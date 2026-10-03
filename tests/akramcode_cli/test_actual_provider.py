@@ -36,7 +36,7 @@ def _clear_ca_bundle_env(monkeypatch):
     # SSL_CERT_FILE into os.environ; an explicit CA env var disables the
     # scoped certifi default these tests assert.
     for key in (
-        "HERMES_CA_BUNDLE",
+        "AKRAMCODE_CA_BUNDLE",
         "SSL_CERT_FILE",
         "REQUESTS_CA_BUNDLE",
         "CURL_CA_BUNDLE",

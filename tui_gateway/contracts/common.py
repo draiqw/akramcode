@@ -68,7 +68,7 @@ class SessionLiveInfo(OpenModel):
     provider: str = ""
     reasoning_effort: str = ""
     # The level the route's entry clamp actually sends for ``reasoning_effort`` ("" when unset/none;
-    # equal when verbatim). Lets clients label a clamped Hermes step ("ultra sends max on this route").
+    # equal when verbatim). Lets clients label a clamped AkramCode step ("ultra sends max on this route").
     reasoning_effort_wire: str = ""
     service_tier: str = ""
     fast: bool = False

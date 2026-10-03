@@ -1,5 +1,5 @@
 """Tests for ``_prompt_api_key`` — the shared Keep/Replace/Clear menu used by
-``hermes setup`` / ``hermes model`` when an API key already exists in ``.env``.
+``akramcode setup`` / ``akramcode model`` when an API key already exists in ``.env``.
 
 Regression coverage for #16394: the wizard used to silently skip the key prompt
 when any value was present (even malformed junk), leaving users stuck.
@@ -15,10 +15,10 @@ from akramcode_cli import main_provider_setup
 
 @pytest.fixture
 def profile_env(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     (home / ".env").write_text("")
     return home
 

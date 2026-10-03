@@ -1,8 +1,8 @@
 """Process identity: spawn tags, the machine-wide spawn ledger, and the Windows job-object self-attach.
 
-Three layers make every long-lived Hermes process positively identifiable, so reapers (``hermes
+Three layers make every long-lived AkramCode process positively identifiable, so reapers (``akramcode
 update``, Desktop startup sweeps) never guess lineage from PPID archaeology or cmdline matching:
-1. spawn tags (``HERMES_SPAWN`` env stamped by the spawner); 2. a ``(pid, create_time)`` ledger;
+1. spawn tags (``AKRAMCODE_SPAWN`` env stamped by the spawner); 2. a ``(pid, create_time)`` ledger;
 3. Windows job-object self-attach with ``KILL_ON_JOB_CLOSE`` so the whole child tree dies with the
 root — no launcher→worker chains left holding ``.pyd`` locks.
 """
@@ -25,7 +25,7 @@ from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)
 
-SPAWN_ENV_VAR = "HERMES_SPAWN"
+SPAWN_ENV_VAR = "AKRAMCODE_SPAWN"
 _TAG_VERSION = "v1"
 LEDGER_FILENAME = "spawn-ledger.json"
 
@@ -79,7 +79,7 @@ class SpawnTag:
 
 
 def build_spawn_tag(purpose: str, *, project_root: Optional[Path] = None) -> str:
-    """Value for the child's ``HERMES_SPAWN`` env var, stamped by the spawner."""
+    """Value for the child's ``AKRAMCODE_SPAWN`` env var, stamped by the spawner."""
     create = _process_create_time()
     create_part = f"{create:.3f}" if create is not None else "-"
     return ":".join((_TAG_VERSION, install_id(project_root), purpose, str(os.getpid()), create_part))
@@ -91,7 +91,7 @@ def spawn_env(purpose: str, *, project_root: Optional[Path] = None) -> dict[str,
 
 
 def parse_spawn_tag(raw: object) -> Optional[SpawnTag]:
-    """Parse a ``HERMES_SPAWN`` value; ``None`` for anything malformed."""
+    """Parse a ``AKRAMCODE_SPAWN`` value; ``None`` for anything malformed."""
     parts = raw.split(":") if isinstance(raw, str) else []
     if len(parts) != 5 or parts[0] != _TAG_VERSION:
         return None
@@ -124,7 +124,7 @@ class LedgerEntry:
     host: str = ""
     port: Optional[int] = None
     profile: str = ""
-    hermes_home: str = ""
+    akramcode_home: str = ""
     # `serve --isolated`: opted out of the host singleton (Desktop's SSH backend for another
     # machine). Attach-first readers must never adopt it; argv is truncated, so this is canonical.
     isolated: bool = False
@@ -133,13 +133,13 @@ class LedgerEntry:
 def _ledger_path() -> Path:
     """Machine-root ledger path (shared by every profile of this install)."""
     try:
-        from akramcode_constants import get_default_hermes_root
+        from akramcode_constants import get_default_akramcode_root
 
-        return Path(get_default_hermes_root()) / LEDGER_FILENAME
+        return Path(get_default_akramcode_root()) / LEDGER_FILENAME
     except Exception:
-        from akramcode_cli.config import get_hermes_home
+        from akramcode_cli.config import get_akramcode_home
 
-        return Path(get_hermes_home()) / LEDGER_FILENAME
+        return Path(get_akramcode_home()) / LEDGER_FILENAME
 
 
 def _read_ledger(path: Path) -> Optional[list[dict]]:
@@ -211,12 +211,12 @@ def register_self(purpose: str, *, project_root: Optional[Path] = None, detail: 
     pipeline can relaunch a manually-started serve with its real bind address, and ``isolated``
     so attach-first discovery skips a backend that opted out of the host singleton.
     """
-    from akramcode_constants import hermes_home_key
+    from akramcode_constants import akramcode_home_key
 
     tag = parse_spawn_tag(os.environ.get(SPAWN_ENV_VAR))
     spawner_pid, spawner_create = (tag.spawner_pid, tag.spawner_create) if tag else _desktop_spawner_identity()
     entry = _new_entry(os.getpid(), _process_create_time(), purpose, project_root, spawner_pid, spawner_create)
-    entry.hermes_home = hermes_home_key()
+    entry.akramcode_home = akramcode_home_key()
     if detail:
         try:
             entry.host = str(detail.get("host") or "")
@@ -228,7 +228,7 @@ def register_self(purpose: str, *, project_root: Optional[Path] = None, detail: 
     try:
         import sys as _sys
 
-        # 10 tokens: enough for `hermes serve --host X --port N --profile P` while bounding
+        # 10 tokens: enough for `akramcode serve --host X --port N --profile P` while bounding
         # pathological argv. Structured detail is canonical; argv is the human-readable fallback.
         entry.argv = " ".join(_sys.argv[:10])
     except Exception:
@@ -239,16 +239,16 @@ def register_self(purpose: str, *, project_root: Optional[Path] = None, detail: 
 def is_desktop_owned_backend(argv: Optional[Sequence[str]] = None) -> bool:
     """Whether this process is the backend Desktop spawned and owns.
 
-    ``HERMES_DESKTOP=1`` is inherited by every shell and agent child the app launches, so the
+    ``AKRAMCODE_DESKTOP=1`` is inherited by every shell and agent child the app launches, so the
     flag alone is not ownership proof (same class as #116107). Desktop hands its backend a
     per-spawn credential the terminal pane never receives (and the terminal tool's env policy
-    strips from agent children): the local pool spawn mints ``HERMES_DASHBOARD_SESSION_TOKEN``,
+    strips from agent children): the local pool spawn mints ``AKRAMCODE_DASHBOARD_SESSION_TOKEN``,
     the SSH spawn passes a 0600 token FILE on argv and deliberately sets no token env var.
     ``argv`` defaults to this process's own.
     """
-    if os.environ.get("HERMES_DESKTOP") != "1":
+    if os.environ.get("AKRAMCODE_DESKTOP") != "1":
         return False
-    if os.environ.get("HERMES_DASHBOARD_SESSION_TOKEN"):
+    if os.environ.get("AKRAMCODE_DASHBOARD_SESSION_TOKEN"):
         return True
     from akramcode_cli._startup_fast import is_desktop_ssh_backend_argv
 
@@ -256,16 +256,16 @@ def is_desktop_owned_backend(argv: Optional[Sequence[str]] = None) -> bool:
 
 
 def _desktop_spawner_identity() -> tuple[Optional[int], Optional[float]]:
-    """Spawner ``(pid, create_time)`` from the Electron app's HERMES_PARENT_PID (+ optional
+    """Spawner ``(pid, create_time)`` from the Electron app's AKRAMCODE_PARENT_PID (+ optional
     ``winms:<ms>`` start marker) parent-death watchdog vars, so ledger lineage works with every
     Desktop version without a TS change. ``(None, None)`` when absent/malformed."""
     try:
-        spawner_pid = int(os.environ.get("HERMES_PARENT_PID", ""))
+        spawner_pid = int(os.environ.get("AKRAMCODE_PARENT_PID", ""))
     except (TypeError, ValueError):
         spawner_pid = 0
     if spawner_pid <= 0:
         return None, None
-    marker = os.environ.get("HERMES_PARENT_START_MARKER", "")
+    marker = os.environ.get("AKRAMCODE_PARENT_START_MARKER", "")
     if not marker.startswith("winms:"):
         return spawner_pid, None
     try:
@@ -303,8 +303,8 @@ def _append_entry(entry: LedgerEntry) -> bool:
         ]
         pruned.append(asdict(entry))
         try:
-            from akramcode_constants import mkdir_under_hermes_home
-            mkdir_under_hermes_home(path.parent)
+            from akramcode_constants import mkdir_under_akramcode_home
+            mkdir_under_akramcode_home(path.parent)
             # argv may carry surrogate-escaped bytes (non-UTF-8 paths); ensure_ascii keeps the
             # utf-8 text handle from raising UnicodeEncodeError (a ValueError, not an OSError).
             atomic_json_write(path, pruned, mode=0o600, ensure_ascii=True)
@@ -318,7 +318,7 @@ def register_child(pid: int, purpose: str, *, project_root: Optional[Path] = Non
     """Record a CHILD process this process just spawned. Best-effort.
 
     Mirror of :func:`register_self` for children that cannot register themselves (stdio MCP
-    helpers: arbitrary ``npx``/binary servers never import Hermes code). Records the child's
+    helpers: arbitrary ``npx``/binary servers never import AkramCode code). Records the child's
     ``(pid, create_time)`` with THIS process as spawner, so a helper whose spawner is provably gone
     is a reapable orphan and one whose spawner is alive is never reaped.
     """

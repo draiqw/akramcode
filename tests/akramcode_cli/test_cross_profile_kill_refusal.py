@@ -1,7 +1,7 @@
 """Cross-profile kill refusal regression tests (#89315).
 
-A poisoned/contaminated ``gateway.pid`` inside one profile's HERMES_HOME can
-truthfully name ANOTHER profile's live gateway (its ``hermes_home`` stamp
+A poisoned/contaminated ``gateway.pid`` inside one profile's AKRAMCODE_HOME can
+truthfully name ANOTHER profile's live gateway (its ``akramcode_home`` stamp
 records the real owner).  ``gateway stop`` / the restart force-kill escalation
 / ``profile delete`` must refuse to signal such a PID instead of starting the
 mutual cross-profile SIGTERM restart loop from the issue report.
@@ -27,7 +27,7 @@ def _spawn_gateway_lookalike(bin_dir: Path, lock_path: Path) -> subprocess.Popen
     """Real child process whose argv matches the gateway runtime matcher."""
     bin_dir.mkdir(parents=True, exist_ok=True)
     lock_path.parent.mkdir(parents=True, exist_ok=True)
-    script = bin_dir / "hermes"
+    script = bin_dir / "akramcode"
     if sys.platform == "win32":
         body = "import time\ntime.sleep(120)\n"
     else:
@@ -59,34 +59,34 @@ def _pid_record(proc: subprocess.Popen, script: Path, owner_home: Path) -> dict:
 
     return {
         "pid": proc.pid,
-        "kind": "hermes-gateway",
+        "kind": "akramcode-gateway",
         "argv": [str(script), "gateway", "run"],
         "start_time": get_process_start_time(proc.pid),
-        "hermes_home": str(owner_home),
+        "akramcode_home": str(owner_home),
     }
 
 
 class TestRecordedGatewayHomeConflicts:
     def test_conflicting_home_detected(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "profiles" / "tim"))
-        record = {"pid": 1, "hermes_home": str(tmp_path)}
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "profiles" / "tim"))
+        record = {"pid": 1, "akramcode_home": str(tmp_path)}
         assert recorded_gateway_home_conflicts(record) is True
 
     def test_same_home_accepted(self, tmp_path, monkeypatch):
         home = tmp_path / "profiles" / "tim"
-        monkeypatch.setenv("HERMES_HOME", str(home))
-        record = {"pid": 1, "hermes_home": str(home)}
+        monkeypatch.setenv("AKRAMCODE_HOME", str(home))
+        record = {"pid": 1, "akramcode_home": str(home)}
         assert recorded_gateway_home_conflicts(record) is False
 
     def test_legacy_record_without_home_proves_nothing(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
         assert recorded_gateway_home_conflicts({"pid": 1}) is False
         assert recorded_gateway_home_conflicts(None) is False
-        assert recorded_gateway_home_conflicts({"pid": 1, "hermes_home": "  "}) is False
+        assert recorded_gateway_home_conflicts({"pid": 1, "akramcode_home": "  "}) is False
 
     def test_expected_home_override(self, tmp_path):
         target = tmp_path / "profiles" / "tim"
-        record = {"pid": 1, "hermes_home": str(tmp_path)}
+        record = {"pid": 1, "akramcode_home": str(tmp_path)}
         assert (
             recorded_gateway_home_conflicts(record, expected_home=target) is True
         )
@@ -115,13 +115,13 @@ class TestCrossProfileStopRefusal:
         root_home = tmp_path / "root-home"
         tim_home = tmp_path / "root-home" / "profiles" / "tim"
         tim_home.mkdir(parents=True)
-        monkeypatch.setenv("HERMES_HOME", str(tim_home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tim_home))
 
         proc = _spawn_gateway_lookalike(
             tmp_path / "bin", tim_home / "gateway.lock"
         )
         try:
-            record = _pid_record(proc, tmp_path / "bin" / "hermes", root_home)
+            record = _pid_record(proc, tmp_path / "bin" / "akramcode", root_home)
             (tim_home / "gateway.pid").write_text(json.dumps(record))
 
             from akramcode_cli import gateway as gateway_cli
@@ -144,13 +144,13 @@ class TestCrossProfileStopRefusal:
         """Same-home records keep stopping normally (no false refusal)."""
         tim_home = tmp_path / "profiles" / "tim"
         tim_home.mkdir(parents=True)
-        monkeypatch.setenv("HERMES_HOME", str(tim_home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tim_home))
 
         proc = _spawn_gateway_lookalike(
             tmp_path / "bin", tim_home / "gateway.lock"
         )
         try:
-            record = _pid_record(proc, tmp_path / "bin" / "hermes", tim_home)
+            record = _pid_record(proc, tmp_path / "bin" / "akramcode", tim_home)
             (tim_home / "gateway.pid").write_text(json.dumps(record))
 
             from akramcode_cli import gateway as gateway_cli
@@ -181,7 +181,7 @@ class TestProfileDeleteStopRefusal:
             tmp_path / "bin", tim_home / "gateway.lock"
         )
         try:
-            record = _pid_record(proc, tmp_path / "bin" / "hermes", root_home)
+            record = _pid_record(proc, tmp_path / "bin" / "akramcode", root_home)
             (tim_home / "gateway.pid").write_text(json.dumps(record))
 
             from akramcode_cli.profiles import _stop_gateway_process
@@ -205,7 +205,7 @@ class TestProfileDeleteStopRefusal:
             tmp_path / "bin", tim_home / "gateway.lock"
         )
         try:
-            record = _pid_record(proc, tmp_path / "bin" / "hermes", tim_home)
+            record = _pid_record(proc, tmp_path / "bin" / "akramcode", tim_home)
             (tim_home / "gateway.pid").write_text(json.dumps(record))
 
             from akramcode_cli.profiles import _stop_gateway_process

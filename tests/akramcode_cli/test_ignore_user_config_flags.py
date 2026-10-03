@@ -1,17 +1,17 @@
-"""Tests for --ignore-user-config and --ignore-rules flags on `hermes chat`.
+"""Tests for --ignore-user-config and --ignore-rules flags on `akramcode chat`.
 
 Ported from openai/codex#18646 (`feat: add --ignore-user-config and --ignore-rules`).
 Codex's flags fully isolate a run from user-level config and exec-policy .rules
-files. In Hermes the equivalent isolation is:
+files. In AkramCode the equivalent isolation is:
 
-* ``--ignore-user-config`` → skip ``~/.hermes/config.yaml`` in ``load_cli_config()``
+* ``--ignore-user-config`` → skip ``~/.akramcode/config.yaml`` in ``load_cli_config()``
   (credentials in ``.env`` are still loaded).
 * ``--ignore-rules`` → skip AGENTS.md / SOUL.md / .cursorrules auto-injection
   and persistent memory (maps to ``AIAgent(skip_context_files=True,
   skip_memory=True)``).
 
 Both flags are wired via env vars so they work cleanly across the
-argparse → cmd_chat → cli.main() → HermesCLI → AIAgent call chain.
+argparse → cmd_chat → cli.main() → AkramCodeCLI → AIAgent call chain.
 """
 
 from __future__ import annotations
@@ -30,23 +30,23 @@ def _clean_env(monkeypatch):
     those writes aren't tracked by monkeypatch and won't be undone by it.
     We add explicit cleanup on yield to prevent cross-test pollution.
     """
-    for var in ("HERMES_IGNORE_USER_CONFIG", "HERMES_IGNORE_RULES"):
+    for var in ("AKRAMCODE_IGNORE_USER_CONFIG", "AKRAMCODE_IGNORE_RULES"):
         monkeypatch.delenv(var, raising=False)
     yield
-    for var in ("HERMES_IGNORE_USER_CONFIG", "HERMES_IGNORE_RULES"):
+    for var in ("AKRAMCODE_IGNORE_USER_CONFIG", "AKRAMCODE_IGNORE_RULES"):
         os.environ.pop(var, None)
 
 class TestIgnoreUserConfigEnvGate:
-    """``load_cli_config()`` must honour ``HERMES_IGNORE_USER_CONFIG=1``.
+    """``load_cli_config()`` must honour ``AKRAMCODE_IGNORE_USER_CONFIG=1``.
 
-    When the env var is set, user config at ``<hermes_home>/config.yaml`` is
+    When the env var is set, user config at ``<akramcode_home>/config.yaml`` is
     skipped even if present — the function returns only the built-in defaults
     (merged with the project-level ``cli-config.yaml`` fallback).
     """
 
     def _write_user_config(self, tmp_path, model_default):
         # NOTE: the model value is a sentinel that can never appear in a real
-        # config. With HERMES_IGNORE_USER_CONFIG=1, load_cli_config() falls
+        # config. With AKRAMCODE_IGNORE_USER_CONFIG=1, load_cli_config() falls
         # back to the repo-root ``cli-config.yaml`` (untracked, gitignored) —
         # on a dev machine that file can legitimately set the same popular
         # model this test previously used ("anthropic/claude-sonnet-4.6"),
@@ -63,9 +63,9 @@ class TestIgnoreUserConfigEnvGate:
         (tmp_path / "config.yaml").write_text(config_yaml)
 
     def _reload_cli(self, monkeypatch, tmp_path):
-        """Point cli._hermes_home at tmp_path and return a fresh load_cli_config."""
+        """Point cli._akramcode_home at tmp_path and return a fresh load_cli_config."""
         import cli
-        monkeypatch.setattr(cli, "_hermes_home", tmp_path)
+        monkeypatch.setattr(cli, "_akramcode_home", tmp_path)
         return cli.load_cli_config
 
     def test_user_config_loaded_when_flag_unset(self, tmp_path, monkeypatch):
@@ -79,13 +79,13 @@ class TestIgnoreUserConfigEnvGate:
         assert cfg["agent"]["system_prompt"] == "from user config"
 
     def test_user_config_skipped_when_flag_set(self, tmp_path, monkeypatch):
-        """With HERMES_IGNORE_USER_CONFIG=1, user config.yaml is ignored.
+        """With AKRAMCODE_IGNORE_USER_CONFIG=1, user config.yaml is ignored.
 
         The built-in default ``model.default`` is empty string (no user override),
         and the user's ``agent.system_prompt`` is not seen.
         """
         self._write_user_config(tmp_path, "test-vendor/ignore-user-config-sentinel")
-        monkeypatch.setenv("HERMES_IGNORE_USER_CONFIG", "1")
+        monkeypatch.setenv("AKRAMCODE_IGNORE_USER_CONFIG", "1")
 
         load_cli_config = self._reload_cli(monkeypatch, tmp_path)
         cfg = load_cli_config()
@@ -101,7 +101,7 @@ class TestIgnoreUserConfigEnvGate:
     def test_flag_ignored_when_set_to_other_value(self, tmp_path, monkeypatch):
         """Only the literal value "1" activates the bypass, matching the yolo pattern."""
         self._write_user_config(tmp_path, "test-vendor/ignore-user-config-sentinel")
-        monkeypatch.setenv("HERMES_IGNORE_USER_CONFIG", "true")  # not "1"
+        monkeypatch.setenv("AKRAMCODE_IGNORE_USER_CONFIG", "true")  # not "1"
 
         load_cli_config = self._reload_cli(monkeypatch, tmp_path)
         cfg = load_cli_config()

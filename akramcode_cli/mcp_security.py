@@ -1,7 +1,7 @@
 """Security checks for user-configured MCP server entries.
 
 Blocks three narrow shapes (see ``validate_mcp_server_entry``), including a hardcoded IOC blocklist
-for the June 2026 hermes-0day campaign. Runs BOTH at save time (``_save_mcp_server`` — dashboard API +
+for the June 2026 akramcode-0day campaign. Runs BOTH at save time (``_save_mcp_server`` — dashboard API +
 CLI) and at spawn time (``tools.mcp_tool._filter_suspicious_mcp_servers``), so a hand-edited or
 pre-planted ``config.yaml`` entry is caught before it can execute.
 """
@@ -30,7 +30,7 @@ _EXFIL_HINT_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
-# OS persistence surfaces an MCP server has no legitimate reason to write to (the hermes-0day
+# OS persistence surfaces an MCP server has no legitimate reason to write to (the akramcode-0day
 # SSH-key/PAM/sudoers/cron shape). Matched anywhere in the inline script.
 _PERSISTENCE_PATTERN = re.compile(
     r"authorized_keys"               # SSH key persistence (the campaign's payload)
@@ -44,11 +44,11 @@ _PERSISTENCE_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
-# Indicators of compromise, June 2026 hermes-0day campaign: exact attacker artifacts observed on
+# Indicators of compromise, June 2026 akramcode-0day campaign: exact attacker artifacts observed on
 # multiple compromised public instances. Hardcoded so a pre-planted config.yaml is refused.
 _IOC_SUBSTRINGS = (
     "AAAAC3NzaC1lZDI1NTE5AAAAICBoh1oDC4DnsO1m5mJ4yfEKrQebaFh",  # attacker SSH public key
-    "hermes-0day",
+    "akramcode-0day",
     # Attacker source IPs seen authenticating with the key.
     "60.165.167.",
     "118.182.244.156",
@@ -93,7 +93,7 @@ def validate_mcp_server_entry(name: str, entry: dict[str, Any]) -> list[str]:
     narrow shapes are blocked: (1) a known IOC anywhere in command/args/env, (2) a shell interpreter
     with network egress in its inline script, (3) a shell interpreter writing an OS persistence surface.
 
-    * a shell interpreter whose inline script writes to an OS persistence surface (June 2026 hermes-0day
+    * a shell interpreter whose inline script writes to an OS persistence surface (June 2026 akramcode-0day
     SSH/PAM/sudoers/cron shape). See #45620.
     """
     if not isinstance(entry, dict):
@@ -105,7 +105,7 @@ def validate_mcp_server_entry(name: str, entry: dict[str, Any]) -> list[str]:
         if ioc in flat:
             # One IOC is enough to refuse; don't leak the full match list.
             issues.append(
-                f"MCP server '{name}' contains a known hermes-0day "
+                f"MCP server '{name}' contains a known akramcode-0day "
                 f"indicator-of-compromise ('{ioc}')"
             )
             return issues
@@ -129,7 +129,7 @@ def validate_mcp_server_entry(name: str, entry: dict[str, Any]) -> list[str]:
         issues.append(
             f"MCP server '{name}' uses shell interpreter '{command}' to write "
             f"to an OS persistence surface (SSH keys / PAM / sudoers / cron / "
-            f"shell rc) — this is the hermes-0day backdoor shape, not a real "
+            f"shell rc) — this is the akramcode-0day backdoor shape, not a real "
             f"MCP server"
         )
     return issues

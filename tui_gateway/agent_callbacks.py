@@ -229,7 +229,7 @@ def _wire_callbacks(sid: str):
         # record whose profile scope the value is saved into. No bound owner: skip.
         from gateway.session_context import get_session_env
 
-        owner_sid = get_session_env("HERMES_UI_SESSION_ID")
+        owner_sid = get_session_env("AKRAMCODE_UI_SESSION_ID")
         # Credential admission is fenced to a live runtime. owner_sid is a ContextVar copied onto
         # the worker's thread at spawn: a background/btw/preview worker outlives its session, and
         # the close path's `_clear_pending` cancels only requests ALREADY open — it cannot fence
@@ -332,7 +332,7 @@ def _apply_personality_to_session(
 def _cfg_max_turns(cfg: dict, default: int) -> int:
     from akramcode_cli.config import resolve_turn_limit as _resolve_turn_limit
     # Env override wins; resolve_turn_limit makes "none"/"unlimited"/0 first-class spellings.
-    if env_val := os.environ.get("HERMES_TUI_MAX_TURNS"):
+    if env_val := os.environ.get("AKRAMCODE_TUI_MAX_TURNS"):
         return _resolve_turn_limit(env_val, default=default)
     raw = (cfg.get("agent") or {}).get("max_turns")
     if raw is None:
@@ -341,13 +341,13 @@ def _cfg_max_turns(cfg: dict, default: int) -> int:
 
 
 def _parse_tui_skills_env() -> list[str]:
-    raw = os.environ.get("HERMES_TUI_SKILLS", "")
+    raw = os.environ.get("AKRAMCODE_TUI_SKILLS", "")
     return list(dict.fromkeys(p.strip() for p in raw.replace("\n", ",").split(",") if p.strip()))
 
 
 def _load_fallback_model():
     """Configured fallback chain via the shared ``get_fallback_chain`` (parity with
-    HermesCLI/gateway: ``fallback_providers`` first, legacy ``fallback_model`` merged after)."""
+    AkramCodeCLI/gateway: ``fallback_providers`` first, legacy ``fallback_model`` merged after)."""
     from akramcode_cli.fallback_config import get_fallback_chain
     return get_fallback_chain(_load_cfg())
 
@@ -357,15 +357,15 @@ def _load_prefill_messages() -> list:
     ``agent.*``). Desktop/TUI agents never run the CLI bootstrap, so without this the setting was
     ignored there (#60456). Relative paths resolve against the active profile home, per call."""
     from akramcode_cli.cli_config_load import _load_prefill_messages as _load, _resolve_prefill_messages_file
-    from akramcode_constants import get_hermes_home
-    return _load(_resolve_prefill_messages_file(_load_cfg()), get_hermes_home())
+    from akramcode_constants import get_akramcode_home
+    return _load(_resolve_prefill_messages_file(_load_cfg()), get_akramcode_home())
 
 
 def _sync_agent_fallback_with_config(sid: str, session: dict) -> None:
     """Adopt ``fallback_providers`` edits into the cached agent at turn start.
 
     Desktop/TUI chats keep one agent across turns, and ``_make_agent`` reads the chain once: a chat
-    opened before ``hermes fallback add`` kept an empty chain forever and a provider-quota 429 ended in
+    opened before ``akramcode fallback add`` kept an empty chain forever and a provider-quota 429 ended in
     a provider error with a healthy fallback configured (#95066). Same per-turn contract the messaging
     gateway applies to its cached agents (``GatewayRunner._refresh_fallback_model``): the config is
     read fail-closed, so a torn/invalid config.yaml keeps the agent's last known-good chain instead of

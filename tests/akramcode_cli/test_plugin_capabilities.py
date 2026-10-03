@@ -11,7 +11,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from akramcode_cli.plugin_capabilities import (
     CAPABILITY_REGISTRY,
@@ -27,9 +27,9 @@ from akramcode_cli.plugin_capabilities import (
 
 
 @pytest.fixture()
-def hermes_home(tmp_path, monkeypatch):
-    """Point HERMES_HOME at a tmp dir with an empty config.yaml."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+def akramcode_home(tmp_path, monkeypatch):
+    """Point AKRAMCODE_HOME at a tmp dir with an empty config.yaml."""
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     (tmp_path / "config.yaml").write_text("{}\n", encoding="utf-8")
     return tmp_path
 
@@ -116,7 +116,7 @@ class TestDeclarationParsing:
         plugin_ep = SimpleNamespace(
             name="thread-namer",
             value="thread_namer.plugin:register",
-            group="hermes_agent.plugins",
+            group="akramcode_agent.plugins",
             dist=SimpleNamespace(
                 version="1.2.3",
                 metadata={"Summary": "Names gateway threads"},
@@ -126,7 +126,7 @@ class TestDeclarationParsing:
         capability_ep = SimpleNamespace(
             name="thread-namer.gateway.platform_actions",
             value="thread_namer.plugin:register",
-            group="hermes_agent.plugin_capabilities",
+            group="akramcode_agent.plugin_capabilities",
             load=load,
         )
         monkeypatch.setattr(
@@ -149,9 +149,9 @@ class TestDeclarationParsing:
 
 
 class TestConsentPersistence:
-    def test_record_consent_persists_grant(self, hermes_home):
+    def test_record_consent_persists_grant(self, akramcode_home):
         record_consent("capplug", ["tools.override"], ["tools.override"])
-        cfg = _read_cfg(hermes_home)
+        cfg = _read_cfg(akramcode_home)
         entry = cfg["plugins"]["entries"]["capplug"]
         assert entry["granted_capabilities"] == ["tools.override"]
         assert entry["capabilities_consent"]["hash"] == capability_set_hash(
@@ -161,15 +161,15 @@ class TestConsentPersistence:
         # Bridge: legacy key mirrored so existing enforcement sites work.
         assert entry["allow_tool_override"] is True
 
-    def test_record_consent_mirrors_nested_legacy_key(self, hermes_home):
+    def test_record_consent_mirrors_nested_legacy_key(self, akramcode_home):
         record_consent(
             "capplug", ["llm.model_override"], ["llm.model_override"]
         )
-        entry = _read_cfg(hermes_home)["plugins"]["entries"]["capplug"]
+        entry = _read_cfg(akramcode_home)["plugins"]["entries"]["capplug"]
         assert entry["llm"]["allow_model_override"] is True
 
 
-    def test_grant_is_union_with_previous(self, hermes_home):
+    def test_grant_is_union_with_previous(self, akramcode_home):
         record_consent("capplug", ["tools.override"], ["tools.override"])
         record_consent(
             "capplug",
@@ -181,7 +181,7 @@ class TestConsentPersistence:
         )
 
 
-    def test_declined_stays_off(self, hermes_home):
+    def test_declined_stays_off(self, akramcode_home):
         # No record_consent call — nothing granted.
         assert plugin_capability_granted("capplug", "tools.override") is False
         assert pending_capabilities("capplug", ["tools.override"]) == [
@@ -193,7 +193,7 @@ class TestConsentPersistence:
 
 
 class TestUpdateReconsent:
-    def test_added_capability_is_pending(self, hermes_home):
+    def test_added_capability_is_pending(self, akramcode_home):
         # v1 declared + granted tools.override.
         record_consent("capplug", ["tools.override"], ["tools.override"])
         # v2 adds llm.model_override.
@@ -207,7 +207,7 @@ class TestUpdateReconsent:
         # The previously granted one keeps working.
         assert plugin_capability_granted("capplug", "tools.override") is True
 
-    def test_unchanged_set_needs_no_reconsent(self, hermes_home):
+    def test_unchanged_set_needs_no_reconsent(self, akramcode_home):
         record_consent("capplug", ["tools.override"], ["tools.override"])
         assert pending_capabilities("capplug", ["tools.override"]) == []
         assert declared_set_changed("capplug", ["tools.override"]) is False
@@ -217,10 +217,10 @@ class TestUpdateReconsent:
         b = capability_set_hash(["llm.model_override", "tools.override"])
         assert a == b
 
-    def test_no_consent_record_counts_as_changed(self, hermes_home):
+    def test_no_consent_record_counts_as_changed(self, akramcode_home):
         assert declared_set_changed("capplug", ["tools.override"]) is True
 
-    def test_reconsent_grants_addition(self, hermes_home):
+    def test_reconsent_grants_addition(self, akramcode_home):
         record_consent("capplug", ["tools.override"], ["tools.override"])
         declared_v2 = ["tools.override", "llm.model_override"]
         record_consent(
@@ -235,30 +235,30 @@ class TestUpdateReconsent:
 
 class TestFailClosed:
     def test_missing_config_not_granted(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "nonexistent"))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "nonexistent"))
         assert plugin_capability_granted("capplug", "tools.override") is False
         assert granted_capabilities("capplug") == frozenset()
 
-    def test_corrupt_granted_list_not_granted(self, hermes_home):
-        (hermes_home / "config.yaml").write_text(
+    def test_corrupt_granted_list_not_granted(self, akramcode_home):
+        (akramcode_home / "config.yaml").write_text(
             "plugins:\n  entries:\n    capplug:\n"
             "      granted_capabilities: not-a-list\n",
             encoding="utf-8",
         )
         assert plugin_capability_granted("capplug", "tools.override") is False
 
-    def test_corrupt_entry_types_not_granted(self, hermes_home):
-        (hermes_home / "config.yaml").write_text(
+    def test_corrupt_entry_types_not_granted(self, akramcode_home):
+        (akramcode_home / "config.yaml").write_text(
             "plugins:\n  entries:\n    capplug: 42\n", encoding="utf-8"
         )
         assert plugin_capability_granted("capplug", "tools.override") is False
 
-    def test_unknown_capability_denied(self, hermes_home):
+    def test_unknown_capability_denied(self, akramcode_home):
         record_consent("capplug", ["tools.override"], ["tools.override"])
         assert plugin_capability_granted("capplug", "root.everything") is False
 
-    def test_unknown_ids_in_granted_list_ignored(self, hermes_home):
-        (hermes_home / "config.yaml").write_text(
+    def test_unknown_ids_in_granted_list_ignored(self, akramcode_home):
+        (akramcode_home / "config.yaml").write_text(
             "plugins:\n  entries:\n    capplug:\n"
             "      granted_capabilities: [root.everything, 42]\n",
             encoding="utf-8",
@@ -266,8 +266,8 @@ class TestFailClosed:
         assert granted_capabilities("capplug") == frozenset()
         assert plugin_capability_granted("capplug", "tools.override") is False
 
-    def test_corrupt_consent_hash_counts_as_changed(self, hermes_home):
-        (hermes_home / "config.yaml").write_text(
+    def test_corrupt_consent_hash_counts_as_changed(self, akramcode_home):
+        (akramcode_home / "config.yaml").write_text(
             "plugins:\n  entries:\n    capplug:\n"
             "      capabilities_consent: broken\n",
             encoding="utf-8",
@@ -280,31 +280,31 @@ class TestFailClosed:
 
 
 class TestLegacyGateCompat:
-    def test_legacy_allow_tool_override_still_works(self, hermes_home):
-        (hermes_home / "config.yaml").write_text(
+    def test_legacy_allow_tool_override_still_works(self, akramcode_home):
+        (akramcode_home / "config.yaml").write_text(
             "plugins:\n  entries:\n    oldplug:\n"
             "      allow_tool_override: true\n",
             encoding="utf-8",
         )
         assert plugin_capability_granted("oldplug", "tools.override") is True
 
-    def test_legacy_nested_llm_key_still_works(self, hermes_home):
-        (hermes_home / "config.yaml").write_text(
+    def test_legacy_nested_llm_key_still_works(self, akramcode_home):
+        (akramcode_home / "config.yaml").write_text(
             "plugins:\n  entries:\n    oldplug:\n"
             "      llm:\n        allow_model_override: true\n",
             encoding="utf-8",
         )
         assert plugin_capability_granted("oldplug", "llm.model_override") is True
 
-    def test_legacy_false_stays_denied(self, hermes_home):
-        (hermes_home / "config.yaml").write_text(
+    def test_legacy_false_stays_denied(self, akramcode_home):
+        (akramcode_home / "config.yaml").write_text(
             "plugins:\n  entries:\n    oldplug:\n"
             "      allow_tool_override: false\n",
             encoding="utf-8",
         )
         assert plugin_capability_granted("oldplug", "tools.override") is False
 
-    def test_tool_override_gate_uses_canonical_path(self, hermes_home):
+    def test_tool_override_gate_uses_canonical_path(self, akramcode_home):
         """PluginContext._tool_override_allowed honors capability grant."""
         from akramcode_cli.plugins import PluginContext, PluginManifest, PluginManager
 
@@ -313,17 +313,17 @@ class TestLegacyGateCompat:
         ctx = PluginContext(manifest, PluginManager())
         assert ctx._tool_override_allowed("write_file") is True
 
-    def test_tool_override_gate_denies_without_grant(self, hermes_home):
+    def test_tool_override_gate_denies_without_grant(self, akramcode_home):
         from akramcode_cli.plugins import PluginContext, PluginManifest, PluginManager
 
         manifest = PluginManifest(name="capplug", source="user", key="capplug")
         ctx = PluginContext(manifest, PluginManager())
         assert ctx._tool_override_allowed("write_file") is False
 
-    def test_tool_override_gate_legacy_key(self, hermes_home):
+    def test_tool_override_gate_legacy_key(self, akramcode_home):
         from akramcode_cli.plugins import PluginContext, PluginManifest, PluginManager
 
-        (hermes_home / "config.yaml").write_text(
+        (akramcode_home / "config.yaml").write_text(
             "plugins:\n  entries:\n    oldplug:\n"
             "      allow_tool_override: true\n",
             encoding="utf-8",
@@ -332,7 +332,7 @@ class TestLegacyGateCompat:
         ctx = PluginContext(manifest, PluginManager())
         assert ctx._tool_override_allowed("write_file") is True
 
-    def test_bundled_plugin_trusted(self, hermes_home):
+    def test_bundled_plugin_trusted(self, akramcode_home):
         from akramcode_cli.plugins import PluginContext, PluginManifest, PluginManager
 
         manifest = PluginManifest(name="bplug", source="bundled", key="bplug")
@@ -345,7 +345,7 @@ class TestLegacyGateCompat:
 
 
 class TestHasCapability:
-    def test_probe_granted(self, hermes_home):
+    def test_probe_granted(self, akramcode_home):
         from akramcode_cli.plugins import PluginContext, PluginManifest, PluginManager
 
         record_consent("capplug", ["llm.model_override"], ["llm.model_override"])
@@ -366,7 +366,7 @@ class TestConsentFlow:
         console.input.side_effect = lambda *a, **k: next(it, "")
         return console
 
-    def test_consent_yes_records_grant(self, hermes_home, monkeypatch):
+    def test_consent_yes_records_grant(self, akramcode_home, monkeypatch):
         from akramcode_cli.plugins_cmd import _run_capability_consent
 
         console = self._console(["y"])
@@ -379,7 +379,7 @@ class TestConsentFlow:
         assert granted is True
         assert plugin_capability_granted("capplug", "tools.override") is True
 
-    def test_consent_decline_leaves_ungranted(self, hermes_home):
+    def test_consent_decline_leaves_ungranted(self, akramcode_home):
         from akramcode_cli.plugins_cmd import _run_capability_consent
 
         console = self._console(["n"])
@@ -392,7 +392,7 @@ class TestConsentFlow:
         assert granted is False
         assert plugin_capability_granted("capplug", "tools.override") is False
 
-    def test_non_interactive_fails_closed(self, hermes_home):
+    def test_non_interactive_fails_closed(self, akramcode_home):
         from akramcode_cli.plugins_cmd import _run_capability_consent
 
         console = self._console()
@@ -407,7 +407,7 @@ class TestConsentFlow:
         # No prompt was shown.
         console.input.assert_not_called()
 
-    def test_already_granted_skips_prompt(self, hermes_home):
+    def test_already_granted_skips_prompt(self, akramcode_home):
         from akramcode_cli.plugins_cmd import _run_capability_consent
 
         record_consent("capplug", ["tools.override"], ["tools.override"])

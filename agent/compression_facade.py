@@ -203,7 +203,7 @@ def _mirror_result_onto_live_lists(agent, result, messages, *, direct_path: bool
 def _rebind_caller_session_context(agent) -> None:
     """Propagate a rotated session id to the CALLER's thread/ContextVar (idempotent otherwise).
     The worker thread rotated akram_core.akramcode_logging's thread-local id; post-compression tools must resolve
-    HERMES_SESSION_ID to the child id."""
+    AKRAMCODE_SESSION_ID to the child id."""
     with contextlib.suppress(Exception):
         from akram_core.akramcode_logging import set_session_context
         set_session_context(agent.session_id)

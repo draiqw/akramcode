@@ -1,4 +1,4 @@
-"""HERMES_HOME state checks for hermes doctor: directories, memory files, state.db health, skills hub, memory provider, profiles.
+"""AKRAMCODE_HOME state checks for akramcode doctor: directories, memory files, state.db health, skills hub, memory provider, profiles.
 Split out of ``akramcode_cli/doctor.py``, which re-exports every name so ``akramcode_cli.doctor.<name>`` keeps resolving (and monkeypatching)."""
 
 from __future__ import annotations
@@ -25,12 +25,12 @@ def _honcho_is_configured_for_doctor() -> bool:
         return False
 
 
-def _doctor_memory_config(hermes_home: Path | None = None) -> dict:
+def _doctor_memory_config(akramcode_home: Path | None = None) -> dict:
     """Return the effective memory section used by doctor diagnostics."""
-    from akramcode_cli.doctor import HERMES_HOME
+    from akramcode_cli.doctor import AKRAMCODE_HOME
     try:
         from akramcode_cli.config_effective import load_user_config_effective
-        config_path = (hermes_home if hermes_home is not None else HERMES_HOME) / "config.yaml"
+        config_path = (akramcode_home if akramcode_home is not None else AKRAMCODE_HOME) / "config.yaml"
         if not config_path.exists():
             return {}
         section = load_user_config_effective(config_path).get("memory")
@@ -102,7 +102,7 @@ def _render_state_db_stats(stats: dict, holders=None, host_note: str = "") -> li
             lines.append(("warn", f"state.db FTS repair is blocked after {deferral.get('attempts') or '?'} deferral(s) "
                           f"by PID(s) {pids}",
                           "(stop the listed processes; the host gateway's own retry then rebuilds, or run "
-                          "'hermes sessions optimize-storage' with every holder stopped)"))
+                          "'akramcode sessions optimize-storage' with every holder stopped)"))
     # Oversized DB: suggest auto_prune, plus the offline optimize-storage pass when the FTS rebuild is
     # pending OR the DB predates the current trigram layout (fts_storage_version < FTS_STORAGE_VERSION).
     if logical is not None and logical > STATE_DB_SIZE_WARN_BYTES:
@@ -110,22 +110,22 @@ def _render_state_db_stats(stats: dict, holders=None, host_note: str = "") -> li
         stale_trigram = (fts is not None and fts.get("messages_fts_trigram")
                          and (stats.get("fts_storage_version") or 0) < FTS_STORAGE_VERSION)
         if stats.get("fts_rebuild_pending") or stale_trigram:
-            detail += "; run 'hermes sessions optimize-storage' offline (with the host gateway stopped) to compact FTS storage"
+            detail += "; run 'akramcode sessions optimize-storage' offline (with the host gateway stopped) to compact FTS storage"
         lines.append(("warn", f"state.db is large ({_human_bytes(logical)})", f"({detail})"))
     # WAL runaway is deliberately NOT warned here: _state_db_wal already warns above 50 MB and offers --fix.
     return lines
 
 
-def _memory_store_flags(hermes_home: Path) -> tuple:
+def _memory_store_flags(akramcode_home: Path) -> tuple:
     from tools.memory_tool import get_builtin_memory_store_flags
-    return get_builtin_memory_store_flags({"memory": _doctor_memory_config(hermes_home)})
+    return get_builtin_memory_store_flags({"memory": _doctor_memory_config(akramcode_home)})
 
 
 def check_legacy_desktop_checkout() -> None:
     """Report the unused legacy checkout under an embedded desktop install.
 
     Before the embedded runtime existed, the desktop app installed a git
-    checkout at $HERMES_HOME/hermes-agent. An embedded app never uses it,
+    checkout at $AKRAMCODE_HOME/akramcode-agent. An embedded app never uses it,
     so it sits on disk (1-2 GB of tree + venv). Doctor only REPORTS the
     checkout and its size — it never suggests a deletion command, and
     never deletes anything itself: a pristineness probe cannot prove no
@@ -142,9 +142,9 @@ def check_legacy_desktop_checkout() -> None:
     if sealed_steward(Path(PROJECT_ROOT)) != STEWARD_DESKTOP:
         return
 
-    from akramcode_cli.doctor import HERMES_HOME, _DHH
+    from akramcode_cli.doctor import AKRAMCODE_HOME, _DHH
 
-    checkout = HERMES_HOME / "hermes-agent"
+    checkout = AKRAMCODE_HOME / "akramcode-agent"
     if not (checkout / ".git").exists():
         return
 
@@ -180,13 +180,13 @@ def check_legacy_desktop_checkout() -> None:
 
     if pristine:
         check_warn(
-            f"Unused checkout at {_DHH}/hermes-agent{size_note}",
+            f"Unused checkout at {_DHH}/akramcode-agent{size_note}",
             "(the desktop app runs embedded and does not use it; the tree is clean)",
         )
         print("    Review it and decide whether to keep or remove it — doctor does not delete anything.")
     else:
         check_info(
-            f"A checkout exists at {_DHH}/hermes-agent but holds local work "
+            f"A checkout exists at {_DHH}/akramcode-agent but holds local work "
             "(changes, a branch, or stashes). The desktop app does not use "
             "it; review it before you remove anything."
         )
@@ -194,23 +194,23 @@ def check_legacy_desktop_checkout() -> None:
 
 @doctor_check()
 def _check_directory_structure(should_fix: bool, f: Finding) -> None:
-    """HERMES_HOME, expected subdirs, SOUL.md, and the enabled built-in memory files."""
+    """AKRAMCODE_HOME, expected subdirs, SOUL.md, and the enabled built-in memory files."""
     try:
         check_legacy_desktop_checkout()
     except Exception:
         pass  # best-effort report; must never break the directory check
-    from akramcode_cli.doctor import HERMES_HOME, _DHH
-    hermes_home = HERMES_HOME
-    ensure_dir(f, should_fix, hermes_home, f"{_DHH} directory exists", f"Created {_DHH} directory", f"{_DHH} not found")
-    _memory_enabled, _user_profile_enabled = _memory_store_flags(hermes_home)
+    from akramcode_cli.doctor import AKRAMCODE_HOME, _DHH
+    akramcode_home = AKRAMCODE_HOME
+    ensure_dir(f, should_fix, akramcode_home, f"{_DHH} directory exists", f"Created {_DHH} directory", f"{_DHH} not found")
+    _memory_enabled, _user_profile_enabled = _memory_store_flags(akramcode_home)
     memory_on = bool(_memory_enabled or _user_profile_enabled)
     # The built-in file store neither creates nor consumes memories/ when both targets are disabled.
     for subdir_name in ["cron", "sessions", "logs", "skills"] + (["memories"] if memory_on else []):
-        ensure_dir(f, should_fix, hermes_home / subdir_name, f"{_DHH}/{subdir_name}/ exists",
+        ensure_dir(f, should_fix, akramcode_home / subdir_name, f"{_DHH}/{subdir_name}/ exists",
                    f"Created {_DHH}/{subdir_name}/", f"{_DHH}/{subdir_name}/ not found")
-    _check_scratch_dir(hermes_home, _DHH)
+    _check_scratch_dir(akramcode_home, _DHH)
     # SOUL.md persona file
-    soul_path = hermes_home / "SOUL.md"
+    soul_path = akramcode_home / "SOUL.md"
     if soul_path.exists():
         lines = soul_path.read_text(encoding="utf-8-sig").strip().splitlines()
         if any(l.strip() and not l.strip().startswith(("<!--", "-->", "#")) for l in lines):
@@ -218,16 +218,16 @@ def _check_directory_structure(should_fix: bool, f: Finding) -> None:
         else:  # template comments only (no real content)
             check_info(f"{_DHH}/SOUL.md exists but is empty — edit it to customize personality")
     else:
-        check_warn(f"{_DHH}/SOUL.md not found", "(create it to give Hermes a custom personality)")
+        check_warn(f"{_DHH}/SOUL.md not found", "(create it to give AkramCode a custom personality)")
         if should_fix:
             soul_path.parent.mkdir(parents=True, exist_ok=True)
-            soul_path.write_text("# Hermes Agent Persona\n\n<!-- Edit this file to customize how Hermes communicates. -->\n\n"
-                                 "You are Hermes, a helpful AI assistant.\n", encoding="utf-8")
+            soul_path.write_text("# AkramCode Agent Persona\n\n<!-- Edit this file to customize how AkramCode communicates. -->\n\n"
+                                 "You are AkramCode, a helpful AI assistant.\n", encoding="utf-8")
             check_ok(f"Created {_DHH}/SOUL.md with basic template")
             f.fixed += 1
     # Only enabled built-in stores: users can disable either legacy file target, and stale migration files
     # must not read as active memory usage.
-    memories_dir = hermes_home / "memories"
+    memories_dir = akramcode_home / "memories"
     if not memory_on:
         return check_info("Built-in memory files disabled by config")
     existed = memories_dir.exists()
@@ -245,14 +245,14 @@ _UNPRUNED_CACHE_WARN_BYTES = 1 << 30
 _PRUNED_CACHE_DIRS = frozenset({"scratch", "terminal"})
 
 
-def unpruned_cache_hogs(hermes_home: Path, min_bytes: int = _UNPRUNED_CACHE_WARN_BYTES) -> list[tuple[str, int]]:
+def unpruned_cache_hogs(akramcode_home: Path, min_bytes: int = _UNPRUNED_CACHE_WARN_BYTES) -> list[tuple[str, int]]:
     """``(name, bytes)`` for ``cache/`` entries outside the pruned dirs that exceed *min_bytes*.
 
     Finished campaign trees parked at the cache root sat for weeks (95 GB on one host)
     because only ``scratch/`` and ``terminal/`` are reaped; doctor is where that shows."""
     from akramcode_constants import scratch_dir_usage_bytes
 
-    cache = hermes_home / "cache"
+    cache = akramcode_home / "cache"
     hogs: list[tuple[str, int]] = []
     try:
         entries = [e for e in cache.iterdir() if e.is_dir() and not e.is_symlink() and e.name not in _PRUNED_CACHE_DIRS]
@@ -265,14 +265,14 @@ def unpruned_cache_hogs(hermes_home: Path, min_bytes: int = _UNPRUNED_CACHE_WARN
     return sorted(hogs, key=lambda item: -item[1])
 
 
-def _check_scratch_dir(hermes_home: Path, _DHH: str) -> None:
+def _check_scratch_dir(akramcode_home: Path, _DHH: str) -> None:
     """Report the scratch dir (TMPDIR target) and its size; a user-set TMPDIR elsewhere is shown, not judged."""
     from akramcode_constants import (
         SCRATCH_DIR_MARKER_ENV, SCRATCH_MAX_IDLE_HOURS, get_scratch_dir, scratch_dir_usage_bytes)
-    scratch = get_scratch_dir(hermes_home, prune=False)
+    scratch = get_scratch_dir(akramcode_home, prune=False)
     size = _human_bytes(scratch_dir_usage_bytes(scratch))
     check_ok(f"{_DHH}/cache/scratch/ is the scratch dir (TMPDIR; {size}, entries pruned after {SCRATCH_MAX_IDLE_HOURS}h idle)")
-    for name, nbytes in unpruned_cache_hogs(hermes_home):
+    for name, nbytes in unpruned_cache_hogs(akramcode_home):
         check_warn(
             f"{_DHH}/cache/{name}/ is {_human_bytes(nbytes)} and outside every pruner "
             f"(only cache/scratch/ and cache/terminal/ are reaped) — move task files under "
@@ -280,7 +280,7 @@ def _check_scratch_dir(hermes_home: Path, _DHH: str) -> None:
         )
     tmpdir = os.environ.get("TMPDIR", "")
     if tmpdir and tmpdir != os.environ.get(SCRATCH_DIR_MARKER_ENV, ""):
-        check_info(f"TMPDIR={tmpdir} is set by you or the OS, so Hermes leaves it alone")
+        check_info(f"TMPDIR={tmpdir} is set by you or the OS, so AkramCode leaves it alone")
 
 
 def _session_count(state_db_path: Path):
@@ -306,7 +306,7 @@ def _write_health_reason(state_db_path: Path, *, should_fix: bool):
         return _db_opens_cleanly(state_db_path)
     if not should_fix and state_db_path.stat().st_size > _WRITE_PROBE_SNAPSHOT_MAX_BYTES:
         check_info("state.db write-health probe skipped: store is held by a live writer and larger than 1 GB "
-                   "(run 'hermes doctor --fix' to probe it)")
+                   "(run 'akramcode doctor --fix' to probe it)")
         return None
     import sqlite3
     import tempfile
@@ -331,16 +331,16 @@ _STATE_DB_REPAIRS = {
     "fts": ("Repaired state.db FTS write health",
             "state.db FTS write-health repair did not recover automatically",
             "state.db FTS write corruption and auto-repair failed — restore from the backup copy beside state.db",
-            "state.db FTS write corruption — run 'hermes doctor --fix' (or 'hermes sessions repair') to rebuild the FTS index"),
+            "state.db FTS write corruption — run 'akramcode doctor --fix' (or 'akramcode sessions repair') to rebuild the FTS index"),
     "schema": ("Repaired state.db schema ({count} sessions recovered)",
                "state.db schema repair did not recover automatically",
                "state.db schema malformed and auto-repair failed — restore from the backup copy beside state.db",
-               "state.db schema malformed — run 'hermes doctor --fix' (or 'hermes sessions repair') to recover hidden sessions"),
+               "state.db schema malformed — run 'akramcode doctor --fix' (or 'akramcode sessions repair') to recover hidden sessions"),
 }
 _STATE_DB_STRUCTURAL_ISSUE = (
     "state.db structural corruption (canonical tables/indexes damaged, not the FTS index) — an FTS rebuild "
-    "cannot repair it. Stop the gateway, then run 'hermes {profile_arg}sessions recover --source {db_path} "
-    "--inspect-only' and, if it reports recoverable, 'hermes {profile_arg}sessions recover --source {db_path} "
+    "cannot repair it. Stop the gateway, then run 'akramcode {profile_arg}sessions recover --source {db_path} "
+    "--inspect-only' and, if it reports recoverable, 'akramcode {profile_arg}sessions recover --source {db_path} "
     "--output recovered-state.db'. Do NOT restore a .malformed-backup copy beside state.db: it is a snapshot "
     "of the same corrupt file."
 )
@@ -423,7 +423,7 @@ def _state_db_stats(issues: list, state_db_path: Path) -> None:
             check_warn(_text, _detail)
             if "auto_prune" in _detail:
                 issues.append("state.db is large — enable sessions.auto_prune in config.yaml"
-                              + (" and run 'hermes sessions optimize-storage' offline (gateway stopped)" if "optimize-storage" in _detail else ""))
+                              + (" and run 'akramcode sessions optimize-storage' offline (gateway stopped)" if "optimize-storage" in _detail else ""))
 
 
 def _state_db_wal(f: Finding, should_fix: bool, state_db_path: Path) -> None:
@@ -440,7 +440,7 @@ def _state_db_wal(f: Finding, should_fix: bool, state_db_path: Path) -> None:
             from akramcode_state.repair import _exclusive_repair_db_guard, _live_writer_holds_db
             title = f"WAL file is large ({size // (1024*1024)} MB)"
             _SKIP = ("Large WAL file — cannot prove state.db is quiet (stop the profile's gateway first, then "
-                     "run 'hermes doctor --fix' to checkpoint)")
+                     "run 'akramcode doctor --fix' to checkpoint)")
             # Honest disjunction (gate C1): a True here means "held OR unprovable" — never assert a live
             # writer as fact.
             if _live_writer_holds_db(state_db_path):
@@ -452,11 +452,11 @@ def _state_db_wal(f: Finding, should_fix: bool, state_db_path: Path) -> None:
             check_warn(title, "(may indicate missed checkpoints)")
             if not should_fix:
                 return f.issues.append(
-                    "Large WAL file — stop the profile's gateway, then run 'hermes doctor --fix' to checkpoint")
+                    "Large WAL file — stop the profile's gateway, then run 'akramcode doctor --fix' to checkpoint")
             with _exclusive_repair_db_guard(state_db_path) as (guard, guard_error):
                 if guard is None:
                     check_warn("WAL checkpoint skipped: could not take exclusive ownership of state.db",
-                               f"({guard_error}; stop the profile's gateway and re-run 'hermes doctor --fix')")
+                               f"({guard_error}; stop the profile's gateway and re-run 'akramcode doctor --fix')")
                     return f.issues.append(_SKIP)
                 guard.execute("PRAGMA wal_checkpoint(PASSIVE)")
             check_ok(f"WAL checkpoint performed ({size // 1024}K → {wal_size() // 1024}K)")
@@ -479,17 +479,17 @@ def _retired_wal_holders(f: Finding, state_db_path: Path, _DHH: str) -> bool:
     check_warn(f"{_DHH}/state.db: {len(pids)} process(es) still hold a retired WAL generation ({rendered})",
                "(every new session refuses to open until they exit; health/stats probes skipped)")
     f.issues.append(f"state.db retired WAL generation held by {rendered}{host_gateway_note()} — stop the host "
-                    f"gateway, dashboard and cron writers among them ('hermes {profile_cli_selector()}gateway "
+                    f"gateway, dashboard and cron writers among them ('akramcode {profile_cli_selector()}gateway "
                     "stop' stops the ONE host process serving every profile, quit the Desktop app), do not "
-                    "delete the WAL yourself, then rerun 'hermes doctor'")
+                    "delete the WAL yourself, then rerun 'akramcode doctor'")
     return True
 
 
 @doctor_check()
 def _check_state_db(should_fix: bool, f: Finding) -> None:
     """state.db session count, FTS write health, schema repair, stats snapshot, WAL size."""
-    from akramcode_cli.doctor import HERMES_HOME, _DHH
-    state_db_path = HERMES_HOME / "state.db"
+    from akramcode_cli.doctor import AKRAMCODE_HOME, _DHH
+    state_db_path = AKRAMCODE_HOME / "state.db"
     # A read-only connect on the new generation is itself another opener, so nothing below may run.
     if _retired_wal_holders(f, state_db_path, _DHH):
         return
@@ -539,10 +539,10 @@ def _plugin_provenance_rows(plugins_dir) -> list:
 @doctor_check("")
 def _check_update_provenance(should_fix: bool, f: Finding) -> None:
     """Inspect local plugin update provenance without network or writes."""
-    from akramcode_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
 
     printers = {"warn": check_warn, "ok": check_ok, "info": lambda text, detail: check_info(f"{text} {detail}".rstrip())}
-    for kind, text, detail in _plugin_provenance_rows(get_hermes_home() / "plugins"):
+    for kind, text, detail in _plugin_provenance_rows(get_akramcode_home() / "plugins"):
         printers[kind](text, detail)
 
 
@@ -568,9 +568,9 @@ def _gh_authenticated() -> bool:
 
 @doctor_check()
 def _check_skills_hub(should_fix: bool, f: Finding) -> None:
-    from akramcode_cli.doctor import HERMES_HOME, _DHH
-    hub_dir = HERMES_HOME / "skills" / ".hub"
-    if check_bool(hub_dir.exists(), "Skills Hub directory exists", ("Skills Hub directory not initialized", "(run: hermes skills list)")):
+    from akramcode_cli.doctor import AKRAMCODE_HOME, _DHH
+    hub_dir = AKRAMCODE_HOME / "skills" / ".hub"
+    if check_bool(hub_dir.exists(), "Skills Hub directory exists", ("Skills Hub directory not initialized", "(run: akramcode skills list)")):
         lock_file = hub_dir / "lock.json"
         if lock_file.exists():
             with warn_on_error("Lock file", "(corrupted or unreadable)"):
@@ -598,12 +598,12 @@ def _memory_provider_honcho(issues: list) -> None:
         # Config file missing — env-var fallback may still have resolved it.
         check_bool(hcfg.api_key or hcfg.base_url,
                    ("Honcho configured via environment variables", f"config file {cfg_path} not found, using HONCHO_API_KEY env var"),
-                   ("Honcho config not found", "run: hermes memory setup"))
+                   ("Honcho config not found", "run: akramcode memory setup"))
     elif not hcfg.enabled:
         check_info(f"Honcho disabled (set enabled: true in {cfg_path} to activate)")
     elif not (hcfg.api_key or hcfg.base_url):
-        _fail_and_issue("Honcho API key or base URL not set", "run: hermes memory setup",
-                        "No Honcho API key — run 'hermes memory setup'", issues)
+        _fail_and_issue("Honcho API key or base URL not set", "run: akramcode memory setup",
+                        "No Honcho API key — run 'akramcode memory setup'", issues)
     else:
         client.reset_honcho_client()
         try:
@@ -620,16 +620,16 @@ def _memory_provider_mem0(issues: list) -> None:
         check_ok("Mem0 API key configured")
         check_info(f"user_id={mem0_cfg.get('user_id', '?')}  agent_id={mem0_cfg.get('agent_id', '?')}")
     else:
-        _fail_and_issue("Mem0 API key not set", "(set MEM0_API_KEY in .env or run hermes memory setup)",
+        _fail_and_issue("Mem0 API key not set", "(set MEM0_API_KEY in .env or run akramcode memory setup)",
                         "Mem0 is set as memory provider but API key is missing", issues)
 
 
 # provider -> (checker, ImportError row, ImportError issue, label for "check failed")
 _MEMORY_PROVIDER_CHECKS = {
-    "honcho": (_memory_provider_honcho, ("honcho-ai not installed", "run hermes memory setup"),
-               "Honcho dependencies missing — run hermes memory setup, then restart Hermes", "Honcho"),
-    "mem0": (_memory_provider_mem0, ("Mem0 plugin not loadable", "run hermes memory setup"),
-             "Mem0 dependencies missing — run hermes memory setup, then restart Hermes", "Mem0"),
+    "honcho": (_memory_provider_honcho, ("honcho-ai not installed", "run akramcode memory setup"),
+               "Honcho dependencies missing — run akramcode memory setup, then restart AkramCode", "Honcho"),
+    "mem0": (_memory_provider_mem0, ("Mem0 plugin not loadable", "run akramcode memory setup"),
+             "Mem0 dependencies missing — run akramcode memory setup, then restart AkramCode", "Mem0"),
 }
 
 
@@ -640,16 +640,16 @@ def _memory_provider_generic(name: str) -> None:
     if _provider and _provider.is_available():
         check_ok(f"{name} provider active")
     elif _provider:
-        check_warn(f"{name} configured but not available", "run: hermes memory status")
+        check_warn(f"{name} configured but not available", "run: akramcode memory status")
     else:
-        check_warn(f"{name} plugin not found", "run: hermes memory setup")
+        check_warn(f"{name} plugin not found", "run: akramcode memory setup")
 
 
 @doctor_check()
 def _check_memory_provider(should_fix: bool, f: Finding) -> None:
-    from akramcode_cli.doctor import HERMES_HOME
+    from akramcode_cli.doctor import AKRAMCODE_HOME
     from agent.memory_provider import is_core_memory_provider
-    name = _doctor_memory_config(HERMES_HOME).get("provider", "")
+    name = _doctor_memory_config(AKRAMCODE_HOME).get("provider", "")
     if is_core_memory_provider(name):
         check_ok("Built-in memory active", "(no external provider configured — this is fine)")
         return
@@ -687,11 +687,11 @@ def _check_profiles(should_fix: bool, f: Finding) -> None:
             if not wrapper.is_file():
                 continue
             with warn_on_error(""):
-                _m = _re.search(r"hermes -p (\S+)", wrapper.read_text(encoding="utf-8-sig"))
+                _m = _re.search(r"akramcode -p (\S+)", wrapper.read_text(encoding="utf-8-sig"))
                 if _m and not profile_exists(_m.group(1)):
                     check_warn(f"Orphan alias: {wrapper.name} → profile '{_m.group(1)}' no longer exists")
     # Same helper as the multiplex migration preflight, so doctor names the duplicates that make
-    # `hermes gateway migrate --multiplex` refuse (and made pre-multiplex standalone gateways race).
+    # `akramcode gateway migrate --multiplex` refuse (and made pre-multiplex standalone gateways race).
     from akramcode_cli.gateway_migrate import duplicate_credential_findings
     for line in duplicate_credential_findings():
         check_warn("Duplicate platform credential across profiles", f"({line})")

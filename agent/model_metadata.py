@@ -145,8 +145,8 @@ _LOCAL_PROBE_DISK_TTL_SECONDS = 300.0
 
 
 def _cache_file(name: str) -> Path:
-    from akramcode_constants import get_hermes_home
-    return get_hermes_home() / "cache" / name
+    from akramcode_constants import get_akramcode_home
+    return get_akramcode_home() / "cache" / name
 
 
 def _load_json_dict(path: Path) -> Dict[str, Any]:
@@ -236,7 +236,7 @@ def _get_endpoint_metadata_cache_path() -> Path:
 
 def _endpoint_disk_cache_get(normalized: str) -> Optional[Dict[str, Dict[str, Any]]]:
     """Fresh cross-process memo of a remote ``/models`` probe (same TTL as in-memory): one-shot
-    runs (``hermes -q``, cron) start cold and Nous bypasses the persistent context cache, so
+    runs (``akramcode -q``, cron) start cold and Nous bypasses the persistent context cache, so
     without this every launch paid the live probe. Local endpoints are never memoized."""
     models = _ttl_memo_get(_get_endpoint_metadata_cache_path(), normalized, _ENDPOINT_MODEL_CACHE_TTL, ts_key="at", value_key="models")
     return models if isinstance(models, dict) else None
@@ -619,7 +619,7 @@ def _skip_persistent_context_cache(base_url: str, provider: str) -> bool:
 
 def _is_codex_route(provider: str, base_url: str, custom_providers: list | None) -> bool:
     """True when the request travels the Codex Responses wire regardless of host: the native
-    ``openai-codex`` provider (also behind a ``HERMES_CODEX_BASE_URL`` / ``model.base_url`` proxy)
+    ``openai-codex`` provider (also behind a ``AKRAMCODE_CODEX_BASE_URL`` / ``model.base_url`` proxy)
     or a custom entry declaring ``api_mode: codex_responses``. The transport, not the hostname,
     decides which window the model actually gets (#116191)."""
     if (provider or "").strip().lower() == "openai-codex":
@@ -1097,8 +1097,8 @@ def _resolve_endpoint_context_length(model: str, base_url: str, api_key: str = "
 
 def _get_context_cache_path() -> Path:
     """Path to the persistent context length cache file."""
-    from akramcode_constants import get_hermes_home
-    return get_hermes_home() / "context_length_cache.yaml"
+    from akramcode_constants import get_akramcode_home
+    return get_akramcode_home() / "context_length_cache.yaml"
 
 
 def _load_context_cache_document() -> dict:
@@ -1213,9 +1213,9 @@ def _invalidate_cached_context_length(model: str, base_url: str) -> None:
     _LOCAL_CTX_PROBE_CACHE.pop(("ollama_show", bare, stripped), None)
     # Same for a memoised Bedrock probe failure (keyed by region, which the caller does not know):
     # the entry being dropped is the reason to ask the probe again, not to wait out its TTL.
-    from akramcode_constants import hermes_home_key
+    from akramcode_constants import akramcode_home_key
     for memo_key in list(_BEDROCK_PROBE_FAILURE_CACHE):  # snapshot: another thread may be memoising
-        if memo_key[:2] == (hermes_home_key(), stripped) and memo_key[2] in (model, bare):
+        if memo_key[:2] == (akramcode_home_key(), stripped) and memo_key[2] in (model, bare):
             _BEDROCK_PROBE_FAILURE_CACHE.pop(memo_key, None)
     # Every key shape get_cached_context_length consults.
     stale_keys = {key, f"{model}@{base_url}", f"{key}/"}
@@ -1904,7 +1904,7 @@ def _resolve_codex_oauth_context_length_with_source(model: str, access_token: st
             return bumped, source
         return ctx, source
     # The Codex catalog only knows the base slug (no -900k, no vendor/).
-    # ``-900k`` variants are Hermes picker aliases — the Codex catalog only knows the base slug, so resolve
+    # ``-900k`` variants are AkramCode picker aliases — the Codex catalog only knows the base slug, so resolve
     # against the stripped id. Also drop any ``vendor/`` namespace (``openai/gpt-5.6-sol-900k``): the
     # main-agent path normalizes it away before reaching here, but display/auxiliary callers pass it through
     # (#92797 review).
@@ -2026,8 +2026,8 @@ def _resolve_bedrock_context_length(model: str, base_url: str) -> Optional[int]:
     if not region:
         with contextlib.suppress(Exception):
             region = resolve_bedrock_region()
-    from akramcode_constants import hermes_home_key
-    memo_key = (hermes_home_key(), cache_key_url.rstrip('/'), model, region)
+    from akramcode_constants import akramcode_home_key
+    memo_key = (akramcode_home_key(), cache_key_url.rstrip('/'), model, region)
     if region and not _bedrock_probe_failed_recently(memo_key):
         probed = probe_bedrock_context_length(model, region)
         if probed:
@@ -2248,7 +2248,7 @@ def get_model_context_length(
         return context
     is_bedrock_context = _is_bedrock_context(base_url, provider)
     # A Codex Responses route is keyed on its transport, not its host: behind a proxy
-    # (HERMES_CODEX_BASE_URL, model.base_url, custom api_mode: codex_responses) the URL looks
+    # (AKRAMCODE_CODEX_BASE_URL, model.base_url, custom api_mode: codex_responses) the URL looks
     # generic while the window is still the Codex OAuth one (#116191).
     codex_route = _is_codex_route(provider, base_url, custom_providers)
     # 1. Persistent cache (LM Studio / Codex routes excluded — see _skip_persistent_context_cache).
@@ -2296,7 +2296,7 @@ def get_model_context_length(
                 logger.info("Rejecting OpenRouter metadata context=%s for %r (known 32K underreport); falling through to hardcoded defaults", or_ctx, model)
             else:
                 return or_ctx
-    # 7. Local server before hardcoded defaults — ``Hermes-3-Llama-3.1-70B`` matches ``llama``
+    # 7. Local server before hardcoded defaults — ``AkramCode-3-Llama-3.1-70B`` matches ``llama``
     # (131072) even when vLLM runs at a lower ``--max-model-len``.
     local_ctx = _probe_local_context_length(model, base_url, api_key, provider) if base_url and is_local_endpoint(base_url) else None
     if local_ctx:

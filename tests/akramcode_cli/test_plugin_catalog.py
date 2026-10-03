@@ -8,7 +8,7 @@ import os
 
 import pytest
 
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from akramcode_cli import plugin_catalog as pc
 
@@ -144,7 +144,7 @@ def _fresh_cache(tmp_path, monkeypatch, doc: dict):
 
 
 def test_newer_in_tree_pin_outranks_a_fresh_live_cache(tmp_path, monkeypatch):
-    """Right after `hermes update` bumps an in-tree pin, a live cache fetched BEFORE the bump must not
+    """Right after `akramcode update` bumps an in-tree pin, a live cache fetched BEFORE the bump must not
     re-install the old sha: for the same entry the newer catalog wins (checkout catalog commit time vs
     the doc's generated_at). Live-only entries survive; an older checkout still defers to the doc."""
     old, new = SHA, "a" * 40
@@ -202,7 +202,7 @@ def test_curated_fields_the_published_doc_lacks_come_from_the_checkout(tmp_path,
 
 def test_in_tree_catalog_time_does_not_lazy_fetch_on_treeless_clones(tmp_path, monkeypatch):
     """``in_tree_catalog_time`` dates the checkout with a pathspec'd ``git log``; the pathspec makes git
-    open every commit's tree. On a treeless (``tree:0``) partial clone — the layout ``hermes update``
+    open every commit's tree. On a treeless (``tree:0``) partial clone — the layout ``akramcode update``
     produces — none of those trees exist locally, so an unrestricted probe lazy-fetches each one against
     the remote: measured 40-80 s per inventory request, past the desktop's 30s RPC limit (#125683).
     The probe must scope ``GIT_NO_LAZY_FETCH`` to itself so missing objects fail fast into the
@@ -246,7 +246,7 @@ def test_in_tree_catalog_time_does_not_lazy_fetch_on_treeless_clones(tmp_path, m
 
 def test_treeless_checkout_still_outranks_a_doc_fetched_before_the_bump(tmp_path, monkeypatch):
     """On the treeless layout the history probe fails fast, and ``None`` would feed the frozen-copy
-    rule that lets the live doc win — re-pinning the old sha on exactly the checkouts ``hermes
+    rule that lets the live doc win — re-pinning the old sha on exactly the checkouts ``akramcode
     update`` just bumped. The checked-out files' mtime must stand in for the unreadable commit time
     (fresh checkout ⇒ in-tree pin wins; catalog files older than the doc ⇒ live pin wins), with no
     tree lazy-fetch anywhere (#125716 review)."""

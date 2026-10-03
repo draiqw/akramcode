@@ -59,15 +59,15 @@ def _free_tier_state() -> dict:
 def _account_state() -> dict:
     return {
         "auth_method": "oauth_device_code",
-        "access_token": _jwt(client_id="hermes-cli", account_tier="standard"),
+        "access_token": _jwt(client_id="akramcode-cli", account_tier="standard"),
         "refresh_token": "refresh-status",
         "expires_at": "2999-01-01T00:00:00+00:00",
     }
 
 @pytest.fixture(autouse=True)
 def isolated_auth_store(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
-    monkeypatch.setenv("HERMES_GUEST_ONBOARDING", "1")
+    monkeypatch.setenv("AKRAMCODE_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
+    monkeypatch.setenv("AKRAMCODE_GUEST_ONBOARDING", "1")
 
 @pytest.mark.asyncio
 async def test_status_names_the_free_tier_and_the_slash_command_when_the_free_tier_carries_inference(

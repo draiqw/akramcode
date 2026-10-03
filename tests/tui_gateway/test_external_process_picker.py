@@ -1,8 +1,8 @@
 """A user-installed ``external_process`` provider must survive shared picker discovery and native selection.
 
-Drives a fake process profile (registered like a ``$HERMES_HOME/plugins/<name>`` model-provider plugin
+Drives a fake process profile (registered like a ``$AKRAMCODE_HOME/plugins/<name>`` model-provider plugin
 would) through ``list_available_providers``, ``provider_model_ids``, the TUI/Desktop ``model.options``
-RPC, the ``hermes model`` setup picker and a session-scoped ``config.set model`` switch.
+RPC, the ``akramcode model`` setup picker and a session-scoped ``config.set model`` switch.
 """
 import shutil
 import sys
@@ -31,9 +31,9 @@ class _FakeProcessProfile(ProviderProfile):
 def picker_env(monkeypatch, tmp_path):
     # Real registries/config/runtime resolution, isolated from the user's home.
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    home = tmp_path / "hermes"
+    home = tmp_path / "akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     profile = _FakeProcessProfile(
         name="fake-process-provider", display_name="Fake Process Provider", auth_type="external_process",
         api_mode="chat_completions", base_url="process://fake-process-provider", process_command="fake-process-cli",

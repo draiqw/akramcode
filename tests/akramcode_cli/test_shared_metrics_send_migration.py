@@ -2,7 +2,7 @@
 
 The store schema version must NOT move when these columns are added: the
 existing loader raises on any version it does not recognise, so bumping it
-would hard-fail an older Hermes (a second profile on an older build, or a
+would hard-fail an older AkramCode (a second profile on an older build, or a
 rollback) against the same database file.
 """
 
@@ -112,7 +112,7 @@ class TestUpgradeFromPreSendDatabase:
                 CREATE TABLE counter_aggregates (
                     period_start TEXT NOT NULL,
                     metric_name TEXT NOT NULL,
-                    hermes_version TEXT NOT NULL,
+                    akramcode_version TEXT NOT NULL,
                     os_family TEXT NOT NULL,
                     architecture TEXT NOT NULL,
                     install_method TEXT NOT NULL,
@@ -120,7 +120,7 @@ class TestUpgradeFromPreSendDatabase:
                     value INTEGER NOT NULL,
                     packaged_value INTEGER NOT NULL,
                     PRIMARY KEY (
-                        period_start, metric_name, hermes_version, os_family,
+                        period_start, metric_name, akramcode_version, os_family,
                         architecture, install_method, dimensions_json
                     )
                 )

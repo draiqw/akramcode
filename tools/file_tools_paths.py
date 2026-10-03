@@ -60,7 +60,7 @@ def _terminal_env_type_for_task(task_id: str = "default") -> str:
         if env is not None:
             name = env.__class__.__name__.lower()
             hint = next((h for h in _ENV_CLASS_NAME_HINTS if h in name), None)
-            stamped = getattr(env, "_hermes_backend_name", None)
+            stamped = getattr(env, "_akramcode_backend_name", None)
             if hint or (isinstance(stamped, str) and stamped):
                 return hint or stamped
         return str(_get_env_config().get("env_type") or os.getenv("TERMINAL_ENV") or "local").lower()
@@ -171,7 +171,7 @@ def _anchor(text: str, base, container_paths: bool) -> Path | PurePosixPath:
 
 def _ssh_remote_anchor(task_id: str) -> str:
     """Working directory on the SSH target, read RAW: ``_authoritative_workspace_root``
-    expands ``~`` on the Hermes host, which names a directory the remote does not have.
+    expands ``~`` on the AkramCode host, which names a directory the remote does not have.
 
     Same precedence (session record, registered override, ``$TERMINAL_CWD``); a
     value that is neither ``~``-prefixed nor POSIX-absolute (a Windows or relative
@@ -220,7 +220,7 @@ def _ssh_remote_home(task_id: str) -> str | None:
 
 
 def _resolve_ssh_path(filepath: str, task_id: str) -> PurePosixPath:
-    """Resolve *filepath* in the SSH target's namespace, never via the Hermes host
+    """Resolve *filepath* in the SSH target's namespace, never via the AkramCode host
     (``Path.resolve()`` and ``get_subprocess_home()`` both name host directories).
 
     ``~`` becomes the remote home once the live environment has detected it, so the

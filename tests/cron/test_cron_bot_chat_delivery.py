@@ -123,12 +123,12 @@ def test_deliver_runs_canonical_bot_chat_lane():
         return _completed()
 
     with mock.patch.object(sched_delivery, "_run_bot_chat_turn", side_effect=fake_run), \
-         mock.patch.object(sched_delivery.shutil, "which", return_value="/usr/bin/hermes"):
+         mock.patch.object(sched_delivery.shutil, "which", return_value="/usr/bin/akramcode"):
         err = _deliver_to_bot_chat({"id": "j1", "name": "Daily digest"}, "the output", "")
 
     assert err is None
     argv = calls["argv"]
-    # The running install's interpreter, not whatever `hermes` PATH names (same order as /update).
+    # The running install's interpreter, not whatever `akramcode` PATH names (same order as /update).
     assert argv[:3] == [sys.executable, "-m", "akramcode_cli.main"]
     assert argv[3:5] == ["-p", "default"]  # do not follow active_profile
     assert "chat" in argv
@@ -150,7 +150,7 @@ def test_deliver_failure_reports_both_streams_labeled():
     with mock.patch.object(
         sched_delivery, "_run_bot_chat_turn",
         return_value=_completed(returncode=1, stdout="banner out", stderr="boom-err"),
-    ), mock.patch.object(sched_delivery.shutil, "which", return_value="/usr/bin/hermes"):
+    ), mock.patch.object(sched_delivery.shutil, "which", return_value="/usr/bin/akramcode"):
         err = _deliver_to_bot_chat({"id": "j1", "name": "n"}, "out", "")
     assert err is not None
     assert "stderr: boom-err" in err
@@ -166,7 +166,7 @@ def test_deliver_failure_banner_only_stdout_names_exit_code_not_banner():
     with mock.patch.object(
         sched_delivery, "_run_bot_chat_turn",
         return_value=_completed(returncode=1, stdout=banner, stderr=""),
-    ), mock.patch.object(sched_delivery.shutil, "which", return_value="/usr/bin/hermes"):
+    ), mock.patch.object(sched_delivery.shutil, "which", return_value="/usr/bin/akramcode"):
         err = _deliver_to_bot_chat({"id": "j1", "name": "n"}, "out", "")
     assert err is not None
     assert "exit code 1" in err
@@ -183,7 +183,7 @@ def test_deliver_failure_persisted_stdout_tail_is_short_and_redacted():
     with mock.patch.object(
         sched_delivery, "_run_bot_chat_turn",
         return_value=_completed(returncode=1, stdout=answer, stderr="boom-err"),
-    ), mock.patch.object(sched_delivery.shutil, "which", return_value="/usr/bin/hermes"):
+    ), mock.patch.object(sched_delivery.shutil, "which", return_value="/usr/bin/akramcode"):
         err = _deliver_to_bot_chat({"id": "j1", "name": "n"}, "out", "")
     assert err is not None
     stdout_part = err.split("stdout: ", 1)[1]
@@ -194,8 +194,8 @@ def test_deliver_failure_persisted_stdout_tail_is_short_and_redacted():
 def test_deliver_timeout_returns_error_string():
     with mock.patch.object(
         sched_delivery, "_run_bot_chat_turn",
-        side_effect=subprocess.TimeoutExpired(cmd="hermes", timeout=600),
-    ), mock.patch.object(sched_delivery.shutil, "which", return_value="/usr/bin/hermes"):
+        side_effect=subprocess.TimeoutExpired(cmd="akramcode", timeout=600),
+    ), mock.patch.object(sched_delivery.shutil, "which", return_value="/usr/bin/akramcode"):
         err = _deliver_to_bot_chat({"id": "j1", "name": "n"}, "out", "")
     assert err is not None
     assert "timed out" in err
@@ -212,7 +212,7 @@ def test_deliver_message_carries_cron_attribution(tmp_path):
         return _completed()
 
     with mock.patch.object(sched_delivery, "_run_bot_chat_turn", side_effect=fake_run), \
-         mock.patch.object(sched_delivery.shutil, "which", return_value="/usr/bin/hermes"):
+         mock.patch.object(sched_delivery.shutil, "which", return_value="/usr/bin/akramcode"):
         _deliver_to_bot_chat({"id": "j1", "name": "Daily digest"}, "the payload", "")
 
     assert 'Cronjob "Daily digest" output' in captured["message"]
@@ -277,7 +277,7 @@ def test_delivery_child_runs_in_the_target_home_not_the_schedulers_cwd(tmp_path,
         sys.stdout.write(os.getcwd())
         write_turn_report(os.environ.pop(TURN_REPORT_FILE_ENV), exit_code=0)
         """)
-    env = {**_child_env(), "HERMES_HOME": str(home), TURN_REPORT_FILE_ENV: str(report)}
+    env = {**_child_env(), "AKRAMCODE_HOME": str(home), TURN_REPORT_FILE_ENV: str(report)}
     result = sched_delivery._run_bot_chat_turn([sys.executable, "-c", child], env, str(report), timeout=30)
     assert result.returncode == 0, result.stderr
     assert result.stdout.strip() == os.path.realpath(home)
@@ -309,7 +309,7 @@ def test_bot_chat_turn_failure_tail_decodes_lossily(tmp_path):
 @pytest.mark.platforms("windows")
 def test_bot_chat_turn_roundtrips_accented_utf8_reply(tmp_path):
     """The delivery child writes UTF-8 unconditionally — akramcode_cli reconfigures its
-    own streams via akram_core.hermes_bootstrap on Windows even under PYTHONIOENCODING=cp1252 —
+    own streams via akram_core.akramcode_bootstrap on Windows even under PYTHONIOENCODING=cp1252 —
     while the gateway parent there is NOT started in UTF-8 mode, so text=True alone
     decoded the pipes with the ANSI code page: the reply came back mojibake'd, or the
     reader thread died on bytes undefined in cp1252 and the reply was silently lost

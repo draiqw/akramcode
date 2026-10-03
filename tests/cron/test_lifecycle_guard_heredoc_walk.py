@@ -33,7 +33,7 @@ def test_prefixed_inert_heredoc_body_path_not_walked_as_script(tmp_path):
 
 
 def test_allowlisted_name_function_heredoc_stays_visible(tmp_path):
-    command = "python3() { bash; }; python3 <<'PY'\nhermes gateway restart\nPY"
+    command = "python3() { bash; }; python3 <<'PY'\nakramcode gateway restart\nPY"
     assert guard(command, cwd=str(tmp_path)) is True
 
 
@@ -47,7 +47,7 @@ def test_inert_heredoc_body_script_path_still_read(tmp_path):
     """Masking hides the body from the *executed* view only: a lifecycle script named inside a
     Python body is still handed to ``os.system`` at runtime, so its contents must still be read."""
     script = tmp_path / "restart.sh"
-    script.write_text("#!/bin/sh\nhermes gateway restart\n", encoding="utf-8")
+    script.write_text("#!/bin/sh\nakramcode gateway restart\n", encoding="utf-8")
     command = f"python3 - <<'PY'\nimport os\nos.system('{script}')\nPY"
     assert guard(command, cwd=str(tmp_path)) is True
 
@@ -91,7 +91,7 @@ def test_mentioned_script_with_lifecycle_command_still_blocks(tmp_path):
     import cron.lifecycle_guard as lifecycle_guard
 
     script = tmp_path / "restart.sh"
-    script.write_text("#!/bin/sh\nhermes gateway restart\n", encoding="utf-8")
+    script.write_text("#!/bin/sh\nakramcode gateway restart\n", encoding="utf-8")
     command = f"cd {tmp_path} && python3 - <<'PY'\nimport os\nos.system('{script}')\nPY"
     assert lifecycle_guard.scan_gateway_lifecycle(command, cwd=str(tmp_path)) == (True, None)
 

@@ -20,14 +20,14 @@ from akramcode_cli import proxy_cli
 
 
 @pytest.fixture
-def hermes_home(tmp_path, monkeypatch):
-    """Point HERMES_HOME at a temp dir so the wizard doesn't touch the
+def akramcode_home(tmp_path, monkeypatch):
+    """Point AKRAMCODE_HOME at a temp dir so the wizard doesn't touch the
     operator's real config.  Also blanks any provider env vars so we
     don't accidentally read a real key."""
 
-    home = tmp_path / "hermes"
+    home = tmp_path / "akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     for key in list(os.environ):
         if key.endswith("_API_KEY") or key in (
             "BWS_ACCESS_TOKEN", "ANTHROPIC_API_KEY",
@@ -57,7 +57,7 @@ def _args(**overrides):
 # ---------------------------------------------------------------------------
 
 
-def test_cmd_install_failure_returns_1(hermes_home, monkeypatch):
+def test_cmd_install_failure_returns_1(akramcode_home, monkeypatch):
     def boom(**kw):
         raise RuntimeError("download failed")
     monkeypatch.setattr(ip, "install_iron_proxy", boom)
@@ -70,7 +70,7 @@ def test_cmd_install_failure_returns_1(hermes_home, monkeypatch):
 # ---------------------------------------------------------------------------
 
 
-def test_cmd_setup_from_bitwarden_refuses_on_empty_vault(hermes_home, monkeypatch):
+def test_cmd_setup_from_bitwarden_refuses_on_empty_vault(akramcode_home, monkeypatch):
     """If BW returns {} (empty vault / scoped wrong / unreachable), fail
     loud rather than silently writing credential_source: bitwarden."""
 
@@ -85,11 +85,11 @@ def test_cmd_setup_from_bitwarden_refuses_on_empty_vault(hermes_home, monkeypatc
     save_config(cfg)
     monkeypatch.setenv("BWS_ACCESS_TOKEN", "bwsk-test-token")
 
-    monkeypatch.setattr(ip, "find_iron_proxy", lambda **kw: hermes_home / "iron-proxy")
+    monkeypatch.setattr(ip, "find_iron_proxy", lambda **kw: akramcode_home / "iron-proxy")
     monkeypatch.setattr(ip, "iron_proxy_version", lambda b: "test")
     monkeypatch.setattr(
         ip, "ensure_ca_cert",
-        lambda **kw: (hermes_home / "ca.crt", hermes_home / "ca.key"),
+        lambda **kw: (akramcode_home / "ca.crt", akramcode_home / "ca.key"),
     )
 
     # Mock fetch_bitwarden_secrets to return an empty dict (empty vault).
@@ -104,7 +104,7 @@ def test_cmd_setup_from_bitwarden_refuses_on_empty_vault(hermes_home, monkeypatc
 
 
 def test_cmd_start_passes_bitwarden_refresh_flag_when_credential_source_is_bitwarden(
-    hermes_home, monkeypatch,
+    akramcode_home, monkeypatch,
 ):
     """When credential_source=bitwarden, cmd_start must wire
     refresh_secrets_from_bitwarden=True into start_proxy.  That's what
@@ -148,7 +148,7 @@ def test_cmd_start_passes_bitwarden_refresh_flag_when_credential_source_is_bitwa
 
 
 def test_cmd_disable_uses_public_status_pid_not_private_read_pid(
-    hermes_home, monkeypatch,
+    akramcode_home, monkeypatch,
 ):
     """cmd_disable must read status.pid (which incorporates the _pid_alive
     check) — NOT ip._read_pid() directly (which would fire a spurious
@@ -197,7 +197,7 @@ def test_cmd_disable_uses_public_status_pid_not_private_read_pid(
 # ---------------------------------------------------------------------------
 
 
-def test_cmd_start_refuses_when_bitwarden_mode_but_disabled(hermes_home, monkeypatch):
+def test_cmd_start_refuses_when_bitwarden_mode_but_disabled(akramcode_home, monkeypatch):
     """config keeps credential_source: bitwarden but secrets.bitwarden.enabled
     later flips to false — cmd_start must refuse, not silently start on
     host env (the silent-degrade class strict mode is meant to close)."""
@@ -218,14 +218,14 @@ def test_cmd_start_refuses_when_bitwarden_mode_but_disabled(hermes_home, monkeyp
     assert rc == 1
 
 
-def test_cmd_setup_audit_log_failure_is_warning_not_abort(hermes_home, monkeypatch):
+def test_cmd_setup_audit_log_failure_is_warning_not_abort(akramcode_home, monkeypatch):
     """On the pinned v0.39 the daemon never writes audit.log, so a
     pre-create failure must not abort the wizard."""
 
-    monkeypatch.setattr(ip, "find_iron_proxy", lambda **kw: hermes_home / "iron-proxy")
+    monkeypatch.setattr(ip, "find_iron_proxy", lambda **kw: akramcode_home / "iron-proxy")
     monkeypatch.setattr(ip, "discover_provider_mappings", lambda **kw: [
         ip.TokenMapping(
-            proxy_token="hermes-proxy-deadbeef",
+            proxy_token="akramcode-proxy-deadbeef",
             real_env_name="OPENROUTER_API_KEY",
             upstream_hosts=("openrouter.ai",),
         ),

@@ -212,9 +212,9 @@ class GatewayKanbanWatchersMixin:
         except Exception:
             logger.warning("kanban dispatcher: config loader unavailable; disabled")
             return None
-        env_override = os.environ.get("HERMES_KANBAN_DISPATCH_IN_GATEWAY", "").strip().lower()
+        env_override = os.environ.get("AKRAMCODE_KANBAN_DISPATCH_IN_GATEWAY", "").strip().lower()
         if env_override in {"0", "false", "no", "off"}:
-            logger.info("kanban dispatcher: disabled via HERMES_KANBAN_DISPATCH_IN_GATEWAY env")
+            logger.info("kanban dispatcher: disabled via AKRAMCODE_KANBAN_DISPATCH_IN_GATEWAY env")
             return None
         try:
             cfg = _load_config()
@@ -252,7 +252,7 @@ class GatewayKanbanWatchersMixin:
         """Embedded kanban dispatcher — one tick every `dispatch_interval_seconds`.
 
         Gated by `kanban.dispatch_in_gateway` (default True); when false the
-        loop exits and an external `hermes kanban daemon` is expected. Each
+        loop exits and an external `akramcode kanban daemon` is expected. Each
         tick runs :func:`kanban_db_dispatch.dispatch_once` in a thread; one tick's
         failure never stops the next. Shutdown: ``self._running`` is checked
         between ticks and the in-flight ``to_thread`` returns on its own.
@@ -288,7 +288,7 @@ class GatewayKanbanWatchersMixin:
                 logger.exception("kanban dispatcher: zombie reaper failed")
 
             try:
-                # Emergency stop (`hermes pause`): no auto-decompose or
+                # Emergency stop (`akramcode pause`): no auto-decompose or
                 # dispatch while paused; running workers finish naturally.
                 if not _kanban_dispatch_allowed():
                     bad_ticks = 0
@@ -310,7 +310,7 @@ class GatewayKanbanWatchersMixin:
                         "kanban dispatcher stuck: ready queue non-empty for "
                         "%d consecutive ticks but 0 workers spawned.%s Check "
                         "profile health (venv, PATH, credentials) and "
-                        "`hermes kanban list --status ready`.",
+                        "`akramcode kanban list --status ready`.",
                         bad_ticks, f" Last tick held back: {held}." if held else "",
                     )
                     last_warn_at = now

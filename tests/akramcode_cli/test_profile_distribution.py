@@ -31,7 +31,7 @@ from akramcode_cli.profile_distribution import (
     _looks_like_git_url,
     _parse_semver,
     _stage_source,
-    check_hermes_requires,
+    check_akramcode_requires,
     describe_distribution,
     install_distribution,
     plan_install,
@@ -49,9 +49,9 @@ from akramcode_cli.profile_distribution import (
 @pytest.fixture()
 def profile_env(tmp_path, monkeypatch):
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    default_home = tmp_path / ".hermes"
+    default_home = tmp_path / ".akramcode"
     default_home.mkdir(exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(default_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(default_home))
     return tmp_path
 
 
@@ -101,7 +101,7 @@ class TestManifestParsing:
             "name: telem\n"
             "version: 1.2.3\n"
             "description: Telem monitor\n"
-            "hermes_requires: '>=0.12.0'\n"
+            "akramcode_requires: '>=0.12.0'\n"
             "author: Kyle\n"
             "license: MIT\n"
             "env_requires:\n"
@@ -168,10 +168,10 @@ class TestVersionRequires:
     ])
     def test_check_matrix(self, spec, cur, ok):
         if ok:
-            check_hermes_requires(spec, cur)
+            check_akramcode_requires(spec, cur)
         else:
-            with pytest.raises(DistributionError, match="requires Hermes"):
-                check_hermes_requires(spec, cur)
+            with pytest.raises(DistributionError, match="requires AkramCode"):
+                check_akramcode_requires(spec, cur)
 
     def test_parse_semver_handles_prerelease(self):
         assert _parse_semver("0.12.0-rc1") == (0, 12, 0)
@@ -403,8 +403,8 @@ class TestInstall:
             plan_install(str(bogus), tmp_path / "work", override_name="x")
 
 
-    def test_install_enforces_hermes_requires(self, profile_env, monkeypatch):
-        # Pin current Hermes version to something well below the requirement
+    def test_install_enforces_akramcode_requires(self, profile_env, monkeypatch):
+        # Pin current AkramCode version to something well below the requirement
         monkeypatch.setattr(
             "akramcode_cli.version_info.get_version_info",
             lambda: SimpleNamespace(base_version="0.1.0"),
@@ -413,10 +413,10 @@ class TestInstall:
         mf = DistributionManifest(
             name="future",
             version="1.0.0",
-            hermes_requires=">=99.0.0",
+            akramcode_requires=">=99.0.0",
         )
         staged = _make_staging_dir(profile_env, "future", manifest=mf)
-        with pytest.raises(DistributionError, match="requires Hermes"):
+        with pytest.raises(DistributionError, match="requires AkramCode"):
             install_distribution(str(staged), name="future")
 
 
@@ -477,7 +477,7 @@ class TestUpdate:
 
     def test_an_owned_category_keeps_skills_the_installer_added_to_it(self, profile_env):
         """``distribution_owned: [skills/research/]`` owns the author's research skills, not the
-        category: ``hermes skills install`` and agent-created skills land in ``skills/<category>/``
+        category: ``akramcode skills install`` and agent-created skills land in ``skills/<category>/``
         too. The category was replaced wholesale, deleting them (the #25120 loss, still live for
         the explicit form the docs show)."""
         staged, plan = self._owned_category(profile_env, "rb")
@@ -691,7 +691,7 @@ class TestDescribe:
 
 
     def test_describe_missing_profile_raises(self, profile_env):
-        with pytest.raises(DistributionError, match="No profile named .*hermes profile list"):
+        with pytest.raises(DistributionError, match="No profile named .*akramcode profile list"):
             describe_distribution("nonexistent")
 
 

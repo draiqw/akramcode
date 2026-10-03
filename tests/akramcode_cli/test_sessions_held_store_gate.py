@@ -1,4 +1,4 @@
-"""`hermes sessions optimize|optimize-storage|prune` refuse while another process holds state.db (#110054).
+"""`akramcode sessions optimize|optimize-storage|prune` refuse while another process holds state.db (#110054).
 
 Running the storage rewrite underneath a fleet of live gateways put every agent into the retired-WAL
 refusal; the command now runs the same fail-closed holder scan doctor/repair use, names each holder as
@@ -83,7 +83,7 @@ def test_store_rewrites_refuse_and_name_the_holder_until_forced(action, state_db
     assert sessions_cmd.cmd_sessions(_args(action, force=False)) == 1
     out = capsys.readouterr().out
     assert f"PID {foreign_holder.pid} (" in out
-    assert f"Refusing `hermes sessions {action}`" in out and "--force" in out
+    assert f"Refusing `akramcode sessions {action}`" in out and "--force" in out
     # The gate scans the store the command actually opened, not some other resolver's file: no
     # gated action can point the command at another database, so the default resolver IS the
     # operated-on path, and the refusal names it. (Offline commands such as set-journal-mode
@@ -107,7 +107,7 @@ def test_prune_preview_passes_the_delete_waits_for_a_quiet_store(state_db, forei
     prune_preview.dry_run = False
     prune_preview.yes = True
     assert sessions_cmd.cmd_sessions(prune_preview) == 1
-    assert "Refusing `hermes sessions prune`" in capsys.readouterr().out
+    assert "Refusing `akramcode sessions prune`" in capsys.readouterr().out
     # Control: once the holder exits the same command runs.
     foreign_holder.stdin.close()
     foreign_holder.wait(timeout=10)

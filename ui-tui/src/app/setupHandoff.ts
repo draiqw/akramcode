@@ -1,4 +1,4 @@
-import type { RunExternalProcess } from '@hermes/ink'
+import type { RunExternalProcess } from '@akramcode/ink'
 
 import type { SetupStatusResponse } from '../gatewayTypes.js'
 import { t } from '../i18n/runtime.js'

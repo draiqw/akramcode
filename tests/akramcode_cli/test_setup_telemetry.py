@@ -26,7 +26,7 @@ def test_setup_telemetry_enables_shared_metrics(monkeypatch):
 
 
 def test_disabling_collection_closes_the_send_consent_window(monkeypatch, tmp_path):
-    """`hermes tools` -> disable shared metrics must withdraw send consent.
+    """`akramcode tools` -> disable shared metrics must withdraw send consent.
 
     The not-enabled branch returned early without recording anything, so the
     consent window stayed open and re-enabling later would release every
@@ -90,7 +90,7 @@ def test_no_answer_survives_the_callers_later_config_save(monkeypatch):
     monkeypatch.setattr("akramcode_cli.setup.prompt_yes_no", lambda _question, default: False)
     config = load_config()
     setup_telemetry(config)
-    save_config(config)  # what the wizard and `hermes tools` do afterwards
+    save_config(config)  # what the wizard and `akramcode tools` do afterwards
 
     assert read_raw_config()["telemetry"]["shared_metrics"] == {"enabled": False, "send": False}
 
@@ -103,8 +103,8 @@ def test_chat_offer_asks_an_undecided_profile_once(monkeypatch):
     monkeypatch.setattr("akramcode_cli.curses_ui.curses_radiolist", lambda *a, **k: asked.append(a) or 1)
     monkeypatch.setattr("sys.stdin.isatty", lambda: True)
     monkeypatch.setattr("sys.stdout.isatty", lambda: True)
-    monkeypatch.delenv("HERMES_DESKTOP", raising=False)
-    monkeypatch.delenv("HERMES_NONINTERACTIVE", raising=False)
+    monkeypatch.delenv("AKRAMCODE_DESKTOP", raising=False)
+    monkeypatch.delenv("AKRAMCODE_NONINTERACTIVE", raising=False)
 
     consent.offer_consent_before_chat(argparse.Namespace(query="hi"))  # no person to ask
     assert asked == []

@@ -59,7 +59,7 @@ def render_sessions_export(sessions: Iterable[Dict[str, Any]], *, fmt: str = "js
         headings = (lambda s: f"User prompts for session {_heading_text(_session_id(s))}",
                     lambda s: f"Session {_heading_text(_session_id(s))}")
     else:
-        multi_title, append_body = "Hermes sessions export", _append_session_messages
+        multi_title, append_body = "AkramCode sessions export", _append_session_messages
         headings = (lambda s: f"Session: {_heading_text(_session_title_or_id(s))}",) * 2
     lines: List[str] = []
     single = len(session_list) == 1
@@ -221,7 +221,7 @@ Formats:
 
 Options:
   filename   optional output name/path (default: auto-named;
-             CLI saves under ~/.hermes/sessions/saved/)
+             CLI saves under ~/.akramcode/sessions/saved/)
   redact     scrub API keys, tokens, and credentials before writing
 
 Examples:
@@ -265,4 +265,4 @@ def render_session_for_save(session: Dict[str, Any], fmt: str) -> str:
 def default_save_filename(session_id: str, fmt: str) -> str:
     """Default filename for a /save export of the given session."""
     safe_id = "".join(ch for ch in str(session_id) if ch.isalnum() or ch in ("-", "_")) or "session"
-    return f"hermes_session_{safe_id}.{fmt}"
+    return f"akramcode_session_{safe_id}.{fmt}"

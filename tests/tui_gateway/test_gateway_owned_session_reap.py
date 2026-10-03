@@ -46,10 +46,10 @@ def _make_real_session(tmp_path, monkeypatch, *, source, session_id):
     from akramcode_state import SessionDB
     from run_agent import AIAgent
 
-    hermes_home = tmp_path / "hermes_home"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    db_path = hermes_home / "state.db"
+    akramcode_home = tmp_path / "akramcode_home"
+    akramcode_home.mkdir()
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
+    db_path = akramcode_home / "state.db"
     db = SessionDB(db_path=db_path)
     db.create_session(session_id, source=source)
 
@@ -66,7 +66,7 @@ def _make_real_session(tmp_path, monkeypatch, *, source, session_id):
 
     session = _make_session(session_id)
     session["agent"] = agent
-    session["profile_home"] = str(hermes_home)
+    session["profile_home"] = str(akramcode_home)
     session["source"] = source
     return db_path, session, agent
 

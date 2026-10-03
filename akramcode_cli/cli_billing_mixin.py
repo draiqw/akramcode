@@ -1,4 +1,4 @@
-"""Billing and subscription handlers for the interactive CLI (mixed into ``HermesCLI``).
+"""Billing and subscription handlers for the interactive CLI (mixed into ``AkramCodeCLI``).
 cli.py symbols are imported LAZILY inside methods — never at module load (import cycle).
 
 User-facing copy is looked up through ``agent.i18n.t`` at call time (never at import — the

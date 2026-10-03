@@ -122,7 +122,7 @@ def _warn_anchorless_thread_sub_once(sub: dict, platform: str) -> None:
     _ANCHORLESS_WARNED.add(key)
     logger.warning(
         "kanban notifier: subscription for %s on %s thread %s has no parent_chat_id anchor and matched no "
-        "profile route; it will not be delivered. Re-subscribe with `hermes kanban notify-subscribe ... "
+        "profile route; it will not be delivered. Re-subscribe with `akramcode kanban notify-subscribe ... "
         "--parent-chat-id <channel id> [--guild-id <guild id>]`.",
         sub.get("task_id"), platform, sub.get("chat_id"),
     )
@@ -187,7 +187,7 @@ def _adapter_for_subscription(runner: Any, platform: Any, sub: dict, owner_profi
                     sub, platform,
                     "kanban notifier: subscription for %s on %s chat %s is stamped with profile %s but a "
                     "profile_routes entry pins that chat to profile %s; it will not be delivered. "
-                    "Re-subscribe with `hermes kanban notify-subscribe ... --notifier-profile %s`.",
+                    "Re-subscribe with `akramcode kanban notify-subscribe ... --notifier-profile %s`.",
                     profile, route.profile, route.profile)
                 return None
             from gateway.run import _multiplex_profile_homes
@@ -243,7 +243,7 @@ class _Collector:
             logger.debug("kanban notifier: no connected adapters; skipping tick")
             return self.deliveries
         # Poll each resolved DB path once: several slugs can map to one DB when
-        # HERMES_KANBAN_DB pins the board path.
+        # AKRAMCODE_KANBAN_DB pins the board path.
         kb = self.kb
         seen_db_paths: set[str] = set()
         for board_meta in _list_boards(kb):
@@ -595,7 +595,7 @@ class _KanbanNotification:
     def _served_wake_profile(self) -> Optional[str]:
         """The subscription's profile when THIS gateway is a multiplexer serving it, else ``None``.
 
-        ``None`` keeps the historical path: a standalone ``hermes -p <name>`` gateway owns its own
+        ``None`` keeps the historical path: a standalone ``akramcode -p <name>`` gateway owns its own
         listener and key, so its api_server wakes keep using the HTTP self-post.
         """
         if not self.sub_profile:

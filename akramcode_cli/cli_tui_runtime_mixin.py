@@ -1,6 +1,6 @@
 """Classic-TUI run loop phases: input processing, after-turn bookkeeping, startup banner/prewarm/maintenance, prompt_toolkit application build, signal handlers and shutdown.
 
-Mixin split out of ``cli.py``; bound onto ``HermesCLI`` via the MRO.
+Mixin split out of ``cli.py``; bound onto ``AkramCodeCLI`` via the MRO.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from agent.i18n import t
 from agent.interrupt_compat import request_hard_interrupt
 from agent.pet import render as pet_render
 from contextlib import suppress
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 from prompt_toolkit.application import Application
 from rich.markup import escape as _escape
 
@@ -298,7 +298,7 @@ class CLITuiRuntimeMixin:
         # Pre-import the agent runtime (~1.5s: run_agent + OpenAI SDK) off-thread; the import
         # lock makes an early submit block on the remaining work rather than redo it.
         # Skipped when Termux defers agent startup on purpose.
-        if os.environ.get("HERMES_DEFER_AGENT_STARTUP") != "1":
+        if os.environ.get("AKRAMCODE_DEFER_AGENT_STARTUP") != "1":
             def _prewarm_agent_runtime() -> None:
                 try:
                     import run_agent  # noqa: F401  (imports model_tools + tool registry)
@@ -313,7 +313,7 @@ class CLITuiRuntimeMixin:
             # The redactor snapshots its state at import time so any toggle now won't affect the running
             # process — we just want the operator to see that they're running without the safety net. See
             # #17691.
-            _redact_raw = os.getenv("HERMES_REDACT_SECRETS", "true")
+            _redact_raw = os.getenv("AKRAMCODE_REDACT_SECRETS", "true")
             if _redact_raw.lower() not in {"1", "true", "yes", "on"}:
                 self._console_print(
                     f"[bold red]{t('cli.tui.redaction_disabled_title')}[/] "
@@ -492,7 +492,7 @@ class CLITuiRuntimeMixin:
                 # /exit --delete: remove transcripts + SQLite history.
                 try:
                     _sid = self.agent.session_id
-                    if self._session_db.delete_session(_sid, sessions_dir=get_hermes_home() / "sessions"):
+                    if self._session_db.delete_session(_sid, sessions_dir=get_akramcode_home() / "sessions"):
                         _cprint(f"  {_DIM}{t('cli.tui.session_deleted', session_id=_escape(_sid))}{_RST}")
                     else:
                         _cprint(f"  {_DIM}{t('cli.tui.session_delete_missing', session_id=_escape(_sid))}{_RST}")

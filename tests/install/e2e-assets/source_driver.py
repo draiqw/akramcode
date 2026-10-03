@@ -18,7 +18,7 @@ def desktop_outputs(root: Path) -> list[Path]:
     desktop = root / "apps/desktop"
     return [path for pattern in (
         "release/*/resources/app.asar.unpacked/dist",
-        "release/mac*/Hermes.app/Contents/Resources/app.asar.unpacked/dist",
+        "release/mac*/AkramCode.app/Contents/Resources/app.asar.unpacked/dist",
     ) for path in desktop.glob(pattern)]
 
 
@@ -32,8 +32,8 @@ def verify_products(root: Path, desktop: str, node: Path | None = None) -> None:
         if not outputs or not any((out / "index.html").is_file() for out in outputs):
             raise RuntimeError("desktop packaged renderer is missing or incomplete")
         executables = [path for pattern in (
-            "release/*/Hermes.exe", "release/*/Hermes", "release/*/hermes",
-            "release/mac*/Hermes.app/Contents/MacOS/Hermes",
+            "release/*/AkramCode.exe", "release/*/AkramCode", "release/*/akramcode",
+            "release/mac*/AkramCode.app/Contents/MacOS/AkramCode",
         ) for path in app.glob(pattern) if path.is_file() and path.stat().st_size]
         if not executables:
             raise RuntimeError("desktop executable is missing or empty")
@@ -85,7 +85,7 @@ def main() -> None:
     if args.runtime_command:
         probe_pm(root, args.desktop, json.loads(args.runtime_command))
     elif (root / "pm/lock.json").is_file():
-        env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1", HERMES_DISABLE_LAZY_INSTALLS="1")
+        env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1", AKRAMCODE_DISABLE_LAZY_INSTALLS="1")
         result = subprocess.run([str(args.launcher), "--print-runtime-command"],
                                 capture_output=True, text=True, check=True, env=env, timeout=30)
         command = json.loads(result.stdout)

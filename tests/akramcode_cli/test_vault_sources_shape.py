@@ -1,11 +1,11 @@
-"""`hermes vault sources --disable` must not crash on a hand-edited non-dict
+"""`akramcode vault sources --disable` must not crash on a hand-edited non-dict
 ``vault:`` section in config.yaml (the same YAML-shape hazard class
 ``_voice_cfg_dict`` guards for voice.*, #19835): the malformed section is
 coerced to a dict before the opt-out is written."""
 
 from types import SimpleNamespace
 
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from agent.vault_store import VaultStore
 from akramcode_cli.vault import _cmd_sources, vault_command
@@ -23,9 +23,9 @@ def _corrupt_vault(home):
 
 
 def test_sources_disable_tolerates_scalar_vault_section(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     (home / "config.yaml").write_text("vault: true\n")
 
     _cmd_sources(SimpleNamespace(enable=None, disable="bitwarden"))
@@ -37,12 +37,12 @@ def test_sources_disable_tolerates_scalar_vault_section(tmp_path, monkeypatch):
 def test_vault_command_surfaces_corrupt_store_as_clean_error(tmp_path, monkeypatch, capsys):
     """A decryptable-but-malformed vault file surfaces through the VaultError
     contract as a clean error line on every subcommand, not a traceback."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     _corrupt_vault(home)
 
-    vault_command(SimpleNamespace())  # bare `hermes vault` -> _cmd_list
+    vault_command(SimpleNamespace())  # bare `akramcode vault` -> _cmd_list
 
     out = capsys.readouterr().out
     assert "Error" in out

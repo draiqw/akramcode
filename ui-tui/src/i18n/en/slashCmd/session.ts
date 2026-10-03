@@ -169,7 +169,7 @@ export const slashCmdSessionEn = {
       rateLimited: (retrySuffix: string) =>
         `🟡 Too many charges right now${retrySuffix}. This isn't a payment failure.`,
       remoteSpendingDisabled:
-        "Remote spending is off for this account — a billing admin can turn it on from the portal's Hermes Agent page.",
+        "Remote spending is off for this account — a billing admin can turn it on from the portal's AkramCode Agent page.",
       retryIn: (minutes: string) => ` (try again in ~${minutes} min)`,
       revokedByAdmin: 'An admin stopped remote spending for this terminal.',
       revokedByYou: 'You stopped remote spending for this terminal.',

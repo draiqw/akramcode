@@ -112,7 +112,7 @@ def _mark_entitlement_rejected_model(agent, api_error) -> bool:
     )
     agent._buffer_diagnostic_status(
         f"🚫 This account is not entitled to {model} via {provider}; it will be skipped "
-        "until restart. Switch to an entitled model via /model or `hermes model`."
+        "until restart. Switch to an entitled model via /model or `akramcode model`."
     )
     return True
 

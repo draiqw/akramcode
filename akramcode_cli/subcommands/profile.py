@@ -1,4 +1,4 @@
-"""``hermes profile`` subcommand parser."""
+"""``akramcode profile`` subcommand parser."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import Callable
 def build_profile_parser(subparsers, *, cmd_profile: Callable) -> None:
     """Attach the ``profile`` subcommand to ``subparsers``."""
     profile_parser = subparsers.add_parser(
-        "profile", help="Manage profiles — multiple isolated Hermes instances")
+        "profile", help="Manage profiles — multiple isolated AkramCode instances")
     profile_subparsers = profile_parser.add_subparsers(dest="profile_action")
 
     profile_subparsers.add_parser("list", help="List all profiles")
@@ -34,20 +34,20 @@ def build_profile_parser(subparsers, *, cmd_profile: Callable) -> None:
              "multiplexed gateway.")
     profile_create.add_argument(
         "--sync-imports", action="store_true",
-        help="With --clone/--clone-from: also carry over the `hermes import-agent` sync manifest so "
+        help="With --clone/--clone-from: also carry over the `akramcode import-agent` sync manifest so "
              "the new profile stays registered against the same Claude Code / Codex trees "
-             "(`hermes -p <name> import-agent --sync`). Never syncs config from the source profile.")
+             "(`akramcode -p <name> import-agent --sync`). Never syncs config from the source profile.")
     profile_create.add_argument(
         "--no-alias", action="store_true", help="Skip wrapper script creation")
     profile_create.add_argument(
         "--no-skills", action="store_true",
-        help="Create an empty profile with no bundled skills (opts out of `hermes update` skill sync)",
+        help="Create an empty profile with no bundled skills (opts out of `akramcode update` skill sync)",
     )
     profile_create.add_argument(
         "--description", default=None,
         help="One- or two-sentence description of what this profile is good at. "
              "Used by the kanban decomposer to route tasks based on role instead "
-             "of profile name alone. Skip and add later via `hermes profile describe`.")
+             "of profile name alone. Skip and add later via `akramcode profile describe`.")
 
     profile_delete = profile_subparsers.add_parser("delete", help="Delete a profile")
     profile_delete.add_argument("profile_name", help="Profile to delete")
@@ -93,7 +93,7 @@ def build_profile_parser(subparsers, *, cmd_profile: Callable) -> None:
     profile_purge = profile_subparsers.add_parser(
         "purge-identity",
         help="Retry a deleted profile's session/routing identity purge",
-        description="Re-run the session/routing identity purge that `hermes profile delete` performs "
+        description="Re-run the session/routing identity purge that `akramcode profile delete` performs "
             "automatically. The profile directory is already gone when this is needed: state still "
             "keyed by the deleted profile name (routing keys, heartbeats, routing/delivery rows) is "
             "deleted. Run it after restarting the gateway (which reloads the routing index from the "
@@ -103,7 +103,7 @@ def build_profile_parser(subparsers, *, cmd_profile: Callable) -> None:
     profile_migrate = profile_subparsers.add_parser(
         "migrate-identity",
         help="Retry a renamed profile's session/routing identity migration",
-        description="Re-run the session/routing identity migration that `hermes profile rename` "
+        description="Re-run the session/routing identity migration that `akramcode profile rename` "
             "performs automatically. The rename has already happened when this is needed, so pass "
             "the OLD and NEW names: state still keyed by the old profile name (session keys, "
             "profile_name, heartbeats, routing/delivery rows) is rekeyed to the new one. Run it "
@@ -117,7 +117,7 @@ def build_profile_parser(subparsers, *, cmd_profile: Callable) -> None:
     profile_export.add_argument(
         "-o", "--output", default=None,
         help="Output file (default: a managed profile-exports/<name>-<timestamp>.tar.gz "
-             "under the default Hermes home)")
+             "under the default AkramCode home)")
 
     profile_import = profile_subparsers.add_parser("import", help="Import a profile from archive")
     profile_import.add_argument("archive", help="Path to .tar.gz archive")
@@ -128,7 +128,7 @@ def build_profile_parser(subparsers, *, cmd_profile: Callable) -> None:
     # ---------- Distribution subcommands (issue #20456) ----------
     profile_install = profile_subparsers.add_parser(
         "install", help="Install a profile distribution from a git URL or local directory",
-        description="Install a Hermes profile distribution. SOURCE can be a git URL "
+        description="Install a AkramCode profile distribution. SOURCE can be a git URL "
             "(github.com/user/repo, https://..., git@...) or a local "
             "directory containing distribution.yaml at its root.")
     profile_install.add_argument("source", help="Distribution source (git URL or local directory)")

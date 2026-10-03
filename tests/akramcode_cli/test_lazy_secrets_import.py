@@ -1,4 +1,4 @@
-"""Regression test: hermes update must not load cryptography eagerly."""
+"""Regression test: akramcode update must not load cryptography eagerly."""
 
 import sys
 import subprocess
@@ -75,7 +75,7 @@ sys.exit(0)
         )
 
     def test_update_check_no_cryptography(self) -> None:
-        """Running hermes update --check should NOT load cryptography._rust."""
+        """Running akramcode update --check should NOT load cryptography._rust."""
         # Write a small script in the repo root so akramcode_cli is importable,
         # and use a filename that doesn't trigger the live-system guard.
         repo_root = Path(__file__).parent.parent.parent
@@ -83,7 +83,7 @@ sys.exit(0)
         script.write_text(
             """
 import sys
-sys.argv = ['hermes', 'update', '--check']
+sys.argv = ['akramcode', 'update', '--check']
 
 import akramcode_cli.main
 from akramcode_cli.update_cmd import _cmd_update_check

@@ -274,7 +274,7 @@ def main() -> int:
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
     tmp = Path(tempfile.mkdtemp(prefix="ab-token-accounting-"))
-    os.environ["HERMES_HOME"] = str(tmp / "home")
+    os.environ["AKRAMCODE_HOME"] = str(tmp / "home")
     (tmp / "home").mkdir(parents=True)
     head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace").stdout.strip()
     wire = _FakeChat()

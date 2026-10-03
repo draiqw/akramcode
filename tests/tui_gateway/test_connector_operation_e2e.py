@@ -123,9 +123,9 @@ class FakeConnectorClient:
 
 @pytest.fixture
 def owned_session(monkeypatch, tmp_path):
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "akramcode-home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     reset_session_vars()
     live.reset_for_tests()
     with ExitStack() as stack:

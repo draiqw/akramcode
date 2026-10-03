@@ -24,7 +24,7 @@ def _database(path, count):
 
 
 def _assert_no_decoy(tmp_path, home_name):
-    assert {p.name for p in tmp_path.iterdir()} <= {home_name, "native", "backup.zip", "hermes_test"}
+    assert {p.name for p in tmp_path.iterdir()} <= {home_name, "native", "backup.zip", "akramcode_test"}
 
 
 @pytest.fixture(params=HOME_NAMES)
@@ -33,12 +33,12 @@ def home(tmp_path, monkeypatch, request):
 
     home = tmp_path / request.param
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     # An existing default install keeps import from installing/starting a gateway.
     native = tmp_path / "native"
     native.mkdir()
     (native / "config.yaml").write_text("{}", encoding="utf-8")
-    monkeypatch.setattr(backup, "_get_platform_default_hermes_home", lambda: native)
+    monkeypatch.setattr(backup, "_get_platform_default_akramcode_home", lambda: native)
     monkeypatch.setattr(gateway, "ensure_gateway_service", lambda **kwargs: False)
     monkeypatch.setattr(gateway, "_is_service_running", lambda: False)
     return home
@@ -46,7 +46,7 @@ def home(tmp_path, monkeypatch, request):
 
 def _restore(entry, home, snapshot_id, source):
     if entry == "snapshot":
-        return backup.restore_quick_snapshot(snapshot_id, hermes_home=home)
+        return backup.restore_quick_snapshot(snapshot_id, akramcode_home=home)
     archive = home.parent / "backup.zip"
     with zipfile.ZipFile(archive, "w") as zf:
         zf.write(source, "state.db")
@@ -91,7 +91,7 @@ def test_corrupt_source_cannot_replace_a_healthy_database(
         db.execute("CREATE TABLE evidence(value TEXT)")
         db.execute("INSERT INTO evidence VALUES ('snapshot')")
         db.commit()
-    snapshot_id = backup.create_quick_snapshot(hermes_home=home)
+    snapshot_id = backup.create_quick_snapshot(akramcode_home=home)
     assert snapshot_id
     source = home / "state-snapshots" / snapshot_id / "state.db"
     with closing(sqlite3.connect(live)) as db:

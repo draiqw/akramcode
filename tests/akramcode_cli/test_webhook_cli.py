@@ -16,7 +16,7 @@ from akramcode_cli.webhook import (
 
 @pytest.fixture(autouse=True)
 def _isolate(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     # Default: webhooks enabled (most tests need this)
     monkeypatch.setattr(
         "akramcode_cli.webhook._is_webhook_enabled", lambda: True

@@ -1,4 +1,4 @@
-"""``hermes update`` subcommand parser."""
+"""``akramcode update`` subcommand parser."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ def build_update_parser(subparsers, *, cmd_update: Callable) -> None:
     """Attach the ``update`` subcommand to ``subparsers``."""
     from akramcode_cli.release_channels import validate_name
     update_parser = subparsers.add_parser(
-        "update", help="Update Hermes Agent to the latest version",
+        "update", help="Update AkramCode Agent to the latest version",
         description="Pull the latest changes from git and reinstall dependencies")
     update_parser.add_argument(
         "--gateway", action="store_true", default=False,
@@ -21,14 +21,14 @@ def build_update_parser(subparsers, *, cmd_update: Callable) -> None:
     update_parser.add_argument(
         "--plan", action="store_true", default=False,
         help="Show the update plan and exit without changing anything: install "
-            "kind (git/docker/nix), every running Hermes service across all "
+            "kind (git/docker/nix), every running AkramCode service across all "
             "profiles with its supervisor and running code version, and how "
             "each will be restarted. Read-only; safe on a live fleet.")
     update_parser.add_argument(
         "--list-venv-holders", action="store_true", default=False,
         help="Print the processes the Windows venv-holder guard would refuse on as a JSON list "
             "[{pid, exe, argv, kind}] and exit: 0 when the venv is free, 3 when holders are present. "
-            "Read-only; kind is gateway / backend (Desktop serve) / hermes:<subcommand> / python, so a "
+            "Read-only; kind is gateway / backend (Desktop serve) / akramcode:<subcommand> / python, so a "
             "scheduled update can stop exactly those PIDs instead of looping. Always [] off Windows.")
     update_parser.add_argument(
         "--no-backup", action="store_true", default=False,
@@ -36,11 +36,11 @@ def build_update_parser(subparsers, *, cmd_update: Callable) -> None:
     )
     update_parser.add_argument(
         "--backup", action="store_true", default=False,
-        help="Force a FULL pre-update backup (quick state snapshot + HERMES_HOME zip) for this run, regardless of updates.pre_update_backup",
+        help="Force a FULL pre-update backup (quick state snapshot + AKRAMCODE_HOME zip) for this run, regardless of updates.pre_update_backup",
     )
     update_parser.add_argument(
         "--yes", "-y", action="store_true", default=False,
-        help="Run without blocking on prompts: accepts the config-migration and stash-restore prompts, skips the fork-upstream prompt without adding a remote. API-key entry is skipped; run 'hermes config migrate' separately for those.",
+        help="Run without blocking on prompts: accepts the config-migration and stash-restore prompts, skips the fork-upstream prompt without adding a remote. API-key entry is skipped; run 'akramcode config migrate' separately for those.",
     )
     update_parser.add_argument(
         "--keep-stash", action="store_true", default=False,
@@ -52,7 +52,7 @@ def build_update_parser(subparsers, *, cmd_update: Callable) -> None:
     update_parser.add_argument(
         "--branch", default=None, metavar="NAME",
         help="Update against this branch instead of the default (main). "
-            "If the local checkout is on a different branch, hermes will "
+            "If the local checkout is on a different branch, akramcode will "
             "switch to the requested branch first (auto-stashing any "
             "uncommitted changes).")
     update_parser.add_argument(
@@ -67,7 +67,7 @@ def build_update_parser(subparsers, *, cmd_update: Callable) -> None:
             "Still refuses to touch a dirty tree.")
     update_parser.add_argument(
         "--force", action="store_true", default=False,
-        help="Windows: proceed with the update even when another hermes.exe is detected. The concurrent process will likely cause WinError 32 warnings. Does NOT bypass the venv-process guard (see --force-venv).",
+        help="Windows: proceed with the update even when another akramcode.exe is detected. The concurrent process will likely cause WinError 32 warnings. Does NOT bypass the venv-process guard (see --force-venv).",
     )
     update_parser.add_argument(
         "--force-venv", action="store_true", default=False,

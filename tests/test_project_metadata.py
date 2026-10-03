@@ -17,7 +17,7 @@ def test_wake_dependencies_and_runtime_gate_agree_on_supported_targets():
     root = Path(__file__).resolve().parents[1]
     metadata = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8-sig"))
     optional = metadata["project"]["optional-dependencies"]
-    gates = metadata["tool"]["hermes"]["extras-platforms"]
+    gates = metadata["tool"]["akramcode"]["extras-platforms"]
     targets = [
         ("darwin", "Darwin", "x86_64", False),
         ("darwin", "Darwin", "arm64", True),
@@ -127,7 +127,7 @@ def test_lazy_installable_extras_excluded_from_all():
     for extra in lazy_covered_extras:
         offending = [
             spec for spec in all_extra_specs
-            if f"hermes-agent[{extra}]" in spec
+            if f"akramcode-agent[{extra}]" in spec
         ]
         assert not offending, (
             f"[{extra}] is in [all] but also in LAZY_DEPS. "

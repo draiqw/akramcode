@@ -425,7 +425,7 @@ def auto_prune_from_config() -> Dict[str, object]:
     """``maybe_auto_prune_checkpoints`` driven by the ``checkpoints:`` config section — the one
     startup/housekeeping entry point for the CLI and the gateway. ``delete_orphans`` is never
     honoured unattended: a missing workdir is ambiguous (deleted vs. unmounted share); orphan
-    cleanup is only via explicit ``hermes checkpoints prune``. Never raises."""
+    cleanup is only via explicit ``akramcode checkpoints prune``. Never raises."""
     try:
         from akramcode_cli.config import load_config
         cfg = load_config().get("checkpoints") or {}
@@ -460,15 +460,15 @@ def checkpoint_footprint_notice() -> Optional[str]:
         from akramcode_cli.sizefmt import format_bytes
         return (f"Filesystem checkpoints (/rollback) are on: {format_bytes(size)} across "
                 f"{status['project_count']} project(s), above the {cap_mb} MB cap (one snapshot per project is "
-                f"always kept). Not using /rollback? `hermes config set checkpoints.enabled false` then "
-                f"`hermes checkpoints clear`; or lower `checkpoints.retention_days`.")
+                f"always kept). Not using /rollback? `akramcode config set checkpoints.enabled false` then "
+                f"`akramcode checkpoints clear`; or lower `checkpoints.retention_days`.")
     except Exception as exc:
         logger.debug("checkpoint footprint notice skipped: %s", exc)
         return None
 
 
 # ---------------------------------------------------------------------------
-# Public helpers for `hermes checkpoints` CLI
+# Public helpers for `akramcode checkpoints` CLI
 # ---------------------------------------------------------------------------
 
 def store_status(checkpoint_base: Optional[Path] = None) -> Dict:

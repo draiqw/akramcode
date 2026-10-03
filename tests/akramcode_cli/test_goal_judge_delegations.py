@@ -52,7 +52,7 @@ def test_a_delegation_wait_lifts_when_a_batch_returns_not_only_when_the_timer_ru
     re-judged; integration sat unfinished until the timer ran out."""
     from pathlib import Path
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes")); (tmp_path / ".hermes").mkdir()
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / ".akramcode")); (tmp_path / ".akramcode").mkdir()
     goals._DB_CACHE.clear()
     mgr = goals.GoalManager(session_id="root-wait")
     mgr.set("integrate the rounds")

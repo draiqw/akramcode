@@ -48,14 +48,14 @@ def _format_live_review_output(sid: str, session: Optional[dict], arg: str) -> s
         snapshot = list(session.get("history", []))
     snapshot = snapshot or list(getattr(agent, "_session_messages", None) or [])
     # slash.exec runs on the RPC pool, not inside a turn: bind the same session identity a turn binds
-    # (HERMES_UI_SESSION_ID + steer authority), or delegate_task registers the reviewer with no owner
+    # (AKRAMCODE_UI_SESSION_ID + steer authority), or delegate_task registers the reviewer with no owner
     # and `subagent.list` hides it — the Desktop status stack then shows nothing for /review.
     tokens = _set_session_context(session["session_key"], ui_session_id=sid)
     runtime_token = _current_runtime_session_record.set(session)
     try:
         from agent.review_engine import format_dispatch_note, start_review
         # slash.exec is off-turn (RPC pool). start_review → resolve_runtime_provider
-        # reads HERMES_CODEX_BASE_URL via get_secret; under multiplex that raises
+        # reads AKRAMCODE_CODEX_BASE_URL via get_secret; under multiplex that raises
         # UnscopedSecretError unless the same runtime scope a turn binds is here
         # (#117544; same wrap as _compress_live_with_feedback / #116611).
         with _session_profile_runtime_scope(session):
@@ -181,7 +181,7 @@ def _format_live_history_output(sid: str, session: dict, arg: str) -> str:
     lines = ["Conversation History", "────────────────────────────────────────"]
     for idx, message in enumerate(messages, start=1):
         role = str(message.get("role") or "unknown")
-        label = {"user": "You", "assistant": "Hermes"}.get(role, role.title())
+        label = {"user": "You", "assistant": "AkramCode"}.get(role, role.title())
         text = str(message.get("text") or message.get("context") or "").strip()
         text = f"{text[:400]}..." if len(text) > 400 else text
         lines.append(f"[{label} #{idx}] {text or '(no text)'}")

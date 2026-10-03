@@ -8,7 +8,7 @@ from unittest.mock import Mock
 import pytest
 
 from cron import scheduler_delivery as delivery
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from akramcode_constants import reset_akramcode_home_override, set_akramcode_home_override
 
 
 @pytest.mark.parametrize("profile", ["beta", "default", ""])
@@ -19,8 +19,8 @@ def test_cli_keeps_discovered_home_when_launch_selection_changes(tmp_path, monke
     other = root / "profiles" / "other"
     other.mkdir(parents=True)
     monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.setenv("HERMES_HOME", str(root))
-    token = set_hermes_home_override(str(root))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(root))
+    token = set_akramcode_home_override(str(root))
     real_run = subprocess.run
     seen = []
 
@@ -31,9 +31,9 @@ def test_cli_keeps_discovered_home_when_launch_selection_changes(tmp_path, monke
 
     def run(argv, env, report_path, timeout):
         # Exercise the actual startup resolver with the production child env/flags.
-        code = ('import json,sys; sys.argv=["hermes"]+json.loads(sys.argv[1]); '
-                'import akramcode_cli.main; from hermes_constants import get_hermes_home; '
-                'print(json.dumps(str(get_hermes_home())))')
+        code = ('import json,sys; sys.argv=["akramcode"]+json.loads(sys.argv[1]); '
+                'import akramcode_cli.main; from akramcode_constants import get_akramcode_home; '
+                'print(json.dumps(str(get_akramcode_home())))')
         # Everything after the launcher (binary or ``python -m akramcode_cli.main``) is the CLI argv.
         cli_argv = argv[3:] if argv[1:3] == ["-m", "akramcode_cli.main"] else argv[1:]
         result = real_run([sys.executable, "-c", code, json.dumps(cli_argv)],
@@ -47,9 +47,9 @@ def test_cli_keeps_discovered_home_when_launch_selection_changes(tmp_path, monke
     try:
         assert delivery._deliver_to_bot_chat({"id": "job"}, "output", profile) is None
         assert seen == [home]
-        assert not (tmp_path / ".hermes").exists()
+        assert not (tmp_path / ".akramcode").exists()
     finally:
-        reset_hermes_home_override(token)
+        reset_akramcode_home_override(token)
 
 
 @pytest.mark.parametrize("removed_during_discovery", [False, True])
@@ -59,8 +59,8 @@ def test_missing_destination_never_launches_or_recreates(tmp_path, monkeypatch, 
     home = root / "profiles" / "beta"
     if removed_during_discovery:
         home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(root))
-    token = set_hermes_home_override(str(root))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(root))
+    token = set_akramcode_home_override(str(root))
     run = Mock(return_value=subprocess.CompletedProcess([], 0, "", ""))
 
     def discover(target):
@@ -76,4 +76,4 @@ def test_missing_destination_never_launches_or_recreates(tmp_path, monkeypatch, 
         run.assert_not_called()
         assert not home.exists()
     finally:
-        reset_hermes_home_override(token)
+        reset_akramcode_home_override(token)

@@ -88,9 +88,9 @@ def test_loop_thread_cache_hit_returns_cached_instance(monkeypatch):
     """A warm cache is returned directly even on the loop thread."""
     _patch_sessiondb(monkeypatch)
     sentinel = _RecordingDB()
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
 
-    goals._DB_CACHE[str(get_hermes_home())] = sentinel
+    goals._DB_CACHE[str(get_akramcode_home())] = sentinel
     result = "UNSET"
 
     async def main():

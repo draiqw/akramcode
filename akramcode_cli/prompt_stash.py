@@ -40,7 +40,7 @@ class StashEntry:
     preview: str = ""
 
     def as_dict(self) -> dict:
-        """Shape ``HermesCLI._render_stash_panel`` consumes."""
+        """Shape ``AkramCodeCLI._render_stash_panel`` consumes."""
         return {"text": self.text, "images": list(self.images), "stashed_at": self.stashed_at, "preview": self.preview}
 
 

@@ -9,7 +9,7 @@ from typing import Callable, Optional
 
 from agent.browser_provider import BrowserProvider as CloudBrowserProvider
 from agent.browser_registry import get_provider as _registry_get_browser_provider
-from akramcode_constants import get_hermes_home_override, hermes_home_key
+from akramcode_constants import get_akramcode_home_override, akramcode_home_key
 from plugins.browser.browser_use.provider import BrowserUseBrowserProvider
 from plugins.browser.browserbase.provider import BrowserbaseBrowserProvider
 from tools.tool_backend_helpers import normalize_browser_cloud_provider
@@ -21,11 +21,11 @@ from tools import browser_tool_cdp as _cdp
 def _memo(_bt, resolved_attr: str, cache_attr: str, compute: Callable[[], object]):
     """Process-lifetime cache on ``_bt``: the resolved flag is set BEFORE computing, then the final value is stored.
 
-    Under a routed profile (HERMES_HOME override, multiplexed gateway) the slot is NOT consulted: every
+    Under a routed profile (AKRAMCODE_HOME override, multiplexed gateway) the slot is NOT consulted: every
     ``_memo`` here caches a ``browser.*`` config read, and one process-wide slot would hand the launch
     profile's engine/headed/private-URL policy to every other profile (same rule as ``_allow_private_urls``).
     """
-    if get_hermes_home_override() is not None:
+    if get_akramcode_home_override() is not None:
         return compute()
     if not getattr(_bt, resolved_attr):
         setattr(_bt, resolved_attr, True)
@@ -43,9 +43,9 @@ def _ensure_browser_plugins_loaded() -> None:
 
 
 def _get_cloud_provider() -> Optional[CloudBrowserProvider]:
-    """Return the provider cached for the active Hermes profile."""
+    """Return the provider cached for the active AkramCode profile."""
     _bt = _origin()
-    scope = hermes_home_key()
+    scope = akramcode_home_key()
     with _bt._cloud_provider_cache_lock:
         # A cleared boolean (tests / legacy reset) is a full reset even if a scoped resolution is still mirrored here.
         if not _bt._cloud_provider_resolved:
@@ -257,7 +257,7 @@ def _allow_private_urls() -> bool:
     resolve on every call so one profile's opt-out is never reused by another.
     """
     _bt = _origin()
-    if get_hermes_home_override() is not None:
+    if get_akramcode_home_override() is not None:
         return _resolve_allow_private_urls()
     return _memo(_bt, "_allow_private_urls_resolved", "_cached_allow_private_urls", _resolve_allow_private_urls)
 

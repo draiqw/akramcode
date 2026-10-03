@@ -125,7 +125,7 @@ def test_version_at_least_accepts_only_bounded_ascii_components(found, minimum, 
 
 def test_unexpanded_locations_are_missing_even_when_cwd_contains_them(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
-    for location in ("%HERMES_TEST_UNSET_VAR%/x.exe", "$HERMES_TEST_UNSET_VAR/x"):
+    for location in ("%AKRAMCODE_TEST_UNSET_VAR%/x.exe", "$AKRAMCODE_TEST_UNSET_VAR/x"):
         path = tmp_path / location
         path.parent.mkdir(exist_ok=True)
         path.write_text("fixture", encoding="utf-8")

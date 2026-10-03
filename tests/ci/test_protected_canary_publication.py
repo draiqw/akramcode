@@ -15,7 +15,7 @@ import subprocess
 import sys
 import zipfile
 
-import akram_core.hermes_yaml
+import akram_core.akramcode_yaml
 import pytest
 
 from akramcode_cli.release_channels import ChannelReader
@@ -29,7 +29,7 @@ pytestmark = pytest.mark.platforms("posix")
 
 
 def workflow_jobs():
-    return akram_core.hermes_yaml.safe_load((ROOT / ".github/workflows/desktop-bundled-release.yml").read_text())["jobs"]
+    return akram_core.akramcode_yaml.safe_load((ROOT / ".github/workflows/desktop-bundled-release.yml").read_text())["jobs"]
 
 
 def canary_job():
@@ -97,15 +97,15 @@ def canary(tmp_path, r2_server, monkeypatch):
     codesign = tools / "codesign"
     codesign.write_text('#!/bin/sh\nprintf "TeamIdentifier=ABCDEFGHIJ\\n" >&2\n')
     codesign.chmod(0o755)
-    base = f"http://127.0.0.1:{r2_server.server_port}/hermes-releases"
+    base = f"http://127.0.0.1:{r2_server.server_port}/akramcode-releases"
     env = {**os.environ, "PATH": str(tools) + os.pathsep + os.environ["PATH"],
            "FIXTURE_RELEASE": str(release_state), "FIXTURE_WINDOWS_VERSION": windows_version, "GITHUB_ACTIONS": "true",
-           "GITHUB_EVENT_NAME": "workflow_dispatch", "GITHUB_REPOSITORY": "NousResearch/hermes-agent",
-           "GITHUB_WORKFLOW_REF": "NousResearch/hermes-agent/.github/workflows/desktop-bundled-release.yml@refs/heads/main",
-           "RELEASE_TAG": tag, "TAG": tag, "HERMES_PAYLOAD_TAG": tag,
+           "GITHUB_EVENT_NAME": "workflow_dispatch", "GITHUB_REPOSITORY": "NousResearch/akramcode-agent",
+           "GITHUB_WORKFLOW_REF": "NousResearch/akramcode-agent/.github/workflows/desktop-bundled-release.yml@refs/heads/main",
+           "RELEASE_TAG": tag, "TAG": tag, "AKRAMCODE_PAYLOAD_TAG": tag,
            "RELEASE_TAG_OBJECT": tag_object,
-           "RELEASE_COMMIT": commit, "RELEASE_PHASE": "", "HERMES_DESKTOP_VARIANT": "bundled",
-           "HERMES_BUILD_COMMIT": "", "CHANNEL_BUILD": "", "R2_DISPOSABLE_RUN": "",
+           "RELEASE_COMMIT": commit, "RELEASE_PHASE": "", "AKRAMCODE_DESKTOP_VARIANT": "bundled",
+           "AKRAMCODE_BUILD_COMMIT": "", "CHANNEL_BUILD": "", "R2_DISPOSABLE_RUN": "",
            "CLOUDFLARE_R2_PUBLIC_URL": base,
            "RELEASE_NEEDS": json.dumps({name: {"result": "success"} for name in canary_job()["needs"]})}
 
@@ -149,13 +149,13 @@ def native_leg(root, identity, env, platform, arch):
 ])
 def test_canary_metadata_is_recorded_and_receipt_bound(canary, r2_server, platform, variant, phase, commit_build):
     clone, identity, original_env, run = canary
-    env = {**original_env, "HERMES_DESKTOP_VARIANT": variant, "RELEASE_PHASE": phase}
+    env = {**original_env, "AKRAMCODE_DESKTOP_VARIANT": variant, "RELEASE_PHASE": phase}
     if phase == "candidate":
-        env["RELEASE_TAG"] = env["HERMES_PAYLOAD_TAG"] = "v0.1.2"
+        env["RELEASE_TAG"] = env["AKRAMCODE_PAYLOAD_TAG"] = "v0.1.2"
         env["FIXTURE_WINDOWS_VERSION"] = "0.1.2.0"
     if commit_build:
-        env["RELEASE_TAG"] = env["HERMES_PAYLOAD_TAG"] = ""
-        env["HERMES_BUILD_COMMIT"] = env["RELEASE_COMMIT"]
+        env["RELEASE_TAG"] = env["AKRAMCODE_PAYLOAD_TAG"] = ""
+        env["AKRAMCODE_BUILD_COMMIT"] = env["RELEASE_COMMIT"]
     root = clone / "apps/desktop/release"
     native_leg(root, identity, env, platform, "x64")
     script = stage_script(f"{platform}-x64", "commit" if commit_build else "release")
@@ -287,7 +287,7 @@ def test_published_canary_workflow_advances_only_after_every_gate(canary, r2_ser
     _git("tag", "-a", newer_tag, "-m", '{"schema":1}', cwd=clone)
     newer_object = _git("rev-parse", f"{newer_tag}^{{tag}}", cwd=clone)
     _git("push", "origin", newer_tag, cwd=clone)
-    newer = {**env, "RELEASE_TAG": newer_tag, "HERMES_PAYLOAD_TAG": newer_tag,
+    newer = {**env, "RELEASE_TAG": newer_tag, "AKRAMCODE_PAYLOAD_TAG": newer_tag,
              "RELEASE_TAG_OBJECT": newer_object,
              "FIXTURE_WINDOWS_VERSION": "26.913.0.1100"}
     stage_canary(clone, identity, newer, run)

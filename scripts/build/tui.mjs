@@ -40,7 +40,7 @@ export async function buildTui(options) {
       outfile: out,
       jsx: 'automatic',
       jsxImportSource: 'react',
-      // Skip the prebuilt @hermes/ink bundle and inline the source instead:
+      // Skip the prebuilt @akramcode/ink bundle and inline the source instead:
       // (1) esbuild's `__esm` helper does not await nested async init, so the
       //     prebuilt bundle's lazy `render` would never resolve when nested in
       //     this top-level Promise.all; (2) bundling from source also lets us
@@ -48,7 +48,7 @@ export async function buildTui(options) {
       //     bundle entirely — re-exporting them from entry-exports created a
       //     circular async chain that hung the TUI at startup with only ANSI
       //     reset bytes on screen (#31227).
-      alias: { '@hermes/ink': resolve(root, 'packages/hermes-ink/src/entry-exports.ts') },
+      alias: { '@akramcode/ink': resolve(root, 'packages/akramcode-ink/src/entry-exports.ts') },
       plugins: [stubDevtools],
       // Some transitive deps use CommonJS `require(...)` at runtime. ESM bundles
       // don't get a `require` binding automatically, so we inject one.
@@ -76,7 +76,7 @@ export async function buildTui(options) {
 // npm's existing developer entrypoint retains ui-tui/dist without replacing
 // the source workspace (a product includes its own package.json).
 async function buildDeveloperTui() {
-  const scratch = mkdtempSync(join(tmpdir(), 'hermes-tui-'))
+  const scratch = mkdtempSync(join(tmpdir(), 'akramcode-tui-'))
   try {
     const result = await buildTui({ source: repoRoot, out: join(scratch, 'tui') })
     // TMPDIR and the source checkout need not share a filesystem.

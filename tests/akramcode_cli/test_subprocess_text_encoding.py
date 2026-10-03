@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-HERMES_CLI = Path(__file__).resolve().parents[2] / "akramcode_cli"
+AKRAMCODE_CLI = Path(__file__).resolve().parents[2] / "akramcode_cli"
 
 
 def _iter_call_text_nodes(tree: ast.AST) -> list[ast.Call]:
@@ -21,8 +21,8 @@ def _iter_call_text_nodes(tree: ast.AST) -> list[ast.Call]:
 
 @pytest.mark.parametrize(
     "path",
-    sorted(p for p in HERMES_CLI.rglob("*.py") if "__pycache__" not in p.parts and "test" not in p.name),
-    ids=lambda p: str(p.relative_to(HERMES_CLI)),
+    sorted(p for p in AKRAMCODE_CLI.rglob("*.py") if "__pycache__" not in p.parts and "test" not in p.name),
+    ids=lambda p: str(p.relative_to(AKRAMCODE_CLI)),
 )
 def test_text_mode_subprocess_calls_pin_utf8(path: Path) -> None:
     tree = ast.parse(path.read_text(encoding="utf-8"))
@@ -35,7 +35,7 @@ def test_text_mode_subprocess_calls_pin_utf8(path: Path) -> None:
                 and kw.value.value is True
             ):
                 assert "encoding" in names, (
-                    f"{path.relative_to(HERMES_CLI)}:{kw.lineno}: subprocess text=True "
+                    f"{path.relative_to(AKRAMCODE_CLI)}:{kw.lineno}: subprocess text=True "
                     "without encoding= — on Windows this decodes with the ANSI code page "
                     "and can raise UnicodeDecodeError on non-ASCII child output (#55658)"
                 )

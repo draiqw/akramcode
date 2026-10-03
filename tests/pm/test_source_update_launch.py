@@ -35,9 +35,9 @@ def source_launch(tmp_path, monkeypatch, isolated_python):
     engine = importlib.import_module("pm.install")
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(tmp_path / "store"))
-    monkeypatch.delenv("HERMES_DISABLE_LAZY_INSTALLS", raising=False)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("AKRAMCODE_RUNTIME_DIR", str(tmp_path / "store"))
+    monkeypatch.delenv("AKRAMCODE_DISABLE_LAZY_INSTALLS", raising=False)
     monkeypatch.setattr(paths, "lockfile_path", lambda: tmp_path / "tool-lock.json")
 
     uv = shutil.which("uv")
@@ -120,10 +120,10 @@ def test_source_python_pin_update_survives_real_gc(source_launch, tmp_path, monk
     pm.sync_venv(explicit=True, project_root=root)
     # Initial installation is allowed to publish. No explicit writer is called
     # after replacement: the source-update owner must refresh this same command.
-    _launchers.ensure_install_launchers(root, root / ".hermes" / "bin")
+    _launchers.ensure_install_launchers(root, root / ".akramcode" / "bin")
     command = _launchers.installation_command(root, module="source_probe")
     (site_packages(selected_venv(root)) / "selected_probe.py").write_text("VALUE = 'A'\n")
-    child_env = {**os.environ, "HERMES_DISABLE_LAZY_INSTALLS": "1"}
+    child_env = {**os.environ, "AKRAMCODE_DISABLE_LAZY_INSTALLS": "1"}
     before = subprocess.run(command, env=child_env, capture_output=True, text=True, timeout=30)
     assert before.returncode == 0, before.stderr
     assert json.loads(before.stdout)["executable"] == str(old_python)
@@ -193,7 +193,7 @@ def test_launcher_publication_failure_retries_without_rebuilding_dependencies(so
     committed = runtime_facts_path(root).read_bytes()
     assert venv_sync.prepare_launch(root, []) == store_python
     assert runtime_facts_path(root).read_bytes() == committed
-    assert (root / ".hermes" / "bin" / "hermes").is_file()
+    assert (root / ".akramcode" / "bin" / "akramcode").is_file()
 
 
 @pytest.mark.platforms("posix")
@@ -205,7 +205,7 @@ def test_source_publication_leaves_external_install_launchers_alone(source_launc
     )
     if not checkout:
         (root / ".git").rmdir()
-    launcher = root / ".hermes" / "bin" / "hermes"
+    launcher = root / ".akramcode" / "bin" / "akramcode"
     launcher.parent.mkdir(parents=True)
     launcher.write_text("externally owned launcher\n", encoding="utf-8")
     assert venv_sync.sync(root)["ok"]
@@ -368,7 +368,7 @@ def test_real_bootstrap_reexecs_before_app_imports(source_launch, tmp_path, isol
     repository = Path(__file__).resolve().parents[2]
     # Copy the real bootstrap so it owns this disposable source install. The
     # other modules remain real checkout imports; only acquisition is injected.
-    shutil.copy2(repository / "akram_core.hermes_bootstrap.py", root / "akram_core.hermes_bootstrap.py")
+    shutil.copy2(repository / "akram_core.akramcode_bootstrap.py", root / "akram_core.akramcode_bootstrap.py")
     (root / "launch_test_tools.py").write_text(
         "import sys\n"
         "from pathlib import Path\n"
@@ -382,7 +382,7 @@ def test_real_bootstrap_reexecs_before_app_imports(source_launch, tmp_path, isol
     entry = root / "launch_probe.py"
     entry.write_text(
         "import launch_test_tools\n"
-        "import akram_core.hermes_bootstrap\n"
+        "import akram_core.akramcode_bootstrap\n"
         "import json, sys\n"
         "from pathlib import Path\n"
         "from pm.environments import selected_venv, site_packages\n"
@@ -457,7 +457,7 @@ def test_failed_launch_completion_degrades_to_a_warning(source_launch, tmp_path,
     CLI on the previous generation with a warning — and a metadata query must not even try."""
     root, store_python, worker_command = source_launch
     repository = Path(__file__).resolve().parents[2]
-    shutil.copy2(repository / "akram_core.hermes_bootstrap.py", root / "akram_core.hermes_bootstrap.py")
+    shutil.copy2(repository / "akram_core.akramcode_bootstrap.py", root / "akram_core.akramcode_bootstrap.py")
     (root / "launch_test_tools.py").write_text(
         "import sys\n"
         "from pathlib import Path\n"
@@ -471,7 +471,7 @@ def test_failed_launch_completion_degrades_to_a_warning(source_launch, tmp_path,
     entry = root / "launch_probe.py"
     entry.write_text(
         "import launch_test_tools\n"
-        "import akram_core.hermes_bootstrap\n"
+        "import akram_core.akramcode_bootstrap\n"
         "import json, sys\n"
         "print(json.dumps({'executable': sys.executable, 'args': sys.argv[1:]}))\n",
         encoding="utf-8",
@@ -496,7 +496,7 @@ def test_failed_launch_completion_degrades_to_a_warning(source_launch, tmp_path,
         assert _receipts(tmp_path) == before_receipts, "a metadata query attempted a dependency sync"
     else:
         assert "source-update completion failed" in result.stderr
-        assert "hermes update" in result.stderr
+        assert "akramcode update" in result.stderr
 
 
 @pytest.mark.platforms("posix")
@@ -541,7 +541,7 @@ def test_completion_retry_backoff_and_cap(tmp_path, monkeypatch):
 @pytest.mark.platforms("posix")
 def test_capped_completion_attempts_leave_marker_for_explicit_update(source_launch, tmp_path, capsys):
     """Past the retry cap a launch must NOT re-run the tail; it keeps the pending marker
-    and points the operator at `hermes update` instead of burning another doomed attempt."""
+    and points the operator at `akramcode update` instead of burning another doomed attempt."""
     root, store_python, _ = source_launch
     from akramcode_cli.venv_sync import (  # noqa: F401 — import for the paths under test
         _completion_attempts_path,
@@ -561,7 +561,7 @@ def test_capped_completion_attempts_leave_marker_for_explicit_update(source_laun
     assert venv_sync.prepare_launch(root, []) == store_python
     out = capsys.readouterr().err
     assert "could not be finished automatically" in out
-    assert "hermes update" in out
+    assert "akramcode update" in out
     assert completion_pending_path(root).is_file(), "the owed completion is still recorded"
     assert not (tmp_path / "completion-calls").exists(), "a capped launch re-ran the tail"
 

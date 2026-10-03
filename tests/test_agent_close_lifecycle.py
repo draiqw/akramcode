@@ -27,7 +27,7 @@ from types import SimpleNamespace
 
 import pytest
 
-import akram_core.hermes_bootstrap  # noqa: F401  (process boot before tui_gateway.server)
+import akram_core.akramcode_bootstrap  # noqa: F401  (process boot before tui_gateway.server)
 
 
 class RecordingAgent:
@@ -224,9 +224,9 @@ class TestPromptBackgroundClosesAgent:
 
 
 def _make_cli():
-    from cli import HermesCLI
+    from cli import AkramCodeCLI
 
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = AkramCodeCLI.__new__(AkramCodeCLI)
     cli._background_task_counter = 0
     cli._background_tasks = {}
     cli._agent_running = False

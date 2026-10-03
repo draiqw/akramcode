@@ -7,7 +7,7 @@ These assert the toggle sets the instance flag, persists to config.yaml,
 and that the clamp gate honours the flag.
 """
 
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from akramcode_cli.cli_commands_mixin import CLICommandsMixin
 
@@ -24,14 +24,14 @@ class _Stub(CLICommandsMixin):
         return None
 
 def _seed_config(tmp_path, monkeypatch):
-    hh = tmp_path / ".hermes"
+    hh = tmp_path / ".akramcode"
     hh.mkdir()
     (hh / "config.yaml").write_text("display:\n  show_reasoning: true\n")
-    monkeypatch.setenv("HERMES_HOME", str(hh))
-    # cli captures _hermes_home at import; force it to the temp home.
+    monkeypatch.setenv("AKRAMCODE_HOME", str(hh))
+    # cli captures _akramcode_home at import; force it to the temp home.
     import cli
 
-    monkeypatch.setattr(cli, "_hermes_home", hh, raising=False)
+    monkeypatch.setattr(cli, "_akramcode_home", hh, raising=False)
     return hh
 
 def test_reasoning_full_sets_and_persists(tmp_path, monkeypatch):

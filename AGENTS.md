@@ -1,15 +1,15 @@
-# Hermes Agent - Development Guide
+# AkramCode Agent - Development Guide
 
-Instructions for AI coding assistants and developers working on the hermes-agent codebase.
+Instructions for AI coding assistants and developers working on the akramcode-agent codebase.
 This root file holds only what applies everywhere. Each area has its own `AGENTS.md` (aim for
 ~8k chars; `agent/subdirectory_hints.py` delivers up to 32k and truncates head/tail with a warning
 past that); see the **routing table** at the end and read the area file before editing in that area.
 
 **Never give up on the right solution.**
 
-## What Hermes Is
+## What AkramCode Is
 
-Hermes is a personal AI agent that runs the same agent core across a CLI, a messaging
+AkramCode is a personal AI agent that runs the same agent core across a CLI, a messaging
 gateway (Telegram, Discord, Slack, ~20 platforms), a TUI, and an Electron desktop app. It
 learns across sessions (memory + skills), delegates to subagents, runs scheduled jobs, and
 drives a real terminal and browser. It is extended primarily through **plugins and skills**,
@@ -35,7 +35,7 @@ sweeper, which may only close on `implemented_on_main`, `cannot_reproduce`, or `
 Taste-based "out of scope" closes are a human maintainer's call; the sweeper's job is to
 recognize design intent and *avoid wrongly closing a legitimate contribution*.
 
-Read the balance right: Hermes ships a **lot**. Most merges are bug fixes to reported
+Read the balance right: AkramCode ships a **lot**. Most merges are bug fixes to reported
 behavior, and the product surface (platforms, providers, models, desktop/TUI features)
 expands aggressively on purpose. The restraint below targets the **core agent + model tool
 schema**, the one place where every addition is paid for on every API call. "Smallest
@@ -48,7 +48,7 @@ grow: expansive at the edges, conservative at the waist.
   where it manifests, and fix the whole bug class — sibling call paths included.
 - **Expand reach at the edges.** New adapters, channels, providers, models, desktop/TUI/
   dashboard features land routinely, including large ones — as long as they integrate with
-  the existing setup/config UX (`hermes tools`, `hermes setup`, auto-install) rather than
+  the existing setup/config UX (`akramcode tools`, `akramcode setup`, auto-install) rather than
   bolting on a raw env var.
 - **Refactor god-files into clean modules.** Huge mechanical `+N/-N` extraction PRs are
   wanted work. "Every line traces to the request" applies to *feature* PRs; a declared
@@ -64,7 +64,7 @@ grow: expansive at the edges, conservative at the waist.
   freeze a current value (see Testing).
 - **E2E validation, not just green unit mocks.** Anything touching resolution chains, config
   propagation, security boundaries, remote backends, or file/network I/O must exercise the
-  real path with real imports against a temp `HERMES_HOME` — two of them (A→B→A) when the
+  real path with real imports against a temp `AKRAMCODE_HOME` — two of them (A→B→A) when the
   change touches profile scope. Mocks hide integration bugs.
 - **Cache-, alternation-, and invariant-safe.** Preserve prompt caching, strict role
   alternation (never two same-role messages in a row; never a synthetic user message injected
@@ -77,7 +77,7 @@ grow: expansive at the edges, conservative at the waist.
 - **Speculative infrastructure.** Hooks/callbacks/extension points with no concrete consumer.
   Adding a hook is easy; removing one after plugins depend on it is hard. A hook with a real,
   stated use case is NOT speculative even if the consumer ships separately.
-- **New `HERMES_*` env vars for non-secret config.** `.env` is for secrets only. Behavioral
+- **New `AKRAMCODE_*` env vars for non-secret config.** `.env` is for secrets only. Behavioral
   settings (timeouts, thresholds, flags, display prefs) go in `config.yaml`; bridge to an
   internal env var in code if the mechanism needs one. Reject "set X in your .env" docs
   unless X is a credential.
@@ -90,14 +90,14 @@ grow: expansive at the edges, conservative at the waist.
   (`git log -p -S`) before restricting behavior; find a fix that preserves the feature.
 - **Outbound telemetry / usage attribution without opt-in gating.** No analytics,
   third-party identifier tagging, or attribution tags until a generic user-facing opt-in
-  (config gate + setup prompt + `hermes tools` toggle) exists. Park behind a label.
+  (config gate + setup prompt + `akramcode tools` toggle) exists. Park behind a label.
 - **Change-detector tests, cache-breaking mid-conversation, dead code wired in without E2E
   proof, plugins that touch core files.** Plugins work within the ABCs/hooks we provide; if
   one needs more, widen the generic plugin surface, never special-case it in core.
 - **Third-party products integrated into the core tree.** Observability backends, vendor
   SaaS connectors, analytics dashboards, and other "someone else's product" plugins do NOT
   land under `plugins/` — every one becomes our burden against a fast-moving core for a
-  backend we don't own. Ship as a **standalone plugin repo** (`~/.hermes/plugins/` or pip
+  backend we don't own. Ship as a **standalone plugin repo** (`~/.akramcode/plugins/` or pip
   entry point), promoted in the Nous Research Discord `#plugins-skills-and-skins`. This is a
   coupling decision, not a quality bar; such PRs are closed with a pointer to publish.
 
@@ -136,14 +136,14 @@ Choose the highest (least-footprint) rung that correctly solves the problem:
 
 1. **Extend existing code** — a variation of something that exists. Zero new surface.
 2. **CLI command + skill** — config/state/infra expressible as shell commands; the agent runs
-   `hermes <subcommand>` guided by a skill. Default for subscriptions, scheduled tasks,
-   service setup (`hermes webhook`, `hermes cron`, `hermes tools`).
+   `akramcode <subcommand>` guided by a skill. Default for subscriptions, scheduled tasks,
+   service setup (`akramcode webhook`, `akramcode cron`, `akramcode tools`).
 3. **Service-gated tool (`check_fn`)** — needs structured params/returns AND only appears when
    a prerequisite is configured (Home Assistant tools, memory-provider tools). This rung gates
    reachability/opt-in process-wide; a capability that varies per SESSION (who is watching) is
    a named toolset folded in by the toolset resolver, not a `check_fn` — see "Surface capability
    is a property of the SESSION" below.
-4. **Plugin** — third-party/niche/user-specific; lives in `~/.hermes/plugins/` or a pip
+4. **Plugin** — third-party/niche/user-specific; lives in `~/.akramcode/plugins/` or a pip
    package, discovered at runtime.
 5. **MCP server (in the catalog)** — genuinely a tool but not core-fundamental. Zero permanent
    core-schema footprint, reusable by any MCP host, reached via the built-in MCP client.
@@ -156,20 +156,20 @@ Choose the highest (least-footprint) rung that correctly solves the problem:
 A tool that works only because of *who is on the other end* (desktop panes, in-app browser,
 message reactions, Projects) must resolve availability from the **session's own source**, not
 from an env var on the backend. Client and backend are separate machines: the desktop app may
-drive a locally spawned backend, one over SSH, one behind URL + token, or Hermes Cloud, and
-only the first two carry `HERMES_DESKTOP=1`. An env-keyed gate is a silent no-op on the other
+drive a locally spawned backend, one over SSH, one behind URL + token, or AkramCode Cloud, and
+only the first two carry `AKRAMCODE_DESKTOP=1`. An env-keyed gate is a silent no-op on the other
 topologies — the tool is stripped from the schema while the platform hint tells the model it
-is "inside the Hermes desktop app". The pattern:
+is "inside the AkramCode desktop app". The pattern:
 
-- **The toolset is the surface gate.** Keep such tools off `_HERMES_CORE_TOOLS` and in a named
+- **The toolset is the surface gate.** Keep such tools off `_AKRAMCODE_CORE_TOOLS` and in a named
   toolset (`desktop_ui`, `project`); the GUI gateway's `_load_enabled_toolsets(platform)`
   folds it in when the session's platform says GUI. One resolver, every topology.
 - **`check_fn` answers reachability or opt-in, not surface.** "Is the bridge wired?" — fine.
   "Was I spawned by Electron?" — not. `check_fn` results are TTL-cached process-wide
   (`tools/registry.py`); a per-session answer does not belong there.
-- **Ask which identity you mean.** `HERMES_DESKTOP=1` legitimately means "this backend was
+- **Ask which identity you mean.** `AKRAMCODE_DESKTOP=1` legitimately means "this backend was
   spawned by the app" (cron ticker, web-dist handling). It does NOT mean "a GUI is watching";
-  the embedded terminal pane (`hermes --tui` against that backend) is the counterexample.
+  the embedded terminal pane (`akramcode --tui` against that backend) is the counterexample.
 
 Test: if the capability still makes sense with the client on another machine, it is
 session-scoped. Assert the GUI session gets the tool **with the env var absent**.
@@ -179,12 +179,12 @@ session-scoped. Assert the GUI session gets the tool **with the env var absent**
 ```bash
 source ./activate   # provisions/syncs PM tools + dependencies, then activates
 ```
-Select an isolated development `HERMES_HOME` and `HERMES_RUNTIME_DIR` first;
+Select an isolated development `AKRAMCODE_HOME` and `AKRAMCODE_RUNTIME_DIR` first;
 see `docs/reference/package-management.md#developer-workflow`.
 PowerShell: `. .\activate.ps1`. `deactivate` restores the prior environment.
 For tests, use the independent test environment in `docs/CONTRIBUTING.md` (or Nix);
 PM activation's `PYTHONPATH` does not survive the test runner's environment scrub.
-`scripts/run_tests.sh` probes `.venv`, then `venv`, then `$HOME/.hermes/hermes-agent/venv`
+`scripts/run_tests.sh` probes `.venv`, then `venv`, then `$HOME/.akramcode/akramcode-agent/venv`
 (worktrees sharing the main checkout's venv).
 
 ## Project Structure
@@ -192,14 +192,14 @@ PM activation's `PYTHONPATH` does not survive the test runner's environment scru
 Counts shift constantly; the filesystem is canonical. Load-bearing entry points:
 
 ```
-hermes-agent/
+akramcode-agent/
 ├── run_agent.py          # AIAgent facade; the turn loop lives in agent/turn_*.py
 ├── model_tools.py        # Tool orchestration, discover_builtin_tools(), handle_function_call()
-├── toolsets.py           # TOOLSETS dict, _HERMES_CORE_TOOLS
-├── cli.py                # HermesCLI (REPL, slash dispatch) + akramcode_cli/cli_*_mixin.py
+├── toolsets.py           # TOOLSETS dict, _AKRAMCODE_CORE_TOOLS
+├── cli.py                # AkramCodeCLI (REPL, slash dispatch) + akramcode_cli/cli_*_mixin.py
 ├── akramcode_state.py       # SessionDB facade; akramcode_state_*.py siblings
-├── hermes_constants.py   # get_hermes_home(), display_hermes_home() — profile-aware paths
-├── akram_core.hermes_logging.py     # agent.log / errors.log / gateway.log (profile-aware)
+├── akramcode_constants.py   # get_akramcode_home(), display_akramcode_home() — profile-aware paths
+├── akram_core.akramcode_logging.py     # agent.log / errors.log / gateway.log (profile-aware)
 ├── scripts/batch_runner.py # Parallel batch processing
 ├── agent/                # turn_*.py loop phases, providers, memory, compression, prompt builder
 ├── akramcode_cli/           # CLI subcommands, setup, config, plugins loader, skins, updater
@@ -211,7 +211,7 @@ hermes-agent/
 │   └── builtin_hooks/    # Always-registered gateway hooks (extension point; none shipped)
 ├── plugins/              # memory/, context_engine/, model-providers/, kanban/, image_gen/, ...
 ├── skills/               # Built-in skills (by category)   optional-skills/: shipped, not active
-├── ui-tui/               # Ink (React) terminal UI — `hermes --tui`
+├── ui-tui/               # Ink (React) terminal UI — `akramcode --tui`
 ├── tui_gateway/          # Python JSON-RPC backend for TUI + Desktop — server.py + methods_*.py
 ├── apps/desktop/         # Electron desktop app (+ apps/shared JSON-RPC client)   web/: dashboard SPA
 ├── acp_adapter/          # ACP server (VS Code / Zed / JetBrains)
@@ -222,9 +222,9 @@ hermes-agent/
 └── tests/                # Pytest suite (~39k tests / ~3.7k files, Sep 2026)
 ```
 
-**User state:** `~/.hermes/config.yaml` (settings), `~/.hermes/.env` (secrets only),
-`~/.hermes/logs/` (`agent.log` INFO+, `errors.log` WARNING+, `gateway.log`); all
-profile-aware via `get_hermes_home()`. Browse logs with `hermes logs [--follow] [--level] [--session]`.
+**User state:** `~/.akramcode/config.yaml` (settings), `~/.akramcode/.env` (secrets only),
+`~/.akramcode/logs/` (`agent.log` INFO+, `errors.log` WARNING+, `gateway.log`); all
+profile-aware via `get_akramcode_home()`. Browse logs with `akramcode logs [--follow] [--level] [--session]`.
 
 **Dependency chain:** `tools/registry.py` (no deps) ← `tools/*.py` (register at import) ←
 `model_tools.py` (discovery) ← `run_agent.py`, `cli.py`, `scripts/batch_runner.py`, `environments/`.
@@ -266,13 +266,13 @@ families: `akramcode_state.py` (21), `gateway/run.py` (15), `tools/mcp_tool.py` 
 - **Never infer process identity from argv substrings** (`"serve" in cmdline`) — the bug class
   behind ~10 fleet-update issues (#90778, #87594, #78089, #76129, #91964). Use the canonical
   matchers `gateway.status.looks_like_gateway_command_line` and
-  `akramcode_cli.update_cmd._hermes_holder_subcommand`; flag sets are DERIVED from the parser
+  `akramcode_cli.update_cmd._akramcode_holder_subcommand`; flag sets are DERIVED from the parser
   (`_holder_value_flags()`), never hand-written; match FULL cmdlines and truncate only for
   display. Details: `akramcode_cli/AGENTS.md`.
-- **Never hardcode `~/.hermes`.** `get_hermes_home()` for code paths, `display_hermes_home()`
-  for user-facing text (both from `hermes_constants`). Hardcoding breaks profiles (5 bugs in
+- **Never hardcode `~/.akramcode`.** `get_akramcode_home()` for code paths, `display_akramcode_home()`
+  for user-facing text (both from `akramcode_constants`). Hardcoding breaks profiles (5 bugs in
   PR #3575). Profile operations themselves are HOME-anchored
-  (`_get_profiles_root()` = `Path.home()/.hermes/profiles`) so `hermes -p x profile list`
+  (`_get_profiles_root()` = `Path.home()/.akramcode/profiles`) so `akramcode -p x profile list`
   sees all profiles — intentional, not a bug.
 - **One process may serve many profiles; code that runs outside a turn binds the owning
   profile scope explicitly.** A profile = home + secret scope + terminal scope, bound by
@@ -281,12 +281,12 @@ families: `akramcode_state.py` (21), `gateway/run.py` (15), `tools/mcp_tool.py` 
   _profile_cron_scope` (ticker), `gateway/run_agent_cache.py::_run_release_in_profile_scope`
   (eviction). `os.environ`, module globals and import-time values hold the *launch* profile's, so
   an unbound read is a silent default-profile leak, never an error: home/config/`.env`-derived
-  module constants are a bug class — key slots by `hermes_home_key()` or resolve at call time.
+  module constants are a bug class — key slots by `akramcode_home_key()` or resolve at call time.
   Needs a binding: boot probes (`check_fn`, MCP discovery, hooks), session end/eviction, tickers,
   deferred callbacks, RPC methods, config readers, thread hops (`spawn_context_thread`), child
   spawns (`served_profile_child_env`, never `os.environ.copy()`). Fail-closed reads exist only after
   `set_multiplex_active(True)`. Prove live with two homes (A→B→A) under multiplex, not one temp
-  `HERMES_HOME`. Advisory lint: `scripts/check_profile_scope_patterns.py`.
+  `AKRAMCODE_HOME`. Advisory lint: `scripts/check_profile_scope_patterns.py`.
 - **Machine facts and resource lookup go through `akramcode_platform`.** `akramcode_platform.host` is the
   one answer for OS family, native architecture (`IsWow64Process2` → `platform.machine()`; never
   `PROCESSOR_ARCHITECTURE` alone, it reads AMD64 under x64-on-ARM64 emulation), CPU identity, and
@@ -298,9 +298,9 @@ families: `akramcode_state.py` (21), `gateway/run.py` (15), `tools/mcp_tool.py` 
   `tests/test_managed_runtime_resolution.py` unless allowlisted with a reason; resolvers land in
   `akramcode_platform/resolver/`. Lookup never installs, downloads, or starts anything.
 - **Argparse alias dispatch:** `add_parser("list", aliases=["ls"])` sets `dest` to the literal
-  the user typed (`"ls"`). Dispatch must accept both (caught PTY-testing `hermes webhook ls`).
+  the user typed (`"ls"`). Dispatch must accept both (caught PTY-testing `akramcode webhook ls`).
 - **Don't wire in dead code without E2E validation.** Unshipped code was dead for a reason;
-  E2E the real resolution chain with real imports against a temp `HERMES_HOME` first.
+  E2E the real resolution chain with real imports against a temp `AKRAMCODE_HOME` first.
 
 ### TypeScript style (desktop, TUI, website, future TS packages)
 
@@ -322,22 +322,22 @@ All dependencies carry upper bounds (litellm compromise #2796/#2810; Mini Shai-H
 May 2026). PyPI: `>=floor,<next_major` (`"httpx>=0.28.1,<1"`); pre-1.0: `<0.(minor+2)`
 (`>=0.29,<0.32`). Git URLs: 40-char commit SHA. GitHub Actions: SHA + `# vN` comment. CI-only
 Python requirements: `==exact`. A bare `>=X.Y.Z` is rejected by CI and reviewers.
-After changing `pyproject.toml`, run `hermes pm lock`, re-source `./activate`, and commit
+After changing `pyproject.toml`, run `akramcode pm lock`, re-source `./activate`, and commit
 `pyproject.toml` with `uv.lock`. Reference: #2810 (bounds), #9801 (SHA pinning + audit CI).
 
-PM owns Hermes Python dependency changes. Use `pm.sync_venv(['extra'], explicit=True)`
-for declared runtime extras, `hermes pm install` for setup/sync, and `hermes pm repair`
-for damaged dependencies. Do not mutate Hermes environments with raw pip or uv.
+PM owns AkramCode Python dependency changes. Use `pm.sync_venv(['extra'], explicit=True)`
+for declared runtime extras, `akramcode pm install` for setup/sync, and `akramcode pm repair`
+for damaged dependencies. Do not mutate AkramCode environments with raw pip or uv.
 Use `pm.build_environment` for fresh build outputs and `pm.ensure_environment` for
 isolated tool environments. Callers receive an interpreter or tool path, not uv.
 Nix's declarative uv2nix builds and unrelated user projects remain independently owned.
 
-The `[tool.uv] exclude-newer = "14 days"` quarantine covers **Hermes's own dependencies only**
+The `[tool.uv] exclude-newer = "14 days"` quarantine covers **AkramCode's own dependencies only**
 (every registry package in core's `uv.lock`). Plugin `python_dependencies` follow the plugin's own
 policy: when PM generates the plugin workspace (`pm/workspace.py::_core_release_quarantine`) the
 global cutoff moves onto each core-locked package, so plugin-only packages are not filtered and a
 plugin still cannot drag a core package past the window. Teknium's ruling: "plugins dont have to
-abide by our 14 day rule … Only hermes' dependencies themselves have to." We recommend (not require)
+abide by our 14 day rule … Only akramcode' dependencies themselves have to." We recommend (not require)
 plugin authors adopt their own quarantine — the developer guide and `plugin-catalog/README.md` carry
 that guidance.
 
@@ -355,7 +355,7 @@ that guidance.
 ## Testing (applies everywhere)
 
 **ALWAYS use `scripts/run_tests.sh`**, never bare `pytest`. It enforces CI parity: credential
-vars unset, `TZ=UTC`, `LANG=C.UTF-8`, `HERMES_HOME` → temp dir, and per-file subprocess
+vars unset, `TZ=UTC`, `LANG=C.UTF-8`, `AKRAMCODE_HOME` → temp dir, and per-file subprocess
 isolation via `scripts/run_tests_parallel.py` (no xdist; workers scale with CPU count) so
 module-level dicts/ContextVars cannot leak between files. Direct `pytest` on a big machine
 with API keys set has caused repeated "works locally, fails in CI" incidents (and the reverse).
@@ -369,7 +369,7 @@ python -m pm.build_env --source . --out .venv --group dev --group test
 This is a fresh build, not an in-place sync. If the disposable output exists,
 stop its processes and intentionally remove it before regeneration. The runner
 clears `PYTHONPATH`, so PM shell activation alone does not supply pytest. For a
-fresh output outside the checkout, set `HERMES_PYTHON` to its interpreter.
+fresh output outside the checkout, set `AKRAMCODE_PYTHON` to its interpreter.
 
 ```bash
 scripts/run_tests.sh                                    # full suite
@@ -379,33 +379,33 @@ scripts/run_tests.sh -v --tb=long                       # pytest flags pass thro
 ```
 
 - **Flake policy:** a failing FILE is retried once in a fresh subprocess (`--file-retries`;
-  `HERMES_TEST_FILE_RETRIES=0` disables); a worker killed by signal or the file timeout is never
+  `AKRAMCODE_TEST_FILE_RETRIES=0` disables); a worker killed by signal or the file timeout is never
   retried (relaunching a runaway doubles the damage). Pass-on-retry is green but printed under `⚠ FLAKY`
   with both outputs — a bug to fix, not noise. Timing tests must not assume a quiet runner:
   wall-clock bounds ≥ 2s, event-based sync, no `assert not _wait_until(...)` races.
 - **Placement mirrors the source tree.** A test lives in `tests/<top-level source dir>/` (`tests/akramcode_cli/`,
   `tests/agent/`, `tests/akramcode_state/`, `tests/gateway/relay/`, ...); installer/updater script tests
   under `tests/scripts/{install,desktop_update}/`. Only tests of root-level modules (`utils`,
-  `utils`, `hermes_constants`, packaging) sit directly in `tests/`. No issue numbers in filenames —
+  `utils`, `akramcode_constants`, packaging) sit directly in `tests/`. No issue numbers in filenames —
   cite the issue in the module docstring (`test_89315_x.py` → `test_x.py`, "Regression for #89315").
 - **Placement (CI lanes):** `scripts/ci/classify_changes.py` picks jobs by changed files. A Python test
   asserting about `package.json`, `package-lock.json`, `tsconfig.json`, or `.ts/.tsx/.js/
   .mjs/.cjs` sources will not run on a JS-only PR (green on PR, red on `main` where the
   classifier fails open). Such tests belong in the vitest suite, not `tests/*.py`.
-- **Tests must not write to `~/.hermes/`.** The autouse `_isolate_hermes_home` fixture in
-  `tests/conftest.py` redirects `HERMES_HOME`; never hardcode `~/.hermes/` in tests. Profile
-  tests also mock `Path.home()` so `_get_profiles_root()` / `_get_default_hermes_home()` stay
+- **Tests must not write to `~/.akramcode/`.** The autouse `_isolate_akramcode_home` fixture in
+  `tests/conftest.py` redirects `AKRAMCODE_HOME`; never hardcode `~/.akramcode/` in tests. Profile
+  tests also mock `Path.home()` so `_get_profiles_root()` / `_get_default_akramcode_home()` stay
   in the temp dir (pattern: `tests/akramcode_cli/test_profiles.py`):
   ```python
   @pytest.fixture
   def profile_env(tmp_path, monkeypatch):
-      home = tmp_path / ".hermes"; home.mkdir()
+      home = tmp_path / ".akramcode"; home.mkdir()
       monkeypatch.setattr(Path, "home", lambda: tmp_path)
-      monkeypatch.setenv("HERMES_HOME", str(home))
+      monkeypatch.setenv("AKRAMCODE_HOME", str(home))
       return home
   ```
-  Tests that `patch.object(Path, "home", ...)` must ALSO set `HERMES_HOME` — code reads the
-  env var, not `Path.home()/.hermes`.
+  Tests that `patch.object(Path, "home", ...)` must ALSO set `AKRAMCODE_HOME` — code reads the
+  env var, not `Path.home()/.akramcode`.
 
 ### Don't fake the host OS
 
@@ -506,7 +506,7 @@ extract, not to regex around it.
 | Area | Read | Covers |
 |---|---|---|
 | `run_agent.py`, `agent/` | `agent/AGENTS.md` | AIAgent + mixins, turn phases, caching integrity, message-flow invariants, compression, model/aux resolution |
-| `cli.py`, `akramcode_cli/`, `main.py` | `akramcode_cli/AGENTS.md` | CLI mixins, `_SLASH_DISPATCH`, slash registry, config system + loaders, skins, `hermes update` pipeline, profiles / multiplex |
+| `cli.py`, `akramcode_cli/`, `main.py` | `akramcode_cli/AGENTS.md` | CLI mixins, `_SLASH_DISPATCH`, slash registry, config system + loaders, skins, `akramcode update` pipeline, profiles / multiplex |
 | `gateway/` | `gateway/AGENTS.md` | Adapters, two message guards, streaming contract, background notifications, gateway vs desktop lifecycle, token locks, scoped secrets |
 | `tools/`, `toolsets.py`, `model_tools.py` | `tools/AGENTS.md` | Adding tools, registry, toolsets, delegation, cross-tool references, backends |
 | `plugins/`, `akramcode_cli/plugins*.py` | `plugins/AGENTS.md` | Plugin kinds, native compat contract, in-tree policy |
@@ -521,4 +521,4 @@ extract, not to regex around it.
 Long-form background lives in `docs/developer-guide/` (agent-loop, prompt-assembly,
 context-compression-and-caching, gateway-internals, tools-runtime, plugins/, cron-internals,
 session-storage, ...). Workflow rules (PR/issue/review/salvage process) live in the
-`hermes-agent-dev` skill, not here.
+`akramcode-agent-dev` skill, not here.

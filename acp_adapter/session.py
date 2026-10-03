@@ -1,12 +1,12 @@
-"""ACP session manager — maps ACP sessions to Hermes AIAgent instances.
+"""ACP session manager — maps ACP sessions to AkramCode AIAgent instances.
 
-Sessions are persisted to the shared SessionDB (``~/.hermes/state.db``) so they
+Sessions are persisted to the shared SessionDB (``~/.akramcode/state.db``) so they
 survive process restarts and appear in ``session_search``; ``load_session`` /
 ``resume_session`` after an editor reconnect restore the full history from there.
 """
 from __future__ import annotations
 
-from akramcode_constants import get_hermes_home, translate_cwd_for_wsl_backend, windows_path_to_wsl
+from akramcode_constants import get_akramcode_home, translate_cwd_for_wsl_backend, windows_path_to_wsl
 
 import copy
 import json
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 def _translate_acp_cwd(cwd: str) -> str:
     """Translate Windows ACP cwd values (``E:\\Projects``, ``\\\\wsl.localhost\\``) to POSIX form
-    when Hermes runs in WSL so agents, tools, and persisted sessions agree; no-op elsewhere."""
+    when AkramCode runs in WSL so agents, tools, and persisted sessions agree; no-op elsewhere."""
     return translate_cwd_for_wsl_backend(str(cwd))
 
 
@@ -103,7 +103,7 @@ def _register_task_cwd(task_id: str, cwd: str) -> None:
 def _expand_acp_enabled_toolsets(toolsets: List[str] | None = None,
                                  mcp_server_names: List[str] | None = None) -> List[str]:
     """Return ACP toolsets plus explicit MCP server toolsets for this session."""
-    names = [n for n in (["hermes-acp"] if toolsets is None else toolsets) if n]
+    names = [n for n in (["akramcode-acp"] if toolsets is None else toolsets) if n]
     names += [f"mcp-{s}" for s in (mcp_server_names or []) if s]
     return list(dict.fromkeys(names))
 
@@ -130,7 +130,7 @@ def _first_user_preview(history: List[Dict[str, Any]], default: str) -> str:
 
 @dataclass
 class SessionState:
-    """Tracks per-session state for an ACP-managed Hermes agent."""
+    """Tracks per-session state for an ACP-managed AkramCode agent."""
 
     session_id: str
     agent: Any  # AIAgent instance
@@ -154,14 +154,14 @@ class SessionState:
 
 
 class SessionManager:
-    """Thread-safe manager for ACP sessions backed by Hermes AIAgent instances.
+    """Thread-safe manager for ACP sessions backed by AkramCode AIAgent instances.
 
     Sessions are held in-memory for fast access **and** persisted to the shared
     SessionDB so they survive restarts and are searchable via ``session_search``."""
 
     def __init__(self, agent_factory=None, db=None):
         """``agent_factory``: AIAgent-like factory (tests); default builds a real AIAgent from
-        the runtime provider config. ``db``: SessionDB; default lazily opens ``~/.hermes/state.db``."""
+        the runtime provider config. ``db``: SessionDB; default lazily opens ``~/.akramcode/state.db``."""
         self._sessions: Dict[str, SessionState] = {}
         self._lock = threading.Lock()
         # Serializes DB restores: session construction runs off the event loop, so two
@@ -317,14 +317,14 @@ class SessionManager:
 
     def _get_db(self):
         """Lazily acquire the process-shared SessionDB; ``None`` if unavailable (e.g. import
-        error in a minimal test env). ``HERMES_HOME`` is resolved here, not via the import-time
+        error in a minimal test env). ``AKRAMCODE_HOME`` is resolved here, not via the import-time
         ``DEFAULT_DB_PATH``, so test fixtures that change the env var later are honoured. The
         registry handle is the one in-process tools (delegation, session_search, goals) also
         acquire, so the ACP server holds ONE writer on state.db instead of two (#100896)."""
         if self._db_instance is None:
             try:
                 from akramcode_state.registry import acquire
-                self._db_instance = acquire(get_hermes_home() / "state.db")
+                self._db_instance = acquire(get_akramcode_home() / "state.db")
             except Exception:
                 logger.debug("SessionDB unavailable for ACP persistence", exc_info=True)
         if self._db_instance is not None and not self._cwd_backfilled:
@@ -516,7 +516,7 @@ class SessionManager:
 
         if enabled_toolsets is None:
             # The same per-platform resolver as the gateway/cron/api_server: platform_toolsets.acp wins, else
-            # hermes-acp; its MCP half (every enabled server, a listed-name allowlist, or none for ``no_mcp``)
+            # akramcode-acp; its MCP half (every enabled server, a listed-name allowlist, or none for ``no_mcp``)
             # comes back as bare server names, which ACP keys as ``mcp-<server>`` like its session servers.
             resolved = _get_platform_tools(config, "acp")
             mcp_servers = resolved & enabled_mcp_server_names(config)
@@ -559,7 +559,7 @@ class SessionManager:
         # join a slow-but-reachable server would be invisible all session. ensure_* also
         # (re)starts discovery if the entry spawn never ran or connected zero servers.
         # Bounded by ``mcp_discovery_timeout`` (config.yaml, ~1.5s); late servers are
-        # picked up by HermesACPAgent._schedule_mcp_late_refresh.
+        # picked up by AkramCodeACPAgent._schedule_mcp_late_refresh.
         try:
             from akramcode_cli.mcp_startup import ensure_mcp_discovery_before_agent_build
 
@@ -570,7 +570,7 @@ class SessionManager:
         try:
             agent = AIAgent(**kwargs)
         except Exception as exc:
-            # The bare-AIAgent fallback dies with "No LLM provider configured. Run `hermes setup`" on a
+            # The bare-AIAgent fallback dies with "No LLM provider configured. Run `akramcode setup`" on a
             # machine that is configured and was working a call earlier; the swallowed resolution
             # failure (revoked OAuth, disabled provider, ...) is the actionable error (#91090).
             if resolve_error is not None:

@@ -137,8 +137,8 @@ class WeComAdapter(WeComStreamMixin, WeComMediaMixin, ChatSendQueueMixin, OwnAcc
         self._dedup, self._reply_req_ids = MessageDeduplicator(max_size=DEDUP_MAX_SIZE), {}
         # Text batching (clients split long messages ~4000 chars); attachment-only frames are held
         # for the merge window so the trailing text callback joins the same event (official: 800ms).
-        self._text_batch_delay_seconds = env_float("HERMES_WECOM_TEXT_BATCH_DELAY_SECONDS", 0.6)
-        self._text_batch_split_delay_seconds = env_float("HERMES_WECOM_TEXT_BATCH_SPLIT_DELAY_SECONDS", 2.0)
+        self._text_batch_delay_seconds = env_float("AKRAMCODE_WECOM_TEXT_BATCH_DELAY_SECONDS", 0.6)
+        self._text_batch_split_delay_seconds = env_float("AKRAMCODE_WECOM_TEXT_BATCH_SPLIT_DELAY_SECONDS", 2.0)
         self._attachment_text_merge_delay_seconds = _extra_float("attachment_text_merge_delay_seconds", 0.8)
         # Stream keep-alive config (see streaming.py STREAM_* constants).
         self._stream_safe_duration_seconds = _extra_float("stream_safe_duration_seconds", STREAM_SAFE_DURATION_SECONDS)
@@ -637,7 +637,7 @@ class WeComAdapter(WeComStreamMixin, WeComMediaMixin, ChatSendQueueMixin, OwnAcc
 
 _QR_GENERATE_URL = "https://work.weixin.qq.com/ai/qc/generate"
 _QR_QUERY_URL = "https://work.weixin.qq.com/ai/qc/query_result"
-_QR_CODE_PAGE = "https://work.weixin.qq.com/ai/qc/gen?source=hermes&scode="
+_QR_CODE_PAGE = "https://work.weixin.qq.com/ai/qc/gen?source=akramcode&scode="
 _QR_POLL_INTERVAL, _QR_POLL_TIMEOUT = 3, 300  # seconds (poll every 3s, give up after 5 minutes)
 
 
@@ -648,7 +648,7 @@ def qr_scan_for_bot_info(*, timeout_seconds: int = _QR_POLL_TIMEOUT) -> Optional
     import urllib.parse
 
     def _get_json(url: str, timeout: int) -> Dict[str, Any]:
-        req = urllib.request.Request(url, headers={"User-Agent": "HermesAgent/1.0"})
+        req = urllib.request.Request(url, headers={"User-Agent": "AkramCodeAgent/1.0"})
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             return json.loads(resp.read().decode("utf-8"))
 
@@ -658,7 +658,7 @@ def qr_scan_for_bot_info(*, timeout_seconds: int = _QR_POLL_TIMEOUT) -> Optional
 
     print("  Connecting to WeCom...", end="", flush=True)
     try:
-        raw = _get_json(f"{_QR_GENERATE_URL}?source=hermes", 15)
+        raw = _get_json(f"{_QR_GENERATE_URL}?source=akramcode", 15)
     except Exception as exc:
         return _fail("WeCom QR: failed to fetch QR code: %s", exc, exc)
     scode, auth_url = (str((raw.get("data") or {}).get(k) or "").strip() for k in ("scode", "auth_url"))
@@ -675,7 +675,7 @@ def qr_scan_for_bot_info(*, timeout_seconds: int = _QR_POLL_TIMEOUT) -> Optional
         print(f"\n  Scan the QR code above, or open this URL directly:\n  {page_url}")
     except Exception:
         print(f"  Open this URL in WeCom on your phone:\n\n  {page_url}\n")
-        print("  Tip: from the Hermes environment, run: "
+        print("  Tip: from the AkramCode environment, run: "
               f"{install_hint('messaging')} "
               "to display a scannable QR code here next time")
     print("\n  Fetching configuration results...", end="", flush=True)
@@ -750,10 +750,10 @@ _MANUAL_SETUP_STEPS = (
 _ACCESS_CHOICES = (
     ("Enable open access (anyone can message the bot)", (("WECOM_DM_POLICY", "open"), ("GATEWAY_ALLOW_ALL_USERS", "true")),
      (("warning", "Open access enabled — anyone can use your bot!"),)),
-    ("Use DM pairing (unknown users request access, you approve with 'hermes pairing approve')", (("WECOM_DM_POLICY", "pairing"),),
-     (("success", "DM pairing mode — users will receive a code to request access."), ("info", "Approve with: hermes pairing approve <platform> <code>"))),
+    ("Use DM pairing (unknown users request access, you approve with 'akramcode pairing approve')", (("WECOM_DM_POLICY", "pairing"),),
+     (("success", "DM pairing mode — users will receive a code to request access."), ("info", "Approve with: akramcode pairing approve <platform> <code>"))),
     ("Disable direct messages", (("WECOM_DM_POLICY", "disabled"),), (("warning", "Direct messages disabled."),)),
-    ("Skip for now (bot will deny all users until configured)", (), (("info", "Skipped — configure later with 'hermes gateway setup'"),)),
+    ("Skip for now (bot will deny all users until configured)", (), (("info", "Skipped — configure later with 'akramcode gateway setup'"),)),
 )
 
 
@@ -832,7 +832,7 @@ def _build_callback_adapter(config):
 
 
 def register(ctx) -> None:
-    common = dict(install_hint="Run `hermes setup` to install WeCom support.", emoji="💼", allow_update_command=True)
+    common = dict(install_hint="Run `akramcode setup` to install WeCom support.", emoji="💼", allow_update_command=True)
     ctx.register_platform(
         name="wecom", label="WeCom (Enterprise WeChat)", adapter_factory=WeComAdapter, check_fn=check_wecom_requirements,
         is_connected=_is_connected, validate_config=_is_connected, required_env=["WECOM_BOT_ID", "WECOM_SECRET"],

@@ -77,9 +77,9 @@ SQLITE3_CLI_GUIDANCE = (
 # 3.50.7 and 3.44.6 — the same version gate akramcode_state applies to the
 # embedded library (#69784). The system `sqlite3` CLI on Debian/Ubuntu is
 # routinely in the vulnerable band (e.g. 3.45.1), and #100368's forensics
-# caught exactly this shell converting a live Hermes state.db into two
+# caught exactly this shell converting a live AkramCode state.db into two
 # generations. A salvage shell must therefore be version-gated, not just
-# capability-gated, before it is pointed at (a copy of) a Hermes database.
+# capability-gated, before it is pointed at (a copy of) a AkramCode database.
 #
 # The predicate lives in akramcode_cli.sqlite_runtime (stdlib-only, shared with
 # the installer/update gates) so the embedded runtime and the salvage shell
@@ -87,7 +87,7 @@ SQLITE3_CLI_GUIDANCE = (
 from akramcode_cli.sqlite_runtime import is_sqlite_wal_reset_vulnerable as _wal_reset_vulnerable  # noqa: E502
 
 _WAL_RESET_VULNERABLE_GUIDANCE = (
-    "salvage against a Hermes database with the WAL-reset bug "
+    "salvage against a AkramCode database with the WAL-reset bug "
     "(https://sqlite.org/wal.html#walresetbug, fixed in 3.51.3+ / backports "
     "3.50.7 / 3.44.6; the vulnerable fresh-opener can unlink a live WAL/SHM "
     "pair and split the database into two generations, losing acknowledged "
@@ -162,7 +162,7 @@ def find_sqlite3_cli() -> Optional[str]:
 
 def _cli_supports_recover(binary: str) -> bool:
     """True when ``binary`` can run ``.recover`` (has sqlite_dbpage)."""
-    scratch_dir = tempfile.mkdtemp(prefix="hermes-recover-probe-")
+    scratch_dir = tempfile.mkdtemp(prefix="akramcode-recover-probe-")
     scratch = Path(scratch_dir) / "probe.db"
     try:
         conn = sqlite3.connect(str(scratch))
@@ -222,7 +222,7 @@ def _cli_recover_attempts(source: Path, lf_path: Path, sqlite3_bin: str, *, time
         # .recover reports per-page diagnostics on stderr; a heavily damaged source can emit
         # far more than a pipe buffer holds, so stderr drains to a temp file — an undrained
         # PIPE would block the dump child, stall load's stdin, and burn the whole timeout.
-        with tempfile.TemporaryFile(prefix="hermes-recover-dump-stderr-") as dump_stderr:
+        with tempfile.TemporaryFile(prefix="akramcode-recover-dump-stderr-") as dump_stderr:
             dump = subprocess.Popen(
                 [sqlite3_bin, "-readonly", str(source), command], stdout=subprocess.PIPE, stderr=dump_stderr
             )
@@ -354,7 +354,7 @@ def _type_conflicts(value: Any, declared: str) -> bool:
     """True when a salvaged cell cannot have come from a column of this type.
 
     Stricter than SQLite affinity on purpose: SQLite would happily keep a
-    non-numeric string in an INTEGER column, but Hermes never writes one, so
+    non-numeric string in an INTEGER column, but AkramCode never writes one, so
     text sitting where a counter is declared means the layout is wrong. A
     TEXT column always yields ``str`` (numbers are coerced on write), a REAL
     column always yields ``float``, an INTEGER column yields ``int``.

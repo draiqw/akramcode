@@ -3,7 +3,7 @@
 from unittest.mock import patch
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from utils import atomic_yaml_write
 

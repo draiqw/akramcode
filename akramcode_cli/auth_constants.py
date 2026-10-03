@@ -58,7 +58,7 @@ DEFAULT_NOUS_INFERENCE_URL = "https://inference-api.nousresearch.com/v1"
 # exchange (``inference_base_url``); this literal is the fallback when that field is absent or fails
 # the host allowlist, because the paid host cross-refuses an anonymous JWT with a 400.
 DEFAULT_NOUS_WELCOME_URL = "https://welcome-api.nousresearch.com/v1"
-DEFAULT_NOUS_CLIENT_ID = "hermes-cli"
+DEFAULT_NOUS_CLIENT_ID = "akramcode-cli"
 NOUS_INFERENCE_INVOKE_SCOPE = "inference:invoke"
 NOUS_BILLING_MANAGE_SCOPE = "billing:manage"
 DEFAULT_NOUS_SCOPE = NOUS_INFERENCE_INVOKE_SCOPE
@@ -89,7 +89,7 @@ STEPFUN_STEP_PLAN_INTL_BASE_URL = "https://api.stepfun.ai/step_plan/v1"
 STEPFUN_STEP_PLAN_CN_BASE_URL = "https://api.stepfun.com/step_plan/v1"
 CODEX_OAUTH_CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann"
 CODEX_OAUTH_TOKEN_URL = "https://auth.openai.com/oauth/token"
-CODEX_OAUTH_USER_AGENT = f"hermes-cli/{get_version_info().base_version}"
+CODEX_OAUTH_USER_AGENT = f"akramcode-cli/{get_version_info().base_version}"
 CODEX_ACCESS_TOKEN_REFRESH_SKEW_SECONDS = 120
 XAI_OAUTH_ISSUER = "https://auth.x.ai"
 XAI_OAUTH_DISCOVERY_URL = f"{XAI_OAUTH_ISSUER}/.well-known/openid-configuration"
@@ -106,7 +106,7 @@ QWEN_ACCESS_TOKEN_REFRESH_SKEW_SECONDS = 120
 DEFAULT_SPOTIFY_ACCOUNTS_BASE_URL = "https://accounts.spotify.com"
 DEFAULT_SPOTIFY_API_BASE_URL = "https://api.spotify.com/v1"
 DEFAULT_SPOTIFY_REDIRECT_URI = "http://127.0.0.1:43827/spotify/callback"
-SPOTIFY_DOCS_URL = "https://hermes-agent.nousresearch.com/docs/user-guide/features/spotify"
+SPOTIFY_DOCS_URL = "https://akramcode-agent.nousresearch.com/docs/user-guide/features/spotify"
 SPOTIFY_DASHBOARD_URL = "https://developer.spotify.com/dashboard"
 SPOTIFY_ACCESS_TOKEN_REFRESH_SKEW_SECONDS = 120
 # OpenRouter PKCE (https://openrouter.ai/docs/guides/overview/auth/oauth): the "token" endpoint
@@ -115,7 +115,7 @@ OPENROUTER_AUTH_URL = "https://openrouter.ai/auth"
 OPENROUTER_AUTH_KEYS_URL = "https://openrouter.ai/api/v1/auth/keys"
 OPENROUTER_OAUTH_DOCS_URL = "https://openrouter.ai/docs/guides/overview/auth/oauth"
 
-OAUTH_OVER_SSH_DOCS_URL = "https://hermes-agent.nousresearch.com/docs/guides/oauth-over-ssh"
+OAUTH_OVER_SSH_DOCS_URL = "https://akramcode-agent.nousresearch.com/docs/guides/oauth-over-ssh"
 DEFAULT_SPOTIFY_SCOPE = " ".join((
     "user-modify-playback-state", "user-read-playback-state", "user-read-currently-playing",
     "user-read-recently-played", "playlist-read-private", "playlist-read-collaborative",

@@ -26,11 +26,11 @@ def _reset_resolver_state(monkeypatch):
 
 
 class TestCloudProviderCachePolicy:
-    def test_cache_is_isolated_by_hermes_home(self, tmp_path, monkeypatch):
-        from hermes_constants import (
-            get_hermes_home,
-            reset_hermes_home_override,
-            set_hermes_home_override,
+    def test_cache_is_isolated_by_akramcode_home(self, tmp_path, monkeypatch):
+        from akramcode_constants import (
+            get_akramcode_home,
+            reset_akramcode_home_override,
+            set_akramcode_home_override,
         )
 
         monkeypatch.setattr(
@@ -41,7 +41,7 @@ class TestCloudProviderCachePolicy:
         resolutions = []
 
         def resolve(_name):
-            home = str(get_hermes_home())
+            home = str(get_akramcode_home())
             resolutions.append(home)
             return providers[home]
 
@@ -53,11 +53,11 @@ class TestCloudProviderCachePolicy:
         providers[str(home_b)] = Mock(name="provider-b")
 
         def resolve_for(home):
-            token = set_hermes_home_override(home)
+            token = set_akramcode_home_override(home)
             try:
                 return bt_cloud._get_cloud_provider()
             finally:
-                reset_hermes_home_override(token)
+                reset_akramcode_home_override(token)
 
         assert resolve_for(home_a) is providers[str(home_a)]
         assert resolve_for(home_b) is providers[str(home_b)]
@@ -69,9 +69,9 @@ class TestCloudProviderCachePolicy:
     ):
         from agent.browser_provider import BrowserProvider
         import agent.browser_registry as browser_registry
-        from hermes_constants import (
-            reset_hermes_home_override,
-            set_hermes_home_override,
+        from akramcode_constants import (
+            reset_akramcode_home_override,
+            set_akramcode_home_override,
         )
 
         class Provider(BrowserProvider):
@@ -102,7 +102,7 @@ class TestCloudProviderCachePolicy:
             lambda: {"browser": {"cloud_provider": "cache-replacement"}},
         )
         monkeypatch.setattr("tools.browser_tool_cloud._ensure_browser_plugins_loaded", lambda: None)
-        token = set_hermes_home_override(home)
+        token = set_akramcode_home_override(home)
         try:
             browser_registry.register_provider(first, scope=home)
             assert bt_cloud._get_cloud_provider() is first
@@ -116,7 +116,7 @@ class TestCloudProviderCachePolicy:
                 browser_registry.restore_registration(
                     "cache-replacement", current, None, scope=home
                 )
-            reset_hermes_home_override(token)
+            reset_akramcode_home_override(token)
 
     def test_concurrent_registry_replacement_discards_stale_resolution(
         self, tmp_path, monkeypatch
@@ -126,9 +126,9 @@ class TestCloudProviderCachePolicy:
 
         from agent.browser_provider import BrowserProvider
         import agent.browser_registry as browser_registry
-        from hermes_constants import (
-            reset_hermes_home_override,
-            set_hermes_home_override,
+        from akramcode_constants import (
+            reset_akramcode_home_override,
+            set_akramcode_home_override,
         )
 
         class Provider(BrowserProvider):
@@ -177,11 +177,11 @@ class TestCloudProviderCachePolicy:
         browser_registry.register_provider(first, scope=home)
 
         def resolve():
-            token = set_hermes_home_override(home)
+            token = set_akramcode_home_override(home)
             try:
                 return bt_cloud._get_cloud_provider()
             finally:
-                reset_hermes_home_override(token)
+                reset_akramcode_home_override(token)
 
         try:
             with ThreadPoolExecutor(max_workers=1) as pool:

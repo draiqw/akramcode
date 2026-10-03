@@ -26,7 +26,7 @@ if TYPE_CHECKING:  # annotation-only; the runtime import would be a cycle
     from akramcode_cli.auth import ProviderConfig
 logger = logging.getLogger("akramcode_cli.auth")
 
-_RELOGIN = "Re-authenticate with `hermes model`."
+_RELOGIN = "Re-authenticate with `akramcode model`."
 
 
 def _clean(value: Any) -> str:
@@ -79,7 +79,7 @@ def _read_xai_oauth_tokens(*, _lock: bool = True) -> Dict[str, Any]:
             state = global_state
     if not state:
         raise _xai_err(
-            "No xAI OAuth credentials stored. Select xAI Grok OAuth (SuperGrok / Premium+) in `hermes model`.",
+            "No xAI OAuth credentials stored. Select xAI Grok OAuth (SuperGrok / Premium+) in `akramcode model`.",
             "xai_auth_missing", relogin=True,
         )
     tokens = state.get("tokens")
@@ -108,11 +108,11 @@ def _write_through_xai_oauth_to_global_root(state: Dict[str, Any]) -> None:
     global_path = _global_auth_file_path()
     if global_path is None:  # classic mode (profile == root); the profile save already hit root
         return
-    # Seat belt: under pytest never write the real ~/.hermes/auth.json (mirrors the read-side guard
+    # Seat belt: under pytest never write the real ~/.akramcode/auth.json (mirrors the read-side guard
     # in _load_global_auth_store). Uses raw HOME, not Path.home(), which fixtures may monkeypatch.
     real_home_env = os.environ.get("HOME", "") if os.environ.get("PYTEST_CURRENT_TEST") else ""
     if real_home_env:
-        real_root = Path(real_home_env) / ".hermes" / "auth.json"
+        real_root = Path(real_home_env) / ".akramcode" / "auth.json"
         try:
             if global_path.resolve(strict=False) == real_root.resolve(strict=False):
                 return
@@ -226,7 +226,7 @@ def _xai_validate_oauth_endpoint(url: str, *, field: str) -> str:
             f"xAI OIDC discovery {field} host {host!r} is not on the xAI origin "
             f"(expected x.ai or a *.x.ai subdomain). Refusing to use a cached "
             f"endpoint that may have been substituted by a MITM during initial "
-            f"discovery; re-authenticate with `hermes model` to re-fetch."
+            f"discovery; re-authenticate with `akramcode model` to re-fetch."
         ),
     }[problem]
     raise _xai_err(message, "xai_discovery_invalid")
@@ -323,7 +323,7 @@ def refresh_xai_oauth_pure(
         # 403 is almost always a tier/entitlement gate; re-login won't fix it, so use a separate
         # code and format_auth_error skips the re-authenticate hint.
         # ``403`` from xAI's token endpoint is almost always a tier / entitlement gate (the OAuth grant
-        # exists but the account isn't on the allowlist for API access). Re-running ``hermes model`` won't
+        # exists but the account isn't on the allowlist for API access). Re-running ``akramcode model`` won't
         # fix that — surface a separate error code so ``format_auth_error`` doesn't append a misleading
         # re-authenticate hint, and point users at the ``XAI_API_KEY`` fallback. See #26847.
         if response.status_code == 403:
@@ -396,7 +396,7 @@ def _quarantine_xai_oauth_tokens(exc: AuthError) -> None:
         tokens.pop("refresh_token", None)
         # Capture the previous singleton tokens BEFORE overwriting them. The pool-sync step uses this to
         # distinguish legacy singleton-aliases (which should be refreshed) from independent accounts that
-        # ``hermes auth add openai-codex`` created (which must not be overwritten — see #39236).
+        # ``akramcode auth add openai-codex`` created (which must not be overwritten — see #39236).
         state["tokens"] = tokens
         state["last_auth_error"] = _last_auth_error_marker(
             "xai-oauth", exc, reason="runtime_refresh_failure", default_code="xai_refresh_failed",
@@ -409,7 +409,7 @@ def _quarantine_xai_oauth_tokens(exc: AuthError) -> None:
 
 def _xai_oauth_inference_base_url() -> str:
     return _xai_validate_inference_base_url(
-        os.getenv("HERMES_XAI_BASE_URL", "").strip().rstrip("/") or os.getenv("XAI_BASE_URL", "").strip().rstrip("/"),
+        os.getenv("AKRAMCODE_XAI_BASE_URL", "").strip().rstrip("/") or os.getenv("XAI_BASE_URL", "").strip().rstrip("/"),
         fallback=DEFAULT_XAI_OAUTH_BASE_URL,
     )
 
@@ -432,7 +432,7 @@ def resolve_xai_oauth_runtime_credentials(
 
     data = _read_xai_oauth_tokens()
     tokens = dict(data["tokens"])
-    refresh_timeout_seconds = env_float("HERMES_XAI_REFRESH_TIMEOUT_SECONDS", 20)
+    refresh_timeout_seconds = env_float("AKRAMCODE_XAI_REFRESH_TIMEOUT_SECONDS", 20)
     if _should_refresh(data):
         with _auth_store_lock(timeout_seconds=max(float(AUTH_LOCK_TIMEOUT_SECONDS), refresh_timeout_seconds + 5.0)):
             # Re-read under the lock: a concurrent caller may already have rotated the grant.
@@ -457,7 +457,7 @@ def resolve_xai_oauth_runtime_credentials(
         "provider": "xai-oauth",
         "base_url": _xai_oauth_inference_base_url(),
         "api_key": _clean(tokens.get("access_token")),
-        "source": "hermes-auth-store",
+        "source": "akramcode-auth-store",
         "last_refresh": data.get("last_refresh"),
         # Display only; auth.json may still carry a legacy ``oauth_pkce`` label.
         "auth_mode": "oauth_device_code",
@@ -479,7 +479,7 @@ def _login_xai_oauth(args, pconfig: ProviderConfig, *, force_new_login: bool = F
 
     print()
     print("Signing in to xAI Grok OAuth (SuperGrok / Premium+)...")
-    print("(Hermes creates its own local OAuth session)")
+    print("(AkramCode creates its own local OAuth session)")
     print()
 
     timeout_seconds = float(getattr(args, "timeout", None) or 20.0)
@@ -494,7 +494,7 @@ def _login_xai_oauth(args, pconfig: ProviderConfig, *, force_new_login: bool = F
         auth_mode="oauth_device_code",
     )
     # Explicit re-login re-enables the credential: clear the ``device_code`` suppression marker left
-    # by ``hermes auth remove xai-oauth``. Deliberately NOT inside _save_xai_oauth_tokens — the
+    # by ``akramcode auth remove xai-oauth``. Deliberately NOT inside _save_xai_oauth_tokens — the
     # refresh hot path shares that helper and must never mutate suppression state.
     unsuppress_credential_source("xai-oauth", "device_code")
     config_path = _update_config_for_provider("xai-oauth", creds.get("base_url", DEFAULT_XAI_OAUTH_BASE_URL))

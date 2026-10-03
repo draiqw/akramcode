@@ -48,10 +48,10 @@ def is_connected(config) -> bool:
 
 
 def interactive_setup() -> None:
-    """`hermes gateway setup` flow for A2A."""
+    """`akramcode gateway setup` flow for A2A."""
     from akramcode_cli.setup import prompt, prompt_yes_no, save_env_value, get_env_value, print_header, print_info, print_warning
     print_header("A2A (Agent-to-Agent)")
-    print_info("Expose Hermes as an A2A-discoverable agent and call other A2A agents.")
+    print_info("Expose AkramCode as an A2A-discoverable agent and call other A2A agents.")
     print_info("Uses Python stdlib — no extra packages needed.")
     print()
     def ask(label: str, env: str) -> str:

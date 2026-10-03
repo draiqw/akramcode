@@ -18,7 +18,7 @@ def _patch_info(tmp_path, config_yaml, model, runtime):
     if config_yaml is not None:
         cfg_path.write_text(config_yaml)
     return (
-        patch("gateway.run._hermes_home", tmp_path),
+        patch("gateway.run._akramcode_home", tmp_path),
         patch("gateway.run._resolve_gateway_model", return_value=model),
         patch("gateway.run._resolve_runtime_agent_kwargs", return_value=runtime),
     )
@@ -143,7 +143,7 @@ class TestResetNoticeSessionInfo:
         from types import SimpleNamespace
         base, profile = self._homes(tmp_path)
         runner.config = SimpleNamespace(multiplex_profiles=True)
-        with patch("gateway.run._hermes_home", base), \
+        with patch("gateway.run._akramcode_home", base), \
              patch.object(GatewayRunner, "_resolve_profile_home_for_source", return_value=profile), \
              patch("gateway.run._resolve_runtime_agent_kwargs", return_value=self._RUNTIME):
             info = runner._reset_notice_session_info(self._source())

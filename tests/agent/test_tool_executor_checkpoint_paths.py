@@ -34,14 +34,14 @@ def container_task_id(monkeypatch):
 
 def test_relative_file_checkpoint_uses_task_workspace(tmp_path, monkeypatch):
     """Checkpoint lookup must use the same cwd as a relative file mutation."""
-    process_cwd = tmp_path / "opt" / "hermes"
+    process_cwd = tmp_path / "opt" / "akramcode"
     workspace_cwd = tmp_path / "opt" / "data" / "workspace"
     process_cwd.mkdir(parents=True)
     workspace_cwd.mkdir(parents=True)
 
     # Both directories contain content so checkpointing the wrong one would
     # still succeed and remain observable as the regression did in Docker.
-    (process_cwd / "pyproject.toml").write_text("[project]\nname = 'hermes'\n")
+    (process_cwd / "pyproject.toml").write_text("[project]\nname = 'akramcode'\n")
     (workspace_cwd / "pyproject.toml").write_text("[project]\nname = 'workspace'\n")
     (workspace_cwd / "existing.txt").write_text("before\n")
 

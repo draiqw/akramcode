@@ -20,7 +20,7 @@ from akramcode_cli.local_runtime.binaries import Engine
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / ".akramcode"))
     from akramcode_cli import web_server
 
     test_client = TestClient(web_server.app)

@@ -67,7 +67,7 @@ def test_x_search_posts_responses_request(monkeypatch):
 
     tool_def = captured["json"]["tools"][0]
     assert captured["url"] == "https://api.x.ai/v1/responses"
-    assert captured["headers"]["User-Agent"] == f"Hermes-Agent/{get_version_info().base_version}"
+    assert captured["headers"]["User-Agent"] == f"AkramCode-Agent/{get_version_info().base_version}"
     assert captured["json"]["model"]
     assert captured["json"]["store"] is False
     assert "reasoning" not in captured["json"]
@@ -175,7 +175,7 @@ def test_x_search_returns_structured_http_error(monkeypatch):
 
 def _no_xai_env(monkeypatch):
     """Strip any XAI_* env vars so the resolver doesn't see a leaked dev key."""
-    for var in ("XAI_API_KEY", "XAI_BASE_URL", "HERMES_XAI_BASE_URL"):
+    for var in ("XAI_API_KEY", "XAI_BASE_URL", "AKRAMCODE_XAI_BASE_URL"):
         monkeypatch.delenv(var, raising=False)
 
 def test_x_search_uses_xai_oauth_when_only_oauth_available(monkeypatch):

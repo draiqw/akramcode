@@ -153,7 +153,7 @@ def test_url_mismatch_is_needs_fixing(tmp_path):
 FEED = """\
 version: 1.2.0
 released: 2026-09-03T00:00:00Z
-min_hermes: 0.27.0
+min_akramcode: 0.27.0
 artifacts:
   git: https://example/o/r
   bundle: https://example/o/r/plug-1.2.0.zip
@@ -181,7 +181,7 @@ def test_matching_tag_fetches_feed(tmp_path):
     assert fetched == ["https://feed.example/f.yml"]
     assert r.latest == "1.2.0"
     assert r.current == "1.0.0"
-    assert r.min_hermes == "0.27.0"
+    assert r.min_akramcode == "0.27.0"
     assert r.update_available is True  # installed 1.0.0 vs feed 1.2.0
 
 
@@ -421,7 +421,7 @@ def test_pip_uses_owning_distribution_not_import_root():
     """C17: the dist name comes from the entry point's owning distribution,
     never guessed from the value's first import module."""
     ep = _EP("mnemosyne", "some.module:register", None)
-    ep.dist = _Dist("mnemosyne-hermes")
+    ep.dist = _Dist("mnemosyne-akramcode")
     seen = []
 
     rs = check_pip_plugins(
@@ -429,7 +429,7 @@ def test_pip_uses_owning_distribution_not_import_root():
         pypi_latest=lambda d: None,
         entry_points=[ep],
     )
-    assert seen == ["mnemosyne-hermes"]
+    assert seen == ["mnemosyne-akramcode"]
     assert rs[0].current == "0.5.0"
 
 

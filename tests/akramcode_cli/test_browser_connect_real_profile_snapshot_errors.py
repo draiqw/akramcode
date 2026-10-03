@@ -61,7 +61,7 @@ def test_snapshot_error_names_databases_and_reason(tmp_path, monkeypatch, reason
     wording when every failure is the backup deadline, the SQLite error otherwise."""
     root = tmp_path / "real"
     _fake_profile(root)
-    monkeypatch.setattr(bc, "get_hermes_home", lambda: tmp_path / "hh")
+    monkeypatch.setattr(bc, "get_akramcode_home", lambda: tmp_path / "hh")
     locked_reason = reason or bc._AUTH_DB_LOCKED
 
     def fake_copy(src, dst_file):

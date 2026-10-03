@@ -18,7 +18,7 @@ It also pins the named-custom-provider case: a provider declared under
 it. A future refactor keying the flag on provider *name* would reintroduce that
 miss; this test is the tripwire.
 
-Uses a temp HERMES_HOME + real `load_config_readonly` (the config cache is
+Uses a temp AKRAMCODE_HOME + real `load_config_readonly` (the config cache is
 path-keyed, so this is hermetic) — no live server, no hand-set flag.
 """
 
@@ -30,8 +30,8 @@ from run_agent import AIAgent
 
 
 def _write_home(tmp_path, monkeypatch, reasoning_echo: bool):
-    """Point HERMES_HOME at a temp profile declaring a named custom provider."""
-    home = tmp_path / "hermes"
+    """Point AKRAMCODE_HOME at a temp profile declaring a named custom provider."""
+    home = tmp_path / "akramcode"
     home.mkdir()
     lines = [
         "model:",
@@ -47,7 +47,7 @@ def _write_home(tmp_path, monkeypatch, reasoning_echo: bool):
         "    key_env: LLAMACPP_KEY",
     ]
     (home / "config.yaml").write_text("\n".join(lines) + "\n")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     # Drop any path-keyed config cache from a prior test.
     try:
         from akramcode_cli import config as _cfg

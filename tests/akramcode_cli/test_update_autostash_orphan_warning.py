@@ -1,9 +1,9 @@
 """Orphaned update-autostash surfacing (#63717 problem 6).
 
-``hermes update`` can legitimately leave an autostash behind (--keep-stash
+``akramcode update`` can legitimately leave an autostash behind (--keep-stash
 parks it; a conflicted restore preserves it), but nothing ever mentioned those
-entries again — they persisted invisibly for weeks. ``hermes update`` now
-warns about ``hermes-update-autostash-*`` entries older than the threshold.
+entries again — they persisted invisibly for weeks. ``akramcode update`` now
+warns about ``akramcode-update-autostash-*`` entries older than the threshold.
 Behavioral tests use real git repos; no production mocking of the code under
 test.
 """
@@ -23,7 +23,7 @@ def _git(cwd, *args, check=True):
 
 
 def _make_repo_with_autostash(tmp_path, age_days: float):
-    """Real repo with one hermes-update-autostash entry aged ``age_days``."""
+    """Real repo with one akramcode-update-autostash entry aged ``age_days``."""
     import shutil
 
     if shutil.which("git") is None:
@@ -39,7 +39,7 @@ def _make_repo_with_autostash(tmp_path, age_days: float):
     stamp = (
         datetime.now(timezone.utc) - timedelta(days=age_days)
     ).strftime("%Y%m%d-%H%M%S")
-    name = f"hermes-update-autostash-{stamp}"
+    name = f"akramcode-update-autostash-{stamp}"
     _git(tmp_path, "stash", "push", "--include-untracked", "-m", name)
     return name
 
@@ -64,7 +64,7 @@ def test_fresh_autostash_is_not_flagged(tmp_path, capsys):
     assert "leftover update autostash" not in capsys.readouterr().out
 
 
-def test_non_hermes_stash_is_ignored(tmp_path, capsys):
+def test_non_akramcode_stash_is_ignored(tmp_path, capsys):
     import shutil
 
     if shutil.which("git") is None:
@@ -94,7 +94,7 @@ def test_unparseable_autostash_timestamp_left_alone(tmp_path, capsys):
     _git(tmp_path, "add", "-A")
     _git(tmp_path, "commit", "-qm", "init")
     (tmp_path / "tracked.txt").write_text("change\n")
-    _git(tmp_path, "stash", "push", "-m", "hermes-update-autostash-notadate")
+    _git(tmp_path, "stash", "push", "-m", "akramcode-update-autostash-notadate")
     count = update_cmd._warn_orphaned_update_autostashes(["git"], tmp_path)
     assert count == 0
 

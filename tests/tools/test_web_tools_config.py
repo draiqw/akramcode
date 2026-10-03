@@ -197,7 +197,7 @@ class TestBackendSelection:
     """Test suite for _get_backend() backend selection logic.
 
     The backend is configured via config.yaml (web.backend), set by
-    ``hermes tools``.  Falls back to key-based detection for legacy/manual
+    ``akramcode tools``.  Falls back to key-based detection for legacy/manual
     setups.
     """
 
@@ -666,7 +666,7 @@ class TestCheckWebApiKey:
         has_xai_credentials probe -> check_fn -> get_tool_definitions. The web
         toolset must serve zero tools (xai can never be dispatched to), and it
         must light up once a real web key joins."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))  # isolate auth.json / credential pool
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))  # isolate auth.json / credential pool
         monkeypatch.setenv("XAI_API_KEY", "xai-test-key")
         for k in ("PERPLEXITY_API_KEY", "SEARXNG_URL", "BRAVE_SEARCH_API_KEY"):
             monkeypatch.delenv(k, raising=False)
@@ -848,7 +848,7 @@ class TestNonBuiltinProviderAvailability:
 class TestFirecrawlEnvResolution:
     """Verify Firecrawl reads env values from akramcode_cli.config.get_env_value,
     not just os.getenv.  This catches the regression reported in #40190 where
-    values stored in ~/.hermes/.env were invisible to the provider."""
+    values stored in ~/.akramcode/.env were invisible to the provider."""
 
     def test_direct_config_reads_via_get_env_value(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """_get_direct_firecrawl_config() must use get_env_value, not os.getenv."""
@@ -891,7 +891,7 @@ class TestFirecrawlEnvResolution:
 class TestSiblingProvidersEnvResolution:
     """The same #40190 bug class widened: every keyed web provider must
     resolve its credential through the config-aware lookup (os.environ OR
-    ~/.hermes/.env), not bare os.getenv. Parametrized over the four
+    ~/.akramcode/.env), not bare os.getenv. Parametrized over the four
     providers that previously read only the process environment."""
 
     _CASES = [
@@ -942,7 +942,7 @@ class TestSiblingProvidersEnvResolution:
             KeenableWebSearchProvider().search("q", limit=2)
             headers = mock_post.call_args.kwargs["headers"]
             assert headers["Authorization"] == "Bearer kn-from-dotenv"
-            assert headers["X-Keenable-Title"] == "hermes-agent"
+            assert headers["X-Keenable-Title"] == "akramcode-agent"
 
     def test_tavily_request_reads_key_via_get_env_value(self, monkeypatch):
         """Keyed Tavily must Bearer-auth with a key that lives only in .env."""
@@ -963,7 +963,7 @@ class TestSiblingProvidersEnvResolution:
             _tavily_request("search", {"query": "q"})
             headers = mock_post.call_args.kwargs["headers"]
             assert headers["Authorization"] == "Bearer tvly-from-dotenv"
-            assert headers["X-Client-Name"] == "hermes-agent"
+            assert headers["X-Client-Name"] == "akramcode-agent"
             assert "X-Tavily-Access-Mode" not in headers
 
 
@@ -984,7 +984,7 @@ def test_xai_only_gate_agrees_with_dispatcher_when_web_xai_plugin_loaded(monkeyp
     from agent import web_search_registry as registry
     from plugins.web.xai.provider import XAIWebSearchProvider
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     monkeypatch.setenv("XAI_API_KEY", "xai-test-key")
     for k in ("PERPLEXITY_API_KEY", "SEARXNG_URL", "BRAVE_SEARCH_API_KEY", "TAVILY_API_KEY", "EXA_API_KEY"):
         monkeypatch.delenv(k, raising=False)

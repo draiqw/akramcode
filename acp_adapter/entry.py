@@ -1,11 +1,11 @@
-"""CLI entry point for the hermes-agent ACP adapter.
+"""CLI entry point for the akramcode-agent ACP adapter.
 
-Loads ``~/.hermes/.env``, routes logging to stderr (stdout is reserved for ACP
+Loads ``~/.akramcode/.env``, routes logging to stderr (stdout is reserved for ACP
 JSON-RPC), and starts the ACP agent server.
 
 Usage::
 
-    python -m acp_adapter.entry   # or: hermes acp / hermes-acp
+    python -m acp_adapter.entry   # or: akramcode acp / akramcode-acp
 """
 
 # IMPORTANT: akram_core.akramcode_bootstrap must be the very first import — UTF-8 stdio
@@ -13,15 +13,15 @@ Usage::
 try:
     import akram_core.akramcode_bootstrap  # noqa: F401
 except ModuleNotFoundError as exc:
-    # Partial ``hermes update`` (git-reset landed, ``uv pip install -e .`` did not).
+    # Partial ``akramcode update`` (git-reset landed, ``uv pip install -e .`` did not).
     if exc.name != "akram_core.akramcode_bootstrap":
         raise  # the bootstrap exists but cannot load: skipping it would skip PM activation
 else:
-    # Stop a ``utils/``/``proxy/``/``ui/`` package in the launch cwd from shadowing Hermes modules.
+    # Stop a ``utils/``/``proxy/``/``ui/`` package in the launch cwd from shadowing AkramCode modules.
     akram_core.akramcode_bootstrap.harden_import_path()
 
-# `hermes-acp` runs without akramcode_cli.main: repair a `hermes update` killed mid-pull here, before
-# importing anything else from the checkout (a no-op under `hermes acp`, which already did).
+# `akramcode-acp` runs without akramcode_cli.main: repair a `akramcode update` killed mid-pull here, before
+# importing anything else from the checkout (a no-op under `akramcode acp`, which already did).
 from akramcode_cli import _early_recovery
 
 if _early_recovery.restore_interrupted_pull():
@@ -33,7 +33,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 
 
 # Liveness-probe methods outside the ACP schema. The router correctly answers JSON-RPC -32601
@@ -79,24 +79,24 @@ def _setup_logging() -> None:
 
 
 def _load_env() -> None:
-    """Load .env from HERMES_HOME (default ``~/.hermes``)."""
-    from akramcode_cli.env_loader import load_hermes_dotenv
+    """Load .env from AKRAMCODE_HOME (default ``~/.akramcode``)."""
+    from akramcode_cli.env_loader import load_akramcode_dotenv
 
-    hermes_home = get_hermes_home()
-    loaded = load_hermes_dotenv(hermes_home=hermes_home)
+    akramcode_home = get_akramcode_home()
+    loaded = load_akramcode_dotenv(akramcode_home=akramcode_home)
     log = logging.getLogger(__name__)
     for env_file in loaded or ():
         log.info("Loaded env from %s", env_file)
     if not loaded:
-        log.info("No .env found at %s, using system env", hermes_home / ".env")
+        log.info("No .env found at %s, using system env", akramcode_home / ".env")
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(prog="hermes-acp", description="Run Hermes Agent as an ACP stdio server.")
-    parser.add_argument("--version", action="store_true", help="Print Hermes version and exit")
+    parser = argparse.ArgumentParser(prog="akramcode-acp", description="Run AkramCode Agent as an ACP stdio server.")
+    parser.add_argument("--version", action="store_true", help="Print AkramCode version and exit")
     parser.add_argument("--check", action="store_true", help="Verify ACP dependencies and adapter imports, then exit")
     parser.add_argument("--setup", action="store_true",
-                        help="Run interactive Hermes provider/model setup for ACP terminal auth")
+                        help="Run interactive AkramCode provider/model setup for ACP terminal auth")
     parser.add_argument("--setup-browser", action="store_true",
                         help="Prepare PM's pinned browser tools and Chromium.")
     parser.add_argument("--yes", "-y", action="store_true", dest="assume_yes",
@@ -112,18 +112,18 @@ def _print_version() -> None:
 
 def _run_check() -> None:
     import acp  # noqa: F401
-    from acp_adapter.server import HermesACPAgent  # noqa: F401
+    from acp_adapter.server import AkramCodeACPAgent  # noqa: F401
 
-    print("Hermes ACP check OK")
+    print("AkramCode ACP check OK")
 
 
 def _run_setup() -> None:
-    from akramcode_cli.main import main as hermes_main
+    from akramcode_cli.main import main as akramcode_main
 
     old_argv = sys.argv[:]
     try:
-        sys.argv = [old_argv[0] if old_argv else "hermes", "model"]
-        hermes_main()
+        sys.argv = [old_argv[0] if old_argv else "akramcode", "model"]
+        akramcode_main()
     finally:
         sys.argv = old_argv
 
@@ -175,7 +175,7 @@ def main(argv: list[str] | None = None) -> None:
     _load_env()
 
     logger = logging.getLogger(__name__)
-    logger.info("Starting hermes-agent ACP adapter")
+    logger.info("Starting akramcode-agent ACP adapter")
 
     # Ensure the project root is on sys.path so ``from run_agent import AIAgent`` works
     project_root = str(Path(__file__).resolve().parent.parent)
@@ -190,7 +190,7 @@ def main(argv: list[str] | None = None) -> None:
     install_truststore()
 
     import acp
-    from .server import HermesACPAgent
+    from .server import AkramCodeACPAgent
 
     # Windows: import the configured memory provider (and numpy) on the main thread before
     # the MCP-discovery and ACP stdin-reader threads start (akramcode_cli's ~150 ms
@@ -207,7 +207,7 @@ def main(argv: list[str] | None = None) -> None:
     # Previously this blocked asyncio.run() for 2-5 s. (ACP also registers per-session MCP servers
     # dynamically via asyncio.to_thread inside the event loop; that path is unaffected.)  Moved from
     # model_tools.py module scope to avoid freezing the gateway's loop on lazy import (#16856).
-    if os.environ.get("HERMES_ACP_SKIP_CONFIGURED_MCP", "").strip() != "1":
+    if os.environ.get("AKRAMCODE_ACP_SKIP_CONFIGURED_MCP", "").strip() != "1":
         try:
             from akramcode_cli.mcp_startup import start_background_mcp_discovery
 
@@ -215,7 +215,7 @@ def main(argv: list[str] | None = None) -> None:
         except Exception:
             logger.debug("MCP tool discovery failed at ACP startup", exc_info=True)
 
-    agent = HermesACPAgent()
+    agent = AkramCodeACPAgent()
     try:
         asyncio.run(acp.run_agent(agent, use_unstable_protocol=True))
     except KeyboardInterrupt:

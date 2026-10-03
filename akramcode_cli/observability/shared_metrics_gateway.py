@@ -34,7 +34,7 @@ def _submit(fn: Callable[..., Any], *args: Any, **kwargs: Any) -> Future | None:
     try:
         with _executor_lock:
             if _executor is None:
-                _executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="hermes-gateway-metrics")
+                _executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="akramcode-gateway-metrics")
         return _executor.submit(contextvars.copy_context().run, _guarded, fn, *args, **kwargs)
     except Exception:  # interpreter shutdown refuses new work: the metric is simply dropped
         logger.debug("Gateway shared metric not scheduled", exc_info=True)
@@ -68,10 +68,10 @@ def _platform(value: Any) -> str:
     return adapter_platform(getattr(value, "platform", value))
 
 
-# ---- classification (closed classes from exception types, HTTP statuses and Hermes's own codes) ----
+# ---- classification (closed classes from exception types, HTTP statuses and AkramCode's own codes) ----
 
 _STATUS_CLASSES = {401: "auth", 403: "forbidden", 413: "too_long", 429: "rate_limited"}
-# Adapter fatal codes are Hermes-authored identifiers (``telegram_auth_error``); first match wins, so
+# Adapter fatal codes are AkramCode-authored identifiers (``telegram_auth_error``); first match wins, so
 # "missing credentials" reads as configuration, not a rejected credential.
 _CODE_CLASSES = (
     (("missing", "dependency", "npm", "config", "conflict", "lock", "bind"), "config"),
@@ -118,7 +118,7 @@ def _exception_class(exc: BaseException | None) -> str:
     if isinstance(exc, (TimeoutError, ConnectionError)):
         return "network"
     names = "".join(cls.__name__.lower() for cls in type(exc).__mro__[:-1])
-    # Type names say auth / rate / network; "configuration" is only ever a Hermes fatal code.
+    # Type names say auth / rate / network; "configuration" is only ever a AkramCode fatal code.
     return next((cls for needles, cls in _CODE_CLASSES[1:] if any(n in names for n in needles)), "other")
 
 
@@ -152,7 +152,7 @@ def delivery_failure_class(result: Any = None, exc: BaseException | None = None)
     return "network" if getattr(result, "retryable", False) else "other"
 
 
-# ---- hermes.platform.health ----
+# ---- akramcode.platform.health ----
 
 def platform_health_fields(*, platform: Any, event: str, error_class: str) -> dict[str, str] | None:
     from . import shared_metrics_contract as contract
@@ -178,13 +178,13 @@ def _in_home(home: Any, fn: Callable[..., Any], *args: Any, **kwargs: Any) -> No
     if home is None:
         fn(*args, **kwargs)
         return
-    from akramcode_constants import reset_hermes_home_override, set_hermes_home_override
+    from akramcode_constants import reset_akramcode_home_override, set_akramcode_home_override
 
-    token = set_hermes_home_override(str(home))
+    token = set_akramcode_home_override(str(home))
     try:
         fn(*args, **kwargs)
     finally:
-        reset_hermes_home_override(token)
+        reset_akramcode_home_override(token)
 
 
 def record_platform_connect(
@@ -201,17 +201,17 @@ def record_platform_connect(
 _USER_CHOSEN_FATAL_CODES = frozenset({"relay_disabled"})
 
 
-def record_platform_disconnect(adapter: Any, *, hermes_home: Any = None) -> None:
+def record_platform_disconnect(adapter: Any, *, akramcode_home: Any = None) -> None:
     """A live adapter lost its connection after startup (its fatal-error handler owned it).
-    ``hermes_home``: the owning profile, for handlers that run outside its scope (multiplexed
+    ``akramcode_home``: the owning profile, for handlers that run outside its scope (multiplexed
     secondaries)."""
     fatal_code = getattr(adapter, "fatal_error_code", None)
     if fatal_code in _USER_CHOSEN_FATAL_CODES:
         return
-    _submit(_in_home, hermes_home, _record_health, adapter, "disconnect", fatal_code=fatal_code)
+    _submit(_in_home, akramcode_home, _record_health, adapter, "disconnect", fatal_code=fatal_code)
 
 
-# ---- hermes.platform.delivery + hermes.gateway.reply_latency ----
+# ---- akramcode.platform.delivery + akramcode.gateway.reply_latency ----
 
 def delivery_fields(*, platform: Any, failure_class: str) -> dict[str, str]:
     from . import shared_metrics_contract as contract
@@ -269,10 +269,10 @@ def stops_reply_clock(send_or_edit: Callable[..., Any]) -> Callable[..., Any]:
 _REPLY_THRESHOLDS = ((2.0, "lt_2s"), (5.0, "2s_to_5s"), (15.0, "5s_to_15s"), (60.0, "15s_to_60s"))
 _REPLY_CLOCK_MAX = 1024
 _REPLY_CLOCK_MAX_AGE = 3600.0
-# (platform value, chat id) -> (monotonic start, owning Hermes home). Keyed without the profile: the
+# (platform value, chat id) -> (monotonic start, owning AkramCode home). Keyed without the profile: the
 # send side may run outside the turn's scope, so the start side records whose row it is.
 _reply_clocks: OrderedDict[tuple[str, str], tuple[float, str]] = OrderedDict()
-# (platform value, chat id) -> the Hermes home whose turn last started there; outlives the clock so
+# (platform value, chat id) -> the AkramCode home whose turn last started there; outlives the clock so
 # later sends (busy acks, follow-ups) in the chat are attributed too.
 _chat_homes: OrderedDict[tuple[str, str], str] = OrderedDict()
 _reply_lock = threading.Lock()
@@ -304,9 +304,9 @@ def start_reply_clock(source: Any, *, internal: bool = False) -> None:
     key = None if internal else _clock_key(getattr(source, "platform", None), getattr(source, "chat_id", None))
     if key is None:
         return
-    from akramcode_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
 
-    home = str(get_hermes_home())
+    home = str(get_akramcode_home())
     with _reply_lock:
         for table, value in ((_reply_clocks, (time.monotonic(), home)), (_chat_homes, home)):
             table.pop(key, None)
@@ -364,7 +364,7 @@ def reply_latency_fields(*, platform: Any, seconds: float) -> dict[str, str]:
     }
 
 
-# ---- hermes.cron.run ----
+# ---- akramcode.cron.run ----
 
 _CRON_NOTES_MAX = 512
 # execution id -> delivery kind, noted where the job dict is in hand; popped once at the terminal write.

@@ -26,7 +26,7 @@ class ActualProfile(ProviderProfile):
         if any(
             os.getenv(key)
             for key in (
-                "HERMES_CA_BUNDLE",
+                "AKRAMCODE_CA_BUNDLE",
                 "SSL_CERT_FILE",
                 "REQUESTS_CA_BUNDLE",
                 "CURL_CA_BUNDLE",

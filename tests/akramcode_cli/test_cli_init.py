@@ -1,4 +1,4 @@
-"""Tests for HermesCLI initialization -- catches configuration bugs
+"""Tests for AkramCodeCLI initialization -- catches configuration bugs
 that only manifest at runtime (not in mocked unit tests)."""
 
 import os
@@ -12,7 +12,7 @@ from agent.i18n import t
 
 
 def _make_cli(env_overrides=None, config_overrides=None, **kwargs):
-    """Create a HermesCLI instance with minimal mocking."""
+    """Create a AkramCodeCLI instance with minimal mocking."""
     import importlib
 
     _clean_config = {
@@ -27,7 +27,7 @@ def _make_cli(env_overrides=None, config_overrides=None, **kwargs):
     }
     if config_overrides:
         _clean_config.update(config_overrides)
-    clean_env = {"LLM_MODEL": "", "HERMES_MAX_ITERATIONS": ""}
+    clean_env = {"LLM_MODEL": "", "AKRAMCODE_MAX_ITERATIONS": ""}
     if env_overrides:
         clean_env.update(env_overrides)
     prompt_toolkit_stubs = {
@@ -54,7 +54,7 @@ def _make_cli(env_overrides=None, config_overrides=None, **kwargs):
             _cli_mod = importlib.reload(_cli_mod)
             with patch.object(_cli_mod, "get_tool_definitions", return_value=[]), \
                  patch.dict(_cli_mod.__dict__, {"CLI_CONFIG": _clean_config}):
-                return _cli_mod.HermesCLI(**kwargs)
+                return _cli_mod.AkramCodeCLI(**kwargs)
     finally:
         # The reload above re-executed cli.py while prompt_toolkit was stubbed
         # with MagicMocks, permanently rebinding cli's module globals
@@ -96,11 +96,11 @@ class TestFallbackChainInit:
             "fallback_providers": [
                 {"provider": "openrouter", "model": "anthropic/claude-sonnet-4.6"},
             ],
-            "fallback_model": {"provider": "nous", "model": "Hermes-4"},
+            "fallback_model": {"provider": "nous", "model": "AkramCode-4"},
         })
         assert cli._fallback_model == [
             {"provider": "openrouter", "model": "anthropic/claude-sonnet-4.6"},
-            {"provider": "nous", "model": "Hermes-4"},
+            {"provider": "nous", "model": "AkramCode-4"},
         ]
 
 
@@ -326,11 +326,11 @@ class TestHistoryDisplay:
         output = capsys.readouterr().out
 
         assert "[You #1]" in output
-        assert "[Hermes #2]" in output
+        assert "[AkramCode #2]" in output
         assert "(requested 2 tool calls)" in output
         assert "[Tools]" in output
         assert "(2 tool messages hidden)" in output
-        assert "[Hermes #3]" in output
+        assert "[AkramCode #3]" in output
         assert "[You #4]" in output
         assert "[You #5]" not in output
         assert "A" * 250 in output
@@ -350,8 +350,8 @@ class TestHistoryDisplay:
             },
             {
                 "id": "20260401_201329_d85961",
-                "title": "Checking Running Hermes Agent",
-                "preview": "check running gateways for hermes agent",
+                "title": "Checking Running AkramCode Agent",
+                "preview": "check running gateways for akramcode agent",
                 "last_active": 0,
             },
         ]
@@ -360,7 +360,7 @@ class TestHistoryDisplay:
         output = capsys.readouterr().out
 
         assert t("cli.session.recent_header") in output
-        assert "Checking Running Hermes Agent" in output
+        assert "Checking Running AkramCode Agent" in output
 
 
 
@@ -378,8 +378,8 @@ class TestHistoryDisplay:
         cli._session_db.list_sessions_rich.return_value = [
             {
                 "id": "20260401_201329_d85961",
-                "title": "Checking Running Hermes Agent",
-                "preview": "check running gateways for hermes agent",
+                "title": "Checking Running AkramCode Agent",
+                "preview": "check running gateways for akramcode agent",
                 "last_active": 0,
             },
         ]
@@ -391,7 +391,7 @@ class TestHistoryDisplay:
 
         assert "Unknown command" not in output
         assert t("cli.session.recent_header") in output
-        assert "Checking Running Hermes Agent" in output
+        assert "Checking Running AkramCode Agent" in output
         assert "20260401_201329_d85961" in output
 
 
@@ -404,10 +404,10 @@ class TestHistoryDisplay:
         """
         cli = _make_cli()
         with patch.object(cli, "_handle_resume_command") as mock_resume:
-            cli.process_command("/sessions Checking Running Hermes Agent")
+            cli.process_command("/sessions Checking Running AkramCode Agent")
 
         mock_resume.assert_called_once_with(
-            "/resume Checking Running Hermes Agent"
+            "/resume Checking Running AkramCode Agent"
         )
 
 
@@ -415,7 +415,7 @@ class TestNestedDictModelDefaultPairing:
     """A dict-valued ``model.default`` must keep its nested provider paired.
 
     ``model.default: {provider: ..., model: ...}`` canonicalizes to the string
-    model AND the nested provider, so ``HermesCLI`` routes the model through
+    model AND the nested provider, so ``AkramCodeCLI`` routes the model through
     that provider instead of discarding it and falling back to the outer
     merged ``model.provider`` (``"auto"`` — authoritative at runtime
     resolution, which would route the model through the wrong active
@@ -509,13 +509,13 @@ class TestRootLevelProviderOverride:
 
     def test_model_provider_wins_over_root_provider(self, tmp_path, monkeypatch):
         """model.provider takes priority — root-level provider is only a fallback."""
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        akramcode_home = tmp_path / ".akramcode"
+        akramcode_home.mkdir()
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
-        config_path = hermes_home / "config.yaml"
+        config_path = akramcode_home / "config.yaml"
         config_path.write_text(yaml.safe_dump({
             "provider": "opencode-go",  # stale root-level key
             "model": {
@@ -525,20 +525,20 @@ class TestRootLevelProviderOverride:
         }))
 
         import cli
-        monkeypatch.setattr(cli, "_hermes_home", hermes_home)
+        monkeypatch.setattr(cli, "_akramcode_home", akramcode_home)
         cfg = cli.load_cli_config()
 
         assert cfg["model"]["provider"] == "openrouter"
 
     def test_root_provider_used_as_fallback_when_model_provider_missing(self, tmp_path, monkeypatch):
         """Legacy root-level provider still populates model.provider in the CLI loader."""
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        akramcode_home = tmp_path / ".akramcode"
+        akramcode_home.mkdir()
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
-        config_path = hermes_home / "config.yaml"
+        config_path = akramcode_home / "config.yaml"
         config_path.write_text(yaml.safe_dump({
             "provider": "opencode-go",  # stale root key
             "model": {
@@ -548,20 +548,20 @@ class TestRootLevelProviderOverride:
         }))
 
         import cli
-        monkeypatch.setattr(cli, "_hermes_home", hermes_home)
+        monkeypatch.setattr(cli, "_akramcode_home", akramcode_home)
         cfg = cli.load_cli_config()
 
         assert cfg["model"]["provider"] == "opencode-go"
 
     def test_root_base_url_used_as_fallback_when_model_base_url_missing(self, tmp_path, monkeypatch):
         """Legacy root-level base_url still populates model.base_url in the CLI loader."""
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        akramcode_home = tmp_path / ".akramcode"
+        akramcode_home.mkdir()
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
-        config_path = hermes_home / "config.yaml"
+        config_path = akramcode_home / "config.yaml"
         config_path.write_text(yaml.safe_dump({
             "base_url": "https://example.com/v1",
             "model": {
@@ -570,21 +570,21 @@ class TestRootLevelProviderOverride:
         }))
 
         import cli
-        monkeypatch.setattr(cli, "_hermes_home", hermes_home)
+        monkeypatch.setattr(cli, "_akramcode_home", akramcode_home)
         cfg = cli.load_cli_config()
 
         assert cfg["model"]["base_url"] == "https://example.com/v1"
 
     def test_terminal_vercel_runtime_bridged_to_env(self, tmp_path, monkeypatch):
         """Classic CLI must expose terminal.vercel_runtime to terminal_tool.py."""
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        akramcode_home = tmp_path / ".akramcode"
+        akramcode_home.mkdir()
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
         monkeypatch.delenv("TERMINAL_VERCEL_RUNTIME", raising=False)
 
-        config_path = hermes_home / "config.yaml"
+        config_path = akramcode_home / "config.yaml"
         config_path.write_text(yaml.safe_dump({
             "terminal": {
                 "backend": "vercel_sandbox",
@@ -593,7 +593,7 @@ class TestRootLevelProviderOverride:
         }))
 
         import cli
-        monkeypatch.setattr(cli, "_hermes_home", hermes_home)
+        monkeypatch.setattr(cli, "_akramcode_home", akramcode_home)
         cfg = cli.load_cli_config()
 
         assert cfg["terminal"]["vercel_runtime"] == "python3.13"
@@ -745,7 +745,7 @@ class TestPluginToolsetStartupValidation:
     def _init_toolsets(monkeypatch, toolsets, *, registry, plugin_keys):
         import cli as _cli_mod
 
-        stub = object.__new__(_cli_mod.HermesCLI)
+        stub = object.__new__(_cli_mod.AkramCodeCLI)
         printed: list[str] = []
         stub._console_print = printed.append
         monkeypatch.setattr(_cli_mod, "validate_toolset", lambda name: name in registry)

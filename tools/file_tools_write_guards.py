@@ -36,7 +36,7 @@ _SENSITIVE_PATH_PREFIXES = (
 _SENSITIVE_EXACT_PATHS = {"/var/run/docker.sock", "/run/docker.sock"}
 
 # NOTE: these four are a TEST-OVERRIDE surface, not a process cache. Both getters
-# resolve per call in production (below) because ``get_hermes_home()`` /
+# resolve per call in production (below) because ``get_akramcode_home()`` /
 # ``get_config_path()`` are per-turn contextvar-scoped: a multiplexed gateway
 # (``gateway.multiplex_profiles: true``) serves many profiles in one process, and
 # a process-wide memo would freeze whichever profile's home/config ran first —
@@ -44,10 +44,10 @@ _SENSITIVE_EXACT_PATHS = {"/var/run/docker.sock", "/run/docker.sock"}
 # order-dependent, up to letting a later profile rewrite its own ``config.yaml``
 # the block exists to protect (#107327). A test can still pin a value by setting
 # the slot and its ``_loaded`` flag.
-_hermes_config_resolved: str | None = None
-_hermes_config_resolved_loaded = False
-_real_hermes_home_cached: str | None = None
-_real_hermes_home_loaded = False
+_akramcode_config_resolved: str | None = None
+_akramcode_config_resolved_loaded = False
+_real_akramcode_home_cached: str | None = None
+_real_akramcode_home_loaded = False
 
 
 def _config_path_resolved() -> str:
@@ -55,73 +55,73 @@ def _config_path_resolved() -> str:
     return str(get_config_path().resolve())
 
 
-def _hermes_home_real() -> str:
-    from akramcode_constants import get_hermes_home
-    return os.path.realpath(str(get_hermes_home()))
+def _akramcode_home_real() -> str:
+    from akramcode_constants import get_akramcode_home
+    return os.path.realpath(str(get_akramcode_home()))
 
 
-def _get_hermes_config_resolved() -> str | None:
-    """Resolved absolute path of the Hermes config file for the ACTIVE profile.
+def _get_akramcode_config_resolved() -> str | None:
+    """Resolved absolute path of the AkramCode config file for the ACTIVE profile.
 
-    Resolved per call so it tracks the per-turn ``HERMES_HOME`` scope (#107327);
-    a test may pin it via ``_hermes_config_resolved`` + ``_hermes_config_resolved_loaded``."""
-    if _hermes_config_resolved_loaded:
-        return _hermes_config_resolved
+    Resolved per call so it tracks the per-turn ``AKRAMCODE_HOME`` scope (#107327);
+    a test may pin it via ``_akramcode_config_resolved`` + ``_akramcode_config_resolved_loaded``."""
+    if _akramcode_config_resolved_loaded:
+        return _akramcode_config_resolved
     try:
         return _config_path_resolved()
     except Exception:
         # Resolver failure must stay bound to the ACTIVE profile's home, not the
         # subprocess HOME. ``_expand_tilde("~/...")`` follows the subprocess-HOME
         # contract, which under host ``auto`` mode can be the real/default user
-        # home rather than the active multiplex ``HERMES_HOME`` — comparing
+        # home rather than the active multiplex ``AKRAMCODE_HOME`` — comparing
         # beta's ``config.yaml`` against the default/root config would let the
         # hard-block fail open on the exception path. Re-derive from the same
-        # ``get_hermes_home()`` key the happy path uses, and substitute no
+        # ``get_akramcode_home()`` key the happy path uses, and substitute no
         # unrelated home if even that is gone (#107327 follow-up; PR #107335).
         try:
-            from akramcode_constants import get_hermes_home
-            return str((Path(str(get_hermes_home())) / "config.yaml").resolve())
+            from akramcode_constants import get_akramcode_home
+            return str((Path(str(get_akramcode_home())) / "config.yaml").resolve())
         except Exception:
             return None
 
 
-def _get_real_hermes_home() -> str | None:
-    """Realpath of the authoritative Hermes home for the ACTIVE profile.
+def _get_real_akramcode_home() -> str | None:
+    """Realpath of the authoritative AkramCode home for the ACTIVE profile.
 
-    Resolved per call so it tracks the per-turn ``HERMES_HOME`` scope (#107327);
-    a test may pin it via ``_real_hermes_home_cached`` + ``_real_hermes_home_loaded``.
-    Consumers exempting a whole TREE want ``_hermes_exempt_homes()``: under a named
+    Resolved per call so it tracks the per-turn ``AKRAMCODE_HOME`` scope (#107327);
+    a test may pin it via ``_real_akramcode_home_cached`` + ``_real_akramcode_home_loaded``.
+    Consumers exempting a whole TREE want ``_akramcode_exempt_homes()``: under a named
     profile this home is ``<root>/profiles/<name>`` and the root is exempt too."""
-    if _real_hermes_home_loaded:
-        return _real_hermes_home_cached
+    if _real_akramcode_home_loaded:
+        return _real_akramcode_home_cached
     try:
-        return _hermes_home_real()
+        return _akramcode_home_real()
     except Exception:
         # Same active-profile binding on the exception path (see
-        # ``_get_hermes_config_resolved``): re-derive from ``get_hermes_home()``
-        # rather than ``_expand_tilde("~/.hermes")`` so the protected-instruction
+        # ``_get_akramcode_config_resolved``): re-derive from ``get_akramcode_home()``
+        # rather than ``_expand_tilde("~/.akramcode")`` so the protected-instruction
         # exemption resolves against the active profile — not the subprocess /
         # default home — and substitute no unrelated home if the active security
         # path cannot be established (PR #107335). A ``None`` here fails closed at
-        # the consumer: the ``~/.hermes`` exemption is skipped, so the gate runs.
+        # the consumer: the ``~/.akramcode`` exemption is skipped, so the gate runs.
         try:
-            from akramcode_constants import get_hermes_home
-            return os.path.realpath(str(get_hermes_home()))
+            from akramcode_constants import get_akramcode_home
+            return os.path.realpath(str(get_akramcode_home()))
         except Exception:
             return None
 
 
-def _hermes_exempt_homes() -> tuple[str, ...]:
-    """Realpaths of the Hermes home tree(s) the protected-instruction gate must stay out of:
-    the ACTIVE profile's home, plus the Hermes ROOT when that home is a named profile
+def _akramcode_exempt_homes() -> tuple[str, ...]:
+    """Realpaths of the AkramCode home tree(s) the protected-instruction gate must stay out of:
+    the ACTIVE profile's home, plus the AkramCode ROOT when that home is a named profile
     (``<root>/profiles/<name>``). Exempting only the profile dir left the root's DIRECT files
-    (LEDGER.md / MEMORY.md / SOUL.md / AGENTS.md ...) to the ``.hermes`` component rule, which
-    gated them like a project-local ``<repo>/.hermes/config.yaml`` — fail-closed headless
+    (LEDGER.md / MEMORY.md / SOUL.md / AGENTS.md ...) to the ``.akramcode`` component rule, which
+    gated them like a project-local ``<repo>/.akramcode/config.yaml`` — fail-closed headless
     (#110630). They are the agent's own store, governed by their own guards, exactly like
-    ``~/.hermes`` under the default profile. The root is added only when the shape really is a
+    ``~/.akramcode`` under the default profile. The root is added only when the shape really is a
     named profile (``named_profile_home``), so a coincidental ``profiles/`` dir elsewhere never
-    exempts its parent; the home comes from the ACTIVE scope, never ``HERMES_HOME`` alone."""
-    home = _get_real_hermes_home()
+    exempts its parent; the home comes from the ACTIVE scope, never ``AKRAMCODE_HOME`` alone."""
+    home = _get_real_akramcode_home()
     if not home:
         return ()
     try:
@@ -164,18 +164,18 @@ def _check_sensitive_path(filepath: str, task_id: str = "default") -> str | None
             "Use the terminal tool with sudo if you need to modify system files.")
     # approvals.mode and other security settings live in config.yaml; a
     # prompt-injected agent could silently disable exec approval by editing it.
-    hermes_config = _get_hermes_config_resolved()
-    if hermes_config and hermes_config in candidates:
+    akramcode_config = _get_akramcode_config_resolved()
+    if akramcode_config and akramcode_config in candidates:
         return (
-            f"Refusing to write to Hermes config file: {filepath}\n"
+            f"Refusing to write to AkramCode config file: {filepath}\n"
             "Agent cannot modify security-sensitive configuration. "
-            "Edit ~/.hermes/config.yaml directly or use 'hermes config' instead.")
+            "Edit ~/.akramcode/config.yaml directly or use 'akramcode config' instead.")
     return None
 
 
 # ── Protected agent-instruction files (always-ask approval gate) ─────────
 # Files that steer FUTURE agent behavior are a prompt-injection persistence
-# vector (AGENTS.md / CLAUDE.md / SOUL.md / .cursorrules / project .hermes tree).
+# vector (AGENTS.md / CLAUDE.md / SOUL.md / .cursorrules / project .akramcode tree).
 # Writes ALWAYS require human approval — even under --yolo — and fail closed
 # without a human channel. Basenames match in ANY directory, case-insensitively.
 # Ported from: RooCodeInc/Roo-Code RooProtectedController (Apache-2.0). Companion: the terminal-tool vector
@@ -228,12 +228,12 @@ def _protected_instruction_reason(filepath: str, task_id: str = "default",
     except (OSError, ValueError, RuntimeError):
         resolved = os.path.realpath(normalized)
 
-    # ~/.hermes itself is governed by its own guards (config.yaml hard-block,
+    # ~/.akramcode itself is governed by its own guards (config.yaml hard-block,
     # mirror guard, write_approval); this gate targets PROJECT-LOCAL files only.
-    # Must run before the ``.hermes`` component rule, which would match the home.
-    # ``_hermes_exempt_homes`` also covers the ROOT when the active home is a named
-    # profile, so ~/.hermes/<file> cannot read as project-local ``.hermes`` config.
-    for real_home in _hermes_exempt_homes():
+    # Must run before the ``.akramcode`` component rule, which would match the home.
+    # ``_akramcode_exempt_homes`` also covers the ROOT when the active home is a named
+    # profile, so ~/.akramcode/<file> cannot read as project-local ``.akramcode`` config.
+    for real_home in _akramcode_exempt_homes():
         if resolved == real_home or resolved.startswith(real_home + os.sep):
             return None
 
@@ -243,11 +243,11 @@ def _protected_instruction_reason(filepath: str, task_id: str = "default",
         if base_lower in _PROTECTED_INSTRUCTION_BASENAMES or any(
                 fnmatch.fnmatch(base_lower, pattern.lower()) for pattern in extra_patterns):
             return base
-        # Project-local .hermes config dirs (<repo>/.hermes/config.yaml) steer
+        # Project-local .akramcode config dirs (<repo>/.akramcode/config.yaml) steer
         # behavior too. Only the IMMEDIATE parent counts — matching any ancestor
-        # would gate every write inside a checkout living under ~/.hermes.
+        # would gate every write inside a checkout living under ~/.akramcode.
         parts = candidate.replace("\\", "/").rstrip("/").split("/")
-        if len(parts) >= 2 and parts[-2] == ".hermes":
+        if len(parts) >= 2 and parts[-2] == ".akramcode":
             return candidate
     return None
 
@@ -391,7 +391,7 @@ def _check_approval_required_write(paths: list[str], task_id: str = "default") -
 
 
 def _get_container_mirror_prefix_for_task(task_id: str = "default") -> str | None:
-    """Return the container-side Hermes mirror prefix for persistent Docker file tools."""
+    """Return the container-side AkramCode mirror prefix for persistent Docker file tools."""
     try:
         from tools.terminal_tool import (
             _active_environments, _env_lock, _get_env_config, _resolve_container_task_id)
@@ -401,18 +401,18 @@ def _get_container_mirror_prefix_for_task(task_id: str = "default") -> str | Non
         if env is not None:
             persistent_docker = (env.__class__.__name__ == "DockerEnvironment"
                                  and bool(getattr(env, "_persistent", False)))
-            return "/root/.hermes" if persistent_docker else None
+            return "/root/.akramcode" if persistent_docker else None
         config = _get_env_config()
     except Exception:
         return None
     if config.get("env_type") == "docker" and config.get("container_persistent", True):
-        return "/root/.hermes"
+        return "/root/.akramcode"
     return None
 
 
 def _check_cross_profile_path(filepath: str, task_id: str = "default") -> str | None:
     """Soft-guard: warn when ``filepath`` lands on a host-side or Docker sandbox MIRROR of
-    Hermes state (a write the host never reads). Not profile isolation — that guard was
+    AkramCode state (a write the host never reads). Not profile isolation — that guard was
     removed; ``cross_profile=True`` keeps bypassing this one for replay compat. Fails open."""
     try:
         from agent.file_safety import get_container_mirror_warning, get_sandbox_mirror_warning

@@ -52,7 +52,7 @@ def _model_flow_bedrock_api_key(config, region, current_model=""):
     from akramcode_cli.models import _PROVIDER_MODELS
     mantle_base_url = f"https://bedrock-mantle.{region}.api.aws/v1"
 
-    # Check env var and credential pool (keys added via `hermes auth`)
+    # Check env var and credential pool (keys added via `akramcode auth`)
     bedrock_pconfig = ProviderConfig(id="bedrock", name="Bedrock", auth_type="api_key", api_key_env_vars=("AWS_BEARER_TOKEN_BEDROCK",))
     existing_key, existing_source = _resolve_api_key_provider_secret("bedrock", bedrock_pconfig)
     if existing_key:
@@ -154,7 +154,7 @@ def _model_flow_bedrock(config, current_model=""):
     try:
         from agent.bedrock_adapter import has_aws_credentials, resolve_aws_auth_env_var, resolve_bedrock_region, discover_bedrock_models
     except ImportError:
-        _say("  ✗ Could not load the Bedrock adapter.", "  Run hermes pm repair, then restart Hermes.", "")
+        _say("  ✗ Could not load the Bedrock adapter.", "  Run akramcode pm repair, then restart AkramCode.", "")
         return
 
     if not has_aws_credentials():

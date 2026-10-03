@@ -1,5 +1,5 @@
 """Simple slash-command wrappers plus goal/heartbeat/loop manager hooks for the interactive CLI.
-Mixin on ``HermesCLI``; cli.py symbols are imported lazily inside methods (import cycle)."""
+Mixin on ``AkramCodeCLI``; cli.py symbols are imported lazily inside methods (import cycle)."""
 
 from __future__ import annotations
 
@@ -256,9 +256,9 @@ class CLILoopsMixin:
             self._reload_skills()
 
     def _cmd_plugins(self, cmd_original: str):
-        from akramcode_constants import display_hermes_home
+        from akramcode_constants import display_akramcode_home
         try:
-            # Discover from disk (bundled + user) like `hermes plugins list`, so
+            # Discover from disk (bundled + user) like `akramcode plugins list`, so
             # installed-but-not-enabled plugins show up; the plugin manager only knows
             # *loaded* plugins and made fresh installs look like "nothing installed".
             from akramcode_cli.plugins_cmd import (
@@ -268,13 +268,13 @@ class CLILoopsMixin:
             disabled = _get_disabled_set()
 
             # `/plugins` is a quick glance: user plugins only, bundled ones summarized
-            # on one line (full catalog behind `hermes plugins list`).
+            # on one line (full catalog behind `akramcode plugins list`).
             user_entries = [e for e in entries if e[3] != "bundled"]
             bundled_count = len(entries) - len(user_entries)
             if not user_entries:
                 print(t("cli.plugins.none_installed"))
                 print(f"  {t('cli.plugins.install_hint')}")
-                print(f"  {t('cli.plugins.drop_dir_hint', path=f'{display_hermes_home()}/plugins/')}")
+                print(f"  {t('cli.plugins.drop_dir_hint', path=f'{display_akramcode_home()}/plugins/')}")
                 if bundled_count:
                     print(f"  {t('cli.plugins.bundled_available', count=bundled_count)}")
                 return

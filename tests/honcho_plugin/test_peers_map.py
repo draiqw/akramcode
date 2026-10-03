@@ -1,4 +1,4 @@
-"""Tests for ``hermes honcho peers map``: account discovery, the resolution preview, and alias writes."""
+"""Tests for ``akramcode honcho peers map``: account discovery, the resolution preview, and alias writes."""
 
 import json
 import sqlite3
@@ -34,7 +34,7 @@ def _row(user_id, platform="telegram", name="eri", started=100.0):
 
 
 def _cfg(root=None, **host):
-    return {"apiKey": "***", **(root or {}), "hosts": {"hermes": host}}
+    return {"apiKey": "***", **(root or {}), "hosts": {"akramcode": host}}
 
 
 class TestSeenGatewayAccounts:
@@ -102,19 +102,19 @@ def _run_map(monkeypatch, tmp_path, *, answers, cfg, db_rows=(), ws_peers=None, 
         _make_state_db(db, list(db_rows))
     written = {}
     answer_iter = iter(answers)
-    # One profile per host block: "hermes" is default, "hermes.<name>" is profile <name>.
-    profiles = [("default" if k == "hermes" else k.removeprefix("hermes."), k, v) for k, v in cfg["hosts"].items()]
+    # One profile per host block: "akramcode" is default, "akramcode.<name>" is profile <name>.
+    profiles = [("default" if k == "akramcode" else k.removeprefix("akramcode."), k, v) for k, v in cfg["hosts"].items()]
     # API seams are offline unless ws_peers is given, then a sentinel client stands in.
     client = object() if ws_peers is not None else None
     for name, value in {
         "_read_config": lambda: cfg,
-        "_host_key": lambda: "hermes",
+        "_host_key": lambda: "akramcode",
         "_active_profile_name": lambda: "default",
         "_state_db_path": lambda: db,
         "_local_config_path": lambda: tmp_path / "honcho.json",
         "_write_config": lambda c, path=None: written.update({"cfg": c}),
         "_all_profile_host_configs": lambda: profiles,
-        "_peers_map_client": lambda workspace=None: (client, SimpleNamespace(workspace_id="hermes") if client else None),
+        "_peers_map_client": lambda workspace=None: (client, SimpleNamespace(workspace_id="akramcode") if client else None),
         "_api_workspace_peers": lambda c: list(ws_peers) if c is not None and ws_peers is not None else None,
         "_api_workspaces": lambda c: list(workspaces) if workspaces is not None else None,
         "_api_peer_detail": lambda c, pid: f"(card of {pid})",
@@ -129,12 +129,12 @@ class TestCmdPeersMap:
     @pytest.mark.parametrize("cfg, answers, kwargs", [
         (_cfg(peerName="eri"), ["1", "eri", ""], dict(db_rows=[_row("111")])),
         (_cfg(), ["111", "eri", ""], {}),
-        (_cfg(peerName="eri"), ["1", "p1", ""], dict(db_rows=[_row("111")], ws_peers=["eri", "hermes"])),
+        (_cfg(peerName="eri"), ["1", "p1", ""], dict(db_rows=[_row("111")], ws_peers=["eri", "akramcode"])),
         (_cfg(pinUserPeer=True, peerName="eri"), ["y", "111", "eri", ""], {}),
     ], ids=["account-number", "typed-runtime-id", "picked-from-peers-table", "pinned-but-accepted"])
     def test_writes_alias_to_host_block(self, monkeypatch, tmp_path, cfg, answers, kwargs):
         written = _run_map(monkeypatch, tmp_path, answers=answers, cfg=cfg, **kwargs)
-        assert written["cfg"]["hosts"]["hermes"]["userPeerAliases"] == {"111": "eri"}
+        assert written["cfg"]["hosts"]["akramcode"]["userPeerAliases"] == {"111": "eri"}
 
     @pytest.mark.parametrize("aliases, expected_host", [
         ({"111": "eri", "222": "tek"}, {"userPeerAliases": {"222": "tek"}}),
@@ -142,27 +142,27 @@ class TestCmdPeersMap:
     ], ids=["one-of-two", "last-alias-keeps-empty-map"])
     def test_dash_clears_alias(self, monkeypatch, tmp_path, aliases, expected_host):
         written = _run_map(monkeypatch, tmp_path, answers=["111", "-", ""], cfg=_cfg(userPeerAliases=aliases))
-        assert written["cfg"]["hosts"]["hermes"] == expected_host
+        assert written["cfg"]["hosts"]["akramcode"] == expected_host
 
     def test_cleared_host_map_does_not_resurrect_root_aliases(self, monkeypatch, tmp_path, capsys):
         """A host block without the key inherits root, so clearing must leave an empty map behind."""
         from plugins.memory.honcho.client import HonchoClientConfig
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
         cfg = _cfg(root={"userPeerAliases": {"111": "root-person"}}, userPeerAliases={"111": "host-person"})
         written = _run_map(monkeypatch, tmp_path, answers=["111", "-", ""], cfg=cfg)
-        assert written["cfg"]["hosts"]["hermes"]["userPeerAliases"] == {}
-        assert "root aliases no longer apply to [hermes]" in capsys.readouterr().out
+        assert written["cfg"]["hosts"]["akramcode"]["userPeerAliases"] == {}
+        assert "root aliases no longer apply to [akramcode]" in capsys.readouterr().out
 
         path = tmp_path / "honcho.json"
         path.write_text(json.dumps(written["cfg"]))
-        assert HonchoClientConfig.from_global_config(host="hermes", config_path=path).user_peer_aliases == {}
+        assert HonchoClientConfig.from_global_config(host="akramcode", config_path=path).user_peer_aliases == {}
 
     @pytest.mark.parametrize("cfg, answers, kwargs", [
         (_cfg(), [""], {}),
         (_cfg(userPeerAliases={"111": "eri"}), ["111", "eri", ""], {}),
         (_cfg(pinUserPeer=True, peerName="eri"), ["n"], {}),
-        (_cfg(peerName="eri"), ["w", "2", "n", ""], dict(ws_peers=["eri"], workspaces=["hermes", "cosmania-dex"])),
+        (_cfg(peerName="eri"), ["w", "2", "n", ""], dict(ws_peers=["eri"], workspaces=["akramcode", "cosmania-dex"])),
     ], ids=["nothing-entered", "kept-current-value", "pinned-declined", "workspace-switch-declined"])
     def test_nothing_changed_writes_nothing(self, monkeypatch, tmp_path, cfg, answers, kwargs):
         assert _run_map(monkeypatch, tmp_path, answers=answers, cfg=cfg, **kwargs) == {}
@@ -174,27 +174,27 @@ class TestWorkspaceSwitch:
     def test_browse_and_confirmed_switch_writes_workspace(self, monkeypatch, tmp_path):
         written = _run_map(
             monkeypatch, tmp_path, answers=["w", "2", "y", ""],
-            cfg=_cfg(peerName="eri"), ws_peers=["eri"], workspaces=["hermes", "cosmania-dex"],
+            cfg=_cfg(peerName="eri"), ws_peers=["eri"], workspaces=["akramcode", "cosmania-dex"],
         )
-        assert written["cfg"]["hosts"]["hermes"]["workspace"] == "cosmania-dex"
+        assert written["cfg"]["hosts"]["akramcode"]["workspace"] == "cosmania-dex"
 
     def test_browse_client_is_built_for_the_browsed_workspace(self, monkeypatch):
         """get_honcho_client keys its cache on workspace_id, so a browse must not reuse the profile's client."""
         import plugins.memory.honcho.client as client_mod
 
         seen = []
-        base = client_mod.HonchoClientConfig(host="hermes", workspace_id="hermes", api_key="k")
+        base = client_mod.HonchoClientConfig(host="akramcode", workspace_id="akramcode", api_key="k")
         monkeypatch.setattr(client_mod.HonchoClientConfig, "from_global_config",
                             classmethod(lambda cls, host=None, config_path=None: base))
         monkeypatch.setattr(client_mod, "get_honcho_client", lambda cfg: seen.append(cfg) or object())
-        monkeypatch.setattr(honcho_cli, "_host_key", lambda: "hermes")
+        monkeypatch.setattr(honcho_cli, "_host_key", lambda: "akramcode")
 
         _, own = honcho_cli._peers_map_client()
         _, browsed = honcho_cli._peers_map_client(workspace="cosmania-dex")
 
-        assert own.workspace_id == "hermes"
+        assert own.workspace_id == "akramcode"
         assert browsed.workspace_id == "cosmania-dex"
-        assert [c.workspace_id for c in seen] == ["hermes", "cosmania-dex"]
+        assert [c.workspace_id for c in seen] == ["akramcode", "cosmania-dex"]
 
 
 class _Page:
@@ -237,27 +237,27 @@ def test_api_workspace_peers_reads_only_the_pages_the_cap_needs():
 
 class TestSaveScope:
     @pytest.mark.parametrize("hosts, answers", [
-        ({"hermes": {}}, ["222", "tek", ""]),
-        ({"hermes": {}, "hermes.dreamer": {}}, ["222", "tek", "", "all"]),
+        ({"akramcode": {}}, ["222", "tek", ""]),
+        ({"akramcode": {}, "akramcode.dreamer": {}}, ["222", "tek", "", "all"]),
     ], ids=["single-profile-no-prompt", "multi-profile-all"])
     def test_root_sourced_aliases_write_back_to_root(self, monkeypatch, tmp_path, hosts, answers):
         cfg = {"apiKey": "***", "userPeerAliases": {"111": "eri"}, "hosts": hosts}
         written = _run_map(monkeypatch, tmp_path, answers=answers, cfg=cfg)
         assert written["cfg"]["userPeerAliases"] == {"111": "eri", "222": "tek"}
-        assert "userPeerAliases" not in written["cfg"]["hosts"]["hermes"]
+        assert "userPeerAliases" not in written["cfg"]["hosts"]["akramcode"]
 
     def test_scope_this_forks_host_block(self, monkeypatch, tmp_path):
-        cfg = {"apiKey": "***", "userPeerAliases": {"111": "eri"}, "hosts": {"hermes": {}, "hermes.dreamer": {}}}
+        cfg = {"apiKey": "***", "userPeerAliases": {"111": "eri"}, "hosts": {"akramcode": {}, "akramcode.dreamer": {}}}
         written = _run_map(monkeypatch, tmp_path, answers=["222", "tek", "", "this"], cfg=cfg)
-        assert written["cfg"]["hosts"]["hermes"]["userPeerAliases"] == {"111": "eri", "222": "tek"}
+        assert written["cfg"]["hosts"]["akramcode"]["userPeerAliases"] == {"111": "eri", "222": "tek"}
         assert written["cfg"]["userPeerAliases"] == {"111": "eri"}  # root stays the other profiles' baseline
 
 
 def test_classify_workspace_peers_labels_from_local_config(monkeypatch):
-    monkeypatch.setattr(honcho_cli, "_host_key", lambda: "hermes")
+    monkeypatch.setattr(honcho_cli, "_host_key", lambda: "akramcode")
     rows = [
-        ("default", "hermes", {"peerName": "eri", "aiPeer": "hermetika"}),
-        ("dreamer", "hermes.dreamer", {"aiPeer": "dreamer-ai"}),
+        ("default", "akramcode", {"peerName": "eri", "aiPeer": "hermetika"}),
+        ("dreamer", "akramcode.dreamer", {"aiPeer": "dreamer-ai"}),
     ]
     cfg = {"peerName": "eri", "hosts": {"claude_code": {"aiPeer": "clawd"}}}
     accounts = [{"platform": "telegram", "user_id": "7654321", "user_id_alt": ""}]

@@ -1,4 +1,4 @@
-"""Durable aggregation and local export for Hermes shared metrics."""
+"""Durable aggregation and local export for AkramCode shared metrics."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from akramcode_cli.sqlite_util import add_column_if_missing, write_txn
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 from utils import atomic_json_write
 
 from .shared_metrics_contract import (
@@ -31,7 +31,7 @@ from .shared_metrics_contract import (
 )
 
 
-_PACKAGE_SCHEMA_VERSION = "hermes.shared_metrics.v3"
+_PACKAGE_SCHEMA_VERSION = "akramcode.shared_metrics.v3"
 _STORE_SCHEMA_VERSION = "2"
 _BUSY_TIMEOUT_MS = 250
 _SCHEMA_BUSY_TIMEOUT_MS = 5_000
@@ -45,7 +45,7 @@ _FEATURE_STATE_PREFIX = "feature:"
 _DAILY_ONCE_STATE_PREFIX = "daily_once:"
 _ACTIVE_INSTALL_INTERVAL = timedelta(hours=24)
 # Column order of the client resource in every counter_aggregates statement.
-_RESOURCE_COLUMNS = ("hermes_version", "os_family", "architecture", "install_method")
+_RESOURCE_COLUMNS = ("akramcode_version", "os_family", "architecture", "install_method")
 
 _CREATE_TELEMETRY_STATE_SQL = """
             CREATE TABLE IF NOT EXISTS telemetry_state (
@@ -57,7 +57,7 @@ _CREATE_COUNTER_AGGREGATES_SQL = """
             CREATE TABLE IF NOT EXISTS counter_aggregates (
                 period_start TEXT NOT NULL,
                 metric_name TEXT NOT NULL,
-                hermes_version TEXT NOT NULL,
+                akramcode_version TEXT NOT NULL,
                 os_family TEXT NOT NULL,
                 architecture TEXT NOT NULL,
                 install_method TEXT NOT NULL,
@@ -65,7 +65,7 @@ _CREATE_COUNTER_AGGREGATES_SQL = """
                 value INTEGER NOT NULL,
                 packaged_value INTEGER NOT NULL DEFAULT 0,
                 PRIMARY KEY (
-                    period_start, metric_name, hermes_version, os_family, architecture,
+                    period_start, metric_name, akramcode_version, os_family, architecture,
                     install_method, dimensions_json
                 )
             )
@@ -105,11 +105,11 @@ _MIGRATE_V1_SQL = (
     _CREATE_COUNTER_AGGREGATES_SQL,
     """
             INSERT INTO counter_aggregates(
-                period_start, metric_name, hermes_version, os_family, architecture,
+                period_start, metric_name, akramcode_version, os_family, architecture,
                 install_method, dimensions_json, value, packaged_value
             )
             SELECT
-                period_start, metric_name, hermes_version, 'unknown', 'unknown', 'unknown',
+                period_start, metric_name, akramcode_version, 'unknown', 'unknown', 'unknown',
                 dimensions_json, value, packaged_value
             FROM counter_aggregates_v1
             """,
@@ -117,18 +117,18 @@ _MIGRATE_V1_SQL = (
 )
 _PENDING_PERIOD_COUNT_SQL = """
                 SELECT COUNT(*) AS period_count FROM (
-                    SELECT period_start, hermes_version, os_family, architecture, install_method
+                    SELECT period_start, akramcode_version, os_family, architecture, install_method
                     FROM counter_aggregates WHERE value > packaged_value
-                    GROUP BY period_start, hermes_version, os_family, architecture, install_method
+                    GROUP BY period_start, akramcode_version, os_family, architecture, install_method
                 )
                 """
 _INCREMENT_COUNTER_SQL = """
             INSERT INTO counter_aggregates(
-                period_start, metric_name, hermes_version, os_family, architecture,
+                period_start, metric_name, akramcode_version, os_family, architecture,
                 install_method, dimensions_json, value, packaged_value
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
             ON CONFLICT(
-                period_start, metric_name, hermes_version, os_family, architecture,
+                period_start, metric_name, akramcode_version, os_family, architecture,
                 install_method, dimensions_json
             )
             DO UPDATE SET value = value + excluded.value
@@ -188,7 +188,7 @@ class SharedMetricsStore:
     def __init__(
         self, database_path: Path | None = None, outbox_directory: Path | None = None
     ) -> None:
-        root = get_hermes_home() / "telemetry" / "shared_metrics"
+        root = get_akramcode_home() / "telemetry" / "shared_metrics"
         self.database_path = database_path or root / "metrics.sqlite3"
         self.outbox_directory = outbox_directory or root / "outbox"
         _ensure_private(self.database_path.parent, 0o700)
@@ -229,7 +229,7 @@ class SharedMetricsStore:
         self, state_key: str, metric_name: str, dimensions: dict[str, str],
         resource: dict[str, str],
     ) -> bool:
-        """Transactional compare-and-set latch shared by concurrent Hermes processes."""
+        """Transactional compare-and-set latch shared by concurrent AkramCode processes."""
         self._validate_counter(metric_name, dimensions, resource)
         now = _utc_now()
         with self._write() as connection:
@@ -463,10 +463,10 @@ class SharedMetricsStore:
         with self._connection() as connection:
             rows = connection.execute(
                 """
-                SELECT period_start, metric_name, hermes_version, os_family, architecture,
+                SELECT period_start, metric_name, akramcode_version, os_family, architecture,
                     install_method, dimensions_json, value, packaged_value
                 FROM counter_aggregates
-                ORDER BY period_start, hermes_version, os_family, architecture, install_method,
+                ORDER BY period_start, akramcode_version, os_family, architecture, install_method,
                     metric_name, dimensions_json
                 """
             ).fetchall()
@@ -500,7 +500,7 @@ class SharedMetricsStore:
                 yield connection
 
     def _ensure_schema(self) -> None:
-        # Serialize first-run creation and upgrades across Hermes processes.
+        # Serialize first-run creation and upgrades across AkramCode processes.
         with self._write(busy_timeout_ms=_SCHEMA_BUSY_TIMEOUT_MS) as connection:
             connection.execute(_CREATE_TELEMETRY_STATE_SQL)
             schema_row = connection.execute(
@@ -519,7 +519,7 @@ class SharedMetricsStore:
             connection.execute(_CREATE_PACKAGE_OUTBOX_SQL)
             # Send bookkeeping columns are ADDITIVE and nullable; the schema version is
             # deliberately NOT bumped because the check above raises on unknown versions,
-            # so a bump would hard-fail an older Hermes (second profile, rollback) sharing
+            # so a bump would hard-fail an older AkramCode (second profile, rollback) sharing
             # the database. Old readers select named columns, never ``SELECT *``.
             existing = {
                 str(row["name"])
@@ -579,9 +579,9 @@ class SharedMetricsStore:
     ) -> dict[str, Any] | None:
         period_row = connection.execute(
             """
-                SELECT period_start, hermes_version, os_family, architecture, install_method
+                SELECT period_start, akramcode_version, os_family, architecture, install_method
                 FROM counter_aggregates WHERE value > packaged_value
-                ORDER BY period_start, hermes_version, os_family, architecture, install_method
+                ORDER BY period_start, akramcode_version, os_family, architecture, install_method
                 LIMIT 1
                 """
         ).fetchone()
@@ -594,7 +594,7 @@ class SharedMetricsStore:
         rows = connection.execute(
             """
                 SELECT metric_name, dimensions_json, value, packaged_value FROM counter_aggregates
-                WHERE period_start = ? AND hermes_version = ? AND os_family = ?
+                WHERE period_start = ? AND akramcode_version = ? AND os_family = ?
                   AND architecture = ? AND install_method = ? AND value > packaged_value
                 ORDER BY metric_name, dimensions_json
                 """,
@@ -633,7 +633,7 @@ class SharedMetricsStore:
             connection.execute(
                 """
                     UPDATE counter_aggregates SET packaged_value = value
-                    WHERE period_start = ? AND metric_name = ? AND hermes_version = ?
+                    WHERE period_start = ? AND metric_name = ? AND akramcode_version = ?
                       AND os_family = ? AND architecture = ? AND install_method = ?
                       AND dimensions_json = ?
                     """,

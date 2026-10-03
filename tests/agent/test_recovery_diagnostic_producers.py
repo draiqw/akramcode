@@ -35,8 +35,8 @@ class Agent(StatusOutputMixin):
 
 @pytest.fixture(params=[None, False, True])
 def policy(request, tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.setenv("HERMES_MANAGED_DIR", str(tmp_path / "managed"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_MANAGED_DIR", str(tmp_path / "managed"))
     config = {} if request.param is None else {"display": {"suppress_warning_notifications": request.param}}
     (tmp_path / "config.yaml").write_text(json.dumps(config))
     return request.param is True

@@ -1,4 +1,4 @@
-"""Shared SKILL.md preprocessing helpers: ``${HERMES_*}`` template tokens and
+"""Shared SKILL.md preprocessing helpers: ``${AKRAMCODE_*}`` template tokens and
 inline ``!`cmd``` shell expansion."""
 
 import logging
@@ -11,9 +11,9 @@ from akramcode_cli._subprocess_compat import IS_WINDOWS, windows_hide_flags
 
 logger = logging.getLogger(__name__)
 
-# ${HERMES_SKILL_DIR} / ${HERMES_SESSION_ID} tokens. Unresolvable ones (e.g. no
+# ${AKRAMCODE_SKILL_DIR} / ${AKRAMCODE_SESSION_ID} tokens. Unresolvable ones (e.g. no
 # session) are left as-is so the author can spot them.
-_SKILL_TEMPLATE_RE = re.compile(r"\$\{(HERMES_SKILL_DIR|HERMES_SESSION_ID)\}")
+_SKILL_TEMPLATE_RE = re.compile(r"\$\{(AKRAMCODE_SKILL_DIR|AKRAMCODE_SESSION_ID)\}")
 # Inline shell snippets like !`date +%Y-%m-%d` — single-line only.
 _INLINE_SHELL_RE = re.compile(r"!`([^`\n]+)`")
 # Cap inline-shell output so a runaway command can't blow out the context.
@@ -33,12 +33,12 @@ def load_skills_config() -> dict:
 
 
 def substitute_template_vars(content: str, skill_dir: Path | None, session_id: str | None) -> str:
-    """Replace ${HERMES_SKILL_DIR} / ${HERMES_SESSION_ID}; tokens without a value stay in place."""
+    """Replace ${AKRAMCODE_SKILL_DIR} / ${AKRAMCODE_SESSION_ID}; tokens without a value stay in place."""
     if not content:
         return content
     values = {
-        "HERMES_SKILL_DIR": str(skill_dir) if skill_dir else None,
-        "HERMES_SESSION_ID": str(session_id) if session_id else None,
+        "AKRAMCODE_SKILL_DIR": str(skill_dir) if skill_dir else None,
+        "AKRAMCODE_SESSION_ID": str(session_id) if session_id else None,
     }
     return _SKILL_TEMPLATE_RE.sub(lambda m: values[m.group(1)] or m.group(0), content)
 

@@ -1,4 +1,4 @@
-"""Filesystem helpers shared across Hermes CLI subsystems."""
+"""Filesystem helpers shared across AkramCode CLI subsystems."""
 
 import os
 import shutil

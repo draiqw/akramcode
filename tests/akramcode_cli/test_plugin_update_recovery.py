@@ -24,7 +24,7 @@ def test_boot_recovers_plugin_publication_after_process_death(tmp_path, committe
     (staged / "__init__.py").write_text("new code", encoding="utf-8")
     project = tmp_path / "project"
     project.mkdir()
-    env = {**os.environ, "HERMES_HOME": str(home), "PYTHONPATH": str(Path(__file__).resolve().parents[2])}
+    env = {**os.environ, "AKRAMCODE_HOME": str(home), "PYTHONPATH": str(Path(__file__).resolve().parents[2])}
     program = '''
 from pathlib import Path
 import os,sys

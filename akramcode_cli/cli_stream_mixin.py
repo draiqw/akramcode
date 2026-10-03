@@ -1,6 +1,6 @@
 """Streaming output, reasoning preview, tool progress callbacks, and busy-command spinner for the interactive CLI
 
-Mixin split out of ``cli.py``; bound onto ``HermesCLI`` via the MRO. cli.py-internal
+Mixin split out of ``cli.py``; bound onto ``AkramCodeCLI`` via the MRO. cli.py-internal
 symbols are imported LAZILY inside each method (``from cli import ...``) — the mixin
 never imports ``cli`` at module load time (import cycle).
 """
@@ -422,7 +422,7 @@ class CLIStreamMixin:
         """Emit filtered text to the streaming display."""
         from agent.markdown_tables import is_table_divider, looks_like_table_row
         from cli import (
-            HermesCLI, _ACCENT, _RST, _STREAM_PARTIAL_PREVIEW_LEN, _cprint, _strip_markdown_syntax, datetime)
+            AkramCodeCLI, _ACCENT, _RST, _STREAM_PARTIAL_PREVIEW_LEN, _cprint, _strip_markdown_syntax, datetime)
         if not text:
             return
         # Close a still-open reasoning box on the first content token so the answer streams
@@ -439,10 +439,10 @@ class CLIStreamMixin:
             try:
                 from akramcode_cli.skin_engine import get_active_skin
                 _skin = get_active_skin()
-                label = _skin.get_branding("response_label", "☤ Hermes")
+                label = _skin.get_branding("response_label", "☤ AkramCode")
                 _text_hex = _skin.get_color("banner_text", "#FFF8DC")
             except Exception:
-                label = "☤ Hermes"
+                label = "☤ AkramCode"
                 _text_hex = "#FFF8DC"
             try:  # true-color escape so streamed text matches the Rich Panel appearance
                 _r, _g, _b = (int(_text_hex[i:i + 2], 16) for i in (1, 3, 5))
@@ -452,7 +452,7 @@ class CLIStreamMixin:
             if self.show_timestamps:
                 label = f"{label} {datetime.now().strftime(getattr(self, 'timestamp_format', '%H:%M'))}"
             w = self._scrollback_box_width()
-            fill = w - 2 - HermesCLI._status_bar_display_width(label)
+            fill = w - 2 - AkramCodeCLI._status_bar_display_width(label)
             _cprint(f"\n{_ACCENT}╭─{label}{'─' * max(fill - 1, 0)}╮{_RST}")
 
         # Turn-level record of what actually reached the screen; survives _reset_stream_state at
@@ -669,7 +669,7 @@ class CLIStreamMixin:
         Drives the TUI spinner (tool.started stamps the elapsed timer); in "all"/"new"/"verbose"
         progress modes tool.completed also commits a stacked scrollback line (tool history).
         """
-        from cli import CLI_CONFIG, _DIM, _RST, _cprint, _hermes_home
+        from cli import CLI_CONFIG, _DIM, _RST, _cprint, _akramcode_home
         # MoA reference outputs (display-only events from the MoA facade): render each answer
         # as a labelled thinking-style block BEFORE the aggregator acts.
         if event_type == "moa.reference":
@@ -748,7 +748,7 @@ class CLIStreamMixin:
                         if not is_seen(CLI_CONFIG, TOOL_PROGRESS_FLAG):
                             self._long_tool_hint_fired = True
                             _cprint(f"  {_DIM}{tool_progress_hint_cli()}{_RST}")
-                            mark_seen(_hermes_home / "config.yaml", TOOL_PROGRESS_FLAG)
+                            mark_seen(_akramcode_home / "config.yaml", TOOL_PROGRESS_FLAG)
                             CLI_CONFIG.setdefault("onboarding", {}).setdefault("seen", {})[TOOL_PROGRESS_FLAG] = True
                 except Exception:
                     pass

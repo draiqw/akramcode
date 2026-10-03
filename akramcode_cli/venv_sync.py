@@ -61,7 +61,7 @@ def check_runtime(project_root: Path) -> str | None:
         return None
     steward = sealed_steward(Path(project_root))
     remedy = (f"this {steward}-managed install must rebuild the artifact to fix"
-              if steward else "run `hermes pm install`")
+              if steward else "run `akramcode pm install`")
     return f"install out of sync ({'; '.join(problems)}) — {remedy}"
 
 
@@ -85,9 +85,9 @@ def publish_launchers(project_root: Path, *, create: bool = True) -> None:
         # source-driver.sh refuses to let --version paper over the gap), so
         # this skip is a half-finished update, never a quiet no-op.
         log.warning("launchers: no managed interpreter under %s; %s not published",
-                    root, root / ".hermes" / "bin")
+                    root, root / ".akramcode" / "bin")
         return
-    written = ensure_install_launchers(root, root / ".hermes" / "bin")
+    written = ensure_install_launchers(root, root / ".akramcode" / "bin")
     if len(written) != len(ENTRY_POINTS):
         from pm.package import InstallError
 
@@ -130,7 +130,7 @@ def sync(project_root: Path | None = None, *, check: bool = False) -> dict:
 def collect_superseded_generations(project_root: Path) -> None:
     """Collect what a publish just superseded, as the Docker boot already does.
 
-    Without this only a manual `hermes pm gc` reclaimed old environments. Safe
+    Without this only a manual `akramcode pm gc` reclaimed old environments. Safe
     right after a sync: the collectors skip leased, selected and day-young
     generations and yield to any in-flight install instead of waiting.
     """
@@ -180,7 +180,7 @@ def arm_completion(project_root: Path) -> Path:
 #: failing re-runs on every launch ("every launch burns ~4 minutes"), so after
 #: this many consecutive failures the tail waits out a backoff window before
 #: trying again, and past the cap it stops self-starting entirely and leaves
-#: the marker for an explicit ``hermes update`` instead. The counter is the
+#: the marker for an explicit ``akramcode update`` instead. The counter is the
 #: tail's own attempt record beside the pending marker: same lifetime, same
 #: install scope, cleared by the same success path.
 COMPLETION_RETRY_BACKOFF_ATTEMPTS = 2
@@ -262,7 +262,7 @@ def refuse_foreign_owned_venv(project_root: Path) -> None:
     # A root-run update on a user's checkout is not safe even if a fresh
     # generation would be allocated: it publishes root-owned state for them.
     from pm.environments import selected_venv
-    candidates = [root, root / "venv", root / ".venv", root / ".hermes", selected_venv(root)]
+    candidates = [root, root / "venv", root / ".venv", root / ".akramcode", selected_venv(root)]
     for venv in (root / "venv", root / ".venv", candidates[-1]):
         for directory in (venv / ("Scripts" if os.name == "nt" else "bin"),
                           *venv.glob("lib/python*/site-packages")):
@@ -300,12 +300,12 @@ def _supervised_child() -> bool:
     """A launcher-marked child: booted by a manager, not a user's shell.
 
     Launcher markers only — not INVOCATION_ID, which systemd exports to every
-    descendant: an ordinary hermes command inside a CI runner still owes its repair.
+    descendant: an ordinary akramcode command inside a CI runner still owes its repair.
     Parsed as a truthy flag, so an explicit ``0``/``false`` does not suppress the tail.
     """
     return any(
         os.environ.get(name, "").strip().lower() in ("1", "true", "yes", "on")
-        for name in ("HERMES_SUPERVISED_CHILD", "HERMES_S6_SUPERVISED_CHILD")
+        for name in ("AKRAMCODE_SUPERVISED_CHILD", "AKRAMCODE_S6_SUPERVISED_CHILD")
     )
 
 
@@ -317,7 +317,7 @@ def prepare_launch(project_root: Path, argv: list[str]) -> Path | None:
     so a tail that failed is retried on the next launch WITHOUT rebuilding
     dependencies that are already current. Old updaters need not write a
     marker (and cannot accidentally clear this obligation).
-    A supervised child leaves that tail to ``hermes update`` when its dependencies
+    A supervised child leaves that tail to ``akramcode update`` when its dependencies
     are current: its manager restarts it on every start, so a sticky marker would
     re-run the tail (and its environment builds) on each boot until the disk fills.
     Return the store interpreter when this process must restart cleanly.
@@ -335,7 +335,7 @@ def prepare_launch(project_root: Path, argv: list[str]) -> Path | None:
 
     if (command_argv(argv)[:1] == ["pm"]
             or _METADATA_FLAGS & set(argv)
-            or os.environ.get("HERMES_DISABLE_LAZY_INSTALLS", "").lower() in ("1", "true", "yes")
+            or os.environ.get("AKRAMCODE_DISABLE_LAZY_INSTALLS", "").lower() in ("1", "true", "yes")
             or not (root / ".git").exists()
             or not (root / "pyproject.toml").is_file()):
         return None
@@ -359,10 +359,10 @@ def prepare_launch(project_root: Path, argv: list[str]) -> Path | None:
     if not _may_retry and _attempts >= COMPLETION_RETRY_MAX_ATTEMPTS:
         # The tail has failed often enough that every relaunch re-running it
         # does more harm than good (#122206: "every launch burns ~4 minutes").
-        # Leave the marker for an explicit `hermes update`; say so once.
+        # Leave the marker for an explicit `akramcode update`; say so once.
         print(
-            f"hermes: a source update could not be finished automatically "
-            f"({_attempts} attempts); run `hermes update` from a shell to finish it",
+            f"akramcode: a source update could not be finished automatically "
+            f"({_attempts} attempts); run `akramcode update` from a shell to finish it",
             file=sys.stderr, flush=True,
         )
     elif not _may_retry:
@@ -372,7 +372,7 @@ def prepare_launch(project_root: Path, argv: list[str]) -> Path | None:
     elif not owed_to_cli and (not current or pending.is_file()):
         lock = UpdateLock()
         if not lock.acquire():
-            raise RuntimeError("an update is still running; wait for it to exit, then relaunch Hermes")
+            raise RuntimeError("an update is still running; wait for it to exit, then relaunch AkramCode")
         try:
             # Under the launching update's own claim (its pid is our ancestor) a process it
             # spawned owes no tail: that obligation is the updater's.
@@ -392,9 +392,9 @@ def prepare_launch(project_root: Path, argv: list[str]) -> Path | None:
             lock.release()
     python = resolve_store_python(root)
     if python is None:
-        raise RuntimeError("source update has no managed Python; run `hermes pm install`")
+        raise RuntimeError("source update has no managed Python; run `akramcode pm install`")
     # Lexical identity, never resolve(): PM spells the store path through
-    # HERMES_HOME (which may carry '..') while sys.executable arrives
+    # AKRAMCODE_HOME (which may carry '..') while sys.executable arrives
     # normalized, so a raw compare re-execs every child forever (#122513). A
     # venv interpreter symlinked to the same binary is still a different
     # interpreter (its own sys.prefix) and must re-exec once.
@@ -405,7 +405,7 @@ def prepare_launch(project_root: Path, argv: list[str]) -> Path | None:
     if owed_to_cli:
         # Left owed, not dropped: say so (once, in the process that boots) where an
         # operator of the unit will read it.
-        print("hermes: a source update is unfinished; run `hermes update` from a shell to finish it",
+        print("akramcode: a source update is unfinished; run `akramcode update` from a shell to finish it",
               file=sys.stderr, flush=True)
     return None
 
@@ -421,11 +421,11 @@ def _finish_source_update(root: Path, *, current: bool, pending: Path) -> None:
         # Current post-sync verification children can boot under a live updater.
         legacy_markers = (root / ".update-incomplete", root / ".lazy-refresh-incomplete")
         if any(_marker_owner_is_live(marker) for marker in legacy_markers):
-            raise RuntimeError("an update is still running; wait for it to exit, then relaunch Hermes")
-        print("hermes: completing source-update dependencies...", file=sys.stderr, flush=True)
+            raise RuntimeError("an update is still running; wait for it to exit, then relaunch AkramCode")
+        print("akramcode: completing source-update dependencies...", file=sys.stderr, flush=True)
         _sync_source_dependencies(root, arm=True)
     else:
-        print("hermes: finishing an interrupted source update...", file=sys.stderr, flush=True)
+        print("akramcode: finishing an interrupted source update...", file=sys.stderr, flush=True)
     # Sync commits the dependency generation, but a source update also owes
     # the product builds and the post-build maintenance -- the tail every
     # install and finished update shares (akramcode_cli/source_completion.py).
@@ -448,7 +448,7 @@ def _finish_source_update(root: Path, *, current: bool, pending: Path) -> None:
     if code != 0:
         _record_completion_attempt(root, failed=True)
         raise RuntimeError(
-            "source update completion failed; run `hermes update` to finish it"
+            "source update completion failed; run `akramcode update` to finish it"
         )
     clear_completion(root)
 
@@ -462,7 +462,7 @@ def _sync_source_dependencies(root: Path, *, arm: bool) -> None:
     from pm.extras import legacy_selection
 
     if not arm:
-        print("hermes: preparing dependencies for this update...", file=sys.stderr, flush=True)
+        print("akramcode: preparing dependencies for this update...", file=sys.stderr, flush=True)
     refuse_foreign_owned_venv(root)
     if arm:
         # Owed from before the sync commits: a crash between the commit and the
@@ -471,7 +471,7 @@ def _sync_source_dependencies(root: Path, *, arm: bool) -> None:
     # Main-era installs have no PM ledger; carry what their venv held.
     # Established PM installs retain their recorded extras and plugin union instead.
     extras = legacy_selection(root) if not runtime_facts_path(root).is_file() else None
-    # Same order as `hermes update`: an interrupted update or a hand-run
+    # Same order as `akramcode update`: an interrupted update or a hand-run
     # `git pull` leaves this tree's lockfile ahead of the installed tools.
     ensure_tools_for_sync()
     pm.sync_venv(extras, explicit=True, project_root=root, evict_incompatible_plugins=True)

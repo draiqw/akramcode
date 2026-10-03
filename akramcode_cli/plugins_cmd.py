@@ -1,4 +1,4 @@
-"""``hermes plugins`` CLI subcommand — install, update, remove, and list plugins.
+"""``akramcode plugins`` CLI subcommand — install, update, remove, and list plugins.
 
 Facade: shared primitives (errors, console/config helpers, manifest reading, discovery, enable/disable
 selection) and the dispatch table live here; each verb family lives in a ``plugins_cmd_<topic>.py``
@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 from typing import Any, NoReturn, Optional
 
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 from akramcode_cli.config import cfg_get
 from akramcode_cli.plugin_capabilities import _child_dict
 # Tests patch these two on the facade; the install/remove siblings read them through it.
@@ -240,7 +240,7 @@ def _scan_merged_tree(plugin_dir: Path, identifier: str, merged: Optional[list[s
 
 def _plugins_dir() -> Path:
     """Return the user plugins directory, creating it if needed."""
-    plugins = get_hermes_home() / "plugins"
+    plugins = get_akramcode_home() / "plugins"
     plugins.mkdir(parents=True, exist_ok=True)
     return plugins
 
@@ -405,7 +405,7 @@ def _copy_example_files(plugin_dir: Path, console) -> None:
 
 def _missing_env_specs(manifest: dict) -> list[dict]:
     """``requires_env`` entries (plain names or ``{name, description, url, secret}`` dicts,
-    normalised to dicts; nameless entries dropped) whose variable is unset in ``~/.hermes/.env``."""
+    normalised to dicts; nameless entries dropped) whose variable is unset in ``~/.akramcode/.env``."""
     env_specs = [
         {"name": entry} if isinstance(entry, str) else entry
         for entry in manifest.get("requires_env") or []
@@ -424,7 +424,7 @@ def _clone_failure_message(git_url: str, git_error: str) -> str:
     not parsed as markup."""
     from rich.markup import escape
     return (f"Could not download the plugin from {git_url}. Check the address (browse the catalog "
-            "with `hermes plugins search`), check your internet connection, or, if the repository "
+            "with `akramcode plugins search`), check your internet connection, or, if the repository "
             "is private, sign in first with `gh auth login` (or set GITHUB_TOKEN in your .env).\n"
             f"Details: {escape(git_error.strip())}")
 
@@ -444,9 +444,9 @@ def _unknown_plugin_message(name: str, *, downloaded_only: bool = False) -> str:
     """``No plugin named ...`` with the exact-name rule and the two commands that resolve it."""
     scope = (" This command only works on downloaded plugins; bundled ones can only be enabled or disabled."
              if downloaded_only else " Bundled plugins can only be enabled or disabled.")
-    return (f"[red]No plugin named '{name}'.[/red] Run `hermes plugins list` to see the exact names "
+    return (f"[red]No plugin named '{name}'.[/red] Run `akramcode plugins list` to see the exact names "
             f"(nested plugins use their full key, e.g. web/firecrawl).{scope} "
-            "To add one: `hermes plugins install <owner/repo>`.")
+            "To add one: `akramcode plugins install <owner/repo>`.")
 
 
 # ``plugins.disabled`` is an explicit deny-list that wins over the ``plugins.enabled`` allow-list.
@@ -463,7 +463,7 @@ def _save_enabled_set(enabled: set) -> None:
 
 def _plugin_selection_version() -> str:
     from akramcode_cli.runtime_state import _digest
-    return _digest(get_hermes_home() / "config.yaml") or "missing"
+    return _digest(get_akramcode_home() / "config.yaml") or "missing"
 
 
 def _admit_and_save_plugin_sets(
@@ -487,7 +487,7 @@ def _admit_and_save_plugin_sets(
             plugin=plugin,
         )
     except DependencyConflict as exc:
-        # `hermes pm install` cannot fix a conflict, so the retry hint below would mislead here.
+        # `akramcode pm install` cannot fix a conflict, so the retry hint below would mislead here.
         if console is not None:
             console.print(f"[red]✗[/red] {escape(str(exc))}")
             console.print("[dim]config.yaml and the active environment are unchanged.[/dim]")
@@ -497,7 +497,7 @@ def _admit_and_save_plugin_sets(
             console.print(f"[red]✗[/red] {action} refused: {exc}")
             console.print(
                 "[dim]config.yaml and the active environment are unchanged. "
-                "Run `hermes pm install` to resolve dependencies, then retry.[/dim]"
+                "Run `akramcode pm install` to resolve dependencies, then retry.[/dim]"
             )
         raise
 
@@ -509,7 +509,7 @@ _BASIC_AUTH_PLUGIN_KEYS = frozenset({"basic", "dashboard_auth/basic"})
 def ensure_basic_auth_plugin_enabled_in_config(cfg: dict) -> bool:
     """Drop the bundled basic dashboard-auth plugin from ``plugins.disabled`` in *cfg*.
 
-    ``hermes setup`` / ``hermes plugins disable basic`` can park it there while
+    ``akramcode setup`` / ``akramcode plugins disable basic`` can park it there while
     ``dashboard.basic_auth`` is configured, and password auth then silently fails.
     Returns True when modified.
     """
@@ -590,7 +590,7 @@ def _set_plugin_enabled(name: str, *, enable: bool, aliases=(), console=None) ->
     from pm.plugins_state import read_home_selection
 
     expected_config = _plugin_selection_version()
-    config = read_home_selection(get_hermes_home()) or {}
+    config = read_home_selection(get_akramcode_home()) or {}
     plugins = config.get("plugins") or {}
     enabled = set(plugins.get("enabled") or ())
     disabled = set(plugins.get("disabled") or ())
@@ -647,7 +647,7 @@ def cmd_enable(name: str, allow_tool_override: Optional[bool] = None) -> None:
         if plugin in LEGACY_RELAY_PLUGIN_KEYS:
             _fail(console, (
                 f"[red]Plugin '{plugin}' was removed.[/red] Relay lifecycle is owned "
-                "by Hermes core; configure a standard user or system Relay plugins.toml, or use "
+                "by AkramCode core; configure a standard user or system Relay plugins.toml, or use "
                 f"{RELAY_PLUGINS_CONFIG_ENV} for an explicit user-file override."))
 
     _refuse_legacy_relay(name)
@@ -880,7 +880,7 @@ def _toggle_plugin_toolset(name: str, *, enable: bool) -> None:
     platform_toolsets = _child_dict(config, "platform_toolsets")
     changed = False
     for platform, raw in list(platform_toolsets.items()):
-        # A list-literal string (older `hermes config set`) is the user's real selection; toggling
+        # A list-literal string (older `akramcode config set`) is the user's real selection; toggling
         # it re-saves the entry as a proper list so the string never persists.
         ts_list = parse_platform_toolsets_value(raw)
         if ts_list is not None and enable != (toolset_key in ts_list):
@@ -928,7 +928,7 @@ def dashboard_set_agent_plugin_enabled(name: str, *, enabled: bool) -> dict[str,
 
 
 def _user_installed_plugin_dir(name: str) -> Optional[Path]:
-    """Resolved path under ``~/.hermes/plugins/<name>`` if it exists."""
+    """Resolved path under ``~/.akramcode/plugins/<name>`` if it exists."""
     try:
         target = _sanitize_plugin_name(name, _plugins_dir(), allow_subdir=True)
     except ValueError:
@@ -998,7 +998,7 @@ _PLUGIN_ACTIONS = {
 
 
 def plugins_command(args) -> None:
-    """Dispatch hermes plugins subcommands."""
+    """Dispatch akramcode plugins subcommands."""
     action = getattr(args, "plugins_action", None)
     handler = _PLUGIN_ACTIONS.get(action)
     if handler is None:

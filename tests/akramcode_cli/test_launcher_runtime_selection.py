@@ -15,7 +15,7 @@ from pm.environments import install_state_dir, site_packages
 def test_minted_launcher_reads_current_selection_and_editable_members(tmp_path, monkeypatch):
     from pm import environments as runtime_paths
     from akramcode_cli import runtime_state
-    import hermes_constants
+    import akramcode_constants
 
     root = tmp_path / "repo"
     package = root / "akramcode_cli"
@@ -28,8 +28,8 @@ def test_minted_launcher_reads_current_selection_and_editable_members(tmp_path, 
     (pm_package / "environments.py").write_bytes(Path(runtime_paths.__file__).read_bytes())
     (pm_package / "filesystem.py").write_bytes((Path(runtime_paths.__file__).parent / "filesystem.py").read_bytes())
     (package / "runtime_state.py").write_bytes(Path(runtime_state.__file__).read_bytes())
-    (root / "hermes_constants.py").write_bytes(Path(hermes_constants.__file__).read_bytes())
-    (root / "akram_core.hermes_bootstrap.py").write_text(
+    (root / "akramcode_constants.py").write_bytes(Path(akramcode_constants.__file__).read_bytes())
+    (root / "akram_core.akramcode_bootstrap.py").write_text(
         "from pathlib import Path\nfrom pm.environments import activate_dependencies\n"
         "activate_dependencies(Path(__file__).resolve().parent)\n"
     )
@@ -40,11 +40,11 @@ def test_minted_launcher_reads_current_selection_and_editable_members(tmp_path, 
     base = site_packages(root / "venv")
     base.mkdir(parents=True)
     (base / "selection_probe.py").write_text("VALUE = 'base'\n")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
     state = install_state_dir(root)
     out = tmp_path / "bin"
     out.mkdir()
-    launcher = _launchers.mint_launcher("hermes", root, out, Path(sys.executable), base)
+    launcher = _launchers.mint_launcher("akramcode", root, out, Path(sys.executable), base)
     assert launcher is not None
 
     selected = state / "environments" / "selected" / "venv"

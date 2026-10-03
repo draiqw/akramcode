@@ -52,7 +52,7 @@ def test_stop_mark_never_blocks_restart_and_unit_wires_exec_stop(monkeypatch):
     from akramcode_cli import gateway as gateway_cli
 
     unit = gateway_cli.generate_systemd_unit(system=False)
-    # Both modules run through the installation launcher (`hermes --run-module <mod>`).
+    # Both modules run through the installation launcher (`akramcode --run-module <mod>`).
     assert "ExecStop=-" in unit and "gateway.systemd_stop_mark" in unit
     # The cgroup reaper still runs after the main process exits.
     assert "ExecStopPost=-" in unit and "gateway.cgroup_cleanup" in unit

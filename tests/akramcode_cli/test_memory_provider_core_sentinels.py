@@ -12,7 +12,7 @@ from akramcode_cli import memory_provider_migration as mig
 @pytest.mark.parametrize("sentinel", ["builtin", "Default", "none"])
 def test_doctor_treats_core_sentinel_as_builtin_memory(tmp_path: Path, monkeypatch, capsys, sentinel):
     (tmp_path / "config.yaml").write_text(f"memory:\n  provider: {sentinel}\n")
-    monkeypatch.setattr(doctor, "HERMES_HOME", tmp_path)
+    monkeypatch.setattr(doctor, "AKRAMCODE_HOME", tmp_path)
 
     finding = doctor_state._check_memory_provider(False)
     out = capsys.readouterr().out
@@ -23,7 +23,7 @@ def test_doctor_treats_core_sentinel_as_builtin_memory(tmp_path: Path, monkeypat
 
 
 def test_migration_never_installs_a_core_sentinel(tmp_path: Path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     (tmp_path / "config.yaml").write_text("memory:\n  provider: builtin\n")
     monkeypatch.setattr(mig, "catalog_source", lambda name: pytest.fail("catalog must not be consulted"))
     said: list[str] = []

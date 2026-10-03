@@ -32,13 +32,13 @@ from utils import base_url_host_matches, base_url_hostname
 import fire
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, TimeElapsedColumn, TimeRemainingColumn
 from rich.console import Console
-from akramcode_constants import OPENROUTER_BASE_URL, get_hermes_home
+from akramcode_constants import OPENROUTER_BASE_URL, get_akramcode_home
 from agent.compression_marker import elide_middle
 from agent.retry_utils import jittered_backoff
-from akramcode_cli.env_loader import load_hermes_dotenv
+from akramcode_cli.env_loader import load_akramcode_dotenv
 
-# Load .env from HERMES_HOME first, then project root as a dev fallback.
-load_hermes_dotenv(hermes_home=get_hermes_home(), project_env=Path(__file__).parent / ".env")
+# Load .env from AKRAMCODE_HOME first, then project root as a dev fallback.
+load_akramcode_dotenv(akramcode_home=get_akramcode_home(), project_env=Path(__file__).parent / ".env")
 
 
 def _response_finish_reason(response: Any) -> str:
@@ -315,7 +315,7 @@ class TrajectoryCompressor:
             from agent.auxiliary_client import resolve_provider_client
             client, _ = resolve_provider_client(provider, model=self.config.summarization_model)
             if client is None:
-                raise RuntimeError(f"Provider '{provider}' is not configured. Check your API key or run: hermes setup")
+                raise RuntimeError(f"Provider '{provider}' is not configured. Check your API key or run: akramcode setup")
             self.client = self.async_client = None  # Not used directly
         else:
             # Custom endpoint — use config's raw base_url + api_key_env
@@ -837,10 +837,10 @@ def main(input: str, output: str = None, config: str = "configs/trajectory_compr
          tokenizer: str = None, sample_percent: float = None, seed: int = 42, dry_run: bool = False):
     """
     Compress agent trajectories to fit within a target token budget.
-    
+
     Supports both single JSONL files and directories containing multiple JSONL files.
     Optionally sample a percentage of trajectories before compression.
-    
+
     Args:
         input: Path to JSONL file or directory containing JSONL files
         output: Output path (file for file input, directory for dir input)

@@ -23,10 +23,10 @@ def protected_home(tmp_path, monkeypatch):
     root.mkdir()
     (root / "file.txt").write_text("unchanged", encoding="utf-8")
     (root / "empty").mkdir()
-    monkeypatch.setattr(conftest, "_REAL_HERMES_ROOT_CANDIDATES", [root])
+    monkeypatch.setattr(conftest, "_REAL_AKRAMCODE_ROOT_CANDIDATES", [root])
     yield root
     # Restore access before tmp_path/pytest cleanup even when an assertion fails.
-    monkeypatch.setattr(conftest, "_REAL_HERMES_ROOT_CANDIDATES", [])
+    monkeypatch.setattr(conftest, "_REAL_AKRAMCODE_ROOT_CANDIDATES", [])
 
 
 def _open_close(path):
@@ -70,14 +70,14 @@ _OPERATIONS = {
 
 @pytest.mark.parametrize("operation", _OPERATIONS, ids=_OPERATIONS)
 def test_io_guard_denies_protected_roots_before_mutation(protected_home, operation):
-    with pytest.raises((AssertionError, pytest.fail.Exception), match="REAL hermes home"):
+    with pytest.raises((AssertionError, pytest.fail.Exception), match="REAL akramcode home"):
         _OPERATIONS[operation](protected_home / "file.txt")
 
 
 def test_rename_cannot_overwrite_a_protected_destination(protected_home, tmp_path):
     source = tmp_path / "source.txt"
     source.write_text("external", encoding="utf-8")
-    with pytest.raises((AssertionError, pytest.fail.Exception), match="REAL hermes home"):
+    with pytest.raises((AssertionError, pytest.fail.Exception), match="REAL akramcode home"):
         source.replace(protected_home / "file.txt")
     assert source.read_text(encoding="utf-8") == "external"
 
@@ -85,23 +85,23 @@ def test_rename_cannot_overwrite_a_protected_destination(protected_home, tmp_pat
 def test_installed_desktop_app_can_be_read_but_never_changed(tmp_path, monkeypatch):
     from tests import conftest
 
-    app = tmp_path / "Applications" / "Hermes.app"
+    app = tmp_path / "Applications" / "AkramCode.app"
     (app / "Contents").mkdir(parents=True)
     plist = app / "Contents" / "Info.plist"
     plist.write_text("unchanged", encoding="utf-8")
-    replacement = tmp_path / "Hermes.app.new"
+    replacement = tmp_path / "AkramCode.app.new"
     replacement.mkdir()
     changes = [lambda: shutil.rmtree(app), plist.unlink, lambda: replacement.replace(app),
                lambda: plist.write_text("clobbered", encoding="utf-8")]
     try:  # Windows without Developer Mode cannot create symlinks
         (tmp_path / "linked").symlink_to(app.parent, target_is_directory=True)
-        changes.append(lambda: shutil.rmtree(tmp_path / "linked" / "Hermes.app"))
+        changes.append(lambda: shutil.rmtree(tmp_path / "linked" / "AkramCode.app"))
     except OSError:
         pass
     monkeypatch.setattr(conftest, "_REAL_INSTALLED_GUI_APPS", [os.path.normcase(os.path.realpath(app))])
     assert plist.read_text(encoding="utf-8") == "unchanged"
     for change in changes:
-        with pytest.raises(pytest.fail.Exception, match="REAL installed Hermes desktop app"):
+        with pytest.raises(pytest.fail.Exception, match="REAL installed AkramCode desktop app"):
             change()
     assert plist.read_text(encoding="utf-8") == "unchanged"
 
@@ -164,7 +164,7 @@ def test_path_metadata_exemption_tracks_path_changes(protected_home, monkeypatch
     monkeypatch.setenv("PATH", str(protected_home))
     guard.check(target, metadata=True)  # executable lookup, not a state read
     monkeypatch.setenv("PATH", str(protected_home.parent))
-    with pytest.raises(AssertionError, match="REAL hermes home"):
+    with pytest.raises(AssertionError, match="REAL akramcode home"):
         guard.check(target, metadata=True)
 
 
@@ -180,13 +180,13 @@ def test_relative_path_metadata_exemption_tracks_working_directory(protected_hom
     monkeypatch.chdir(other)
     guard.check(target, metadata=True)
     monkeypatch.chdir(other / "nested")
-    with pytest.raises(AssertionError, match="REAL hermes home"):
+    with pytest.raises(AssertionError, match="REAL akramcode home"):
         guard.check(target, metadata=True)
 
 
 def test_checkout_inside_a_guarded_root_is_not_akramcode_state():
     """The default install checks the repo out INSIDE the home (install.sh:
-    INSTALL_DIR=$HERMES_HOME/hermes-agent): the checkout, its .venv and test
+    INSTALL_DIR=$AKRAMCODE_HOME/akramcode-agent): the checkout, its .venv and test
     data are exempt even when the guarded root contains them; siblings under
     that root are still refused."""
     from tests.home_io_guard import HomeIOGuard
@@ -194,15 +194,15 @@ def test_checkout_inside_a_guarded_root_is_not_akramcode_state():
     guard = HomeIOGuard(lambda: [PROJECT_ROOT.parent])
     guard.check(PROJECT_ROOT / "tests" / "home_io_guard.py")
     guard.check(PROJECT_ROOT / ".venv" / "bin" / "python", metadata=True)
-    with pytest.raises(AssertionError, match="REAL hermes home"):
+    with pytest.raises(AssertionError, match="REAL akramcode home"):
         guard.check(PROJECT_ROOT.parent / "config.yaml")
 
 
-def test_hermes_exported_scratch_tmp_is_not_the_test_temp_root(tmp_path):
-    """A Hermes-launched shell hands pytest TMPDIR=<home>/cache/scratch (tagged by
-    HERMES_SCRATCH_DIR). With that home guarded, honoring it would put the session
+def test_akramcode_exported_scratch_tmp_is_not_the_test_temp_root(tmp_path):
+    """A AkramCode-launched shell hands pytest TMPDIR=<home>/cache/scratch (tagged by
+    AKRAMCODE_SCRATCH_DIR). With that home guarded, honoring it would put the session
     sandbox, basetemp and every tempfile default inside the guarded root; the
-    conftest must drop Hermes' own export before anything allocates temp space."""
+    conftest must drop AkramCode' own export before anything allocates temp space."""
     home = tmp_path / "home"
     scratch = home / "cache" / "scratch"
     scratch.mkdir(parents=True)
@@ -218,8 +218,8 @@ def test_hermes_exported_scratch_tmp_is_not_the_test_temp_root(tmp_path):
                 assert not Path(made).resolve().is_relative_to(home)
         """), encoding="utf-8")
     env = {k: v for k, v in os.environ.items()
-           if k not in ("TMPDIR", "TMP", "TEMP", "HERMES_SCRATCH_DIR", "HERMES_TEST_SANDBOX_HOME")}
-    env.update(HERMES_HOME=str(home), TMPDIR=str(scratch), HERMES_SCRATCH_DIR=str(scratch))
+           if k not in ("TMPDIR", "TMP", "TEMP", "AKRAMCODE_SCRATCH_DIR", "AKRAMCODE_TEST_SANDBOX_HOME")}
+    env.update(AKRAMCODE_HOME=str(home), TMPDIR=str(scratch), AKRAMCODE_SCRATCH_DIR=str(scratch))
     result = subprocess.run(
         [sys.executable, "-m", "pytest", "-p", "tests.conftest", "-p", "no:cacheprovider", "-q", str(probe)],
         cwd=PROJECT_ROOT, env=env, capture_output=True, text=True, timeout=120,

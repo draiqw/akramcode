@@ -51,7 +51,7 @@ def fetch_in_new_process(home, base, *, force=False):
          "import json, sys; print(json.dumps(fetch_nous_recommended_models(sys.argv[1], force_refresh=sys.argv[2] == 'True')))",
          base, str(force)],
         cwd=Path(__file__).resolve().parents[2],
-        env={**os.environ, "HERMES_HOME": str(home)},
+        env={**os.environ, "AKRAMCODE_HOME": str(home)},
         capture_output=True, text=True, check=True, timeout=30,
     )
     return json.loads(result.stdout)
@@ -111,13 +111,13 @@ def test_disk_cache_is_scoped_to_home_and_portal(tmp_path, portal):
 
     # The same process can switch profiles under the multiplex gateway too.
     from akramcode_cli.models import fetch_nous_recommended_models, _nous_recommended_cache
-    from hermes_constants import set_hermes_home_override, reset_hermes_home_override
+    from akramcode_constants import set_akramcode_home_override, reset_akramcode_home_override
     _nous_recommended_cache.clear()
     for home, expected in [(a, first), (b, {"paidRecommendedModels": [{"modelName": "model-2"}]}), (a, first)]:
-        token = set_hermes_home_override(home)
+        token = set_akramcode_home_override(home)
         try:
             assert fetch_nous_recommended_models(base) == expected
         finally:
-            reset_hermes_home_override(token)
+            reset_akramcode_home_override(token)
     assert len(requests) == 3
     _nous_recommended_cache.clear()

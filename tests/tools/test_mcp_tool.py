@@ -156,7 +156,7 @@ class TestLoadMCPConfig:
         self, tmp_path, monkeypatch
     ):
         import json
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
         from akramcode_cli.agent_plugins import MCP_SCHEMA_V1, PLUGIN_SCHEMA_V1
         from akramcode_cli import plugins as plugins_mod
 
@@ -182,8 +182,8 @@ class TestLoadMCPConfig:
         )
         bundled = tmp_path / "bundled"
         bundled.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(home))
-        monkeypatch.setenv("HERMES_BUNDLED_PLUGINS", str(bundled))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(home))
+        monkeypatch.setenv("AKRAMCODE_BUNDLED_PLUGINS", str(bundled))
         monkeypatch.setattr(plugins_mod, "_plugin_manager", None)
 
         from tools.mcp_tool_config import _load_mcp_config
@@ -462,7 +462,7 @@ class TestLifecycleConfig:
 # ---------------------------------------------------------------------------
 
 class TestSchemaConversion:
-    def test_converts_mcp_tool_to_hermes_schema(self):
+    def test_converts_mcp_tool_to_akramcode_schema(self):
         from tools.mcp_tool_schema import _convert_mcp_schema
 
         mcp_tool = _make_mcp_tool(name="read_file", description="Read a file")
@@ -1144,7 +1144,7 @@ class TestMCPServerTask:
         """A pinned session working directory becomes the stdio default cwd.
 
         Hosted/multiplexed sessions (ACP, gateway) pin their logical cwd; a stdio
-        server spawned there inherits the Hermes process dir instead, so
+        server spawned there inherits the AkramCode process dir instead, so
         relative-path servers resolve against the wrong tree.
         """
         from agent.runtime_cwd import clear_session_cwd, set_session_cwd
@@ -1281,7 +1281,7 @@ class TestToolsetInjection:
             "good": {"command": "npx", "args": []},
         }
         fake_toolsets = {
-            "hermes-cli": {"tools": [], "description": "CLI", "includes": []},
+            "akramcode-cli": {"tools": [], "description": "CLI", "includes": []},
         }
 
         with patch("tools.mcp_tool._MCP_AVAILABLE", True), \
@@ -2677,7 +2677,7 @@ class TestMCPSelectiveToolLoading:
             }
         }
         fake_toolsets = {
-            "hermes-cli": {"tools": [], "description": "CLI", "includes": []},
+            "akramcode-cli": {"tools": [], "description": "CLI", "includes": []},
         }
 
         with patch("tools.mcp_tool._MCP_AVAILABLE", True), \

@@ -8,107 +8,107 @@
 # Emits the composed pm env (PATH + tool vars) into the CURRENT shell, with
 # save/restore: `deactivate` undoes exactly what activation changed.
 #
-# `hermes` becomes a shell function for this checkout. It runs only while the
+# `akramcode` becomes a shell function for this checkout. It runs only while the
 # shell is inside this worktree and refuses outside it, so a sibling worktree
 # keeps its own command. A prompt prefix names the worktree.
 #
 # Sync through setup before selecting the environment. PM owns freshness;
 # activation does not maintain a second dependency stamp. It trusts the
-# recorded tool digest instead of re-hashing every entry. `hermes pm
-# install` and `hermes update` keep that check.
+# recorded tool digest instead of re-hashing every entry. `akramcode pm
+# install` and `akramcode update` keep that check.
 # ============================================================================
-_HERMES_REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+_AKRAMCODE_REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Options: `--test-extras a,b` selects the test environment's runtime extras
 # (default: [all]); `--` ends options.
 # A bare `source ./activate` inherits the caller's positional parameters.
 # Ignore unrelated words so scripts with their own arguments can source it.
-_hermes_test_env="--test-environment"
-_hermes_expect_extras=""
-for _hermes_arg in "$@"; do
-    if [ -n "$_hermes_expect_extras" ]; then
-        _hermes_test_env="--test-environment=$_hermes_arg"
-        _hermes_expect_extras=""
+_akramcode_test_env="--test-environment"
+_akramcode_expect_extras=""
+for _akramcode_arg in "$@"; do
+    if [ -n "$_akramcode_expect_extras" ]; then
+        _akramcode_test_env="--test-environment=$_akramcode_arg"
+        _akramcode_expect_extras=""
         continue
     fi
-    case "$_hermes_arg" in
+    case "$_akramcode_arg" in
         --) break ;;
-        --test-extras) _hermes_expect_extras=1 ;;
-        --test-extras=*) _hermes_test_env="--test-environment=${_hermes_arg#--test-extras=}" ;;
+        --test-extras) _akramcode_expect_extras=1 ;;
+        --test-extras=*) _akramcode_test_env="--test-environment=${_akramcode_arg#--test-extras=}" ;;
         *) : ;;
     esac
 done
-if [ -n "$_hermes_expect_extras" ]; then
+if [ -n "$_akramcode_expect_extras" ]; then
     printf '%s\n' 'activate: --test-extras needs a comma-separated list' >&2
-    unset _hermes_arg _hermes_test_env _hermes_expect_extras
+    unset _akramcode_arg _akramcode_test_env _akramcode_expect_extras
     return 2 2>/dev/null || exit 2
 fi
 # Setup runs in a child: failures must not exit or partially activate the
 # caller's shell, and activation must not republish launchers or shell config.
 if ! (
     unset PYTHONHOME PYTHONPATH VIRTUAL_ENV
-    bash "$_HERMES_REPO/setup-hermes.sh" --runtime-only "$_hermes_test_env"
+    bash "$_AKRAMCODE_REPO/setup-akramcode.sh" --runtime-only "$_akramcode_test_env"
 ) >&2; then
     printf '%s\n' 'activate: setup failed; shell environment unchanged' >&2
-    unset _hermes_arg _hermes_test_env _hermes_expect_extras
+    unset _akramcode_arg _akramcode_test_env _akramcode_expect_extras
     return 1 2>/dev/null || exit 1
 fi
-unset _hermes_arg _hermes_test_env _hermes_expect_extras
+unset _akramcode_arg _akramcode_test_env _akramcode_expect_extras
 
 # Guard against double-sourcing: venv activate precedent (re-activating is a
 # no-op re-save; we keep it idempotent by deactivating first). Key on the
-# function, not the sentinel: child shells inherit __HERMES_ACTIVATED from an
+# function, not the sentinel: child shells inherit __AKRAMCODE_ACTIVATED from an
 # activated parent but never the function, and there is nothing to undo there.
 if [ "$(type -t deactivate 2>/dev/null)" = "function" ]; then
     deactivate
 fi
 
 # Bootstrap Python only emits the environment; it does not install anything.
-_hermes_repo="$_HERMES_REPO"
-_hermes_py=""
-for _hermes_candidate in "$_hermes_repo/.venv/bin/python" "$_hermes_repo/.venv/Scripts/python.exe" \
-                         "$_hermes_repo/venv/bin/python" "$_hermes_repo/venv/Scripts/python.exe"; do
-    [ -x "$_hermes_candidate" ] && { _hermes_py="$_hermes_candidate"; break; }
+_akramcode_repo="$_AKRAMCODE_REPO"
+_akramcode_py=""
+for _akramcode_candidate in "$_akramcode_repo/.venv/bin/python" "$_akramcode_repo/.venv/Scripts/python.exe" \
+                         "$_akramcode_repo/venv/bin/python" "$_akramcode_repo/venv/Scripts/python.exe"; do
+    [ -x "$_akramcode_candidate" ] && { _akramcode_py="$_akramcode_candidate"; break; }
 done
-if [ -z "$_hermes_py" ]; then
-    for _hermes_store in "${HERMES_RUNTIME_DIR:-}" "$_hermes_repo/../tools" "${HERMES_HOME:-$HOME/.hermes}/tools"; do
-        [ -n "$_hermes_store" ] || continue
-        for _hermes_candidate in "$_hermes_store"/python-*/bin/python3 "$_hermes_store"/python-*/python.exe "$_hermes_store"/python-*/bin/python "$_hermes_store"/python-*/bin/python.exe; do
-            [ -x "$_hermes_candidate" ] && { _hermes_py="$_hermes_candidate"; break; }
+if [ -z "$_akramcode_py" ]; then
+    for _akramcode_store in "${AKRAMCODE_RUNTIME_DIR:-}" "$_akramcode_repo/../tools" "${AKRAMCODE_HOME:-$HOME/.akramcode}/tools"; do
+        [ -n "$_akramcode_store" ] || continue
+        for _akramcode_candidate in "$_akramcode_store"/python-*/bin/python3 "$_akramcode_store"/python-*/python.exe "$_akramcode_store"/python-*/bin/python "$_akramcode_store"/python-*/bin/python.exe; do
+            [ -x "$_akramcode_candidate" ] && { _akramcode_py="$_akramcode_candidate"; break; }
         done
-        [ -n "$_hermes_py" ] && break
+        [ -n "$_akramcode_py" ] && break
     done
 fi
-if [ -z "$_hermes_py" ]; then
-    echo "activate: no bootstrap Python found; run setup-hermes.sh" >&2
+if [ -z "$_akramcode_py" ]; then
+    echo "activate: no bootstrap Python found; run setup-akramcode.sh" >&2
     return 1 2>/dev/null || exit 1
 fi
 
 # --- emit export lines from `pm env` ---
-_hermes_json="$(PYTHONHOME= PYTHONPATH="$_hermes_repo" "$_hermes_py" -m pm.environments)"
-if [ -z "$_hermes_json" ] || [ "${_hermes_json#*{}" = "$_hermes_json" ]; then
-    echo "activate: could not read pm env (run ./setup-hermes.sh first)" >&2
-    unset _hermes_repo _hermes_os _hermes_arch _hermes_target _hermes_store _hermes_py _hermes_json
+_akramcode_json="$(PYTHONHOME= PYTHONPATH="$_akramcode_repo" "$_akramcode_py" -m pm.environments)"
+if [ -z "$_akramcode_json" ] || [ "${_akramcode_json#*{}" = "$_akramcode_json" ]; then
+    echo "activate: could not read pm env (run ./setup-akramcode.sh first)" >&2
+    unset _akramcode_repo _akramcode_os _akramcode_arch _akramcode_target _akramcode_store _akramcode_py _akramcode_json
     return 1 2>/dev/null || exit 1
 fi
 
-_hermes_keys="$(printf '%s' "$_hermes_json" | "$_hermes_py" -c 'import json,sys; print(" ".join(json.load(sys.stdin)))' \
+_akramcode_keys="$(printf '%s' "$_akramcode_json" | "$_akramcode_py" -c 'import json,sys; print(" ".join(json.load(sys.stdin)))' \
     | tr ' ' '\n' | grep -E '^[A-Za-z_][A-Za-z0-9_]*$' | tr '\n' ' ')"
-[ -n "$_hermes_keys" ] || _hermes_keys="PATH"
+[ -n "$_akramcode_keys" ] || _akramcode_keys="PATH"
 
 # --- snapshot what we are about to change (deactivate restores this) ---
-# __HERMES_ACTIVATED is part of the composed env below (it carries the
+# __AKRAMCODE_ACTIVATED is part of the composed env below (it carries the
 # installed-state path this environment was built from), so it is snapshotted
 # and exported with every other key — no separate assignment here.
-__HERMES_SAVED_PATH="$PATH"
-for _hermes_k in $_hermes_keys; do
-    eval "__HERMES_SAVED_$_hermes_k=\"\${$_hermes_k+set}\""
-    eval "__HERMES_PRIOR_$_hermes_k=\${$_hermes_k-__HERMES_UNSET__}"
+__AKRAMCODE_SAVED_PATH="$PATH"
+for _akramcode_k in $_akramcode_keys; do
+    eval "__AKRAMCODE_SAVED_$_akramcode_k=\"\${$_akramcode_k+set}\""
+    eval "__AKRAMCODE_PRIOR_$_akramcode_k=\${$_akramcode_k-__AKRAMCODE_UNSET__}"
 done
 
 # Resolved before the export below replaces PATH.
-_hermes_cygpath="$(command -v cygpath 2>/dev/null || :)"
+_akramcode_cygpath="$(command -v cygpath 2>/dev/null || :)"
 
-eval "$(printf '%s' "$_hermes_json" | "$_hermes_py" -c '
+eval "$(printf '%s' "$_akramcode_json" | "$_akramcode_py" -c '
 import json, sys, shlex, re
 for k, v in json.load(sys.stdin).items():
     # Windows carries names like ProgramFiles(ARM) that are not valid
@@ -120,38 +120,38 @@ for k, v in json.load(sys.stdin).items():
 # The MSYS/Cygwin runtime hands a native Windows Python these variables in
 # Windows form (`C:\a;C:\b`) and converts them back only for its own children.
 # Exported verbatim, bash splits PATH on ':' and finds no commands.
-if [ -n "$_hermes_cygpath" ]; then
-    PATH="$("$_hermes_cygpath" -u -p "$PATH")"
-    for _hermes_k in HOME TMPDIR TMP TEMP; do
-        if [ -n "${!_hermes_k-}" ]; then
-            printf -v "$_hermes_k" '%s' "$("$_hermes_cygpath" -u "${!_hermes_k}")"
+if [ -n "$_akramcode_cygpath" ]; then
+    PATH="$("$_akramcode_cygpath" -u -p "$PATH")"
+    for _akramcode_k in HOME TMPDIR TMP TEMP; do
+        if [ -n "${!_akramcode_k-}" ]; then
+            printf -v "$_akramcode_k" '%s' "$("$_akramcode_cygpath" -u "${!_akramcode_k}")"
         fi
     done
 fi
 
 # This checkout, not whichever `akramcode` PATH finds. A function beats PATH, an
 # alias, and a hashed command, including the MSIX execution alias.
-__HERMES_WORKTREE="$_hermes_repo"
+__AKRAMCODE_WORKTREE="$_akramcode_repo"
 # The branch names the worktree. A checkout cannot share a branch with another.
-__HERMES_WORKTREE_NAME="$(git -C "$_hermes_repo" rev-parse --abbrev-ref HEAD 2>/dev/null || :)"
-if [ -z "$__HERMES_WORKTREE_NAME" ] || [ "$__HERMES_WORKTREE_NAME" = HEAD ]; then
-    __HERMES_WORKTREE_NAME="$(basename "$_hermes_repo")"
+__AKRAMCODE_WORKTREE_NAME="$(git -C "$_akramcode_repo" rev-parse --abbrev-ref HEAD 2>/dev/null || :)"
+if [ -z "$__AKRAMCODE_WORKTREE_NAME" ] || [ "$__AKRAMCODE_WORKTREE_NAME" = HEAD ]; then
+    __AKRAMCODE_WORKTREE_NAME="$(basename "$_akramcode_repo")"
 fi
-__HERMES_SAVED_PS1="${PS1-__HERMES_UNSET__}"
-__HERMES_SAVED_PROMPT_COMMAND="${PROMPT_COMMAND-__HERMES_UNSET__}"
+__AKRAMCODE_SAVED_PS1="${PS1-__AKRAMCODE_UNSET__}"
+__AKRAMCODE_SAVED_PROMPT_COMMAND="${PROMPT_COMMAND-__AKRAMCODE_UNSET__}"
 
-_hermes_worktree_here() {
-    _hermes_top="$(git rev-parse --show-toplevel 2>/dev/null)" || return 1
-    [ "$(cd "$_hermes_top" && pwd -P)" = "$(cd "$__HERMES_WORKTREE" && pwd -P)" ]
+_akramcode_worktree_here() {
+    _akramcode_top="$(git rev-parse --show-toplevel 2>/dev/null)" || return 1
+    [ "$(cd "$_akramcode_top" && pwd -P)" = "$(cd "$__AKRAMCODE_WORKTREE" && pwd -P)" ]
 }
 
 akramcode() {
-    _hermes_worktree_here || {
-        printf '%s\n' "akramcode: $(pwd) is outside $__HERMES_WORKTREE; refusing (the installed command is hidden while this checkout is active)" >&2
+    _akramcode_worktree_here || {
+        printf '%s\n' "akramcode: $(pwd) is outside $__AKRAMCODE_WORKTREE; refusing (the installed command is hidden while this checkout is active)" >&2
         return 1
     }
     (
-        cd "$__HERMES_WORKTREE" || exit 1
+        cd "$__AKRAMCODE_WORKTREE" || exit 1
         if [ -n "${PYTHON-}" ]; then
             exec "$PYTHON" akramcode "$@"
         elif [ -x .venv/Scripts/python.exe ]; then
@@ -168,58 +168,58 @@ akramcode() {
     )
 }
 
-_hermes_prompt() {
-    if [ "$__HERMES_SAVED_PS1" = "__HERMES_UNSET__" ]; then
-        _hermes_base_ps1=""
+_akramcode_prompt() {
+    if [ "$__AKRAMCODE_SAVED_PS1" = "__AKRAMCODE_UNSET__" ]; then
+        _akramcode_base_ps1=""
     else
-        _hermes_base_ps1="$__HERMES_SAVED_PS1"
+        _akramcode_base_ps1="$__AKRAMCODE_SAVED_PS1"
     fi
-    if _hermes_worktree_here; then
-        PS1="($__HERMES_WORKTREE_NAME) $_hermes_base_ps1"
+    if _akramcode_worktree_here; then
+        PS1="($__AKRAMCODE_WORKTREE_NAME) $_akramcode_base_ps1"
     else
-        PS1="$_hermes_base_ps1"
+        PS1="$_akramcode_base_ps1"
     fi
 }
 
 if [ -n "${PROMPT_COMMAND-}" ]; then
-    PROMPT_COMMAND="_hermes_prompt; ${PROMPT_COMMAND}"
+    PROMPT_COMMAND="_akramcode_prompt; ${PROMPT_COMMAND}"
 else
-    PROMPT_COMMAND=_hermes_prompt
+    PROMPT_COMMAND=_akramcode_prompt
 fi
-_hermes_prompt
+_akramcode_prompt
 
 deactivate() {
-    export PATH="$__HERMES_SAVED_PATH"
-    for _hermes_k in $__HERMES_KEY_LIST; do
-        eval "_hermes_was=\"\$__HERMES_SAVED_$_hermes_k\""
-        eval "_hermes_old=\"\$__HERMES_PRIOR_$_hermes_k\""
-        if [ "$_hermes_was" != "set" ]; then
-            unset "$_hermes_k"
+    export PATH="$__AKRAMCODE_SAVED_PATH"
+    for _akramcode_k in $__AKRAMCODE_KEY_LIST; do
+        eval "_akramcode_was=\"\$__AKRAMCODE_SAVED_$_akramcode_k\""
+        eval "_akramcode_old=\"\$__AKRAMCODE_PRIOR_$_akramcode_k\""
+        if [ "$_akramcode_was" != "set" ]; then
+            unset "$_akramcode_k"
         else
-            export "$_hermes_k=$_hermes_old"
+            export "$_akramcode_k=$_akramcode_old"
         fi
-        unset "__HERMES_SAVED_$_hermes_k" "__HERMES_PRIOR_$_hermes_k"
+        unset "__AKRAMCODE_SAVED_$_akramcode_k" "__AKRAMCODE_PRIOR_$_akramcode_k"
     done
-    if [ "$__HERMES_SAVED_PS1" = "__HERMES_UNSET__" ]; then
+    if [ "$__AKRAMCODE_SAVED_PS1" = "__AKRAMCODE_UNSET__" ]; then
         unset PS1
     else
-        PS1="$__HERMES_SAVED_PS1"
+        PS1="$__AKRAMCODE_SAVED_PS1"
     fi
-    if [ "$__HERMES_SAVED_PROMPT_COMMAND" = "__HERMES_UNSET__" ]; then
+    if [ "$__AKRAMCODE_SAVED_PROMPT_COMMAND" = "__AKRAMCODE_UNSET__" ]; then
         unset PROMPT_COMMAND
     else
-        PROMPT_COMMAND="$__HERMES_SAVED_PROMPT_COMMAND"
+        PROMPT_COMMAND="$__AKRAMCODE_SAVED_PROMPT_COMMAND"
     fi
-    unset __HERMES_SAVED_PATH __HERMES_KEY_LIST __HERMES_ACTIVATED \
-          __HERMES_WORKTREE __HERMES_WORKTREE_NAME \
-          __HERMES_SAVED_PS1 __HERMES_SAVED_PROMPT_COMMAND
-    unset -f deactivate akramcode _hermes_worktree_here _hermes_prompt
-    unset _hermes_k _hermes_was _hermes_old _hermes_top
+    unset __AKRAMCODE_SAVED_PATH __AKRAMCODE_KEY_LIST __AKRAMCODE_ACTIVATED \
+          __AKRAMCODE_WORKTREE __AKRAMCODE_WORKTREE_NAME \
+          __AKRAMCODE_SAVED_PS1 __AKRAMCODE_SAVED_PROMPT_COMMAND
+    unset -f deactivate akramcode _akramcode_worktree_here _akramcode_prompt
+    unset _akramcode_k _akramcode_was _akramcode_old _akramcode_top
 }
 
 # remember the key list for deactivate (kept out of the loop vars above)
-__HERMES_KEY_LIST="$_hermes_keys"
+__AKRAMCODE_KEY_LIST="$_akramcode_keys"
 
-unset _hermes_repo _hermes_os _hermes_arch _hermes_target _hermes_store \
-      _hermes_py _hermes_json _hermes_keys _hermes_k _hermes_entry _hermes_venvpy \
-      _hermes_winarch _hermes_top _hermes_cygpath
+unset _akramcode_repo _akramcode_os _akramcode_arch _akramcode_target _akramcode_store \
+      _akramcode_py _akramcode_json _akramcode_keys _akramcode_k _akramcode_entry _akramcode_venvpy \
+      _akramcode_winarch _akramcode_top _akramcode_cygpath

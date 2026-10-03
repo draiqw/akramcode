@@ -6,7 +6,7 @@ from akramcode_cli.local_runtime.estimator import HardwareBudget, ModelProfile
 
 
 def test_preset_roundtrip_keeps_refusals_and_dense_spill(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     mdir = tmp_path / "modèles"
     mdir.mkdir()
     for name in ("allowed", "refused"):
@@ -34,7 +34,7 @@ def test_optional_draft_is_enabled_only_with_room_at_the_selected_window(tmp_pat
     from dataclasses import replace
     from akramcode_cli.local_runtime import bootstrap, catalog
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     entry = next(e for e in catalog.CATALOG if e.draft)
     main = tmp_path / f"{entry.variants[0].model_id}.gguf"
     draft = bootstrap.assets_dir() / entry.draft.local_name
@@ -75,7 +75,7 @@ def test_optional_draft_is_enabled_only_with_room_at_the_selected_window(tmp_pat
 
 
 def test_supervisor_with_presets_does_not_scan_unadmitted_files(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     ini = tmp_path / "presets.ini"
     ini.write_text("[allowed]\nmodel = allowed.gguf\nctx-size = 65536\n")
     calls = []

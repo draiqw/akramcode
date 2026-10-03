@@ -155,14 +155,14 @@ def test_model_aliases_dict_entries_are_loaded(monkeypatch):
 
 def _write_named_provider(tmp_path, monkeypatch):
     """A ``providers:`` entry the user selects by the documented ``custom:<name>:<model>`` form."""
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "akramcode-home"
     home.mkdir()
     (home / "config.yaml").write_text(
         "model:\n  default: claude-sonnet-4-5\n  provider: anthropic\n"
         "providers:\n  jetson-vllm:\n    base_url: http://127.0.0.1:8000/v1\n"
         "    api_key: EMPTY\n    api_mode: chat_completions\n    models: [nemotron-nano-30b]\n"
     )
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     monkeypatch.setattr(model_switch, "DIRECT_ALIASES", {})
     from akramcode_cli.config import load_config
     return load_config()
@@ -187,22 +187,22 @@ def test_startup_route_decodes_custom_colon_qualified_model(tmp_path, monkeypatc
 
 
 def test_oneshot_and_tui_qualified_model_never_reaches_default_provider(tmp_path, monkeypatch):
-    """``hermes -z -m custom:<name>:<model>`` and ``hermes --tui -m …`` route through the same
+    """``akramcode -z -m custom:<name>:<model>`` and ``akramcode --tui -m …`` route through the same
     startup owner, so provider auto-detection never hands the qualified string to the configured
     default (#73943)."""
     from akramcode_cli.oneshot import _resolve_model_and_provider
 
     cfg = _write_named_provider(tmp_path, monkeypatch)
-    from tui_gateway import server as tui_server  # binds the config path at import: after HERMES_HOME
-    monkeypatch.delenv("HERMES_INFERENCE_PROVIDER", raising=False)
-    monkeypatch.delenv("HERMES_TUI_PROVIDER", raising=False)
+    from tui_gateway import server as tui_server  # binds the config path at import: after AKRAMCODE_HOME
+    monkeypatch.delenv("AKRAMCODE_INFERENCE_PROVIDER", raising=False)
+    monkeypatch.delenv("AKRAMCODE_TUI_PROVIDER", raising=False)
     monkeypatch.setattr(
         "akramcode_cli.models.detect_provider_for_model",
         lambda *_a, **_k: pytest.fail("auto-detection ran on a provider-qualified model"))
     monkeypatch.setattr(
         "akramcode_cli.models.detect_static_provider_for_model",
         lambda *_a, **_k: pytest.fail("auto-detection ran on a provider-qualified model"))
-    monkeypatch.setenv("HERMES_INFERENCE_MODEL", "custom:jetson-vllm:nemotron-nano-30b")
+    monkeypatch.setenv("AKRAMCODE_INFERENCE_MODEL", "custom:jetson-vllm:nemotron-nano-30b")
     choice = _resolve_model_and_provider(cfg, None, None)
     assert (choice.provider, choice.model) == ("custom:jetson-vllm", "nemotron-nano-30b")
     assert tui_server._resolve_startup_runtime() == ("nemotron-nano-30b", "custom:jetson-vllm")

@@ -197,16 +197,16 @@ def test_explicit_only_filters_ambient_credentials_but_keeps_current_and_custom_
     rows = [
         {"slug": "openai-codex", "name": "OpenAI Codex", "models": ["gpt-5.4"],
          "total_models": 1, "is_current": True, "is_user_defined": False,
-         "source": "hermes"},
+         "source": "akramcode"},
         {"slug": "gemini", "name": "Gemini", "models": ["gemini-2.5-pro"],
          "total_models": 1, "is_current": False, "is_user_defined": False,
          "source": "built-in"},
         {"slug": "copilot", "name": "Copilot", "models": ["gpt-5.4"],
          "total_models": 1, "is_current": False, "is_user_defined": False,
-         "source": "hermes"},
+         "source": "akramcode"},
         {"slug": "nous", "name": "Nous", "models": ["anthropic/claude-sonnet-5"],
          "total_models": 1, "is_current": False, "is_user_defined": False,
-         "source": "hermes"},
+         "source": "akramcode"},
         {"slug": "custom:lab", "name": "Lab", "models": ["lab-1"],
          "total_models": 1, "is_current": False, "is_user_defined": True,
          "source": "user-config"},
@@ -235,7 +235,7 @@ def test_explicit_only_filters_ambient_credentials_but_keeps_current_and_custom_
 def test_explicit_only_keeps_anthropic_row_with_oauth_credentials():
     """Anthropic OAuth logins are deliberate sign-ins, not ambient credentials.
 
-    Claude Code (~/.claude/.credentials.json) and Hermes' own device flow
+    Claude Code (~/.claude/.credentials.json) and AkramCode' own device flow
     leave no trace in active_provider / model.provider / API-key env vars,
     so is_provider_explicitly_configured() returns False even though
     list_authenticated_providers just accepted those same credentials when
@@ -244,10 +244,10 @@ def test_explicit_only_keeps_anthropic_row_with_oauth_credentials():
     rows = [
         {"slug": "anthropic", "name": "Anthropic", "models": ["claude-sonnet-5"],
          "total_models": 1, "is_current": False, "is_user_defined": False,
-         "source": "hermes"},
+         "source": "akramcode"},
         {"slug": "copilot", "name": "Copilot", "models": ["gpt-5.4"],
          "total_models": 1, "is_current": False, "is_user_defined": False,
-         "source": "hermes"},
+         "source": "akramcode"},
     ]
     ctx = _empty_ctx(provider="opencode-go", model="glm-5.3")
     with (
@@ -278,7 +278,7 @@ def test_explicit_only_drops_anthropic_row_without_oauth_credentials():
     rows = [
         {"slug": "anthropic", "name": "Anthropic", "models": ["claude-sonnet-5"],
          "total_models": 1, "is_current": False, "is_user_defined": False,
-         "source": "hermes"},
+         "source": "akramcode"},
     ]
     ctx = _empty_ctx(provider="opencode-go", model="glm-5.3")
     with (
@@ -309,7 +309,7 @@ def test_anthropic_oauth_presence_accepts_pool_only_oauth_entry():
 
     with (
         patch(
-            "agent.anthropic_credentials.read_hermes_oauth_credentials",
+            "agent.anthropic_credentials.read_akramcode_oauth_credentials",
             return_value=None,
         ),
         patch(
@@ -329,7 +329,7 @@ def test_anthropic_oauth_presence_accepts_pool_only_oauth_entry():
     # (they are handled by the explicit-config gate / env var paths).
     with (
         patch(
-            "agent.anthropic_credentials.read_hermes_oauth_credentials",
+            "agent.anthropic_credentials.read_akramcode_oauth_credentials",
             return_value=None,
         ),
         patch(
@@ -683,7 +683,7 @@ def test_picker_metadata_uses_one_config_read_for_real_models_dev_lookups(tmp_pa
     from agent import models_dev
     from akramcode_cli import config as config_module
 
-    home = tmp_path / "hermes"
+    home = tmp_path / "akramcode"
     home.mkdir()
     (home / "config.yaml").write_text(
         "providers:\n"
@@ -692,7 +692,7 @@ def test_picker_metadata_uses_one_config_read_for_real_models_dev_lookups(tmp_pa
         "model_overrides: {}\n",
         encoding="utf-8",
     )
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     config_module._LOAD_CONFIG_CACHE.clear()
     config_module._RAW_CONFIG_CACHE.clear()
 

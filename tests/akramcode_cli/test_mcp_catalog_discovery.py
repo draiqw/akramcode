@@ -5,17 +5,17 @@ from pathlib import Path
 import sys
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 from fastapi.testclient import TestClient
 
 
 @pytest.fixture
 def catalog_client(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     other = home / "profiles" / "b"
     other.mkdir(parents=True)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     monkeypatch.setenv("PATH", "")
     for directory, servers in ((home, {"demo": {"command": "unused", "enabled": False}}),
                                (other, {"demo": {"command": "unused", "enabled": True},
@@ -32,7 +32,7 @@ def catalog_client(tmp_path, monkeypatch):
             "manifest_version": 1, "name": name, "description": "Fixture entry",
             "transport": {"type": "stdio", "command": "must-not-run"}, "suggest": suggest,
         }), encoding="utf-8")
-    monkeypatch.setenv("HERMES_OPTIONAL_MCPS", str(catalog))
+    monkeypatch.setenv("AKRAMCODE_OPTIONAL_MCPS", str(catalog))
 
     from agent import secret_scope
     from tui_gateway import launch_profile_policy
@@ -46,7 +46,7 @@ def catalog_client(tmp_path, monkeypatch):
 
 def test_catalog_detection_is_opt_in_and_preserves_profile_state(catalog_client, tmp_path, monkeypatch):
     from akramcode_cli import mcp_app_detection as detection
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
 
     client, home, other = catalog_client
     import socket
@@ -72,7 +72,7 @@ def test_catalog_detection_is_opt_in_and_preserves_profile_state(catalog_client,
     def checked_discover(criteria):
         with pytest.raises(RuntimeError):
             asyncio.get_running_loop()  # Scans stay off the event loop.
-        assert get_hermes_home() == home  # No named-profile scope/skills lock spans discovery.
+        assert get_akramcode_home() == home  # No named-profile scope/skills lock spans discovery.
         calls.append(criteria)
         return discover(criteria)
 

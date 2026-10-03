@@ -10,7 +10,7 @@ from akramcode_cli import gateway, main, update_cmd_fleet as fleet, update_recei
 @pytest.mark.parametrize("failure", ["listing", "restart", "inactive", "unloaded", None])
 def test_pending_launchd_requires_complete_supervision(monkeypatch, tmp_path, failure):
     # Host-independent subprocess-boundary fixture, not native launchd validation.
-    current, sibling = "ai.hermes.gateway", "ai.hermes.gateway-two"
+    current, sibling = "ai.akramcode.gateway", "ai.akramcode.gateway-two"
     (tmp_path / f"{sibling}.plist").touch()
     monkeypatch.setattr(gateway, "get_launchd_label", lambda: current)
     monkeypatch.setattr(gateway, "get_launchd_plist_path", lambda: tmp_path / f"{current}.plist")

@@ -1,4 +1,4 @@
-"""Post-``hermes update`` config-schema migration for the active profile and every sibling.
+"""Post-``akramcode update`` config-schema migration for the active profile and every sibling.
 Names are re-imported by ``update_cmd`` (``akramcode_cli.update_cmd.<name>`` resolves/monkeypatches);
 origin helpers are imported lazily."""
 
@@ -30,29 +30,29 @@ def _run_migrate_config_fresh(*, interactive: bool = False, quiet: bool = False)
 
 def _migrate_sibling_profile_configs() -> list[tuple[str, int, int]]:
     """Migrate every SIBLING profile's config.yaml (the shared checkout serves all profiles). Per
-    sibling (active skipped): scope via the context-local HERMES_HOME override (never ``os.environ``)
+    sibling (active skipped): scope via the context-local AKRAMCODE_HOME override (never ``os.environ``)
     and run the NON-INTERACTIVE quiet migration — prompt-requiring settings wait for that profile's
     own session. Returns ``[(name, from_version, to_version), ...]``; never raises.
 
     91277 Phase 2 (fleet-wide config migration; #20438/#54926/#79048): the shared checkout serves every
-    profile, but ``hermes update`` historically migrated only the active profile's config — siblings drifted
+    profile, but ``akramcode update`` historically migrated only the active profile's config — siblings drifted
     versions until their gateway hit a config the new code couldn't read.
 
     Enumeration matches pre-update snapshots (#66140): default lives at
-    ``_get_default_hermes_home()``, not under ``profiles/``, so a named-profile
-    ``hermes update`` still migrates it.
+    ``_get_default_akramcode_home()``, not under ``profiles/``, so a named-profile
+    ``akramcode update`` still migrates it.
     """
     from akramcode_cli.config import check_config_version, migrate_config
     migrated: list[tuple[str, int, int]] = []
     with _best_effort('Sibling profile enumeration failed: %s'):
         from akramcode_constants import (
-            get_process_hermes_home, reset_hermes_home_override, set_hermes_home_override)
+            get_process_akramcode_home, reset_akramcode_home_override, set_akramcode_home_override)
         from akramcode_cli.backup import _sibling_profile_homes
-        active_home = Path(get_process_hermes_home())
+        active_home = Path(get_process_akramcode_home())
         for name, profile_home in _sibling_profile_homes(active_home):
             if not (profile_home / "config.yaml").is_file():
                 continue  # profile never configured — nothing to migrate
-            token = set_hermes_home_override(profile_home)
+            token = set_akramcode_home_override(profile_home)
             try:
                 current_ver, latest_ver = check_config_version(raise_on_parse_error=True)
                 if current_ver >= latest_ver:
@@ -64,7 +64,7 @@ def _migrate_sibling_profile_configs() -> list[tuple[str, int, int]]:
             except Exception as exc:
                 logger.debug("Config migration for profile %s failed: %s", name, exc)
             finally:
-                reset_hermes_home_override(token)
+                reset_akramcode_home_override(token)
     return migrated
 
 
@@ -151,7 +151,7 @@ def _ask_configure_new_options(*, assume_yes: bool, gateway_mode: bool) -> str:
         # Non-UTF-8 locales / embedded terminals can make input() raise this.
         print(
             "  ⚠ Could not read input (encoding issue). Skipping. "
-            "Run 'hermes config migrate' manually to configure.")
+            "Run 'akramcode config migrate' manually to configure.")
         return "n"
 
 
@@ -179,7 +179,7 @@ def _check_and_apply_config_migration(
     except Exception as exc:
         logger.debug("Config check during update failed: %s", exc)
         print("  ⚠️  Could not check config version.")
-        print("     Run 'hermes config migrate' to check manually.")
+        print("     Run 'akramcode config migrate' to check manually.")
         return
 
     has_new_options = bool(missing_env or missing_config)
@@ -204,7 +204,7 @@ def _check_and_apply_config_migration(
                 print(f"  ⚠️  {_warn}")
         except Exception as _mig_err:
             print(f"  ⚠️  Config format update failed: {_mig_err}")
-            print("     Run 'hermes config migrate' to retry.")
+            print("     Run 'akramcode config migrate' to retry.")
     elif needs_migration:
         print()
         # Show WHAT changed, not just a count, for an informed yes/no.
@@ -227,15 +227,15 @@ def _check_and_apply_config_migration(
                 print()
                 print("✓ Configuration updated!")
             if unattended and missing_env:
-                print("  ℹ API keys require manual entry: hermes config migrate")
+                print("  ℹ API keys require manual entry: akramcode config migrate")
         else:
             print()
-            print("Skipped. Run 'hermes config migrate' later to configure.")
+            print("Skipped. Run 'akramcode config migrate' later to configure.")
     else:
         print("  ✓ Configuration is up to date")
 
     # The migration above touched only the active profile; run the same NON-INTERACTIVE
-    # migration per sibling home via the context-local HERMES_HOME override (never os.environ).
+    # migration per sibling home via the context-local AKRAMCODE_HOME override (never os.environ).
     with _best_effort('Sibling config migration failed: %s'):
         for _name, _from_ver, _to_ver in _migrate_sibling_profile_configs():
             print(f"  ✓ Profile '{_name}': config format updated (v{_from_ver} → v{_to_ver})")

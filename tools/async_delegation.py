@@ -20,7 +20,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, Dict, List, Optional
 
-from akramcode_constants import get_hermes_home, hermes_home_key
+from akramcode_constants import get_akramcode_home, akramcode_home_key
 from tools.daemon_pool import DaemonThreadPoolExecutor
 from tools.thread_context import propagate_context_to_thread
 
@@ -95,7 +95,7 @@ _STALL_FIELD_MAP = (("_stall_quiet_seconds", "stalled_after_quiet_seconds"),
 
 # ── Durable ledger (state.db / async_delegations) ───────────────────────────
 def _db_path():
-    return get_hermes_home() / "state.db"
+    return get_akramcode_home() / "state.db"
 
 
 def _connect() -> sqlite3.Connection:
@@ -103,12 +103,12 @@ def _connect() -> sqlite3.Connection:
     # Same state.db as akramcode_state.SessionDB -- reuse its owner-only (0600)
     # hardening so this writer doesn't create/leave the file (and its WAL
     # sidecars) at the process umask. See akramcode_state._secure_state_db_files.
-    from akramcode_constants import mkdir_under_hermes_home
+    from akramcode_constants import mkdir_under_akramcode_home
     from akramcode_state import _secure_state_db_files
 
     path = _db_path()
     # A late replay or writer must not resurrect a removed named profile (#123265).
-    mkdir_under_hermes_home(path.parent)
+    mkdir_under_akramcode_home(path.parent)
     _secure_state_db_files(path, create_main=True)
     # wal=False: SessionDB owns state.db's journal mode (_initialize_schema applies the barriers).
     conn = open_db(path, db_label="state.db (async_delegation)", busy_timeout_ms=10_000,
@@ -145,7 +145,7 @@ def _capture_routing_origin() -> Dict[str, Any]:
     Best-effort: empty values are omitted."""
     try:
         from gateway.session_context import get_session_env
-        return {k: v for k in _ROUTING_KEYS if (v := get_session_env(f"HERMES_SESSION_{k.upper()}", ""))}
+        return {k: v for k in _ROUTING_KEYS if (v := get_session_env(f"AKRAMCODE_SESSION_{k.upper()}", ""))}
     except Exception:  # noqa: BLE001 - routing origin is additive, never fatal
         return {}
 
@@ -337,7 +337,7 @@ def _replay_pending(conn, rows, target_queue, now: float) -> int:
     """Put each pending ``(delegation_id, event_json, completed_at, dispatched_at)`` row on ``target_queue``
     stamped ``restored``, or terminally drop it past ``_MAX_COMPLETION_REPLAY_AGE_S``. Records the offer so
     the orphan sweep skips the row until the copy is handed back (``return_completion_offer``)."""
-    home, restored = hermes_home_key(get_hermes_home()), 0
+    home, restored = akramcode_home_key(get_akramcode_home()), 0
     for delegation_id, payload, completed_at, dispatched_at in rows:
         age_basis = completed_at or dispatched_at
         if age_basis and (now - age_basis) > _MAX_COMPLETION_REPLAY_AGE_S:
@@ -376,7 +376,7 @@ def sweep_orphaned_completions(target_queue, *, now: Optional[float] = None) -> 
         return 0  # never create a ledger just to sweep it
     recover_abandoned_delegations()
     now = time.time() if now is None else now
-    home = hermes_home_key(get_hermes_home())
+    home = akramcode_home_key(get_akramcode_home())
     with _orphan_lock:
         offered = {delegation_id for key, delegation_id in _offered if key == home}
     with _DB_LOCK, _transaction() as conn:
@@ -407,7 +407,7 @@ def sweep_orphaned_completions(target_queue, *, now: Optional[float] = None) -> 
 def maybe_sweep_orphaned_completions(target_queue, *, now: Optional[float] = None) -> int:
     """``sweep_orphaned_completions`` at most once per ``ORPHAN_SWEEP_INTERVAL_S`` per home (``now`` is
     monotonic), for delivery loops that tick far more often. Never raises into the loop."""
-    home = hermes_home_key(get_hermes_home())
+    home = akramcode_home_key(get_akramcode_home())
     now = time.monotonic() if now is None else now
     with _orphan_lock:
         last = _last_orphan_sweep.get(home)
@@ -684,15 +684,15 @@ def _prune_completed_locked() -> None:
 
 
 def _current_origin_session_id() -> str:
-    """Raw session id of the ORIGINATING api_server request, or ``""``. ``HERMES_SESSION_ID``
+    """Raw session id of the ORIGINATING api_server request, or ``""``. ``AKRAMCODE_SESSION_ID``
     is unsafe here: building the child agent calls ``set_current_session_id(child.session_id)``
     just before dispatch, so the wake would self-post into the subagent's own session. The
-    request-scoped ``HERMES_SESSION_CHAT_ID`` (raw X-Hermes-Session-Id on api_server) survives
+    request-scoped ``AKRAMCODE_SESSION_CHAT_ID`` (raw X-AkramCode-Session-Id on api_server) survives
     child construction; on push platforms chat_id is a chat, not a session => ``""``."""
     try:
         from gateway.session_context import get_session_env
-        is_api = get_session_env("HERMES_SESSION_PLATFORM", "") == "api_server"
-        return (get_session_env("HERMES_SESSION_CHAT_ID", "") or "") if is_api else ""
+        is_api = get_session_env("AKRAMCODE_SESSION_PLATFORM", "") == "api_server"
+        return (get_session_env("AKRAMCODE_SESSION_CHAT_ID", "") or "") if is_api else ""
     except Exception:
         return ""
 

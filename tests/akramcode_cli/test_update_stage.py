@@ -23,7 +23,7 @@ from akramcode_cli import update_stage
 
 @pytest.fixture
 def status_file(tmp_path):
-    return tmp_path / "hermes-update-status.80335"
+    return tmp_path / "akramcode-update-status.80335"
 
 
 @pytest.fixture(autouse=True)
@@ -52,10 +52,10 @@ def test_publishes_through_exported_env_var(status_file, monkeypatch):
 def test_marker_fallback_covers_the_old_shim(status_file, tmp_path, monkeypatch):
     """The old→new transition: no env var, but the marker names the shim pid.
 
-    The shim's status file is ${TMPDIR}/hermes-update-status.<shim pid> and
+    The shim's status file is ${TMPDIR}/akramcode-update-status.<shim pid> and
     the marker's first line IS that pid (update_lock adopts, never rewrites).
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     (tmp_path / update_stage.MARKER_NAME).write_text(
         f"80335\n{int(time.time())}\n", encoding="utf-8")
     status_file.write_text('{"status":"running","message":"old"}', encoding="utf-8")
@@ -68,12 +68,12 @@ def test_marker_fallback_covers_the_old_shim(status_file, tmp_path, monkeypatch)
 
 
 def test_marker_fallback_uses_the_platform_home_without_env_var(status_file, tmp_path, monkeypatch):
-    """The shim without HERMES_HOME resolved the platform default, which is not ~/.hermes
+    """The shim without AKRAMCODE_HOME resolved the platform default, which is not ~/.akramcode
     on every host (sudo invoker, data-dir suffix); the marker must be looked up there."""
-    import hermes_constants
+    import akramcode_constants
 
-    monkeypatch.delenv("HERMES_HOME", raising=False)
-    monkeypatch.setattr(hermes_constants, "_get_platform_default_hermes_home", lambda: tmp_path / "platform")
+    monkeypatch.delenv("AKRAMCODE_HOME", raising=False)
+    monkeypatch.setattr(akramcode_constants, "_get_platform_default_akramcode_home", lambda: tmp_path / "platform")
     (tmp_path / "platform").mkdir()
     (tmp_path / "platform" / update_stage.MARKER_NAME).write_text(
         f"80335\n{int(time.time())}\n", encoding="utf-8")
@@ -87,7 +87,7 @@ def test_marker_fallback_uses_the_platform_home_without_env_var(status_file, tmp
 
 def test_no_ui_sources_is_inert(status_file, tmp_path, monkeypatch):
     """A plain CLI update has no env var and no marker: publish must no-op."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))  # no marker inside
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))  # no marker inside
     monkeypatch.setenv("TMPDIR", str(tmp_path))
 
     update_stage.publish_stage("anything")

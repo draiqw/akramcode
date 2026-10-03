@@ -2,9 +2,9 @@
 the user systemd / launchd arms in ``profiles._cleanup_gateway_service``.
 
 Every registration is keyed on the profile name and starts ``--profile <old>`` with
-``HERMES_HOME`` pinned to a directory that the delete removed or the rename moved, so a
+``AKRAMCODE_HOME`` pinned to a directory that the delete removed or the rename moved, so a
 survivor crash-loops (KeepAlive / Restart= / Task Scheduler retry) at the next boot or login.
-Callers bind the profile's home (``set_hermes_home_override``) before calling so the
+Callers bind the profile's home (``set_akramcode_home_override``) before calling so the
 name-deriving helpers resolve THAT profile, never the ambient one.
 """
 from __future__ import annotations
@@ -14,7 +14,7 @@ import subprocess
 
 
 def remove_system_systemd_unit() -> bool:
-    """Remove ``/etc/systemd/system/hermes-gateway-<profile>.service`` when root; otherwise
+    """Remove ``/etc/systemd/system/akramcode-gateway-<profile>.service`` when root; otherwise
     name the leftover and the exact command, because the profile dir the ``gateway uninstall
     --system`` verb would need to resolve the name from is about to vanish."""
     from akramcode_cli import gateway

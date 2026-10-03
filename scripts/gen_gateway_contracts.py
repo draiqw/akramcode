@@ -1,4 +1,4 @@
-#!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/_hermes-python" "$0" "$@"'
+#!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/_akramcode-python" "$0" "$@"'
 """Render ``tui_gateway/contracts`` into TypeScript and OpenRPC.
 
 Python-only (the Python CI lane has no Node): Pydantic's ``model_json_schema()`` output is walked
@@ -314,7 +314,7 @@ def render_openrpc() -> str:
 
     doc = {
         "openrpc": "1.3.2",
-        "info": {"title": "Hermes TUI/Desktop gateway", "version": "1",
+        "info": {"title": "AkramCode TUI/Desktop gateway", "version": "1",
                  "description": "Generated from tui_gateway/contracts by scripts/gen_gateway_contracts.py."},
         "methods": [
             {"name": m.name, "summary": " ".join(m.doc.split()),

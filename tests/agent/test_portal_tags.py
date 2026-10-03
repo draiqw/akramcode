@@ -13,8 +13,8 @@ def test_nous_portal_tags_contains_product_and_client():
     from akramcode_cli.version_info import get_version_info
 
     tags = nous_portal_tags()
-    assert "product=hermes-agent" in tags
-    assert f"client=hermes-client-v{get_version_info().base_version}" in tags
+    assert "product=akramcode-agent" in tags
+    assert f"client=akramcode-client-v{get_version_info().base_version}" in tags
 
 
 

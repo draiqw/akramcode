@@ -39,7 +39,7 @@ def _write_plugin(home: Path, name: str = "late_cmd") -> None:
 
 
 def test_on_plugin_loaded_fires_with_activation_summary_after_a_late_load():
-    home = Path(os.environ["HERMES_HOME"])
+    home = Path(os.environ["AKRAMCODE_HOME"])
     manager = get_plugin_manager()
     discover_plugins()  # boot: plugin not on disk yet
     events: list = []
@@ -133,7 +133,7 @@ def test_runner_rewires_live_adapters_on_the_loop_when_plugins_load():
     class Runner(GatewayPluginRewireMixin):
         adapters = {Platform.TELEGRAM: MagicMock()}
 
-    _write_plugin(Path(os.environ["HERMES_HOME"]))  # something must actually load for the event to fire
+    _write_plugin(Path(os.environ["AKRAMCODE_HOME"]))  # something must actually load for the event to fire
     mgr = PluginManager()
 
     async def scenario():

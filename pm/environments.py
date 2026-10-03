@@ -11,7 +11,7 @@ import json
 import os
 from pathlib import Path
 
-from akramcode_constants import get_default_hermes_root, project_venv_dir
+from akramcode_constants import get_default_akramcode_root, project_venv_dir
 
 
 def install_key(project_root: Path) -> str:
@@ -21,10 +21,10 @@ def install_key(project_root: Path) -> str:
 
 def dependency_home_root() -> Path:
     """Scope dependency state like a process launched in the active home."""
-    from akramcode_constants import get_default_hermes_root, get_hermes_home_override
+    from akramcode_constants import get_default_akramcode_root, get_akramcode_home_override
 
-    override = get_hermes_home_override()
-    return get_default_hermes_root(home=override) if override else get_default_hermes_root()
+    override = get_akramcode_home_override()
+    return get_default_akramcode_root(home=override) if override else get_default_akramcode_root()
 
 
 def installs_root() -> Path:
@@ -50,13 +50,13 @@ def runtime_facts_path(project_root: Path) -> Path:
     return install_state_dir(project_root) / "facts.json"
 
 
-# The files that decide the dependency set. `scripts/_hermes-python` re-activates
+# The files that decide the dependency set. `scripts/_akramcode-python` re-activates
 # when any of them differs in mtime from its stamp under activation_inputs_dir.
 ACTIVATION_INPUTS = ("uv.lock", "pyproject.toml", "pm/lock.json")
 
 
 def activation_inputs_dir(project_root: Path) -> Path:
-    """Beside facts.json, so the prologue finds it from ``$__HERMES_ACTIVATED``."""
+    """Beside facts.json, so the prologue finds it from ``$__AKRAMCODE_ACTIVATED``."""
     return install_state_dir(project_root) / "inputs"
 
 
@@ -111,7 +111,7 @@ def base_venv(project_root: Path) -> Path:
 
 def store_root(project_root: Path) -> Path:
     """Resolve a payload-relative or stamped store before PM imports."""
-    override = os.environ.get("HERMES_RUNTIME_DIR")
+    override = os.environ.get("AKRAMCODE_RUNTIME_DIR")
     if override:
         return Path(override).resolve()
     root = Path(project_root).resolve()
@@ -131,10 +131,10 @@ def store_root(project_root: Path) -> Path:
             try:
                 data = json.loads(stamp.read_text(encoding="utf-8-sig"))
             except (OSError, ValueError):
-                return get_default_hermes_root() / "tools"
+                return get_default_akramcode_root() / "tools"
             value = data.get("runtimeDir") if isinstance(data, dict) else None
-            return Path(value).resolve() if value else get_default_hermes_root() / "tools"
-    return get_default_hermes_root() / "tools"
+            return Path(value).resolve() if value else get_default_akramcode_root() / "tools"
+    return get_default_akramcode_root() / "tools"
 
 
 def flush_before_selecting() -> None:
@@ -354,10 +354,10 @@ def activate_dependencies(project_root: Path) -> None:
     os.environ["PYTHONPATH"] = os.pathsep.join([str(project_root.resolve()), str(selected)])
     os.environ.pop("VIRTUAL_ENV", None)
     executable_dir = venv_bin_dir(environment)
-    # The venv's own `hermes`/`hermes-acp` console scripts are editable installs bound to
+    # The venv's own `akramcode`/`akramcode-acp` console scripts are editable installs bound to
     # the build-time source snapshot, not this checkout (#124627): a child that resolves
-    # `hermes` off PATH must hit the checkout's own launcher first, never the venv's copy.
-    prefix = [str(path) for path in (project_root.resolve() / ".hermes" / "bin", executable_dir)
+    # `akramcode` off PATH must hit the checkout's own launcher first, never the venv's copy.
+    prefix = [str(path) for path in (project_root.resolve() / ".akramcode" / "bin", executable_dir)
               if path.is_dir()]
     if prefix:
         os.environ["PATH"] = os.pathsep.join([*prefix, os.environ.get("PATH", "")])
@@ -380,15 +380,15 @@ def activation_environment(project_root: Path) -> dict[str, str]:
     # environment was composed against, so a consumer learns that it inherited
     # an activated shell and which checkout/profile that shell came from. Its
     # directory also holds activation_inputs_dir, the input-mtime stamps
-    # `scripts/_hermes-python` compares against to decide staleness.
-    env["__HERMES_ACTIVATED"] = str(runtime_facts_path(project_root))
+    # `scripts/_akramcode-python` compares against to decide staleness.
+    env["__AKRAMCODE_ACTIVATED"] = str(runtime_facts_path(project_root))
     # The suite's interpreter (pm.testenv): an isolated side environment, so it
     # never appears on PYTHONPATH/PATH above. scripts/run_tests.sh reads it.
     from pm.testenv import testenv_python
 
     test_python = testenv_python(project_root)
     if test_python is not None:
-        env["__HERMES_TEST_PYTHON"] = str(test_python)
+        env["__AKRAMCODE_TEST_PYTHON"] = str(test_python)
     return env
 
 

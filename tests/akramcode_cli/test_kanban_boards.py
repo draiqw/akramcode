@@ -1,4 +1,4 @@
-"""Tests for the multi-board kanban layer (``hermes kanban boards …``).
+"""Tests for the multi-board kanban layer (``akramcode kanban boards …``).
 
 Covers the pieces added when boards became a first-class concept:
 
@@ -6,11 +6,11 @@ Covers the pieces added when boards became a first-class concept:
 * Path resolution for ``default`` (legacy ``<root>/kanban.db``) vs
   named boards (``<root>/kanban/boards/<slug>/kanban.db``).
 * Current-board persistence via ``<root>/kanban/current`` and
-  ``HERMES_KANBAN_BOARD`` env var.
+  ``AKRAMCODE_KANBAN_BOARD`` env var.
 * ``connect(board=)`` isolation — writes on one board don't leak.
 * ``create_board`` / ``list_boards`` / ``remove_board`` round trip.
-* CLI surface: ``hermes kanban boards list/create/switch/rm``.
-* ``_default_spawn`` injects ``HERMES_KANBAN_BOARD`` into worker env.
+* CLI surface: ``akramcode kanban boards list/create/switch/rm``.
+* ``_default_spawn`` injects ``AKRAMCODE_KANBAN_BOARD`` into worker env.
 """
 
 from __future__ import annotations
@@ -39,26 +39,26 @@ from akramcode_cli import kanban_db_dispatch as kbd
 
 @pytest.fixture
 def fresh_home(tmp_path, monkeypatch):
-    """Isolated HERMES_HOME with no prior kanban state.
+    """Isolated AKRAMCODE_HOME with no prior kanban state.
 
     The autouse hermetic conftest already nukes credentials + TZ; this
-    fixture layers a per-test HERMES_HOME plus a path-init cache reset
+    fixture layers a per-test AKRAMCODE_HOME plus a path-init cache reset
     so each test sees a truly empty board set.
     """
-    home = tmp_path / "hermes_home"
+    home = tmp_path / "akramcode_home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     for var in (
-        "HERMES_KANBAN_DB",
-        "HERMES_KANBAN_WORKSPACES_ROOT",
-        "HERMES_KANBAN_HOME",
-        "HERMES_KANBAN_BOARD",
+        "AKRAMCODE_KANBAN_DB",
+        "AKRAMCODE_KANBAN_WORKSPACES_ROOT",
+        "AKRAMCODE_KANBAN_HOME",
+        "AKRAMCODE_KANBAN_BOARD",
     ):
         monkeypatch.delenv(var, raising=False)
-    # Also reset hermes_constants cache so get_default_hermes_root() re-reads.
+    # Also reset akramcode_constants cache so get_default_akramcode_root() re-reads.
     try:
-        import hermes_constants
-        hermes_constants._cached_default_hermes_root = None  # type: ignore[attr-defined]
+        import akramcode_constants
+        akramcode_constants._cached_default_akramcode_root = None  # type: ignore[attr-defined]
     except Exception:
         pass
     # Kanban module-level init cache must not leak between tests.
@@ -72,7 +72,7 @@ def fresh_home(tmp_path, monkeypatch):
 
 class TestSlugValidation:
     @pytest.mark.parametrize("good", [
-        "default", "atm10-server", "hermes-agent", "proj_1", "a",
+        "default", "atm10-server", "akramcode-agent", "proj_1", "a",
         "very-long-but-still-ok-slug-with-hyphens-and-numbers-1234",
     ])
     def test_accepts_valid(self, good):
@@ -101,9 +101,9 @@ class TestPathResolution:
 
 
     def test_env_var_db_override_still_wins(self, fresh_home, tmp_path, monkeypatch):
-        """``HERMES_KANBAN_DB`` pins the file regardless of board= arg."""
+        """``AKRAMCODE_KANBAN_DB`` pins the file regardless of board= arg."""
         forced = tmp_path / "custom.db"
-        monkeypatch.setenv("HERMES_KANBAN_DB", str(forced))
+        monkeypatch.setenv("AKRAMCODE_KANBAN_DB", str(forced))
         assert kb.kanban_db_path() == forced
         assert kb.kanban_db_path(board="ignored") == forced
 
@@ -222,7 +222,7 @@ class TestConnectionIsolation:
         kb.create_board("persist")
         kb.create_board("envwin")
         kb.set_current_board("persist")
-        monkeypatch.setenv("HERMES_KANBAN_BOARD", "envwin")
+        monkeypatch.setenv("AKRAMCODE_KANBAN_BOARD", "envwin")
         with kbc.connect() as conn:
             kb.create_task(conn, title="via-env", assignee="x")
         with kbc.connect(board="envwin") as conn:
@@ -236,7 +236,7 @@ class TestConnectionIsolation:
 # ---------------------------------------------------------------------------
 
 class TestWorkerSpawnEnv:
-    """Ensure the dispatcher pins ``HERMES_KANBAN_BOARD`` / DB / workspaces on spawn.
+    """Ensure the dispatcher pins ``AKRAMCODE_KANBAN_BOARD`` / DB / workspaces on spawn.
 
     We monkey-patch ``subprocess.Popen`` to capture the child env without
     actually spawning anything.
@@ -277,13 +277,13 @@ class TestWorkerSpawnEnv:
         kbd._default_spawn(task, str(fresh_home / "ws"), board="spawntest")
 
         env = captured["env"]
-        assert env["HERMES_KANBAN_BOARD"] == "spawntest"
-        assert env["HERMES_KANBAN_TASK"] == "t_abc"
+        assert env["AKRAMCODE_KANBAN_BOARD"] == "spawntest"
+        assert env["AKRAMCODE_KANBAN_TASK"] == "t_abc"
         # DB path should match the per-board DB, not the legacy default.
         expected_db = fresh_home / "kanban" / "boards" / "spawntest" / "kanban.db"
-        assert env["HERMES_KANBAN_DB"] == str(expected_db)
+        assert env["AKRAMCODE_KANBAN_DB"] == str(expected_db)
         expected_ws = fresh_home / "kanban" / "boards" / "spawntest" / "workspaces"
-        assert env["HERMES_KANBAN_WORKSPACES_ROOT"] == str(expected_ws)
+        assert env["AKRAMCODE_KANBAN_WORKSPACES_ROOT"] == str(expected_ws)
 
 
 # ---------------------------------------------------------------------------
@@ -291,7 +291,7 @@ class TestWorkerSpawnEnv:
 # ---------------------------------------------------------------------------
 
 def _cli(args: list[str], env_extra: dict | None = None) -> subprocess.CompletedProcess:
-    """Run ``hermes kanban …`` with PYTHONPATH pinned to the worktree."""
+    """Run ``akramcode kanban …`` with PYTHONPATH pinned to the worktree."""
     env = dict(os.environ)
     env["PYTHONPATH"] = str(_WORKTREE)
     if env_extra:
@@ -310,7 +310,7 @@ class TestCLI:
 
 
     def test_per_board_task_isolation_via_cli(self, tmp_path):
-        env = {"HERMES_HOME": str(tmp_path)}
+        env = {"AKRAMCODE_HOME": str(tmp_path)}
         assert _cli(["boards", "create", "projA"], env_extra=env).returncode == 0
         assert _cli(["boards", "create", "projB"], env_extra=env).returncode == 0
 

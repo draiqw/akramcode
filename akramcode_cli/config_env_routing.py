@@ -1,15 +1,15 @@
-"""Which ``hermes config`` keys live in ``.env`` instead of ``config.yaml``, and their lifecycle.
+"""Which ``akramcode config`` keys live in ``.env`` instead of ``config.yaml``, and their lifecycle.
 
 Platform setting keys such as ``FEISHU_HOME_CHANNEL`` had two writers: the platform setup flows and
-``/sethome`` persist them to ``.env`` through ``save_env_value``, while ``hermes config set`` only
+``/sethome`` persist them to ``.env`` through ``save_env_value``, while ``akramcode config set`` only
 routed credential-shaped names there and wrote every other bare name to the top level of
 ``config.yaml``. The gateway bridges top-level scalars into the environment only when ``.env`` lacks
 the name and one-shot CLI readers never bridge, so the two copies diverged silently (#111848).
 
 The routing rule is the key's SHAPE, not a registry: a bare ``UPPER_SNAKE`` name is an environment
 setting and goes to ``.env`` — the file every runtime reader (``os.getenv``, the gateway's
-``platform_gate_env``) resolves against — whether or not Hermes enumerates it anywhere. Roughly 290
-of the ~700 documented variables (``TELEGRAM_GROUP_ALLOWED_USERS``, ``HERMES_TIMEZONE``, ...) are
+``platform_gate_env``) resolves against — whether or not AkramCode enumerates it anywhere. Roughly 290
+of the ~700 documented variables (``TELEGRAM_GROUP_ALLOWED_USERS``, ``AKRAMCODE_TIMEZONE``, ...) are
 read straight from the environment without being registered in ``OPTIONAL_ENV_VARS``, so a registry
 check alone kept landing them in ``config.yaml``. Provider credentials keep their own rotation
 lifecycle in ``akramcode_cli.credential_lifecycle``.
@@ -25,7 +25,7 @@ from typing import Optional
 _ENV_SHAPE_RE = re.compile(r"^[A-Z][A-Z0-9_]*$")
 
 def is_registered_env_name(name: str) -> bool:
-    """True when Hermes itself enumerates ``name``: ``OPTIONAL_ENV_VARS`` / ``_EXTRA_ENV_KEYS``, or a
+    """True when AkramCode itself enumerates ``name``: ``OPTIONAL_ENV_VARS`` / ``_EXTRA_ENV_KEYS``, or a
     self-configuring platform suffix so plugin adapters nobody listed (``IRC_HOME_CHANNEL``) count."""
     from akramcode_cli.config import _EXTRA_ENV_KEYS, OPTIONAL_ENV_VARS
     from akramcode_cli.setup_hidden_env import is_setup_hidden_env
@@ -34,7 +34,7 @@ def is_registered_env_name(name: str) -> bool:
 
 
 def is_env_setting_key(key: str) -> bool:
-    """True for a bare (undotted) key ``hermes config`` stores in ``.env``: any ``UPPER_SNAKE`` name,
+    """True for a bare (undotted) key ``akramcode config`` stores in ``.env``: any ``UPPER_SNAKE`` name,
     plus registered names typed in any case (``discord_home_channel``)."""
     if "." in key:
         return False
@@ -82,6 +82,6 @@ def read_env_setting(key: str) -> Optional[str]:
     if value is None:
         value = read_raw_config_readonly().get(key)
         if value is not None:
-            print(f"  (note: {key} is a stale top-level config.yaml copy; `hermes config set {key} <value>` "
-                  f"moves it to .env, `hermes config unset {key}` removes it)", file=sys.stderr)
+            print(f"  (note: {key} is a stale top-level config.yaml copy; `akramcode config set {key} <value>` "
+                  f"moves it to .env, `akramcode config unset {key}` removes it)", file=sys.stderr)
     return value

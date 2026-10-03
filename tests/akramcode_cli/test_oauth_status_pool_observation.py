@@ -1,7 +1,7 @@
 """A status snapshot observes the credential pool; it never leases (refreshes / rotates) an entry.
 
 ``get_codex_auth_status`` / ``get_xai_oauth_auth_status`` back every credential-gated listing
-(``/model`` picker, ``hermes doctor``, dashboard cards). When that read ran ``pool.select()`` it
+(``/model`` picker, ``akramcode doctor``, dashboard cards). When that read ran ``pool.select()`` it
 refreshed an expiring single-use token, and a *transient* failure of that speculative POST benched
 the entry with a persisted cooldown — the picker then rendered the provider as unconfigured
 ("needs setup" / "0 models") while the runtime resolver kept serving the same credential.
@@ -28,12 +28,12 @@ def _jwt_with_exp(offset_seconds: int) -> str:
 
 
 def _pool_only_codex_home(tmp_path, monkeypatch, *, access_tokens: list):
-    """HERMES_HOME whose only Codex credentials live in ``credential_pool.openai-codex``; the token
+    """AKRAMCODE_HOME whose only Codex credentials live in ``credential_pool.openai-codex``; the token
     endpoint is a transient failure (the credential itself is still good)."""
     import akramcode_cli.auth as auth
     import akramcode_cli.codex_models as codex_models
 
-    home = tmp_path / "hermes"
+    home = tmp_path / "akramcode"
     home.mkdir()
     entries = [
         {"id": f"codex-pool-entry-{i}", "label": f"device_code-{i}", "auth_type": "oauth", "source": "device_code",
@@ -43,7 +43,7 @@ def _pool_only_codex_home(tmp_path, monkeypatch, *, access_tokens: list):
     ]
     (home / "auth.json").write_text(
         json.dumps({"version": 1, "credential_pool": {"openai-codex": entries}}), encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     monkeypatch.setenv("CODEX_HOME", str(tmp_path / "no-codex-cli"))
     monkeypatch.setattr(codex_models, "_fetch_models_from_api", lambda access_token: [])
     refresh_calls: list = []
@@ -134,16 +134,16 @@ def test_read_only_resolver_never_probes_or_mutates_an_exhausted_pool(tmp_path, 
 
 
 def _singleton_only_codex_home(tmp_path, monkeypatch, *, tokens: dict, codex_cli_tokens: dict):
-    """HERMES_HOME whose Codex credentials are the ``providers.openai-codex`` singleton only, with a
+    """AKRAMCODE_HOME whose Codex credentials are the ``providers.openai-codex`` singleton only, with a
     valid Codex CLI login sitting beside it in ``CODEX_HOME``."""
-    home, codex_home = tmp_path / "hermes", tmp_path / "codex"
+    home, codex_home = tmp_path / "akramcode", tmp_path / "codex"
     home.mkdir()
     codex_home.mkdir()
     (home / "auth.json").write_text(json.dumps({
         "version": 1, "active_provider": "openai-codex",
         "providers": {"openai-codex": {"tokens": tokens, "auth_mode": "chatgpt"}}}), encoding="utf-8")
     (codex_home / "auth.json").write_text(json.dumps({"tokens": codex_cli_tokens}), encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     monkeypatch.setenv("CODEX_HOME", str(codex_home))
     return home
 
@@ -153,8 +153,8 @@ def _singleton_tokens(home) -> dict:
 
 
 def test_status_snapshot_never_adopts_codex_cli_tokens(tmp_path, monkeypatch):
-    """#68004: a Hermes store missing its refresh_token is recovery-eligible on the runtime path, but
-    ``hermes status`` / ``hermes doctor`` must not import the Codex CLI's single-use token family."""
+    """#68004: a AkramCode store missing its refresh_token is recovery-eligible on the runtime path, but
+    ``akramcode status`` / ``akramcode doctor`` must not import the Codex CLI's single-use token family."""
     from akramcode_cli.auth import resolve_codex_runtime_credentials
 
     stale = {"access_token": _jwt_with_exp(-60)}
@@ -167,7 +167,7 @@ def test_status_snapshot_never_adopts_codex_cli_tokens(tmp_path, monkeypatch):
     assert _singleton_tokens(home) == stale, "a status read persisted the Codex CLI login into auth.json"
 
     # Control: the runtime resolver still self-heals from the CLI file.
-    assert resolve_codex_runtime_credentials()["source"] == "hermes-auth-store"
+    assert resolve_codex_runtime_credentials()["source"] == "akramcode-auth-store"
     assert _singleton_tokens(home)["refresh_token"] == "cli-refresh"
 
 
@@ -196,7 +196,7 @@ def test_status_snapshot_never_refreshes_an_expired_singleton(tmp_path, monkeypa
 
     assert refresh_calls == [], "a status read spent the single-use singleton refresh token"
     assert status["logged_in"] is True and status["api_key"] == expired["access_token"]
-    assert status["source"] == "hermes-auth-store", "the status read never reached the singleton resolver"
+    assert status["source"] == "akramcode-auth-store", "the status read never reached the singleton resolver"
     assert _singleton_tokens(home) == expired
 
     # Secondary: read_only wins over force_refresh on the resolver itself.
@@ -222,7 +222,7 @@ def test_status_snapshot_leaves_the_auth_store_manifest_byte_identical(tmp_path,
 
     status = get_codex_auth_status()
 
-    assert status["source"] == "hermes-auth-store"
+    assert status["source"] == "akramcode-auth-store"
     assert {p.name: p.read_bytes() for p in home.iterdir() if p.is_file()} == manifest
 
 

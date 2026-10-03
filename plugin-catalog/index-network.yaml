@@ -1,10 +1,10 @@
 name: index-network
 title: Index Network
-repo: https://github.com/indexnetwork/hermes-plugin
+repo: https://github.com/indexnetwork/akramcode-plugin
 sha: 97ce52266792a5171004cabbc7f9ab42ed8a9677
 description: >-
   Index tools for intents, networks, and opportunities. Disclosure — registers
-  an index gateway platform. Login writes INDEX_SESSION_TOKEN to the Hermes
+  an index gateway platform. Login writes INDEX_SESSION_TOKEN to the AkramCode
   env. When this install is the selected negotiator, a Bun child from PATH
   runs the pinned bundle and mints INDEX_API_KEY from that session if it is
   missing; that key also registers the Index MCP server. API traffic goes to
@@ -13,7 +13,7 @@ description: >-
 maintainer: indexnetwork
 tier: community
 category: tools
-docs_url: https://github.com/indexnetwork/hermes-plugin#readme
+docs_url: https://github.com/indexnetwork/akramcode-plugin#readme
 version: "0.47.4"
 capabilities:
   provides_tools:

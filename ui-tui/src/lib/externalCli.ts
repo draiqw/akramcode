@@ -5,11 +5,11 @@ export interface LaunchResult {
   error?: string
 }
 
-const resolveHermesBin = () => process.env.HERMES_BIN?.trim() || 'hermes'
+const resolveAkramCodeBin = () => process.env.AKRAMCODE_BIN?.trim() || 'akramcode'
 
-export const launchHermesCommand = (args: string[]): Promise<LaunchResult> =>
+export const launchAkramCodeCommand = (args: string[]): Promise<LaunchResult> =>
   new Promise(resolve => {
-    const child = spawn(resolveHermesBin(), args, { stdio: 'inherit' })
+    const child = spawn(resolveAkramCodeBin(), args, { stdio: 'inherit' })
 
     child.on('error', err => resolve({ code: null, error: err.message }))
     child.on('exit', code => resolve({ code }))

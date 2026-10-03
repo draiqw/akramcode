@@ -1,4 +1,4 @@
-"""Package definitions for the tools hermes manages. Versions and hashes
+"""Package definitions for the tools akramcode manages. Versions and hashes
 live in pm/lock.json (written by `pm lock`), never here."""
 
 from __future__ import annotations
@@ -301,18 +301,18 @@ _uv_lock_digest_cache: dict[Path, tuple] = {}
 
 
 def uv_cache_dir() -> Path:
-    """The hermes-owned uv cache: machine-scoped and shared (keyed by
+    """The akramcode-owned uv cache: machine-scoped and shared (keyed by
     content — two profiles reuse one cache), anchored to the DEFAULT
-    hermes root like partials_root(). A bundle ships a seeded copy at
+    akramcode root like partials_root(). A bundle ships a seeded copy at
     the payload root (uv-cache/); the first call on a sealed install
     copies it out to the writable machine cache (the read-only payload
     can't serve uv's working cache), and a warm `uv sync --offline`
     from it is near-free (probed: 0.4s vs 1.2s cold) — the blow-away-
     on-update contract depends on it. uv's default cache location is
     per-user/platform-opinionated and never used by pm."""
-    from akramcode_constants import get_default_hermes_root
+    from akramcode_constants import get_default_akramcode_root
 
-    machine_cache = get_default_hermes_root() / "cache" / "uv"
+    machine_cache = get_default_akramcode_root() / "cache" / "uv"
     marker = machine_cache / ".seeded"
     if not marker.is_file():
         # Seed from a shipped bundle cache when present (payload root =
@@ -592,7 +592,7 @@ class Npm(BinaryPackage):
         # there turns its removal into a tree delete that fails on Windows
         # while Defender still holds the fresh copy (WinError 145). Cleanup
         # of this throwaway cache must never fail the install.
-        with tempfile.TemporaryDirectory(prefix="hermes-npm-cache-", ignore_cleanup_errors=True) as cache:
+        with tempfile.TemporaryDirectory(prefix="akramcode-npm-cache-", ignore_cleanup_errors=True) as cache:
             proc = subprocess.run(
                 [
                     str(node_bin), str(bundled_cli), "install", "--global",
@@ -729,7 +729,7 @@ class Gh(BinaryPackage):
 class Ffmpeg(_BionicDebArm, BinaryPackage, DebPackage):
     """FFmpeg builds for supported targets; BtbN Linux archives require glibc.
     optional=False: ffmpeg is a required runtime tool where supported. Sealed bundles ship
-    it baked into the payload; every `hermes update` and `hermes pm install`
+    it baked into the payload; every `akramcode update` and `akramcode pm install`
     re-ensures it from the new lockfile before the venv sync
     (pm.client.ensure_tools_for_sync), so a pin bump lands. Windows + Linux:
     BtbN/FFmpeg-Builds (month-end autobuild tag, kept two years; ships ffprobe too).

@@ -15,16 +15,16 @@ import pytest
 
 
 @pytest.fixture
-def hermes_home(tmp_path, monkeypatch):
-    """Isolated HERMES_HOME so SessionDB.state_meta writes don't clobber the real one."""
+def akramcode_home(tmp_path, monkeypatch):
+    """Isolated AKRAMCODE_HOME so SessionDB.state_meta writes don't clobber the real one."""
     from pathlib import Path
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
 
-    # Bust the goal-module's DB cache for each test so it re-resolves HERMES_HOME.
+    # Bust the goal-module's DB cache for each test so it re-resolves AKRAMCODE_HOME.
     from akramcode_cli import goals
 
     goals._DB_CACHE.clear()
@@ -105,7 +105,7 @@ class TestJudgeGoal:
 
 class TestGoalManager:
 
-    def test_set_then_status(self, hermes_home):
+    def test_set_then_status(self, akramcode_home):
         from akramcode_cli.goals import GoalManager
 
         mgr = GoalManager(session_id="test-sid-2", default_max_turns=5)
@@ -125,17 +125,17 @@ class TestGoalManager:
 
 
 
-    def test_continuation_prompt_shape(self, hermes_home):
+    def test_continuation_prompt_shape(self, akramcode_home):
         """The continuation prompt must include the goal text verbatim —
         and must be safe to inject as a user-role message (prompt-cache
         invariants: no system-prompt mutation)."""
         from akramcode_cli.goals import GoalManager
 
         mgr = GoalManager(session_id="cont-sid")
-        mgr.set("port goal command to hermes")
+        mgr.set("port goal command to akramcode")
         prompt = mgr.next_continuation_prompt()
         assert prompt is not None
-        assert "port goal command to hermes" in prompt
+        assert "port goal command to akramcode" in prompt
         assert prompt.strip()  # non-empty
 
 
@@ -177,7 +177,7 @@ class TestJudgeParseFailureAutoPause:
         assert transport_failed is True
 
 
-    def test_auto_pause_after_three_consecutive_parse_failures(self, hermes_home):
+    def test_auto_pause_after_three_consecutive_parse_failures(self, akramcode_home):
         """N=3 consecutive parse failures → auto-pause with config pointer."""
         from akramcode_cli import goals
         from akramcode_cli.goals import GoalManager
@@ -236,7 +236,7 @@ class TestMigrateGoalToSession:
     per-session lookup with no lineage walk, so without migration an active
     goal silently dies when compression rotates session_id."""
 
-    def test_migrates_active_goal_to_child(self, hermes_home):
+    def test_migrates_active_goal_to_child(self, akramcode_home):
         from akramcode_cli.goals import save_goal, load_goal, migrate_goal_to_session, GoalState
         save_goal("parent-sid", GoalState(goal="ship the feature"))
         assert migrate_goal_to_session("parent-sid", "child-sid", reason="compression") is True
@@ -247,7 +247,7 @@ class TestMigrateGoalToSession:
         assert parent is not None and parent.status == "cleared"
 
 
-    def test_does_not_clobber_existing_child_goal(self, hermes_home):
+    def test_does_not_clobber_existing_child_goal(self, akramcode_home):
         from akramcode_cli.goals import save_goal, load_goal, migrate_goal_to_session, GoalState
         save_goal("p3", GoalState(goal="parent goal"))
         save_goal("c3", GoalState(goal="child already has one"))
@@ -256,24 +256,24 @@ class TestMigrateGoalToSession:
 
 
 class TestSessionDbCacheAfterProfileDelete:
-    """``hermes profile delete`` force-closes every registry handle under the profile home
+    """``akramcode profile delete`` force-closes every registry handle under the profile home
     (``close_all_under``) and rmtrees it; recreating the same name in the long-lived dashboard
     process must not keep persisting goals into the torn-down handle."""
 
-    def test_delete_then_recreate_gets_a_live_store(self, hermes_home):
+    def test_delete_then_recreate_gets_a_live_store(self, akramcode_home):
         import shutil
 
         import akramcode_state
         import akramcode_state.registry as registry
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+        from akramcode_constants import reset_akramcode_home_override, set_akramcode_home_override
         from akramcode_cli.goals import GoalState, _get_session_db, load_goal, save_goal
 
         # conftest re-points DEFAULT_DB_PATH at one fixed file; the registry must resolve the
         # scoped profile home here, as production does.
         with patch.object(akramcode_state, "DEFAULT_DB_PATH", akramcode_state._IMPORT_DEFAULT_DB_PATH):
-            profile = hermes_home / "profiles" / "p1"
+            profile = akramcode_home / "profiles" / "p1"
             profile.mkdir(parents=True)
-            token = set_hermes_home_override(profile)
+            token = set_akramcode_home_override(profile)
             try:
                 save_goal("s1", GoalState(goal="before delete"))
                 stale = _get_session_db()
@@ -287,12 +287,12 @@ class TestSessionDbCacheAfterProfileDelete:
                 assert (profile / "state.db").exists()
                 assert load_goal("s2").goal == "after recreate"
             finally:
-                reset_hermes_home_override(token)
+                reset_akramcode_home_override(token)
                 registry.close_all_under(profile)
 
 
 class TestGoalManagerSubgoals:
-    def test_add_subgoal(self, hermes_home):
+    def test_add_subgoal(self, akramcode_home):
         from akramcode_cli.goals import GoalManager
         mgr = GoalManager(session_id="sub-add")
         mgr.set("main goal")
@@ -301,7 +301,7 @@ class TestGoalManagerSubgoals:
         assert mgr.state.subgoals == ["use bullet points"]
 
 
-    def test_remove_subgoal_out_of_range(self, hermes_home):
+    def test_remove_subgoal_out_of_range(self, akramcode_home):
         import pytest
         from akramcode_cli.goals import GoalManager
         mgr = GoalManager(session_id="sub-oob")
@@ -314,7 +314,7 @@ class TestGoalManagerSubgoals:
 
 
 class TestJudgeGoalWithSubgoals:
-    def test_judge_uses_subgoals_template_when_provided(self, hermes_home):
+    def test_judge_uses_subgoals_template_when_provided(self, akramcode_home):
         """judge_goal switches templates when subgoals is non-empty.
 
         We don't actually call the model — we patch the aux client to
@@ -350,7 +350,7 @@ class TestJudgeGoalWithSubgoals:
         assert "2. update docs" in user_msg
         assert verdict == "done"
 
-    def test_judge_uses_original_template_when_no_subgoals(self, hermes_home):
+    def test_judge_uses_original_template_when_no_subgoals(self, akramcode_home):
         from unittest.mock import patch
         from akramcode_cli import goals
 
@@ -399,7 +399,7 @@ class TestWaitBarrier:
         return 2_000_000_000
 
 
-    def test_parked_on_live_pid_does_not_continue_or_judge(self, hermes_home):
+    def test_parked_on_live_pid_does_not_continue_or_judge(self, akramcode_home):
         from akramcode_cli import goals
         from akramcode_cli.goals import GoalManager
 
@@ -426,7 +426,7 @@ class TestWaitBarrier:
             proc.terminate()
             proc.wait(timeout=10)
 
-    def test_wait_on_rejects_a_pid_not_alive_on_this_host(self, hermes_home, monkeypatch):
+    def test_wait_on_rejects_a_pid_not_alive_on_this_host(self, akramcode_home, monkeypatch):
         """Regression for #110826: do not persist a barrier for remote/dead PIDs."""
         from akramcode_cli import goals
         from akramcode_cli.goals import GoalManager
@@ -441,7 +441,7 @@ class TestWaitBarrier:
         assert mgr.state.waiting_on_pid is None
 
 
-    def test_stop_waiting_clears_barrier(self, hermes_home):
+    def test_stop_waiting_clears_barrier(self, akramcode_home):
         from akramcode_cli.goals import GoalManager
 
         proc = self._spawn_sleeper()
@@ -458,7 +458,7 @@ class TestWaitBarrier:
             proc.terminate()
             proc.wait(timeout=10)
 
-    def test_barrier_on_a_process_that_never_exits_expires(self, hermes_home):
+    def test_barrier_on_a_process_that_never_exits_expires(self, akramcode_home):
         """A poller that outlives the work parked one run for 3h22m; a live barrier ages out."""
         from akramcode_cli import goals
         from akramcode_cli.goals import GoalManager
@@ -513,7 +513,7 @@ class TestJudgeDrivenWait:
         import subprocess, sys
         return subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
 
-    def test_judge_wait_on_dead_pid_continues_instead_of_parking(self, hermes_home):
+    def test_judge_wait_on_dead_pid_continues_instead_of_parking(self, akramcode_home):
         """#110826: a judge ``wait_on_pid`` naming a pid this host cannot observe (remote, or
         already exited) must not park — the barrier would lift and re-park every turn."""
         from akramcode_cli import goals
@@ -531,7 +531,7 @@ class TestJudgeDrivenWait:
         assert mgr.state.waiting_on_pid is None
         assert mgr.is_waiting() is False
 
-    def test_judge_wait_on_pid_dying_between_check_and_park_continues(self, hermes_home):
+    def test_judge_wait_on_pid_dying_between_check_and_park_continues(self, akramcode_home):
         """The pid may exit between the judge path's liveness probe and ``wait_on``'s own
         re-check; that race must land on the same continue decision, not raise out of
         ``evaluate_after_turn`` (callers swallow the error and the continuation is lost)."""
@@ -552,7 +552,7 @@ class TestJudgeDrivenWait:
         assert mgr.state.waiting_on_pid is None
         assert mgr.is_waiting() is False
 
-    def test_judge_wait_pid_parks_loop(self, hermes_home):
+    def test_judge_wait_pid_parks_loop(self, akramcode_home):
         from akramcode_cli import goals
         from akramcode_cli.goals import GoalManager
 
@@ -590,7 +590,7 @@ class TestJudgeDrivenWait:
             proc.wait(timeout=10)
 
 
-    def test_time_barrier_clears_after_deadline(self, hermes_home):
+    def test_time_barrier_clears_after_deadline(self, akramcode_home):
         from akramcode_cli.goals import GoalManager
 
         mgr = GoalManager(session_id="jw-deadline")
@@ -602,7 +602,7 @@ class TestJudgeDrivenWait:
         assert mgr.is_waiting() is False
         assert mgr.state.waiting_until == 0.0
 
-    def test_continue_verdict_still_continues_with_background(self, hermes_home):
+    def test_continue_verdict_still_continues_with_background(self, akramcode_home):
         """A running process present but judge says continue → normal loop."""
         from akramcode_cli import goals
         from akramcode_cli.goals import GoalManager
@@ -649,7 +649,7 @@ class TestSessionTriggerBarrier:
         return s, process_registry
 
 
-    def test_registry_releases_on_watch_match_while_alive(self, hermes_home):
+    def test_registry_releases_on_watch_match_while_alive(self, akramcode_home):
         s, reg = self._inject("proc_t2", watch_patterns=["READY"])
         assert reg.is_session_waiting("proc_t2") is True
         s._watch_hits = 1  # what _check_watch_patterns sets on a match
@@ -658,7 +658,7 @@ class TestSessionTriggerBarrier:
         assert reg.is_session_waiting("proc_t2") is False
 
 
-    def test_wait_on_session_validation(self, hermes_home):
+    def test_wait_on_session_validation(self, akramcode_home):
         from akramcode_cli.goals import GoalManager
         mgr = GoalManager(session_id="st-val")
         # No active goal → RuntimeError
@@ -752,7 +752,7 @@ class TestGoalManagerContract:
 
 
 
-    def test_set_contract_after_the_fact(self, hermes_home):
+    def test_set_contract_after_the_fact(self, akramcode_home):
         from akramcode_cli.goals import GoalManager, GoalContract
 
         mgr = GoalManager(session_id="c-after")
@@ -764,7 +764,7 @@ class TestGoalManagerContract:
         from akramcode_cli.goals import GoalManager as GM2
         assert GM2(session_id="c-after").has_contract()
 
-    def test_persistence_roundtrip(self, hermes_home):
+    def test_persistence_roundtrip(self, akramcode_home):
         from akramcode_cli.goals import GoalManager, GoalContract
 
         GoalManager(session_id="c-persist").set(
@@ -791,7 +791,7 @@ class TestJudgeWithContract:
             return _FakeResp()
         return _fake
 
-    def test_judge_uses_contract_template(self, hermes_home):
+    def test_judge_uses_contract_template(self, akramcode_home):
         from unittest.mock import patch
         from akramcode_cli import goals
         from akramcode_cli.goals import GoalContract
@@ -811,7 +811,7 @@ class TestJudgeWithContract:
 
 
 class TestDraftContract:
-    def test_draft_parses_json(self, hermes_home):
+    def test_draft_parses_json(self, akramcode_home):
         from unittest.mock import patch
         from akramcode_cli import goals
 
@@ -834,7 +834,7 @@ class TestDraftContract:
         assert not contract.is_empty()
 
 
-    def test_draft_returns_none_when_no_client(self, hermes_home):
+    def test_draft_returns_none_when_no_client(self, akramcode_home):
         from unittest.mock import patch
         from akramcode_cli import goals
 
@@ -868,7 +868,7 @@ class TestContractAndBackgroundCompose:
             return _FakeResp()
         return _fake
 
-    def test_judge_prompt_carries_contract_and_background(self, hermes_home):
+    def test_judge_prompt_carries_contract_and_background(self, akramcode_home):
         from unittest.mock import patch
         from akramcode_cli import goals
         from akramcode_cli.goals import GoalContract
@@ -912,7 +912,7 @@ class TestBlockedVerdict:
         assert reason == "the repo was deleted"
         assert parse_failed is False
 
-    def test_blocked_verdict_pauses_goal_instead_of_done(self, hermes_home):
+    def test_blocked_verdict_pauses_goal_instead_of_done(self, akramcode_home):
         from unittest.mock import patch
         from akramcode_cli.goals import GoalManager
 
@@ -935,7 +935,7 @@ class TestBlockedVerdict:
         assert "unachievable" in (mgr.state.paused_reason or "").lower()
 
 
-def test_goal_session_db_is_the_registry_shared_handle(hermes_home):
+def test_goal_session_db_is_the_registry_shared_handle(akramcode_home):
     """GoalManager must borrow the process-wide registry handle for ``state.db`` rather than
     minting a bare ``SessionDB()``: a second writer per profile carries its own token-writer
     thread and close-time checkpoint beside the gateway's handle (the #90837 corruption shape)."""

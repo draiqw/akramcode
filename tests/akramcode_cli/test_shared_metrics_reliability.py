@@ -1,5 +1,5 @@
-"""v4 reliability metrics: hermes.update.run / hermes.update.stage from the final update receipt,
-hermes.process.exit from per-process markers and turn watchdogs."""
+"""v4 reliability metrics: akramcode.update.run / akramcode.update.stage from the final update receipt,
+akramcode.process.exit from per-process markers and turn watchdogs."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ def marks(tmp_path, monkeypatch):
     """Capture decision marks at the runtime boundary; collection on unless a test turns it off."""
     captured: list[tuple[str, dict]] = []
     policy = {"on": True}
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
     monkeypatch.setattr(
         "akramcode_cli.config.read_raw_config_readonly",
         lambda: {"telemetry": {"shared_metrics": {"enabled": policy["on"]}}},
@@ -143,10 +143,10 @@ def test_turn_watchdog_abort_counts_once_per_turn_in_the_turn_profile(marks, tmp
     agent = SimpleNamespace()
     process_metrics.record_watchdog_turn_abort(agent)  # never armed: no owning profile, no row
     process_metrics.arm_turn(agent)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "other"))  # the watchdog thread's ambient home
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "other"))  # the watchdog thread's ambient home
     seen: list[str] = []
     monkeypatch.setattr(relay_shared_metrics, "record_process_mark", lambda mark, data: (
-        marks.rows.append((mark, data)), seen.append(str(__import__("hermes_constants").get_hermes_home()))))
+        marks.rows.append((mark, data)), seen.append(str(__import__("akramcode_constants").get_akramcode_home()))))
     process_metrics.record_watchdog_turn_abort(agent)
     process_metrics.record_watchdog_turn_abort(agent)  # the second watchdog on the same turn
     assert [data["exit_kind"] for _, data in marks.rows] == ["watchdog"]
@@ -187,7 +187,7 @@ def test_v3_schema_accepts_exactly_the_contract_values():
 
     import akramcode_cli.observability as observability
 
-    schema = json.loads((Path(observability.__file__).parent / "schemas/hermes.shared_metrics.v3.schema.json").read_text())
+    schema = json.loads((Path(observability.__file__).parent / "schemas/akramcode.shared_metrics.v3.schema.json").read_text())
     by_name = {d["properties"]["name"]["const"]: d for d in schema["$defs"].values() if "properties" in d}
     for metric in (contract.UPDATE_RUN_METRIC, contract.UPDATE_STAGE_METRIC, contract.PROCESS_EXIT_METRIC):
         dims = by_name[metric]["properties"]["dimensions"]["properties"]
@@ -206,7 +206,7 @@ def _pre_pull_finalize(monkeypatch) -> None:
 def test_pre_pull_park_happens_only_while_opted_in_and_keeps_only_metric_fields(marks, monkeypatch):
     pending = update_metrics.pending_updates_dir(marks.home)
     pending.mkdir(parents=True)
-    (pending / "earlier.json").write_text(json.dumps({"update_id": "earlier", "argv": ["hermes", "update"]}))
+    (pending / "earlier.json").write_text(json.dumps({"update_id": "earlier", "argv": ["akramcode", "update"]}))
     marks.policy["on"] = False
     _pre_pull_finalize(monkeypatch)
     assert not pending.exists() or list(pending.iterdir()) == []  # nothing parked, the earlier one purged

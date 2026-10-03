@@ -23,7 +23,7 @@ from agent.agent_runtime_helpers import (
     get_sanitizer_heal_stats,
     repair_empty_non_final_messages,
 )
-from akram_core.hermes_logging import clear_session_context, set_session_context
+from akram_core.akramcode_logging import clear_session_context, set_session_context
 
 
 @pytest.fixture(autouse=True)
@@ -359,7 +359,7 @@ class TestProjectionStopsReheal:
             _arh._empty_heal_user_notified.add(_live_key)
             _arh._empty_heal_pending_notice[_live_key] = (
                 "⚠️ Your session transcript required repeated repair — "
-                "run /debug share or `hermes doctor`."
+                "run /debug share or `akramcode doctor`."
             )
 
         warned = []

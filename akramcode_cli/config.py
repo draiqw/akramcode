@@ -1,5 +1,5 @@
-"""Configuration management for Hermes Agent: config.yaml / .env loading, saving,
-validation, migration, and the ``hermes config`` command."""
+"""Configuration management for AkramCode Agent: config.yaml / .env loading, saving,
+validation, migration, and the ``akramcode config`` command."""
 
 # Stale-module bridge — must run before ANY import below can bind a root-level symbol.
 # A pre-handoff updater purges only package prefixes after the pull, so a root module
@@ -38,14 +38,14 @@ from akramcode_cli.colors import Colors, color
 from akramcode_cli import managed_scope
 from akramcode_cli.default_soul import DEFAULT_SOUL_MD, is_legacy_template_soul
 from akramcode_cli.secret_prompt import masked_secret_prompt
-# Managed-mode, container and HERMES_UID/GID policy live in akramcode_constants (import-safe);
+# Managed-mode, container and AKRAMCODE_UID/GID policy live in akramcode_constants (import-safe);
 # re-exported here so existing callers/patch targets keep working.
 from akramcode_constants import (  # noqa: F401
     _IGNORED_MANAGED_VALUES, _LEGACY_MANAGED_SYSTEM, _MANAGED_FALSE_VALUES, _MANAGED_TRUE_VALUES,
-    _chown_to_hermes_uid, _container_or_chmod_skipped, _resolve_hermes_uid_gid,
+    _chown_to_akramcode_uid, _container_or_chmod_skipped, _resolve_akramcode_uid_gid,
     apply_secure_dir_policy, get_managed_system)
 # Re-export from akramcode_constants — canonical definition lives there.
-from akramcode_constants import get_hermes_home, get_process_hermes_home  # noqa: F401
+from akramcode_constants import get_akramcode_home, get_process_akramcode_home  # noqa: F401
 from utils import atomic_replace, fast_safe_load, file_signature
 from akramcode_cli.config_read_errors import (
     _CONFIG_PARSE_FAILURES, _FIX_PERMS, _FIX_YAML, FailedConfigRead, _backups_dir_display,
@@ -79,13 +79,13 @@ _ENV_VAR_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 # Env var names that influence how the next subprocess executes — never writable through
 # ``save_env_value``: dynamic loader (LD_*/DYLD_*: attacker code loads before main()),
-# interpreter init (PYTHON*, NODE_*: Hermes restarts through them), PATH (fix tool lookup
+# interpreter init (PYTHON*, NODE_*: AkramCode restarts through them), PATH (fix tool lookup
 # with absolute paths instead), git rewrites (fire on every plugin install/update),
 # implicitly-invoked commands (BROWSER/EDITOR/VISUAL/PAGER = RCE on next $EDITOR), SHELL,
-# and Hermes runtime-location / security-policy flags (config.yaml is the supported surface).
+# and AkramCode runtime-location / security-policy flags (config.yaml is the supported surface).
 #
-# ``HERMES_*`` overall is NOT blocked — many integration credentials use that prefix
-# (HERMES_LANGFUSE_PUBLIC_KEY, HERMES_SPOTIFY_CLIENT_ID, ...). The denylist is name-by-name so
+# ``AKRAMCODE_*`` overall is NOT blocked — many integration credentials use that prefix
+# (AKRAMCODE_LANGFUSE_PUBLIC_KEY, AKRAMCODE_SPOTIFY_CLIENT_ID, ...). The denylist is name-by-name so
 # it cannot break provider setup wizards. Enforced on *write* only: pre-existing/out-of-band
 # ``.env`` values keep working; the dashboard's writable surface just cannot escalate.
 
@@ -119,18 +119,18 @@ _ENV_VAR_NAME_DENYLIST: frozenset[str] = frozenset({
     "GIT_PROXY_COMMAND", "GIT_TEMPLATE_DIR", "GIT_DIR",
     # Shell init files / interactive hooks — sourced before or during execution
     "BASH_ENV", "ENV", "ZDOTDIR", "PROMPT_COMMAND", "VIMINIT", "EXINIT",
-    # Hermes runtime location
-    "HERMES_HOME", "HERMES_PROFILE", "HERMES_CONFIG", "HERMES_ENV",
-    "HERMES_CONFIG_PATH", "HERMES_ENV_PATH",
+    # AkramCode runtime location
+    "AKRAMCODE_HOME", "AKRAMCODE_PROFILE", "AKRAMCODE_CONFIG", "AKRAMCODE_ENV",
+    "AKRAMCODE_CONFIG_PATH", "AKRAMCODE_ENV_PATH",
     # MCP catalog trust root; package-manager wrappers may still set it in the process env.
-    "HERMES_OPTIONAL_MCPS",
+    "AKRAMCODE_OPTIONAL_MCPS",
     # Local ACP subprocess selection (executable/argv authority).
-    "HERMES_COPILOT_ACP_COMMAND", "HERMES_COPILOT_ACP_ARGS",
+    "AKRAMCODE_COPILOT_ACP_COMMAND", "AKRAMCODE_COPILOT_ACP_ARGS",
     # Security policy / approval-routing context — set via their dedicated controls only.
-    "HERMES_YOLO_MODE", "HERMES_ACCEPT_HOOKS", "HERMES_REDACT_SECRETS",
-    "HERMES_INTERACTIVE", "HERMES_EXEC_ASK", "HERMES_GATEWAY_SESSION",
-    "HERMES_CRON_SESSION", "HERMES_SINGLE_QUERY_SESSION",
-    "HERMES_SESSION_KEY", "HERMES_SESSION_PLATFORM"})
+    "AKRAMCODE_YOLO_MODE", "AKRAMCODE_ACCEPT_HOOKS", "AKRAMCODE_REDACT_SECRETS",
+    "AKRAMCODE_INTERACTIVE", "AKRAMCODE_EXEC_ASK", "AKRAMCODE_GATEWAY_SESSION",
+    "AKRAMCODE_CRON_SESSION", "AKRAMCODE_SINGLE_QUERY_SESSION",
+    "AKRAMCODE_SESSION_KEY", "AKRAMCODE_SESSION_PLATFORM"})
 
 
 def _env_var_policy_name(key: str, *, is_windows: Optional[bool] = None) -> str:
@@ -149,8 +149,8 @@ def validate_env_var_name_for_write(key: str) -> None:
         raise ValueError(
             f"Environment variable {key!r} is on the writer denylist. "
             "Names that influence subprocess execution (LD_PRELOAD, PYTHONPATH, PATH, EDITOR, ...) "
-            "or Hermes runtime location and security policy (HERMES_HOME, HERMES_YOLO_MODE, ...) "
-            "cannot be persisted via the env writer. If you really need this, edit ~/.hermes/.env "
+            "or AkramCode runtime location and security policy (AKRAMCODE_HOME, AKRAMCODE_YOLO_MODE, ...) "
+            "cannot be persisted via the env writer. If you really need this, edit ~/.akramcode/.env "
             "directly.")
 
 
@@ -206,9 +206,9 @@ _EXTRA_ENV_KEYS = frozenset({
     "IRC_SERVER", "IRC_PORT", "IRC_NICKNAME", "IRC_CHANNEL", "IRC_USE_TLS", "IRC_SERVER_PASSWORD",
     "IRC_NICKSERV_PASSWORD", "TERMINAL_ENV", "TERMINAL_SSH_KEY", "TERMINAL_SSH_PORT",
     # Deprecated (replaced by display.tool_progress) but STILL READ by the gateway as a
-    # back-compat fallback. The boolean HERMES_TOOL_PROGRESS variant is unsupported (its only
+    # back-compat fallback. The boolean AKRAMCODE_TOOL_PROGRESS variant is unsupported (its only
     # consumer, the v3->4 migration, is below the v12 support floor); doctor flags it as ignored.
-    "HERMES_TOOL_PROGRESS_MODE",
+    "AKRAMCODE_TOOL_PROGRESS_MODE",
     "WHATSAPP_MODE", "WHATSAPP_ENABLED",
     "MATTERMOST_HOME_CHANNEL", "MATTERMOST_HOME_CHANNEL_NAME", "MATTERMOST_REPLY_MODE",
     "MATRIX_PASSWORD", "MATRIX_ENCRYPTION", "MATRIX_DEVICE_ID", "MATRIX_HOME_ROOM",
@@ -216,31 +216,31 @@ _EXTRA_ENV_KEYS = frozenset({
     "MATRIX_RECOVERY_KEY",
     # Langfuse observability plugin tuning keys + standard SDK vars (activation is via
     # plugins.enabled; credentials gate the plugin at runtime).
-    "HERMES_LANGFUSE_ENV", "HERMES_LANGFUSE_RELEASE", "HERMES_LANGFUSE_SAMPLE_RATE",
-    "HERMES_LANGFUSE_MAX_CHARS", "HERMES_LANGFUSE_CAPTURE", "HERMES_LANGFUSE_DEBUG",
+    "AKRAMCODE_LANGFUSE_ENV", "AKRAMCODE_LANGFUSE_RELEASE", "AKRAMCODE_LANGFUSE_SAMPLE_RATE",
+    "AKRAMCODE_LANGFUSE_MAX_CHARS", "AKRAMCODE_LANGFUSE_CAPTURE", "AKRAMCODE_LANGFUSE_DEBUG",
     "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY", "LANGFUSE_BASE_URL",
     # ACP (Agent Client Protocol) keys — profile-isolable so profiles can use different backends.
-    "HERMES_ACP_AUTH_METHOD", "HERMES_ACP_AUTO_APPROVE", "HERMES_COPILOT_ACP_COMMAND",
-    "HERMES_COPILOT_ACP_ARGS", "COPILOT_CLI_PATH", "COPILOT_ACP_BASE_URL"})
+    "AKRAMCODE_ACP_AUTH_METHOD", "AKRAMCODE_ACP_AUTO_APPROVE", "AKRAMCODE_COPILOT_ACP_COMMAND",
+    "AKRAMCODE_COPILOT_ACP_ARGS", "COPILOT_CLI_PATH", "COPILOT_ACP_BASE_URL"})
 
 
 # ---- Managed mode (NixOS declarative config) ----
 
 _NIX_MANAGED_SYSTEMS = {"nixos", "home-manager"}
 # Nix store root; identifies `nix run` / `nix profile install` installs (which don't set
-# HERMES_MANAGED). Module-level so tests can patch it without touching /nix/store.
+# AKRAMCODE_MANAGED). Module-level so tests can patch it without touching /nix/store.
 _NIX_STORE = Path("/nix/store")
 
 
 def is_managed() -> bool:
-    """Check if Hermes is running in package-manager-managed mode."""
+    """Check if AkramCode is running in package-manager-managed mode."""
     return get_managed_system() is not None
 
 
 # Nix installs arrive by several routes (nix run, nix profile, system flake, home-manager) and
 # the running process cannot tell which, so the text names the routes instead of one command.
 _NIX_UPDATE_MSG = (
-    "Update Hermes through the Nix source that installed it "
+    "Update AkramCode through the Nix source that installed it "
     "(e.g. nix profile upgrade, or update your flake input and rebuild with nixos-rebuild or home-manager switch)"
 )
 
@@ -265,29 +265,29 @@ def _install_method_stamp(path: Path) -> Optional[str]:
 
 
 def detect_install_method(project_root: Optional[Path] = None) -> str:
-    """Detect how Hermes was installed: apt/docker/nix/nixos/home-manager/git/unknown.
+    """Detect how AkramCode was installed: apt/docker/nix/nixos/home-manager/git/unknown.
     Order: code-scoped ``<install tree>/.install_method`` stamp (authoritative) -> legacy
-    ``$HERMES_HOME/.install_method`` -> managed marker -> /nix/store path -> .git dir -> unknown.
-    The stamp lives next to the code because HERMES_HOME is shared data: a container and a host
+    ``$AKRAMCODE_HOME/.install_method`` -> managed marker -> /nix/store path -> .git dir -> unknown.
+    The stamp lives next to the code because AKRAMCODE_HOME is shared data: a container and a host
     install can bind-mount the same home, so a home-scoped ``docker`` stamp would make the host
-    ``hermes update`` refuse to run. A legacy ``docker`` value is therefore ignored unless we are
+    ``akramcode update`` refuse to run. A legacy ``docker`` value is therefore ignored unless we are
     really inside a container, and being in a container alone never implies 'docker'.
 
     Source installers clone a git checkout and publish ``install-stamp.json``;
     the ``.git`` fallback identifies it as a source install. Older installations
     may carry ``.install_method``, which remains authoritative for compatibility.
-    The published image bakes a ``docker`` marker into ``/opt/hermes``. A manual
+    The published image bakes a ``docker`` marker into ``/opt/akramcode``. A manual
     clone in a container still resolves via ``.git``, not container presence alone.
     See issue #34397.
     """
-    # The stamp is a property of the running code tree (parent of akramcode_cli/), NOT of $HERMES_HOME,
+    # The stamp is a property of the running code tree (parent of akramcode_cli/), NOT of $AKRAMCODE_HOME,
     # so it survives two installs sharing a home.
     root = project_root if project_root is not None else get_project_root()
     method = _install_method_stamp(root / ".install_method")
     if method:
         return method
 
-    method = _install_method_stamp(get_hermes_home() / ".install_method")
+    method = _install_method_stamp(get_akramcode_home() / ".install_method")
     if method and not (method == "docker" and not _running_in_container()):
         return method
 
@@ -329,8 +329,8 @@ def is_nix_install_method(method: str) -> bool:
 
 
 _UPDATE_COMMAND_BY_METHOD = {
-    "docker": "docker pull nousresearch/hermes-agent:latest",
-    "apt": "pkg upgrade hermes-agent",  # "apt" == Termux APT by contract; uses Termux's `pkg`.
+    "docker": "docker pull nousresearch/akramcode-agent:latest",
+    "apt": "pkg upgrade akramcode-agent",  # "apt" == Termux APT by contract; uses Termux's `pkg`.
 }
 
 
@@ -338,7 +338,7 @@ def recommended_update_command_for_method(method: str) -> str:
     """Return the update command or guidance for a given install method."""
     if is_nix_install_method(method):
         return _NIX_UPDATE_MSG
-    return _UPDATE_COMMAND_BY_METHOD.get(method, "hermes update")
+    return _UPDATE_COMMAND_BY_METHOD.get(method, "akramcode update")
 
 
 def recommended_update_command() -> str:
@@ -351,31 +351,31 @@ def recommended_update_command() -> str:
 
 # Shared by ``cmd_update`` and ``_cmd_update_check`` (akramcode_cli/main.py) so the wording never
 # forks. The published image excludes ``.git``, so the git update path can never succeed there
-# and the generic "reinstall via install.sh" fallback would install a NEW host-side Hermes.
+# and the generic "reinstall via install.sh" fallback would install a NEW host-side AkramCode.
 _DOCKER_UPDATE_MESSAGE = """\
-✗ ``hermes update`` doesn't apply inside the Docker container.
+✗ ``akramcode update`` doesn't apply inside the Docker container.
 
-Hermes Agent runs as a published image (nousresearch/hermes-agent), not a
+AkramCode Agent runs as a published image (nousresearch/akramcode-agent), not a
 git checkout — the container has no working tree to pull into.  Update by
 pulling a fresh image and restarting your container instead:
 
-  docker pull nousresearch/hermes-agent:latest
+  docker pull nousresearch/akramcode-agent:latest
   # then restart whatever started the container, e.g.:
-  docker compose up -d --force-recreate hermes-agent
+  docker compose up -d --force-recreate akramcode-agent
   # or, for ad-hoc runs, exit the current container and `docker run` again
 
 Verify the new version after restart:
-  docker run --rm nousresearch/hermes-agent:latest --version
+  docker run --rm nousresearch/akramcode-agent:latest --version
 
 Notes:
   • If you pinned a specific tag (e.g. ``:v0.14.0``) the ``:latest`` tag
     won't move your container — pull the newer tag you actually want, or
     switch to ``:latest`` / ``:main`` for rolling updates.  See available
-    tags at https://hub.docker.com/r/nousresearch/hermes-agent/tags
+    tags at https://hub.docker.com/r/nousresearch/akramcode-agent/tags
   • On a ``-desktop`` tag (the one carrying Bot Screen)?  Keep the suffix:
     the unsuffixed image has no Xvnc/Xfce and no sudo to add them, so
     pulling it stops the bots' screens from starting.
-  • Your config and session history live under ``$HERMES_HOME`` (``/opt/data``
+  • Your config and session history live under ``$AKRAMCODE_HOME`` (``/opt/data``
     in the container, typically bind-mounted from the host) and persist
     across image upgrades — re-pulling doesn't lose any state.
   • Running a fork?  Build your own image with this repo's ``Dockerfile``
@@ -383,16 +383,16 @@ Notes:
 
 
 def format_docker_update_message() -> str:
-    """Return the user-facing message for ``hermes update`` inside Docker."""
+    """Return the user-facing message for ``akramcode update`` inside Docker."""
     return _DOCKER_UPDATE_MESSAGE
 
 
-def format_managed_message(action: str = "modify this Hermes installation") -> str:
+def format_managed_message(action: str = "modify this AkramCode installation") -> str:
     """Build a user-facing error for managed installs."""
     managed_system = get_managed_system() or "a package manager"
     return (
-        f"Cannot {action}: this Hermes installation is managed by {managed_system}.\n"
-        "Use your package manager to upgrade or reinstall Hermes.")
+        f"Cannot {action}: this AkramCode installation is managed by {managed_system}.\n"
+        "Use your package manager to upgrade or reinstall AkramCode.")
 
 
 def managed_error(action: str = "modify configuration"):
@@ -401,12 +401,12 @@ def managed_error(action: str = "modify configuration"):
 
 
 def get_container_exec_info() -> Optional[dict]:
-    """Read container mode metadata from HERMES_HOME/.container-mode.
+    """Read container mode metadata from AKRAMCODE_HOME/.container-mode.
     Written by the NixOS activation script when container.enable = true; tells the host CLI to
     exec into the container instead of running locally. None when container mode is off, when
-    already inside the container, or when HERMES_DEV=1 is set. Only FileNotFoundError is
+    already inside the container, or when AKRAMCODE_DEV=1 is set. Only FileNotFoundError is
     swallowed; other errors (permissions, malformed data) propagate."""
-    if os.environ.get("HERMES_DEV") == "1":
+    if os.environ.get("AKRAMCODE_DEV") == "1":
         return None
 
     from akramcode_constants import is_container
@@ -415,7 +415,7 @@ def get_container_exec_info() -> Optional[dict]:
 
     try:
         info = {}
-        with open(get_hermes_home() / ".container-mode", "r", encoding="utf-8-sig") as f:
+        with open(get_akramcode_home() / ".container-mode", "r", encoding="utf-8-sig") as f:
             for line in f:
                 line = line.strip()
                 if "=" in line and not line.startswith("#"):
@@ -426,16 +426,16 @@ def get_container_exec_info() -> Optional[dict]:
 
     return {
         "backend": info.get("backend", "docker"),
-        "container_name": info.get("container_name", "hermes-agent"),
-        "exec_user": info.get("exec_user", "hermes"),
-        "hermes_bin": info.get("hermes_bin", "/data/current-package/bin/hermes")}
+        "container_name": info.get("container_name", "akramcode-agent"),
+        "exec_user": info.get("exec_user", "akramcode"),
+        "akramcode_bin": info.get("akramcode_bin", "/data/current-package/bin/akramcode")}
 
 
-# ---- Config paths / HERMES_HOME skeleton ----
+# ---- Config paths / AKRAMCODE_HOME skeleton ----
 
 def get_config_path() -> Path:
     """Get the main config file path."""
-    return get_hermes_home() / "config.yaml"
+    return get_akramcode_home() / "config.yaml"
 
 
 def require_parseable_user_config(*, ignore_user_config: bool = False) -> None:
@@ -443,8 +443,8 @@ def require_parseable_user_config(*, ignore_user_config: bool = False) -> None:
     Interactive surfaces keep ``load_config()``'s recovery behavior so the operator can repair
     the file; a one-shot run has no such chance, and defaults there could silently pick a hosted
     provider and spend against ``.env`` credentials. Missing/empty files stay valid first-run
-    states; ``--ignore-user-config`` / HERMES_IGNORE_USER_CONFIG=1 remain authoritative."""
-    if ignore_user_config or os.environ.get("HERMES_IGNORE_USER_CONFIG") == "1":
+    states; ``--ignore-user-config`` / AKRAMCODE_IGNORE_USER_CONFIG=1 remain authoritative."""
+    if ignore_user_config or os.environ.get("AKRAMCODE_IGNORE_USER_CONFIG") == "1":
         return
 
     config_path = get_config_path()
@@ -464,9 +464,9 @@ def require_parseable_user_config(*, ignore_user_config: bool = False) -> None:
     backup_path = backup_config(config_path, "corrupt")
     where = _yaml_error_location(parse_error)
     message = (
-        f"Hermes stopped because your settings file ({config_path}) has a formatting error"
-        f"{f' at {where}' if where else ''}. Fix it with `hermes config edit` and check with "
-        "`hermes config check`, or add --ignore-user-config to run once with default settings.")
+        f"AkramCode stopped because your settings file ({config_path}) has a formatting error"
+        f"{f' at {where}' if where else ''}. Fix it with `akramcode config edit` and check with "
+        "`akramcode config check`, or add --ignore-user-config to run once with default settings.")
     if backup_path is not None:
         message += f" A copy of the broken file is at {backup_path}."
     message += f" Details: {_yaml_error_details(parse_error)}"
@@ -476,7 +476,7 @@ def require_parseable_user_config(*, ignore_user_config: bool = False) -> None:
 
 def get_env_path() -> Path:
     """Get the .env file path (for API keys)."""
-    return get_hermes_home() / ".env"
+    return get_akramcode_home() / ".env"
 
 
 def get_project_root() -> Path:
@@ -485,12 +485,12 @@ def get_project_root() -> Path:
 
 
 def _secure_dir(path):
-    """chmod a directory owner-only (0700) and apply HERMES_UID/GID ownership. No-op when managed;
-    in a container only an explicit HERMES_HOME_MODE is applied. HERMES_HOME_MODE (e.g. 0701)
-    overrides the mode so a web server can traverse HERMES_HOME to a served subdirectory without
+    """chmod a directory owner-only (0700) and apply AKRAMCODE_UID/GID ownership. No-op when managed;
+    in a container only an explicit AKRAMCODE_HOME_MODE is applied. AKRAMCODE_HOME_MODE (e.g. 0701)
+    overrides the mode so a web server can traverse AKRAMCODE_HOME to a served subdirectory without
     directory listings.
 
-    Also applies ``HERMES_UID``/``HERMES_GID``-based ownership when those env vars are set (#34107 — Docker
+    Also applies ``AKRAMCODE_UID``/``AKRAMCODE_GID``-based ownership when those env vars are set (#34107 — Docker
     deployments need this so profile subdirs created at runtime by kanban workers don't land as root:root
     and block subsequent uid-mapped workers).
 
@@ -516,7 +516,7 @@ def seed_config_file(config_path: Path, template: Optional[Path] = None) -> bool
     """Create a missing config.yaml the way the installers do: copy cli-config.yaml.example (the display keys
     there are commented out), else write stripped DEFAULT_CONFIG. Never DEFAULT_CONFIG verbatim -- the gateway
     merges no defaults, so every written display key becomes a global that beats each platform's own default
-    (#121230). Shared by ``hermes config edit`` and ``hermes doctor --fix`` so the seeders cannot drift.
+    (#121230). Shared by ``akramcode config edit`` and ``akramcode doctor --fix`` so the seeders cannot drift.
     Returns True when the template was copied (the fallback, like save_config, writes get_config_path())."""
     template = template or get_project_root() / "cli-config.yaml.example"
     config_path.parent.mkdir(parents=True, exist_ok=True)
@@ -564,27 +564,27 @@ def _ensure_default_soul_md(home: Path) -> None:
 
 # Home paths whose directory skeleton was created this process. Only successful passes are
 # recorded, so a raised managed-mode/missing-profile error keeps re-checking on later loads.
-_HERMES_HOME_ENSURED: set = set()
-_HERMES_HOME_SUBDIRS = (
+_AKRAMCODE_HOME_ENSURED: set = set()
+_AKRAMCODE_HOME_SUBDIRS = (
     "cron", "sessions", "logs", "logs/curator", "memories",
     "pairing", "hooks", "image_cache", "audio_cache", "skills")
 
 
-def ensure_hermes_home():
-    """Ensure the ~/.hermes directory skeleton exists with secure permissions.
+def ensure_akramcode_home():
+    """Ensure the ~/.akramcode directory skeleton exists with secure permissions.
     Memoized per home path: this runs on EVERY ``load_config()`` and the ~14 mkdir/chmod syscalls
     made repeated loads the dominant cost of hot read paths."""
-    home = get_hermes_home()
+    home = get_akramcode_home()
     key = str(home)
 
     # Named profiles must be created explicitly. Check tombstones BEFORE the memo so a stale
     # empty shell cannot skip the deleted-profile guard.
     from akramcode_constants import assert_named_profile_home_live
     assert_named_profile_home_live(home)
-    if key in _HERMES_HOME_ENSURED and home.is_dir():
+    if key in _AKRAMCODE_HOME_ENSURED and home.is_dir():
         return
     from akramcode_cli.config_home import initialize_home
-    initialize_home(home, _HERMES_HOME_SUBDIRS, _HERMES_HOME_ENSURED)
+    initialize_home(home, _AKRAMCODE_HOME_SUBDIRS, _AKRAMCODE_HOME_ENSURED)
 
 
 # ---- Config loading/saving ----
@@ -642,7 +642,7 @@ def _split_key_path(key: str) -> list[str]:
     """Split a dotted config-key path, honoring backslash-escaped dots (``a\\.b`` -> ``a.b``).
     Backslashes before any other character are preserved verbatim.
 
-    ``hermes config set`` uses ``.`` as the nesting separator, so a key that itself contains a literal dot
+    ``akramcode config set`` uses ``.`` as the nesting separator, so a key that itself contains a literal dot
     (e.g. provider names like ``qwen3.5-397b-wafer``) was silently split into bogus nested segments
     (#84064).
     """
@@ -867,7 +867,7 @@ _ENV_CONFIG_KEYS = frozenset({
 
 
 def _is_env_config_key(key: str) -> bool:
-    """Return whether `hermes config set` routes this credential-shaped key to .env through the
+    """Return whether `akramcode config set` routes this credential-shaped key to .env through the
     provider credential lifecycle. Non-secret env settings (``*_HOME_CHANNEL``, ``*_ALLOWED_USERS``)
     are ``config_env_routing.is_env_setting_key`` and take the plain ``.env`` path."""
     if "." in key:
@@ -921,7 +921,7 @@ def get_missing_skill_config_vars() -> List[Dict[str, Any]]:
     try:
         all_vars = discover_all_skill_config_vars()
     except Exception as e:
-        # A malformed SKILL.md must never break `hermes update`; this prompting is a nicety.
+        # A malformed SKILL.md must never break `akramcode update`; this prompting is a nicety.
         logger.debug("discover_all_skill_config_vars failed: %s", e)
         return []
     if not all_vars:
@@ -1087,7 +1087,7 @@ def _validate_timezone(config: Dict[str, Any], issues: List[ConfigIssue]) -> Non
     tz = config.get("timezone")
     hint = ("Use an IANA zone name such as America/New_York or Asia/Tokyo (see "
             "`timedatectl list-timezones`). With an invalid value the agent clock and cron "
-            "schedules silently fall back to server-local time. HERMES_TIMEZONE overrides "
+            "schedules silently fall back to server-local time. AKRAMCODE_TIMEZONE overrides "
             "this key when set.")
     if tz is not None and not isinstance(tz, str):
         _issue(issues, "error", f"timezone must be an IANA zone name string, got {tz!r}", hint)
@@ -1180,7 +1180,7 @@ def _validate_web_backends(config: Dict[str, Any], issues: List[ConfigIssue]) ->
             _issue(issues, "warning",
                    f"web.{_key} is set to '{_val}', but {note} — "
                    "web_search/web_extract will fail until it is changed",
-                   "Run 'hermes tools' and pick a different Web Search & Extract provider")
+                   "Run 'akramcode tools' and pick a different Web Search & Extract provider")
 
 
 def _container_slots() -> Dict[str, str]:
@@ -1219,9 +1219,9 @@ def _validate_quoted_containers(config: Dict[str, Any], issues: List[ConfigIssue
             continue
         if isinstance(parsed, (list, dict)):
             _issue(issues, "warning",
-                   f"{key} is the quoted string {value!r} — Hermes expects a YAML {kind} here "
+                   f"{key} is the quoted string {value!r} — AkramCode expects a YAML {kind} here "
                    "and every reader ignores the string",
-                   f"Run: hermes config set {key} {shlex.quote(value)}  (stores a real {kind}), "
+                   f"Run: akramcode config set {key} {shlex.quote(value)}  (stores a real {kind}), "
                    "or remove the quotes in config.yaml")
 
 
@@ -1250,7 +1250,7 @@ def validate_config_structure(config: Optional[Dict[str, Any]] = None) -> List["
 
     if cp and not config.get("model"):
         _issue(issues, "warning",
-               "custom_providers defined but no 'model' section — Hermes won't know which provider to use",
+               "custom_providers defined but no 'model' section — AkramCode won't know which provider to use",
                "Add a model section:\n  model:\n    provider: custom\n    default: your-model-name\n"
                "    base_url: https://...")
 
@@ -1281,7 +1281,7 @@ def print_config_warnings(config: Optional[Dict[str, Any]] = None) -> None:
     for ci in issues:
         marker = "\033[31m✗\033[0m" if ci.severity == "error" else "\033[33m⚠\033[0m"
         lines.append(f"  {marker} {ci.message}")
-    lines.append("  \033[2mRun 'hermes doctor' for fix suggestions.\033[0m")
+    lines.append("  \033[2mRun 'akramcode doctor' for fix suggestions.\033[0m")
     sys.stderr.write("\n".join(lines) + "\n\n")
 
 
@@ -1300,9 +1300,9 @@ def warn_deprecated_cwd_env_vars() -> None:
         if val:
             lines.append(f"  \033[33m⚠\033[0m {name}={val} found in .env — this is deprecated.")
     if lines:
-        from akramcode_constants import display_hermes_home
+        from akramcode_constants import display_akramcode_home
 
-        hint_path = display_hermes_home()
+        hint_path = display_akramcode_home()
         lines.insert(0, "\033[33m⚠ Deprecated .env settings detected:\033[0m")
         lines.append(
             "  \033[2mMove to config.yaml instead:  "
@@ -1316,10 +1316,10 @@ def _persist_migration(config: Dict[str, Any]) -> None:
     persist values that DIFFER from the schema default, plus explicit removals/renames of user
     data. Every migration step MUST write through here (``save_config`` with default-stripping
     ON, no ``merge_existing``) so the invariant cannot regress one migration at a time. A migration
-    is Hermes' own write, never a user turning a feature off."""
-    from akramcode_cli.observability.shared_metrics_disabled import hermes_applied_write
+    is AkramCode' own write, never a user turning a feature off."""
+    from akramcode_cli.observability.shared_metrics_disabled import akramcode_applied_write
 
-    with hermes_applied_write():
+    with akramcode_applied_write():
         save_config(config)
 
 
@@ -1374,7 +1374,7 @@ def migrate_config(interactive: bool = True, quiet: bool = False) -> Dict[str, A
         msg = support_floor_message()
         results["warnings"].append(msg)
         # stderr so it is visible even on quiet startup paths.
-        sys.stderr.write(f"⚠ hermes config: {msg}\n")
+        sys.stderr.write(f"⚠ akramcode config: {msg}\n")
         if not quiet:
             print(f"  ⚠ {msg}")
     else:
@@ -1471,7 +1471,7 @@ def _offer_list(heading: str, items: List[str], question: str) -> bool:
         print(f"    • {item}")
     print()
     if not _ask_yes_no(question):
-        print("  Set later with: hermes config set <key> <value>")
+        print("  Set later with: akramcode config set <key> <value>")
         return False
     print()
     return True
@@ -1616,7 +1616,7 @@ def _env_expand_match(m: re.Match) -> str:
         return val
     if inner.startswith("env:"):
         logger.warning(
-            "Config ref %r: %s is not set (check ~/.hermes/.env); "
+            "Config ref %r: %s is not set (check ~/.akramcode/.env); "
             "keeping the literal placeholder", raw, name)
     return raw
 
@@ -1650,7 +1650,7 @@ def _expand_env_vars(obj):
 def _env_ref_snapshot(obj, snapshot=None):
     """Map each env-sourced ``${...}`` ref in *obj* to its current value.
     Stored with cached ``load_config()`` results so a cache hit can detect that the expansion was
-    made against a different environment (load before ``load_hermes_dotenv()``, in-process
+    made against a different environment (load before ``load_akramcode_dotenv()``, in-process
     rotation) — file mtime/size alone cannot see either.
 
     See #58514.
@@ -1784,7 +1784,7 @@ def _normalize_root_model_keys(config: Dict[str, Any]) -> Dict[str, Any]:
     sees a nested dict, and the id is canonicalized to ``default``.
 
     Also aliases ``api_base`` → ``base_url`` (issue #8919). ``api_base`` is the intuitive name OpenAI-SDK /
-    LiteLLM users reach for, and ``hermes config set`` blindly accepts any dotted key — so
+    LiteLLM users reach for, and ``akramcode config set`` blindly accepts any dotted key — so
     ``model.api_base`` got written, confirmed, and then silently ignored by the runtime resolver (which
     reads only ``model.base_url``), causing requests to fall back to OpenRouter. We migrate the alias to the
     canonical key (fallback-only — never override an explicit ``base_url``) and drop the alias so it can't
@@ -1793,7 +1793,7 @@ def _normalize_root_model_keys(config: Dict[str, Any]) -> Dict[str, Any]:
     ~14 other readers select the chat model via ``model.default``; ``model.model`` was already aliased
     inline at some sites but ``model.name`` was not, so a custom-provider config like ``model: {name: <id>,
     provider: <custom>}`` resolved to an empty model and the API request went out with ``model=`` (HTTP 400
-    from OpenAI-compatible backends) — while display paths (``hermes status``/``dump``) read ``name`` and
+    from OpenAI-compatible backends) — while display paths (``akramcode status``/``dump``) read ``name`` and
     *showed* the model, making the failure silent. Normalizing here (the single load/save chokepoint) means
     every reader, present and future, sees a populated ``default`` and the stale alias is migrated out of
     config.yaml on the next save. Precedence: ``default`` > ``model`` > ``name`` (never overrides an
@@ -1879,7 +1879,7 @@ def _canonicalize_config(config: Dict[str, Any]) -> Dict[str, Any]:
 
 
 # Sentinel for an unlimited turn budget. ``sys.maxsize`` survives the str->int round-trip through
-# the HERMES_MAX_ITERATIONS env bridge, works in every ``<``/``>=``/``max - used`` comparison in
+# the AKRAMCODE_MAX_ITERATIONS env bridge, works in every ``<``/``>=``/``max - used`` comparison in
 # the iteration budget without an "unlimited" special case, and is unreachable in practice.
 TURN_LIMIT_UNLIMITED = sys.maxsize
 
@@ -2203,7 +2203,7 @@ def terminal_config_env_var_for_key(key: str) -> Optional[str]:
 
 
 def _is_ssh_remote_tilde_cwd(backend: str, cwd: str) -> bool:
-    """Whether the remote SSH shell must expand *cwd* itself: ``~`` expanded on the Hermes host
+    """Whether the remote SSH shell must expand *cwd* itself: ``~`` expanded on the AkramCode host
     would name the host/container home instead of the SSH user's."""
     return (backend or "").strip().lower() == "ssh" and (cwd == "~" or cwd.startswith("~/"))
 
@@ -2291,7 +2291,7 @@ def _last_known_good_fallback(config_path: Path, path_key: str, cache_sig, exc: 
     lkg = _LAST_EXPANDED_CONFIG_BY_PATH.get(path_key)
     fallback = "last-known-good"
     if lkg is None:
-        # Fresh process (CLI restart, `hermes config get`): nothing loaded yet in this process, so
+        # Fresh process (CLI restart, `akramcode config get`): nothing loaded yet in this process, so
         # fall back to the newest byte-exact copy the last successful parse left in backups/config/.
         # It holds the raw file (``${VAR}`` templates intact), so it goes through the same
         # canonicalize -> expand -> managed-overlay pipeline as a normal load.
@@ -2338,7 +2338,7 @@ def _merge_managed_overlay(expanded: Dict[str, Any]) -> Tuple[Dict[str, Any], An
 def _load_config_cache_hit(path_key: str, cache_sig: Any) -> Optional[Dict[str, Any]]:
     """Lookup: the cached expanded config for ``path_key`` if its signature equals
     ``cache_sig`` AND every ``${VAR}`` it was expanded against still has the same value, else
-    ``None``. Signatures matching is not enough: a load before load_hermes_dotenv() would otherwise
+    ``None``. Signatures matching is not enough: a load before load_akramcode_dotenv() would otherwise
     pin unexpanded literals (e.g. auxiliary.<task>.api_key) for the process lifetime (#58514).
     Shared by the lock-free fast path and the locked re-check of ``_load_config_impl``."""
     cached = _LOAD_CONFIG_CACHE.get(path_key)
@@ -2379,7 +2379,7 @@ def _load_config_impl(*, want_deepcopy: bool) -> Dict[str, Any]:
         pass
 
     with _CONFIG_LOCK:
-        ensure_hermes_home()
+        ensure_akramcode_home()
         config_path = get_config_path()
         path_key = str(config_path)
 
@@ -2469,8 +2469,8 @@ _FALLBACK_COMMENT = """
 #
 # Supported providers:
 #   openrouter   (OPENROUTER_API_KEY)  — routes to any model
-#   openai-codex (OAuth — hermes auth) — OpenAI Codex
-#   nous         (OAuth — hermes auth) — Nous Portal
+#   openai-codex (OAuth — akramcode auth) — OpenAI Codex
+#   nous         (OAuth — akramcode auth) — Nous Portal
 #   zai          (ZAI_API_KEY)         — Z.AI / GLM
 #   kimi-coding  (KIMI_API_KEY)        — Kimi / Moonshot
 #   kimi-coding-cn (KIMI_CN_API_KEY)   — Kimi / Moonshot (China)
@@ -2515,7 +2515,7 @@ def _commented_sections_for_save(normalized: Dict[str, Any]) -> Optional[str]:
 def save_config(
     config: Dict[str, Any], *, strip_defaults: bool = True,
     preserve_keys: Optional[Set[Tuple[str, ...]]] = None, merge_existing: bool = False):
-    """Save configuration to ~/.hermes/config.yaml.
+    """Save configuration to ~/.akramcode/config.yaml.
     Schema defaults are not written unless the user explicitly set them (the path exists in the
     raw config before normalisation), so config.yaml is never contaminated with defaults that
     would hide future default changes. ``merge_existing`` deep-merges the on-disk raw config
@@ -2529,7 +2529,7 @@ def save_config(
         _refuse_failed_read(config_path, config)
         config = _strip_managed_keys_for_save(config)
 
-        ensure_hermes_home()
+        ensure_akramcode_home()
         # Explicit user paths come from the RAW dict BEFORE normalisation (which may inject
         # agent.max_turns) so _strip_default_values keeps exactly what the user set. The
         # fail-closed read is the single authority here: ``read_raw_config()`` is cached and
@@ -2560,7 +2560,7 @@ def save_config(
 
 
 def load_env() -> Dict[str, str]:
-    """Load ~/.hermes/.env as a dict. Memoised inside ``load_env_file`` (``get_env_value()`` runs
+    """Load ~/.akramcode/.env as a dict. Memoised inside ``load_env_file`` (``get_env_value()`` runs
     hundreds of times per interactive menu render). Each assignment's value is opaque data for
     boundary discovery."""
     from agent.secret_scope import load_env_file  # the one .env tokenizer; also installs profile scopes
@@ -2602,7 +2602,7 @@ def _sanitize_env_lines(lines: list) -> list:
 
 
 def sanitize_env_file() -> int:
-    """Rewrite ~/.hermes/.env with normalized line formatting; returns the number of changed lines."""
+    """Rewrite ~/.akramcode/.env with normalized line formatting; returns the number of changed lines."""
     env_path = get_env_path()
     if not env_path.exists():
         return 0
@@ -2776,14 +2776,14 @@ def _managed_source(filename: str):
 
 
 def save_env_value(key: str, value: str):
-    """Save or update a value in ~/.hermes/.env (also matching ``export KEY=`` lines, so a save
+    """Save or update a value in ~/.akramcode/.env (also matching ``export KEY=`` lines, so a save
     never appends a second line that a later delete would resurrect)."""
     if _env_write_blocked(key, "set"):
         return
     validate_env_var_name_for_write(key)
     value = value.replace("\n", "").replace("\r", "")
     value = _check_non_ascii_credential(key, value)
-    ensure_hermes_home()
+    ensure_akramcode_home()
     env_path = get_env_path()
 
     lines = _read_env_lines(env_path) if env_path.exists() else []
@@ -2805,14 +2805,14 @@ def save_env_value(key: str, value: str):
 def custom_endpoint_key_env(identity: str) -> str:
     """Env var name holding a custom endpoint's API key.
     ``identity`` is the endpoint's own id (Desktop endpoint id, or ``host:port`` for CLI setup),
-    so two endpoints on one host get separate slots. The fixed ``HERMES_CUSTOM_`` prefix keeps the
+    so two endpoints on one host get separate slots. The fixed ``AKRAMCODE_CUSTOM_`` prefix keeps the
     name POSIX-valid when the slug starts with a digit (``save_env_value`` rejects those)."""
     slug = re.sub(r"[^A-Z0-9]+", "_", str(identity or "").upper()).strip("_")
-    return f"HERMES_CUSTOM_{slug}_API_KEY" if slug else "HERMES_CUSTOM_API_KEY"
+    return f"AKRAMCODE_CUSTOM_{slug}_API_KEY" if slug else "AKRAMCODE_CUSTOM_API_KEY"
 
 
 def remove_env_value(key: str) -> bool:
-    """Remove a key from ~/.hermes/.env and os.environ; True if it was found and removed."""
+    """Remove a key from ~/.akramcode/.env and os.environ; True if it was found and removed."""
     if _env_write_blocked(key, "remove"):
         return False
     if not _ENV_VAR_NAME_RE.match(key):
@@ -2868,8 +2868,8 @@ def save_env_value_secure(key: str, value: str) -> Dict[str, Any]:
 
 
 def reload_env() -> int:
-    """Re-read ~/.hermes/.env into os.environ; returns count of vars changed.
-    Removes deleted vars only when known to Hermes (OPTIONAL_ENV_VARS and _EXTRA_ENV_KEYS) so
+    """Re-read ~/.akramcode/.env into os.environ; returns count of vars changed.
+    Removes deleted vars only when known to AkramCode (OPTIONAL_ENV_VARS and _EXTRA_ENV_KEYS) so
     unrelated environment is never clobbered."""
     env_vars = load_env()
     count = 0
@@ -2897,7 +2897,7 @@ def _scoped_environ_get(key: str) -> Optional[str]:
 
 
 def get_env_value(key: str) -> Optional[str]:
-    """Get a value from ``os.environ`` (scope-aware) or ``~/.hermes/.env``.
+    """Get a value from ``os.environ`` (scope-aware) or ``~/.akramcode/.env``.
 
     The ``os.environ`` read routes through ``agent.secret_scope.get_secret`` so that, under an active
     profile scope (multiplexed gateway turn), this is scope-checked rather than leaking another profile's
@@ -2912,7 +2912,7 @@ def get_env_value(key: str) -> Optional[str]:
 
 
 def get_env_value_prefer_dotenv(key: str) -> Optional[str]:
-    """Resolve a Hermes-managed credential preferring ``~/.hermes/.env`` over ``os.environ``, so a
+    """Resolve a AkramCode-managed credential preferring ``~/.akramcode/.env`` over ``os.environ``, so a
     deliberate .env edit beats a stale value inherited from the parent shell."""
     return load_env().get(key) or _scoped_environ_get(key)
 
@@ -3008,15 +3008,15 @@ def _show_model_section(config: Dict[str, Any]) -> None:
     print(f"  Model:        {redact_config_value(config.get('model', 'not set'))}")
     cfg_max_turns = config.get('agent', {}).get('max_turns', DEFAULT_CONFIG['agent']['max_turns'])
     print(f"  Max turns:    {cfg_max_turns}")
-    # Read the .env FILE directly so a stale HERMES_MAX_ITERATIONS ghost is caught even when the
+    # Read the .env FILE directly so a stale AKRAMCODE_MAX_ITERATIONS ghost is caught even when the
     # gateway bridge already overrode os.environ.
     try:
-        env_ghost = load_env().get("HERMES_MAX_ITERATIONS")
+        env_ghost = load_env().get("AKRAMCODE_MAX_ITERATIONS")
     except Exception:
         env_ghost = None
     if env_ghost is not None and str(env_ghost).strip() != str(cfg_max_turns).strip():
-        print(color(f"                ⚠ .env has stale HERMES_MAX_ITERATIONS={env_ghost} "
-                    f"(run 'hermes doctor --fix' to remove)", Colors.YELLOW))
+        print(color(f"                ⚠ .env has stale AKRAMCODE_MAX_ITERATIONS={env_ghost} "
+                    f"(run 'akramcode doctor --fix' to remove)", Colors.YELLOW))
 
 
 def _show_display_section(config: Dict[str, Any]) -> None:
@@ -3128,7 +3128,7 @@ def show_config():
 
     print()
     print(color("┌─────────────────────────────────────────────────────────┐", Colors.CYAN))
-    print(color("│              ☤ Hermes Configuration                    │", Colors.CYAN))
+    print(color("│              ☤ AkramCode Configuration                    │", Colors.CYAN))
     print(color("└─────────────────────────────────────────────────────────┘", Colors.CYAN))
     _show_managed_banner()
 
@@ -3163,9 +3163,9 @@ def show_config():
 
     print()
     print(color("─" * 60, Colors.DIM))
-    print(color("  hermes config edit     # Edit config file", Colors.DIM))
-    print(color("  hermes config set <key> <value>", Colors.DIM))
-    print(color("  hermes setup           # Run setup wizard", Colors.DIM))
+    print(color("  akramcode config edit     # Edit config file", Colors.DIM))
+    print(color("  akramcode config set <key> <value>", Colors.DIM))
+    print(color("  akramcode setup           # Run setup wizard", Colors.DIM))
     print()
 
 
@@ -3383,7 +3383,7 @@ _SCALAR_WORDS = {
 
 
 def _coerce_config_set_value(key: str, value: str) -> Any:
-    """Auto-coerce a ``hermes config set`` string to bool/None/int/float/list/dict.
+    """Auto-coerce a ``akramcode config set`` string to bool/None/int/float/list/dict.
     String-typed settings (per ``DEFAULT_CONFIG``) are preserved verbatim so enum members such as
     ``approvals.mode="off"`` never become booleans. List/mapping literals are parsed so
     isinstance-gated readers see real structures; the trigger is conservative."""
@@ -3468,7 +3468,7 @@ def _refuse_container_type_mismatch(key: str, value: Any, user_config: Dict[str,
     literal = "[item, ...]" if expected == "list" else "{key: value}"
     _exit_invalid(
         f"✗ Cannot set '{key}': it must be a {expected}, got a {got} — nothing was written.\n"
-        f"  Pass a YAML/JSON literal, e.g.:\n    hermes config set {key} '{literal}'\n"
+        f"  Pass a YAML/JSON literal, e.g.:\n    akramcode config set {key} '{literal}'\n"
         "  or edit config.yaml directly.")
 
 
@@ -3479,7 +3479,7 @@ def _redirect_platform_display_key(key: str) -> tuple[str, Optional[str]]:
     Only known display settings (``OVERRIDEABLE_KEYS``) are redirected. Returns ``(key, note)``;
     the gateway import is guarded so the CLI works where the gateway package is unavailable.
 
-    Before #71047 a write such as ``hermes config set platforms.telegram.streaming false`` landed on a key
+    Before #71047 a write such as ``akramcode config set platforms.telegram.streaming false`` landed on a key
     the gateway never reads: ``config get`` echoed the new value back while the runtime kept the old
     ``display.platforms`` one — a silent no-op that looks like a duplicated key to the user.
 
@@ -3557,9 +3557,9 @@ def _guard_section_overwrite(key: str, value: Any, user_config: Dict[str, Any], 
             err.append(f"  ... and {len(sub) - 8} more")
     err += [
         "  Use a dotted path to set a specific leaf key:",
-        f"    hermes config set {key}.<sub-key> <value>",
+        f"    akramcode config set {key}.<sub-key> <value>",
         "  Or use --force to replace the entire section:",
-        f"    hermes config set --force {key} {value!r}"]
+        f"    akramcode config set --force {key} {value!r}"]
     print("\n".join(err), file=sys.stderr)
     sys.exit(1)
 
@@ -3569,7 +3569,7 @@ def _touch_skin_file(key: str, value: Any) -> None:
     (name, mtime) signature moves even when the name is unchanged. Best-effort."""
     if key == "display.skin" and isinstance(value, str) and value:
         try:
-            skin_file = get_hermes_home() / "skins" / f"{value}.yaml"
+            skin_file = get_akramcode_home() / "skins" / f"{value}.yaml"
             if skin_file.exists():
                 skin_file.touch()
         except Exception:
@@ -3583,7 +3583,7 @@ def _exit_invalid(msg: str) -> None:
 
 def _write_user_config(config_path: Path, user_config: Dict[str, Any]) -> None:
     """Write only the user's raw config back (never the merged defaults)."""
-    ensure_hermes_home()
+    ensure_akramcode_home()
     from akramcode_cli.observability.shared_metrics_disabled import recording_raw_config_write
     recording_raw_config_write(config_path, user_config, atomic_config_replace)
 
@@ -3591,7 +3591,7 @@ def _write_user_config(config_path: Path, user_config: Dict[str, Any]) -> None:
 def _print_unknown_key_notice(key: str, suggestion: Optional[str]) -> None:
     print(color(
         f"⚠ '{key}' is not a recognized config key — it was saved anyway, "
-        "but Hermes may not read it.", Colors.YELLOW))
+        "but AkramCode may not read it.", Colors.YELLOW))
     if suggestion:
         print(color(f"  Did you mean: {suggestion}", Colors.YELLOW))
     # The env bridge covers custom TOP-LEVEL keys only; an unseeded nested path (``stt.provider``)
@@ -3648,7 +3648,7 @@ def set_config_value(key: str, value: str, force: bool = False):
     if is_env_setting_key(key):
         # Every UPPER_SNAKE name is an environment setting: same file the platform setup flows and
         # /sethome write, and the only one os.getenv readers see. config.yaml never gets one from
-        # here, --force included (#111848). The env writer's denylist (HERMES_YOLO_MODE, PATH, ...)
+        # here, --force included (#111848). The env writer's denylist (AKRAMCODE_YOLO_MODE, PATH, ...)
         # therefore also refuses the config.yaml detour that used to bridge those into os.environ.
         try:
             save_env_setting(key, value)
@@ -3713,10 +3713,10 @@ def set_config_value(key: str, value: str, force: bool = False):
             _route_notice = color(
                 f"⚠ model.base_url ({user_config['model'].get('base_url')}) was set under {_old_provider} and "
                 f"still applies to {value} — requests go there. If it is not {value}'s endpoint: "
-                "`hermes config unset model.base_url` (and model.api_mode).", Colors.YELLOW)
+                "`akramcode config unset model.base_url` (and model.api_mode).", Colors.YELLOW)
     # api_base -> base_url alias at set-time too (mirrors _normalize_root_model_keys).
     if key.strip().lower() in ("model.api_base", "api_base"):
-        # Normalize the api_base → base_url alias at set-time too (issue #8919), so a fresh `hermes config
+        # Normalize the api_base → base_url alias at set-time too (issue #8919), so a fresh `akramcode config
         # set model.api_base ...` lands on the canonical key the runtime resolver actually reads, instead of
         # being silently ignored.
         user_config = _normalize_root_model_keys(user_config)
@@ -3797,7 +3797,7 @@ def get_config_value(key: str, *, as_json: bool = False, raw: bool = False):
         is_known, suggestion = _validate_config_key(key)
         if not is_known:
             print(color(
-                f"⚠ '{key}' is not a recognized config key — Hermes may not read it; the value "
+                f"⚠ '{key}' is not a recognized config key — AkramCode may not read it; the value "
                 "printed above comes from your config file.", Colors.YELLOW), file=sys.stderr)
             if suggestion:
                 print(color(f"  Did you mean: {suggestion}", Colors.YELLOW), file=sys.stderr)
@@ -3882,17 +3882,17 @@ def _run_write_command(fn, *args) -> None:
         _exit_invalid(f"✗ {exc}")
 
 
-_USAGE_GET = ("Usage: hermes config get <key> [--json] [--raw]", [
-    "hermes config get model", "hermes config get terminal.backend",
-    "hermes config get skills.config --json"], None)
-_USAGE_SET = ("Usage: hermes config set [--force] <key> <value>", [
-    "hermes config set model anthropic/claude-sonnet-4", "hermes config set terminal.backend docker",
-    "hermes config set OPENROUTER_API_KEY sk-or-..."], [
+_USAGE_GET = ("Usage: akramcode config get <key> [--json] [--raw]", [
+    "akramcode config get model", "akramcode config get terminal.backend",
+    "akramcode config get skills.config --json"], None)
+_USAGE_SET = ("Usage: akramcode config set [--force] <key> <value>", [
+    "akramcode config set model anthropic/claude-sonnet-4", "akramcode config set terminal.backend docker",
+    "akramcode config set OPENROUTER_API_KEY sk-or-..."], [
     "", "  --force: skip the unknown-key notice for unrecognized keys,",
     "           and allow a scalar to replace a whole mapping section"])
-_USAGE_UNSET = ("Usage: hermes config unset <key>", [
-    "hermes config unset model", "hermes config unset terminal.backend",
-    "hermes config unset OPENROUTER_API_KEY"], None)
+_USAGE_UNSET = ("Usage: akramcode config unset <key>", [
+    "akramcode config unset model", "akramcode config unset terminal.backend",
+    "akramcode config unset OPENROUTER_API_KEY"], None)
 
 
 def _cmd_config_get(args):
@@ -3992,7 +3992,7 @@ def _cmd_config_check(args):
     if missing_config:
         print()
         print(color(f"  {len(missing_config)} new config option(s) available", Colors.YELLOW))
-        print("    Run 'hermes config migrate' to add them")
+        print("    Run 'akramcode config migrate' to add them")
 
     from akramcode_cli.config_check_diagnostics import config_check_diagnostics
 
@@ -4019,15 +4019,15 @@ _CONFIG_SUBCOMMANDS = {
     "check": _cmd_config_check}
 
 _CONFIG_USAGE = """Available commands:
-  hermes config           Show current configuration
-  hermes config edit      Open config in editor
-  hermes config get <key>          Print a resolved config value
-  hermes config set <key> <value>   Set a config value
-  hermes config unset <key>        Remove a config value
-  hermes config check     Check for missing, outdated, or inactive config
-  hermes config migrate   Update config with new options
-  hermes config path      Show config file path
-  hermes config env-path  Show .env file path"""
+  akramcode config           Show current configuration
+  akramcode config edit      Open config in editor
+  akramcode config get <key>          Print a resolved config value
+  akramcode config set <key> <value>   Set a config value
+  akramcode config unset <key>        Remove a config value
+  akramcode config check     Check for missing, outdated, or inactive config
+  akramcode config migrate   Update config with new options
+  akramcode config path      Show config file path
+  akramcode config env-path  Show .env file path"""
 
 
 def config_command(args):
@@ -4085,7 +4085,7 @@ def _platform_manifest_paths(home: Optional[Path] = None, source: PlatformManife
     """Yield ``(dir_name, manifest_path, require_kind, stat)`` for every platform plugin manifest.
     ``source`` is ``"bundled"`` (shipped ``plugins/platforms/*``), ``"user"`` (``<home>/plugins/
     platforms/*`` plus flat ``<home>/plugins/*`` installs, which must declare ``kind: platform``,
-    #46600) or ``"all"``. ``home`` defaults to the bound Hermes home. A directory that cannot be
+    #46600) or ``"all"``. ``home`` defaults to the bound AkramCode home. A directory that cannot be
     listed or searched yields ``(name, None, require_kind, error)``: a plugin there can't load
     either, so callers skip it. One ``scandir`` per root and one ``stat`` per candidate, because
     the child-env scrub stamps these on every spawn."""
@@ -4093,7 +4093,7 @@ def _platform_manifest_paths(home: Optional[Path] = None, source: PlatformManife
     if source in ("all", "bundled"):
         roots.append((get_project_root() / "plugins" / "platforms", False))
     if source in ("all", "user"):
-        user_plugins = (home if home is not None else get_hermes_home()) / "plugins"
+        user_plugins = (home if home is not None else get_akramcode_home()) / "plugins"
         roots += [(user_plugins / "platforms", False), (user_plugins, True)]
     for root, require_kind in roots:
         try:
@@ -4218,7 +4218,7 @@ def platform_manifest_secret_scan(home: Optional[Path] = None) -> "tuple[frozens
 
 def _inject_platform_plugin_env_vars() -> "frozenset[str] | None":
     """Populate OPTIONAL_ENV_VARS from platform plugin manifests (bundled AND user-installed) so
-    Teams / IRC / Google Chat and third-party platforms are configurable in the ``hermes config`` /
+    Teams / IRC / Google Chat and third-party platforms are configurable in the ``akramcode config`` /
     Desktop Gateway form without the core knowing they exist. Failures are swallowed so a
     malformed plugin.yaml can't break CLI import. Returns the bundled manifests' secret names, or
     None when a bundled manifest could not be read (the policy then re-reads strictly).

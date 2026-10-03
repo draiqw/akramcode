@@ -43,7 +43,7 @@ async def unused_handler(event):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("human_pending", [False, True])
 async def test_completed_board_wake_is_admitted_without_changing_human_input(tmp_path, monkeypatch, human_pending):
-    monkeypatch.setenv("HERMES_KANBAN_DB", str(tmp_path / "board.db"))
+    monkeypatch.setenv("AKRAMCODE_KANBAN_DB", str(tmp_path / "board.db"))
     kb.init_db()
     with kbc.connect() as conn:
         tid = kb.create_task(conn, title="wake receipt", assignee="worker")

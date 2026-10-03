@@ -1,4 +1,4 @@
-from cli import HermesCLI
+from cli import AkramCodeCLI
 from akramcode_cli.active_sessions import (
     active_session_registry_snapshot,
     try_acquire_active_session,
@@ -6,7 +6,7 @@ from akramcode_cli.active_sessions import (
 
 
 def test_cli_claim_active_session_respects_global_limit(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / ".akramcode"))
     cfg = {"max_concurrent_sessions": 1}
     held, message = try_acquire_active_session(
         session_id="held-session",
@@ -16,7 +16,7 @@ def test_cli_claim_active_session_respects_global_limit(tmp_path, monkeypatch):
     assert message is None
     assert held is not None
 
-    cli = object.__new__(HermesCLI)
+    cli = object.__new__(AkramCodeCLI)
     cli.session_id = "new-cli-session"
     cli.config = cfg
     cli._active_session_lease = None

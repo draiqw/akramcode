@@ -14,7 +14,7 @@ from akramcode_cli.plugins import PluginManager
 
 @pytest.fixture()
 def manager(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_home"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode_home"))
     return PluginManager()
 
 

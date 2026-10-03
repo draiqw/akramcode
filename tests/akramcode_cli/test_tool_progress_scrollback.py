@@ -16,7 +16,7 @@ _UNSET = object()
 
 
 def _make_cli(tool_progress="all", verbose=_UNSET):
-    """Create a HermesCLI instance with minimal mocking."""
+    """Create a AkramCodeCLI instance with minimal mocking."""
     global _cli_mod
     _clean_config = {
         "model": {
@@ -28,7 +28,7 @@ def _make_cli(tool_progress="all", verbose=_UNSET):
         "agent": {},
         "terminal": {"env_type": "local"},
     }
-    clean_env = {"LLM_MODEL": "", "HERMES_MAX_ITERATIONS": ""}
+    clean_env = {"LLM_MODEL": "", "AKRAMCODE_MAX_ITERATIONS": ""}
     prompt_toolkit_stubs = {
         "prompt_toolkit": MagicMock(),
         "prompt_toolkit.history": MagicMock(),
@@ -54,9 +54,9 @@ def _make_cli(tool_progress="all", verbose=_UNSET):
         with patch.object(mod, "get_tool_definitions", return_value=[]), \
              patch.dict(mod.__dict__, {"CLI_CONFIG": _clean_config}):
             if verbose is _UNSET:
-                inst = mod.HermesCLI()
+                inst = mod.AkramCodeCLI()
             else:
-                inst = mod.HermesCLI(verbose=verbose)
+                inst = mod.AkramCodeCLI(verbose=verbose)
     # patch.dict(sys.modules) above restores the pre-import state on exit, which
     # DROPS ``cli`` when this was the first import. The mixin handlers resolve
     # ``_cprint`` via a lazy ``from cli import ...``, so ``cli`` must stay

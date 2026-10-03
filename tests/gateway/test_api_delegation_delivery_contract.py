@@ -13,7 +13,7 @@ from tools.delegate_tool_dispatch import _resolve_async_wake_sid
 
 @pytest.mark.asyncio
 async def test_detached_dispatch_requires_a_declared_consumer(monkeypatch):
-    monkeypatch.setenv("HERMES_SESSION_HISTORY_DELIVERY", "1")
+    monkeypatch.setenv("AKRAMCODE_SESSION_HISTORY_DELIVERY", "1")
     for capability in (None, "", "1"):
         kw = dict(chat_id="api-parent", session_id="api-parent")
         import inspect

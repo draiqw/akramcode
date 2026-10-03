@@ -1,6 +1,6 @@
 """SQLite WAL-reset vulnerability gate (issue #69784).
 
-Hermes must not *enable* multi-process WAL on SQLite builds that still contain
+AkramCode must not *enable* multi-process WAL on SQLite builds that still contain
 the upstream WAL-reset corruption bug:
 https://sqlite.org/wal.html#walresetbug
 

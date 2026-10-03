@@ -128,8 +128,8 @@ class TestCallbackSubprocess:
             'printf \'{"decision": "block", "reason": "blocked-by-shell"}\\n\'\n',
         )
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
-        monkeypatch.setenv("HERMES_ACCEPT_HOOKS", "1")
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
+        monkeypatch.setenv("AKRAMCODE_ACCEPT_HOOKS", "1")
 
         # Fresh manager
         plugins._plugin_manager = plugins.PluginManager()
@@ -160,8 +160,8 @@ class TestCallbackSubprocess:
             "#!/usr/bin/env bash\n"
             'printf \'{"action": "approve", "message": "risky", "rule_key": "terminal:rm"}\\n\'\n',
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
-        monkeypatch.setenv("HERMES_ACCEPT_HOOKS", "1")
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
+        monkeypatch.setenv("AKRAMCODE_ACCEPT_HOOKS", "1")
         plugins._plugin_manager = plugins.PluginManager()
         cfg = {"hooks": {"pre_tool_call": [{"matcher": "terminal", "command": str(script)}]}}
         assert len(shell_hooks.register_from_config(cfg, accept_hooks=True)) == 1
@@ -311,8 +311,8 @@ class TestIdempotentRegistration:
 
         script = _write_script(tmp_path, "h.sh",
                                "#!/usr/bin/env bash\nprintf '{}\\n'\n")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
-        monkeypatch.setenv("HERMES_ACCEPT_HOOKS", "1")
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
+        monkeypatch.setenv("AKRAMCODE_ACCEPT_HOOKS", "1")
 
         plugins._plugin_manager = plugins.PluginManager()
 
@@ -335,8 +335,8 @@ class TestIdempotentRegistration:
 
         script = _write_script(tmp_path, "h.sh",
                                "#!/usr/bin/env bash\nprintf '{}\\n'\n")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
-        monkeypatch.setenv("HERMES_ACCEPT_HOOKS", "1")
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
+        monkeypatch.setenv("AKRAMCODE_ACCEPT_HOOKS", "1")
 
         plugins._plugin_manager = plugins.PluginManager()
 
@@ -367,7 +367,7 @@ class TestAllowlistConcurrency:
     def test_save_allowlist_uses_unique_tmp_paths(self, tmp_path, monkeypatch):
         """Two save_allowlist calls in flight must use distinct tmp files
         so the loser's os.replace does not ENOENT on the winner's sweep."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
         p = shell_hooks.allowlist_path()
         p.parent.mkdir(parents=True, exist_ok=True)
 
@@ -617,7 +617,7 @@ class TestFailSemanticsEndToEnd:
 
     @pytest.mark.platforms("linux")
     def test_run_once_reflects_exit_2_block(self, tmp_path):
-        """hermes hooks test must mirror production semantics."""
+        """akramcode hooks test must mirror production semantics."""
         script = _write_script(
             tmp_path, "exit2.sh",
             "#!/usr/bin/env bash\n"
@@ -657,27 +657,27 @@ class TestFailSemanticsEndToEnd:
 class TestRoutedProfileEnv:
     @pytest.mark.platforms("linux")
     def test_hook_child_sees_routed_profile_home_and_no_default_secrets(self, tmp_path, monkeypatch):
-        """Under multiplexing the child gets the ROUTED HERMES_HOME, the default profile's secrets
+        """Under multiplexing the child gets the ROUTED AKRAMCODE_HOME, the default profile's secrets
         stay out of its env, and the payload names the firing profile."""
-        from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+        from akramcode_constants import reset_akramcode_home_override, set_akramcode_home_override
 
         launch, routed = tmp_path / "launch", tmp_path / "routed"
         launch.mkdir(); routed.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(launch))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(launch))
         monkeypatch.setenv("OPENAI_API_KEY", "sk-default-profile")
         monkeypatch.setattr("agent.secret_scope.is_multiplex_active", lambda: True)
         script = _write_script(
             tmp_path, "env_dump.sh",
             "#!/usr/bin/env bash\ncat > /dev/null\n"
-            'printf \'{"home": "%s", "key": "%s"}\\n\' "$HERMES_HOME" "${OPENAI_API_KEY:-}"\n',
+            'printf \'{"home": "%s", "key": "%s"}\\n\' "$AKRAMCODE_HOME" "${OPENAI_API_KEY:-}"\n',
         )
         spec = shell_hooks.ShellHookSpec(event="pre_tool_call", command=str(script))
-        token = set_hermes_home_override(str(routed))
+        token = set_akramcode_home_override(str(routed))
         try:
             result = shell_hooks._spawn(spec, shell_hooks._serialize_payload("pre_tool_call", {"tool_name": "terminal"}))
             payload = json.loads(shell_hooks._serialize_payload("pre_tool_call", {"tool_name": "terminal"}))
         finally:
-            reset_hermes_home_override(token)
+            reset_akramcode_home_override(token)
         seen = json.loads(result["stdout"])
         assert seen["home"] == str(routed)
         assert seen["key"] == ""

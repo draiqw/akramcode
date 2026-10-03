@@ -6,7 +6,7 @@ Covers:
 - Clean response without interrupt still drives the judge + enqueues.
 
 These tests exercise ``_maybe_continue_goal_after_turn`` directly on a
-minimal ``HermesCLI`` stub (pattern used elsewhere in tests/cli).
+minimal ``AkramCodeCLI`` stub (pattern used elsewhere in tests/cli).
 """
 
 from __future__ import annotations
@@ -23,25 +23,25 @@ import pytest
 # ──────────────────────────────────────────────────────────────────────
 
 @pytest.fixture
-def hermes_home(tmp_path, monkeypatch):
-    """Isolated HERMES_HOME so SessionDB.state_meta writes stay hermetic."""
-    home = tmp_path / ".hermes"
+def akramcode_home(tmp_path, monkeypatch):
+    """Isolated AKRAMCODE_HOME so SessionDB.state_meta writes stay hermetic."""
+    home = tmp_path / ".akramcode"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
 
-    # Bust the goal module's DB cache so it re-resolves HERMES_HOME each test.
+    # Bust the goal module's DB cache so it re-resolves AKRAMCODE_HOME each test.
     from akramcode_cli import goals
     goals._DB_CACHE.clear()
     yield home
     goals._DB_CACHE.clear()
 
 def _make_cli_with_goal(session_id: str, goal_text: str = "build a thing"):
-    """Build a minimal HermesCLI stub with an active goal wired in."""
-    from cli import HermesCLI
+    """Build a minimal AkramCodeCLI stub with an active goal wired in."""
+    from cli import AkramCodeCLI
     from akramcode_cli.goals import GoalManager
 
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = AkramCodeCLI.__new__(AkramCodeCLI)
     # State the hook + helpers touch directly.
     cli._pending_input = queue.Queue()
     cli._last_turn_interrupted = False
@@ -63,7 +63,7 @@ def _make_cli_with_goal(session_id: str, goal_text: str = "build a thing"):
 
 class TestInterruptAutoPause:
 
-    def test_interrupted_turn_is_resumable(self, hermes_home):
+    def test_interrupted_turn_is_resumable(self, akramcode_home):
         """After auto-pause from Ctrl+C, /goal resume puts it back to active."""
         sid = f"sid-resume-{uuid.uuid4().hex}"
         cli, mgr = _make_cli_with_goal(sid)
@@ -80,7 +80,7 @@ class TestInterruptAutoPause:
 
 class TestHealthyTurnStillRuns:
     def test_clean_response_enqueues_continuation_when_judge_says_continue(
-        self, hermes_home,
+        self, akramcode_home,
     ):
         """Sanity check: the hook still works in the happy path."""
         sid = f"sid-healthy-{uuid.uuid4().hex}"
@@ -104,7 +104,7 @@ class TestHealthyTurnStillRuns:
         assert "Continuing toward your standing goal" in queued
         assert mgr.state.status == "active"
 
-    def test_clean_response_marks_done_when_judge_says_done(self, hermes_home):
+    def test_clean_response_marks_done_when_judge_says_done(self, akramcode_home):
         sid = f"sid-done-{uuid.uuid4().hex}"
         cli, mgr = _make_cli_with_goal(sid)
         cli._last_turn_interrupted = False

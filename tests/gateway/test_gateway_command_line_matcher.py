@@ -1,6 +1,6 @@
 """Tests for the strict gateway command-line matcher.
 
-Regression guard for the Windows ``hermes gateway restart`` silent-outage bug:
+Regression guard for the Windows ``akramcode gateway restart`` silent-outage bug:
 the previous loose substring match (``"... gateway" in cmdline``) false-matched
 ``gateway status``/``dashboard`` siblings and unrelated processes such as
 ``python -m tui_gateway``, which let ``restart()`` race a still-draining old
@@ -20,25 +20,25 @@ from gateway.status import (
 
 ACCEPT = [
     "pythonw.exe -m akramcode_cli.main gateway run",
-    r"C:\Users\me\hermes\venv\Scripts\pythonw.exe -m akramcode_cli.main gateway run",
+    r"C:\Users\me\akramcode\venv\Scripts\pythonw.exe -m akramcode_cli.main gateway run",
     "python -m akramcode_cli.main --profile work gateway run",
     "python -m akramcode_cli.main gateway run --replace",
     "python -m akramcode_cli/main.py gateway run",
     "python gateway/run.py",
-    "hermes-gateway.exe",
-    "hermes gateway",          # bare `hermes gateway` defaults to run
-    "hermes gateway run",
+    "akramcode-gateway.exe",
+    "akramcode gateway",          # bare `akramcode gateway` defaults to run
+    "akramcode gateway run",
     # profile selector AFTER the `gateway` token (argv is profile-position
     # agnostic — _apply_profile_override strips --profile/-p anywhere)
-    "hermes gateway --profile work run",
+    "akramcode gateway --profile work run",
     "python -m akramcode_cli.main gateway -p work run",
-    "hermes gateway --profile=work run",
+    "akramcode gateway --profile=work run",
     # a profile literally NAMED "gateway"
-    "hermes -p gateway gateway run",
+    "akramcode -p gateway gateway run",
     "python -m akramcode_cli.main --profile gateway gateway run",
     # quoted Windows paths with spaces (shlex-aware tokenization)
-    r'"C:\Program Files\Hermes\hermes-gateway.exe"',
-    r'"C:\Program Files\Hermes\gateway\run.py" run',
+    r'"C:\Program Files\AkramCode\akramcode-gateway.exe"',
+    r'"C:\Program Files\AkramCode\gateway\run.py" run',
     r'"C:\Program Files\Py\pythonw.exe" -m akramcode_cli.main gateway run',
 ]
 
@@ -70,16 +70,16 @@ def test_rejects_non_gateway_run(cmd):
 # the watcher instead of a gateway (#107002).
 INLINE_SOURCE_REJECT = [
     'python -c "import time; time.sleep(1)" 14980 python -m akramcode_cli.main gateway run',
-    r'"C:\Users\me\hermes\venv\Scripts\python.exe" -c "import os" 14980 '
-    r'"C:\Users\me\hermes\venv\Scripts\python.exe" -m akramcode_cli.main gateway run',
+    r'"C:\Users\me\akramcode\venv\Scripts\python.exe" -c "import os" 14980 '
+    r'"C:\Users\me\akramcode\venv\Scripts\python.exe" -m akramcode_cli.main gateway run',
     'python -u -c "import os" 14980 python -m akramcode_cli.main --profile work gateway run',
-    'python -uc "import os" 14980 hermes gateway run',
+    'python -uc "import os" 14980 akramcode gateway run',
     # Options that take a SEPARATE operand must not end the option walk before ``-c`` (the operand
     # is not the start of the program's own argv). The repo itself spawns ``-I -S -B -X utf8 …``
     # (akramcode_cli/_old_updater.py, _update_takeover.py), so this shape is not hypothetical.
     'python -X utf8 -c "import os" 14980 python -m akramcode_cli.main gateway run',
     'python -W ignore -c "import os" 14980 python -m akramcode_cli.main gateway run',
-    'python --check-hash-based-pycs always -c "import os" 14980 hermes gateway run',
+    'python --check-hash-based-pycs always -c "import os" 14980 akramcode gateway run',
     'python -I -S -B -X utf8 -c "import os" 14980 python -m akramcode_cli.main gateway run',
     # ``-q`` (quiet) takes NO operand, unlike ``-Q``; a case-folded walk would skip past the ``-c``.
     'python -q -c "import os" 14980 python -m akramcode_cli.main gateway run',
@@ -150,13 +150,13 @@ def test_spawn_intent_ignores_inline_source_without_a_gateway_argv():
     assert spawn_intent('python -c "import time; time.sleep(1)" 14980') is None
 
 
-# Atomic Hermes' bundled desktop runner (regression for #22418): it shares
-# HERMES_HOME with the CLI and must be recognised as a gateway so
+# Atomic AkramCode' bundled desktop runner (regression for #22418): it shares
+# AKRAMCODE_HOME with the CLI and must be recognised as a gateway so
 # ``gateway run --replace`` enters the replace/lock-handoff path instead of
 # colliding with the desktop runner's still-held scoped locks.
 ATOMIC_DESKTOP = (
-    "/Applications/Atomic Hermes.app/Contents/Resources/python-server/python "
-    "/Applications/Atomic Hermes.app/Contents/Resources/python-server/desktop-gateway.py"
+    "/Applications/Atomic AkramCode.app/Contents/Resources/python-server/python "
+    "/Applications/Atomic AkramCode.app/Contents/Resources/python-server/desktop-gateway.py"
 )
 
 

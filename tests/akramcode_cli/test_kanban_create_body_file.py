@@ -23,18 +23,18 @@ BODY = "line one\nline two\n--json\n--body should survive verbatim\n"
 
 @pytest.fixture
 def kanban_home(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_KANBAN_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_KANBAN_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
     return home
 
 
 def _create(argv, monkeypatch=None, stdin=None):
-    """Drive the real ``hermes kanban create`` parser into ``_cmd_create``."""
-    root = argparse.ArgumentParser(prog="hermes")
+    """Drive the real ``akramcode kanban create`` parser into ``_cmd_create``."""
+    root = argparse.ArgumentParser(prog="akramcode")
     kc.build_parser(root.add_subparsers())
     args = root.parse_args(["kanban", "create", *argv])
     if stdin is not None:

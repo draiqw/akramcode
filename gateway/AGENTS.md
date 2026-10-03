@@ -31,7 +31,7 @@ lifecycle.
 
 Adapters with `draft_stream_is_message = True` (relay Slack native streaming) keep ONE cumulative
 native stream per turn; the stream IS the final message. Four invariants, each from a live
-duplicate-final incident (NS-658 canary ledger, hermes#85796 / gateway-gateway#210); violating any
+duplicate-final incident (NS-658 canary ledger, akramcode#85796 / gateway-gateway#210); violating any
 re-creates a duplicate or frozen stream:
 
 1. **Draft frames are prefix-stable.** Frame N must be a string prefix of frame N+1. Never mutate
@@ -60,7 +60,7 @@ MagicMock adapters in older tests auto-create truthy attributes.
 
 `terminal(background=true, notify_on_complete=true)` starts a gateway watcher that detects
 completion and triggers a new agent turn. Verbosity: `display.background_process_notifications`
-(or `HERMES_BACKGROUND_NOTIFICATIONS`): `concise` (default; one line, failures append an output
+(or `AKRAMCODE_BACKGROUND_NOTIFICATIONS`): `concise` (default; one line, failures append an output
 tail), `all` (running updates + final raw output), `result` (final raw output only), `error`
 (final raw output only on non-zero exit), `off`.
 
@@ -122,9 +122,9 @@ an expiring access token that nothing refreshes.
 
 ## Gateway lifecycle vs. the Desktop app
 
-`hermes serve` (control plane, desktop-spawned child) dies with the app — by design. The messaging
+`akramcode serve` (control plane, desktop-spawned child) dies with the app — by design. The messaging
 gateway (`gateway run`) SURVIVES the app: the serve backend's `/api/gateway/*` endpoints spawn it
-detached (`_spawn_hermes_action` — `start_new_session` / `DETACHED_PROCESS`), so `before-quit`'s
+detached (`_spawn_akramcode_action` — `start_new_session` / `DETACHED_PROCESS`), so `before-quit`'s
 SIGTERM never reaches it and bots keep running. The known breach is the Windows shim-unlock
 teardown (`taskkill /T /F` on venv-shim holders, #85265), which exists to let updates proceed and is
 replaced by #92091's `pause-for-update`. Do NOT "fix" gateway-dies-with-app by re-parenting the
@@ -239,13 +239,13 @@ gateway under the backend, and do NOT "fix" update locks by widening the tree-ki
   into runtime status (`run_adapters.py::_note_unserved_secondary_platform`). `needs_attention` is
   set and cleared at the single writer (`_update_platform_runtime_status`) on the connect path.
 - **One launch-home identity.** "Does this task serve a routed profile?" compares the override
-  with `hermes_constants.get_routing_process_hermes_home()` (`agent/secret_scope.py::
+  with `akramcode_constants.get_routing_process_akramcode_home()` (`agent/secret_scope.py::
   serves_routed_profile` and `_is_process_home`, `tools/environments/local.py::_is_routed_home`,
-  `akramcode_cli/env_loader.py::_process_hermes_home`), never with `os.environ["HERMES_HOME"]` read
-  live: an embedding host that mirrors the served profile into the env var per turn (Hermes
-  WebUI) pins its own home with `pin_process_hermes_home()`, and without a pin the resolver is
-  `get_process_hermes_home()` unchanged. Do not add another routing decision that compares
-  against `get_process_hermes_home()` directly; that resolver is for process-level assets.
+  `akramcode_cli/env_loader.py::_process_akramcode_home`), never with `os.environ["AKRAMCODE_HOME"]` read
+  live: an embedding host that mirrors the served profile into the env var per turn (AkramCode
+  WebUI) pins its own home with `pin_process_akramcode_home()`, and without a pin the resolver is
+  `get_process_akramcode_home()` unchanged. Do not add another routing decision that compares
+  against `get_process_akramcode_home()` directly; that resolver is for process-level assets.
 
 ## Tests
 

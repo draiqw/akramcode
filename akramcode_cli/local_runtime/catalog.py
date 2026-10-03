@@ -246,7 +246,7 @@ def recommended_entry(budget: HardwareBudget,
 # packaged copy remains the offline truth. A reverted commit on main heals every install on its
 # next fetch, and day-0 entries reach users without an app release.
 
-_CATALOG_URL = ("https://raw.githubusercontent.com/NousResearch/hermes-agent"
+_CATALOG_URL = ("https://raw.githubusercontent.com/NousResearch/akramcode-agent"
                 "/main/akramcode_cli/local_runtime/catalog.json")
 _SCHEMA_VERSION = 1
 _REFRESH_TTL_S = 6 * 3600
@@ -314,7 +314,7 @@ def refresh_catalog(force: bool = False) -> bool:
             return False
         _last_refresh_attempt = now
     try:
-        req = urllib.request.Request(_CATALOG_URL, headers={"User-Agent": "hermes-local-runtime"})
+        req = urllib.request.Request(_CATALOG_URL, headers={"User-Agent": "akramcode-local-runtime"})
         with urllib.request.urlopen(req, timeout=10) as r:
             fetched = _load_catalog(json.load(r))
     except Exception as exc:  # noqa: BLE001

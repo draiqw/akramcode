@@ -13,7 +13,7 @@ from agent import secret_scope
 
 @pytest.fixture
 def secondary_scope(monkeypatch):
-    for name in ("OPENAI_BASE_URL", "XAI_BASE_URL", "HERMES_XAI_BASE_URL", "NOUS_INFERENCE_BASE_URL",
+    for name in ("OPENAI_BASE_URL", "XAI_BASE_URL", "AKRAMCODE_XAI_BASE_URL", "NOUS_INFERENCE_BASE_URL",
                  "GATEWAY_PROXY_URL", "FIRECRAWL_API_URL", "BROWSERBASE_BASE_URL", "XAI_API_KEY"):
         monkeypatch.setenv(name, f"https://{name.lower()}.default.example/v1")
     secret_scope.set_multiplex_active(True)
@@ -33,7 +33,7 @@ def test_base_urls_follow_the_scoped_key_not_default_environ(monkeypatch, second
     from gateway.run_turn import GatewayTurnMixin
     from akramcode_cli import auth_nous
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     from akramcode_cli.runtime_provider_custom import expand_direct_api_alias
     monkeypatch.setattr("akramcode_cli.runtime_provider._get_named_custom_provider", lambda name: None)
 

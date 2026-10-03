@@ -1,7 +1,7 @@
 """Session lifecycle for the interactive CLI: new/resume/save, undo/retry rewinds, yolo
 persistence, manual compression, and exit summary.
 
-Mixin bound onto ``HermesCLI`` via the MRO. cli.py-internal symbols are imported LAZILY
+Mixin bound onto ``AkramCodeCLI`` via the MRO. cli.py-internal symbols are imported LAZILY
 inside each method (``from cli import ...``) — never at module load time (import cycle).
 """
 
@@ -13,7 +13,7 @@ import shutil
 import sys
 
 from agent.i18n import t
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 from akramcode_state.ids import new_session_id
 from pathlib import Path
 from rich.console import Console
@@ -212,7 +212,7 @@ class CLISessionMixin:
         """Show compact startup status line."""
         from cli import get_tool_definitions
         # Avoid pulling the full tool registry into the bare Termux prompt path.
-        if os.environ.get("HERMES_DEFER_AGENT_STARTUP") == "1":
+        if os.environ.get("AKRAMCODE_DEFER_AGENT_STARTUP") == "1":
             tool_status = t("cli.session.status_tools_deferred")
         else:
             tools = get_tool_definitions(enabled_toolsets=self.enabled_toolsets,
@@ -417,7 +417,7 @@ class CLISessionMixin:
                 continue
 
             _cli_visible_print(
-                f"\n  {t('cli.session.history_assistant_header', agent_name='Hermes', index=visible_index)}{_ts_suffix(msg)}")
+                f"\n  {t('cli.session.history_assistant_header', agent_name='AkramCode', index=visible_index)}{_ts_suffix(msg)}")
             n_calls = len(msg.get("tool_calls") or [])
             if not content_text:
                 suffix = ""
@@ -457,7 +457,7 @@ class CLISessionMixin:
         if getattr(self, "conversation_history", None):
             return False
         try:
-            from akramcode_constants import get_hermes_home as _ghh
+            from akramcode_constants import get_akramcode_home as _ghh
             return self._session_db.delete_session_if_empty(
                 session_id, sessions_dir=_ghh() / "sessions")
         except Exception:
@@ -564,7 +564,7 @@ class CLISessionMixin:
                     self.agent._session_db_created = False
                     self._session_db.create_session(
                         session_id=self.session_id,
-                        source=os.environ.get("HERMES_SESSION_SOURCE", "cli"),
+                        source=os.environ.get("AKRAMCODE_SESSION_SOURCE", "cli"),
                         model=self.model,
                         model_config={
                             "max_iterations": self.max_turns, "reasoning_config": self.reasoning_config,
@@ -670,7 +670,7 @@ class CLISessionMixin:
 
             session_data = redact_session_data(session_data)
 
-        saved_dir = get_hermes_home() / "sessions" / "saved"
+        saved_dir = get_akramcode_home() / "sessions" / "saved"
         try:
             saved_dir.mkdir(parents=True, exist_ok=True)
         except Exception as e:
@@ -682,7 +682,7 @@ class CLISessionMixin:
                 path = Path.cwd() / path
         else:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            path = saved_dir / f"hermes_conversation_{timestamp}.{fmt}"
+            path = saved_dir / f"akramcode_conversation_{timestamp}.{fmt}"
 
         try:
             content = render_session_for_save(session_data, fmt)
@@ -693,7 +693,7 @@ class CLISessionMixin:
             # #76354 review F5: the worker thread also rebound the session ContextVar inside its own
             # (copied) context, which the caller never sees — and get_session_env() prefers an already-bound
             # ContextVar over os.environ. Rebind in the CALLER's context so post-compression
-            # tools/subprocesses on this thread resolve HERMES_SESSION_ID to the child id after an
+            # tools/subprocesses on this thread resolve AKRAMCODE_SESSION_ID to the child id after an
             # out-of-place rotation (idempotent when no rotation happened).
             if self.session_id:
                 print(f"       {t('cli.session.save_resume_hint', session_id=self.session_id)}")
@@ -840,7 +840,7 @@ class CLISessionMixin:
         return ""
 
     def _write_terminal_breadcrumb(self) -> None:
-        """Record this terminal's live session for bare ``hermes -c``. Called whenever
+        """Record this terminal's live session for bare ``akramcode -c``. Called whenever
         ``self.session_id`` is (re)assigned so a later bare ``-c`` in THIS terminal resumes
         this conversation's live tip. Best-effort; no-op without a terminal identity."""
         with contextlib.suppress(Exception):
@@ -885,7 +885,7 @@ class CLISessionMixin:
         """Toggle per-session YOLO mode (skip dangerous-command approvals).
 
         Mirrors the gateway/TUI ``/yolo`` handlers. Deliberately does NOT touch
-        ``HERMES_YOLO_MODE``: that env var is frozen into ``tools.approval._YOLO_MODE_FROZEN``
+        ``AKRAMCODE_YOLO_MODE``: that env var is frozen into ``tools.approval._YOLO_MODE_FROZEN``
         at import (so prompt-injected skills can't flip the bypass), making a later set a
         silent no-op. ``run_conversation`` binds ``self.session_id`` as the active approval
         key, so the bypass applies to the very next dangerous command.
@@ -1172,16 +1172,16 @@ class CLISessionMixin:
 
         print(t("cli.session.exit_resume_hint"))
         # Session IDs are profile-constrained: non-default profiles need `-p <profile>` in
-        # the hint ("default"/"custom" use the standard HERMES_HOME).
+        # the hint ("default"/"custom" use the standard AKRAMCODE_HOME).
         try:
             from akramcode_cli.profiles import get_active_profile_name
             _active_profile = get_active_profile_name()
         except Exception:
             _active_profile = "default"
         profile_flag = "" if _active_profile in ("default", "custom") else f" -p {_active_profile}"
-        print(f"  hermes --resume {self.session_id}{profile_flag}")
+        print(f"  akramcode --resume {self.session_id}{profile_flag}")
         if session_title:
-            print(f"  hermes -c \"{session_title}\"{profile_flag}")
+            print(f"  akramcode -c \"{session_title}\"{profile_flag}")
         print()
         print(t("cli.session.exit_label_session", session_id=self.session_id))
         if session_title:

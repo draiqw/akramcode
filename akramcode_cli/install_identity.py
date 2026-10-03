@@ -1,4 +1,4 @@
-"""Stable opaque identity shared by every profile in one Hermes install."""
+"""Stable opaque identity shared by every profile in one AkramCode install."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ import threading
 from typing import Optional
 import uuid
 
-from akramcode_constants import get_default_hermes_root
+from akramcode_constants import get_default_akramcode_root
 from utils import atomic_write_text
 
 _INSTALL_ID_FILENAME = "install_id"
@@ -63,7 +63,7 @@ def read_or_create_install_id(root: Path | None = None) -> Optional[str]:
 
     ``None`` = neither readable nor persistable; an ephemeral id would violate the authority/registry contract.
     """
-    root = get_default_hermes_root() if root is None else root
+    root = get_default_akramcode_root() if root is None else root
     path = root / _INSTALL_ID_FILENAME
     # A reader can collide with the first atomic replace on Windows. Serialize
     # threads before reading, and recheck an unavailable file under the OS lock.
@@ -72,8 +72,8 @@ def read_or_create_install_id(root: Path | None = None) -> Optional[str]:
         if existing is not None:
             return existing  # Existing identities remain readable on read-only roots.
         try:
-            from akramcode_constants import mkdir_under_hermes_home
-            mkdir_under_hermes_home(root)
+            from akramcode_constants import mkdir_under_akramcode_home
+            mkdir_under_akramcode_home(root)
             with _install_id_file_lock(root):
                 existing, mint = _read_existing(path)
                 if not mint:
@@ -86,8 +86,8 @@ def read_or_create_install_id(root: Path | None = None) -> Optional[str]:
 
 
 def get_install_id(*, cache: dict[str, Optional[str]] | None = None) -> Optional[str]:
-    """Return the process-cached stable id for the active Hermes root."""
-    root = get_default_hermes_root()
+    """Return the process-cached stable id for the active AkramCode root."""
+    root = get_default_akramcode_root()
     root_key = str(root)
     target_cache = _INSTALL_ID_CACHE if cache is None else cache
 

@@ -1,5 +1,5 @@
 """prompt_toolkit TUI construction, key-binding handlers, and overlay display fragments for the
-interactive CLI. Mixin bound onto ``HermesCLI`` via the MRO; cli.py-internal symbols are imported
+interactive CLI. Mixin bound onto ``AkramCodeCLI`` via the MRO; cli.py-internal symbols are imported
 LAZILY inside each method (``from cli import ...``) — never at module load (import cycle)."""
 
 from __future__ import annotations
@@ -65,9 +65,9 @@ def _approval_choice_label(choice: str) -> str:
 def _agent_name() -> str:
     try:
         from akramcode_cli.skin_engine import get_active_skin
-        return get_active_skin().get_branding("agent_name", "Hermes")
+        return get_active_skin().get_branding("agent_name", "AkramCode")
     except Exception:
-        return "Hermes"
+        return "AkramCode"
 
 
 def _tn(key: str, count: int, **kwargs) -> str:
@@ -543,7 +543,7 @@ class CLITuiMixin:
         the terminal rows or the bottom border and trailing items get clipped on long lists
         (e.g. Ollama Cloud's 36+ models). ``state["_scroll_offset"]`` is updated in place.
         """
-        from cli import HermesCLI, _panel_box_width, _wrap_panel_text
+        from cli import AkramCodeCLI, _panel_box_width, _wrap_panel_text
         box_width = _panel_box_width(title, [hint] + labels, min_width=min_width, max_width=max_width)
         # ``_Panel.row`` pads every row to ``box_width - 2``, so that is the real
         # body width. Keep the wrap budget in sync with it and reserve the
@@ -557,7 +557,7 @@ class CLITuiMixin:
             term_rows = get_app().output.get_size().rows
         except Exception:
             term_rows = _term_rows()
-        scroll_offset, visible = HermesCLI._compute_model_picker_viewport(
+        scroll_offset, visible = AkramCodeCLI._compute_model_picker_viewport(
             selected, state.get("_scroll_offset", 0), len(labels), term_rows)
         state["_scroll_offset"] = scroll_offset
 
@@ -1113,7 +1113,7 @@ class CLITuiMixin:
         import signal as _sig
         from prompt_toolkit.application import run_in_terminal
         from akramcode_cli.skin_engine import get_active_skin
-        agent_name = get_active_skin().get_branding("agent_name", "Hermes Agent")
+        agent_name = get_active_skin().get_branding("agent_name", "AkramCode Agent")
         msg = "\n" + t("cli.tui.suspended", agent_name=agent_name)
 
         def _suspend():
@@ -1491,7 +1491,7 @@ class CLITuiMixin:
         agent supports active-turn redirect, else the legacy interrupt queue (older agents,
         multimodal follow-ups, or a turn that finished in the race). queue → next turn.
         """
-        from cli import CLI_CONFIG, _ACCENT, _DIM, _RST, _cprint, _hermes_home
+        from cli import CLI_CONFIG, _ACCENT, _DIM, _RST, _cprint, _akramcode_home
         _effective_mode = self.busy_input_mode
         redirected = False
         if _effective_mode == "steer":
@@ -1531,7 +1531,7 @@ class CLITuiMixin:
             else:
                 self._interrupt_queue.put(payload)
                 try:
-                    with open(_hermes_home / "interrupt_debug.log", "a", encoding="utf-8") as _f:
+                    with open(_akramcode_home / "interrupt_debug.log", "a", encoding="utf-8") as _f:
                         _f.write(
                             f"{time.strftime('%H:%M:%S')} ENTER: queued interrupt msg={str(payload)[:60]!r}, "
                             f"agent_running={self._agent_running}\n")
@@ -1545,7 +1545,7 @@ class CLITuiMixin:
             if not is_seen(CLI_CONFIG, BUSY_INPUT_FLAG):
                 _hint_mode = "redirect" if redirected else _effective_mode
                 _cprint(f"  {_DIM}{busy_input_hint_cli(_hint_mode)}{_RST}")
-                mark_seen(_hermes_home / "config.yaml", BUSY_INPUT_FLAG)
+                mark_seen(_akramcode_home / "config.yaml", BUSY_INPUT_FLAG)
                 CLI_CONFIG.setdefault("onboarding", {}).setdefault("seen", {})[BUSY_INPUT_FLAG] = True
         except Exception:
             pass
@@ -1657,10 +1657,10 @@ class CLITuiMixin:
         event.app.invalidate()
 
     def _tui_collapse_paste(self, text: str, line_count: int, *, fallback: bool) -> str:
-        """Save a large paste under ~/.hermes/pastes and return the placeholder for the buffer."""
-        from cli import _hermes_home, datetime, logger
+        """Save a large paste under ~/.akramcode/pastes and return the placeholder for the buffer."""
+        from cli import _akramcode_home, datetime, logger
         self._tui_paste_counter += 1
-        paste_dir = _hermes_home / "pastes"
+        paste_dir = _akramcode_home / "pastes"
         paste_dir.mkdir(parents=True, exist_ok=True)
         paste_file = paste_dir / f"paste_{self._tui_paste_counter}_{datetime.now().strftime('%H%M%S')}.txt"
         paste_file.write_text(text, encoding="utf-8")
@@ -1888,7 +1888,7 @@ class CLITuiMixin:
         self._voice_last_tts_text = ""  # most recently spoken TTS text (echo guard, #75780)
         self._voice_barge_phase = None  # "generation" or "playback" phase of the last barge trip
 
-        if os.environ.get("HERMES_DEFER_AGENT_STARTUP") != "1":
+        if os.environ.get("AKRAMCODE_DEFER_AGENT_STARTUP") != "1":
             self._install_tool_callbacks()
             self._ensure_tirith_security()
 

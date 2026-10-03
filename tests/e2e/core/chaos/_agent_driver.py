@@ -2,7 +2,7 @@
 
 Run as ``python -m tests.e2e.core.chaos._agent_driver <spec.json>`` with a hermetic
 env (see ``_helpers.hermetic_env``). The agent is built the way the CLI builds it:
-config.yaml under HERMES_HOME supplies the provider, retry and timeout knobs, and
+config.yaml under AKRAMCODE_HOME supplies the provider, retry and timeout knobs, and
 ``agent.max_turns`` becomes the iteration budget. Each turn feeds the previous
 turn's messages back as ``conversation_history`` (the CLI's multi-turn contract).
 

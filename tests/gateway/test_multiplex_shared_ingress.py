@@ -47,14 +47,14 @@ def _line_adapter(secret: str, profile: str):
 
 async def _publish_line(adapter, runner) -> list[tuple[str, Path]]:
     """Wire the LINE webhook app the way ``connect()`` does, without the LINE API or a bind, and
-    record the HERMES_HOME the handler ran under."""
+    record the AKRAMCODE_HOME the handler ran under."""
     from gateway.platforms.shared_ingress import bind_listener
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
     seen: list[tuple[str, Path]] = []
     adapter.gateway_runner = runner
 
     async def dispatch(event):
-        seen.append((event.get("type"), Path(get_hermes_home())))
+        seen.append((event.get("type"), Path(get_akramcode_home())))
 
     adapter._dispatch_event = dispatch
     app = web.Application(client_max_size=1024)
@@ -66,13 +66,13 @@ async def _publish_line(adapter, runner) -> list[tuple[str, Path]]:
 
 @pytest.fixture
 def mux_home(tmp_path, monkeypatch):
-    root = tmp_path / "hermes"
+    root = tmp_path / "akramcode"
     for name in ("coder", "ops"):
         (root / "profiles" / name).mkdir(parents=True)
         (root / "profiles" / name / ".env").write_text(f"LINE_CHANNEL_SECRET=secret-{name}\n")
-    monkeypatch.setenv("HERMES_HOME", str(root))
-    import hermes_constants
-    monkeypatch.setattr(hermes_constants, "_default_hermes_root_memo", None)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(root))
+    import akramcode_constants
+    monkeypatch.setattr(akramcode_constants, "_default_akramcode_root_memo", None)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     from agent import secret_scope
     monkeypatch.setattr(secret_scope, "_MULTIPLEX_ACTIVE", True)

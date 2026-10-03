@@ -13,10 +13,10 @@ def test_persist_branch_copies_the_parent_system_prompt(tmp_path, monkeypatch):
     from akramcode_state import SessionDB
     from tui_gateway import server
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
 
     with SessionDB(home / "state.db") as db:
         db.create_session("parent", source="desktop", model="test-model")

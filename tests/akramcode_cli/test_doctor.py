@@ -14,7 +14,7 @@ from types import SimpleNamespace
 import pytest
 
 import akramcode_cli.doctor as doctor
-import hermes_constants
+import akramcode_constants
 from akramcode_cli import config as config_mod
 import akramcode_cli.gateway as gateway_cli
 from akramcode_cli import doctor as doctor_mod
@@ -89,19 +89,19 @@ class TestDoctorPlatformHints:
 
         hint = doctor_platform._sqlite_upgrade_hint()
 
-        assert "docker pull nousresearch/hermes-agent:latest" in hint
-        assert "hermes update" not in hint
+        assert "docker pull nousresearch/akramcode-agent:latest" in hint
+        assert "akramcode update" not in hint
 
 
     def test_sqlite_upgrade_hint_apt_stamp_names_termux_external_update(self):
         # The "apt" install method is Termux APT by contract (config.py
         # _UPDATE_COMMAND_BY_METHOD). Deployment kinds are first-class: doctor
         # reports the correct external update command instead of routing an
-        # out-of-place method through the in-place `hermes update` path.
+        # out-of-place method through the in-place `akramcode update` path.
         hint = doctor_platform._sqlite_upgrade_hint("apt")
 
-        assert "run `pkg upgrade hermes-agent`" in hint
-        assert "hermes update" not in hint
+        assert "run `pkg upgrade akramcode-agent`" in hint
+        assert "akramcode update" not in hint
 
     def test_sqlite_upgrade_hint_preserves_nix_guidance_as_prose(self):
         from akramcode_cli.config import recommended_update_command_for_method
@@ -111,7 +111,7 @@ class TestDoctorPlatformHints:
 
         assert guidance in hint
         assert f"run `{guidance}`" not in hint
-        assert "hermes update" not in hint
+        assert "akramcode update" not in hint
 
 
 class TestProviderEnvDetection:
@@ -140,7 +140,7 @@ class TestDoctorToolAvailabilitySummary:
     def test_image_gen_without_provider_reports_setup_hint_not_system_dependency(self, monkeypatch):
         """image_gen declares no single env var (FAL / managed Nous / plugin providers); an
         unconfigured backend is a setup problem and must say so, and it counts toward the
-        'run hermes setup' summary like any missing key (#9516)."""
+        'run akramcode setup' summary like any missing key (#9516)."""
         unavailable = [{"name": "image_gen", "env_vars": [], "tools": ["image_generate"]},
                        {"name": "homeassistant", "env_vars": [], "tools": []}]
         monkeypatch.setattr(doctor_tools, "_enabled_cli_toolsets_for_doctor", lambda: {"image_gen"})
@@ -158,9 +158,9 @@ class TestDoctorToolAvailabilitySummary:
         out = buf.getvalue()
 
         image_line = next(line for line in out.splitlines() if "image_gen" in line)
-        assert "hermes tools" in image_line and "system dependency" not in image_line and "unavailable" in image_line
+        assert "akramcode tools" in image_line and "system dependency" not in image_line and "unavailable" in image_line
         assert "system dependency not met" in next(line for line in out.splitlines() if "homeassistant" in line)
-        assert any("hermes setup" in issue for issue in f.issues)
+        assert any("akramcode setup" in issue for issue in f.issues)
 
     def test_web_capability_rows_warn_when_selected_provider_not_ready(self, monkeypatch):
         """#78412: selected firecrawl with is_available=False must warn."""
@@ -206,7 +206,7 @@ class TestDoctorToolAvailabilitySummary:
 
 
 class TestDoctorEnvFileEncoding:
-    """Regression for #18637 (bug 3): `hermes doctor` crashed on Windows
+    """Regression for #18637 (bug 3): `akramcode doctor` crashed on Windows
     Chinese locale (GBK) because `.env` was read with Path.read_text(encoding="utf-8") which
     defaults to the system locale encoding, not UTF-8."""
 
@@ -215,19 +215,19 @@ class TestDoctorEnvFileEncoding:
     ):
         import pathlib
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
+        akramcode_home = tmp_path / ".akramcode"
+        akramcode_home.mkdir()
         # Write a UTF-8 .env containing an em dash (U+2014 = e2 80 94). The
         # 0x94 byte is exactly the one the issue reporter hit: it's invalid
         # as a GBK trailing byte in this position, so locale-default reads
         # raise UnicodeDecodeError on Chinese Windows.
-        env_path = hermes_home / ".env"
+        env_path = akramcode_home / ".env"
         env_path.write_text(
             "OPENAI_API_KEY=sk-test  # em-dash here — should not crash\n",
             encoding="utf-8",
         )
 
-        monkeypatch.setattr(doctor_mod, "HERMES_HOME", hermes_home)
+        monkeypatch.setattr(doctor_mod, "AKRAMCODE_HOME", akramcode_home)
 
         orig_read_text = pathlib.Path.read_text
 
@@ -262,14 +262,14 @@ class TestDoctorEnvFileEncoding:
         self, monkeypatch, tmp_path
     ):
         """cp1252/latin-1 .env with ASCII provider hints must not abort doctor."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        env_path = hermes_home / ".env"
+        akramcode_home = tmp_path / ".akramcode"
+        akramcode_home.mkdir()
+        env_path = akramcode_home / ".env"
         # 0xff is invalid UTF-8; latin-1 decodes it. Keep an ASCII provider key
         # so the scan still reports a configured endpoint/key.
         env_path.write_bytes(b"OPENAI_API_KEY=sk-test\xff\n")
 
-        monkeypatch.setattr(doctor_mod, "HERMES_HOME", hermes_home)
+        monkeypatch.setattr(doctor_mod, "AKRAMCODE_HOME", akramcode_home)
 
         fake_model_tools = types.SimpleNamespace(
             check_tool_availability=lambda *a, **kw: (_ for _ in ()).throw(SystemExit(0)),
@@ -286,7 +286,7 @@ class TestDoctorToolAvailabilityOverrides:
 
     def test_marks_kanban_available_only_when_missing_worker_env_gate(self, monkeypatch):
         monkeypatch.setattr(doctor_state, "_honcho_is_configured_for_doctor", lambda: False)
-        monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("AKRAMCODE_KANBAN_TASK", raising=False)
 
         available, unavailable = doctor_tools._apply_doctor_tool_availability_overrides(
             [],
@@ -297,7 +297,7 @@ class TestDoctorToolAvailabilityOverrides:
         assert unavailable == []
 
     def test_leaves_kanban_unavailable_when_worker_env_is_set(self, monkeypatch):
-        monkeypatch.setenv("HERMES_KANBAN_TASK", "probe")
+        monkeypatch.setenv("AKRAMCODE_KANBAN_TASK", "probe")
         kanban_entry = {"name": "kanban", "env_vars": [], "tools": ["kanban_show"]}
 
         available, unavailable = doctor_tools._apply_doctor_tool_availability_overrides(
@@ -341,11 +341,11 @@ def test_doctor_reports_vercel_backend_diagnostics(monkeypatch, tmp_path):
 class TestDoctorMemoryProviderSection:
     """The ◆ Memory Provider section should respect memory.provider config."""
 
-    def _make_hermes_home(self, tmp_path, provider="", memory_config=None):
-        """Create a minimal HERMES_HOME with config.yaml."""
-        home = tmp_path / ".hermes"
+    def _make_akramcode_home(self, tmp_path, provider="", memory_config=None):
+        """Create a minimal AKRAMCODE_HOME with config.yaml."""
+        home = tmp_path / ".akramcode"
         home.mkdir(parents=True, exist_ok=True)
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
         config = dict(memory_config or {})
         if provider:
             config["provider"] = provider
@@ -363,13 +363,13 @@ class TestDoctorMemoryProviderSection:
         stale_builtin_files=False,
     ):
         """Run doctor and capture stdout."""
-        home = self._make_hermes_home(tmp_path, provider, memory_config)
+        home = self._make_akramcode_home(tmp_path, provider, memory_config)
         if stale_builtin_files:
             memories = home / "memories"
             memories.mkdir()
             (memories / "MEMORY.md").write_text("stale memory", encoding="utf-8")
             (memories / "USER.md").write_text("stale user", encoding="utf-8")
-        monkeypatch.setattr(doctor_mod, "HERMES_HOME", home)
+        monkeypatch.setattr(doctor_mod, "AKRAMCODE_HOME", home)
         monkeypatch.setattr(doctor_mod, "PROJECT_ROOT", tmp_path / "project")
         monkeypatch.setattr(doctor_mod, "_DHH", str(home))
         (tmp_path / "project").mkdir(exist_ok=True)
@@ -450,10 +450,10 @@ class TestDoctorMemoryProviderSection:
 
 
 def test_run_doctor_accepts_named_provider_from_providers_section(monkeypatch, tmp_path):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir(parents=True, exist_ok=True)
 
-    import akram_core.hermes_yaml as yaml
+    import akram_core.akramcode_yaml as yaml
 
     (home / "config.yaml").write_text(
         yaml.safe_dump(
@@ -474,7 +474,7 @@ def test_run_doctor_accepts_named_provider_from_providers_section(monkeypatch, t
         )
     , encoding="utf-8")
 
-    monkeypatch.setattr(doctor_mod, "HERMES_HOME", home)
+    monkeypatch.setattr(doctor_mod, "AKRAMCODE_HOME", home)
     monkeypatch.setattr(doctor_mod, "PROJECT_ROOT", tmp_path / "project")
     monkeypatch.setattr(doctor_mod, "_DHH", str(home))
     (tmp_path / "project").mkdir(exist_ok=True)
@@ -504,7 +504,7 @@ def test_run_doctor_accepts_named_provider_from_providers_section(monkeypatch, t
 def test_run_doctor_accepts_stable_key_when_provider_name_differs(
     monkeypatch, tmp_path
 ):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir(parents=True, exist_ok=True)
     (home / "config.yaml").write_text(
         "model:\n"
@@ -518,7 +518,7 @@ def test_run_doctor_accepts_stable_key_when_provider_name_differs(
         encoding="utf-8",
     )
 
-    monkeypatch.setattr(doctor_mod, "HERMES_HOME", home)
+    monkeypatch.setattr(doctor_mod, "AKRAMCODE_HOME", home)
     monkeypatch.setattr(doctor_mod, "PROJECT_ROOT", tmp_path / "project")
     monkeypatch.setattr(doctor_mod, "_DHH", str(home))
     (tmp_path / "project").mkdir(exist_ok=True)
@@ -550,7 +550,7 @@ def test_run_doctor_accepts_stable_key_when_provider_name_differs(
 
 
 def test_run_doctor_accepts_bare_custom_provider(monkeypatch, tmp_path):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir(parents=True, exist_ok=True)
     (home / "config.yaml").write_text(
         "model:\n"
@@ -560,7 +560,7 @@ def test_run_doctor_accepts_bare_custom_provider(monkeypatch, tmp_path):
         encoding="utf-8",
     )
 
-    monkeypatch.setattr(doctor_mod, "HERMES_HOME", home)
+    monkeypatch.setattr(doctor_mod, "AKRAMCODE_HOME", home)
     monkeypatch.setattr(doctor_mod, "PROJECT_ROOT", tmp_path / "project")
     monkeypatch.setattr(doctor_mod, "_DHH", str(home))
     (tmp_path / "project").mkdir(exist_ok=True)
@@ -588,7 +588,7 @@ def test_run_doctor_accepts_bare_custom_provider(monkeypatch, tmp_path):
 
 
 def test_run_doctor_flags_missing_credentials_for_active_openrouter_provider(monkeypatch, tmp_path):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir(parents=True, exist_ok=True)
     (home / "config.yaml").write_text(
         "model:\n"
@@ -597,7 +597,7 @@ def test_run_doctor_flags_missing_credentials_for_active_openrouter_provider(mon
         encoding="utf-8",
     )
 
-    monkeypatch.setattr(doctor_mod, "HERMES_HOME", home)
+    monkeypatch.setattr(doctor_mod, "AKRAMCODE_HOME", home)
     monkeypatch.setattr(doctor_mod, "PROJECT_ROOT", tmp_path / "project")
     monkeypatch.setattr(doctor_mod, "_DHH", str(home))
     (tmp_path / "project").mkdir(exist_ok=True)
@@ -639,10 +639,10 @@ def test_run_doctor_flags_missing_credentials_for_active_openrouter_provider(mon
         ("moa", "anthropic/claude-sonnet-4.6"),
     ],
 )
-def test_run_doctor_accepts_hermes_provider_ids_that_catalog_aliases(
+def test_run_doctor_accepts_akramcode_provider_ids_that_catalog_aliases(
     monkeypatch, tmp_path, provider, default_model
 ):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir(parents=True, exist_ok=True)
     (home / "config.yaml").write_text(
         "model:\n"
@@ -651,7 +651,7 @@ def test_run_doctor_accepts_hermes_provider_ids_that_catalog_aliases(
         encoding="utf-8",
     )
 
-    monkeypatch.setattr(doctor_mod, "HERMES_HOME", home)
+    monkeypatch.setattr(doctor_mod, "AKRAMCODE_HOME", home)
     monkeypatch.setattr(doctor_mod, "PROJECT_ROOT", tmp_path / "project")
     monkeypatch.setattr(doctor_mod, "_DHH", str(home))
     (tmp_path / "project").mkdir(exist_ok=True)
@@ -685,7 +685,7 @@ def test_run_doctor_accepts_hermes_provider_ids_that_catalog_aliases(
 
 
 def test_run_doctor_accepts_vendor_slugs_for_named_custom_provider(monkeypatch, tmp_path):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir(parents=True, exist_ok=True)
     (home / "config.yaml").write_text(
         "model:\n"
@@ -698,7 +698,7 @@ def test_run_doctor_accepts_vendor_slugs_for_named_custom_provider(monkeypatch, 
         encoding="utf-8",
     )
 
-    monkeypatch.setattr(doctor_mod, "HERMES_HOME", home)
+    monkeypatch.setattr(doctor_mod, "AKRAMCODE_HOME", home)
     monkeypatch.setattr(doctor_mod, "PROJECT_ROOT", tmp_path / "project")
     monkeypatch.setattr(doctor_mod, "_DHH", str(home))
     (tmp_path / "project").mkdir(exist_ok=True)
@@ -744,7 +744,7 @@ def test_run_doctor_vendor_slug_policy_for_openai_api_endpoint(
 ):
     """openai-api behind a custom router owns a vendor/model namespace (#69912); the real
     OpenAI endpoint keeps the warning."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir(parents=True, exist_ok=True)
     (home / "config.yaml").write_text(
         "model:\n"
@@ -754,7 +754,7 @@ def test_run_doctor_vendor_slug_policy_for_openai_api_endpoint(
         encoding="utf-8",
     )
 
-    monkeypatch.setattr(doctor_mod, "HERMES_HOME", home)
+    monkeypatch.setattr(doctor_mod, "AKRAMCODE_HOME", home)
     monkeypatch.setattr(doctor_mod, "PROJECT_ROOT", tmp_path / "project")
     monkeypatch.setattr(doctor_mod, "_DHH", str(home))
     (tmp_path / "project").mkdir(exist_ok=True)
@@ -787,7 +787,7 @@ def test_run_doctor_vendor_slug_policy_for_openai_api_endpoint(
 
 
 def test_run_doctor_accepts_kimi_coding_cn_provider(monkeypatch, tmp_path):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir(parents=True, exist_ok=True)
     (home / ".env").write_text("KIMI_CN_API_KEY=***\n", encoding="utf-8")
     (home / "config.yaml").write_text(
@@ -797,7 +797,7 @@ def test_run_doctor_accepts_kimi_coding_cn_provider(monkeypatch, tmp_path):
         encoding="utf-8",
     )
 
-    monkeypatch.setattr(doctor_mod, "HERMES_HOME", home)
+    monkeypatch.setattr(doctor_mod, "AKRAMCODE_HOME", home)
     monkeypatch.setattr(doctor_mod, "PROJECT_ROOT", tmp_path / "project")
     monkeypatch.setattr(doctor_mod, "_DHH", str(home))
     (tmp_path / "project").mkdir(exist_ok=True)
@@ -828,14 +828,14 @@ def test_run_doctor_accepts_kimi_coding_cn_provider(monkeypatch, tmp_path):
 def _doctor_env_for_agent_browser(monkeypatch, tmp_path):
     """Shared fixture setup for the agent-browser npx-resolution
     branch in run_doctor (akramcode_cli/doctor.py ~1557-1605)."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir(parents=True, exist_ok=True)
     (home / "config.yaml").write_text("memory: {}\n", encoding="utf-8")
     project = tmp_path / "project"
     project.mkdir(exist_ok=True)
 
     monkeypatch.setenv("PREFIX", "/usr")
-    monkeypatch.setattr(doctor_mod, "HERMES_HOME", home)
+    monkeypatch.setattr(doctor_mod, "AKRAMCODE_HOME", home)
     monkeypatch.setattr(doctor_mod, "PROJECT_ROOT", project)
     monkeypatch.setattr(doctor_mod, "_DHH", str(home))
     monkeypatch.setattr(
@@ -917,14 +917,14 @@ def test_doctor_fix_reports_pm_install_failure(monkeypatch, tmp_path):
 
 
 def test_run_doctor_kimi_cn_env_is_detected_and_probe_is_null_safe(monkeypatch, tmp_path):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir(parents=True, exist_ok=True)
     (home / "config.yaml").write_text("memory: {}\n", encoding="utf-8")
     (home / ".env").write_text("KIMI_CN_API_KEY=sk-test\n", encoding="utf-8")
     project = tmp_path / "project"
     project.mkdir(exist_ok=True)
 
-    monkeypatch.setattr(doctor_mod, "HERMES_HOME", home)
+    monkeypatch.setattr(doctor_mod, "AKRAMCODE_HOME", home)
     monkeypatch.setattr(doctor_mod, "PROJECT_ROOT", project)
     monkeypatch.setattr(doctor_mod, "_DHH", str(home))
     monkeypatch.setenv("KIMI_CN_API_KEY", "sk-test")
@@ -965,14 +965,14 @@ def test_run_doctor_kimi_cn_env_is_detected_and_probe_is_null_safe(monkeypatch, 
 
 
 def test_run_doctor_dashscope_retries_china_endpoint_after_intl_unauthorized(monkeypatch, tmp_path):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir(parents=True, exist_ok=True)
     (home / "config.yaml").write_text("memory: {}\n", encoding="utf-8")
     (home / ".env").write_text("DASHSCOPE_API_KEY=sk-test\n", encoding="utf-8")
     project = tmp_path / "project"
     project.mkdir(exist_ok=True)
 
-    monkeypatch.setattr(doctor_mod, "HERMES_HOME", home)
+    monkeypatch.setattr(doctor_mod, "AKRAMCODE_HOME", home)
     monkeypatch.setattr(doctor_mod, "PROJECT_ROOT", project)
     monkeypatch.setattr(doctor_mod, "_DHH", str(home))
     monkeypatch.setenv("DASHSCOPE_API_KEY", "sk-test")
@@ -1021,14 +1021,14 @@ def test_run_doctor_dashscope_retries_china_endpoint_after_intl_unauthorized(mon
 
 @pytest.mark.parametrize("base_url", [None, "https://opencode.ai/zen/go/v1"])
 def test_run_doctor_opencode_go_skips_invalid_models_probe(monkeypatch, tmp_path, base_url):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir(parents=True, exist_ok=True)
     (home / "config.yaml").write_text("memory: {}\n", encoding="utf-8")
     (home / ".env").write_text("OPENCODE_GO_API_KEY=***\n", encoding="utf-8")
     project = tmp_path / "project"
     project.mkdir(exist_ok=True)
 
-    monkeypatch.setattr(doctor_mod, "HERMES_HOME", home)
+    monkeypatch.setattr(doctor_mod, "AKRAMCODE_HOME", home)
     monkeypatch.setattr(doctor_mod, "PROJECT_ROOT", project)
     monkeypatch.setattr(doctor_mod, "_DHH", str(home))
     monkeypatch.setenv("OPENCODE_GO_API_KEY", "sk-test")
@@ -1108,7 +1108,7 @@ def _run_doctor_with_healthy_oauth_fallback(
     minimax_oauth_status: dict,
     xai_oauth_status: dict | None = None,
 ) -> str:
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir(parents=True, exist_ok=True)
     (home / "config.yaml").write_text(
         "model:\n"
@@ -1119,7 +1119,7 @@ def _run_doctor_with_healthy_oauth_fallback(
     project = tmp_path / "project"
     project.mkdir(exist_ok=True)
 
-    monkeypatch.setattr(doctor_mod, "HERMES_HOME", home)
+    monkeypatch.setattr(doctor_mod, "AKRAMCODE_HOME", home)
     monkeypatch.setattr(doctor_mod, "PROJECT_ROOT", project)
     monkeypatch.setattr(doctor_mod, "_DHH", str(home))
     monkeypatch.setenv(env_key, bad_key)
@@ -1223,13 +1223,13 @@ class TestDoctorXaiOAuthStatus:
 
     def _run(self, monkeypatch, tmp_path, *, xai_auth_fn) -> str:
         """Run doctor with a controlled xAI auth callable; return stdout."""
-        home = tmp_path / ".hermes"
+        home = tmp_path / ".akramcode"
         home.mkdir(parents=True, exist_ok=True)
         (home / "config.yaml").write_text("memory: {}\n", encoding="utf-8")
         project = tmp_path / "project"
         project.mkdir(exist_ok=True)
 
-        monkeypatch.setattr(doctor_mod, "HERMES_HOME", home)
+        monkeypatch.setattr(doctor_mod, "AKRAMCODE_HOME", home)
         monkeypatch.setattr(doctor_mod, "PROJECT_ROOT", project)
         monkeypatch.setattr(doctor_mod, "_DHH", str(home))
 
@@ -1265,13 +1265,13 @@ class TestDoctorXaiOAuthStatus:
 
     def test_import_failure_does_not_affect_other_providers(self, monkeypatch, tmp_path):
         """Nous / Codex / Gemini / MiniMax rows must survive an xAI import failure."""
-        home = tmp_path / ".hermes"
+        home = tmp_path / ".akramcode"
         home.mkdir(parents=True, exist_ok=True)
         (home / "config.yaml").write_text("memory: {}\n", encoding="utf-8")
         project = tmp_path / "project"
         project.mkdir(exist_ok=True)
 
-        monkeypatch.setattr(doctor_mod, "HERMES_HOME", home)
+        monkeypatch.setattr(doctor_mod, "AKRAMCODE_HOME", home)
         monkeypatch.setattr(doctor_mod, "PROJECT_ROOT", project)
         monkeypatch.setattr(doctor_mod, "_DHH", str(home))
 
@@ -1311,7 +1311,7 @@ class TestDoctorXaiOAuthStatus:
 
 
 class TestDoctorStaleMaxIterationsDrift:
-    """Regression for #17534: a stale HERMES_MAX_ITERATIONS in .env shadows
+    """Regression for #17534: a stale AKRAMCODE_MAX_ITERATIONS in .env shadows
     agent.max_turns in config.yaml. The repro symptom is config.yaml saying
     400 while the gateway activity line reads N/90. Doctor must detect the
     drift, and `--fix` must remove the .env ghost (config.yaml wins).
@@ -1327,25 +1327,25 @@ class TestDoctorStaleMaxIterationsDrift:
         import io
         from argparse import Namespace
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir(parents=True)
-        (hermes_home / "config.yaml").write_text(
+        akramcode_home = tmp_path / ".akramcode"
+        akramcode_home.mkdir(parents=True)
+        (akramcode_home / "config.yaml").write_text(
             f"agent:\n  max_turns: {cfg_turns}\n", encoding="utf-8"
         )
         env_lines = ["OPENAI_API_KEY=sk-test\n"]
         if ghost is not None:
-            env_lines.append(f"HERMES_MAX_ITERATIONS={ghost}\n")
-        (hermes_home / ".env").write_text("".join(env_lines), encoding="utf-8")
+            env_lines.append(f"AKRAMCODE_MAX_ITERATIONS={ghost}\n")
+        (akramcode_home / ".env").write_text("".join(env_lines), encoding="utf-8")
 
-        monkeypatch.setattr(doctor_mod, "HERMES_HOME", hermes_home)
-        monkeypatch.setattr(doctor_mod, "get_hermes_home", lambda: hermes_home)
+        monkeypatch.setattr(doctor_mod, "AKRAMCODE_HOME", akramcode_home)
+        monkeypatch.setattr(doctor_mod, "get_akramcode_home", lambda: akramcode_home)
         # Point the config helpers at the temp home.
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
         if os_environ_value is not None:
             # Simulate the gateway bridge having already overridden os.environ.
-            monkeypatch.setenv("HERMES_MAX_ITERATIONS", str(os_environ_value))
+            monkeypatch.setenv("AKRAMCODE_MAX_ITERATIONS", str(os_environ_value))
         else:
-            monkeypatch.delenv("HERMES_MAX_ITERATIONS", raising=False)
+            monkeypatch.delenv("AKRAMCODE_MAX_ITERATIONS", raising=False)
 
         # Short-circuit at the Tool Availability stage — the drift check runs
         # well before it in the Configuration Files section.
@@ -1358,26 +1358,26 @@ class TestDoctorStaleMaxIterationsDrift:
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf), pytest.raises(SystemExit):
             doctor_mod.run_doctor(Namespace(fix=fix))
-        return buf.getvalue(), hermes_home
+        return buf.getvalue(), akramcode_home
 
     def test_detects_drift_warn_only(self, monkeypatch, tmp_path):
-        out, hermes_home = self._run_config_section(
+        out, akramcode_home = self._run_config_section(
             monkeypatch, tmp_path, fix=False, ghost=90, cfg_turns=400,
             os_environ_value=400,  # bridge contaminated os.environ
         )
-        assert "HERMES_MAX_ITERATIONS=90" in out
+        assert "AKRAMCODE_MAX_ITERATIONS=90" in out
         assert "shadows" in out
         # Warn-only must NOT mutate .env.
-        assert "HERMES_MAX_ITERATIONS=90" in (hermes_home / ".env").read_text(encoding="utf-8")
+        assert "AKRAMCODE_MAX_ITERATIONS=90" in (akramcode_home / ".env").read_text(encoding="utf-8")
 
     def test_fix_removes_ghost(self, monkeypatch, tmp_path):
-        out, hermes_home = self._run_config_section(
+        out, akramcode_home = self._run_config_section(
             monkeypatch, tmp_path, fix=True, ghost=90, cfg_turns=400,
             os_environ_value=400,
         )
-        assert "Removed stale HERMES_MAX_ITERATIONS" in out
-        env_after = (hermes_home / ".env").read_text(encoding="utf-8")
-        assert "HERMES_MAX_ITERATIONS" not in env_after
+        assert "Removed stale AKRAMCODE_MAX_ITERATIONS" in out
+        env_after = (akramcode_home / ".env").read_text(encoding="utf-8")
+        assert "AKRAMCODE_MAX_ITERATIONS" not in env_after
         assert "OPENAI_API_KEY=sk-test" in env_after  # other keys preserved
 
 
@@ -1527,7 +1527,7 @@ def test_docker_daemon_probe_uses_version_not_info(monkeypatch):
 def test_doctor_reports_auxiliary_blocks_that_do_not_resolve(tmp_path, monkeypatch):
     """A routed auxiliary.<task> block that the runtime resolver rejects is a doctor finding, not a
     silent fall-back to the main model (#116055); a resolvable one is not flagged."""
-    import akram_core.hermes_yaml as yaml
+    import akram_core.akramcode_yaml as yaml
     from akramcode_cli import doctor_config
 
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
@@ -1549,7 +1549,7 @@ class TestMacOSTCCGrants:
 
     @staticmethod
     def _darwin_bundle(monkeypatch, tmp_path, dr):
-        monkeypatch.setattr(doctor_platform, "_desktop_app_bundle", lambda: tmp_path / "Hermes.app")
+        monkeypatch.setattr(doctor_platform, "_desktop_app_bundle", lambda: tmp_path / "AkramCode.app")
         if dr is not ...:
             monkeypatch.setattr(doctor_platform, "_macos_desktop_dr", lambda app: dr)
 
@@ -1561,32 +1561,32 @@ class TestMacOSTCCGrants:
     def test_warns_on_cdhash_pinned_dr(self, monkeypatch, capsys, tmp_path):
         self._darwin_bundle(
             monkeypatch, tmp_path,
-            'designated => identifier "com.nousresearch.hermes" and cdhash H"97e692f3890f781fa0ad5ad6cb9d769cfaf42628"',
+            'designated => identifier "com.nousresearch.akramcode" and cdhash H"97e692f3890f781fa0ad5ad6cb9d769cfaf42628"',
         )
         doctor_platform.check_macos_tcc_grants()
         out = capsys.readouterr().out
         assert "TCC grants will reset after every update" in out
-        assert "hermes update" in out
+        assert "akramcode update" in out
         assert "signing identity is stable" not in out
 
     def test_identifier_dr_is_stable_with_upgrade_hint_and_repair_info(self, monkeypatch, capsys, tmp_path):
-        self._darwin_bundle(monkeypatch, tmp_path, 'designated => identifier "com.nousresearch.hermes"')
+        self._darwin_bundle(monkeypatch, tmp_path, 'designated => identifier "com.nousresearch.akramcode"')
         doctor_platform.check_macos_tcc_grants()
         out = capsys.readouterr().out
         assert "TCC signing identity is stable" in out
         assert "--setup-tcc-identity" in out
-        assert "tccutil reset ScreenCapture com.nousresearch.hermes" in out
+        assert "tccutil reset ScreenCapture com.nousresearch.akramcode" in out
 
     def test_certificate_anchored_dr_is_stable_without_upgrade_hint(self, monkeypatch, capsys, tmp_path):
         self._darwin_bundle(
             monkeypatch, tmp_path,
-            'designated => identifier "com.nousresearch.hermes" and certificate root = H"aabbcc"',
+            'designated => identifier "com.nousresearch.akramcode" and certificate root = H"aabbcc"',
         )
         doctor_platform.check_macos_tcc_grants()
         out = capsys.readouterr().out
         assert "TCC signing identity is stable" in out
         assert "--setup-tcc-identity" not in out
-        assert "tccutil reset ScreenCapture com.nousresearch.hermes" in out
+        assert "tccutil reset ScreenCapture com.nousresearch.akramcode" in out
 
     @pytest.mark.parametrize("failure", ["none", "empty", "timeout", "no_codesign"])
     def test_unreadable_dr_warns_and_never_claims_stable(self, monkeypatch, capsys, tmp_path, failure):

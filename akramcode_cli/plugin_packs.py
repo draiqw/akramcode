@@ -296,7 +296,7 @@ def render_pack_review(console, pack: PluginPack, resolved: List[ResolvedPackPlu
     if pack.skills:
         console.print(
             "[yellow]Pack lists skills (NOT auto-installed yet):[/yellow] " + ", ".join(pack.skills))
-        console.print("[dim]Install them manually, e.g. `hermes skills install <id>`.[/dim]")
+        console.print("[dim]Install them manually, e.g. `akramcode skills install <id>`.[/dim]")
     console.print(
         "\n[dim]Installing a pack runs third-party code × "
         f"{len(resolved)} plugins. Each plugin's declared capabilities still "
@@ -450,7 +450,7 @@ def _sanitized_entry_config(plugin_id: str) -> dict[str, Any]:
     return _strip_forbidden_keys(entry)
 
 
-def export_pack(*, enabled_only: bool = False, pack_name: str = "my-hermes-pack") -> tuple[str, List[str]]:
+def export_pack(*, enabled_only: bool = False, pack_name: str = "my-akramcode-pack") -> tuple[str, List[str]]:
     """Build pack YAML from the current install; returns ``(yaml_text, warnings)``. Plugins with
     unknown Git provenance (no install metadata) become warnings + YAML comments, never entries."""
     import akram_core.akramcode_yaml as yaml
@@ -484,7 +484,7 @@ def export_pack(*, enabled_only: bool = False, pack_name: str = "my-hermes-pack"
 
     doc: dict[str, Any] = {
         "name": pack_name,
-        "description": "Exported by `hermes plugins pack export`.",
+        "description": "Exported by `akramcode plugins pack export`.",
         "version": "1.0.0",
         "plugins": entries,
     }
@@ -512,7 +512,7 @@ def _load_and_review(console, source: str):
 
 
 def cmd_pack_show(source: str) -> None:
-    """``hermes plugins pack show <path-or-url>`` — dry-run review."""
+    """``akramcode plugins pack show <path-or-url>`` — dry-run review."""
     from akramcode_cli.plugins_cmd import _console
     console = _console()
     pack, resolved = _load_and_review(console, source)
@@ -521,11 +521,11 @@ def cmd_pack_show(source: str) -> None:
         console.print(
             f"\n[yellow]{len(unresolved)} entr{'y' if len(unresolved) == 1 else 'ies'} "
             "could not be resolved — install would skip them and exit non-zero.[/yellow]")
-    console.print("\n[dim]Dry run only. Install with `hermes plugins pack install ...`.[/dim]")
+    console.print("\n[dim]Dry run only. Install with `akramcode plugins pack install ...`.[/dim]")
 
 
 def cmd_pack_install(source: str, *, force: bool = False) -> None:
-    """``hermes plugins pack install <path-or-url>``: mandatory review screen -> one pack-level
+    """``akramcode plugins pack install <path-or-url>``: mandatory review screen -> one pack-level
     consent -> pinned fan-out installs -> per-plugin capability consent. Exit 1 if any failed."""
     from akramcode_cli.plugins_cmd import _ask_yes, _console, _fail, _is_tty
     console = _console()
@@ -547,13 +547,13 @@ def cmd_pack_install(source: str, *, force: bool = False) -> None:
         console.print(f"  [red]✗[/red] {r.display}: {r.error}")
     if ok:
         console.print("[dim]Restart the gateway for the plugins to take effect:[/dim]")
-        console.print("[dim]  hermes gateway restart[/dim]")
+        console.print("[dim]  akramcode gateway restart[/dim]")
     if failed:
         sys.exit(1)
 
 
-def cmd_pack_export(*, enabled_only: bool = False, name: str = "my-hermes-pack") -> None:
-    """``hermes plugins pack export [--enabled-only]`` — pack YAML on stdout."""
+def cmd_pack_export(*, enabled_only: bool = False, name: str = "my-akramcode-pack") -> None:
+    """``akramcode plugins pack export [--enabled-only]`` — pack YAML on stdout."""
     from rich.console import Console
     console = Console(stderr=True)
     try:
@@ -567,11 +567,11 @@ def cmd_pack_export(*, enabled_only: bool = False, name: str = "my-hermes-pack")
 
 
 def pack_command(args) -> None:
-    """Dispatch ``hermes plugins pack <action>``."""
+    """Dispatch ``akramcode plugins pack <action>``."""
     handler = _PACK_ACTIONS.get(getattr(args, "pack_action", None))
     if handler is None:
         from akramcode_cli.plugins_cmd import _console, _fail
-        _fail(_console(), "[red]Error:[/red] Usage: hermes plugins pack {install|export|show}")
+        _fail(_console(), "[red]Error:[/red] Usage: akramcode plugins pack {install|export|show}")
     handler(args)
 
 
@@ -579,6 +579,6 @@ _PACK_ACTIONS = {
     "install": lambda args: cmd_pack_install(args.source, force=getattr(args, "force", False)),
     "export": lambda args: cmd_pack_export(
         enabled_only=getattr(args, "enabled_only", False),
-        name=getattr(args, "name", None) or "my-hermes-pack"),
+        name=getattr(args, "name", None) or "my-akramcode-pack"),
     "show": lambda args: cmd_pack_show(args.source),
 }

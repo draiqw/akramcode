@@ -33,7 +33,7 @@ def _policy(*, approval_mode: str = "manual", max_turns: int = 12) -> dict:
         config={
             "agent": {"max_turns": max_turns},
             "approvals": {"mode": approval_mode},
-            "platform_toolsets": {"api_server": ["hermes-api-server", "web"]},
+            "platform_toolsets": {"api_server": ["akramcode-api-server", "web"]},
         },
     )
 
@@ -234,23 +234,23 @@ def test_policy_drift_requires_reauthorization_without_retry():
 
 
 def _two_profile_homes(tmp_path, monkeypatch) -> None:
-    """alpha is the launch/active home (``HERMES_PROFILE=alpha``); beta is a served sibling."""
-    root = tmp_path / ".hermes"
+    """alpha is the launch/active home (``AKRAMCODE_PROFILE=alpha``); beta is a served sibling."""
+    root = tmp_path / ".akramcode"
     for name, turns in (("alpha", 12), ("beta", 7)):
         home = root / "profiles" / name
         home.mkdir(parents=True)
         (home / "config.yaml").write_text(
             f"agent:\n  max_turns: {turns}\napprovals:\n  mode: manual\n"
-            "platform_toolsets:\n  api_server: [hermes-api-server, web]\n")
+            "platform_toolsets:\n  api_server: [akramcode-api-server, web]\n")
         (home / ".env").write_text("")
     from akramcode_cli import profiles
     import gateway.run as gateway_run
     alpha = root / "profiles" / "alpha"
-    monkeypatch.setattr(profiles, "_get_default_hermes_home", lambda: root)
-    monkeypatch.setattr(gateway_run, "_hermes_home", alpha)
-    monkeypatch.setenv("HERMES_HOME", str(alpha))
-    monkeypatch.setenv("HERMES_PROFILE", "alpha")
-    monkeypatch.delenv("HERMES_YOLO_MODE", raising=False)
+    monkeypatch.setattr(profiles, "_get_default_akramcode_home", lambda: root)
+    monkeypatch.setattr(gateway_run, "_akramcode_home", alpha)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(alpha))
+    monkeypatch.setenv("AKRAMCODE_PROFILE", "alpha")
+    monkeypatch.delenv("AKRAMCODE_YOLO_MODE", raising=False)
 
 
 def test_catalog_policy_comes_from_the_served_profile_not_the_launch_env(tmp_path, monkeypatch):
@@ -268,8 +268,8 @@ def test_catalog_policy_comes_from_the_served_profile_not_the_launch_env(tmp_pat
         execution_policy_mapping(target_profile="ghost")
 
 
-def test_catalog_requires_the_served_profile_and_never_reads_hermes_profile(monkeypatch):
-    monkeypatch.setenv("HERMES_PROFILE", "reviewer")
+def test_catalog_requires_the_served_profile_and_never_reads_akramcode_profile(monkeypatch):
+    monkeypatch.setenv("AKRAMCODE_PROFILE", "reviewer")
     with pytest.raises(TypeError, match="target_profile"):
         catalog_mapping(installation_id="install-peer", persistent_process=True)  # type: ignore[call-arg]
     with pytest.raises(ValueError, match="target_profile"):

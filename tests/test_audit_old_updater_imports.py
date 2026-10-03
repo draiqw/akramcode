@@ -51,31 +51,31 @@ def commit(root, message):
 
 def test_discovers_entrypoint_renames_extractions_and_deleted_helpers(audit):
     root = audit.REPO_ROOT
-    put(root, "akramcode_cli/ancient.py", "def cmd_update():\n    from hermes_constants import first\n")
+    put(root, "akramcode_cli/ancient.py", "def cmd_update():\n    from akramcode_constants import first\n")
     first = commit(root, "first updater at an unknown address")
     git(root, "mv", "akramcode_cli/ancient.py", "akramcode_cli/briefly.py")
     renamed = commit(root, "rename without editing the blob")
     put(root, "akramcode_cli/briefly.py", "from akramcode_cli.gone import phase\ndef cmd_update():\n    phase()\n")
-    put(root, "akramcode_cli/gone.py", "def phase():\n    from hermes_constants import extracted\n")
+    put(root, "akramcode_cli/gone.py", "def phase():\n    from akramcode_constants import extracted\n")
     extracted = commit(root, "extract a helper under an unrelated filename")
     git(root, "mv", "akramcode_cli/gone.py", "akramcode_cli/later.py")
     put(root, "akramcode_cli/briefly.py", "from akramcode_cli.later import phase\ndef cmd_update():\n    phase()\n")
     commit(root, "rename the extracted helper")
     git(root, "rm", "akramcode_cli/briefly.py", "akramcode_cli/later.py")
-    put(root, "akramcode_cli/update_cmd.py", "def cmd_update():\n    from hermes_constants import newest\n")
+    put(root, "akramcode_cli/update_cmd.py", "def cmd_update():\n    from akramcode_constants import newest\n")
     commit(root, "delete every historical filename")
 
     surface = audit.audit_history()
-    assert {("hermes_constants", s) for s in ("first", "extracted", "newest")} <= surface.required.keys()
+    assert {("akramcode_constants", s) for s in ("first", "extracted", "newest")} <= surface.required.keys()
     assert {
         "akramcode_cli/ancient.py:cmd_update", "akramcode_cli/briefly.py:cmd_update"
-    } <= surface.sites[("hermes_constants", "first")]
-    assert first[:12] in surface.required[("hermes_constants", "first")]
-    assert renamed[:12] in surface.required[("hermes_constants", "first")]
-    assert extracted[:12] in surface.required[("hermes_constants", "extracted")]
+    } <= surface.sites[("akramcode_constants", "first")]
+    assert first[:12] in surface.required[("akramcode_constants", "first")]
+    assert renamed[:12] in surface.required[("akramcode_constants", "first")]
+    assert extracted[:12] in surface.required[("akramcode_constants", "extracted")]
     assert {
         "akramcode_cli/gone.py:phase", "akramcode_cli/later.py:phase"
-    } <= surface.sites[("hermes_constants", "extracted")]
+    } <= surface.sites[("akramcode_constants", "extracted")]
     assert surface.stats["commits"] == int(git(root, "rev-list", "--count", "origin/main"))
     assert surface.stats["complete_history"] is True
     assert surface.stats["history_ref"] == git(root, "rev-parse", "origin/main")
@@ -83,7 +83,7 @@ def test_discovers_entrypoint_renames_extractions_and_deleted_helpers(audit):
     assert {"akramcode_cli/ancient.py", "akramcode_cli/briefly.py"} <= set(surface.stats["entrypoint_paths"])
     assert {"akramcode_cli/gone.py", "akramcode_cli/later.py"} <= set(surface.stats["files_analyzed"])
     assert not any(root.glob("akramcode_cli/*gone*"))
-    assert audit.audit_tree().required.keys() == {("hermes_constants", "newest")}
+    assert audit.audit_tree().required.keys() == {("akramcode_constants", "newest")}
 
 
 def test_all_merge_parents_and_merge_result_but_not_unmerged_branches(audit):
@@ -92,58 +92,58 @@ def test_all_merge_parents_and_merge_result_but_not_unmerged_branches(audit):
     put(root, path, "def cmd_update():\n    pass\n")
     base = commit(root, "base")
     git(root, "checkout", "-b", "side")
-    put(root, path, "def cmd_update():\n    from hermes_constants import side_only\n")
+    put(root, path, "def cmd_update():\n    from akramcode_constants import side_only\n")
     side = commit(root, "side updater")
     git(root, "checkout", "main")
-    put(root, path, "def cmd_update():\n    from hermes_constants import main_only\n")
+    put(root, path, "def cmd_update():\n    from akramcode_constants import main_only\n")
     commit(root, "main updater")
     # An ours merge is TREESAME to main. Ordinary path-limited git log
     # simplifies away the side parent and its real shipped revision.
     git(root, "merge", "-s", "ours", "--no-ff", "side", "-m", "discard side changes")
     commit_sha = git(root, "rev-parse", "HEAD")
     git(root, "update-ref", "refs/remotes/origin/main", commit_sha)
-    assert side[:12] in audit.audit_history().required[("hermes_constants", "side_only")]
+    assert side[:12] in audit.audit_history().required[("akramcode_constants", "side_only")]
     git(root, "checkout", "-b", "other", base)
     put(root, "unrelated.txt", "new branch\n")
     commit(root, "unrelated change")
     git(root, "checkout", "main")
     git(root, "merge", "--no-ff", "--no-commit", "other")
-    put(root, path, "def cmd_update():\n    from hermes_constants import merge_only\n")
+    put(root, path, "def cmd_update():\n    from akramcode_constants import merge_only\n")
     merged = commit(root, "updater code created only by merge resolution")
     git(root, "checkout", "-b", "unshipped", base)
-    put(root, path, "def cmd_update():\n    from hermes_constants import never_shipped\n")
+    put(root, path, "def cmd_update():\n    from akramcode_constants import never_shipped\n")
     commit(root, "unmerged branch")
     git(root, "update-ref", "refs/remotes/origin/main", merged)
 
     surface = audit.audit_history()
-    assert {s for m, s in surface.required if m == "hermes_constants"} == {
+    assert {s for m, s in surface.required if m == "akramcode_constants"} == {
         "side_only", "main_only", "merge_only"
     }
-    assert merged[:12] in surface.required[("hermes_constants", "merge_only")]
+    assert merged[:12] in surface.required[("akramcode_constants", "merge_only")]
     assert surface.stats["commits"] == int(git(root, "rev-list", "--count", "origin/main"))
 
 
 def test_deleted_siblings_and_renamed_seed_helper_are_not_tied_to_head(audit):
     root = audit.REPO_ROOT
     put(root, "akramcode_cli/update_cmd.py", "def cmd_update():\n    pass\n")
-    put(root, "akramcode_cli/old_support.py", "def old_phase():\n    from hermes_constants import before_rename\n")
+    put(root, "akramcode_cli/old_support.py", "def old_phase():\n    from akramcode_constants import before_rename\n")
     commit(root, "support before its known name")
     git(root, "mv", "akramcode_cli/old_support.py", "akramcode_cli/post_update.py")
-    put(root, "akramcode_cli/update_cmd_removed.py", "def phase():\n    from hermes_constants import deleted_sibling\n")
+    put(root, "akramcode_cli/update_cmd_removed.py", "def phase():\n    from akramcode_constants import deleted_sibling\n")
     commit(root, "known helper and temporary extraction")
     git(root, "rm", "akramcode_cli/post_update.py", "akramcode_cli/update_cmd_removed.py")
     commit(root, "remove both helpers")
     surface = audit.audit_history()
-    assert {("hermes_constants", s) for s in ("before_rename", "deleted_sibling")} <= surface.required.keys()
-    assert "akramcode_cli/old_support.py:old_phase" in surface.sites[("hermes_constants", "before_rename")]
+    assert {("akramcode_constants", s) for s in ("before_rename", "deleted_sibling")} <= surface.required.keys()
+    assert "akramcode_cli/old_support.py:old_phase" in surface.sites[("akramcode_constants", "before_rename")]
     assert not audit.audit_tree().required
 
 
 def test_shallow_clone_refuses_freeze_without_overwriting_and_tree_still_works(audit, tmp_path, monkeypatch, capsys):
     root = audit.REPO_ROOT
-    put(root, "akramcode_cli/unknown.py", "def cmd_update():\n    from hermes_constants import old\n")
+    put(root, "akramcode_cli/unknown.py", "def cmd_update():\n    from akramcode_constants import old\n")
     commit(root, "historical contract")
-    put(root, "akramcode_cli/unknown.py", "def cmd_update():\n    from hermes_constants import current\n")
+    put(root, "akramcode_cli/unknown.py", "def cmd_update():\n    from akramcode_constants import current\n")
     commit(root, "current contract")
     clone = tmp_path / "shallow"
     git(root, "clone", "--depth=1", root.as_uri(), str(clone))
@@ -151,7 +151,7 @@ def test_shallow_clone_refuses_freeze_without_overwriting_and_tree_still_works(a
     assert git(clone, "rev-parse", "--is-shallow-repository") == "true"
     with pytest.raises(audit.AuditError, match="shallow"):
         audit.audit_history()
-    assert set(audit.audit_tree().required) == {("hermes_constants", "current")}
+    assert set(audit.audit_tree().required) == {("akramcode_constants", "current")}
     output = clone / "frozen.json"
     output.write_text("do not truncate this", encoding="utf-8")
     with pytest.raises(SystemExit) as failure:
@@ -164,24 +164,24 @@ def test_shallow_clone_refuses_freeze_without_overwriting_and_tree_still_works(a
 def test_freeze_requires_cutoff_and_keeps_only_shipped_loads(audit, tmp_path, capsys):
     root = audit.REPO_ROOT
     put(root, "akramcode_cli/update_cmd.py", """def cmd_update():
-    from hermes_constants import old_only, bare_then_guarded
+    from akramcode_constants import old_only, bare_then_guarded
     try:
-        from hermes_constants import guarded_then_bare, always_guarded
+        from akramcode_constants import guarded_then_bare, always_guarded
     except ImportError:
         pass
 """)
     commit(root, "not a tag, still a shipped updater")
     put(root, "akramcode_cli/update_cmd.py", """def cmd_update():
-    from hermes_constants import guarded_then_bare
+    from akramcode_constants import guarded_then_bare
     try:
-        from hermes_constants import bare_then_guarded, always_guarded
+        from akramcode_constants import bare_then_guarded, always_guarded
     except ImportError:
         pass
 """)
     cutoff = commit(root, "last updater before the PM migration")
-    put(root, "akramcode_cli/update_cmd.py", "def cmd_update():\n    from hermes_constants import after_cutoff\n")
+    put(root, "akramcode_cli/update_cmd.py", "def cmd_update():\n    from akramcode_constants import after_cutoff\n")
     commit(root, "origin/main has advanced beyond the contract cutoff")
-    put(root, "akramcode_cli/update_cmd.py", "def cmd_update():\n    from hermes_constants import uncommitted\n")
+    put(root, "akramcode_cli/update_cmd.py", "def cmd_update():\n    from akramcode_constants import uncommitted\n")
     output = tmp_path / "history.json"
     output.write_text("do not overwrite without a cutoff", encoding="utf-8")
     with pytest.raises(SystemExit) as failure:
@@ -193,10 +193,10 @@ def test_freeze_requires_cutoff_and_keeps_only_shipped_loads(audit, tmp_path, ca
     assert audit.main(["--ref", cutoff, "--freeze", str(output)]) == 0
     frozen = json.loads(output.read_text())
     assert set(frozen["bare"]) == {
-        "hermes_constants::old_only",
-        "hermes_constants::bare_then_guarded", "hermes_constants::guarded_then_bare",
+        "akramcode_constants::old_only",
+        "akramcode_constants::bare_then_guarded", "akramcode_constants::guarded_then_bare",
     }
-    assert frozen["guarded_only"] == ["hermes_constants::always_guarded"]
+    assert frozen["guarded_only"] == ["akramcode_constants::always_guarded"]
     assert frozen["stats"]["mode"] == "history"
     assert frozen["stats"]["history_ref"] == cutoff
     assert frozen["stats"]["complete_history"] is True
@@ -218,23 +218,23 @@ def test_committed_merge_conflict_audits_both_arms_and_records_recovery(audit):
     root = audit.REPO_ROOT
     put(root, "old.py", """<<<<<<< HEAD
 def cmd_update():
-    from hermes_constants import ours
+    from akramcode_constants import ours
 =======
 def cmd_update():
-    from hermes_constants import theirs
+    from akramcode_constants import theirs
 >>>>>>> incoming
 """)
     commit(root, "accidentally committed conflict")
     put(root, "old.py", "def cmd_update():\n    pass\n")
     commit(root, "fix conflict")
     surface = audit.audit_history()
-    assert {("hermes_constants", "ours"), ("hermes_constants", "theirs")} <= surface.required.keys()
+    assert {("akramcode_constants", "ours"), ("akramcode_constants", "theirs")} <= surface.required.keys()
     assert any("old.py" in recovery for recovery in surface.parse_recoveries)
 
 
 def test_identical_blobs_have_path_specific_relative_imports_and_seed_roles(audit):
     root = audit.REPO_ROOT
-    source = "def cmd_update():\n    from .constants import important\ndef unrelated():\n    from hermes_constants import helper_only\n"
+    source = "def cmd_update():\n    from .constants import important\ndef unrelated():\n    from akramcode_constants import helper_only\n"
     put(root, "akramcode_cli/unknown.py", source)
     put(root, "akramcode_cli/post_update.py", source)
     put(root, "pm/unknown.py", source)
@@ -242,7 +242,7 @@ def test_identical_blobs_have_path_specific_relative_imports_and_seed_roles(audi
     surface = audit.audit_history()
     assert ("akramcode_cli.constants", "important") in surface.required
     assert ("pm.constants", "important") in surface.required
-    assert surface.sites[("hermes_constants", "helper_only")] == {"akramcode_cli/post_update.py:unrelated"}
+    assert surface.sites[("akramcode_constants", "helper_only")] == {"akramcode_cli/post_update.py:unrelated"}
 
 
 def test_only_swallowed_matching_load_failures_are_guarded(audit):
@@ -250,27 +250,27 @@ def test_only_swallowed_matching_load_failures_are_guarded(audit):
     put(root, "akramcode_cli/update_cmd.py", """def cmd_update():
     import sys
     try:
-        from hermes_constants import wrong_exception
+        from akramcode_constants import wrong_exception
     except AttributeError:
         pass
     try:
-        from hermes_constants import name_not_module
+        from akramcode_constants import name_not_module
     except ModuleNotFoundError:
         pass
     try:
-        from hermes_constants import reraised
+        from akramcode_constants import reraised
     except ImportError:
         raise
     try:
-        module = sys.modules.get("hermes_constants")
+        module = sys.modules.get("akramcode_constants")
         getattr(module, "optional")
     except AttributeError:
         pass
 """)
     commit(root, "exception boundaries")
     surface = audit.audit_history()
-    assert surface.guarded_only == {("hermes_constants", "optional")}
-    assert {("hermes_constants", s) for s in ("wrong_exception", "name_not_module", "reraised")} <= surface.required.keys()
+    assert surface.guarded_only == {("akramcode_constants", "optional")}
+    assert {("akramcode_constants", s) for s in ("wrong_exception", "name_not_module", "reraised")} <= surface.required.keys()
 
 
 def test_lazy_module_facade_follows_called_helper_not_unrelated_commands(audit):
@@ -285,18 +285,18 @@ def cmd_update():
     put(root, "akramcode_cli/main.py", """from akramcode_cli.gone import phase as phase
 
 def unrelated_command():
-    from hermes_constants import not_an_updater_load
+    from akramcode_constants import not_an_updater_load
 """)
-    put(root, "akramcode_cli/gone.py", "def phase():\n    from hermes_constants import actual_helper_load\n")
+    put(root, "akramcode_cli/gone.py", "def phase():\n    from akramcode_constants import actual_helper_load\n")
     commit(root, "lazy facade and re-exported helper")
     surface = audit.audit_history()
-    assert ("hermes_constants", "actual_helper_load") in surface.required
-    assert ("hermes_constants", "not_an_updater_load") not in surface.required
+    assert ("akramcode_constants", "actual_helper_load") in surface.required
+    assert ("akramcode_constants", "not_an_updater_load") not in surface.required
 
 
 def test_resolver_requires_a_module_binding_not_a_nested_name(audit):
     root = audit.REPO_ROOT
-    put(root, "hermes_constants.py", """def owner():
+    put(root, "akramcode_constants.py", """def owner():
     from pathlib import Path as local_import
     local_assignment = 1
     def local_function():
@@ -311,26 +311,26 @@ if True:
     value = 1
 """)
     for symbol in ("local_import", "local_assignment", "local_function", "method"):
-        assert not audit.resolve_in_tree("hermes_constants", symbol, root)[0], symbol
+        assert not audit.resolve_in_tree("akramcode_constants", symbol, root)[0], symbol
     for symbol in ("owner", "Owner", "exported", "value"):
-        assert audit.resolve_in_tree("hermes_constants", symbol, root)[0], symbol
+        assert audit.resolve_in_tree("akramcode_constants", symbol, root)[0], symbol
 
 
 def test_same_named_functions_keep_requirements_from_every_definition(audit):
     result = audit.analyse("""class First:
     def phase(self):
-        from hermes_constants import first
+        from akramcode_constants import first
 
 class Second:
     def phase(self):
-        from hermes_constants import second
+        from akramcode_constants import second
 
 if True:
     def platform_phase():
-        from hermes_constants import platform_a
+        from akramcode_constants import platform_a
 else:
     def platform_phase():
-        from hermes_constants import platform_b
+        from akramcode_constants import platform_b
 
 def cmd_update():
     Second().phase()
@@ -343,21 +343,21 @@ def cmd_update():
 
 def test_reviewed_dynamic_loads_survive_history_freeze_within_cutoff(audit, monkeypatch):
     root = audit.REPO_ROOT
-    put(root, "akramcode_cli/update_cmd.py", "def cmd_update():\n    from hermes_constants import anchor\n")
+    put(root, "akramcode_cli/update_cmd.py", "def cmd_update():\n    from akramcode_constants import anchor\n")
     witness = commit(root, "module-object call manually reviewed")
-    put(root, "akramcode_cli/update_cmd.py", "def cmd_update():\n    from hermes_constants import later\n")
+    put(root, "akramcode_cli/update_cmd.py", "def cmd_update():\n    from akramcode_constants import later\n")
     later = commit(root, "module-object call after the contract cutoff")
     monkeypatch.setattr(audit, "REVIEWED_DYNAMIC_LOADS", (
-        ("hermes_constants", "dynamic", witness[:12], "akramcode_cli/update_cmd.py:cmd_update"),
-        ("hermes_constants", "after_cutoff", later[:12], "akramcode_cli/update_cmd.py:cmd_update"),
+        ("akramcode_constants", "dynamic", witness[:12], "akramcode_cli/update_cmd.py:cmd_update"),
+        ("akramcode_constants", "after_cutoff", later[:12], "akramcode_cli/update_cmd.py:cmd_update"),
     ))
     surface = audit.audit_history(witness)
-    assert surface.required[("hermes_constants", "dynamic")] == {witness[:12]}
-    assert surface.kinds[("hermes_constants", "dynamic")] == {"reviewed-module-call"}
-    assert surface.sites[("hermes_constants", "dynamic")] == {"akramcode_cli/update_cmd.py:cmd_update"}
-    assert ("hermes_constants", "dynamic") not in surface.guarded_only
-    assert ("hermes_constants", "after_cutoff") not in surface.required
+    assert surface.required[("akramcode_constants", "dynamic")] == {witness[:12]}
+    assert surface.kinds[("akramcode_constants", "dynamic")] == {"reviewed-module-call"}
+    assert surface.sites[("akramcode_constants", "dynamic")] == {"akramcode_cli/update_cmd.py:cmd_update"}
+    assert ("akramcode_constants", "dynamic") not in surface.guarded_only
+    assert ("akramcode_constants", "after_cutoff") not in surface.required
     output = root / "history.json"
     assert audit.main(["--ref", witness, "--history", "--freeze", str(output)]) == 0
     frozen = json.loads(output.read_text())
-    assert set(frozen["bare"]) == {"hermes_constants::anchor", "hermes_constants::dynamic"}
+    assert set(frozen["bare"]) == {"akramcode_constants::anchor", "akramcode_constants::dynamic"}

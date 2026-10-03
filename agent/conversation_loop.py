@@ -435,7 +435,7 @@ def _ollama_context_limit_error(agent: Any, request_tokens: int) -> Optional[str
 
     model = getattr(agent, "model", "") or "the selected model"
     logger.warning(
-        "Ollama runtime context too small for Hermes tool use: model=%s provider=%s base_url=%s "
+        "Ollama runtime context too small for AkramCode tool use: model=%s provider=%s base_url=%s "
         "runtime_context=%d minimum_context=%d estimated_request_tokens=%d tool_count=%d session=%s",
         model, getattr(agent, "provider", "") or "unknown",
         getattr(agent, "base_url", "") or "unknown base URL", runtime_ctx, MINIMUM_CONTEXT_LENGTH,
@@ -443,10 +443,10 @@ def _ollama_context_limit_error(agent: Any, request_tokens: int) -> Optional[str
         getattr(agent, "session_id", None) or "none",
     )
     return (
-        f"Ollama loaded `{model}` with only {runtime_ctx:,} tokens of runtime context, but Hermes "
+        f"Ollama loaded `{model}` with only {runtime_ctx:,} tokens of runtime context, but AkramCode "
         f"needs at least {MINIMUM_CONTEXT_LENGTH:,} tokens for reliable tool use.\n\n"
         "Increase the Ollama context for this model and restart/reload the model before trying "
-        "again. A known-good starting point is 65,536 tokens. In Hermes config, set "
+        "again. A known-good starting point is 65,536 tokens. In AkramCode config, set "
         "`model.ollama_num_ctx: 65536` (and `model.context_length: 65536` if you also override the "
         "displayed model context). If you manage the model through an Ollama Modelfile, set "
         "`PARAMETER num_ctx 65536` there instead."
@@ -559,7 +559,7 @@ def _billing_or_entitlement_message(
                 "at https://claude.ai/settings/usage",
                 switch,
                 # The exhaustion latch replays the stored error without a request.
-                "Retry with a fresh credential state: `hermes auth reset anthropic`. Until that "
+                "Retry with a fresh credential state: `akramcode auth reset anthropic`. Until that "
                 "cooldown clears, this error can be replayed from cache without contacting the API.",
             ])
         return "\n".join([
@@ -723,7 +723,7 @@ def _refresh_bot_chat_tools(agent) -> None:
     """Rebuild ``agent.tools`` for a Bot Chat capability refresh through the builder that
     created the session, so the refreshed set is what a fresh desktop/TUI session gets
     (#124211). A canonical Bot Chat never forks, so its tools[] is otherwise a fossil of
-    session creation: ``hermes tools enable/disable`` writes ``platform_toolsets`` and the
+    session creation: ``akramcode tools enable/disable`` writes ``platform_toolsets`` and the
     automatic between-turns refresh reuses the build-time selection. Only the desktop/TUI
     gateway keeps agents alive across turns; every other surface builds a fresh agent whose
     tools[] already reflects config. No prefix preservation: a disabled toolset must drop,
@@ -1566,7 +1566,7 @@ def _run_conversation_turn(
     agent._last_compression_attempt_in_place = None
     begin_fast_mode_turn(agent, conversation_history)
 
-    # Adopt ~/.hermes/.env credential/base-url edits made since the last turn — a
+    # Adopt ~/.akramcode/.env credential/base-url edits made since the last turn — a
     # Settings save updates .env, not this worker's client (#67821). No-op if unchanged.
     try:
         agent._try_refresh_env_client_credentials()
@@ -1787,7 +1787,7 @@ def _redact_display_metadata(metadata: dict) -> dict:
 
 
 def _close_durable_failed_turn(agent, result: Any) -> None:
-    """Append a Hermes-authored assistant boundary when a failed turn left ``user`` as the
+    """Append a AkramCode-authored assistant boundary when a failed turn left ``user`` as the
     durable conversation tail (in place, on ``result["messages"]`` and in SessionDB).
 
     The terminal-failure paths (content-policy refusal, ``_Trunc.end_turn``, retry exhaustion,

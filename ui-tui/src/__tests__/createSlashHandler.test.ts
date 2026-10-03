@@ -1,4 +1,4 @@
-import { JsonRpcGatewayError } from '@hermes/shared/json-rpc-channel'
+import { JsonRpcGatewayError } from '@akramcode/shared/json-rpc-channel'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createSlashHandler } from '../app/createSlashHandler.js'
@@ -11,7 +11,7 @@ import * as ClipboardModule from '../lib/clipboard.js'
 import * as Osc52Module from '../lib/osc52.js'
 import * as TerminalSetupModule from '../lib/terminalSetup.js'
 
-// DASHBOARD_TUI_MODE resolves once at module load from HERMES_TUI_DASHBOARD,
+// DASHBOARD_TUI_MODE resolves once at module load from AKRAMCODE_TUI_DASHBOARD,
 // so toggling process.env in a test body can't move it. Mock just that one
 // export (everything else stays real) and flip the holder per test.
 const envState = { dashboardTuiMode: false }
@@ -171,14 +171,14 @@ describe('createSlashHandler', () => {
 
   it('routes /status to live session.status instead of slash worker', async () => {
     patchUiState({ sid: 'sid-abc' })
-    const rpc = vi.fn(() => Promise.resolve({ output: 'Hermes TUI Status' }))
+    const rpc = vi.fn(() => Promise.resolve({ output: 'AkramCode TUI Status' }))
     const ctx = buildCtx({ gateway: { ...buildGateway(), rpc } })
 
     expect(createSlashHandler(ctx)('/status')).toBe(true)
     expect(rpc).toHaveBeenCalledWith('session.status', { session_id: 'sid-abc' })
     expect(gatewayWork(ctx)).toEqual([])
     await vi.waitFor(() => {
-      expect(ctx.transcript.page).toHaveBeenCalledWith('Hermes TUI Status', t('slashCmd.core.status.pageTitle'))
+      expect(ctx.transcript.page).toHaveBeenCalledWith('AkramCode TUI Status', t('slashCmd.core.status.pageTitle'))
     })
   })
 
@@ -812,7 +812,7 @@ describe('createSlashHandler', () => {
 
   it('falls through to command.dispatch for skill commands, sending the body but showing the invocation', async () => {
     const skillMessage =
-      '[IMPORTANT: The user has invoked the "hermes-agent-dev" skill, indicating they want you to follow its instructions.\n' +
+      '[IMPORTANT: The user has invoked the "akramcode-agent-dev" skill, indicating they want you to follow its instructions.\n' +
       'The full skill content is loaded below.]\n\nUse this skill to do X.\n\n## Steps\n1. First step'
 
     const ctx = buildCtx({
@@ -828,8 +828,8 @@ describe('createSlashHandler', () => {
               return Promise.resolve({
                 type: 'skill',
                 message: skillMessage,
-                name: 'hermes-agent-dev',
-                display: '/hermes-agent-dev'
+                name: 'akramcode-agent-dev',
+                display: '/akramcode-agent-dev'
               })
             }
 
@@ -841,9 +841,9 @@ describe('createSlashHandler', () => {
     })
 
     const h = createSlashHandler(ctx)
-    expect(h('/hermes-agent-dev')).toBe(true)
+    expect(h('/akramcode-agent-dev')).toBe(true)
     await vi.waitFor(() => {
-      expect(ctx.transcript.send).toHaveBeenCalledWith(skillMessage, true, '/hermes-agent-dev')
+      expect(ctx.transcript.send).toHaveBeenCalledWith(skillMessage, true, '/akramcode-agent-dev')
     })
 
     // The expanded skill body is model-facing: no transcript line may carry it.
@@ -976,7 +976,7 @@ describe('createSlashHandler', () => {
   it('/save forwards to session.save RPC and reports the returned file', async () => {
     patchUiState({ sid: 'sid-abc' })
 
-    const rpc = vi.fn(() => Promise.resolve({ file: '/tmp/hermes_conversation_test.json' }))
+    const rpc = vi.fn(() => Promise.resolve({ file: '/tmp/akramcode_conversation_test.json' }))
 
     const ctx = buildCtx({
       gateway: { ...buildGateway(), rpc },
@@ -996,7 +996,7 @@ describe('createSlashHandler', () => {
     expect(rpc).toHaveBeenCalledWith('session.save', { session_id: 'sid-abc' })
 
     await vi.waitFor(() => {
-      expect(ctx.transcript.sys).toHaveBeenCalledWith(expect.stringContaining('/tmp/hermes_conversation_test.json'))
+      expect(ctx.transcript.sys).toHaveBeenCalledWith(expect.stringContaining('/tmp/akramcode_conversation_test.json'))
     })
   })
 

@@ -1,7 +1,7 @@
-"""OAuth-shaped model-provider plugins are first-class in `hermes auth` (#116408).
+"""OAuth-shaped model-provider plugins are first-class in `akramcode auth` (#116408).
 
-The seam: ``ProviderProfile.auth_handler``. These tests drive the real ``hermes auth`` argparse
-surface against a plugin discovered from an isolated HERMES_HOME, so they fail if the dispatch is
+The seam: ``ProviderProfile.auth_handler``. These tests drive the real ``akramcode auth`` argparse
+surface against a plugin discovered from an isolated AKRAMCODE_HOME, so they fail if the dispatch is
 dropped, reordered after the built-in paths, or the registry stops admitting non-api-key profiles.
 """
 
@@ -51,7 +51,7 @@ register_provider(ProviderProfile(name="__NAME__", auth_type="oauth_external",
 
 
 def _rediscover() -> None:
-    """Point the next profile lookup at the (new) HERMES_HOME user plugin dir.
+    """Point the next profile lookup at the (new) AKRAMCODE_HOME user plugin dir.
 
     Only the discovery flag is cleared: bundled plugin modules stay in
     ``sys.modules`` (so their profiles stay registered) while the user dir is
@@ -61,18 +61,18 @@ def _rediscover() -> None:
     import providers as _pkg
 
     _pkg._discovered = False
-    for mod in [m for m in sys.modules if m.startswith("_hermes_user_provider")]:
+    for mod in [m for m in sys.modules if m.startswith("_akramcode_user_provider")]:
         del sys.modules[mod]
 
 
 @pytest.fixture
 def install_provider(tmp_path, monkeypatch):
-    """Write a model-provider plugin into an isolated HERMES_HOME and discover it."""
+    """Write a model-provider plugin into an isolated AKRAMCODE_HOME and discover it."""
     installed: list[str] = []
 
     def _install(name: str = "fake-auth", *, with_handler: bool = True) -> Path:
         """Write (or rewrite) the fixture plugin and re-run discovery."""
-        plugin_dir = tmp_path / "hermes" / "plugins" / "model-providers" / name
+        plugin_dir = tmp_path / "akramcode" / "plugins" / "model-providers" / name
         plugin_dir.mkdir(parents=True, exist_ok=True)
         (plugin_dir / "plugin.yaml").write_text(
             f"name: {name}\nkind: model-provider\nversion: 0.0.1\n"
@@ -82,7 +82,7 @@ def install_provider(tmp_path, monkeypatch):
             source = source.replace(", auth_handler=handler", "")
         (plugin_dir / "__init__.py").write_text(source, encoding="utf-8")
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode"))
         monkeypatch.setenv("FAKE_AUTH_LOG", str(tmp_path / "auth-log.jsonl"))
         _rediscover()
         installed.append(name)
@@ -102,7 +102,7 @@ def install_provider(tmp_path, monkeypatch):
 
 
 def _parse_auth_args(argv: list[str]) -> argparse.Namespace:
-    """Parse `hermes auth <argv>` through the real subcommand parser."""
+    """Parse `akramcode auth <argv>` through the real subcommand parser."""
     from akramcode_cli.subcommands.auth import build_auth_parser
 
     parser = argparse.ArgumentParser()
@@ -132,7 +132,7 @@ def _log(tmp_path: Path) -> list[dict]:
     ],
 )
 def test_oauth_plugin_owns_every_auth_action(tmp_path, install_provider, capsys, argv, expected):
-    """An oauth_external plugin registers and `hermes auth <action>` reaches its handler, args included,
+    """An oauth_external plugin registers and `akramcode auth <action>` reaches its handler, args included,
     before any built-in path (nothing printed, nothing written to the pool)."""
     install_provider()
 
@@ -146,7 +146,7 @@ def test_oauth_plugin_owns_every_auth_action(tmp_path, install_provider, capsys,
 
     assert _log(tmp_path) == [expected]
     assert capsys.readouterr().out == ""
-    assert not (tmp_path / "hermes" / "auth.json").exists()
+    assert not (tmp_path / "akramcode" / "auth.json").exists()
 
 
 def test_oauth_plugin_without_handler_fails_loud_and_builtins_are_untouched(tmp_path, install_provider):
@@ -162,5 +162,5 @@ def test_oauth_plugin_without_handler_fails_loud_and_builtins_are_untouched(tmp_
 
     auth_command(_parse_auth_args(["add", "openrouter", "--api-key", "sk-or-fixture", "--label", "personal"]))
     assert _log(tmp_path) == []
-    pool = json.loads((tmp_path / "hermes" / "auth.json").read_text(encoding="utf-8"))["credential_pool"]
+    pool = json.loads((tmp_path / "akramcode" / "auth.json").read_text(encoding="utf-8"))["credential_pool"]
     assert next(e for e in pool["openrouter"] if e["access_token"] == "sk-or-fixture")["label"] == "personal"

@@ -8,7 +8,7 @@ user chose themselves survives untouched. Driven through ``run_migrations`` agai
 import os
 from unittest.mock import patch
 
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 
 def _run(tmp_path, runtime):
@@ -19,7 +19,7 @@ def _run(tmp_path, runtime):
         {"_config_version": 48, "terminal": {"backend": "vercel_sandbox", "vercel_runtime": runtime}}),
         encoding="utf-8")
     (tmp_path / ".env").write_text(f"VERCEL_TOKEN=tok\nTERMINAL_VERCEL_RUNTIME={runtime}\n", encoding="utf-8")
-    with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}, clear=False):
+    with patch.dict(os.environ, {"AKRAMCODE_HOME": str(tmp_path)}, clear=False):
         os.environ.pop("TERMINAL_VERCEL_RUNTIME", None)
         run_migrations(48, {"env_added": [], "config_added": [], "warnings": []}, quiet=True)
     terminal = yaml.safe_load((tmp_path / "config.yaml").read_text(encoding="utf-8"))["terminal"]
@@ -33,7 +33,7 @@ def test_seeded_default_runtime_is_dropped_everywhere_and_a_user_pin_survives(tm
     terminal, dotenv = _run(tmp_path / "seeded", LEGACY_VERCEL_RUNTIME)
     assert "vercel_runtime" not in terminal, "the seeded default is the template copied, not a choice"
     assert "TERMINAL_VERCEL_RUNTIME" not in dotenv and "VERCEL_TOKEN=tok" in dotenv
-    with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path / "seeded")}):
+    with patch.dict(os.environ, {"AKRAMCODE_HOME": str(tmp_path / "seeded")}):
         merged = load_config()["terminal"]
     assert merged["vercel_image"] == DEFAULT_VERCEL_IMAGE and not merged["vercel_runtime"]
 

@@ -97,7 +97,7 @@ def _preflight_check_provider_key(job: dict, cfg: dict) -> Optional[str]:
     _cron_cfg = cfg.get("cron") if isinstance(cfg.get("cron"), dict) else {}
     requested = (
         job.get("provider") or str((_cron_cfg or {}).get("model_provider") or "").strip() or None)
-    model = job.get("model") or cron_env_setting("HERMES_MODEL") or ""
+    model = job.get("model") or cron_env_setting("AKRAMCODE_MODEL") or ""
 
     from akramcode_cli.auth import AuthError, is_rate_limited_auth_error
     try:
@@ -113,8 +113,8 @@ def _preflight_check_provider_key(job: dict, cfg: dict) -> Optional[str]:
             return None
         return (
             f"provider credential missing: {exc} {_credential_store_scope_label()}. "
-            "Set the provider API key in .env (or `hermes setup`) for that home, or pin a "
-            "working provider via `hermes cron edit "
+            "Set the provider API key in .env (or `akramcode setup`) for that home, or pin a "
+            "working provider via `akramcode cron edit "
             f"{job.get('id')} --provider <p>`."
         )
     except Exception:
@@ -123,16 +123,16 @@ def _preflight_check_provider_key(job: dict, cfg: dict) -> Optional[str]:
 
 
 def _credential_store_scope_label() -> str:
-    """``[profile '<name>', HERMES_HOME <path>]`` for the home this preflight read credentials from.
+    """``[profile '<name>', AKRAMCODE_HOME <path>]`` for the home this preflight read credentials from.
 
     The verdict must name the store it judged: a scheduler process whose home differs from the
-    shell where "the same credential works" (Docker HOME vs HERMES_HOME, a multiplexed satellite
+    shell where "the same credential works" (Docker HOME vs AKRAMCODE_HOME, a multiplexed satellite
     profile, a gateway launched without the shell's env) otherwise reports a bare "No credentials
     stored" that cannot be told apart from a real login gap (#116213).
     """
     from akramcode_cli.profiles import get_active_profile_name
-    from akramcode_constants import get_hermes_home
-    return f"[profile '{get_active_profile_name() or 'default'}', HERMES_HOME {get_hermes_home()}]"
+    from akramcode_constants import get_akramcode_home
+    return f"[profile '{get_active_profile_name() or 'default'}', AKRAMCODE_HOME {get_akramcode_home()}]"
 
 
 def _primary_profile_routes_for_current_home() -> list:
@@ -149,9 +149,9 @@ def _primary_profile_routes_for_current_home() -> list:
     ``duplicate_credential`` fatal).
     """
     try:
-        from akramcode_constants import get_default_hermes_root, get_hermes_home
-        primary_home = get_default_hermes_root()
-        current_home = _sched.Path(get_hermes_home())
+        from akramcode_constants import get_default_akramcode_root, get_akramcode_home
+        primary_home = get_default_akramcode_root()
+        current_home = _sched.Path(get_akramcode_home())
         if (
             primary_home.expanduser().resolve(strict=False)
             == current_home.expanduser().resolve(strict=False)
@@ -159,7 +159,7 @@ def _primary_profile_routes_for_current_home() -> list:
             return []  # this IS the primary home — nothing to consult
 
         # Same layers the primary gateway's own loader reads: routes pinned in the managed scope
-        # (/etc/hermes/config.yaml) never reached the raw user-file read (#121212), so preflight
+        # (/etc/akramcode/config.yaml) never reached the raw user-file read (#121212), so preflight
         # false-blocked and routed delivery failed closed on centrally-managed installs.
         from gateway.config_loader import read_yaml_layers
         layered = read_yaml_layers(primary_home.expanduser())
@@ -288,7 +288,7 @@ def _preflight_check_delivery(job: dict) -> Optional[str]:
             return (
                 f"delivery platform '{platform_name}' has no gateway "
                 "credentials configured (not connected). Configure it via "
-                "`hermes setup` or change the job's `deliver` target."
+                "`akramcode setup` or change the job's `deliver` target."
             )
     return None
 

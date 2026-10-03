@@ -105,7 +105,7 @@ _TERMINAL_AUTH_REASONS = frozenset({
 CREDENTIAL_PERSIST_FAILED_REASON = "credential_persist_failed"
 
 # DEAD ``manual:*`` entries are pruned after this quiet window — they have no
-# singleton to re-seed from and the user can re-add via ``hermes auth add``.
+# singleton to re-seed from and the user can re-add via ``akramcode auth add``.
 # Singleton-seeded entries (device_code, claude_code) are NOT pruned because
 # ``_seed_from_singletons`` would re-create them from the same stale tokens.
 DEAD_MANUAL_PRUNE_TTL_SECONDS = 24 * 60 * 60
@@ -154,10 +154,10 @@ FAILURE_REASON_BILLING_UNVERIFIED = "billing_unverified"
 # core, and stalled the event loop (Desktop backend readiness timeouts).
 # Credential selection runs on a hot path (every model call, plus auxiliary tasks like
 # compression/moa/titles), so when a pool is empty or fully exhausted the un-throttled log fires on *every*
-# selection. On Windows several Hermes processes share one rotating log guarded by concurrent-log-handler's
+# selection. On Windows several AkramCode processes share one rotating log guarded by concurrent-log-handler's
 # cross-process lock; that per-selection volume storms the lock (``RuntimeError: Cannot acquire lock after
 # 20 attempts``), pegs a core, and stalls the asyncio event loop long enough to fail the Desktop backend
-# readiness handshake ("Timed out connecting to Hermes backend after 15000ms"). Logging the condition at
+# readiness handshake ("Timed out connecting to AkramCode backend after 15000ms"). Logging the condition at
 # most once per window preserves the signal while removing the storm — same class of fix as the warn-once
 # dedup in #58265.
 NO_AVAILABLE_ENTRIES_LOG_THROTTLE_SECONDS = 60.0
@@ -222,7 +222,7 @@ class PooledCredential:
     last_error_reason: Optional[str] = None
     last_error_message: Optional[str] = None
     last_error_reset_at: Optional[float] = None
-    # Epoch of the last deliberate ``hermes auth reset`` of this entry. Sticky: a later exhaustion
+    # Epoch of the last deliberate ``akramcode auth reset`` of this entry. Sticky: a later exhaustion
     # stamps a newer ``last_status_at``, so "reset postdates status" stays decidable across processes.
     status_cleared_at: Optional[float] = None
     base_url: Optional[str] = None
@@ -313,7 +313,7 @@ class PooledCredential:
             # Pool rows keep the canonical ChatGPT URL; the profile-scoped proxy override must win
             # for every reader of the row — initial resolution AND a 401/429 rotation
             # (client_lifecycle._swap_credential), or a rotation silently leaves the proxy.
-            return get_secret_str("HERMES_CODEX_BASE_URL", "").strip().rstrip("/") or self.base_url
+            return get_secret_str("AKRAMCODE_CODEX_BASE_URL", "").strip().rstrip("/") or self.base_url
         return self.base_url
 
 
@@ -329,7 +329,7 @@ def label_from_token(token: str, fallback: str) -> str:
 def _codex_principal_identity(access_token: Any) -> Optional[Tuple[str, str]]:
     """``(chatgpt_account_id, sub)`` of a Codex access token, or None when either claim is missing.
 
-    Decoded without signature verification: this only decides whether two credentials Hermes
+    Decoded without signature verification: this only decides whether two credentials AkramCode
     already holds belong to the same principal, never whether a token is valid. Both claims are
     required because members of one ChatGPT workspace share ``chatgpt_account_id`` yet have their
     own subjects and quotas.
@@ -348,7 +348,7 @@ def _codex_entry_tracks_singleton(entry: PooledCredential, singleton_tokens: Dic
 
     ``device_code`` IS the singleton. ``manual:device_code`` is ambiguous: a legacy alias of the
     singleton (same account, must follow its rotations) or an independent account added with
-    ``hermes auth add openai-codex`` (must never be overwritten — adopting turned two logins into
+    ``akramcode auth add openai-codex`` (must never be overwritten — adopting turned two logins into
     one account, both hitting the same usage limit). Same principal proves the alias; unknown
     identity fails closed.
     """
@@ -544,7 +544,7 @@ def custom_provider_pool_key_candidates(
 ) -> List[str]:
     """Return pool keys to try for a custom endpoint.
 
-    ``hermes auth add <key>`` stores ``providers.<key>`` credentials under the
+    ``akramcode auth add <key>`` stores ``providers.<key>`` credentials under the
     durable config slug; older rows and legacy ``custom_providers:`` entries
     live under ``custom:<display-name>``. Try the slug first, then the legacy
     namespace, so a populated pool is not skipped in favour of the
@@ -766,7 +766,7 @@ def _guarded_global_root(global_path: Optional[Path]) -> Optional[Path]:
     """Apply the pytest seat belt to a resolved global-root auth.json path.
 
     ``None`` means classic mode (profile == root) or "refuse": under pytest,
-    never write the real user's ``~/.hermes/auth.json`` even when HERMES_HOME
+    never write the real user's ``~/.akramcode/auth.json`` even when AKRAMCODE_HOME
     points at a profile path (mirrors the read-side guard in
     ``_load_global_auth_store``). Uses the unmodified HOME env, not
     ``Path.home()`` which fixtures may monkeypatch.
@@ -776,7 +776,7 @@ def _guarded_global_root(global_path: Optional[Path]) -> Optional[Path]:
     if os.environ.get("PYTEST_CURRENT_TEST"):
         real_home_env = os.environ.get("HOME", "")
         if real_home_env:
-            real_root = Path(real_home_env) / ".hermes" / "auth.json"
+            real_root = Path(real_home_env) / ".akramcode" / "auth.json"
             try:
                 # Comparing the guard path must not probe the real auth store.
                 if os.path.normcase(os.path.abspath(global_path)) == os.path.normcase(os.path.abspath(real_root)):
@@ -819,12 +819,12 @@ def _write_through_provider_state_to_global_root(
 
 
 def _singleton_target_for_entry(pool: "CredentialPool", entry: "PooledCredential") -> Optional[Path]:
-    """Root ``.anthropic_oauth.json`` when *entry* is a borrowed hermes_pkce row, else None."""
-    if entry.source != "hermes_pkce" or entry.id not in getattr(pool, "_borrowed_root_ids", ()):
+    """Root ``.anthropic_oauth.json`` when *entry* is a borrowed akramcode_pkce row, else None."""
+    if entry.source != "akramcode_pkce" or entry.id not in getattr(pool, "_borrowed_root_ids", ()):
         return None
     try:
-        from agent.anthropic_credentials import _root_hermes_oauth_file
-        return _root_hermes_oauth_file()
+        from agent.anthropic_credentials import _root_akramcode_oauth_file
+        return _root_akramcode_oauth_file()
     except Exception:
         return None
 
@@ -981,8 +981,8 @@ _SINGLE_USE_REFRESH_PROVIDERS = ("openai-codex", "xai-oauth", "anthropic")
 _REFRESH_SWEEP_SPACING_SECONDS = 0.5
 
 _REFRESH_TIMEOUT_ENV_VARS = {
-    "openai-codex": "HERMES_CODEX_REFRESH_TIMEOUT_SECONDS",
-    "xai-oauth": "HERMES_XAI_REFRESH_TIMEOUT_SECONDS",
+    "openai-codex": "AKRAMCODE_CODEX_REFRESH_TIMEOUT_SECONDS",
+    "xai-oauth": "AKRAMCODE_XAI_REFRESH_TIMEOUT_SECONDS",
 }
 
 # Singleton-seeded source whose exhausted/DEAD pool row may be revived by a
@@ -1335,7 +1335,7 @@ class CredentialPool(CredentialPoolAdminMixin, CredentialPoolModelCooldownMixin)
     def _sync_entry_from_auth_store(self, entry: PooledCredential) -> PooledCredential:
         """Sync a Codex / xAI device_code entry from auth.json ``providers.<id>.tokens``.
 
-        A fresh ``hermes model`` / ``hermes auth`` login writes new tokens
+        A fresh ``akramcode model`` / ``akramcode auth`` login writes new tokens
         under ``_auth_store_lock`` while the pool entry may sit frozen behind
         a ``last_error_reset_at`` hours in the future; without this sync every
         request fails with "no available entries" despite fresh credentials on
@@ -1528,7 +1528,7 @@ class CredentialPool(CredentialPoolAdminMixin, CredentialPoolModelCooldownMixin)
             return self._refresh_entry_impl(entry, force=force)
 
         # Single-use refresh tokens: sync -> POST -> write-back must be atomic
-        # across Hermes processes, or two processes adopt the same on-disk
+        # across AkramCode processes, or two processes adopt the same on-disk
         # token, both POST it, and the loser gets ``refresh_token_reused`` /
         # ``invalid_grant`` (for Anthropic sources other than claude_code
         # there was no recovery path at all). Serialize through the shared
@@ -1582,7 +1582,7 @@ class CredentialPool(CredentialPoolAdminMixin, CredentialPoolModelCooldownMixin)
     ) -> None:
         """Quarantine an entry whose rotated pair never reached its store.
 
-        For ``claude_code`` / ``hermes_pkce`` the singleton file — not
+        For ``claude_code`` / ``akramcode_pkce`` the singleton file — not
         auth.json — is authoritative: ``_seed_from_singletons()`` re-reads it
         on every ``load_pool()``. When the refresh POST succeeded but the
         singleton write failed, the replacement pair exists only in memory
@@ -1627,7 +1627,7 @@ class CredentialPool(CredentialPoolAdminMixin, CredentialPoolModelCooldownMixin)
 
     def _single_use_refresh_lock_timeout(self) -> float:
         """Configured refresh POST timeout plus margin, so a slow token endpoint cannot starve the flock."""
-        env_var = _REFRESH_TIMEOUT_ENV_VARS.get(self.provider, "HERMES_ANTHROPIC_REFRESH_TIMEOUT_SECONDS")
+        env_var = _REFRESH_TIMEOUT_ENV_VARS.get(self.provider, "AKRAMCODE_ANTHROPIC_REFRESH_TIMEOUT_SECONDS")
         refresh_timeout_seconds = auth_mod.env_float(env_var, 20)
         return max(float(auth_mod.AUTH_LOCK_TIMEOUT_SECONDS), float(refresh_timeout_seconds) + 5.0)
 
@@ -1637,16 +1637,16 @@ class CredentialPool(CredentialPoolAdminMixin, CredentialPoolModelCooldownMixin)
         """Write a rotated Anthropic pair to its authoritative singleton, or fail closed.
 
         claude_code -> ~/.claude/.credentials.json (so the fallback resolver
-        and other profiles see it). hermes_pkce -> ~/.hermes/.anthropic_oauth.json
+        and other profiles see it). akramcode_pkce -> ~/.akramcode/.anthropic_oauth.json
         (``_seed_from_singletons`` re-seeds it every load; a borrowed row commits
         to the ROOT's file, never a new profile-local copy, #100339). Not
-        ``endswith``: manual:hermes_pkce is pool-owned and a singleton for it
+        ``endswith``: manual:akramcode_pkce is pool-owned and a singleton for it
         would be a second authority for the same refresh-token family.
         """
         if entry.source == "claude_code":
             store = "~/.claude/.credentials.json"
-        elif entry.source == "hermes_pkce":
-            store = "~/.hermes/.anthropic_oauth.json"
+        elif entry.source == "akramcode_pkce":
+            store = "~/.akramcode/.anthropic_oauth.json"
         else:
             return
         try:
@@ -1655,7 +1655,7 @@ class CredentialPool(CredentialPoolAdminMixin, CredentialPoolModelCooldownMixin)
             if entry.source == "claude_code":
                 ac._write_claude_code_credentials(*args, spent_refresh_token=entry.refresh_token or "")
             else:
-                ac._write_hermes_oauth_credentials(*args, target=_singleton_target_for_entry(self, entry))
+                ac._write_akramcode_oauth_credentials(*args, target=_singleton_target_for_entry(self, entry))
         except Exception as wexc:
             # Authoritative commit failed: do not mark, persist or return the
             # rotation as successful, and bypass the re-POST recovery path —
@@ -1684,7 +1684,7 @@ class CredentialPool(CredentialPoolAdminMixin, CredentialPoolModelCooldownMixin)
                 ),
                 store=str(source_path or "credential store"),
             ))
-        refreshed = refresh_anthropic_oauth_pure(entry.refresh_token, use_json=entry.source.endswith("hermes_pkce"))
+        refreshed = refresh_anthropic_oauth_pure(entry.refresh_token, use_json=entry.source.endswith("akramcode_pkce"))
         updated = replace(
             entry,
             access_token=refreshed["access_token"],
@@ -1768,7 +1768,7 @@ class CredentialPool(CredentialPoolAdminMixin, CredentialPoolModelCooldownMixin)
                     try:
                         from agent.anthropic_credentials import refresh_anthropic_oauth_pure
                         refreshed = refresh_anthropic_oauth_pure(
-                            synced.refresh_token, use_json=synced.source.endswith("hermes_pkce"),
+                            synced.refresh_token, use_json=synced.source.endswith("akramcode_pkce"),
                         )
                         # Commit to the authoritative singleton BEFORE marking or
                         # persisting the pool row, or a failed write leaves an
@@ -1791,7 +1791,7 @@ class CredentialPool(CredentialPoolAdminMixin, CredentialPoolModelCooldownMixin)
                     logger.debug("Credentials file has valid token, using without refresh")
                     return synced
             else:
-                # Backstop for pool-owned sources (hermes_pkce, manual:dashboard_pkce):
+                # Backstop for pool-owned sources (akramcode_pkce, manual:dashboard_pkce):
                 # the winner may have persisted between our pre-check and our POST.
                 synced = self._sync_entry_from_pool_store(entry)
                 if synced.refresh_token != entry.refresh_token:
@@ -1801,10 +1801,10 @@ class CredentialPool(CredentialPoolAdminMixin, CredentialPoolModelCooldownMixin)
             if is_terminal_anthropic_refresh_error(exc):
                 # A dead grant is not "exhausted": benching it for a TTL replays the dead token every
                 # hour at DEBUG, so the lost login left no trace (#113023). Never touch the external
-                # CLI's credentials file here — only Hermes' own row goes DEAD.
+                # CLI's credentials file here — only AkramCode' own row goes DEAD.
                 logger.warning(
                     "Anthropic OAuth refresh token for %s is terminally invalid (%s); the credential "
-                    "leaves rotation. Re-run 'hermes auth add anthropic' to sign in again.",
+                    "leaves rotation. Re-run 'akramcode auth add anthropic' to sign in again.",
                     entry.label or entry.id[:8], exc)
                 self._mark_dead_refresh_grant(entry, exc)
                 return None
@@ -1820,10 +1820,10 @@ class CredentialPool(CredentialPoolAdminMixin, CredentialPoolModelCooldownMixin)
             # entries from the pool (mirrors the Nous quarantine path).
             if getattr(auth_mod, terminal_fn_name)(exc):
                 # WARNING, not debug: this is the moment a login is lost. At the default log level a
-                # silent quarantine looked like "I logged in once and Hermes keeps failing" (#113023).
+                # silent quarantine looked like "I logged in once and AkramCode keeps failing" (#113023).
                 logger.warning(
                     "%s OAuth refresh token is terminally invalid (%s); clearing local token state. "
-                    "Re-run 'hermes auth add %s' to sign in again.", display, exc, self.provider)
+                    "Re-run 'akramcode auth add %s' to sign in again.", display, exc, self.provider)
                 self._clear_terminal_tokens_state(entry, exc)
                 self._quarantine_sources(entry, {"device_code"})
                 self._mark_dead_refresh_grant(entry, exc)
@@ -1845,7 +1845,7 @@ class CredentialPool(CredentialPoolAdminMixin, CredentialPoolModelCooldownMixin)
             if auth_mod._is_terminal_nous_refresh_error(exc):
                 logger.warning(
                     "Nous refresh token is terminally invalid (%s); clearing local token state. "
-                    "Re-run 'hermes auth add nous' to sign in again.", exc)
+                    "Re-run 'akramcode auth add nous' to sign in again.", exc)
                 self._clear_terminal_nous_state(entry, exc)
                 self._quarantine_sources(
                     entry,
@@ -1864,7 +1864,7 @@ class CredentialPool(CredentialPoolAdminMixin, CredentialPoolModelCooldownMixin)
         """Mark a row whose refresh token was terminally rejected DEAD, if the quarantine kept it.
 
         ``_quarantine_sources`` drops only singleton-seeded rows; an independent ``manual:*`` login
-        (``hermes auth add``) survives, and an unmarked survivor re-enters rotation and re-fires the
+        (``akramcode auth add``) survives, and an unmarked survivor re-enters rotation and re-fires the
         terminal WARNING on every later refresh attempt. DEAD leaves rotation until a write-side
         re-auth sync clears it (never via TTL).
         """
@@ -2027,7 +2027,7 @@ class CredentialPool(CredentialPoolAdminMixin, CredentialPoolModelCooldownMixin)
             self._refresh_entry(entry, force=False)
 
     def _reset_cleared_after(self, entry: PooledCredential) -> Optional[float]:
-        """Epoch of a ``hermes auth reset`` persisted by another process AFTER *entry*'s status, else None."""
+        """Epoch of a ``akramcode auth reset`` persisted by another process AFTER *entry*'s status, else None."""
         try:
             row = next((p for p in read_credential_pool(self.provider)
                         if isinstance(p, dict) and p.get("id") == entry.id), None)
@@ -2040,9 +2040,9 @@ class CredentialPool(CredentialPoolAdminMixin, CredentialPoolModelCooldownMixin)
     def _resync_stale_entry(self, entry: PooledCredential) -> PooledCredential:
         """Re-read an exhausted/DEAD singleton-seeded entry from its token authority.
 
-        The user may have re-authed (``hermes model`` / ``hermes auth``, the
+        The user may have re-authed (``akramcode model`` / ``akramcode auth``, the
         Claude Code CLI, another profile) leaving fresh tokens on disk while
-        the pool entry is frozen behind ``last_error_reset_at``. A ``hermes auth
+        the pool entry is frozen behind ``last_error_reset_at``. A ``akramcode auth
         reset`` run from another process while this pool is live is honoured the
         same way (#89415): the in-memory cooldown would otherwise outlive it.
         """
@@ -2097,7 +2097,7 @@ class CredentialPool(CredentialPoolAdminMixin, CredentialPoolModelCooldownMixin)
                     if dead_at and now - dead_at > DEAD_MANUAL_PRUNE_TTL_SECONDS:
                         logger.warning(
                             "credential pool: pruning DEAD manual entry %s "
-                            "(reason=%s, age=%.1fh) — re-add via `hermes auth add %s`",
+                            "(reason=%s, age=%.1fh) — re-add via `akramcode auth add %s`",
                             entry.label or entry.id[:8],
                             entry.last_error_reason or "unknown",
                             (now - dead_at) / 3600.0,
@@ -2508,7 +2508,7 @@ def _upsert_entry(entries: List[PooledCredential], provider: str, source: str, p
 _ANTHROPIC_SOURCE_RANK = {
     "env:ANTHROPIC_TOKEN": 0,
     "env:CLAUDE_CODE_OAUTH_TOKEN": 1,
-    "hermes_pkce": 2,
+    "akramcode_pkce": 2,
     "claude_code": 3,
     "env:ANTHROPIC_API_KEY": 4,
 }
@@ -2558,7 +2558,7 @@ class _Seeder:
         self.is_suppressed = _is_source_suppressed_fn()
 
     def upsert(self, source: str, payload: Dict[str, Any]) -> bool:
-        """Upsert unless suppressed (``hermes auth remove`` must stay stable across loads)."""
+        """Upsert unless suppressed (``akramcode auth remove`` must stay stable across loads)."""
         if self.is_suppressed(self.provider, source):
             return False
         self.active_sources.add(source)
@@ -2572,7 +2572,7 @@ class _Seeder:
 
 
 def _seed_anthropic_singletons(seed: _Seeder) -> None:
-    # Only auto-discover external credentials (Claude Code, Hermes PKCE) when
+    # Only auto-discover external credentials (Claude Code, AkramCode PKCE) when
     # the user explicitly configured anthropic; otherwise auxiliary fallback
     # chains would read ~/.claude/.credentials.json without consent (PR #4210).
     try:
@@ -2582,13 +2582,13 @@ def _seed_anthropic_singletons(seed: _Seeder) -> None:
     except ImportError:
         pass
 
-    # API-key vs OAuth is a user-visible choice at `hermes setup`. The API-key
+    # API-key vs OAuth is a user-visible choice at `akramcode setup`. The API-key
     # signal is ANTHROPIC_API_KEY set AND no OAuth env vars (the save_* helpers
     # zero the other side). Then we MUST NOT seed autodiscovered OAuth tokens:
     # rotation on a 401/429 would silently flip the session onto OAuth, which
     # forces the Claude Code identity injection, `mcp_` tool-name rewrite and
     # claude-cli User-Agent the user explicitly opted out of. Prefer
-    # ~/.hermes/.env over os.environ, as `_seed_from_env` does.
+    # ~/.akramcode/.env over os.environ, as `_seed_from_env` does.
     _env_file = load_env()
 
     def _env_val(key: str) -> str:
@@ -2598,21 +2598,21 @@ def _seed_anthropic_singletons(seed: _Seeder) -> None:
     if _env_val("ANTHROPIC_API_KEY") and not anthropic_oauth_env:
         # Prune stale autodiscovered OAuth entries from a previous OAuth
         # session so a transient 401 cannot revive them.
-        seed.changed |= _retain_sources_not_in(seed.entries, {"hermes_pkce", "claude_code"})
+        seed.changed |= _retain_sources_not_in(seed.entries, {"akramcode_pkce", "claude_code"})
         return
 
     from agent.anthropic_credentials import (
         read_claude_code_credentials,
-        read_hermes_oauth_credentials,
+        read_akramcode_oauth_credentials,
     )
     from agent.credential_sources import adopt_external_logins_enabled
 
-    sources = [("hermes_pkce", read_hermes_oauth_credentials())]
+    sources = [("akramcode_pkce", read_akramcode_oauth_credentials())]
     if adopt_external_logins_enabled():
         sources.append(("claude_code", read_claude_code_credentials()))
     else:
         # Singleton-seeded rows are otherwise never pruned; the opt-out must also drop the row an
-        # earlier (adopting) process persisted, or it keeps rotating a login Hermes no longer reads.
+        # earlier (adopting) process persisted, or it keeps rotating a login AkramCode no longer reads.
         seed.changed |= _retain_sources_not_in(seed.entries, {"claude_code"})
     for source_name, creds in sources:
         if creds and creds.get("accessToken"):
@@ -2644,7 +2644,7 @@ def _seed_nous_singleton(seed: _Seeder, auth_store: Dict[str, Any]) -> None:
         seed.changed |= _retain_sources_not_in(seed.entries, {"device_code", "manual:device_code"})
     if not (state and has_runtime_material):
         return
-    # Prefer a user-supplied label embedded in the singleton state (``hermes
+    # Prefer a user-supplied label embedded in the singleton state (``akramcode
     # auth add nous --label <name>``) over the token-derived fingerprint.
     custom_label = str(state.get("label") or "").strip()
     seed.upsert("device_code", {
@@ -2791,10 +2791,10 @@ def _seed_minimax_singleton(seed: _Seeder) -> None:
 def _seed_tokens_singleton(seed: _Seeder, auth_store: Dict[str, Any]) -> None:
     """Codex / xAI: surface the auth.json ``providers.<id>.tokens`` singleton as ``device_code``.
 
-    Hermes owns its own Codex auth state and does NOT auto-import
+    AkramCode owns its own Codex auth state and does NOT auto-import
     ~/.codex/auth.json: refresh tokens are single-use, so sharing them with
     Codex CLI / VS Code causes refresh_token_reused races. Adoption is an
-    explicit one-time prompt via `hermes auth openai-codex`.
+    explicit one-time prompt via `akramcode auth openai-codex`.
     """
     state = _load_provider_state(auth_store, seed.provider)
     tokens = state.get("tokens") if isinstance(state, dict) else None
@@ -2830,7 +2830,7 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
     elif provider == "minimax-oauth":
         _seed_minimax_singleton(seed)
     elif provider in _TOKENS_SINGLETON_PROVIDERS:
-        # `hermes auth remove openai-codex` suppresses device_code; without
+        # `akramcode auth remove openai-codex` suppresses device_code; without
         # this gate the removal is undone on the next load_pool().
         if provider == "openai-codex" and seed.is_suppressed(provider, "device_code"):
             return seed.result
@@ -2839,7 +2839,7 @@ def _seed_from_singletons(provider: str, entries: List[PooledCredential]) -> Tup
 
 
 def get_env_prefer_dotenv(key: str) -> str:
-    """Resolve a credential env var, preferring ~/.hermes/.env over os.environ.
+    """Resolve a credential env var, preferring ~/.akramcode/.env over os.environ.
 
     The user's config file is authoritative; stale env vars from parent
     processes (Codex CLI, test scripts) must not override deliberate .env
@@ -2875,7 +2875,7 @@ def _warn_env_ingestion_once(provider: str, env_var: str) -> None:
     logger.warning(
         "Ingested %s from environment into the %s credential pool — this "
         "enables %s spend. Remove the key or run "
-        "hermes auth remove %s <n> to suppress.",
+        "akramcode auth remove %s <n> to suppress.",
         env_var,
         provider,
         "OpenRouter" if provider == "openrouter" else provider,
@@ -2989,11 +2989,11 @@ def _prune_stale_seeded_entries(
         # ``env:*`` entries are persisted references re-hydrated on every load.
         # A process that merely lacks the env var must NOT delete the on-disk
         # entry for every other process (#9331); prune only when explicitly
-        # requested (an `hermes auth` command that confirmed the source is gone).
+        # requested (an `akramcode auth` command that confirmed the source is gone).
         if entry.source.startswith("env:"):
             return prune_env_sources
-        # File-backed singletons and Hermes PKCE disappear when their backing file is gone.
-        return is_borrowed_credential_source(entry.source, entry.provider) or entry.source == "hermes_pkce"
+        # File-backed singletons and AkramCode PKCE disappear when their backing file is gone.
+        return is_borrowed_credential_source(entry.source, entry.provider) or entry.source == "akramcode_pkce"
 
     retained = [
         entry

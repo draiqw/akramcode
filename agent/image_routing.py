@@ -295,7 +295,7 @@ def _probe_models_dev(provider: str, model: str, cfg: Optional[Dict[str, Any]]) 
     # historical network-on-cold-cache behavior for this one path; the fetch is cached (4h TTL) and
     # backoff-limited after failures.
     if (provider or "").strip().lower() == "openai-codex":
-        # A VALID Codex ``-900k`` picker variant is a Hermes-side alias of its base slug; the catalog
+        # A VALID Codex ``-900k`` picker variant is a AkramCode-side alias of its base slug; the catalog
         # only knows the base, so look that up. The runtime model id stays untouched (the transport
         # owns wire normalization) and ineligible ``-900k`` strings pass through unchanged (#102189).
         from agent.model_metadata import strip_codex_context_variant_suffix
@@ -440,7 +440,7 @@ def _transcode_to_png(raw: bytes) -> Optional[bytes]:
     except ImportError:
         logger.info(
             "image_routing: Pillow not installed; cannot transcode "
-            "non-standard image format to PNG. Run `hermes pm repair` to restore Pillow, "
+            "non-standard image format to PNG. Run `akramcode pm repair` to restore Pillow, "
             "or convert the image to PNG before sending it."
         )
         return None

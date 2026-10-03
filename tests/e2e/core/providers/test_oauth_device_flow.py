@@ -1,4 +1,4 @@
-"""RFC 8628 device-code login: the real ``hermes auth add nous`` CLI against a fake portal.
+"""RFC 8628 device-code login: the real ``akramcode auth add nous`` CLI against a fake portal.
 
 The portal base URL override (``--portal-url``) is the product's documented
 channel; the fake portal is the only thing not ours. Poll arrival times are
@@ -14,7 +14,7 @@ from dataclasses import dataclass
 import pytest
 
 from tests.e2e.core._pending_fixes import known_gate
-from tests.e2e.core.providers._oauth_helpers import kill_tagged, make_home, run_hermes
+from tests.e2e.core.providers._oauth_helpers import kill_tagged, make_home, run_akramcode
 from tests.fakes.providers.oauth_token_server import OAuthTokenServer, unsigned_jwt
 
 pytestmark = pytest.mark.skipif(not sys.platform.startswith("linux"), reason="tagged-tree cleanup uses /proc")
@@ -76,7 +76,7 @@ def test_device_code_login_poll_cadence(name: str, tmp_path) -> None:
         {"scope": "inference:invoke", "exp": int(time.time()) + 3600, "sub": f"user-{n}"})).start()
     flow = srv.start_device_flow(interval=case.interval, script=list(case.script))
     try:
-        proc = run_hermes(fh, ["auth", "add", "nous", "--type", "oauth", "--no-browser",
+        proc = run_akramcode(fh, ["auth", "add", "nous", "--type", "oauth", "--no-browser",
                                "--portal-url", srv.base_url, "--inference-url", f"{srv.base_url}/v1"],
                           timeout=90)
     finally:

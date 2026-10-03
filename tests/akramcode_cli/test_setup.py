@@ -69,7 +69,7 @@ def _write_model_config(tmp_path, provider, base_url="", model_name="test-model"
 
 def test_setup_delegates_to_select_provider_and_model(tmp_path, monkeypatch):
     """setup_model_provider calls select_provider_and_model and syncs config."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     _clear_provider_env(monkeypatch)
     _stub_tts(monkeypatch)
 
@@ -98,7 +98,7 @@ def test_select_provider_and_model_warns_if_named_custom_provider_disappears(
     tmp_path, monkeypatch, capsys
 ):
     """If a saved custom provider is deleted mid-selection, show a warning instead of silently doing nothing."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     _clear_provider_env(monkeypatch)
 
     cfg = load_config()
@@ -134,7 +134,7 @@ def test_select_provider_and_model_warns_if_named_custom_provider_disappears(
 
 def test_modal_setup_persists_direct_mode_when_user_chooses_their_own_account(tmp_path, monkeypatch):
     monkeypatch.setattr("tools.tool_backend_helpers.managed_nous_tools_enabled", lambda: True)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     monkeypatch.delenv("MODAL_TOKEN_ID", raising=False)
     monkeypatch.delenv("MODAL_TOKEN_SECRET", raising=False)
     config = load_config()
@@ -178,7 +178,7 @@ def test_modal_setup_persists_direct_mode_when_user_chooses_their_own_account(tm
 
 
 def test_vercel_setup_configures_access_token_auth(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     _clear_vercel_env(monkeypatch)
     monkeypatch.setenv("VERCEL_OIDC_TOKEN", "old-oidc")
     monkeypatch.setitem(sys.modules, "vercel", types.ModuleType("vercel"))
@@ -209,7 +209,7 @@ def test_vercel_setup_configures_access_token_auth(tmp_path, monkeypatch):
 
 
 def test_vercel_setup_prefills_project_and_team_from_link_file(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     _clear_vercel_env(monkeypatch)
     project_root = tmp_path / "project"
     nested = project_root / "app" / "src"
@@ -279,11 +279,11 @@ def test_python_setup_uses_declared_extras_and_reports_restart(extra, succeeds, 
     assert calls == [([extra], True)]
     output = capsys.readouterr().out
     if succeeds:
-        assert "Restart Hermes" in output
+        assert "Restart AkramCode" in output
         assert sys.modules[extra] is None  # installing never activates in this process
     else:
         assert "resolution refused" in output
-        assert "Retry with: hermes setup" in output
+        assert "Retry with: akramcode setup" in output
         assert "installed." not in output
 
 

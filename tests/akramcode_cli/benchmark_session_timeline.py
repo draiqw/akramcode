@@ -16,8 +16,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 
 def main():
-    with tempfile.TemporaryDirectory(prefix="hermes-timeline-bench-") as directory:
-        os.environ["HERMES_HOME"] = directory
+    with tempfile.TemporaryDirectory(prefix="akramcode-timeline-bench-") as directory:
+        os.environ["AKRAMCODE_HOME"] = directory
         from fastapi import FastAPI
         from fastapi.testclient import TestClient
         from akramcode_state import SessionDB

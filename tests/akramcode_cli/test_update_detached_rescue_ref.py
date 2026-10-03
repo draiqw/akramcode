@@ -1,9 +1,9 @@
-"""`hermes update` must not orphan commits made on a detached HEAD.
+"""`akramcode update` must not orphan commits made on a detached HEAD.
 
 Both update shapes move HEAD off a detached commit: the branch update checks out ``main``, the
 release update checks out the release commit. A commit made there is on no branch, so after the
 move only the expiring reflog reaches it. The update must park it under
-``refs/hermes-update-backups/detached-...`` first and print the ref name. The installed-product
+``refs/akramcode-update-backups/detached-...`` first and print the ref name. The installed-product
 proof is the e2e cell
 ``tests/e2e/core/upgrade/git/test_foreign_state.py::test_work_committed_on_a_detached_head_stays_reachable``.
 """
@@ -48,7 +48,7 @@ def detached_work(tmp_path, monkeypatch):
 
 def _assert_parked(checkout, work, output):
     refs = _git(checkout, "for-each-ref", "--contains", work, "--format=%(refname)").stdout.split()
-    assert len(refs) == 1 and refs[0].startswith("refs/hermes-update-backups/detached-main-"), \
+    assert len(refs) == 1 and refs[0].startswith("refs/akramcode-update-backups/detached-main-"), \
         f"the detached commit must be kept by exactly one rescue ref, got {refs}\n{output}"
     assert refs[0] in output, f"the user must be told where the commit went:\n{output}"
     assert "1 commit(s) made on the detached HEAD" in output, output
@@ -84,5 +84,5 @@ def test_release_update_from_detached_head_parks_only_unreachable_work(detached_
     _git(checkout, "checkout", "-q", "--detach", "origin/main~1")
     update_cmd._pull_updates(GIT, "main", None, prompt_for_restore=False, gw_input_fn=None,
                              discard_local_changes=False, keep_stash=False, target_ref=release)
-    backups = _git(checkout, "for-each-ref", "--format=%(refname)", "refs/hermes-update-backups/").stdout.split()
+    backups = _git(checkout, "for-each-ref", "--format=%(refname)", "refs/akramcode-update-backups/").stdout.split()
     assert len(backups) == 1, f"a detached HEAD already on a branch must not get a backup ref: {backups}"

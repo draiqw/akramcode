@@ -1,11 +1,11 @@
-"""``hermes plugins validate`` — admission checks for a plugin directory.
+"""``akramcode plugins validate`` — admission checks for a plugin directory.
 
 This is the command the plugin-catalog admission CI (and the
 ``.github/actions/plugin-validate`` composite action) runs against a
 candidate plugin. It performs static manifest checks plus a
 subprocess-isolated capability probe: the plugin is imported and its
 ``register(ctx)`` called against a minimal recording stub context in a
-scratch child process (with a throwaway ``HERMES_HOME``), so a crashing or
+scratch child process (with a throwaway ``AKRAMCODE_HOME``), so a crashing or
 malicious plugin cannot take down the CLI, and the *actually registered*
 tools/hooks/middleware are compared against the manifest's declared
 ``provides_*`` lists.
@@ -32,7 +32,7 @@ _UPPER_SNAKE_RE = re.compile(r"^[A-Z][A-Z0-9_]*$")
 # Desktop settings renderer keys its field table on) — a private copy drifted and rejected ``secret``.
 _CONFIG_TYPES = frozenset(_CONFIG_SCHEMA_TYPES)
 _PROBE_TIMEOUT = 30
-_PROBE_SENTINEL = "HERMES_VALIDATE_JSON:"
+_PROBE_SENTINEL = "AKRAMCODE_VALIDATE_JSON:"
 
 
 @dataclass
@@ -74,8 +74,8 @@ class ValidationReport:
 # ─── Static checks ───────────────────────────────────────────────────────────
 
 
-def _requires_hermes_spec_valid(spec: str) -> bool:
-    """Strictly validate a ``requires_hermes`` spec.
+def _requires_akramcode_spec_valid(spec: str) -> bool:
+    """Strictly validate a ``requires_akramcode`` spec.
 
     Unlike :func:`akramcode_cli.plugins_manifest.version_satisfies` (permissive at load
     time), validation REJECTS clauses whose version segment doesn't parse —
@@ -108,18 +108,18 @@ def _check_manifest_fields(report: ValidationReport, manifest: dict) -> None:
         report.add("manifest fields", True, "name, version, description present")
 
 
-def _check_requires_hermes(report: ValidationReport, manifest: dict) -> None:
-    spec = str(manifest.get("requires_hermes") or "").strip()
+def _check_requires_akramcode(report: ValidationReport, manifest: dict) -> None:
+    spec = str(manifest.get("requires_akramcode") or "").strip()
     if not spec:
-        report.add("requires_hermes", True, "not declared")
+        report.add("requires_akramcode", True, "not declared")
         return
-    if _requires_hermes_spec_valid(spec):
-        report.add("requires_hermes", True, f"spec {spec!r} parses")
+    if _requires_akramcode_spec_valid(spec):
+        report.add("requires_akramcode", True, f"spec {spec!r} parses")
     else:
         report.add(
-            "requires_hermes",
+            "requires_akramcode",
             False,
-            f"requires_hermes spec {spec!r} does not parse "
+            f"requires_akramcode spec {spec!r} does not parse "
             "(expected e.g. \">=0.19\" or \">=0.19, <1.0\")",
         )
 
@@ -187,7 +187,7 @@ def _check_requires_env(report: ValidationReport, manifest: dict) -> None:
 # module using the same file-location mechanics PluginManager uses, calls
 # register() against a recording stub ctx, and prints a sentinel-prefixed
 # JSON line of what was actually registered. Deliberately imports NOTHING
-# from hermes so a hostile plugin only sees a bare interpreter — the one
+# from akramcode so a hostile plugin only sees a bare interpreter — the one
 # exception is `providers` for `kind: model-provider`, whose contract IS
 # calling providers.register_provider at import.
 _PROBE_SCRIPT = r"""
@@ -209,7 +209,7 @@ recorded = {"tools": [], "hooks": [], "middleware": [], "commands": [], "provide
 class RecordingContext:
     plugin_config = {}
     profile_name = "default"
-    plugin_id = "hermes_validate_probe_plugin"
+    plugin_id = "akramcode_validate_probe_plugin"
 
     def register_tool(self, name, *args, **kwargs):
         recorded["tools"].append(str(name))
@@ -271,7 +271,7 @@ if provider_kind:
 
 try:
     spec = importlib.util.spec_from_file_location(
-        "hermes_validate_probe_plugin",
+        "akramcode_validate_probe_plugin",
         plugin_dir + "/__init__.py",
         submodule_search_locations=[plugin_dir],
     )
@@ -324,9 +324,9 @@ def _run_capability_probe(plugin_dir: Path, manifest: dict) -> Tuple[Optional[di
     is the ``{tools, hooks, middleware, commands, providers}`` dict on
     success, and *error* is a human-readable failure description otherwise.
     """
-    with tempfile.TemporaryDirectory(prefix="hermes-validate-") as scratch:
+    with tempfile.TemporaryDirectory(prefix="akramcode-validate-") as scratch:
         env = dict(os.environ)
-        env["HERMES_HOME"] = scratch
+        env["AKRAMCODE_HOME"] = scratch
         try:
             result = subprocess.run(
                 [
@@ -508,7 +508,7 @@ def validate_plugin_dir(plugin_dir: Path) -> ValidationReport:
     report.add("manifest", True, "plugin.yaml parses")
 
     _check_manifest_fields(report, manifest)
-    _check_requires_hermes(report, manifest)
+    _check_requires_akramcode(report, manifest)
     _check_config_spec(report, manifest)
     _check_requires_env(report, manifest)
     _check_loadable(report, plugin_dir, manifest)
@@ -525,7 +525,7 @@ _LOADABLE_ENTRYPOINTS = ("__init__.py", "desktop/plugin.js", "plugin.json")
 
 
 def _check_loadable(report: ValidationReport, plugin_dir: Path, manifest: Optional[dict] = None) -> None:
-    """A plugin.yaml with nothing beside it that Hermes can load (no ``register()`` module, no
+    """A plugin.yaml with nothing beside it that AkramCode can load (no ``register()`` module, no
     desktop bundle, no portable manifest, no declared language pack) installs "successfully" and does
     nothing — a pip-layout repo whose code lives under ``src/`` behind an entry point is the usual shape."""
     present = [rel for rel in _LOADABLE_ENTRYPOINTS if (plugin_dir / rel).is_file()]

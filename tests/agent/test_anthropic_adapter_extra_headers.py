@@ -10,7 +10,7 @@ from agent.anthropic_adapter import build_anthropic_client
 _ROUTE = "https://proxy.example.com/v1"
 _CONFIG = {"custom_providers": [{
     "name": "wafproxy", "base_url": _ROUTE, "api_mode": "anthropic_messages",
-    "extra_headers": {"User-Agent": "HermesAgent/1.0", "X-Privacy-Tier": "enterprise"},
+    "extra_headers": {"User-Agent": "AkramCodeAgent/1.0", "X-Privacy-Tier": "enterprise"},
 }]}
 
 
@@ -22,7 +22,7 @@ def _build(route):
 
 def test_matching_route_merges_extra_headers_after_betas():
     headers = _build(_ROUTE)
-    assert headers["User-Agent"] == "HermesAgent/1.0"
+    assert headers["User-Agent"] == "AkramCodeAgent/1.0"
     assert headers["X-Privacy-Tier"] == "enterprise"
     assert "anthropic-beta" in headers  # provider headers add to, not replace, the beta set
 

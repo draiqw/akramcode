@@ -29,24 +29,24 @@ from akramcode_cli.tools_config import (
 
 def test_all_invalid_platform_toolsets_logs_runtime_warning(caplog):
     """#38798: an explicit platform config whose toolset names are all invalid
-    (e.g. 'hermes' instead of 'hermes-cli') must warn at resolve time so an
+    (e.g. 'akramcode' instead of 'akramcode-cli') must warn at resolve time so an
     already-corrupted config is caught at runtime, not just during migration."""
     import akramcode_cli.tools_config as _tc
     # The runtime warning fires once per platform per process; clear the guard
     # so this test is deterministic regardless of prior resolutions.
     _tc._warned_invalid_platform_toolsets.discard("cli")
-    config = {"platform_toolsets": {"cli": ["hermes"]}}
+    config = {"platform_toolsets": {"cli": ["akramcode"]}}
 
     with caplog.at_level(logging.WARNING, logger="akramcode_cli.tools_config"):
         _get_platform_tools(config, "cli")
 
     warnings = [r.getMessage() for r in caplog.records if r.levelno >= logging.WARNING]
-    assert any("#38798" in m and "hermes" in m for m in warnings), warnings
+    assert any("#38798" in m and "akramcode" in m for m in warnings), warnings
 
 
 def test_valid_platform_toolsets_no_runtime_warning(caplog):
     """A correctly-configured platform must not emit the #38798 warning."""
-    config = {"platform_toolsets": {"cli": ["hermes-cli"]}}
+    config = {"platform_toolsets": {"cli": ["akramcode-cli"]}}
 
     with caplog.at_level(logging.WARNING, logger="akramcode_cli.tools_config"):
         _get_platform_tools(config, "cli")
@@ -58,7 +58,7 @@ def test_partially_valid_platform_toolsets_no_runtime_warning(caplog):
     """When at least one configured toolset is valid, tools still resolve, so
     the runtime zero-tools warning must not fire (the migration-time check still
     flags the individual bad name)."""
-    config = {"platform_toolsets": {"cli": ["hermes-cli", "bogus"]}}
+    config = {"platform_toolsets": {"cli": ["akramcode-cli", "bogus"]}}
 
     with caplog.at_level(logging.WARNING, logger="akramcode_cli.tools_config"):
         _get_platform_tools(config, "cli")
@@ -91,7 +91,7 @@ def test_scalar_platform_toolsets_fall_back_to_platform_default():
 
 
 def test_enable_on_string_platform_toolsets_keeps_listed_entries():
-    """#115866: `hermes tools enable` must operate on the selection a list-literal
+    """#115866: `akramcode tools enable` must operate on the selection a list-literal
     string encodes — not re-baseline it on the platform default, which silently
     dropped the user's default-off entries (video, video_gen) on write."""
     config = {"platform_toolsets": {"telegram": '["browser", "terminal", "video", "video_gen"]'}}
@@ -164,7 +164,7 @@ def test_get_platform_tools_homeassistant_uses_active_profile_token(monkeypatch)
 
 # ─── #35527: platform-restricted default-off toolsets (discord/discord_admin)
 # are stripped by _DEFAULT_OFF_TOOLSETS even when the user explicitly opts in
-# via the platform's native composite. The composite ``hermes-discord``
+# via the platform's native composite. The composite ``akramcode-discord``
 # contains both ``discord`` and ``discord_admin`` tools, so configuring it is
 # an explicit opt-in that should survive the default-off strip. ───────────────
 
@@ -173,7 +173,7 @@ def test_discord_toolsets_do_not_leak_to_other_platforms():
     """Layer 4 (guard): discord/discord_admin are platform-restricted — they
     must never appear on a non-discord platform even when that platform is
     explicitly configured."""
-    config = {"platform_toolsets": {"telegram": ["hermes-telegram", "discord"]}}
+    config = {"platform_toolsets": {"telegram": ["akramcode-telegram", "discord"]}}
     enabled = _get_platform_tools(config, "telegram")
     assert "discord" not in enabled
     assert "discord_admin" not in enabled
@@ -186,7 +186,7 @@ def test_discord_toolsets_do_not_leak_to_other_platforms():
 
 
 def test_toolset_has_keys_for_vision_accepts_codex_auth(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     (tmp_path / "auth.json").write_text(
         '{"active_provider":"openai-codex","providers":{"openai-codex":{"tokens":{"access_token": "codex-...oken","refresh_token": "codex-...oken"}}}}'
     )
@@ -205,7 +205,7 @@ def test_toolset_has_keys_for_vision_accepts_codex_auth(tmp_path, monkeypatch):
 def test_save_platform_tools_preserves_mcp_server_names():
     """Ensure MCP server names are preserved when saving platform tools.
 
-    Regression test for https://github.com/NousResearch/hermes-agent/issues/1247
+    Regression test for https://github.com/NousResearch/akramcode-agent/issues/1247
     """
     config = {
         "platform_toolsets": {
@@ -326,11 +326,11 @@ class TestPlatformToolsetConsistency:
             )
 
     def test_gateway_toolset_includes_all_messaging_platforms(self):
-        """hermes-gateway includes list should cover all messaging platforms."""
+        """akramcode-gateway includes list should cover all messaging platforms."""
         from akramcode_cli.tools_config import PLATFORMS
         from toolsets import TOOLSETS
 
-        gateway_includes = set(TOOLSETS["hermes-gateway"]["includes"])
+        gateway_includes = set(TOOLSETS["akramcode-gateway"]["includes"])
         # Exclude non-messaging platforms from the check
         non_messaging = {"cli", "api_server", "cron"}
         for platform, meta in PLATFORMS.items():
@@ -339,7 +339,7 @@ class TestPlatformToolsetConsistency:
             ts_name = meta["default_toolset"]
             assert ts_name in gateway_includes, (
                 f"Platform {platform!r} toolset {ts_name!r} missing from "
-                f"hermes-gateway includes"
+                f"akramcode-gateway includes"
             )
 
     def test_skills_config_covers_tools_config_platforms(self):
@@ -363,7 +363,7 @@ def test_numeric_mcp_server_name_does_not_crash_sorted():
     _get_platform_tools must normalise them to str so that sorted()
     on the returned set never raises TypeError on mixed int/str.
 
-    Regression test for https://github.com/NousResearch/hermes-agent/issues/6901
+    Regression test for https://github.com/NousResearch/akramcode-agent/issues/6901
     """
     config = {
         "platform_toolsets": {"cli": ["web", 12306]},
@@ -422,7 +422,7 @@ class TestAgentBrowserPostSetup:
             _run_post_setup("agent_browser")
 
         assert any(str(error) in c.args[0] for c in warn.call_args_list)
-        assert any("hermes tools post-setup agent_browser" in c.args[0] for c in info.call_args_list)
+        assert any("akramcode tools post-setup agent_browser" in c.args[0] for c in info.call_args_list)
 
 
 class TestBrowserUseCliInstalledForAllNonCamofoxBackends:
@@ -444,13 +444,13 @@ class TestBrowserUseCliInstalledForAllNonCamofoxBackends:
         browser-use harness cannot drive it, so its setup must not pull
         the CLI in."""
         with patch("akramcode_cli.tools_config_post_setup._ensure_browser_use_cli") as ensure, patch(
-            "hermes_constants.find_node_executable", return_value=None
+            "akramcode_constants.find_node_executable", return_value=None
         ), patch("subprocess.run"):
             _run_post_setup("camofox")
         ensure.assert_not_called()
 
     def test_ensure_helper_missing_harness_is_non_fatal(self):
-        """A missing harness must warn and point at `hermes update`, never raise — the built-in
+        """A missing harness must warn and point at `akramcode update`, never raise — the built-in
         tools remain available."""
         from akramcode_cli.tools_config import _ensure_browser_use_cli
 
@@ -460,7 +460,7 @@ class TestBrowserUseCliInstalledForAllNonCamofoxBackends:
             _ensure_browser_use_cli()  # must not raise
 
         assert any("browser-harness" in c.args[0] for c in warn.call_args_list)
-        assert any("hermes update" in c.args[0] for c in info.call_args_list)
+        assert any("akramcode update" in c.args[0] for c in info.call_args_list)
 
 
 class TestImagegenBackendRegistry:
@@ -562,7 +562,7 @@ class TestImagegenModelPicker:
 def test_get_effective_configurable_toolsets_dedupes_bundled_plugins():
     """Bundled plugins (plugins/spotify) share their toolset key with the
     built-in CONFIGURABLE_TOOLSETS entry. The effective list must not list
-    them twice — otherwise `hermes tools` → "reconfigure existing" shows
+    them twice — otherwise `akramcode tools` → "reconfigure existing" shows
     the same toolset two rows in a row.
     """
     from akramcode_cli.tools_config import _get_effective_configurable_toolsets
@@ -601,7 +601,7 @@ def test_kanban_checklist_reports_and_persists_explicit_removal():
 
 def test_vision_picker_custom_endpoint(tmp_path, monkeypatch):
     """Custom endpoint writes base_url+model to config and the key to env."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     import akramcode_cli.tools_config as tc
     import akramcode_cli.tools_config_providers as tcp
     from akramcode_cli.config import load_config
@@ -753,10 +753,10 @@ def test_pool_only_account_is_offered_fal_models_only(monkeypatch):
     assert catalog and {meta["backend"] for meta in catalog.values()} == {"fal"}
 
 
-# ── Toolsets that shipped after a platform's last `hermes tools` save ────────
+# ── Toolsets that shipped after a platform's last `akramcode tools` save ────────
 #
 # Saving the picker (or one toggle in the desktop Toolsets UI) replaces a
-# platform's composite (``[hermes-cli]``) with a frozen explicit list, and
+# platform's composite (``[akramcode-cli]``) with a frozen explicit list, and
 # nothing ever adds to that list — so a toolset shipped later stays off
 # forever, while everyone still on the composite inherits it on upgrade.
 # ``_RECENTLY_SHIPPED_TOOLSETS`` closes that gap for toolsets new enough that
@@ -797,7 +797,7 @@ def test_saved_list_gains_toolsets_that_shipped_after_it_was_written():
     """The bug: a frozen list never gained a newly shipped toolset, so
     composite users got it on upgrade and picker users silently did not."""
     on_composite = _get_platform_tools(
-        {"platform_toolsets": {"cli": ["hermes-cli"]}},
+        {"platform_toolsets": {"cli": ["akramcode-cli"]}},
         "cli",
         include_default_mcp_servers=False,
     )
@@ -812,7 +812,7 @@ def test_saved_list_gains_toolsets_that_shipped_after_it_was_written():
 def test_unchecking_the_new_toolset_sticks():
     """Saving records it as offered, so the next read reads absence as a
     decline instead of turning it back on."""
-    config = {"platform_toolsets": {"cli": ["hermes-cli"]}}
+    config = {"platform_toolsets": {"cli": ["akramcode-cli"]}}
     enabled = _get_platform_tools(config, "cli", include_default_mcp_servers=False)
     with patch("akramcode_cli.tools_config.save_config"):
         _save_platform_tools(config, "cli", enabled - _RECENTLY_SHIPPED_TOOLSETS)
@@ -836,7 +836,7 @@ def test_agent_disabled_toolsets_still_wins():
 @_requires_recently_shipped
 def test_agent_disabled_toolsets_json_array_string_form_still_wins():
     """#86661: the suppression list may arrive as a JSON-array string (e.g.
-    `hermes config set agent.disabled_toolsets '["memory"]'`). It must be
+    `akramcode config set agent.disabled_toolsets '["memory"]'`). It must be
     parsed, not treated as one dead toolset name that filters nothing."""
     config = _saved_list_from_before()
     import json as _json
@@ -865,9 +865,9 @@ def test_agent_disabled_toolsets_python_literal_string_form_still_wins():
 
 def test_disabled_composite_debugging_prunes_constituent_platform_toolsets():
     """#97015: ``agent.disabled_toolsets: [debugging]`` must hide member
-    toolsets on ``hermes tools --summary``, not only strip them at runtime."""
+    toolsets on ``akramcode tools --summary``, not only strip them at runtime."""
     config = {
-        "platform_toolsets": {"cli": ["hermes-cli"]},
+        "platform_toolsets": {"cli": ["akramcode-cli"]},
         "agent": {"disabled_toolsets": ["debugging"]},
     }
     enabled = _get_platform_tools(config, "cli", include_default_mcp_servers=False)
@@ -884,7 +884,7 @@ def test_disabled_composite_display_matches_runtime_tool_selection():
     from toolsets import resolve_toolset
 
     config = {
-        "platform_toolsets": {"cli": ["hermes-cli"]},
+        "platform_toolsets": {"cli": ["akramcode-cli"]},
         "agent": {"disabled_toolsets": ["debugging"]},
     }
     enabled = _get_platform_tools(config, "cli", include_default_mcp_servers=False)
@@ -897,16 +897,16 @@ def test_disabled_composite_display_matches_runtime_tool_selection():
 @_requires_recently_shipped
 def test_platforms_whose_composite_excludes_it_are_left_narrow():
     """Parity is the justification, so don't widen a deliberately small
-    composite (hermes-acp, hermes-webhook) that never carried the toolset."""
+    composite (akramcode-acp, akramcode-webhook) that never carried the toolset."""
     from toolsets import TOOLSETS, resolve_toolset
 
     narrow = [
         platform
         for platform in ("acp", "webhook")
-        if f"hermes-{platform}" in TOOLSETS
+        if f"akramcode-{platform}" in TOOLSETS
         and not any(
             set(resolve_toolset(ts, include_registry=False))
-            <= set(resolve_toolset(f"hermes-{platform}"))
+            <= set(resolve_toolset(f"akramcode-{platform}"))
             for ts in _RECENTLY_SHIPPED_TOOLSETS
         )
     ]
@@ -929,7 +929,7 @@ def test_platforms_whose_composite_excludes_it_are_left_narrow():
 def test_explicit_plugin_toolset_admitted_in_platform_toolsets(monkeypatch):
     """When a plugin toolset key is explicitly listed under
     ``platform_toolsets.<platform>`` (alongside a composite like
-    ``hermes-cli``), it MUST be admitted as a configurable key instead of
+    ``akramcode-cli``), it MUST be admitted as a configurable key instead of
     being silently dropped by the has_explicit_config filter.
 
     Reproduces the second half of #81163: even after the eager register_tools
@@ -977,9 +977,9 @@ def test_explicit_plugin_toolset_admitted_in_platform_toolsets(monkeypatch):
     )
 
     # An explicit platform_toolsets list with a plugin key alongside the
-    # standard composite — exactly the "I want hermes-cli AND a2a in my CLI
+    # standard composite — exactly the "I want akramcode-cli AND a2a in my CLI
     # session" config the issue's user was trying to write.
-    config = {"platform_toolsets": {"cli": ["hermes-cli", "dplat_client"]}}
+    config = {"platform_toolsets": {"cli": ["akramcode-cli", "dplat_client"]}}
 
     enabled = _get_platform_tools(config, "cli")
 
@@ -991,7 +991,7 @@ def test_explicit_plugin_toolset_admitted_in_platform_toolsets(monkeypatch):
 
 def test_explicit_plugin_toolset_admitted_against_real_a2a_plugin(monkeypatch):
     """End-to-end Layer 2 regression: with the bundled a2a plugin enabled and
-    a real config like ``platform_toolsets.cli: [hermes-cli, a2a]``, ``a2a``
+    a real config like ``platform_toolsets.cli: [akramcode-cli, a2a]``, ``a2a``
     must appear in the resolved enabled toolset set. Before the fix, the
     filter dropped all non-CONFIGURABLE keys (a2a included)."""
     # Discover real plugins so _get_plugin_toolset_keys() sees the a2a key.
@@ -1003,7 +1003,7 @@ def test_explicit_plugin_toolset_admitted_against_real_a2a_plugin(monkeypatch):
     if "a2a" not in plugin_ts_keys:
         pytest.skip("bundled a2a plugin not discoverable in this worktree")
 
-    config = {"platform_toolsets": {"cli": ["hermes-cli", "a2a"]}}
+    config = {"platform_toolsets": {"cli": ["akramcode-cli", "a2a"]}}
     enabled = _get_platform_tools(config, "cli")
     assert "a2a" in enabled, (
         f"plugin-provided 'a2a' toolset dropped by _get_platform_tools "

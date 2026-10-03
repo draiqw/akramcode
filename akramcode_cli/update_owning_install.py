@@ -1,8 +1,8 @@
-"""Send ``hermes update`` back to the install whose interpreter it is running on.
+"""Send ``akramcode update`` back to the install whose interpreter it is running on.
 
 An install's in-tree venv can end up importing another checkout's code: an editable
 install recorded against a dev tree (what ``project_venv_dir`` used to cause when a dev
-checkout ran on the app install's interpreter) turns ``<install>/venv/bin/hermes`` into
+checkout ran on the app install's interpreter) turns ``<install>/venv/bin/akramcode`` into
 the dev tree's CLI. Every update the Desktop hands to that launcher then pulls the dev
 tree, the install never moves, and the app keeps relaunching its stale build.
 

@@ -40,4 +40,4 @@ export type { MouseTrackingMode } from './src/ink/termio/dec.ts'
 export { wrapAnsi } from './src/ink/wrapAnsi.ts'
 // 'ink-text-input' types deliberately not re-exported here; see
 // src/entry-exports.ts for the full rationale (#31227). Use the
-// '@hermes/ink/text-input' subpath when the upstream widget is needed.
+// '@akramcode/ink/text-input' subpath when the upstream widget is needed.

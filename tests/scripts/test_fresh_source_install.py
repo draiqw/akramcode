@@ -44,7 +44,7 @@ def test_current_installer_publishes_real_dependencies_and_warm_path(tmp_path, s
     shutil.copy2(python, bootstrap / f"bin/python{minor}")
     (bootstrap / "bin/python3").symlink_to(f"python{minor}")
     env = {"PATH": os.environ["PATH"], "HOME": str(home), "LANG": "C.UTF-8",
-           "HERMES_HOME": str(home / ".hermes"), "UV_PYTHON_INSTALL_DIR": str(managed),
+           "AKRAMCODE_HOME": str(home / ".akramcode"), "UV_PYTHON_INSTALL_DIR": str(managed),
            "UV_PYTHON_DOWNLOADS": "never", "UV_CACHE_DIR": str(tmp_path / "cache")}
     canary = tmp_path / "ambient-bin"
     canary.mkdir()
@@ -67,7 +67,7 @@ def test_current_installer_publishes_real_dependencies_and_warm_path(tmp_path, s
     source.mkdir()
     for name in ("pm", "akramcode_cli", "akramcode_platform"):
         shutil.copytree(ROOT / name, source / name, ignore=shutil.ignore_patterns("__pycache__"))
-    for name in ("utils.py", "hermes_constants.py", "akram_core.hermes_yaml.py", "akram_core.hermes_bootstrap.py", "setup-hermes.sh"):
+    for name in ("utils.py", "akramcode_constants.py", "akram_core.akramcode_yaml.py", "akram_core.akramcode_bootstrap.py", "setup-akramcode.sh"):
         shutil.copy2(ROOT / name, source / name)
     # The CLI's user-facing text resolves through the i18n kernel (agent.i18n + the English catalog);
     # the rest of agent/ stays out so the tail cannot grow a dependency on the agent runtime.
@@ -123,30 +123,30 @@ def test_current_installer_publishes_real_dependencies_and_warm_path(tmp_path, s
          "commit", "-m", "fixture"], cwd=source)
     commit = run(["git", "rev-parse", "HEAD"], cwd=source).stdout.strip()
     install = tmp_path / "installed source"
-    env["HERMES_REPO_URL"] = str(source)
+    env["AKRAMCODE_REPO_URL"] = str(source)
     command = ["bash", str(ROOT / "scripts/install.sh"), "--dir", str(install),
                "--branch", "fixture", "--commit", commit, "--non-interactive", "--json"]
     result = run(command, expected=1 if fault else 0)
     assert not npm_called.exists()
     if fault:
-        assert not (install / ".hermes-bootstrap-complete").exists()
-        assert not (home / ".local/bin/hermes").exists()
-        for facts in (home / ".hermes/installs").glob("*/facts.json"):
+        assert not (install / ".akramcode-bootstrap-complete").exists()
+        assert not (home / ".local/bin/akramcode").exists()
+        for facts in (home / ".akramcode/installs").glob("*/facts.json"):
             assert "venv" not in json.loads(facts.read_text())["packages"]
         assert '"stage":"python-deps"' in result.stdout
         return
     assert '"stage":"python-deps"' in result.stdout
-    assert json.loads((install / ".hermes-bootstrap-complete").read_text())["pinnedCommit"] == commit
-    facts = next((home / ".hermes/installs").glob("*/facts.json"))
+    assert json.loads((install / ".akramcode-bootstrap-complete").read_text())["pinnedCommit"] == commit
+    facts = next((home / ".akramcode/installs").glob("*/facts.json"))
     selection = json.loads(facts.read_text())["packages"]["venv"]
-    launcher = home / ".local/bin/hermes"
+    launcher = home / ".local/bin/akramcode"
     child = json.loads(run([str(launcher), "from elsewhere"]).stdout)
     assert child["argv"] == ["from elsewhere"]
     assert Path(child["module"]).is_relative_to(Path(selection["environment"]))
     assert not (install / "venv").exists()
     # The developer setup path publishes through the same writer after real PM.
     launcher.unlink()
-    run(["bash", str(install / "setup-hermes.sh")])
+    run(["bash", str(install / "setup-akramcode.sh")])
     assert json.loads(run([str(launcher), "from setup"]).stdout)["argv"] == ["from setup"]
     # Warm path publication must work with all acquisition inputs unavailable.
     shutil.rmtree(docroot)

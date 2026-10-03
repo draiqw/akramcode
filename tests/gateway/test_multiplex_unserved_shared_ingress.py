@@ -69,7 +69,7 @@ async def test_secondary_whatsapp_without_primary_is_reported_unserved(monkeypat
     assert infos and "'work'" in infos[0].getMessage() and "default profile" in infos[0].getMessage()
     warnings = [r.getMessage() for r in caplog.records if r.levelno == logging.WARNING]
     assert any("whatsapp" in w and "not being served" in w and "work" in w for w in warnings), warnings
-    # Stamped so `hermes gateway status --profile work` / the dashboard can show the reason.
+    # Stamped so `akramcode gateway status --profile work` / the dashboard can show the reason.
     assert ("work:whatsapp", {
         "platform_state": "disabled", "error_code": "multiplex_shared_ingress",
         "error_message": "not served under multiplex (shared ingress owned by default)",
@@ -107,7 +107,7 @@ async def test_boot_replays_the_launch_ledger_before_secondaries_and_watchers(mo
     reads ``completion_queue`` directly, so the launch profile's durable completions must already
     be queued by the boot hook — in the LAUNCH scope, before any secondary is bound (#123265)."""
     from tools import async_delegation, process_registry as pr_mod
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "launch"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "launch"))
     monkeypatch.setattr(pr_mod.process_registry, "_completions_restored", False)
     order = []
     monkeypatch.setattr(async_delegation, "restore_undelivered_completions",

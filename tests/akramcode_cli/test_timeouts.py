@@ -35,8 +35,8 @@ def test_anthropic_adapter_honors_timeout_kwarg():
 
 def test_resolved_api_call_timeout_priority(monkeypatch, tmp_path):
     """AIAgent._resolved_api_call_timeout() honors config > env > default priority."""
-    # Isolate HERMES_HOME
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    # Isolate AKRAMCODE_HOME
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     (tmp_path / ".env").write_text("", encoding="utf-8")
 
     # Case A: config wins over env var
@@ -48,7 +48,7 @@ def test_resolved_api_call_timeout_priority(monkeypatch, tmp_path):
               openai/gpt-4o-mini:
                 timeout_seconds: 42
         """)
-    monkeypatch.setenv("HERMES_API_TIMEOUT", "999")
+    monkeypatch.setenv("AKRAMCODE_API_TIMEOUT", "999")
 
     from run_agent import AIAgent
     agent = AIAgent(

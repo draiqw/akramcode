@@ -4,8 +4,8 @@ Every surface reads and writes the same two keys in the profile's config.yaml:
 ``telemetry.shared_metrics.enabled`` (collect locally) and ``.send`` (upload daily). The question
 counts as answered once either key is written explicitly; the shipped defaults are not an answer.
 Desktop paints the offer as a composer strip (``consent-strip.tsx`` over the ``shared_metrics.*``
-RPCs). The terminal asks at the end of every ``hermes setup`` flow and, for a profile that never
-answered, once before an interactive ``hermes`` / ``hermes --tui`` chat (which also covers the
+RPCs). The terminal asks at the end of every ``akramcode setup`` flow and, for a profile that never
+answered, once before an interactive ``akramcode`` / ``akramcode --tui`` chat (which also covers the
 dashboard's Chat tab, a PTY-hosted TUI). The messaging gateway never asks: a chat participant is
 not the install owner.
 """
@@ -26,14 +26,14 @@ OFFER_CHOICES = (
     ("No thanks", False, False),
 )
 _NO_THANKS = len(OFFER_CHOICES) - 1
-DOCS_URL = "https://hermes-agent.nousresearch.com/docs/developer-guide/relay-shared-metrics"
+DOCS_URL = "https://akramcode-agent.nousresearch.com/docs/developer-guide/relay-shared-metrics"
 _OFFER_DESCRIPTION = "\n".join((
     "Shared metrics are bounded counters: activity, outcomes, error classes, model routes,",
     "token totals, feature use and coarse machine facts. Never prompts, files, paths,",
     "setting values or error text. Collection stays on this machine; sending to Nous is",
     "a separate choice, and data from before you opt in is never sent.",
     f"Details: {DOCS_URL}",
-    "Change it any time: hermes setup telemetry",
+    "Change it any time: akramcode setup telemetry",
 ))
 
 
@@ -101,21 +101,21 @@ def offer_consent(config: dict | None = None) -> bool:
     from akramcode_cli.curses_ui import curses_radiolist
 
     idx = curses_radiolist(
-        "Help improve Hermes?", [label for label, _, _ in OFFER_CHOICES], selected=_NO_THANKS, cancel_returns=-1,
+        "Help improve AkramCode?", [label for label, _, _ in OFFER_CHOICES], selected=_NO_THANKS, cancel_returns=-1,
         description=_OFFER_DESCRIPTION,
     )
     if idx < 0:
-        print_info("Not answered; Hermes will ask again. Decide any time with `hermes setup telemetry`.")
+        print_info("Not answered; AkramCode will ask again. Decide any time with `akramcode setup telemetry`.")
         return False
     _, enabled, send = OFFER_CHOICES[idx]
     save_consent(enabled, send, config)
     outcome = "collected and sent to Nous" if send else "collected on this machine only" if enabled else "off"
-    print_success(f"Shared metrics {outcome}. Change it any time with `hermes setup telemetry`.")
+    print_success(f"Shared metrics {outcome}. Change it any time with `akramcode setup telemetry`.")
     return True
 
 
 def offer_consent_if_undecided(config: dict | None = None) -> None:
-    """The end-of-setup offer: every ``hermes setup`` flow funnels through the setup-completed
+    """The end-of-setup offer: every ``akramcode setup`` flow funnels through the setup-completed
     record, so this one call covers Quick, Full, Blank Slate, Portal and ``--quick``."""
     from akramcode_cli.config import is_managed
     from akramcode_cli.setup import is_noninteractive
@@ -139,7 +139,7 @@ def offer_consent_before_chat(args: Any) -> None:
         return
     if getattr(args, "safe_mode", False) or getattr(args, "ignore_user_config", False):
         return
-    if os.environ.get("HERMES_DESKTOP") or is_noninteractive():
+    if os.environ.get("AKRAMCODE_DESKTOP") or is_noninteractive():
         return
     if not (sys.stdin.isatty() and sys.stdout.isatty()) or is_managed():
         return

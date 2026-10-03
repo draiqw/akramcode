@@ -56,10 +56,10 @@ def test_non_retryable_reasons_stop(reason):
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    h = tmp_path / ".hermes"
+    h = tmp_path / ".akramcode"
     (h / "profiles" / "ops").mkdir(parents=True)
     (h / "profiles" / "ops" / "config.yaml").touch()  # identity marker: bare dirs are not profiles
-    monkeypatch.setenv("HERMES_HOME", str(h))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(h))
     return h
 
 
@@ -71,9 +71,9 @@ def _deliver(params):
 
 def _is_akramcode_cli(argv) -> bool:
     """Match the delivery CLI by basename — local_delivery_command may
-    resolve the venv-relative hermes next to the interpreter (#93590)."""
+    resolve the venv-relative akramcode next to the interpreter (#93590)."""
     name = str(argv[0]).rsplit("\\", 1)[-1].rsplit("/", 1)[-1]
-    return name in ("hermes", "hermes.exe")
+    return name in ("akramcode", "akramcode.exe")
 
 
 def _transport_calls(calls):
@@ -171,7 +171,7 @@ def test_run_delivery_retries_transient_and_reemits_stdout(monkeypatch, tmp_path
 
     monkeypatch.setattr(bot_mode_dm.subprocess, "run", _fake_run)
     rc = bot_mode_dm._run_delivery(
-        ["hermes", "-p", "ops", "chat"], str(dm), stdin_file=False
+        ["akramcode", "-p", "ops", "chat"], str(dm), stdin_file=False
     )
     assert rc == 0
     assert len(calls) == 2
@@ -193,7 +193,7 @@ def test_run_delivery_no_retry_for_missing_config(monkeypatch, tmp_path):
 
     monkeypatch.setattr(bot_mode_dm.subprocess, "run", _fake_run)
     rc = bot_mode_dm._run_delivery(
-        ["hermes", "-p", "ops", "chat"], str(dm), stdin_file=False
+        ["akramcode", "-p", "ops", "chat"], str(dm), stdin_file=False
     )
     assert rc == 1
     assert len(calls) == 1
@@ -201,7 +201,7 @@ def test_run_delivery_no_retry_for_missing_config(monkeypatch, tmp_path):
 
 # ── the streams a real failed `-Q` turn writes (#111721) ─────────────────────
 
-# `hermes … -Q` prints the turn's final_response (the provider prose) on STDOUT and the session
+# `akramcode … -Q` prints the turn's final_response (the provider prose) on STDOUT and the session
 # bookkeeping on STDERR — on every run, so a `stderr or stdout` read never saw the provider error.
 _REAL_FAILED_STDOUT = (
     "Custom endpoint reported it was overloaded on all 1 attempts — it looks temporarily "
@@ -260,8 +260,8 @@ def test_run_local_turn_retry_reads_the_stream_the_cli_writes_and_resumes_the_pe
         return _Proc(0, stdout="the reply text")
 
     monkeypatch.setattr(bot_mode_dm.subprocess, "run", _fake_run)
-    rc = bot_mode_dm._run_local_turn(["hermes", "-p", "ops", "chat"], str(dm), env={"HERMES_HOME": str(tmp_path)})
+    rc = bot_mode_dm._run_local_turn(["akramcode", "-p", "ops", "chat"], str(dm), env={"AKRAMCODE_HOME": str(tmp_path)})
     assert rc == 0
-    assert envs[0] == {"HERMES_HOME": str(tmp_path)}
-    assert envs[1] == {"HERMES_HOME": str(tmp_path), RESUME_UNANSWERED_TURN_ENV: "1"}
+    assert envs[0] == {"AKRAMCODE_HOME": str(tmp_path)}
+    assert envs[1] == {"AKRAMCODE_HOME": str(tmp_path), RESUME_UNANSWERED_TURN_ENV: "1"}
     assert "the reply text" in capsys.readouterr().out

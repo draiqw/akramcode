@@ -27,18 +27,18 @@ logger = logging.getLogger("akramcode_cli.plugins")
 _VALID_PLUGIN_KINDS: Set[str] = {"standalone", "backend", "exclusive", "platform", "model-provider"}
 
 # Unknown plugin.yaml fields are forward-compat surface: warn (debug for v1 files, warning for v2+)
-# and continue loading. ``capabilities``/``emits``/``listens``/``hermes``/``depends`` are reserved.
+# and continue loading. ``capabilities``/``emits``/``listens``/``akramcode``/``depends`` are reserved.
 # ── Manifest v2 (#64165) parsing helpers ──────────────────────────────────
 _KNOWN_MANIFEST_FIELDS: Set[str] = {
     "name", "version", "description", "author", "requires_env", "provides_tools", "provides_hooks",
     "kind", "hooks", "label", "optional_env", "platforms", "external_dependencies",
     "pip_dependencies", "provides_browser_providers", "provides_web_providers",
     "manifest_version", "api_version", "requires_plugins", "python_dependencies", "config_schema",
-    "license", "homepage", "tags", "capabilities", "emits", "listens", "hermes", "depends",
-    "requires_hermes", "python_runtime", "provides_locales",
+    "license", "homepage", "tags", "capabilities", "emits", "listens", "akramcode", "depends",
+    "requires_akramcode", "python_runtime", "provides_locales",
 }
 
-# Highest manifest schema version this Hermes understands.
+# Highest manifest schema version this AkramCode understands.
 SUPPORTED_MANIFEST_VERSION = 2
 
 _CONFIG_SCHEMA_TYPES: Dict[str, tuple] = {
@@ -136,7 +136,7 @@ def _parse_manifest_v2_fields(data: Mapping, key: str) -> Dict[str, Any]:
                        "Plugin %s: manifest_version %r is not an integer; treating as 1", 1)
     if mv > SUPPORTED_MANIFEST_VERSION:
         logger.warning(
-            "Plugin %s: manifest_version %d is newer than this Hermes "
+            "Plugin %s: manifest_version %d is newer than this AkramCode "
             "supports (%d); loading anyway and ignoring unknown fields", key, mv, SUPPORTED_MANIFEST_VERSION,
         )
     raw_api = data.get("api_version")
@@ -240,7 +240,7 @@ def resolve_plugin_load_order(manifests: Mapping[str, "PluginManifest"]) -> List
                 logger.warning(
                     "Plugin %s requires plugin '%s' which is not enabled/"
                     "installed; loading anyway (probe availability at runtime "
-                    "via ctx.has_plugin). Run `hermes plugins enable %s` if it is installed.",
+                    "via ctx.has_plugin). Run `akramcode plugins enable %s` if it is installed.",
                     k, dep_id, dep_id,
                 )
             elif resolved == k:
@@ -355,12 +355,12 @@ class PluginManifest:
     # <category>.provider; own discovery, general scanner skips) | ``platform`` (gateway adapter; bundled
     # auto-load, user-installed gated as untrusted code).
     kind: str = "standalone"
-    # Path-derived registry key used by plugins.enabled/disabled and `hermes plugins list`: ``disk-cleanup``
+    # Path-derived registry key used by plugins.enabled/disabled and `akramcode plugins list`: ``disk-cleanup``
     # for a flat plugin, ``image_gen/openai`` for a category plugin. Empty -> name.
     key: str = ""
-    # Hermes version requirement (``">=0.19"``, comma-separated clauses allowed). Unsatisfied plugins are
-    # recorded with an error and skipped before import — see ``requires_hermes_error``.
-    requires_hermes: str = ""
+    # AkramCode version requirement (``">=0.19"``, comma-separated clauses allowed). Unsatisfied plugins are
+    # recorded with an error and skipped before import — see ``requires_akramcode_error``.
+    requires_akramcode: str = ""
     portable: bool = False
     skill_namespace: str = ""
     # Declared capability ids, normalized to KNOWN ids. Declaration is consent metadata, NOT a grant: live
@@ -375,7 +375,7 @@ class PluginManifest:
     # Advisory deps [{"id", "version_range"}]: missing ones warn but load; they order the load.
     requires_plugins: List[Dict[str, Any]] = field(default_factory=list)
     # Declared pip deps — VALIDATED AND SURFACED ONLY, never auto-installed.
-    # VALIDATED AND SURFACED ONLY — Hermes never auto-installs these (isolation design for the install seam
+    # VALIDATED AND SURFACED ONLY — AkramCode never auto-installs these (isolation design for the install seam
     # is a deferred follow-up; see #64165 round-2 review and #15220).
     python_dependencies: List[str] = field(default_factory=list)
     # Schema for plugins.entries.<id>.settings; mismatches warn, never fail.
@@ -429,12 +429,12 @@ def parse_provides_locales(raw: Any, key: str = "") -> Tuple[List[str], Dict[str
     return ids, metadata
 
 
-# ── requires_hermes version gate ─────────────────────────────────────────────
+# ── requires_akramcode version gate ─────────────────────────────────────────────
 _VERSION_COMPARATOR_RE = re.compile(r"^\s*(>=|<=|==|!=|>|<)\s*(.+?)\s*$")
 
 
-def running_hermes_version() -> str:
-    """Base release version of the Hermes code that is running."""
+def running_akramcode_version() -> str:
+    """Base release version of the AkramCode code that is running."""
     from akramcode_cli.version_info import get_version_info
 
     return get_version_info().base_version
@@ -474,15 +474,15 @@ def version_satisfies(spec: str, current: str) -> bool:
     return True
 
 
-def requires_hermes_error(manifest: "PluginManifest") -> Optional[str]:
-    """Load-blocking reason when the manifest's ``requires_hermes`` rejects the running version."""
-    spec = manifest.get("requires_hermes", "") if isinstance(manifest, Mapping) else manifest.requires_hermes
+def requires_akramcode_error(manifest: "PluginManifest") -> Optional[str]:
+    """Load-blocking reason when the manifest's ``requires_akramcode`` rejects the running version."""
+    spec = manifest.get("requires_akramcode", "") if isinstance(manifest, Mapping) else manifest.requires_akramcode
     if not spec:
         return None
-    current = running_hermes_version()
+    current = running_akramcode_version()
     if version_satisfies(spec, current):
         return None
-    return f"requires hermes {spec}, running {current}"
+    return f"requires akramcode {spec}, running {current}"
 
 
 def portable_plugin_manifest(child: Path, source: str, prefix: str) -> PluginManifest:
@@ -548,7 +548,7 @@ def parse_manifest_file(
             # ``hooks:`` is the spelling the bundled manifests carried for months; external copies of it
             # must keep declaring the same thing (#108371).
             provides_hooks=data.get("provides_hooks", data.get("hooks", [])), source=source, path=str(plugin_dir),
-            kind=kind, key=key, requires_hermes=str(data.get("requires_hermes") or "").strip(),
+            kind=kind, key=key, requires_akramcode=str(data.get("requires_akramcode") or "").strip(),
             capabilities=_parse_declared_capabilities(data.get("capabilities"), name),
             **_parse_manifest_v2_fields(data, key), emits=data.get("emits") or [],
             listens=data.get("listens") or [],

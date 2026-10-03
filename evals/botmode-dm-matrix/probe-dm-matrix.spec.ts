@@ -17,12 +17,12 @@ test.beforeAll(async () => {
   const sandbox = createSandbox('dm-delivery')
   const mock = await startMockServer({ holdFirstCompletionContaining: 'Message from 🤖 beta (@beta): matrix-unowned-sentinel' })
   for (const name of ['default', 'alpha', 'beta', 'gamma']) {
-    const home = name === 'default' ? sandbox.hermesHome : path.join(sandbox.hermesHome, 'profiles', name)
+    const home = name === 'default' ? sandbox.akramcodeHome : path.join(sandbox.akramcodeHome, 'profiles', name)
     fs.mkdirSync(home, { recursive: true })
     writeMockProviderConfig(home, mock.url)
     writeEnvFile(home)
     fs.writeFileSync(path.join(home, 'SOUL.md'), `# ${name}\nA Bot Mode teammate.\n`)
-    fs.writeFileSync(path.join(home, 'profile.yaml'), 'name: ' + name + '\nui_meta:\n  hermes-bots: {}\n')
+    fs.writeFileSync(path.join(home, 'profile.yaml'), 'name: ' + name + '\nui_meta:\n  akramcode-bots: {}\n')
   }
   if (process.env.BOT_DM_SERVICE_PATH === '1') {
     const sourceVenv = path.dirname(path.dirname(python))
@@ -32,19 +32,19 @@ test.beforeAll(async () => {
     fs.symlinkSync(path.join(sourceVenv, 'lib'), path.join(runtime, 'lib'))
     fs.symlinkSync(python, path.join(runtime, 'bin', 'python'))
     python = path.join(runtime, 'bin', 'python')
-    fs.writeFileSync(path.join(runtime, 'bin', 'hermes'), `#!/bin/sh\ncd ${repo}\nexec ${python} -m akramcode_cli.main "$@"\n`, { mode: 0o755 })
+    fs.writeFileSync(path.join(runtime, 'bin', 'akramcode'), `#!/bin/sh\ncd ${repo}\nexec ${python} -m akramcode_cli.main "$@"\n`, { mode: 0o755 })
   }
   const bin = path.join(sandbox.root, 'bin')
   fs.mkdirSync(bin)
-  fs.writeFileSync(path.join(bin, 'hermes'), `#!/bin/sh\ncd ${repo}\nexec ${python} -m akramcode_cli.main "$@"\n`, { mode: 0o755 })
+  fs.writeFileSync(path.join(bin, 'akramcode'), `#!/bin/sh\ncd ${repo}\nexec ${python} -m akramcode_cli.main "$@"\n`, { mode: 0o755 })
   if (process.env.BOT_DM_SERVICE_PATH === '1') {
-    fs.writeFileSync(path.join(bin, 'hermes'), `#!/bin/sh\nprintf 'WRONG_PATH_HERMES invoked: %s\\n' "$*" >> ${path.join(evidence, 'wrong-path.log')}\nprintf 'old launcher rejects --query-file\\n' >&2\nexit 2\n`, { mode: 0o755 })
+    fs.writeFileSync(path.join(bin, 'akramcode'), `#!/bin/sh\nprintf 'WRONG_PATH_AKRAMCODE invoked: %s\\n' "$*" >> ${path.join(evidence, 'wrong-path.log')}\nprintf 'old launcher rejects --query-file\\n' >&2\nexit 2\n`, { mode: 0o755 })
   }
-  env = buildAppEnv(sandbox, { HOME: sandbox.root, HERMES_DESKTOP_PYTHON: python,
-    HERMES_DESKTOP_HERMES: path.join(bin, 'hermes'), PATH: `${bin}:${process.env.PATH}`,
-    PYTHONPATH: repo, HERMES_SINGLE_QUERY_LINGER_SECONDS: '30' })
+  env = buildAppEnv(sandbox, { HOME: sandbox.root, AKRAMCODE_DESKTOP_PYTHON: python,
+    AKRAMCODE_DESKTOP_AKRAMCODE: path.join(bin, 'akramcode'), PATH: `${bin}:${process.env.PATH}`,
+    PYTHONPATH: repo, AKRAMCODE_SINGLE_QUERY_LINGER_SECONDS: '30' })
   for (const name of ['alpha', 'beta', 'gamma']) {
-    const h = path.join(sandbox.hermesHome, 'profiles', name)
+    const h = path.join(sandbox.akramcodeHome, 'profiles', name)
     execFileSync(python, ['-c', 'import sys; from pathlib import Path; from akramcode_state import SessionDB; d=SessionDB(db_path=Path(sys.argv[1])/"state.db"); d.create_session("matrix-"+sys.argv[2],"cli",cwd=sys.argv[3]); d.set_session_title("matrix-"+sys.argv[2],"Bot Chat"); d.close()', h, name, sandbox.root], { env, cwd: repo })
   }
   const { app, page } = await launchDesktop(env)
@@ -62,7 +62,7 @@ test.afterAll(async () => { await fixture?.cleanup() })
 async function openBot(name: string) {
   const page = fixture.page
   await page.getByRole('button', { name: 'Bots', exact: true }).or(page.getByRole('tab', { name: 'Bots', exact: true })).first().click()
-  const row = page.getByRole('button', { name: new RegExp(`^${name === 'default' ? 'hermes' : name}\\b`, 'i') }).filter({ visible: true }).first()
+  const row = page.getByRole('button', { name: new RegExp(`^${name === 'default' ? 'akramcode' : name}\\b`, 'i') }).filter({ visible: true }).first()
   await expect(row).toBeVisible({ timeout: 30_000 })
   await row.click()
   const composer = page.locator('[data-slot="composer-root"] [contenteditable="true"]').filter({ visible: true }).first()
@@ -71,7 +71,7 @@ async function openBot(name: string) {
 }
 
 function dbMessages(name: string) {
-  const home = name === 'default' ? fixture.sandbox.hermesHome : path.join(fixture.sandbox.hermesHome, 'profiles', name)
+  const home = name === 'default' ? fixture.sandbox.akramcodeHome : path.join(fixture.sandbox.akramcodeHome, 'profiles', name)
   return JSON.parse(execFileSync(python, ['-c', 'import sqlite3,json,sys; c=sqlite3.connect(sys.argv[1]); print(json.dumps(c.execute("select role,content from messages").fetchall()))', path.join(home, 'state.db')], { env, cwd: repo, encoding: 'utf8' })) as string[][]
 }
 
@@ -83,7 +83,7 @@ function owner(name: string) {
   return py('import json,sys; from tools.bot_live_delivery import find_canonical_live_owner; print(json.dumps(find_canonical_live_owner(sys.argv[1])))', [home(name)])
 }
 function home(name: string) {
-  return name === 'default' ? fixture.sandbox.hermesHome : path.join(fixture.sandbox.hermesHome, 'profiles', name)
+  return name === 'default' ? fixture.sandbox.akramcodeHome : path.join(fixture.sandbox.akramcodeHome, 'profiles', name)
 }
 function snapshot(name: string) {
   return py('import json,sqlite3,sys; from akramcode_cli.active_sessions import active_session_registry_snapshot; c=sqlite3.connect(sys.argv[1]+"/state.db"); c.row_factory=sqlite3.Row; print(json.dumps(dict(sessions=[dict(x) for x in c.execute("select * from sessions")],messages=[dict(x) for x in c.execute("select * from messages")],owners=active_session_registry_snapshot(registry_home=sys.argv[1])),default=str))', [home(name)])

@@ -40,7 +40,7 @@ class TestPatchV4AGate(unittest.TestCase):
             ("nous", "openai/o5-mini", True),
             ("openrouter", "anthropic/claude-sonnet-4", False),
             ("anthropic", "claude-fable-5", False),
-            ("nous", "hermes-4-405b", False),
+            ("nous", "akramcode-4-405b", False),
             ("", "", False),
         ]:
             self.assertEqual(_family(prov, model), want, (prov, model))

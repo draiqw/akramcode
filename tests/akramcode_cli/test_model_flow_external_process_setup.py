@@ -1,4 +1,4 @@
-"""`hermes model` for a process provider gates on the CLI's login and lists its live picker.
+"""`akramcode model` for a process provider gates on the CLI's login and lists its live picker.
 
 The generic plugin flow (``_model_flow_plugin_provider``) drives a registered ``external_process``
 profile end to end: credential resolution, the optional ``setup_status`` login gate, and the

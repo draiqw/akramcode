@@ -1,6 +1,6 @@
 """Runtime benchmarks for one tree. Usage: python runtime_bench.py <tree> <label> [reps]
 
-Each probe runs in a FRESH subprocess with an isolated HERMES_HOME so nothing is cached across reps.
+Each probe runs in a FRESH subprocess with an isolated AKRAMCODE_HOME so nothing is cached across reps.
 Reports medians + min over reps. Writes <label>.runtime.json.
 """
 import json, os, statistics, subprocess, sys, tempfile, time, shutil
@@ -11,10 +11,10 @@ PY = os.environ.get("NAV_PY", sys.executable)
 HOME = tempfile.mkdtemp(prefix=f"hh_{LABEL}_")
 os.makedirs(f"{HOME}/skills", exist_ok=True)
 open(f"{HOME}/config.yaml", "w", encoding="utf-8").write("model:\n  default: openai/gpt-4o-mini\n  provider: openrouter\nterminal:\n  backend: local\n")
-ENV = {**os.environ, "HERMES_HOME": HOME, "PYTHONPATH": TREE, "PYTHONDONTWRITEBYTECODE": "0", "OPENROUTER_API_KEY": "sk-bench-placeholder",
-       "HERMES_SKIP_UPDATE_CHECK": "1", "NO_COLOR": "1", "TERM": "dumb", "COLUMNS": "120"}
+ENV = {**os.environ, "AKRAMCODE_HOME": HOME, "PYTHONPATH": TREE, "PYTHONDONTWRITEBYTECODE": "0", "OPENROUTER_API_KEY": "sk-bench-placeholder",
+       "AKRAMCODE_SKIP_UPDATE_CHECK": "1", "NO_COLOR": "1", "TERM": "dumb", "COLUMNS": "120"}
 for k in list(ENV):
-    if k.startswith(("HERMES_SESSION", "HERMES_PROFILE")): ENV.pop(k)
+    if k.startswith(("AKRAMCODE_SESSION", "AKRAMCODE_PROFILE")): ENV.pop(k)
 
 def run(argv, code=None, timeout=300):
     t0 = time.perf_counter()
@@ -50,7 +50,7 @@ except Exception as e:
     err=repr(e)[:200]
 dt=time.perf_counter()-t0
 rss=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-tree=os.getcwd(); foreign=[m for m,mod in list(sys.modules.items()) if getattr(mod,"__file__",None) and "hermes-agent" in mod.__file__ and not mod.__file__.startswith(tree) and "site-packages" not in mod.__file__]
+tree=os.getcwd(); foreign=[m for m,mod in list(sys.modules.items()) if getattr(mod,"__file__",None) and "akramcode-agent" in mod.__file__ and not mod.__file__.startswith(tree) and "site-packages" not in mod.__file__]
 if foreign: err=(err or "")+f" FOREIGN_MODULES:{foreign[:3]}"
 print(json.dumps({"dt":dt,"mods":len(sys.modules)-n0,"rss_kb":rss,"err":err}))
 '''
@@ -68,7 +68,7 @@ for tgt in IMPORT_TARGETS:
                 "err": next((x["err"] for x in rows if x["err"]), None)}
 results["import"] = imp
 
-# 2. CLI end-to-end startup: `hermes --version`, `hermes --help`, `hermes doctor --help`, `hermes config get model` (no network)
+# 2. CLI end-to-end startup: `akramcode --version`, `akramcode --help`, `akramcode doctor --help`, `akramcode config get model` (no network)
 CLI = {"version": ["akramcode_cli/main.py", "--version"], "help": ["akramcode_cli/main.py", "--help"], "config_get": ["akramcode_cli/main.py", "config", "get", "model"], "tools_list": ["akramcode_cli/main.py", "tools", "--help"], "skills_help": ["akramcode_cli/main.py", "skills", "--help"]}
 cli = {}
 for name, argv in CLI.items():
@@ -93,7 +93,7 @@ try:
 except Exception as e: out["tool_definitions_err"]=repr(e)[:160]
 try:
     from toolsets import get_all_toolsets, resolve_toolset
-    T("resolve_toolset_hermes_default_ms", lambda: resolve_toolset("hermes-default"), 200)
+    T("resolve_toolset_akramcode_default_ms", lambda: resolve_toolset("akramcode-default"), 200)
 except Exception as e: out["toolsets_err"]=repr(e)[:160]
 try:
     from agent.prompt_builder import build_skills_system_prompt

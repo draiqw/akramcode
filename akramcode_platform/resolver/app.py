@@ -294,7 +294,7 @@ def _mcp_initialize(session: _Session, endpoint: str, deadline_s: float) -> Obse
     body = json.dumps({
         "jsonrpc": "2.0", "id": 1, "method": "initialize",
         "params": {"protocolVersion": "2025-06-18", "capabilities": {},
-                   "clientInfo": {"name": "hermes", "version": "probe"}},
+                   "clientInfo": {"name": "akramcode", "version": "probe"}},
     }).encode()
     headers = {"Content-Type": "application/json", "Accept": "application/json, text/event-stream"}
     if session.token:

@@ -3,8 +3,8 @@
 Regression for #118026: the module gated only on ``ImportError``, so a Windows install whose
 venv has some other module importable as ``fcntl`` (stock CPython for Windows ships none) hit an
 unguarded ``fcntl.F_RDLCK`` read at import time. ``akramcode_state`` imports this module at module
-level, so the ``AttributeError`` killed every importer — ``hermes serve`` (Desktop backend
-"exited before port announcement (1)"), ``hermes doctor``, the gateway, cron — before
+level, so the ``AttributeError`` killed every importer — ``akramcode serve`` (Desktop backend
+"exited before port announcement (1)"), ``akramcode doctor``, the gateway, cron — before
 ``supported()`` existed to report the guard as unavailable.
 """
 

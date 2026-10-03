@@ -1,7 +1,7 @@
 """NousDashboardAuthProvider — Nous Portal OAuth (authorization-code + PKCE).
 
 Implements ``nous-account-service/docs/agent-dashboard-oauth-contract.md``; registers only
-when a client_id (``dashboard.oauth.client_id`` / ``HERMES_DASHBOARD_OAUTH_CLIENT_ID``, shape
+when a client_id (``dashboard.oauth.client_id`` / ``AKRAMCODE_DASHBOARD_OAUTH_CLIENT_ID``, shape
 ``agent:{instance_id}``) is configured. Access tokens are RS256 JWTs verified against the
 Portal JWKS with ``aud`` = bare client_id. Portal issues a 24h *rotating* refresh token with
 reuse detection: the middleware MUST persist ``Session.refresh_token`` back to the cookie on
@@ -126,19 +126,19 @@ def _load_config_oauth_section() -> dict:
 def _settings() -> dict:
     """Resolve NousDashboardAuthProvider kwargs; the skip reason names BOTH configuration surfaces."""
     section = _load_config_oauth_section()
-    client_id = resolve_env_or_cfg("HERMES_DASHBOARD_OAUTH_CLIENT_ID", section.get("client_id", ""))
-    portal_url = resolve_env_or_cfg("HERMES_DASHBOARD_PORTAL_URL", section.get("portal_url", "")) or _DEFAULT_PORTAL_URL
+    client_id = resolve_env_or_cfg("AKRAMCODE_DASHBOARD_OAUTH_CLIENT_ID", section.get("client_id", ""))
+    portal_url = resolve_env_or_cfg("AKRAMCODE_DASHBOARD_PORTAL_URL", section.get("portal_url", "")) or _DEFAULT_PORTAL_URL
     if not client_id:
         raise SkipRegistration(
-            "HERMES_DASHBOARD_OAUTH_CLIENT_ID is not set (and dashboard.oauth.client_id "
+            "AKRAMCODE_DASHBOARD_OAUTH_CLIENT_ID is not set (and dashboard.oauth.client_id "
             "in config.yaml is empty). The Nous Portal provisions this env var (shape "
-            "'agent:{instance_id}') when it deploys a Hermes Agent instance — set it to "
+            "'agent:{instance_id}') when it deploys a AkramCode Agent instance — set it to "
             "your provisioned client id (either as an env var or under "
             "dashboard.oauth.client_id in config.yaml), or pass --insecure to skip the "
             "OAuth gate entirely.")
     if not client_id.startswith("agent:"):
         raise SkipRegistration(
-            f"HERMES_DASHBOARD_OAUTH_CLIENT_ID={client_id!r} doesn't match the contract "
+            f"AKRAMCODE_DASHBOARD_OAUTH_CLIENT_ID={client_id!r} doesn't match the contract "
             f"shape 'agent:{{instance_id}}'. The Nous Portal provisions this value at deploy "
             f"time; check your Fly app's secrets or override with the value from the Portal admin UI.",
             level="warning")

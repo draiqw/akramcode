@@ -91,7 +91,7 @@ from providers import register_provider
 from providers.base import ProviderProfile
 from akramcode_cli.auth_oauth_pkce_plugin import OAuthPKCEConfig, pkce_auth_handler, pkce_refresh_credential
 
-cfg = OAuthPKCEConfig(client_id="hermes-example", authorize_url="{base}/authorize", token_url="{base}/token",
+cfg = OAuthPKCEConfig(client_id="akramcode-example", authorize_url="{base}/authorize", token_url="{base}/token",
                       scopes=("inference",), timeout_seconds=20)
 register_provider(ProviderProfile(name="example-pkce", auth_type="oauth_external",
                                   base_url="https://example.invalid/v1", fallback_models=("example-model",),

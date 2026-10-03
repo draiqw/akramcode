@@ -189,11 +189,11 @@ class TestSessionsIndexProfileScoping:
         self._write_index(active_home, "sess_active")
 
         # Re-import the module with the launch home live: this is the import-time capture.
-        monkeypatch.setenv("HERMES_HOME", str(launch_home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(launch_home))
         importlib.reload(mirror_mod)
         try:
             # A request for a different profile is now served by the same process.
-            monkeypatch.setenv("HERMES_HOME", str(active_home))
+            monkeypatch.setenv("AKRAMCODE_HOME", str(active_home))
             assert mirror_mod._find_session_id("telegram", "12345") == "sess_active"
         finally:
             monkeypatch.undo()
@@ -205,6 +205,6 @@ class TestSessionsIndexProfileScoping:
         self._write_index(patched, "sess_patched")
 
         monkeypatch.setattr(mirror_mod, "_SESSIONS_INDEX", patched / "sessions" / "sessions.json")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "elsewhere"))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "elsewhere"))
 
         assert mirror_mod._find_session_id("telegram", "12345") == "sess_patched"

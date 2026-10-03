@@ -1,4 +1,4 @@
-"""Browser Use caller -> browser-harness on Hermes's own interpreter -> actual child."""
+"""Browser Use caller -> browser-harness on AkramCode's own interpreter -> actual child."""
 import importlib.metadata
 import json
 import subprocess
@@ -56,7 +56,7 @@ def test_browser_exec_child_environment(tmp_path, monkeypatch):
     assert result["success"], result
     child = json.loads(result["output"])
     assert child["stdin"] == "print('payload')"
-    for key in ("PYTHONHOME", "OPENAI_API_KEY", "_HERMES_BU_PRIVATE_BROWSER"):
+    for key in ("PYTHONHOME", "OPENAI_API_KEY", "_AKRAMCODE_BU_PRIVATE_BROWSER"):
         assert key not in child["env"]
     assert child["env"].get("PYTHONPATH") == bu._harness_site_dir()
     assert child["env"]["BU_NAME"] == "research"

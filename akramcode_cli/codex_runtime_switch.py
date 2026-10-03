@@ -15,15 +15,15 @@ VALID_RUNTIMES = ("auto", "codex_app_server")
 # Human-friendly synonyms accepted by parse_args.
 _ARG_SYNONYMS = {
     "on": "codex_app_server", "codex": "codex_app_server", "enable": "codex_app_server",
-    "off": "auto", "default": "auto", "disable": "auto", "hermes": "auto"}
+    "off": "auto", "default": "auto", "disable": "auto", "akramcode": "auto"}
 
-_HERMES_TOOLS_CALLBACK_NOTE = (
-    "Hermes tool callback registered: codex can now use "
+_AKRAMCODE_TOOLS_CALLBACK_NOTE = (
+    "AkramCode tool callback registered: codex can now use "
     "web_search, web_extract, browser_*, vision_analyze, "
     "image_generate, skill_view, skills_list, text_to_speech, "
     "kanban_* (worker + orchestrator) via MCP.",
     "  (delegate_task, memory, session_search, todo run "
-    "only on the default Hermes runtime — they need the "
+    "only on the default AkramCode runtime — they need the "
     "agent loop context.)")
 
 
@@ -99,10 +99,10 @@ def _migration_lines(config: dict) -> list[str]:
     """Run the ~/.codex/config.toml migration and describe it; failures are non-fatal."""
     lines: list[str] = []
     try:
-        from akramcode_cli.codex_runtime_plugin_migration import HERMES_TOOLS_MCP_SERVER_NAME, migrate
+        from akramcode_cli.codex_runtime_plugin_migration import AKRAMCODE_TOOLS_MCP_SERVER_NAME, migrate
         mig_report = migrate(config)
-        # The hermes-tools callback is internal plumbing — surfaced separately below.
-        user_servers = [s for s in mig_report.migrated if s != HERMES_TOOLS_MCP_SERVER_NAME]
+        # The akramcode-tools callback is internal plumbing — surfaced separately below.
+        user_servers = [s for s in mig_report.migrated if s != AKRAMCODE_TOOLS_MCP_SERVER_NAME]
         if user_servers:
             lines.append(f"Migrated {len(user_servers)} MCP server(s): {', '.join(user_servers)}")
         if mig_report.migrated_plugins:
@@ -115,8 +115,8 @@ def _migration_lines(config: dict) -> list[str]:
             lines.append(
                 f"Default sandbox: {mig_report.wrote_permissions_default} "
                 f"(no approval prompt on every write)")
-        if HERMES_TOOLS_MCP_SERVER_NAME in mig_report.migrated:
-            lines.extend(_HERMES_TOOLS_CALLBACK_NOTE)
+        if AKRAMCODE_TOOLS_MCP_SERVER_NAME in mig_report.migrated:
+            lines.extend(_AKRAMCODE_TOOLS_CALLBACK_NOTE)
         lines.append(f"  (config: {mig_report.target_path})")
         for err in mig_report.errors:
             lines.append(f"⚠ MCP migration: {err}")
@@ -144,7 +144,7 @@ def apply(
         return CodexRuntimeStatus(success=True, new_value=current, old_value=current, message=msg)
 
     # Re-enabling codex_app_server falls through to the migration: the config value is already
-    # correct but the world state (managed block in ~/.codex/config.toml, hermes-tools MCP
+    # correct but the world state (managed block in ~/.codex/config.toml, akramcode-tools MCP
     # callback, plugin discovery) may be stale — a common footgun when users pre-set
     # `openai_runtime: codex_app_server` by hand. The migration is idempotent so re-running is
     # cheap and safe. Re-setting `auto` returns immediately (disabling never touches ~/.codex/).
@@ -185,18 +185,18 @@ def apply(
         ok, ver = _check_binary_cached(codex_bin)
         if ok:
             msg_lines.append(f"codex CLI: {ver}")
-        # Migrate Hermes' MCP servers + Codex's curated plugins into ~/.codex/config.toml so the
-        # spawned codex subprocess sees the same tool surface AND can call back into Hermes.
+        # Migrate AkramCode' MCP servers + Codex's curated plugins into ~/.codex/config.toml so the
+        # spawned codex subprocess sees the same tool surface AND can call back into AkramCode.
         msg_lines.extend(_migration_lines(config))
         msg_lines.append(
             "OpenAI/Codex turns now run through `codex app-server` "
             "(terminal/file ops/patching inside Codex; "
-            "Hermes tools available via MCP callback).")
+            "AkramCode tools available via MCP callback).")
         msg_lines.append(
             "Effective on next session — current cached agent keeps "
             "the prior runtime to preserve prompt cache.")
     else:
-        msg_lines.append("OpenAI/Codex turns will use the default Hermes runtime.")
+        msg_lines.append("OpenAI/Codex turns will use the default AkramCode runtime.")
         msg_lines.append("Effective on next session.")
     return CodexRuntimeStatus(
         success=True, new_value=new_value, old_value=current,

@@ -51,7 +51,7 @@ class TestUserSkins:
             "branding": {"agent_name": "Custom Agent"},
             "tool_prefix": "▸",
         }
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
         skin_file.write_text(yaml.safe_dump(skin_data))
 
         # Patch skins dir
@@ -70,7 +70,7 @@ class TestUserSkins:
 
         skins_dir = tmp_path / "skins"
         skins_dir.mkdir()
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
 
         (skins_dir / "broken.yaml").write_text(
             yaml.safe_dump(
@@ -91,7 +91,7 @@ class TestUserSkins:
 
         assert skin.name == "broken"
         assert skin.get_color("banner_title") == "#FFD700"
-        assert skin.get_branding("agent_name") == "Hermes Agent"
+        assert skin.get_branding("agent_name") == "AkramCode Agent"
         assert skin.spinner.get("waiting_faces", []) == []
         assert skin.tool_emojis == {}
         assert skin.tool_prefix == "!"
@@ -100,7 +100,7 @@ class TestUserSkins:
         from akramcode_cli.skin_engine import list_skins
         skins_dir = tmp_path / "skins"
         skins_dir.mkdir()
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
         (skins_dir / "pirate.yaml").write_text(yaml.safe_dump({
             "name": "pirate",
             "description": "Arr matey",
@@ -123,7 +123,7 @@ class TestCustomCSS:
 
         skins_dir = tmp_path / "skins"
         skins_dir.mkdir()
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
 
         data = {"name": "styled", "colors": {"background": "#101010"}}
         data.update(skin_data)

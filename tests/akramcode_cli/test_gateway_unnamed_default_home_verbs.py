@@ -15,18 +15,18 @@ import pytest
 def default_home_process(tmp_path, monkeypatch):
     """Process whose own home is the DEFAULT one, with a sticky active_profile naming a
     named profile (the state that made the selector-less child resolve the wrong home)."""
-    root = tmp_path / "hermes"
+    root = tmp_path / "akramcode"
     (root / "profiles" / "coder").mkdir(parents=True)
     (root / "profiles" / "coder" / "config.yaml").write_text("{}\n")  # identity marker
     (root / "config.yaml").write_text("model: {default: x}\n")
     (root / "active_profile").write_text("coder")  # sticky: points at a named profile
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(root))
-    for var in ("HERMES_SUPERVISED_CHILD", "HERMES_S6_SUPERVISED_CHILD", "INVOCATION_ID",
-                "HERMES_GATEWAY_EXTERNAL_SUPERVISOR", "HERMES_UPDATE_POST_SWAP"):
+    monkeypatch.setenv("AKRAMCODE_HOME", str(root))
+    for var in ("AKRAMCODE_SUPERVISED_CHILD", "AKRAMCODE_S6_SUPERVISED_CHILD", "INVOCATION_ID",
+                "AKRAMCODE_GATEWAY_EXTERNAL_SUPERVISOR", "AKRAMCODE_UPDATE_POST_SWAP"):
         monkeypatch.delenv(var, raising=False)
-    import hermes_constants
-    monkeypatch.setattr(hermes_constants, "_default_hermes_root_memo", None)
+    import akramcode_constants
+    monkeypatch.setattr(akramcode_constants, "_default_akramcode_root_memo", None)
     return root
 
 
@@ -44,4 +44,4 @@ def test_unnamed_lifecycle_verbs_from_default_home_always_name_default(default_h
         assert argv == ["-p", "default", "gateway", verb]
         assert _named_profile_from_action(argv) == "default"
     env = _profile_action_environment(_gateway_subcommand(None, "restart"))
-    assert env["HERMES_HOME"] == str(default_home_process)
+    assert env["AKRAMCODE_HOME"] == str(default_home_process)

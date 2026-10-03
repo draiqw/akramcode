@@ -87,7 +87,7 @@ def provider(monkeypatch, tmp_path):
     monkeypatch.setenv("SUPERMEMORY_API_KEY", "test-key")
     monkeypatch.setattr("plugins.memory.supermemory._SupermemoryClient", FakeClient)
     p = SupermemoryMemoryProvider()
-    p.initialize("session-1", hermes_home=str(tmp_path), platform="cli")
+    p.initialize("session-1", akramcode_home=str(tmp_path), platform="cli")
     return p
 
 
@@ -119,12 +119,12 @@ def test_clean_text_for_capture_strips_inline_data_uri():
 def test_format_prefetch_context_deduplicates_overlap():
     result = _format_prefetch_context(
         static_facts=["Jordan prefers short answers"],
-        dynamic_facts=["Jordan prefers short answers", "Uses Hermes"],
-        search_results=[{"memory": "Uses Hermes", "similarity": 0.9}],
+        dynamic_facts=["Jordan prefers short answers", "Uses AkramCode"],
+        search_results=[{"memory": "Uses AkramCode", "similarity": 0.9}],
         max_results=10,
     )
     assert result.count("Jordan prefers short answers") == 1
-    assert result.count("Uses Hermes") == 1
+    assert result.count("Uses AkramCode") == 1
     assert "<supermemory-context>" in result
 
 
@@ -132,7 +132,7 @@ def test_prefetch_includes_profile_on_first_turn(provider):
     provider._client.profile_response = {
         "static": ["Jordan prefers short answers"],
         "dynamic": ["Current project is Supermemory provider"],
-        "search_results": [{"memory": "Working on Hermes memory provider", "similarity": 0.88}],
+        "search_results": [{"memory": "Working on AkramCode memory provider", "similarity": 0.88}],
     }
     provider.on_turn_start(1, "start")
     result = provider.prefetch("what am I working on?")
@@ -146,7 +146,7 @@ def test_capture_custom_id_buckets_by_four_hours():
     b = _capture_custom_id("session-1", datetime(2026, 9, 12, 4, 0, tzinfo=timezone.utc))
     assert a == "session_1_2026-09-12_b0"
     assert b == "session_1_2026-09-12_b1"
-    assert _capture_custom_id("", datetime(2026, 9, 12, 23, 0, tzinfo=timezone.utc)) == "hermes_2026-09-12_b5"
+    assert _capture_custom_id("", datetime(2026, 9, 12, 23, 0, tzinfo=timezone.utc)) == "akramcode_2026-09-12_b5"
 
 
 def test_sync_turn_writes_turn_to_session_document(provider, frozen_capture_clock):
@@ -342,18 +342,18 @@ def test_sync_turn_drops_inline_image_payloads(provider, frozen_capture_clock):
 
 
 def test_merge_metadata_stamps_sm_source():
-    # sm_source routes Hermes writes into the "Hermes" Space in the Supermemory
+    # sm_source routes AkramCode writes into the "AkramCode" Space in the Supermemory
     # app (functional routing, not telemetry) — must always be present.
     from plugins.memory.supermemory import _SupermemoryClient
 
     client = _SupermemoryClient.__new__(_SupermemoryClient)
     merged = client._merge_metadata({"type": "explicit_memory"})
-    assert merged["sm_source"] == "hermes"
+    assert merged["sm_source"] == "akramcode"
     assert merged["type"] == "explicit_memory"
 
     # Legacy "source" is migrated into "type" when type is absent.
     merged2 = client._merge_metadata({"source": "conversation_turn"})
-    assert merged2["sm_source"] == "hermes"
+    assert merged2["sm_source"] == "akramcode"
     assert merged2["type"] == "conversation_turn"
     assert "source" not in merged2
 
@@ -450,10 +450,10 @@ def test_identity_template_resolved_in_container_tag(monkeypatch, tmp_path):
     """container_tag with {identity} resolves to profile-scoped tag."""
     monkeypatch.setenv("SUPERMEMORY_API_KEY", "test-key")
     monkeypatch.setattr("plugins.memory.supermemory._SupermemoryClient", FakeClient)
-    _save_supermemory_config({"container_tag": "hermes-{identity}"}, str(tmp_path))
+    _save_supermemory_config({"container_tag": "akramcode-{identity}"}, str(tmp_path))
     p = SupermemoryMemoryProvider()
-    p.initialize("s1", hermes_home=str(tmp_path), platform="cli", agent_identity="coder")
-    assert p._container_tag == "hermes_coder"
+    p.initialize("s1", akramcode_home=str(tmp_path), platform="cli", agent_identity="coder")
+    assert p._container_tag == "akramcode_coder"
 
 
 def test_container_tag_env_var_override(monkeypatch, tmp_path):
@@ -462,7 +462,7 @@ def test_container_tag_env_var_override(monkeypatch, tmp_path):
     monkeypatch.setenv("SUPERMEMORY_CONTAINER_TAG", "env-override")
     monkeypatch.setattr("plugins.memory.supermemory._SupermemoryClient", FakeClient)
     p = SupermemoryMemoryProvider()
-    p.initialize("s1", hermes_home=str(tmp_path), platform="cli")
+    p.initialize("s1", akramcode_home=str(tmp_path), platform="cli")
     assert p._container_tag == "env_override"
 
 
@@ -475,7 +475,7 @@ def test_invalid_search_mode_falls_back_to_default(monkeypatch, tmp_path):
     monkeypatch.setattr("plugins.memory.supermemory._SupermemoryClient", FakeClient)
     _save_supermemory_config({"search_mode": "invalid_mode"}, str(tmp_path))
     p = SupermemoryMemoryProvider()
-    p.initialize("s1", hermes_home=str(tmp_path), platform="cli")
+    p.initialize("s1", akramcode_home=str(tmp_path), platform="cli")
     assert p._search_mode == "hybrid"
 
 
@@ -488,7 +488,7 @@ def test_base_url_defaults_to_cloud(monkeypatch, tmp_path):
     monkeypatch.delenv("SUPERMEMORY_BASE_URL", raising=False)
     monkeypatch.setattr("plugins.memory.supermemory._SupermemoryClient", FakeClient)
     p = SupermemoryMemoryProvider()
-    p.initialize("s1", hermes_home=str(tmp_path), platform="cli")
+    p.initialize("s1", akramcode_home=str(tmp_path), platform="cli")
     assert p._base_url == "https://api.supermemory.ai"
     assert p._client.base_url == "https://api.supermemory.ai"
 
@@ -514,7 +514,7 @@ def test_client_passes_custom_base_url_to_sdk(monkeypatch):
     client = _SupermemoryClient(
         api_key="test-key",
         timeout=1.0,
-        container_tag="hermes",
+        container_tag="akramcode",
         base_url="http://localhost:6767/",
     )
 
@@ -572,9 +572,9 @@ def test_post_setup_writes_config_and_env(monkeypatch, tmp_path):
     )
     monkeypatch.setattr(
         "plugins.memory.supermemory._probe_supermemory_connection",
-        lambda api_key, hermes_home, **kwargs: {
+        lambda api_key, akramcode_home, **kwargs: {
             "ok": True,
-            "container_tag": "hermes",
+            "container_tag": "akramcode",
             "profile_facts": 3,
             "auto_recall": True,
             "auto_capture": True,

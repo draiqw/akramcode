@@ -103,7 +103,7 @@ def _stub_plugin_discovery(monkeypatch):
 
 
 def test_oneshot_wires_session_db_for_recall(monkeypatch):
-    """hermes -z bypasses HermesCLI, but recall still needs SessionDB."""
+    """akramcode -z bypasses AkramCodeCLI, but recall still needs SessionDB."""
     from akramcode_cli.oneshot import _run_agent
 
     captured = {}
@@ -174,7 +174,7 @@ def test_oneshot_wires_session_db_for_recall(monkeypatch):
 
 
 def test_launch_tui_exports_model_provider_and_toolsets(monkeypatch, main_mod):
-    monkeypatch.setenv("HERMES_PYTHON", sys.executable)
+    monkeypatch.setenv("AKRAMCODE_PYTHON", sys.executable)
     captured = {}
     active_path_during_call = None
 
@@ -185,7 +185,7 @@ def test_launch_tui_exports_model_provider_and_toolsets(monkeypatch, main_mod):
     def fake_call(argv, cwd=None, env=None):
         nonlocal active_path_during_call
         captured.update({"argv": argv, "cwd": cwd, "env": env})
-        active_path_during_call = Path(env["HERMES_TUI_ACTIVE_SESSION_FILE"])
+        active_path_during_call = Path(env["AKRAMCODE_TUI_ACTIVE_SESSION_FILE"])
         assert active_path_during_call.exists()
         return 1
 
@@ -193,27 +193,27 @@ def test_launch_tui_exports_model_provider_and_toolsets(monkeypatch, main_mod):
 
     with pytest.raises(SystemExit):
         main_mod._launch_tui(
-            model="nous/hermes-test", provider="nous", toolsets="web, terminal"
+            model="nous/akramcode-test", provider="nous", toolsets="web, terminal"
         )
 
     env = captured["env"]
-    assert env["HERMES_MODEL"] == "nous/hermes-test"
-    assert env["HERMES_INFERENCE_MODEL"] == "nous/hermes-test"
-    assert env["HERMES_TUI_PROVIDER"] == "nous"
-    assert env["HERMES_INFERENCE_PROVIDER"] == "nous"
-    assert env["HERMES_TUI_TOOLSETS"] == "web,terminal"
-    active_path = Path(env["HERMES_TUI_ACTIVE_SESSION_FILE"])
-    assert active_path.name.startswith("hermes-tui-active-session-")
+    assert env["AKRAMCODE_MODEL"] == "nous/akramcode-test"
+    assert env["AKRAMCODE_INFERENCE_MODEL"] == "nous/akramcode-test"
+    assert env["AKRAMCODE_TUI_PROVIDER"] == "nous"
+    assert env["AKRAMCODE_INFERENCE_PROVIDER"] == "nous"
+    assert env["AKRAMCODE_TUI_TOOLSETS"] == "web,terminal"
+    active_path = Path(env["AKRAMCODE_TUI_ACTIVE_SESSION_FILE"])
+    assert active_path.name.startswith("akramcode-tui-active-session-")
     assert active_path.suffix == ".json"
     assert active_path_during_call == active_path
     assert not active_path.exists()
     assert env["NODE_ENV"] == "production"
 
 
-def test_launch_tui_prefers_launch_cwd_over_inherited_hermes_cwd(monkeypatch, main_mod, tmp_path):
-    """The directory `hermes --tui` was run from outranks an inherited HERMES_CWD.
+def test_launch_tui_prefers_launch_cwd_over_inherited_akramcode_cwd(monkeypatch, main_mod, tmp_path):
+    """The directory `akramcode --tui` was run from outranks an inherited AKRAMCODE_CWD.
 
-    A shell export - or an outer `hermes --tui` - leaves HERMES_CWD naming a real but stale
+    A shell export - or an outer `akramcode --tui` - leaves AKRAMCODE_CWD naming a real but stale
     directory, and ui-tui/src/gatewayClient.ts:478 starts the gateway in whatever it names,
     so the session reads files and completions from the wrong project (#49637).
     """
@@ -221,8 +221,8 @@ def test_launch_tui_prefers_launch_cwd_over_inherited_hermes_cwd(monkeypatch, ma
     launch = tmp_path / "launch-project"
     stale.mkdir()
     launch.mkdir()
-    monkeypatch.setenv("HERMES_PYTHON", sys.executable)
-    monkeypatch.setenv("HERMES_CWD", str(stale))
+    monkeypatch.setenv("AKRAMCODE_PYTHON", sys.executable)
+    monkeypatch.setenv("AKRAMCODE_CWD", str(stale))
     monkeypatch.chdir(launch)
 
     captured = {}
@@ -236,7 +236,7 @@ def test_launch_tui_prefers_launch_cwd_over_inherited_hermes_cwd(monkeypatch, ma
     with pytest.raises(SystemExit):
         main_mod._launch_tui()
 
-    handed_to_tui = Path(captured["env"]["HERMES_CWD"]).resolve()
+    handed_to_tui = Path(captured["env"]["AKRAMCODE_CWD"]).resolve()
     assert handed_to_tui == launch.resolve(), "the TUI gateway must start where the user launched"
     assert handed_to_tui != stale.resolve()
 
@@ -247,8 +247,8 @@ def test_launch_tui_worktree_still_outranks_the_launch_cwd(monkeypatch, main_mod
     launch = tmp_path / "launch-project"
     worktree.mkdir()
     launch.mkdir()
-    monkeypatch.setenv("HERMES_PYTHON", sys.executable)
-    monkeypatch.setenv("HERMES_CWD", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_PYTHON", sys.executable)
+    monkeypatch.setenv("AKRAMCODE_CWD", str(tmp_path))
     monkeypatch.chdir(launch)
 
     captured = {}
@@ -263,9 +263,9 @@ def test_launch_tui_worktree_still_outranks_the_launch_cwd(monkeypatch, main_mod
     with pytest.raises(SystemExit):
         main_mod._launch_tui(worktree=True)
 
-    assert captured["env"]["HERMES_CWD"] == str(worktree)
+    assert captured["env"]["AKRAMCODE_CWD"] == str(worktree)
     assert captured["env"]["TERMINAL_CWD"] == str(worktree)
-    assert Path(captured["env"]["HERMES_CWD"]).resolve() != launch.resolve()
+    assert Path(captured["env"]["AKRAMCODE_CWD"]).resolve() != launch.resolve()
 
 
 @pytest.mark.parametrize("backend", ["local", "docker"])
@@ -278,12 +278,12 @@ def test_launch_tui_local_session_starts_in_launch_dir_not_terminal_cwd(monkeypa
     launch = tmp_path / "launch-project"
     configured.mkdir()
     launch.mkdir()
-    (Path(os.environ["HERMES_HOME"]) / "config.yaml").write_text(
+    (Path(os.environ["AKRAMCODE_HOME"]) / "config.yaml").write_text(
         f"terminal:\n  backend: {backend}\n  cwd: {configured}\n", encoding="utf-8")
     monkeypatch.delenv("TERMINAL_ENV", raising=False)
     monkeypatch.delenv("TERMINAL_CWD", raising=False)
-    monkeypatch.setenv("HERMES_PYTHON", sys.executable)
-    monkeypatch.setenv("HERMES_TUI_CWD", str(tmp_path))  # stale, from an outer launcher
+    monkeypatch.setenv("AKRAMCODE_PYTHON", sys.executable)
+    monkeypatch.setenv("AKRAMCODE_TUI_CWD", str(tmp_path))  # stale, from an outer launcher
     monkeypatch.chdir(launch)
 
     captured = {}
@@ -299,8 +299,8 @@ def test_launch_tui_local_session_starts_in_launch_dir_not_terminal_cwd(monkeypa
 
     env = captured["env"]
     if backend == "local":
-        assert Path(env["HERMES_TUI_CWD"]).resolve() == launch.resolve()
+        assert Path(env["AKRAMCODE_TUI_CWD"]).resolve() == launch.resolve()
         assert Path(env["TERMINAL_CWD"]).resolve() == launch.resolve()
     else:
-        assert "HERMES_TUI_CWD" not in env
+        assert "AKRAMCODE_TUI_CWD" not in env
         assert Path(env["TERMINAL_CWD"]).resolve() == configured.resolve()

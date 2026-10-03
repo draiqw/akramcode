@@ -83,7 +83,7 @@ def test_fire_helper_swallows_manager_errors(monkeypatch):
 def _make_cli():
     import cli as cli_mod
 
-    inst = object.__new__(cli_mod.HermesCLI)
+    inst = object.__new__(cli_mod.AkramCodeCLI)
     inst.session_id = "sess-cli-1"
     inst._pending_resume_sessions = None
     return inst

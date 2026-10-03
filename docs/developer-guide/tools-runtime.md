@@ -6,7 +6,7 @@ description: "Runtime behavior of the tool registry, toolsets, dispatch, and ter
 
 # Tools Runtime
 
-Hermes tools are self-registering functions grouped into toolsets and executed through a central registry/dispatch system.
+AkramCode tools are self-registering functions grouped into toolsets and executed through a central registry/dispatch system.
 
 Primary files:
 
@@ -96,12 +96,12 @@ Key behaviors:
 
 ## Toolset resolution
 
-Toolsets are named bundles of tools. Hermes resolves them through:
+Toolsets are named bundles of tools. AkramCode resolves them through:
 
 - explicit enabled/disabled toolset lists
-- platform presets (`hermes-cli`, `hermes-telegram`, etc.)
+- platform presets (`akramcode-cli`, `akramcode-telegram`, etc.)
 - dynamic MCP toolsets
-- curated special-purpose sets like `hermes-acp`
+- curated special-purpose sets like `akramcode-acp`
 
 ### How `get_tool_definitions()` filters tools
 

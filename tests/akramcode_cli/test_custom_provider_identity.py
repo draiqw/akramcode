@@ -125,7 +125,7 @@ def test_named_lookup_does_not_read_an_unmatched_providers_secret(monkeypatch):
     """Provider identity scans must not touch credentials belonging to preceding entries."""
     from agent.secret_scope import is_multiplex_active, set_multiplex_active
 
-    monkeypatch.delenv("HERMES_CUSTOM_ALPHA_API_KEY", raising=False)
+    monkeypatch.delenv("AKRAMCODE_CUSTOM_ALPHA_API_KEY", raising=False)
     monkeypatch.setattr(
         rp,
         "load_config",
@@ -133,7 +133,7 @@ def test_named_lookup_does_not_read_an_unmatched_providers_secret(monkeypatch):
             "providers": {
                 "alpha": {
                     "api": "https://alpha.invalid/v1",
-                    "key_env": "HERMES_CUSTOM_ALPHA_API_KEY",
+                    "key_env": "AKRAMCODE_CUSTOM_ALPHA_API_KEY",
                 },
                 "beta": {
                     "api": "https://beta.invalid/v1",

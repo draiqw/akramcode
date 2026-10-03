@@ -61,7 +61,7 @@ def _runner_with_startup_failure(monkeypatch, clock: _Clock, *, heals: bool):
 @pytest.mark.parametrize("warning_notifications", [True, False])
 def test_lock_that_cleared_before_connect_is_not_broadcast(monkeypatch, tmp_path, warning_notifications):
     (tmp_path / "config.yaml").write_text(f"display: {{suppress_warning_notifications: {str(not warning_notifications).lower()}}}")
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_akramcode_home", tmp_path)
     clock = _Clock()
     runner, sent = _runner_with_startup_failure(monkeypatch, clock, heals=True)
     asyncio.run(runner._send_session_db_warning_notifications())

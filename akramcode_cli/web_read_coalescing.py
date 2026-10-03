@@ -6,7 +6,7 @@ from weakref import WeakKeyDictionary
 from typing import get_type_hints
 
 from anyio.to_thread import run_sync
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 
 
 def _freeze(value):
@@ -42,7 +42,7 @@ def coalesced_read(func, *, thread_runner=run_sync):
         loop = asyncio.get_running_loop()
         bound = signature.bind(*args, **kwargs)
         bound.apply_defaults()
-        key = (str(get_hermes_home()), _freeze(bound.arguments))
+        key = (str(get_akramcode_home()), _freeze(bound.arguments))
         pending, admission = states.setdefault(loop, ({}, asyncio.Semaphore(1)))
         task = pending.get(key)
         if task is None:

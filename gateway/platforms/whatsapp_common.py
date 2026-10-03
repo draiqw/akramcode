@@ -59,7 +59,7 @@ class WhatsAppBehaviorMixin(OwnAccessPolicyMixin):
     ALLOW_ALL_ENV_PREFIX = "WHATSAPP"
     supports_code_blocks = True  # WhatsApp renders fenced code blocks (monospace)
 
-    DEFAULT_REPLY_PREFIX: str = "☤ *Hermes Agent*\n────────────\n"
+    DEFAULT_REPLY_PREFIX: str = "☤ *AkramCode Agent*\n────────────\n"
 
     _OUTBOUND_INVISIBLE_CHARS_RE = re.compile(r"[\u200b\u2060\u2063\ufeff]")
     _OUTBOUND_ODD_SPACE_RE = re.compile(r"[\u00a0\u1680\u180e\u2000-\u200a\u202f\u205f\u3000]")
@@ -288,22 +288,22 @@ class WhatsAppBehaviorMixin(OwnAccessPolicyMixin):
 
 def resolve_whatsapp_bridge_dir() -> Path:
     """Bridge directory for CLI and adapter. A read-only install tree (e.g. Docker
-    /opt/hermes) is mirrored to HERMES_HOME so npm install works."""
+    /opt/akramcode) is mirrored to AKRAMCODE_HOME so npm install works."""
     import shutil
-    from akramcode_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
     install_bridge = Path(__file__).resolve().parents[2] / "scripts" / "whatsapp-bridge"
-    hermes_home_bridge = get_hermes_home() / "scripts" / "whatsapp-bridge"
+    akramcode_home_bridge = get_akramcode_home() / "scripts" / "whatsapp-bridge"
     try:
         (install_bridge / ".write_test").touch()
         (install_bridge / ".write_test").unlink()
         return install_bridge
     except OSError:
         pass
-    if hermes_home_bridge.exists():
-        return hermes_home_bridge
+    if akramcode_home_bridge.exists():
+        return akramcode_home_bridge
     try:
-        hermes_home_bridge.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copytree(install_bridge, hermes_home_bridge, dirs_exist_ok=False)
-        return hermes_home_bridge
+        akramcode_home_bridge.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(install_bridge, akramcode_home_bridge, dirs_exist_ok=False)
+        return akramcode_home_bridge
     except Exception:
         return install_bridge

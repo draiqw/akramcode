@@ -5,14 +5,14 @@ from akramcode_cli import uninstall
 
 
 def test_dry_run_prints_plan_without_mutating(monkeypatch, tmp_path, capsys):
-    project_root = tmp_path / "hermes-agent"
-    hermes_home = tmp_path / ".hermes"
+    project_root = tmp_path / "akramcode-agent"
+    akramcode_home = tmp_path / ".akramcode"
     project_root.mkdir()
     # A .git dir marks the tree as a removable git checkout — without it the
     # install-kind gate refuses before the dry-run plan prints.
     (project_root / ".git").mkdir()
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text("model: {}\n", encoding="utf-8")
+    akramcode_home.mkdir()
+    (akramcode_home / "config.yaml").write_text("model: {}\n", encoding="utf-8")
 
     called = False
 
@@ -21,8 +21,8 @@ def test_dry_run_prints_plan_without_mutating(monkeypatch, tmp_path, capsys):
         called = True
 
     monkeypatch.setattr(uninstall, "get_project_root", lambda: project_root)
-    monkeypatch.setattr(uninstall, "get_hermes_home", lambda: hermes_home)
-    monkeypatch.setattr(uninstall, "_is_default_hermes_home", lambda home: False)
+    monkeypatch.setattr(uninstall, "get_akramcode_home", lambda: akramcode_home)
+    monkeypatch.setattr(uninstall, "_is_default_akramcode_home", lambda home: False)
     monkeypatch.setattr(uninstall, "_discover_named_profiles", lambda: [])
     monkeypatch.setattr(uninstall, "_perform_uninstall", _fail_if_called)
 
@@ -32,23 +32,23 @@ def test_dry_run_prints_plan_without_mutating(monkeypatch, tmp_path, capsys):
     assert called is False
     assert "Dry run" in output
     assert str(project_root) in output
-    assert str(hermes_home) in output
+    assert str(akramcode_home) in output
     assert project_root.exists()
-    assert hermes_home.exists()
+    assert akramcode_home.exists()
 
 
 def test_dry_run_lists_named_profiles_without_desktop_userdata(monkeypatch, tmp_path, capsys):
     """Full-uninstall dry-run lists named profiles even on a machine with no desktop
     userData dir — the profiles section must not depend on the desktop install."""
     profile = SimpleNamespace(name="work", path=tmp_path / "profiles" / "work")
-    monkeypatch.setattr(uninstall, "_is_default_hermes_home", lambda home: True)
+    monkeypatch.setattr(uninstall, "_is_default_akramcode_home", lambda home: True)
     monkeypatch.setattr(uninstall, "_discover_named_profiles", lambda: [profile])
     monkeypatch.setattr(
         "akramcode_cli.gui_uninstall.desktop_userdata_dir", lambda: tmp_path / "absent-userdata"
     )
 
     uninstall._print_uninstall_dry_run(
-        project_root=tmp_path, hermes_home=tmp_path / ".hermes", full_uninstall=True
+        project_root=tmp_path, akramcode_home=tmp_path / ".akramcode", full_uninstall=True
     )
 
     out = capsys.readouterr().out

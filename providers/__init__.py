@@ -2,9 +2,9 @@
 
 Provider profiles can live in three places:
 
-1. Bundled plugins: ``plugins/model-providers/<name>/`` (shipped with hermes-agent)
-2. User plugins: ``$HERMES_HOME/plugins/model-providers/<name>/``
-3. Pip-installed plugins: distributions exposing a ``hermes_agent.plugins``
+1. Bundled plugins: ``plugins/model-providers/<name>/`` (shipped with akramcode-agent)
+2. User plugins: ``$AKRAMCODE_HOME/plugins/model-providers/<name>/``
+3. Pip-installed plugins: distributions exposing a ``akramcode_agent.plugins``
    entry point (``module:func`` callable or a self-registering ``module``)
 
 Each plugin directory contains:
@@ -13,7 +13,7 @@ Each plugin directory contains:
 
 Discovery is lazy: the first call to ``get_provider_profile()`` or
 ``list_providers()`` imports the bundled and pip-installed plugins once per
-process; the ``$HERMES_HOME`` plugins of the profile home bound at lookup time
+process; the ``$AKRAMCODE_HOME`` plugins of the profile home bound at lookup time
 load into that home's own layer, so one process serving several profiles
 (multiplex gateway, Desktop ``serve``) resolves each profile's installs. User
 plugins override bundled plugins on name collision, so third parties can
@@ -63,13 +63,13 @@ _PLUGIN_DIR_STAMP_TTL_SECONDS = 1.0
 
 @dataclass
 class _HomeLayer:
-    """The ``$HERMES_HOME/plugins`` providers of ONE profile home.
+    """The ``$AKRAMCODE_HOME/plugins`` providers of ONE profile home.
 
     One process serves many profiles (multiplex gateway, Desktop ``serve``) and each profile installs
     its own plugins, so user plugins are keyed by the home bound at lookup time instead of the home
     that happened to be bound at first discovery — that made a plugin installed in a secondary
     profile ``Unknown provider`` in Desktop while the same profile worked in a terminal (#88143).
-    ``stamps`` are the plugin dirs' mtimes: a directory added by ``hermes plugins install`` while the
+    ``stamps`` are the plugin dirs' mtimes: a directory added by ``akramcode plugins install`` while the
     process runs changes them, and the next lookup imports it without a restart.
     """
     registry: dict[str, ProviderProfile] = field(default_factory=dict)
@@ -113,9 +113,9 @@ def register_provider(profile: ProviderProfile) -> None:
     """Register a provider profile by name and aliases.
 
     Later registrations with the same name replace earlier ones — so user
-    plugins under ``$HERMES_HOME/plugins/model-providers/`` can override
+    plugins under ``$AKRAMCODE_HOME/plugins/model-providers/`` can override
     bundled profiles without editing repo code. A registration made while a
-    ``$HERMES_HOME`` plugin is being imported lands in that home's layer.
+    ``$AKRAMCODE_HOME`` plugin is being imported lands in that home's layer.
     """
     global _PROVIDER_LIST_CACHE
     layer = _REGISTRATION_TARGET.get()
@@ -136,7 +136,7 @@ def register_provider(profile: ProviderProfile) -> None:
 def provider_source(name: str) -> str | None:
     """Discovery source of the profile currently registered under *name* (see ``_SOURCES``), or None.
 
-    ``"user"`` is what lets a ``$HERMES_HOME`` plugin re-registering a bundled name win in
+    ``"user"`` is what lets a ``$AKRAMCODE_HOME`` plugin re-registering a bundled name win in
     ``akramcode_cli.auth.PROVIDER_REGISTRY`` too — a bundled profile never rewrites a built-in row.
     """
     layer = _home_layer()
@@ -196,7 +196,7 @@ def routed_model_rejects_vision_tool_messages(provider: str, model: str) -> bool
 
 def list_providers() -> list[ProviderProfile]:
     """Return all registered provider profiles (one per canonical name); the bound home's
-    ``$HERMES_HOME`` plugins shadow process-wide profiles of the same name."""
+    ``$AKRAMCODE_HOME`` plugins shadow process-wide profiles of the same name."""
     global _PROVIDER_LIST_CACHE
     if not _discovered:
         _discover_providers()
@@ -223,10 +223,10 @@ def _home_layer(*, force_stamp_check: bool = False) -> _HomeLayer:
 
 def _bound_home_layer() -> tuple[_HomeLayer, Path | None, str]:
     try:
-        from akramcode_constants import get_hermes_home, hermes_home_key
+        from akramcode_constants import get_akramcode_home, akramcode_home_key
 
-        home = get_hermes_home()
-        key = hermes_home_key(home)
+        home = get_akramcode_home()
+        key = akramcode_home_key(home)
     except Exception:
         home, key = None, ""
     with _HOME_LAYERS_LOCK:
@@ -272,27 +272,27 @@ def _plugin_dir_stamps(home: Path) -> tuple:
 
 
 def _user_plugins_dir() -> Path | None:
-    """Return ``$HERMES_HOME/plugins/model-providers/`` if it exists."""
+    """Return ``$AKRAMCODE_HOME/plugins/model-providers/`` if it exists."""
     try:
-        from akramcode_constants import get_hermes_home
+        from akramcode_constants import get_akramcode_home
 
-        d = get_hermes_home() / "plugins" / "model-providers"
+        d = get_akramcode_home() / "plugins" / "model-providers"
         return d if d.is_dir() else None
     except Exception:
         return None
 
 
 def _installed_plugins_dir() -> Path | None:
-    """Return ``$HERMES_HOME/plugins/`` if it exists.
+    """Return ``$AKRAMCODE_HOME/plugins/`` if it exists.
 
-    This is where ``hermes plugins install`` clones a plugin — flat, one
+    This is where ``akramcode plugins install`` clones a plugin — flat, one
     directory per plugin, NOT under ``model-providers/``. See
     :func:`_discover_installed_provider_plugins`.
     """
     try:
-        from akramcode_constants import get_hermes_home
+        from akramcode_constants import get_akramcode_home
 
-        d = get_hermes_home() / "plugins"
+        d = get_akramcode_home() / "plugins"
         return d if d.is_dir() else None
     except Exception:
         return None
@@ -336,8 +336,8 @@ def _declares_model_provider_kind(plugin_dir: Path) -> bool:
 def _scan_home_layer(layer: _HomeLayer, key: str) -> None:
     """Import the bound home's not-yet-imported provider plugins into *layer*.
 
-    ``$HERMES_HOME/plugins/model-providers/<name>/`` first, then plugins cloned flat by
-    ``hermes plugins install`` into ``$HERMES_HOME/plugins/<name>/`` that declare
+    ``$AKRAMCODE_HOME/plugins/model-providers/<name>/`` first, then plugins cloned flat by
+    ``akramcode plugins install`` into ``$AKRAMCODE_HOME/plugins/<name>/`` that declare
     ``kind: model-provider`` (PluginManager owns every other kind there). Per-home module names
     let two profiles carry the same plugin without aliasing each other's registrations.
     """
@@ -364,7 +364,7 @@ def _scan_home_layer(layer: _HomeLayer, key: str) -> None:
 
 def _user_module_name(plugin_dir: Path, home_key: str) -> str:
     digest = hashlib.sha1(home_key.encode("utf-8")).hexdigest()[:10]
-    return f"_hermes_user_provider_{digest}_{plugin_dir.name.replace('-', '_')}"
+    return f"_akramcode_user_provider_{digest}_{plugin_dir.name.replace('-', '_')}"
 
 
 def _import_plugin_dir(plugin_dir: Path, source: str, *, home_key: str = "") -> None:
@@ -404,13 +404,13 @@ def _import_plugin_dir(plugin_dir: Path, source: str, *, home_key: str = "") -> 
 
 
 def _discover_entry_point_providers() -> None:
-    """Import pip-installed provider plugins via the ``hermes_agent.plugins``
+    """Import pip-installed provider plugins via the ``akramcode_agent.plugins``
     entry-point group so they self-register.
 
     A distribution ships::
 
-        [project.entry-points."hermes_agent.plugins"]
-        acme-inference = "acme_hermes_plugin:register"
+        [project.entry-points."akramcode_agent.plugins"]
+        acme-inference = "acme_akramcode_plugin:register"
 
     The target may be either a **callable** (``module:func`` — invoked with no
     args; typically calls ``register_provider(profile)``) or a **module**
@@ -424,14 +424,14 @@ def _discover_entry_point_providers() -> None:
       general PluginManager enforces — a pip package is never imported just
       because it is installed. An entry point whose name is not enabled is
       skipped without loading.
-    * **Provider targets only.** The ``hermes_agent.plugins`` group is shared
+    * **Provider targets only.** The ``akramcode_agent.plugins`` group is shared
       with general plugins whose target is ``register(ctx)``. Callables that
       require arguments are skipped here (the PluginManager owns them);
       provider registration hooks take no arguments by contract.
 
     Failures are swallowed per-entry (a broken third-party package must not
     break provider discovery) and logged at warning level. This scan runs
-    first, so filesystem plugins (bundled + ``$HERMES_HOME``) keep their
+    first, so filesystem plugins (bundled + ``$AKRAMCODE_HOME``) keep their
     documented override precedence via last-writer-wins in
     ``register_provider()`` — a pip package cannot hijack a first-party
     provider name.
@@ -450,7 +450,7 @@ def _discover_entry_point_providers() -> None:
     if not enabled:
         return
 
-    group = "hermes_agent.plugins"
+    group = "akramcode_agent.plugins"
     try:
         eps = _md.entry_points()
         if hasattr(eps, "select"):
@@ -524,7 +524,7 @@ def _discover_providers() -> None:
       2. Legacy per-file modules at ``providers/<name>.py`` (back-compat)
 
     Each step imports its plugins, which call ``register_provider()`` at
-    module-level. Later steps win on name collision. ``$HERMES_HOME`` plugins are
+    module-level. Later steps win on name collision. ``$AKRAMCODE_HOME`` plugins are
     per profile home and load through :func:`_home_layer` at lookup time.
     """
     global _discovered, _discovering

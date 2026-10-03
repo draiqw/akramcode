@@ -1,10 +1,10 @@
-"""`hermes update` must not drop local commits without leaving a named way back.
+"""`akramcode update` must not drop local commits without leaving a named way back.
 
 When the checkout sits on the update's target branch and its history has
 diverged, the update resets hard to ``origin/<branch>``. Divergence there has
 two indistinguishable causes: an upstream force-push (nothing local is lost)
 and local commits on that branch (everything is). The update must park the old
-HEAD under ``refs/hermes-update-backups/`` first and tell the user the ref name.
+HEAD under ``refs/akramcode-update-backups/`` first and tell the user the ref name.
 The installer update paths are covered in
 ``tests/scripts/install/test_install_diverged_rescue_ref.py``.
 """
@@ -52,7 +52,7 @@ def diverged_checkout(tmp_path):
 
 def _rescue_refs(checkout):
     out = _git(checkout, "for-each-ref", "--format=%(refname) %(objectname)",
-               "refs/hermes-update-backups/").stdout
+               "refs/akramcode-update-backups/").stdout
     return dict(line.split() for line in out.splitlines() if line.strip())
 
 
@@ -62,13 +62,13 @@ def _assert_reset_kept_local_commit(checkout, local_sha, output):
     assert head == origin, "the reset itself must still happen"
     refs = [ref for ref, sha in _rescue_refs(checkout).items() if sha == local_sha]
     assert len(refs) == 1, f"the dropped commit needs exactly one rescue ref: {_rescue_refs(checkout)}"
-    assert refs[0].startswith("refs/hermes-update-backups/diverged-main-")
+    assert refs[0].startswith("refs/akramcode-update-backups/diverged-main-")
     assert refs[0] in output, "the user must be told where the commits went"
     dropped = _git(checkout, "log", "--format=%H", f"origin/main..{refs[0]}").stdout.split()
     assert dropped == [local_sha]
 
 
-def test_hermes_update_keeps_local_commit_behind_a_rescue_ref(
+def test_akramcode_update_keeps_local_commit_behind_a_rescue_ref(
         diverged_checkout, monkeypatch, capsys):
     """The real apply path: ff-only fails, the reconcile resets, the local commit stays reachable."""
     checkout, local_sha = diverged_checkout

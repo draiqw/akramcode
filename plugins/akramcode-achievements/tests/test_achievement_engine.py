@@ -67,7 +67,7 @@ class AchievementEngineTests(unittest.TestCase):
             "threshold_metric": "total_terminal_calls",
             "tiers": [{"name": "Copper", "threshold": 40}],
         }
-        with TemporaryDirectory() as data_dir, patch.object(plugin_api, "ACHIEVEMENTS", [definition]), patch.object(plugin_api, "_data_dir", return_value=Path(data_dir)), patch.object(plugin_api, "get_hermes_home", return_value=Path(data_dir)):
+        with TemporaryDirectory() as data_dir, patch.object(plugin_api, "ACHIEVEMENTS", [definition]), patch.object(plugin_api, "_data_dir", return_value=Path(data_dir)), patch.object(plugin_api, "get_akramcode_home", return_value=Path(data_dir)):
             unlocked = plugin_api._compute_from_scan({"aggregate": {"total_terminal_calls": 40}, "sessions": []})
             rescanned = plugin_api._compute_from_scan({"aggregate": {"total_terminal_calls": 39}, "sessions": []})
             partial = plugin_api._compute_from_scan({"aggregate": {"total_terminal_calls": 39}, "sessions": []}, is_partial=True)
@@ -201,7 +201,7 @@ class CompactionScanTests(unittest.TestCase):
         import akramcode_state
         from akramcode_state import SessionDB
 
-        with TemporaryDirectory() as tmp, patch.object(plugin_api, "_data_dir", return_value=Path(tmp) / "data"), patch.object(plugin_api, "get_hermes_home", return_value=Path(tmp)):
+        with TemporaryDirectory() as tmp, patch.object(plugin_api, "_data_dir", return_value=Path(tmp) / "data"), patch.object(plugin_api, "get_akramcode_home", return_value=Path(tmp)):
             db = SessionDB(Path(tmp) / "state.db")
             try:
                 db.create_session("s1", "cli", model="m")

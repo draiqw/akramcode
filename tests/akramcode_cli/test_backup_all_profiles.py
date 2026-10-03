@@ -27,7 +27,7 @@ def profiles(monkeypatch, tmp_path):
     work = _mk_profile(tmp_path / "home" / "profiles" / "work", jobs=5)
     sparks = _mk_profile(tmp_path / "home" / "profiles" / "sparks", jobs=0)
     monkeypatch.setattr(
-        "akramcode_cli.profiles._get_default_hermes_home", lambda: default_home
+        "akramcode_cli.profiles._get_default_akramcode_home", lambda: default_home
     )
     monkeypatch.setattr(
         "akramcode_cli.profiles._get_profiles_root", lambda: tmp_path / "home" / "profiles"
@@ -53,7 +53,7 @@ class TestSiblingEnumeration:
         def _boom():
             raise RuntimeError("no profiles module")
 
-        monkeypatch.setattr("akramcode_cli.profiles._get_default_hermes_home", _boom)
+        monkeypatch.setattr("akramcode_cli.profiles._get_default_akramcode_home", _boom)
         assert backup._sibling_profile_homes(tmp_path) == []
 
 
@@ -84,11 +84,11 @@ class TestAllProfileSnapshots:
     def test_one_failing_sibling_does_not_block_others(self, profiles, monkeypatch):
         real = backup.create_quick_snapshot
 
-        def _flaky(label=None, hermes_home=None, keep=None, max_file_size=None):
-            if hermes_home == profiles["work"]:
+        def _flaky(label=None, akramcode_home=None, keep=None, max_file_size=None):
+            if akramcode_home == profiles["work"]:
                 raise OSError("disk full")
             return real(
-                label=label, hermes_home=hermes_home, keep=keep,
+                label=label, akramcode_home=akramcode_home, keep=keep,
                 max_file_size=max_file_size,
             )
 

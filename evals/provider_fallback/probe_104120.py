@@ -2,17 +2,17 @@ import os, sys, tempfile, pathlib, json, threading, time, socket
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 
 ROOT = sys.argv[1]
-home = tempfile.mkdtemp(prefix="hermes-104120-")
+home = tempfile.mkdtemp(prefix="akramcode-104120-")
 os.environ.clear()
 os.environ.update(
     HOME=home,
-    HERMES_HOME=home + "/.hermes",
+    AKRAMCODE_HOME=home + "/.akramcode",
     PATH="/usr/bin:/bin",
     PYTHONDONTWRITEBYTECODE="1",
     TOKENIZERS_PARALLELISM="false",
 )
-pathlib.Path(home + "/.hermes").mkdir()
-pathlib.Path(home + "/.hermes/config.yaml").write_text(
+pathlib.Path(home + "/.akramcode").mkdir()
+pathlib.Path(home + "/.akramcode/config.yaml").write_text(
     "model:\n  context_length: 131072\nagent:\n  api_max_retries: 0\ncompression:\n  enabled: false\n",
     encoding="utf-8",
 )

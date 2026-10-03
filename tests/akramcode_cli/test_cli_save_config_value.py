@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 import pytest
 
@@ -13,18 +13,18 @@ class TestSaveConfigValueAtomic:
     @pytest.fixture
     def config_env(self, tmp_path, monkeypatch):
         """Isolated config environment with a writable config.yaml."""
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        config_path = hermes_home / "config.yaml"
+        akramcode_home = tmp_path / ".akramcode"
+        akramcode_home.mkdir()
+        config_path = akramcode_home / "config.yaml"
         config_path.write_text(yaml.safe_dump({
             "model": {"default": "test-model", "provider": "openrouter"},
             "display": {"skin": "default"},
         }))
-        # save_config_value resolves the target live via get_hermes_home(), so
-        # point HERMES_HOME at the temp dir (the _hermes_home import-time
+        # save_config_value resolves the target live via get_akramcode_home(), so
+        # point AKRAMCODE_HOME at the temp dir (the _akramcode_home import-time
         # constant is no longer consulted).
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-        monkeypatch.setattr("cli._hermes_home", hermes_home)
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
+        monkeypatch.setattr("cli._akramcode_home", akramcode_home)
         return config_path
 
 
@@ -54,25 +54,25 @@ class TestSaveConfigValueAtomic:
 
 
 class TestSaveConfigValueTargetsUserConfig:
-    """Regression: persisted runtime settings must land in HERMES_HOME/config.yaml
+    """Regression: persisted runtime settings must land in AKRAMCODE_HOME/config.yaml
     (which config readers actually read), never the repo's cli-config.yaml.
 
     This was the "wake-word ear reverts to disabled after restart" bug: on an
-    install whose HERMES_HOME/config.yaml did not exist yet, save_config_value
+    install whose AKRAMCODE_HOME/config.yaml did not exist yet, save_config_value
     fell back to the checked-in cli-config.yaml. The toggle reported success, but
-    startup read HERMES_HOME/config.yaml and never saw the setting."""
+    startup read AKRAMCODE_HOME/config.yaml and never saw the setting."""
 
     def test_creates_user_config_when_absent(self, tmp_path, monkeypatch):
-        # Fresh HERMES_HOME with NO config.yaml (managed/desktop first launch).
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        # Fresh AKRAMCODE_HOME with NO config.yaml (managed/desktop first launch).
+        akramcode_home = tmp_path / ".akramcode"
+        akramcode_home.mkdir()
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
         from cli import save_config_value
 
         assert save_config_value("wake_word.enabled", True) is True
 
-        config_path = hermes_home / "config.yaml"
+        config_path = akramcode_home / "config.yaml"
         assert config_path.exists(), "user config.yaml must be created, not skipped"
         result = yaml.safe_load(config_path.read_text())
         assert result["wake_word"]["enabled"] is True
@@ -85,9 +85,9 @@ class TestSaveConfigValueTargetsUserConfig:
         repo_cli_config = Path(cli_module.__file__).parent / "cli-config.yaml"
         before = repo_cli_config.read_text() if repo_cli_config.exists() else None
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        akramcode_home = tmp_path / ".akramcode"
+        akramcode_home.mkdir()
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
         from cli import save_config_value
 
@@ -97,5 +97,5 @@ class TestSaveConfigValueTargetsUserConfig:
         after = repo_cli_config.read_text() if repo_cli_config.exists() else None
         assert after == before
         # …and the value landed in the user config.
-        result = yaml.safe_load((hermes_home / "config.yaml").read_text())
+        result = yaml.safe_load((akramcode_home / "config.yaml").read_text())
         assert result["wake_word"]["enabled"] is True

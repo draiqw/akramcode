@@ -148,7 +148,7 @@ def _ask_human(command: str, description: str, timeout_seconds: int, allow_perma
     except Exception:
         pass  # prompt_toolkit absent or detection failed: legacy input() path is safe
 
-    os.environ["HERMES_SPINNER_PAUSE"] = "1"
+    os.environ["AKRAMCODE_SPINNER_PAUSE"] = "1"
     try:
         from agent.i18n import t
         # (prompt key, menu key) by menu shape: once/deny, full, or no [a]lways.
@@ -176,7 +176,7 @@ def _ask_human(command: str, description: str, timeout_seconds: int, allow_perma
         print("\n" + t("approval.cancelled"))
         return Unanswered("the prompt was interrupted before an answer was given")
     finally:
-        os.environ.pop("HERMES_SPINNER_PAUSE", None)
+        os.environ.pop("AKRAMCODE_SPINNER_PAUSE", None)
         print()
         sys.stdout.flush()
 

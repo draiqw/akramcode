@@ -55,7 +55,7 @@ def _responses_payload(text: str, annotations=None, citations=None) -> dict:
 
 class TestXAIProviderIsAvailable:
     """``is_available()`` MUST be cheap — no network, no token refresh, no
-    auth-store lock. It runs on every ``hermes tools`` repaint and at
+    auth-store lock. It runs on every ``akramcode tools`` repaint and at
     tool-registration time, so any I/O regression here would surface as
     visible CLI latency.
     """
@@ -65,7 +65,7 @@ class TestXAIProviderIsAvailable:
     def test_unavailable_when_auth_store_corrupted(self, monkeypatch, tmp_path):
         """A malformed auth.json must not crash availability scans."""
         monkeypatch.delenv("XAI_API_KEY", raising=False)
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
         (tmp_path / "auth.json").write_text("not json at all }{")
 
         from plugins.web.xai.provider import XAIWebSearchProvider
@@ -390,7 +390,7 @@ class TestXAIBackendWiring:
 
     def test_is_backend_available_does_not_call_resolver(self, monkeypatch):
         """Regression guard — `_is_backend_available` runs on every web_search
-        dispatch and every `hermes tools` repaint. It must not invoke the
+        dispatch and every `akramcode tools` repaint. It must not invoke the
         OAuth resolver (which can trigger a network refresh)."""
         from tools import web_tools
 
@@ -405,7 +405,7 @@ class TestXAIBackendWiring:
     def test_xai_not_in_legacy_backend_candidate_chain(self, monkeypatch):
         """The hardcoded ``backend_candidates`` tuple in ``_get_backend()``
         does not include xAI — by design, since the no-config legacy
-        chain is for users who set env vars but never ran ``hermes tools``,
+        chain is for users who set env vars but never ran ``akramcode tools``,
         and we don't want a stray ``XAI_API_KEY`` (perhaps set for chat
         inference) to silently re-route web_search through Grok.
 
@@ -436,7 +436,7 @@ class TestXAIBackendWiring:
 
 class TestXAIProviderOAuthPath:
     """Verifies the provider works when credentials come from the OAuth
-    credential pool (``hermes auth`` sign-in) rather than an env-var key.
+    credential pool (``akramcode auth`` sign-in) rather than an env-var key.
     The full ``tools.xai_http.resolve_xai_http_credentials`` chain is exercised
     against a temporary auth store.
     """
@@ -446,8 +446,8 @@ class TestXAIProviderOAuthPath:
 
         # Force the env-var fallback to fail so resolution must go via OAuth.
         monkeypatch.delenv("XAI_API_KEY", raising=False)
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-        monkeypatch.setenv("HERMES_XAI_BASE_URL", "https://proxy.x.ai/v1/")
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
+        monkeypatch.setenv("AKRAMCODE_XAI_BASE_URL", "https://proxy.x.ai/v1/")
         (tmp_path / "auth.json").write_text(json.dumps({
             "version": 1,
             "active_provider": "xai-oauth",
@@ -486,7 +486,7 @@ class TestXAIProviderOAuthPath:
         from akramcode_cli.runtime_provider import resolve_runtime_provider
         from tools.xai_http import resolve_xai_http_credentials
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
         monkeypatch.delenv("XAI_API_KEY", raising=False)
         monkeypatch.delenv("XAI_OAUTH_ACCESS_TOKEN", raising=False)
         (tmp_path / "config.yaml").write_text(

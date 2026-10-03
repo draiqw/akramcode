@@ -16,7 +16,7 @@ def test_unconfirmed_removal_never_contacts_the_gateway(layout, monkeypatch, mod
 
     def identify(target, **kwargs):
         calls.append(target)
-        return {"pid": 42, "hermes_home": str(home), "supervisor": "systemd"}
+        return {"pid": 42, "akramcode_home": str(home), "supervisor": "systemd"}
 
     monkeypatch.setattr("gateway.control_socket.identify_gateway", identify)
     monkeypatch.setattr("builtins.input", lambda *args: "no")
@@ -67,7 +67,7 @@ def test_manual_gateway_drains_over_real_control_transport_before_deletion(layou
 
     def identify():
         return {"pid": child.pid, "start_time": get_process_start_time(child.pid),
-                "hermes_home": str(home), "supervisor": "manual"}
+                "akramcode_home": str(home), "supervisor": "manual"}
 
     def drain():
         paused.set()
@@ -139,12 +139,12 @@ def test_named_profile_cannot_delete_data_served_by_the_default_multiplexer(layo
     profile.mkdir()
     config = profile / "config.yaml"
     config.write_text("{}", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(profile))
-    monkeypatch.setattr(uninstall, "get_hermes_home", lambda: profile)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(profile))
+    monkeypatch.setattr(uninstall, "get_akramcode_home", lambda: profile)
 
     def identify(target, **kwargs):
         if target == home:
-            return {"pid": 42, "hermes_home": str(home), "served_profiles": ["active"]}
+            return {"pid": 42, "akramcode_home": str(home), "served_profiles": ["active"]}
         return None
 
     monkeypatch.setattr("gateway.control_socket.identify_gateway", identify)

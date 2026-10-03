@@ -16,7 +16,7 @@ class TestMinimaxM3StaleCacheGuard:
 
 
     def test_m2_cache_not_clobbered(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
         import importlib
         import agent.model_metadata as mm
         importlib.reload(mm)

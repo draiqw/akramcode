@@ -27,7 +27,7 @@ def _run(coro):
 
 @pytest.fixture()
 def home(tmp_path: Path) -> Path:
-    d = tmp_path / "home" / ".hermes"
+    d = tmp_path / "home" / ".akramcode"
     d.mkdir(parents=True)
     return d
 
@@ -52,7 +52,7 @@ def test_short_home_binds_in_home(tmp_path: Path):
     except OSError:
         pytest.skip("/tmp not writable on this host")
     try:
-        short_home = short_root / ".hermes"
+        short_home = short_root / ".akramcode"
         short_home.mkdir()
         assert len(str(short_home / "gateway.sock").encode()) <= 100
         bind, pointer = resolve_server_socket_path(short_home)
@@ -65,7 +65,7 @@ def test_short_home_binds_in_home(tmp_path: Path):
 
 
 def test_long_home_uses_pointer_fallback(tmp_path: Path):
-    deep = tmp_path / ("x" * 120) / ".hermes"
+    deep = tmp_path / ("x" * 120) / ".akramcode"
     deep.mkdir(parents=True)
     bind, pointer = resolve_server_socket_path(deep)
     assert bind != deep / "gateway.sock"
@@ -89,7 +89,7 @@ def test_client_resolution_prefers_direct_then_pointer(home: Path, tmp_path: Pat
 def test_windows_pipe_name_is_stable_and_home_scoped(tmp_path: Path):
     a = windows_pipe_name(tmp_path / "a")
     b = windows_pipe_name(tmp_path / "b")
-    assert a.startswith(r"\\.\pipe\hermes-gateway-")
+    assert a.startswith(r"\\.\pipe\akramcode-gateway-")
     assert a != b
     assert a == windows_pipe_name(tmp_path / "a")
 
@@ -231,7 +231,7 @@ def test_stale_socket_file_is_replaced_on_bind(home: Path):
 
 
 def test_long_home_end_to_end_via_pointer(tmp_path: Path):
-    deep = tmp_path / ("p" * 120) / ".hermes"
+    deep = tmp_path / ("p" * 120) / ".akramcode"
     deep.mkdir(parents=True)
 
     async def scenario():
@@ -257,7 +257,7 @@ def test_no_socket_returns_none_fast(home: Path):
 
 def test_default_identify_payload_shape(home: Path, monkeypatch):
     """The real identify handler carries the fleet-consumer contract fields."""
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
 
     async def scenario():
         server = GatewayControlServer(home)  # default handlers
@@ -273,7 +273,7 @@ def test_default_identify_payload_shape(home: Path, monkeypatch):
     assert ident["protocol"] == CONTROL_PROTOCOL_VERSION
     assert ident["pid"] == __import__("os").getpid()
     # contract keys exist even when values are None/absent-degradable
-    for key in ("hermes_home", "supervisor", "kind", "start_time"):
+    for key in ("akramcode_home", "supervisor", "kind", "start_time"):
         assert key in ident
     assert ident["supervisor"] in {
         "systemd",
@@ -295,14 +295,14 @@ def _fake_identity(pid: int, sha: str):
         "code_sha": sha,
         "code_version": "9.9.9",
         "supervisor": "systemd",
-        "kind": "hermes-gateway",
+        "kind": "akramcode-gateway",
     }
 
 
 def test_collect_fleet_versions_prefers_socket(tmp_path: Path, monkeypatch):
     import akramcode_cli.update_receipt as ur
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
 
     monkeypatch.setattr(
@@ -310,14 +310,14 @@ def test_collect_fleet_versions_prefers_socket(tmp_path: Path, monkeypatch):
         lambda refresh=False: {"sha": "HEADSHA", "version": "1.0"},
     )
     monkeypatch.setattr(
-        "akramcode_cli.profiles._get_default_hermes_home", lambda: home
+        "akramcode_cli.profiles._get_default_akramcode_home", lambda: home
     )
     monkeypatch.setattr(
         "akramcode_cli.profiles._get_profiles_root", lambda: tmp_path / "no-profiles"
     )
     # stale state file that would report a WRONG pid — socket must win
     (home / "gateway_state.json").write_text(
-        json.dumps({"pid": 1, "code_sha": "stalefile", "kind": "hermes-gateway"})
+        json.dumps({"pid": 1, "code_sha": "stalefile", "kind": "akramcode-gateway"})
     )
     monkeypatch.setattr(
         "gateway.control_socket.identify_gateway",
@@ -344,7 +344,7 @@ def test_collect_fleet_versions_falls_back_to_state_file(tmp_path: Path, monkeyp
 
     import akramcode_cli.update_receipt as ur
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
 
     monkeypatch.setattr(
@@ -352,7 +352,7 @@ def test_collect_fleet_versions_falls_back_to_state_file(tmp_path: Path, monkeyp
         lambda refresh=False: {"sha": "HEADSHA", "version": "1.0"},
     )
     monkeypatch.setattr(
-        "akramcode_cli.profiles._get_default_hermes_home", lambda: home
+        "akramcode_cli.profiles._get_default_akramcode_home", lambda: home
     )
     monkeypatch.setattr(
         "akramcode_cli.profiles._get_profiles_root", lambda: tmp_path / "no-profiles"
@@ -365,7 +365,7 @@ def test_collect_fleet_versions_falls_back_to_state_file(tmp_path: Path, monkeyp
             {
                 "pid": os.getpid(),  # a live pid so _pid_exists passes
                 "code_sha": "OLDSHA",
-                "kind": "hermes-gateway",
+                "kind": "akramcode-gateway",
             }
         )
     )
@@ -394,13 +394,13 @@ def test_runtime_inventory_dedupes_same_pid_across_homes(tmp_path: Path, monkeyp
     yield exactly ONE runtime record (reviewer point on #92447)."""
     import akramcode_cli.update_inventory as ui
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
     profiles_root = tmp_path / "profiles"
     (profiles_root / "coder").mkdir(parents=True)
 
     monkeypatch.setattr(
-        "akramcode_cli.profiles._get_default_hermes_home", lambda: home
+        "akramcode_cli.profiles._get_default_akramcode_home", lambda: home
     )
     monkeypatch.setattr(
         "akramcode_cli.profiles._get_profiles_root", lambda: profiles_root
@@ -425,11 +425,11 @@ def test_runtime_inventory_dedupes_same_pid_across_homes(tmp_path: Path, monkeyp
 def test_runtime_inventory_prefers_socket_supervisor(tmp_path: Path, monkeypatch):
     import akramcode_cli.update_inventory as ui
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
 
     monkeypatch.setattr(
-        "akramcode_cli.profiles._get_default_hermes_home", lambda: home
+        "akramcode_cli.profiles._get_default_akramcode_home", lambda: home
     )
     monkeypatch.setattr(
         "akramcode_cli.profiles._get_profiles_root", lambda: tmp_path / "no-profiles"

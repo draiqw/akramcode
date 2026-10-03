@@ -62,7 +62,7 @@ class _HealthyAdapter(BasePlatformAdapter):
 
 
 def _runner_with_one_parked_platform(monkeypatch, tmp_path) -> GatewayRunner:
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     config = GatewayConfig(
         platforms={
             Platform.API_SERVER: PlatformConfig(enabled=True, extra={"port": 8642}),
@@ -112,7 +112,7 @@ async def test_parked_platform_is_logged_at_error_and_the_run_is_degraded(monkey
 @pytest.mark.asyncio
 async def test_every_platform_connected_still_reports_a_normal_run(monkeypatch, tmp_path, caplog):
     """Protection: a clean startup keeps the normal ``running`` state and logs no ERROR."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     config = GatewayConfig(
         platforms={Platform.TELEGRAM: PlatformConfig(enabled=True, token="***")},
         sessions_dir=tmp_path / "sessions",

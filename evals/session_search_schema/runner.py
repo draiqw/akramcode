@@ -49,12 +49,12 @@ def _load_api_key() -> str:
     key = os.environ.get("OPENROUTER_API_KEY", "").strip()
     if key:
         return key
-    env_path = Path.home() / ".hermes" / ".env"
+    env_path = Path.home() / ".akramcode" / ".env"
     if env_path.exists():
         for line in env_path.read_text().splitlines():
             if line.startswith("OPENROUTER_API_KEY="):
                 return line.split("=", 1)[1].strip().strip('"').strip("'")
-    raise SystemExit("OPENROUTER_API_KEY not found (env or ~/.hermes/.env)")
+    raise SystemExit("OPENROUTER_API_KEY not found (env or ~/.akramcode/.env)")
 
 
 def extract_arm(ref: str, workdir: Path, name: str) -> Path:

@@ -3,8 +3,8 @@
 Every pm venv sync — startup, plugin install, update rebuild — writes a
 receipt with the SAME schema the updater's receipts use
 (akramcode_cli.update_receipt), into the same
-``<HERMES_HOME>/logs/update_receipts/`` dir with a ``kind`` field
-separating kinds. One reader (``hermes pm status``, desktop IPC) serves
+``<AKRAMCODE_HOME>/logs/update_receipts/`` dir with a ``kind`` field
+separating kinds. One reader (``akramcode pm status``, desktop IPC) serves
 every surface: a failed venv rebuild is as reportable as a failed
 update.
 
@@ -124,9 +124,9 @@ def _utc_now_iso() -> str:
 def _receipt_dir() -> Path:
     """The receipts dir — a pure path computation, NO mkdir side
     effect: readers (latest()) must not create state."""
-    from akramcode_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
 
-    return get_hermes_home() / "logs" / "update_receipts"
+    return get_akramcode_home() / "logs" / "update_receipts"
 
 
 def begin(kind: str) -> contextvars.Token:
@@ -136,7 +136,7 @@ def begin(kind: str) -> contextvars.Token:
     outer receipt survives the inner finalize.
 
     The receipt is stamped with the ambient update correlation id (the
-    ``hermes update`` this sync belongs to), or None for a standalone
+    ``akramcode update`` this sync belongs to), or None for a standalone
     sync — the id is what makes the updater's embed selective."""
     return _current.set(
         {
@@ -277,7 +277,7 @@ def last_for_update(update_id: Optional[str], *, consume: bool = False) -> Optio
 
 def latest() -> Optional[dict[str, Any]]:
     """The newest receipt (any kind) — the reader surface for
-    ``hermes pm status`` + the desktop. Pure read: never creates the
+    ``akramcode pm status`` + the desktop. Pure read: never creates the
     receipts dir."""
     try:
         point = _receipt_dir() / "latest.json"

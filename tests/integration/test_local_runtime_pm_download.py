@@ -23,7 +23,7 @@ from pm.lock import Facts, Lockfile
 def test_live_pinned_cuda_download_pause_resume_and_execute(tmp_path, monkeypatch, record_property):
     home = tmp_path / "home"
     store = home / "tools"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     monkeypatch.setattr(paths, "store_root", lambda: store)
     monkeypatch.setattr(lm, "_JOBS", {})
     monkeypatch.setattr(lm, "_RUNNING", {})

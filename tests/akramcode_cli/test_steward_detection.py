@@ -1,7 +1,7 @@
 """Steward detection reads the install stamp beside the code, not markers.
 
 ``akramcode_cli.steward`` decides whether a steward owns this tree (and
-therefore whether ``hermes update`` and the uninstaller must refuse code
+therefore whether ``akramcode update`` and the uninstaller must refuse code
 mutation). That is a fact about the INSTALL, so it comes from the two
 facts the tree itself carries: ``.git`` (a checkout we own) and the
 install stamp that ships with the code (``install-stamp.json``, written by
@@ -78,17 +78,17 @@ class TestStampDrivenDetection:
 
     def test_executing_nix_tree_reads_the_stamp_the_wrapper_points_at(self, tmp_path, monkeypatch):
         """A Nix package bakes the stamp outside the store's package dir; its wrapper
-        carries HERMES_INSTALL_ROOT. The executing tree must classify as nix (not
+        carries AKRAMCODE_INSTALL_ROOT. The executing tree must classify as nix (not
         "unknown"), the way version_info already reports it."""
         from akramcode_cli.version_info import _resolve_stamp_file
 
-        package = tmp_path / "store" / "lib" / "hermes-agent"
+        package = tmp_path / "store" / "lib" / "akramcode-agent"
         package.mkdir(parents=True)
-        share = tmp_path / "store" / "share" / "hermes-agent"
+        share = tmp_path / "store" / "share" / "akramcode-agent"
         share.mkdir(parents=True)
         _stamp(share, mechanism="external", distribution="nix")
         monkeypatch.setattr("pm.paths.repo_root", lambda: package)
-        monkeypatch.setenv("HERMES_INSTALL_ROOT", str(share))
+        monkeypatch.setenv("AKRAMCODE_INSTALL_ROOT", str(share))
 
         assert sealed_steward(package) == "nix"
         assert _resolve_stamp_file() == share / "install-stamp.json"

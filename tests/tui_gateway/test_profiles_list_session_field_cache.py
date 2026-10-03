@@ -21,7 +21,7 @@ def _clean_memo():
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     (tmp_path / "profiles" / "bob").mkdir(parents=True)
     return tmp_path
 

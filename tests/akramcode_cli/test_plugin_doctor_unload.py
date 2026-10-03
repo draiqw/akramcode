@@ -1,6 +1,6 @@
 """`plugins doctor` must unload the plugin before removing the temp home (#99918).
 
-Doctor loads a plugin under a temporary ``HERMES_HOME`` through a throwaway
+Doctor loads a plugin under a temporary ``AKRAMCODE_HOME`` through a throwaway
 ``PluginManager``. It restored the global registries and closed the temp dir but
 never called ``manager.unload()``, so host-owned ``ctx.on_unload(...)`` callbacks
 never ran. A context-engine plugin that opened SQLite under the temp home thus
@@ -40,7 +40,7 @@ def _write_plugin(root: Path, marker: Path) -> Path:
 def test_doctor_runs_on_unload_during_teardown(tmp_path: Path) -> None:
     from akramcode_cli.plugin_dev import doctor_plugin
 
-    marker = tmp_path / "unloaded.marker"  # outside the temp HERMES_HOME
+    marker = tmp_path / "unloaded.marker"  # outside the temp AKRAMCODE_HOME
     plugin = _write_plugin(tmp_path, marker)
 
     with patch.dict(os.environ, {"DOCTOR_UNLOAD_MARKER": str(marker)}, clear=False):

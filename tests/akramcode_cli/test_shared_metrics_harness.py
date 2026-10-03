@@ -98,10 +98,10 @@ def test_command_kind_comes_from_the_first_program_word(command, kind):
     assert kind in contract.TERMINAL_COMMAND_KINDS
 
 
-def test_terminal_outcome_trusts_hermes_flags_not_exit_124():
+def test_terminal_outcome_trusts_akramcode_flags_not_exit_124():
     assert harness.terminal_outcome({"returncode": 124}) == "nonzero"  # the command's own `exit 124`
-    assert harness.terminal_outcome({"returncode": 124, "hermes_timed_out": True}) == "timeout"
-    assert harness.terminal_outcome({"returncode": 130, "hermes_interrupted": True}) == "killed"
+    assert harness.terminal_outcome({"returncode": 124, "akramcode_timed_out": True}) == "timeout"
+    assert harness.terminal_outcome({"returncode": 130, "akramcode_interrupted": True}) == "killed"
     assert harness.terminal_outcome({"returncode": 137}) == "killed"
     assert harness.terminal_outcome({"returncode": -9}) == "killed"
     assert harness.terminal_outcome({"returncode": 0}) == "ok"
@@ -116,7 +116,7 @@ def test_foreground_terminal_commands_count_by_kind_and_outcome(direct_runtime, 
         ("ls /definitely/not/here", 30), ("echo ok", 30), ("sh -c 'exit 124'", 30), ("sleep 5", 1),
     )]
     assert [r["exit_code"] for r in results] == [2, 0, 124, 124]
-    terminal_tool("true", task_id="harness", _host_local=True)  # Hermes' own control plane: never counted
+    terminal_tool("true", task_id="harness", _host_local=True)  # AkramCode' own control plane: never counted
     rows = _rows(tmp_path, contract.TERMINAL_OUTCOME_METRIC, "backend", "command_kind", "outcome")
     assert rows == sorted([
         ("local", "file_ops", "nonzero", 1), ("local", "shell_builtin", "ok", 1),
@@ -252,7 +252,7 @@ def test_everything_is_a_no_op_while_disabled(direct_runtime, tmp_path, monkeypa
 def test_v3_schema_accepts_exactly_the_contract_values():
     import akramcode_cli.observability as observability
 
-    schema = json.loads((Path(observability.__file__).parent / "schemas/hermes.shared_metrics.v3.schema.json").read_text())
+    schema = json.loads((Path(observability.__file__).parent / "schemas/akramcode.shared_metrics.v3.schema.json").read_text())
     by_name = {d["properties"]["name"]["const"]: d for d in schema["$defs"].values() if "properties" in d}
     for metric in (contract.FILE_EDIT_METRIC, contract.LOOP_GUARD_METRIC, contract.TOOL_RECOVERY_METRIC,
                    contract.TERMINAL_OUTCOME_METRIC, contract.MODEL_REPLY_ISSUE_METRIC):

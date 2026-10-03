@@ -2,12 +2,12 @@
 
 These exercise the REAL resolution path: real helper shell scripts written
 to a temp dir (chmod +x), real ``/bin/sh -c`` subprocesses, and a real temp
-HERMES_HOME with a config.yaml routing ``secrets.provider: command`` through
+AKRAMCODE_HOME with a config.yaml routing ``secrets.provider: command`` through
 ``akramcode_cli.env_loader._apply_external_secret_sources``.
 
 Security invariants under test (ported from the desktop TS provider):
 
-* the requested key travels ONLY via the ``HERMES_SECRET_KEY`` env var —
+* the requested key travels ONLY via the ``AKRAMCODE_SECRET_KEY`` env var —
   never interpolated into the shell string (hostile key names are inert);
 * hard timeout + degrade-to-empty on every failure mode, never raise;
 * failure logging carries structured fields only — never the command
@@ -147,7 +147,7 @@ def test_fetch_parses_dotenv_blob(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# Dispatch E2E through env_loader against a real temp HERMES_HOME
+# Dispatch E2E through env_loader against a real temp AKRAMCODE_HOME
 # ---------------------------------------------------------------------------
 
 
@@ -160,7 +160,7 @@ def _clean_registry():
 
 
 def test_registry_command_source_applies_and_records_source(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     helper = _write_helper(
         tmp_path, "printf 'CMDTEST_API_KEY=sk-dispatch\\nCMDTEST_TOKEN=tok-dispatch\\n'"
     )
@@ -184,7 +184,7 @@ def test_registry_command_source_applies_and_records_source(tmp_path, monkeypatc
 
 
 def test_registry_status_line_printed_once_per_home(tmp_path, monkeypatch, capsys):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     helper = _write_helper(tmp_path, "printf 'CMDTEST_API_KEY=sk-once\\n'")
     (tmp_path / "config.yaml").write_text(
         "secrets:\n  command:\n    enabled: true\n"
@@ -200,7 +200,7 @@ def test_registry_status_line_printed_once_per_home(tmp_path, monkeypatch, capsy
 
 
 def test_registry_failing_helper_does_not_block_startup(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     (tmp_path / "config.yaml").write_text(
         "secrets:\n  command:\n    enabled: true\n    command: exit 9\n",
         encoding="utf-8",
@@ -211,7 +211,7 @@ def test_registry_failing_helper_does_not_block_startup(tmp_path, monkeypatch):
 
 
 def test_registry_helper_error_prints_remediation(tmp_path, monkeypatch, capsys):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     (tmp_path / "config.yaml").write_text(
         "secrets:\n  command:\n    enabled: true\n    command: ''\n",
         encoding="utf-8",

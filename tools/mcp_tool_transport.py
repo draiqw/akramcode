@@ -24,7 +24,7 @@ logger = logging.getLogger("tools.mcp_tool")
 
 _PROBE_INITIALIZE_BODY = (  # JSON-RPC ``initialize`` body for the content-type preflight POST
     '{"jsonrpc":"2.0","id":"_probe","method":"initialize","params":{"protocolVersion":"2025-03-26",'
-    '"capabilities":{},"clientInfo":{"name":"hermes-probe","version":"0.1"}}}')
+    '"capabilities":{},"clientInfo":{"name":"akramcode-probe","version":"0.1"}}}')
 
 
 def _content_type_base(resp) -> str:
@@ -236,7 +236,7 @@ class MCPServerTransportMixin:
         offered = _core.LATEST_HANDSHAKE_VERSION
         build_caps = getattr(session, "_build_capabilities", None)
         capabilities = build_caps(offered) if callable(build_caps) else types.ClientCapabilities()
-        client_info = getattr(session, "_client_info", None) or types.Implementation(name="hermes-agent", version="0")
+        client_info = getattr(session, "_client_info", None) or types.Implementation(name="akramcode-agent", version="0")
         result = await session.send_request(
             types.InitializeRequest(params=types.InitializeRequestParams(
                 protocolVersion=offered, capabilities=capabilities, clientInfo=client_info)),
@@ -350,7 +350,7 @@ class MCPServerTransportMixin:
                            "HTTP/SSE transports — ignored for stdio servers", self.name)
         if not _core._ensure_mcp_sdk():
             raise ImportError(f"MCP server '{self.name}' requires the 'mcp' Python SDK, but "
-                              "it is not installed. Run `hermes setup` to install MCP support, then retry.")
+                              "it is not installed. Run `akramcode setup` to install MCP support, then retry.")
         command = config.get("command")
         if not command:
             raise ValueError(f"MCP server '{self.name}' has no 'command' in config")
@@ -388,7 +388,7 @@ class MCPServerTransportMixin:
         # thread: the reaper blocks up to 2s (SIGTERM → wait → SIGKILL) when orphans exist, which would
         # otherwise stall the shared MCP event loop.
         new_pids: set = set()
-        # Subprocess stderr goes to ~/.hermes/logs/mcp-stderr.log so banners can't corrupt the TUI.
+        # Subprocess stderr goes to ~/.akramcode/logs/mcp-stderr.log so banners can't corrupt the TUI.
         _config._write_stderr_log_header(self.name)
         stderr = _config._StderrTee(_config._get_mcp_stderr_log())
         try:

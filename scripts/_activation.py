@@ -22,11 +22,11 @@ Activating from the shebang
 ---------------------------
 
 A POSIX script can activate for itself, so ``./scripts/foo.py`` works from any
-cwd with no manual ``source``. The shebang points at ``scripts/_hermes-python``,
+cwd with no manual ``source``. The shebang points at ``scripts/_akramcode-python``,
 a real repo script that sources ``activate`` and execs the interpreter on the
 same file::
 
-    #!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/_hermes-python" "$0" "$@"'
+    #!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/_akramcode-python" "$0" "$@"'
 
 The kernel appends the invoking script as the last argument, and ``bash -c``
 binds it to ``$0`` — so the prologue finds the target relative to itself and
@@ -35,7 +35,7 @@ free of both the exec bit and a ``PATH`` lookup.
 
 Activation is not re-run when the inherited environment is still current. pm
 records one stamp per dependency input (``uv.lock``, ``pyproject.toml``,
-``pm/lock.json``) beside the installed-state file that ``__HERMES_ACTIVATED``
+``pm/lock.json``) beside the installed-state file that ``__AKRAMCODE_ACTIVATED``
 names, each carrying the exact mtime that input had when the install was last
 verified against it (``pm.environments.record_activation_inputs``). The
 prologue re-activates when any input's mtime *differs* from its stamp: newer
@@ -56,7 +56,7 @@ from __future__ import annotations
 import os
 import sys
 
-ACTIVATION_ENV_VAR = "__HERMES_ACTIVATED"
+ACTIVATION_ENV_VAR = "__AKRAMCODE_ACTIVATED"
 POSIX_COMMAND = "source ./activate"
 WINDOWS_COMMAND = ". .\\activate.ps1"
 
@@ -83,7 +83,7 @@ def require_activation() -> None:
         return
     script = os.path.basename(sys.argv[0]) or "this script"
     print(
-        f"{script}: the Hermes environment is not activated.\n"
+        f"{script}: the AkramCode environment is not activated.\n"
         "From the repository root, run:\n"
         "\n"
         f"    {activation_command()}\n"

@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 import pytest
 
 from agent import i18n, i18n_layers
@@ -30,8 +30,8 @@ def home(tmp_path, monkeypatch):
     home = tmp_path / "home"
     (home / "locales").mkdir(parents=True)
     monkeypatch.setenv("HOME", str(tmp_path / "os-home"))
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.delenv("HERMES_LANGUAGE", raising=False)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
+    monkeypatch.delenv("AKRAMCODE_LANGUAGE", raising=False)
     i18n.reset_language_cache()
     yield home
     i18n_layers._reset_registry_for_tests()

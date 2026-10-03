@@ -364,7 +364,7 @@ class TestFileDedup(unittest.TestCase):
 
     def setUp(self):
         _read_tracker.clear()
-        self._tmpdir = _make_safe_tempdir("hermes-dedup-")
+        self._tmpdir = _make_safe_tempdir("akramcode-dedup-")
         self._tmpfile = os.path.join(self._tmpdir, "dedup_test.txt")
         with open(self._tmpfile, "w", encoding="utf-8") as f:
             f.write("line one\nline two\n")
@@ -701,12 +701,12 @@ class TestWriteInvalidatesDedup(unittest.TestCase):
     cache for the written path.  Without this, a read→write→read sequence
     within the same mtime second returns a stale 'File unchanged' stub.
 
-    Regression test for https://github.com/NousResearch/hermes-agent/issues/13144
+    Regression test for https://github.com/NousResearch/akramcode-agent/issues/13144
     """
 
     def setUp(self):
         _read_tracker.clear()
-        self._tmpdir = _make_safe_tempdir("hermes-write-dedup-")
+        self._tmpdir = _make_safe_tempdir("akramcode-write-dedup-")
         self._tmpfile = os.path.join(self._tmpdir, "write_dedup.txt")
         with open(self._tmpfile, "w", encoding="utf-8") as f:
             f.write("original content\n")

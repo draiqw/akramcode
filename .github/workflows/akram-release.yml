@@ -46,7 +46,7 @@ jobs:
           ref: ${{ steps.tag.outputs.value }}
           fetch-depth: 0
 
-      - name: Set up Hermes PM
+      - name: Set up AkramCode PM
         uses: ./.github/actions/setup-pm
         with:
           cache-python: true

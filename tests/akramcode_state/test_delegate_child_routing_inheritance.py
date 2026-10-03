@@ -5,7 +5,7 @@ inherited ONLY across a compression fork, because "peer recovery could repoint t
 subagent's session" — but the SQL gated on the PARENT's ``end_reason`` alone.  A delegate child
 whose gateway parent had already rotated on compression (long batch, queued child, detached unit)
 therefore took the chat's ``session_key``/``chat_id``/``user_id``, leaving two live rows holding one
-routing key (NousResearch/hermes-agent#116322, first reported as #92859).
+routing key (NousResearch/akramcode-agent#116322, first reported as #92859).
 
 Real ``SessionDB`` on a temp path, no mocks: the contract asserted here is the RELATIONSHIP between
 the two child kinds — a compression continuation keeps inheriting, a delegate/branch fork does not.

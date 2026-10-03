@@ -63,7 +63,7 @@ def parse_openrouter_reasoning_capabilities(item: Any) -> Optional[dict[str, Any
 # ── Disk mirror ────────────────────────────────────────────────────────
 #
 # In-process caches are always cold in a short-lived process, and every consumer is on a hot path
-# that must never block on HTTP — so without a disk copy, `hermes -p`, a cron job, or a freshly
+# that must never block on HTTP — so without a disk copy, `akramcode -p`, a cron job, or a freshly
 # booted gateway answers "capability unknown" for its whole first turn. One file holds every
 # catalog keyed by URL: OpenRouter and the Portal list different models, and a staging Portal must
 # not answer for production.
@@ -71,8 +71,8 @@ _REASONING_CAPS_DISK_TTL_SECONDS = 24 * 3600
 
 
 def _reasoning_caps_disk_path() -> Path:
-    from akramcode_constants import get_hermes_home
-    return get_hermes_home() / "cache" / "reasoning_caps.json"
+    from akramcode_constants import get_akramcode_home
+    return get_akramcode_home() / "cache" / "reasoning_caps.json"
 
 
 def _read_reasoning_caps_disk() -> dict[str, Any]:
@@ -148,7 +148,7 @@ def _fetch_reasoning_caps_catalog(url: str, timeout: float) -> Optional[Caps]:
     empty so callers remember the failure. Sends a User-Agent: the Portal 403s anonymous reads."""
     m = _origin()
     try:
-        req = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": m._HERMES_USER_AGENT})
+        req = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": m._AKRAMCODE_USER_AGENT})
         with m._urlopen_model_catalog_request(req, timeout=timeout) as resp:
             payload = json.loads(resp.read().decode())
     except Exception:

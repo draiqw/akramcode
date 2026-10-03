@@ -42,7 +42,7 @@ def _td(name: str, description: str = "", properties: Dict[str, Any] | None = No
 class TestConfigParsing:
 
     def test_defer_default_is_the_registered_list_and_a_user_list_replaces_it(self, caplog):
-        """#116404: the curated deferral set lives in DEFAULT_CONFIG (so ``hermes config set``
+        """#116404: the curated deferral set lives in DEFAULT_CONFIG (so ``akramcode config set``
         recognizes the key); a user list replaces it wholesale, [] keeps every tool eager, and a
         scalar is warned about (naming the expected shape) before falling back to the default."""
         from akramcode_cli.config_defaults import DEFAULT_CONFIG
@@ -84,9 +84,9 @@ class TestClassification:
     def test_core_tools_never_defer(self):
         """The critical invariant from the OpenClaw report."""
         from tools.tool_search import is_deferrable_tool_name
-        from toolsets import _HERMES_CORE_TOOLS
-        assert _HERMES_CORE_TOOLS
-        for core_name in _HERMES_CORE_TOOLS:
+        from toolsets import _AKRAMCODE_CORE_TOOLS
+        assert _AKRAMCODE_CORE_TOOLS
+        for core_name in _AKRAMCODE_CORE_TOOLS:
             assert not is_deferrable_tool_name(core_name), (
                 f"Core tool '{core_name}' must NEVER be deferrable"
             )
@@ -100,7 +100,7 @@ class TestClassification:
         """Session-gated GUI tools stay direct and stay off the global core list."""
         from tools.registry import discover_builtin_tools, registry
         from tools.tool_search import _DIRECT_SURFACE_TOOLSETS, is_deferrable_tool_name
-        from toolsets import _HERMES_CORE_TOOLS
+        from toolsets import _AKRAMCODE_CORE_TOOLS
 
         discover_builtin_tools()
         surface = [n for n, ts in registry.get_tool_to_toolset_map().items()
@@ -108,7 +108,7 @@ class TestClassification:
         assert surface
         for name in surface:
             assert not is_deferrable_tool_name(name), name
-            assert name not in _HERMES_CORE_TOOLS
+            assert name not in _AKRAMCODE_CORE_TOOLS
 
 
     def test_defer_override_restores_legacy_direct_gui(self):

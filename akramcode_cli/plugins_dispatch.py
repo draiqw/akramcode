@@ -72,8 +72,8 @@ MAX_SYSTEM_PROMPT_SECTIONS = 32
 MAX_SYSTEM_PROMPT_SECTIONS_TOTAL_CHARS = 8_000
 _SYSTEM_PROMPT_SECTION_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,127}$")
 _SYSTEM_PROMPT_SECTION_HEADING_PREFIX = "## Plugin Context: "
-PLUGIN_SECTIONS_START = "<!-- hermes-plugin-sections:start -->"
-PLUGIN_SECTIONS_END = "<!-- hermes-plugin-sections:end -->"
+PLUGIN_SECTIONS_START = "<!-- akramcode-plugin-sections:start -->"
+PLUGIN_SECTIONS_END = "<!-- akramcode-plugin-sections:end -->"
 
 
 def is_valid_system_prompt_section_id(value: Any) -> bool:
@@ -85,7 +85,7 @@ def format_system_prompt_section(section_id: str, content: str) -> str:
     """Render an auditable, length-framed block recoverable from the full prompt."""
     return (
         f"{_SYSTEM_PROMPT_SECTION_HEADING_PREFIX}{section_id}\n"
-        f"<!-- hermes-plugin-section-chars:{len(content)} -->\n\n{content}")
+        f"<!-- akramcode-plugin-section-chars:{len(content)} -->\n\n{content}")
 
 
 def format_system_prompt_sections(sections: list) -> str:
@@ -96,8 +96,8 @@ def format_system_prompt_sections(sections: list) -> str:
     return f"{PLUGIN_SECTIONS_START}\n" + "\n\n".join(blocks) + f"\n{PLUGIN_SECTIONS_END}"
 
 
-# Reserved event namespace prefix — only core may publish ``hermes:<event>``.
-HERMES_EVENT_NAMESPACE = "hermes"
+# Reserved event namespace prefix — only core may publish ``akramcode:<event>``.
+AKRAMCODE_EVENT_NAMESPACE = "akramcode"
 # Event recursion depth cap (subscribers may emit); over-deep emits are dropped with a warning.
 _EVENT_EMIT_DEPTH_CAP = 8
 # Max queued + running events per manager generation; emit never waits — a full budget drops.
@@ -328,7 +328,7 @@ class PluginDispatchMixin:
                 _release_token()
                 done.set()
 
-        thread = threading.Thread(target=_runner, name=f"hermes-hook-{callback_name}"[:40], daemon=True)
+        thread = threading.Thread(target=_runner, name=f"akramcode-hook-{callback_name}"[:40], daemon=True)
         try:
             thread.start()
         except RuntimeError as exc:
@@ -386,7 +386,7 @@ class PluginDispatchMixin:
         if worker is not None and worker.is_alive():
             return
         worker = threading.Thread(
-            target=self._event_worker_loop, args=(self._event_queue,), name="hermes-plugin-events",
+            target=self._event_worker_loop, args=(self._event_queue,), name="akramcode-plugin-events",
             daemon=True,
         )
         self._event_worker = worker

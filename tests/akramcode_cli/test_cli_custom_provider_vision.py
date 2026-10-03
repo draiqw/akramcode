@@ -37,8 +37,8 @@ class _RuntimeCLI(CLIAgentSetupMixin):
         return False
 
 
-def _write_profile_config(hermes_home) -> None:
-    (hermes_home / "config.yaml").write_text(
+def _write_profile_config(akramcode_home) -> None:
+    (akramcode_home / "config.yaml").write_text(
         """
 model:
   default: ollama-cloud/glm-5.2
@@ -60,9 +60,9 @@ agent:
 
 def _resolve_cli_route():
     from akramcode_cli._parser import build_top_level_parser
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
 
-    _write_profile_config(get_hermes_home())
+    _write_profile_config(get_akramcode_home())
     parser, _subparsers, _chat = build_top_level_parser()
     args, _unknown = parser.parse_known_args(
         ["-m", MODEL, "--provider", REQUESTED_PROVIDER, "chat"]

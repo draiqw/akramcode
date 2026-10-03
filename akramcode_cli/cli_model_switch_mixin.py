@@ -1,11 +1,11 @@
 """Model picker, /model switch application, runtime snapshot/restore, and codex runtime handling for the interactive CLI
 
-Mixin split out of ``cli.py``; bound onto ``HermesCLI`` via the MRO. cli.py-internal
+Mixin split out of ``cli.py``; bound onto ``AkramCodeCLI`` via the MRO. cli.py-internal
 symbols are imported LAZILY inside each method (``from cli import ...``) — the mixin
 never imports ``cli`` at module load time (import cycle).
 
 Tests drive the switch paths with bare stubs lacking most mixin methods, so shared steps are
-module-level functions taking ``cli`` and siblings are called as ``HermesCLI.<name>(self, ...)``.
+module-level functions taking ``cli`` and siblings are called as ``AkramCodeCLI.<name>(self, ...)``.
 """
 
 from __future__ import annotations
@@ -254,7 +254,7 @@ def _commit_model_switch(
     ``picker``: tolerate context-resolution errors and label the config write "(--global)"; the
     typed path additionally records the one-turn restore snapshot. ``reasoning_effort`` (from
     ``--reasoning`` or the picker's effort step) is applied after the swap."""
-    from cli import HermesCLI, _cprint
+    from cli import AkramCodeCLI, _cprint
     old_model, old_provider = cli.model, getattr(cli, "provider", None)
     snapshot = cli._snapshot_model_runtime() if one_turn else None
     if not cli._stage_and_swap_model(result, old_model):
@@ -281,7 +281,7 @@ def _commit_model_switch(
     # The row records what THIS session runs even on --global (else a later resume restores the
     # stale creation-time model); --once is restored after one turn and never touches the row.
     if not one_turn:
-        HermesCLI._persist_model_switch_to_session(cli, result)
+        AkramCodeCLI._persist_model_switch_to_session(cli, result)
 
 
 def _show_model_picker(cli, ctx, force_refresh: bool) -> None:
@@ -724,7 +724,7 @@ class CLIModelSwitchMixin:
                 self._close_model_picker()
                 return
             provider_data = providers[selected]
-            # Curated list (same as `hermes model` / gateway pickers); live catalog only when
+            # Curated list (same as `akramcode model` / gateway pickers); live catalog only when
             # it is empty (user-defined endpoints, per-resource providers such as azure-foundry).
             # Disk-cached like the gateway pickers: the live probe can walk several api-version
             # fallbacks with a 6 s timeout each, which must not block the REPL on every select.
@@ -883,7 +883,7 @@ class CLIModelSwitchMixin:
 
         Usage:
             /codex-runtime                       — show current state
-            /codex-runtime auto                  — Hermes default (chat_completions)
+            /codex-runtime auto                  — AkramCode default (chat_completions)
             /codex-runtime codex_app_server      — hand turns to codex subprocess
             /codex-runtime on / off              — synonyms for the above
         """

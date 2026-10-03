@@ -41,7 +41,7 @@ def endpoint(monkeypatch):
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     base_url = f"http://127.0.0.1:{srv.server_port}/v1"
     monkeypatch.setenv("HYPER_KEY", "test-key-12345")
-    (Path(os.environ["HERMES_HOME"]) / "config.yaml").write_text(
+    (Path(os.environ["AKRAMCODE_HOME"]) / "config.yaml").write_text(
         "model:\n  provider: custom:hyper\n  default: deepseek-v4-flash-0731\n"
         f"providers:\n  hyper:\n    base_url: {base_url}\n    api_key_env: HYPER_KEY\n")
     try:

@@ -19,17 +19,17 @@ class TestVimModeLabel(unittest.TestCase):
         from prompt_toolkit.key_binding.vi_state import InputMode
 
         self.assertEqual(
-            cli_mod.HermesCLI._vim_mode_label(SimpleNamespace(_vim_mode=False, _app=None)), "")
+            cli_mod.AkramCodeCLI._vim_mode_label(SimpleNamespace(_vim_mode=False, _app=None)), "")
         self.assertEqual(
-            cli_mod.HermesCLI._vim_mode_label(SimpleNamespace(_vim_mode=True, _app=None)), "")
+            cli_mod.AkramCodeCLI._vim_mode_label(SimpleNamespace(_vim_mode=True, _app=None)), "")
 
         app = SimpleNamespace(vi_state=SimpleNamespace(input_mode=InputMode.INSERT))
         stub = SimpleNamespace(_vim_mode=True, _app=app)
-        self.assertEqual(cli_mod.HermesCLI._vim_mode_label(stub), "INSERT")
+        self.assertEqual(cli_mod.AkramCodeCLI._vim_mode_label(stub), "INSERT")
         app.vi_state.input_mode = InputMode.NAVIGATION
-        self.assertEqual(cli_mod.HermesCLI._vim_mode_label(stub), "NORMAL")
+        self.assertEqual(cli_mod.AkramCodeCLI._vim_mode_label(stub), "NORMAL")
         app.vi_state.input_mode = InputMode.REPLACE
-        self.assertEqual(cli_mod.HermesCLI._vim_mode_label(stub), "REPLACE")
+        self.assertEqual(cli_mod.AkramCodeCLI._vim_mode_label(stub), "REPLACE")
 
 
 

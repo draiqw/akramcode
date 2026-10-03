@@ -8,9 +8,9 @@ import pytest
 @pytest.mark.parametrize("enabled,disabled,allowed", [
     ([], [], False),
     (["safe"], [], False),
-    (["hermes-webhook"], [], False),
+    (["akramcode-webhook"], [], False),
     (["connections"], [], True),
-    (["hermes-cli"], ["connections"], False),
+    (["akramcode-cli"], ["connections"], False),
     (["safe"], ["connections"], False),
     (None, ["connections"], False),
     (None, [], True),

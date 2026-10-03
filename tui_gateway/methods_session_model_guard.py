@@ -3,7 +3,7 @@
 A composer, script or older client can pin a model the selected provider cannot serve
 (``gpt-5.5`` on ``anthropic``); the session used to be minted fine and the FIRST turn died with
 the provider's 404, leaving a dead chat. The gate is offline (curated catalogs only) and stays
-permissive wherever Hermes cannot know better — see ``models_validate.static_model_provider_conflict``.
+permissive wherever AkramCode cannot know better — see ``models_validate.static_model_provider_conflict``.
 """
 
 from __future__ import annotations

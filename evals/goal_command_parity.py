@@ -13,8 +13,8 @@ import sys
 
 root, home, out = map(Path, sys.argv[1:4])
 home.mkdir(parents=True, exist_ok=False)
-os.environ['HERMES_HOME'] = str(home)
-os.environ['HERMES_NIX_BUILD'] = '1'
+os.environ['AKRAMCODE_HOME'] = str(home)
+os.environ['AKRAMCODE_NIX_BUILD'] = '1'
 sys.path.insert(0, str(root))
 commands = importlib.import_module("akramcode_cli.cli_commands_mixin")
 GoalManager = importlib.import_module("akramcode_cli.goals").GoalManager

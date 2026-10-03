@@ -19,11 +19,11 @@ import pytest
 
 
 @pytest.fixture()
-def hermes_home(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+def akramcode_home(tmp_path, monkeypatch):
+    home = tmp_path / ".akramcode"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
 
     from akramcode_cli import goals
 
@@ -33,7 +33,7 @@ def hermes_home(tmp_path, monkeypatch):
 
 
 @pytest.fixture()
-def server(hermes_home):
+def server(akramcode_home):
     with patch.dict(
         "sys.modules",
         {

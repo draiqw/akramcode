@@ -103,7 +103,7 @@ def _managed_scratch_path_info(p: Path) -> tuple[bool, Optional[str]]:
                 board,
             ))
 
-    override = os.environ.get("HERMES_KANBAN_WORKSPACES_ROOT", "").strip()
+    override = os.environ.get("AKRAMCODE_KANBAN_WORKSPACES_ROOT", "").strip()
     if override:
         override_root = Path(override).expanduser()
         with contextlib.suppress(OSError):
@@ -157,11 +157,11 @@ def _scratch_workspace(conn: sqlite3.Connection, task_id: str) -> Optional[Path]
 
 def _is_managed_scratch_path(p: Path) -> bool:
     """True iff *p* is a STRICT descendant of a kanban-managed ``workspaces/``
-    root (``HERMES_KANBAN_WORKSPACES_ROOT``, ``<kanban_home>/kanban/workspaces``,
+    root (``AKRAMCODE_KANBAN_WORKSPACES_ROOT``, ``<kanban_home>/kanban/workspaces``,
     or ``<kanban_home>/kanban/boards/<slug>/workspaces``). A path equal to a
     root is not managed (deleting it would wipe every task's scratch dir);
     ``<kanban_home>/kanban``, ``.../logs`` and ``.../boards/<slug>`` hold
-    Hermes' own DB and metadata. :func:`_cleanup_workspace` refuses
+    AkramCode' own DB and metadata. :func:`_cleanup_workspace` refuses
     ``rmtree`` outside managed storage — a board ``default_workdir`` on a real
     source tree paired with ``workspace_kind='scratch'`` would otherwise make
     task completion delete user data.

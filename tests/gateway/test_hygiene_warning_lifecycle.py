@@ -11,8 +11,8 @@ from tests.gateway.test_session_hygiene import _make_cooldown_runner
 @pytest.mark.asyncio
 @pytest.mark.parametrize("setting", [None, False, True])
 async def test_aborted_hygiene_retains_cooldown_across_restart_and_final_result(tmp_path, monkeypatch, caplog, setting):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.setenv("HERMES_MANAGED_DIR", str(tmp_path / "managed"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_MANAGED_DIR", str(tmp_path / "managed"))
     sid = "hygiene-policy"
     calls = []
     recovering = False

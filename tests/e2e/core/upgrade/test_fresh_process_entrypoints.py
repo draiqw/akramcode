@@ -1,6 +1,6 @@
 """C6: every shipped module and every entrypoint works in a FRESH process after an update.
 
-The ``hermes update`` failure class this guards (issue_classes.md C6): after the pull every
+The ``akramcode update`` failure class this guards (issue_classes.md C6): after the pull every
 command dies with ``ImportError: cannot import name 'file_signature'`` (#111942, #111943,
 #112522, #114616), a module-level ``NameError``/circular import only shows up in a clean
 interpreter, or the restart phase of a pre-hand-off updater imports new code into a stale
@@ -55,7 +55,7 @@ from tests.e2e.core.upgrade._helpers import (
     sandbox_required_reason,
     wait_for,
 )
-from tests.fakes.fake_llm_provider import FakeLLMServer, Text, write_hermes_home
+from tests.fakes.fake_llm_provider import FakeLLMServer, Text, write_akramcode_home
 
 pytestmark = [
     pytest.mark.skipif(sys.platform != "linux", reason="fork()-based import isolation and bwrap sandbox are Linux-only"),
@@ -116,10 +116,10 @@ _POST_PURGE_IMPORTS = (
     "akramcode_cli.gateway_migrate", "akramcode_cli.profiles", "akramcode_cli.backup", "akramcode_cli.model_catalog",
     "akramcode_cli.plugin_compat", "agent.curator", "tools.skills_sync", "tools.browser_tool",
 )
-# What the pre-hand-off ``hermes update`` process had imported before the pull.
+# What the pre-hand-off ``akramcode update`` process had imported before the pull.
 _OLD_UPDATER_GRAPH = ("akramcode_cli.main", "akramcode_cli.update_cmd", "akramcode_cli.config", "akramcode_cli.gateway")
 
-_READY_RE = re.compile(r"^HERMES_(?:BACKEND|DASHBOARD)_READY port=(\d+)", re.M)  # electron/backend-ready.ts
+_READY_RE = re.compile(r"^AKRAMCODE_(?:BACKEND|DASHBOARD)_READY port=(\d+)", re.M)  # electron/backend-ready.ts
 
 
 # --------------------------------------------------------------------------- packaging model
@@ -134,7 +134,7 @@ def _requirements():
 
     core = [Requirement(r) for r in PYPROJECT["project"]["dependencies"]]
     extras = {_canonical(Requirement(r).name) for reqs in PYPROJECT["project"]["optional-dependencies"].values()
-              for r in reqs if not r.startswith("hermes-agent")}
+              for r in reqs if not r.startswith("akramcode-agent")}
     return core, extras
 
 
@@ -160,7 +160,7 @@ def _tracked(prefix: str = "") -> set[str] | None:
 
 def _root_py_modules() -> list[str]:
     """``setup.py::_root_py_modules()`` — the list the wheel build ships."""
-    spec = importlib.util.spec_from_file_location("_hermes_setup_py_c6", WORKTREE / "setup.py")
+    spec = importlib.util.spec_from_file_location("_akramcode_setup_py_c6", WORKTREE / "setup.py")
     mod = importlib.util.module_from_spec(spec)
     saved = sys.argv
     sys.argv = ["setup.py", "--name"]  # setup() must not build anything on import
@@ -222,7 +222,7 @@ def _shipped_modules() -> tuple[list[dict], set[str]]:
                 entries.append({"id": rel, "kind": "plugin", "root": str(plugin_root), "slug": slug, "sub": sub})
             else:
                 entries.append({"id": rel, "kind": "file", "file": str(f), "slug": re.sub(r"\W", "_", rel[:-3])})
-    first_party = set(roots) | {p.split(".")[0] for p in pkgs} | {"hermes_plugins"}
+    first_party = set(roots) | {p.split(".")[0] for p in pkgs} | {"akramcode_plugins"}
     return entries, first_party
 
 
@@ -268,11 +268,11 @@ def _import(entry):
     if entry["kind"] == "name":
         importlib.import_module(entry["name"])
         return
-    ns = types.ModuleType("hermes_plugins")  # plugins_loader's synthetic namespace parent
+    ns = types.ModuleType("akramcode_plugins")  # plugins_loader's synthetic namespace parent
     ns.__path__ = []
-    ns.__package__ = "hermes_plugins"
-    sys.modules.setdefault("hermes_plugins", ns)
-    name = "hermes_plugins." + entry["slug"]
+    ns.__package__ = "akramcode_plugins"
+    sys.modules.setdefault("akramcode_plugins", ns)
+    name = "akramcode_plugins." + entry["slug"]
     if entry["kind"] == "plugin":
         _load_file_module(name, os.path.join(entry["root"], "__init__.py"), [entry["root"]])
         if entry["sub"]:
@@ -356,7 +356,7 @@ os.rename(checkout, checkout + ".pre-pull")
 os.rename(spec["new_tree"], checkout)
 
 # The OLD updater's own post-pull steps, called the way it calls them (``_m()._...``).
-for step in ("_reload_updated_runtime_modules", "_purge_stale_hermes_modules"):
+for step in ("_reload_updated_runtime_modules", "_purge_stale_akramcode_modules"):
     fn = getattr(main, step, None)
     if fn is not None:
         fn()
@@ -541,7 +541,7 @@ def _pre_handoff_tag() -> tuple[str, str] | None:
     for tag in cp.stdout.split()[:15] if cp.returncode == 0 else []:
         if _git("cat-file", "-e", f"{tag}:akramcode_cli/update_handoff.py").returncode == 0:
             continue
-        grep = _git("grep", "-l", "def _purge_stale_hermes_modules", tag, "--", "akramcode_cli")
+        grep = _git("grep", "-l", "def _purge_stale_akramcode_modules", tag, "--", "akramcode_cli")
         return (tag, grep.stdout.strip()) if grep.returncode == 0 and grep.stdout.strip() else None
     return None
 
@@ -564,7 +564,7 @@ def _copy_tree(src: Path, dst: Path, names: list[str]) -> None:
 
 def test_pre_handoff_updater_stale_graph_imports_post_update_modules(tmp_path):
     """#114616 / #112522 shape: v2026.9.14's updater purges package prefixes only, keeps root
-    modules (``utils``, ``hermes_constants``) cached, then imports new restart-phase code.
+    modules (``utils``, ``akramcode_constants``) cached, then imports new restart-phase code.
     Retire this leg together with ``akramcode_cli/stale_modules.py``."""
     _sandbox_or_skip()
     found = _pre_handoff_tag()
@@ -649,11 +649,11 @@ _ENTRIES = {
     "module-oneshot": Entry("module", ("-z",), frozenset({0}), turn=True),
     # The #111942 symptom: the interactive CLI died at startup whenever config.yaml existed.
     "module-interactive-cli": Entry("module", (), frozenset({0}), tty=True),
-    "hermes-version": Entry("hermes", ("--version",), frozenset({0}), prints_version=True),
-    "hermes-help": Entry("hermes", ("--help",), frozenset({0})),
-    "hermes-acp-version": Entry("hermes-acp", ("--version",), frozenset({0}), prints_version=True),
-    "hermes-acp-help": Entry("hermes-acp", ("--help",), frozenset({0})),
-    "hermes-agent-help": Entry("hermes-agent", ("--help",), frozenset({0})),
+    "akramcode-version": Entry("akramcode", ("--version",), frozenset({0}), prints_version=True),
+    "akramcode-help": Entry("akramcode", ("--help",), frozenset({0})),
+    "akramcode-acp-version": Entry("akramcode-acp", ("--version",), frozenset({0}), prints_version=True),
+    "akramcode-acp-help": Entry("akramcode-acp", ("--help",), frozenset({0})),
+    "akramcode-agent-help": Entry("akramcode-agent", ("--help",), frozenset({0})),
 }
 def _run_on_tty(argv: list[str], *, env: dict[str, str], cwd: Path, writable: list[Path],
                 timeout: float) -> subprocess.CompletedProcess:
@@ -718,10 +718,10 @@ def test_entrypoint_in_a_fresh_process(case, tmp_path):
     reply = f"FAKE-REPLY-{uuid.uuid4().hex[:12]}"
     env = isolated_env(tmp_path, pythonpath=WORKTREE,
                        extra={"TERM": "xterm-256color", "COLUMNS": "120", "LINES": "40"} if entry.tty else None)
-    hermes_home = Path(env["HERMES_HOME"])
+    akramcode_home = Path(env["AKRAMCODE_HOME"])
     with FakeLLMServer([Text(reply)]) as srv:
-        write_hermes_home(hermes_home, srv.base_url)
-        config_before = (hermes_home / "config.yaml").read_bytes()
+        write_akramcode_home(akramcode_home, srv.base_url)
+        config_before = (akramcode_home / "config.yaml").read_bytes()
         args = [*entry.args, canary] if entry.turn else list(entry.args)
         if entry.via == "module":
             argv = [PY, "-m", "akramcode_cli.main", *args]
@@ -741,12 +741,12 @@ def test_entrypoint_in_a_fresh_process(case, tmp_path):
         from akramcode_cli.version_info import get_version_info
         commit = get_version_info().commit
         assert commit and commit[:7] in cp.stdout, describe(cp)
-    db = hermes_home / "state.db"
+    db = akramcode_home / "state.db"
     if db.exists():
         assert _db_rows(db, "PRAGMA integrity_check") == [("ok",)], f"{case} left a corrupt state.db"
     if case == "module-doctor":
         assert cp.stdout.strip(), describe(cp)
-        assert (hermes_home / "config.yaml").read_bytes() == config_before, "doctor without --fix rewrote config.yaml"
+        assert (akramcode_home / "config.yaml").read_bytes() == config_before, "doctor without --fix rewrote config.yaml"
     if not entry.turn:
         assert main_requests == [], f"{case} made {len(main_requests)} model call(s)"
         return
@@ -767,12 +767,12 @@ def test_serve_announces_ready_and_stops_cleanly_on_sigterm(tmp_path):
     _sandbox_or_skip()
     psutil = pytest.importorskip("psutil")
     lock_dir = tmp_path / "host-locks"
-    env = isolated_env(tmp_path, pythonpath=WORKTREE, extra={"HERMES_GATEWAY_LOCK_DIR": str(lock_dir)})
+    env = isolated_env(tmp_path, pythonpath=WORKTREE, extra={"AKRAMCODE_GATEWAY_LOCK_DIR": str(lock_dir)})
     reaper = _write_script(tmp_path / "runner", "subreaper.py", _SUBREAPER)
     report_path = tmp_path / "reaper.json"
     stdout_path, stderr_path = tmp_path / "serve.out", tmp_path / "serve.err"
     with FakeLLMServer() as srv, open(stdout_path, "w", encoding="utf-8") as out, open(stderr_path, "w", encoding="utf-8") as err:
-        write_hermes_home(Path(env["HERMES_HOME"]), srv.base_url)
+        write_akramcode_home(Path(env["AKRAMCODE_HOME"]), srv.base_url)
         argv = [PY, str(reaper), str(report_path),
                 PY, "-m", "akramcode_cli.main", "serve", "--host", "127.0.0.1", "--port", "0"]
         proc = subprocess.Popen(sandbox_argv(argv, writable=[tmp_path]), env=env, cwd=str(WORKTREE),
@@ -789,7 +789,7 @@ def test_serve_announces_ready_and_stops_cleanly_on_sigterm(tmp_path):
                 assert proc.poll() is None, f"serve exited rc={proc.returncode} before READY\n{_logs()}"
                 return None
 
-            port = wait_for(_ready, timeout=180, what="HERMES_BACKEND_READY on stdout")
+            port = wait_for(_ready, timeout=180, what="AKRAMCODE_BACKEND_READY on stdout")
             socket.create_connection(("127.0.0.1", port), timeout=10).close()
             record_file = lock_dir / "host-serve.json"
             record = json.loads(record_file.read_text(encoding="utf-8"))

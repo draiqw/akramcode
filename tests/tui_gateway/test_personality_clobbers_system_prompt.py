@@ -23,7 +23,7 @@ Contract tested here:
    text in `agent.system_prompt`.
 
 This test drives the REAL `_write_config_key` / `_save_cfg` against a temp
-HERMES_HOME config.yaml (no mocks of the persistence layer), so the captured
+AKRAMCODE_HOME config.yaml (no mocks of the persistence layer), so the captured
 config file is genuine proof of the write.
 """
 
@@ -34,7 +34,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import tui_gateway.server as server
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 
 MANUAL_PROMPT = "manual_prompt_1"
@@ -114,8 +114,8 @@ def test_switching_personality_leaves_no_stale_text(tmp_path, monkeypatch):
     should have been left untouched (the personality overlay belongs in the
     in-session ephemeral prompt, not the durable global system prompt).
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.setattr(server, "_hermes_home", Path(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
+    monkeypatch.setattr(server, "_akramcode_home", Path(tmp_path))
     monkeypatch.setattr(server, "_cfg_path", None)
     monkeypatch.setattr(server, "_cfg_cache", None)
     _seed_config(str(tmp_path))

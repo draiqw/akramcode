@@ -79,7 +79,7 @@ def test_task_cost_is_one_row_per_user_turn_with_its_tokens_and_work(direct_runt
     lifecycle.finalize_session(session_id="child")
 
     common = dict(ROUTE)
-    assert _rows(tmp_path, "hermes.task_cost.count") == sorted([
+    assert _rows(tmp_path, "akramcode.task_cost.count") == sorted([
         (_dims(**common, api_calls_bucket="2", outcome="completed", tokens_bucket="2k_to_10k",
                tool_calls_bucket="3_to_5"), 1),
         (_dims(**common, api_calls_bucket="1", outcome="interrupted", tokens_bucket="50k_to_200k",
@@ -88,7 +88,7 @@ def test_task_cost_is_one_row_per_user_turn_with_its_tokens_and_work(direct_runt
                tool_calls_bucket="0"), 1),
     ])
     # The interrupt threw its tokens away.
-    assert _rows(tmp_path, "hermes.wasted_tokens.count") == [
+    assert _rows(tmp_path, "akramcode.wasted_tokens.count") == [
         (_dims(**common, reason="interrupt", tokens_bucket="50k_to_200k"), 1)]
 
 
@@ -104,7 +104,7 @@ def test_undo_and_retry_count_the_tokens_of_the_turns_they_discard(direct_runtim
     record_model_friction("retry", session_id="s1", provider="openrouter", model="model-a")
     record_model_friction("retry", session_id="gone", provider="openrouter", model="model-a")
 
-    assert _rows(tmp_path, "hermes.wasted_tokens.count") == sorted([
+    assert _rows(tmp_path, "akramcode.wasted_tokens.count") == sorted([
         (_dims(**ROUTE, reason="undo", tokens_bucket="200k_to_1m"), 1),
         (_dims(**ROUTE, reason="undo", tokens_bucket="10k_to_50k"), 1),
         (_dims(**ROUTE, reason="interrupt", tokens_bucket="2k_to_10k"), 1),
@@ -134,7 +134,7 @@ def test_tool_output_truncation_is_judged_after_the_turn_budget(direct_runtime, 
     eff.record_tool_batch(agent, batch, before)
     assert not getattr(agent, "_shared_metrics_tool_outputs", None)
 
-    rows = _rows(tmp_path, "hermes.tool_output_truncation.count")
+    rows = _rows(tmp_path, "akramcode.tool_output_truncation.count")
     assert "acme" not in json.dumps(rows)
     got = {(dict(d)["tool"], dict(d)["original_size_bucket"], dict(d)["truncated"]) for d, _ in rows}
     assert ("read_file", "lt_1k", "no") in got
@@ -154,13 +154,13 @@ def test_tool_overhead_and_unused_toolsets_report_once_per_conversation(direct_r
     _turn("s1", "t1", {"completed": True}, tools=[("terminal", "terminal")])
     lifecycle.finalize_session(session_id="s1")
 
-    overhead = _rows(tmp_path, "hermes.tool_overhead.count")
+    overhead = _rows(tmp_path, "akramcode.tool_overhead.count")
     assert [dict(d) for d, _ in overhead] == [{
         "enabled_tool_count_bucket": "3_to_5", "execution_surface": "cli", "tool_schema_tokens_bucket": "lt_2k"}]
-    assert _rows(tmp_path, "hermes.tool_enabled_unused.count") == sorted([
+    assert _rows(tmp_path, "akramcode.tool_enabled_unused.count") == sorted([
         (_dims(toolset="custom", used="no"), 1), (_dims(toolset="file", used="no"), 1),
         (_dims(toolset="terminal", used="yes"), 1)])
-    assert "acme" not in json.dumps(_stored_values(tmp_path, "hermes.tool_enabled_unused.count"))
+    assert "acme" not in json.dumps(_stored_values(tmp_path, "akramcode.tool_enabled_unused.count"))
 
 
 def test_several_known_causes_before_one_cold_read_are_one_break(direct_runtime, tmp_path):
@@ -170,7 +170,7 @@ def test_several_known_causes_before_one_cold_read_are_one_break(direct_runtime,
     eff.record_cache_break(agent, "compression")
     eff.record_cache_break(agent, "model_switch")
     _turn("s1", "t2", {"completed": True}, calls=[_usage(9_000, cache_read=0)])
-    assert _rows(tmp_path, "hermes.cache_break.count") == [(_dims(**ROUTE, cause="compression"), 1)]
+    assert _rows(tmp_path, "akramcode.cache_break.count") == [(_dims(**ROUTE, cause="compression"), 1)]
 
 
 def test_cache_breaks_count_known_causes_once_and_unannounced_cold_reads_as_misses(direct_runtime, tmp_path,
@@ -195,7 +195,7 @@ def test_cache_breaks_count_known_causes_once_and_unannounced_cold_reads_as_miss
     eff.record_cache_break(SimpleNamespace(**vars(_agent()), _memory_write_origin="background_review"), "compression")
     eff.record_cache_break(SimpleNamespace(**vars(_agent()), _persist_disabled=True), "compression")
 
-    assert _rows(tmp_path, "hermes.cache_break.count") == sorted([
+    assert _rows(tmp_path, "akramcode.cache_break.count") == sorted([
         (_dims(**ROUTE, cause="compression"), 1), (_dims(**ROUTE, cause="provider_reported_miss"), 1),
         (_dims(**ROUTE, cause="cache_expired"), 1), (_dims(**ROUTE, cause="toolset_change"), 1)])
 
@@ -204,7 +204,7 @@ def test_prompt_rebuild_names_a_model_switch_apart_from_other_rebuilds(monkeypat
     causes = []
     monkeypatch.setattr(eff, "record_cache_break", lambda agent, cause: causes.append(cause))
     agent = _agent(model="model-b")
-    stored = "You are Hermes.\nModel: model-a\nProvider: openrouter\n"
+    stored = "You are AkramCode.\nModel: model-a\nProvider: openrouter\n"
     eff.record_prompt_rebuild(agent, stored, "stale_runtime", stored.replace("model-a", "model-b"))
     eff.record_prompt_rebuild(_agent(model="model-a"), stored, "stale_runtime", stored + "Host: x\n")
     eff.record_prompt_rebuild(agent, None, "null", "rebuilt")
@@ -220,7 +220,7 @@ def test_nothing_is_recorded_while_disabled(direct_runtime, tmp_path, monkeypatc
     assert not getattr(agent, "_shared_metrics_tool_outputs", None)
     eff.record_cache_break(agent, "compression")
     eff.observe_request_tools(agent, agent.tools)
-    assert not (tmp_path / "hermes-home" / "telemetry").exists()
+    assert not (tmp_path / "akramcode-home" / "telemetry").exists()
 
 
 @pytest.mark.parametrize("count,bucket", [(0, "0"), (2, "2"), (5, "3_to_5"), (25, "11_to_25"), (50, "26_to_50"),
@@ -233,7 +233,7 @@ def test_turn_activity_buckets_reach_long_agentic_loops(count, bucket):
 def test_v3_schema_accepts_exactly_the_contract_values():
     import akramcode_cli.observability as observability
 
-    schema = json.loads((Path(observability.__file__).parent / "schemas/hermes.shared_metrics.v3.schema.json").read_text())
+    schema = json.loads((Path(observability.__file__).parent / "schemas/akramcode.shared_metrics.v3.schema.json").read_text())
     by_name = {d["properties"]["name"]["const"]: d for d in schema["$defs"].values() if "properties" in d}
     refs = {item["$ref"].rsplit("/", 1)[1] for item in schema["properties"]["metrics"]["items"]["oneOf"]}
     for metric in (contract.TASK_COST_METRIC, contract.WASTED_TOKENS_METRIC, contract.TOOL_OUTPUT_TRUNCATION_METRIC,

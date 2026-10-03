@@ -1,6 +1,6 @@
 """``platforms.relay.enabled: false`` beats a deployment-injected relay URL.
 
-Real profile files under a temp HERMES_HOME, the production startup hook and the
+Real profile files under a temp AKRAMCODE_HOME, the production startup hook and the
 standalone predicate. Only the connector HTTP calls are replaced.
 """
 from unittest.mock import Mock
@@ -8,7 +8,7 @@ import json
 import os
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 import gateway.relay as relay
 from gateway.config import Platform, load_gateway_config
@@ -25,13 +25,13 @@ SPELLINGS = {
     "nested": {"gateway": {"platforms": DISABLE}},
     "string-false": {"platforms": {"relay": {"enabled": "false"}}},
     "top-beats-nested": {"platforms": DISABLE, "gateway": {"platforms": {"relay": {"enabled": True}}}},
-    "managed": None,  # user YAML absent; disable comes from HERMES_MANAGED_DIR
+    "managed": None,  # user YAML absent; disable comes from AKRAMCODE_MANAGED_DIR
 }
 
 
 @pytest.fixture
 def profile(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     for key in list(os.environ):
         if key.startswith("GATEWAY_RELAY_"):
             monkeypatch.delenv(key)
@@ -54,7 +54,7 @@ def write_disable(home, spelling, monkeypatch):
         managed = home / "managed"
         managed.mkdir()
         (managed / "config.yaml").write_text(yaml.safe_dump({"platforms": DISABLE}))
-        monkeypatch.setenv("HERMES_MANAGED_DIR", str(managed))
+        monkeypatch.setenv("AKRAMCODE_MANAGED_DIR", str(managed))
         return
     (home / "config.yaml").write_text(yaml.safe_dump(doc))
 

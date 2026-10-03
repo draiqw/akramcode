@@ -78,7 +78,7 @@ def test_background_ready_record_does_not_block_and_still_lands(marks, monkeypat
 
 def test_kanban_worker_one_shot_is_not_a_cli_startup(marks, monkeypatch):
     monkeypatch.setattr(startup, "process_started_at", lambda: time.time())
-    monkeypatch.setenv("HERMES_KANBAN_TASK", "t_1")
+    monkeypatch.setenv("AKRAMCODE_KANBAN_TASK", "t_1")
 
     startup.record_cli_one_shot_ready()
 
@@ -91,13 +91,13 @@ def _rpc(params: dict) -> dict:
 
 
 def test_rpc_takes_the_declared_surface_else_env_detection(marks, monkeypatch):
-    monkeypatch.delenv("HERMES_DESKTOP", raising=False)
-    monkeypatch.delenv("HERMES_DESKTOP_TERMINAL", raising=False)
+    monkeypatch.delenv("AKRAMCODE_DESKTOP", raising=False)
+    monkeypatch.delenv("AKRAMCODE_DESKTOP_TERMINAL", raising=False)
 
-    # A Desktop attached to a URL/cloud backend: no HERMES_DESKTOP here, the client says who it is.
+    # A Desktop attached to a URL/cloud backend: no AKRAMCODE_DESKTOP here, the client says who it is.
     assert _rpc({"elapsed_ms": 2500, "surface": "desktop_attach", "launch_id": "a"})["result"] == {"ok": True}
     assert _rpc({"elapsed_ms": 700, "launch_id": "b"})["result"] == {"ok": True}
-    monkeypatch.setenv("HERMES_DESKTOP", "1")
+    monkeypatch.setenv("AKRAMCODE_DESKTOP", "1")
     assert _rpc({"elapsed_ms": 12_000, "launch_id": "c"})["result"] == {"ok": True}
     assert _rpc({"elapsed_ms": -5, "surface": "tui", "launch_id": "d"})["result"] == {"ok": True}
 

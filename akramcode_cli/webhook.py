@@ -1,4 +1,4 @@
-"""hermes webhook — manage dynamic webhook subscriptions from the CLI."""
+"""akramcode webhook — manage dynamic webhook subscriptions from the CLI."""
 
 import hashlib
 import hmac
@@ -10,7 +10,7 @@ import urllib.request
 from pathlib import Path
 from typing import Dict
 
-from akramcode_constants import display_hermes_home
+from akramcode_constants import display_akramcode_home
 from utils import atomic_json_write
 from akramcode_cli.config import cfg_get
 
@@ -20,8 +20,8 @@ _SUBSCRIPTIONS_FILE_MODE = 0o600
 
 
 def _subscriptions_path() -> Path:
-    from akramcode_constants import get_hermes_home
-    return get_hermes_home() / _SUBSCRIPTIONS_FILENAME
+    from akramcode_constants import get_akramcode_home
+    return get_akramcode_home() / _SUBSCRIPTIONS_FILENAME
 
 
 def _load_subscriptions() -> Dict[str, dict]:
@@ -71,12 +71,12 @@ def _route_url(name: str, route: dict) -> str:
 
 
 def _setup_hint() -> str:
-    _dhh = display_hermes_home()
+    _dhh = display_akramcode_home()
     return f"""
   Webhook platform is not enabled. To set it up:
 
   1. Run the gateway setup wizard:
-     hermes gateway setup
+     akramcode gateway setup
 
   2. Or manually add to {_dhh}/config.yaml:
      platforms:
@@ -91,16 +91,16 @@ def _setup_hint() -> str:
      WEBHOOK_PORT=8644
      WEBHOOK_SECRET=your-global-secret
 
-  Then start the gateway: hermes gateway run
+  Then start the gateway: akramcode gateway run
 """
 
 
 def webhook_command(args):
-    """Entry point for 'hermes webhook' subcommand."""
+    """Entry point for 'akramcode webhook' subcommand."""
     sub = getattr(args, "webhook_action", None)
     if not sub:
-        print("Usage: hermes webhook {subscribe|list|remove|test}")
-        print("Run 'hermes webhook --help' for details.")
+        print("Usage: akramcode webhook {subscribe|list|remove|test}")
+        print("Run 'akramcode webhook --help' for details.")
         return
     if not _is_webhook_enabled():
         print(_setup_hint())
@@ -172,7 +172,7 @@ def _cmd_subscribe(args):
             print(f"Error: {e}")
             return
         if job is None:
-            print(f"Error: no cron job matches '{cron_job}'. List jobs with: hermes cron list")
+            print(f"Error: no cron job matches '{cron_job}'. List jobs with: akramcode cron list")
             return
         route["cron_job"] = job["id"]
     script = (getattr(args, "script", "") or "").strip()
@@ -202,14 +202,14 @@ def _cmd_subscribe(args):
         print(f"  Script: {route['script']}")
     print("\n  Configure your service to POST to the URL above.")
     print("  Use the secret for HMAC-SHA256 signature validation.")
-    print("  The gateway must be running to receive events (hermes gateway run).\n")
+    print("  The gateway must be running to receive events (akramcode gateway run).\n")
 
 
 def _cmd_list(args):
     subs = _load_subscriptions()
     if not subs:
         print("  No dynamic webhook subscriptions.")
-        print("  Create one with: hermes webhook subscribe <name>")
+        print("  Create one with: akramcode webhook subscribe <name>")
         return
 
     print(f"\n  {len(subs)} webhook subscription(s):\n")
@@ -255,7 +255,7 @@ def _cmd_test(args):
         return
     secret = subs[name].get("secret", "")
     url = _route_url(name, subs[name])
-    payload = args.payload or '{"test": true, "event_type": "test", "message": "Hello from hermes webhook test"}'
+    payload = args.payload or '{"test": true, "event_type": "test", "message": "Hello from akramcode webhook test"}'
     sig = "sha256=" + hmac.new(secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
     print(f"  Sending test POST to {url}")
     try:
@@ -269,7 +269,7 @@ def _cmd_test(args):
             print(f"  Response ({resp.status}): {body}")
     except Exception as e:
         print(f"  Error: {e}")
-        print("  Is the gateway running? (hermes gateway run)")
+        print("  Is the gateway running? (akramcode gateway run)")
 
 
 _ACTIONS = {

@@ -58,9 +58,9 @@ class TestGetActiveProvider:
 
 
     def test_explicit_config_wins(self, tmp_path, monkeypatch):
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
         (tmp_path / "config.yaml").write_text(
             yaml.safe_dump({"image_gen": {"provider": "openai"}})
         )
@@ -71,5 +71,5 @@ class TestGetActiveProvider:
 
 
     def test_none_when_empty(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
         assert image_gen_registry.get_active_provider() is None

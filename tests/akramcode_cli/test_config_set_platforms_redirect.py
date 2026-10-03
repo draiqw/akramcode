@@ -1,6 +1,6 @@
 """Regression tests for #71047 (Problem A): per-platform display settings.
 
-`hermes config set platforms.<name>.<display_setting> <value>` must write to
+`akramcode config set platforms.<name>.<display_setting> <value>` must write to
 `display.platforms.<name>.<display_setting>` — the path the gateway actually
 reads (gateway/display_config.py::resolve_display_setting). Writing to the
 top-level `platforms.<name>` block is silently ignored by the runtime, so the
@@ -10,27 +10,27 @@ edit appeared to succeed while having no effect.
 from pathlib import Path
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 
-def _write_config(hermes_home: Path, data: dict) -> Path:
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    config_path = hermes_home / "config.yaml"
+def _write_config(akramcode_home: Path, data: dict) -> Path:
+    akramcode_home.mkdir(parents=True, exist_ok=True)
+    config_path = akramcode_home / "config.yaml"
     config_path.write_text(yaml.safe_dump(data))
     return config_path
 
 
-def _set(monkeypatch, hermes_home, key, value, force=False):
-    """Isolated call to set_config_value against a temp HERMES_HOME."""
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    # set_config_value resolves the home live via get_config_path()/get_hermes_home()
+def _set(monkeypatch, akramcode_home, key, value, force=False):
+    """Isolated call to set_config_value against a temp AKRAMCODE_HOME."""
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
+    # set_config_value resolves the home live via get_config_path()/get_akramcode_home()
     from akramcode_cli.config import set_config_value
     set_config_value(key, value, force=force)
 
 
 @pytest.fixture
-def hermes_home(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+def akramcode_home(tmp_path, monkeypatch):
+    home = tmp_path / ".akramcode"
     # A config that already has a top-level platforms block (connection keys)
     # AND a display.platforms block, mirroring the real-world report.
     cfg = {
@@ -50,11 +50,11 @@ def hermes_home(tmp_path, monkeypatch):
 
 
 class TestPerPlatformDisplayRedirect:
-    def test_streaming_redirects_to_display_platforms(self, hermes_home, monkeypatch):
+    def test_streaming_redirects_to_display_platforms(self, akramcode_home, monkeypatch):
         """platforms.telegram.streaming must land under display.platforms."""
-        _set(monkeypatch, hermes_home, "platforms.telegram.streaming", "false")
+        _set(monkeypatch, akramcode_home, "platforms.telegram.streaming", "false")
 
-        result = yaml.safe_load((hermes_home / "config.yaml").read_text())
+        result = yaml.safe_load((akramcode_home / "config.yaml").read_text())
         # Redirected target exists and is correct
         assert result["display"]["platforms"]["telegram"]["streaming"] is False
         # Top-level platforms.telegram must NOT gain a streaming key
@@ -64,10 +64,10 @@ class TestPerPlatformDisplayRedirect:
 
 
 
-    def test_connection_key_not_redirected(self, hermes_home, monkeypatch):
+    def test_connection_key_not_redirected(self, akramcode_home, monkeypatch):
         """A real connection key (token) stays in top-level platforms.<name>."""
-        _set(monkeypatch, hermes_home, "platforms.telegram.token", "new-token")
-        result = yaml.safe_load((hermes_home / "config.yaml").read_text())
+        _set(monkeypatch, akramcode_home, "platforms.telegram.token", "new-token")
+        result = yaml.safe_load((akramcode_home / "config.yaml").read_text())
         assert result["platforms"]["telegram"]["token"] == "new-token"
         # Nothing leaked into display.platforms.telegram.token
         assert "token" not in result["display"]["platforms"]["telegram"]
@@ -75,7 +75,7 @@ class TestPerPlatformDisplayRedirect:
     def test_no_top_level_platforms_created_when_missing(self, tmp_path, monkeypatch):
         """When there is no pre-existing top-level platforms block, a display
         setting write must not invent one."""
-        home = tmp_path / ".hermes"
+        home = tmp_path / ".akramcode"
         _write_config(home, {"model": {"default": "m"}})
         _set(monkeypatch, home, "platforms.telegram.streaming", "true")
         result = yaml.safe_load((home / "config.yaml").read_text())
@@ -89,33 +89,33 @@ class TestRedirectSiblingSurfaces:
     resolver actually reads (the #71047 symptom was CLI and runtime disagreeing).
     """
 
-    def test_get_mirrors_gateway_resolution_after_set(self, hermes_home, monkeypatch, capsys):
+    def test_get_mirrors_gateway_resolution_after_set(self, akramcode_home, monkeypatch, capsys):
         from gateway.display_config import resolve_display_setting
         from akramcode_cli.config import get_config_value
 
-        _set(monkeypatch, hermes_home, "platforms.telegram.streaming", "false")
+        _set(monkeypatch, akramcode_home, "platforms.telegram.streaming", "false")
         capsys.readouterr()
         get_config_value("platforms.telegram.streaming")
         assert capsys.readouterr().out.strip() == "false"
 
-        raw = yaml.safe_load((hermes_home / "config.yaml").read_text())
+        raw = yaml.safe_load((akramcode_home / "config.yaml").read_text())
         assert resolve_display_setting(raw, "telegram", "streaming") is False
 
-    def test_unset_removes_the_redirected_leaf(self, hermes_home, monkeypatch):
+    def test_unset_removes_the_redirected_leaf(self, akramcode_home, monkeypatch):
         from akramcode_cli.config import unset_config_value
 
-        _set(monkeypatch, hermes_home, "platforms.telegram.streaming", "false")
+        _set(monkeypatch, akramcode_home, "platforms.telegram.streaming", "false")
         unset_config_value("platforms.telegram.streaming")
-        result = yaml.safe_load((hermes_home / "config.yaml").read_text())
+        result = yaml.safe_load((akramcode_home / "config.yaml").read_text())
         assert "streaming" not in result["display"]["platforms"]["telegram"]
         # Sibling display override and connection block untouched.
         assert result["display"]["platforms"]["telegram"]["show_reasoning"] is True
         assert result["platforms"]["telegram"] == {"token": "secret-bot-token"}
 
-    def test_unset_missing_redirected_leaf_exits_nonzero(self, hermes_home, monkeypatch):
+    def test_unset_missing_redirected_leaf_exits_nonzero(self, akramcode_home, monkeypatch):
         from akramcode_cli.config import unset_config_value
 
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
         with pytest.raises(SystemExit) as exc:
             unset_config_value("platforms.telegram.streaming")
         assert exc.value.code == 1

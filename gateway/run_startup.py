@@ -43,12 +43,12 @@ class GatewayStartupMixin:
     @staticmethod
     def _log_agent_budget() -> None:
         """Report the ENFORCED per-turn budget: ``agent.max_turns`` is bridged into
-        ``HERMES_MAX_ITERATIONS`` before this runs, so the env slot already carries the config value;
+        ``AKRAMCODE_MAX_ITERATIONS`` before this runs, so the env slot already carries the config value;
         resolve it the same way the turn loop does (``none``/``unlimited`` spellings included) instead of
         ``int()`` on the raw string with an invented ``500`` default (#116888)."""
         from akramcode_cli.config import TURN_LIMIT_UNLIMITED, resolve_turn_limit
-        limit = resolve_turn_limit(os.getenv("HERMES_MAX_ITERATIONS"))
-        logger.info("Agent budget: max_iterations=%s (agent.max_turns from config.yaml, else the HERMES_MAX_ITERATIONS bridge)",
+        limit = resolve_turn_limit(os.getenv("AKRAMCODE_MAX_ITERATIONS"))
+        logger.info("Agent budget: max_iterations=%s (agent.max_turns from config.yaml, else the AKRAMCODE_MAX_ITERATIONS bridge)",
                     "unlimited" if limit == TURN_LIMIT_UNLIMITED else limit)
 
     # A configured platform failed non-retryably this boot and is parked: every "we are serving"
@@ -106,7 +106,7 @@ class GatewayStartupMixin:
                     continue
                 # Mark the replay so _handle_message does not re-queue it while the restore gate is closed.
                 with suppress(Exception):
-                    setattr(event, "_hermes_startup_restore_replay", True)
+                    setattr(event, "_akramcode_startup_restore_replay", True)
                 await adapter.handle_message(event)
             except Exception:
                 # One bad replay must not abort the drain: the remaining queued
@@ -142,9 +142,9 @@ class GatewayStartupMixin:
         loop = asyncio.get_running_loop()
         if getattr(self.config, "multiplex_profiles", False):
             from gateway.run import _async_profile_runtime_scope
-            from akramcode_constants import get_hermes_home
+            from akramcode_constants import get_akramcode_home
             try:
-                async with _async_profile_runtime_scope(get_hermes_home()):
+                async with _async_profile_runtime_scope(get_akramcode_home()):
                     return await loop.run_in_executor(None, copy_context().run, fn)
             except Exception:
                 # Same fallback as load_gateway_config_for_runner: a scope that cannot be built must not
@@ -718,7 +718,7 @@ class GatewayStartupMixin:
         ledgered)."""
         from gateway.run import _float_env
         resumed = ledgered = 0
-        max_age = max(60 * 60, int(max(1.0, _float_env("HERMES_AGENT_TIMEOUT", 1800)) * 2))
+        max_age = max(60 * 60, int(max(1.0, _float_env("AKRAMCODE_AGENT_TIMEOUT", 1800)) * 2))
         with _log_suppressed(logging.WARNING, "Crash-left reply recovery on startup failed: %s"):
             ledgered = await self._ledger_crash_left_replies(max_age)
         with _log_suppressed(logging.WARNING, "Exact active-turn recovery on startup failed: %s"):
@@ -841,15 +841,15 @@ class GatewayStartupMixin:
                 )
             )
             # PERMANENT watcher tag so the scale-to-zero idle check doesn't count it as busy forever.
-            task._hermes_supervised_watcher = True  # type: ignore[attr-defined]
+            task._akramcode_supervised_watcher = True  # type: ignore[attr-defined]
             _bg = getattr(self, "_background_tasks", None)
             if _bg is not None:
                 self._track_task_in(_bg, task)
 
     def _open_faulthandler_log(self):
         """Open (append) ``<log_dir>/gateway_faulthandler.log``, creating the directory."""
-        from gateway.run import get_hermes_home
-        log_dir = getattr(self.config, "log_dir", None) or os.path.join(str(get_hermes_home()), "logs")
+        from gateway.run import get_akramcode_home
+        log_dir = getattr(self.config, "log_dir", None) or os.path.join(str(get_akramcode_home()), "logs")
         os.makedirs(log_dir, exist_ok=True)
         return open(os.path.join(log_dir, "gateway_faulthandler.log"), "a", encoding="utf-8")  # windows-footgun: ok (append log writer, not a read)
 
@@ -895,7 +895,7 @@ class GatewayStartupMixin:
         # so this line is the source of truth for the process lifetime.
         with suppress(Exception):
             # Redaction status: ON by default (#17691).
-            _redact_raw = os.getenv("HERMES_REDACT_SECRETS", "true")
+            _redact_raw = os.getenv("AKRAMCODE_REDACT_SECRETS", "true")
             if _redact_raw.lower() in {"1", "true", "yes", "on"}:
                 logger.info(
                     "Secret redaction: ENABLED (tool output, logs, and chat "
@@ -903,7 +903,7 @@ class GatewayStartupMixin:
                 )
             else:
                 logger.warning(
-                    "Secret redaction: DISABLED (HERMES_REDACT_SECRETS=%s). API keys and tokens may appear "
+                    "Secret redaction: DISABLED (AKRAMCODE_REDACT_SECRETS=%s). API keys and tokens may appear "
                     "verbatim in chat output, session JSONs, and logs. Set security.redact_secrets: true "
                     "in config.yaml to re-enable.", _redact_raw,
                 )
@@ -938,7 +938,7 @@ class GatewayStartupMixin:
             _adv_msg = gateway_log_message(detect_compromised())
             if _adv_msg:
                 logger.warning("%s", _adv_msg)
-                logger.warning("Run `hermes doctor` on the gateway host for full remediation steps.")
+                logger.warning("Run `akramcode doctor` on the gateway host for full remediation steps.")
 
     def _start_log_retired_session_reset(self) -> None:
         """Warn per served profile whose config still declares an idle/daily ``session_reset``,
@@ -966,7 +966,7 @@ class GatewayStartupMixin:
                 logger.warning(
                     "Stale systemd unit detected: %s has TimeoutStopSec=%.0fs but drain_timeout=%.0fs "
                     "cron_drain_timeout=%.0fs (expected >=%.0fs). systemd may SIGKILL the gateway "
-                    "mid-drain. Run `hermes gateway install --force` to regenerate the unit, or shorten "
+                    "mid-drain. Run `akramcode gateway install --force` to regenerate the unit, or shorten "
                     "agent.restart_drain_timeout / agent.cron_drain_timeout.",
                     _alignment.get("unit", "(unknown)"), _alignment["timeout_stop_sec"],
                     _alignment["drain_timeout"],
@@ -1069,8 +1069,8 @@ class GatewayStartupMixin:
                 "shell-hook/webhook registration failed at gateway startup", level=logging.WARNING)
             return
         from gateway.run import _profile_runtime_scope
-        from akramcode_constants import get_process_hermes_home
-        with _profile_runtime_scope(get_process_hermes_home()):
+        from akramcode_constants import get_process_akramcode_home
+        with _profile_runtime_scope(get_process_akramcode_home()):
             GatewayStartupMixin._register_config_hooks(
                 "shell-hook/webhook registration failed at gateway startup", level=logging.WARNING)
 
@@ -1078,7 +1078,7 @@ class GatewayStartupMixin:
     def _register_config_hooks(fail_fmt: str, *fail_args, level: int = logging.DEBUG) -> None:
         """Register declarative shell hooks + outbound webhooks from the CURRENT scope's config.
 
-        Gateway has no TTY, so consent must come from --accept-hooks, HERMES_ACCEPT_HOOKS, or
+        Gateway has no TTY, so consent must come from --accept-hooks, AKRAMCODE_ACCEPT_HOOKS, or
         hooks_auto_accept: true; ``accept_hooks=False`` lets register_from_config resolve env + config.
         Never raises (logged at ``level``).
         """
@@ -1098,8 +1098,8 @@ class GatewayStartupMixin:
         if not getattr(self.config, "multiplex_profiles", False):
             return 0
         from gateway.run import _multiplex_profile_homes, _profile_runtime_scope
-        from akramcode_constants import get_hermes_home
-        launch_home = get_hermes_home().resolve()
+        from akramcode_constants import get_akramcode_home
+        launch_home = get_akramcode_home().resolve()
         recovered = 0
         for profile_name, profile_home in _multiplex_profile_homes(self.config):
             if Path(profile_home).resolve() == launch_home:
@@ -1113,7 +1113,7 @@ class GatewayStartupMixin:
 
     async def _start_recover_previous_run(self) -> None:
         """Plugins, relay, hooks, then crash/clean-exit recovery of processes and sessions."""
-        from gateway.run import _hermes_home
+        from gateway.run import _akramcode_home
         self._start_register_plugins_relay_hooks()
         # Plugins that load later (force re-discovery, install/enable nudge) re-wire live adapters (#87770).
         with _log_suppressed(logging.WARNING, "plugin re-wire subscription failed", exc_info=True):
@@ -1131,7 +1131,7 @@ class GatewayStartupMixin:
                 logger.info("Recovered %s background process(es) from previous run", recovered)
         # Recover the turns the last process left marked (in flight, or reply not yet ledgered).
         # SKIP after a clean exit — the previous process already drained.
-        _clean_marker = _hermes_home / ".clean_shutdown"
+        _clean_marker = _akramcode_home / ".clean_shutdown"
         if _clean_marker.exists():
             logger.info("Previous gateway exited cleanly — skipping session suspension")
             try:
@@ -1383,7 +1383,7 @@ class GatewayStartupMixin:
                 self._startup_parked_platforms = True
                 logger.error(
                     "%d configured platform(s) failed to start and are parked (fix the reported error, "
-                    "then `hermes gateway restart`): %s. The gateway is DEGRADED — it serves the "
+                    "then `akramcode gateway restart`): %s. The gateway is DEGRADED — it serves the "
                     "remaining platform(s) with those unserved.",
                     len(startup_nonretryable_errors), "; ".join(startup_nonretryable_errors),
                 )
@@ -1436,7 +1436,7 @@ class GatewayStartupMixin:
 
     async def _start_post_connect_services(self, connected_count: int) -> None:
         """Room worker, heartbeat, gateway:startup hook, channel directory, /update notice."""
-        from gateway.run import _hermes_home
+        from gateway.run import _akramcode_home
         try:
             await self._ensure_hosted_room_worker()
         except Exception:
@@ -1464,7 +1464,7 @@ class GatewayStartupMixin:
         # Restarting after a /update still in progress: keep watching so we notify when it finishes.
         notified = await self._send_update_notification()
         if not notified and any(
-            (_hermes_home / name).exists()
+            (_akramcode_home / name).exists()
             for name in (".update_pending.json", ".update_pending.claimed.json")
         ):
             self._schedule_update_notification_watch()
@@ -1570,7 +1570,7 @@ class GatewayStartupMixin:
             await self._start_flush_runtime_status()
 
     async def _start_impl(self) -> bool:
-        logger.info("Starting Hermes Gateway...")
+        logger.info("Starting AkramCode Gateway...")
         self._start_install_faulthandler()
         await self._start_log_startup_environment()
         if await self._abort_startup_if_shutdown_requested():
@@ -1578,7 +1578,7 @@ class GatewayStartupMixin:
         if self._start_check_access_policy():
             return True
         await self._start_recover_previous_run()
-        # The gateway is a boot owner of the Nous free tier, beside `cmd_chat` and `hermes serve`: every
+        # The gateway is a boot owner of the Nous free tier, beside `cmd_chat` and `akramcode serve`: every
         # demand-time site (provider resolution, /login, the connector token) is a read that needs the
         # identity to already exist. Blocking here, before any adapter connects, is what keeps a fast
         # first DM from arriving with nothing to resolve. With the launch gate unset this is a local

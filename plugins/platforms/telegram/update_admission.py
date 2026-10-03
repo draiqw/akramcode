@@ -3,7 +3,7 @@
 Claims belong to the receiving adapter across Application rebuilds. Completed
 history is bounded and has no TTL in memory; dispatch and its PTB tasks pin active
 claims. Completed IDs are also written to a per-bot receipt file under the adapter's
-Hermes home, so a replacement adapter or a restarted gateway still drops updates that
+AkramCode home, so a replacement adapter or a restarted gateway still drops updates that
 Telegram redelivers because their getUpdates/webhook acknowledgement never landed.
 No cross-process coordination or exactly-once effects are promised.
 """
@@ -74,7 +74,7 @@ def _record_receipt(adapter, key: str) -> None:
 
 
 async def _flush_receipts(adapter) -> None:
-    from hermes_constants import mkdir_under_hermes_home
+    from akramcode_constants import mkdir_under_akramcode_home
 
     while adapter._update_receipts_dirty:
         bot_id = adapter._update_receipts_dirty.pop()
@@ -84,7 +84,7 @@ async def _flush_receipts(adapter) -> None:
                if key.startswith(prefix) and isinstance(ts, float) and ts > cutoff}
         path = _receipt_path(adapter, bot_id)
         try:
-            mkdir_under_hermes_home(path.parent)
+            mkdir_under_akramcode_home(path.parent)
             await asyncio.to_thread(atomic_json_write, path, {"update_ids": ids}, indent=None)
         except Exception:
             logger.warning("[Telegram] Failed to persist update receipts to %s", path, exc_info=True)

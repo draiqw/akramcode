@@ -19,14 +19,14 @@ def _tree(tmp_path, monkeypatch):
     project = tmp_path / "source"
     project.mkdir()
     (project / ".install_method").write_text("git", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(home / "tools"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_RUNTIME_DIR", str(home / "tools"))
     monkeypatch.delenv("PREFIX", raising=False)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     monkeypatch.setattr(doctor, "PROJECT_ROOT", project)
-    monkeypatch.setattr(doctor, "HERMES_HOME", home)
+    monkeypatch.setattr(doctor, "AKRAMCODE_HOME", home)
     monkeypatch.setattr(doctor, "DOCTOR_CHECKS", ((None, doctor_platform._check_command_installation),))
-    command = tmp_path / ".local" / "bin" / "hermes"
+    command = tmp_path / ".local" / "bin" / "akramcode"
     command.parent.mkdir(parents=True)
     monkeypatch.setenv("PATH", str(command.parent))
     return project, home, command
@@ -45,7 +45,7 @@ def _generation(project):
 def _pm_source(project, home):
     root = Path(__file__).resolve().parents[2]
     for relative in (
-        "hermes", "akram_core.hermes_bootstrap.py", "hermes_constants.py", "akramcode_cli/__init__.py",
+        "akramcode", "akram_core.akramcode_bootstrap.py", "akramcode_constants.py", "akramcode_cli/__init__.py",
         "pm/environments.py", "pm/filesystem.py", "akramcode_cli/runtime_state.py",
         "akramcode_cli/_early_recovery.py", "akramcode_cli/_parser.py",
         "akramcode_cli/venv_sync.py", "akramcode_cli/steward.py", "akramcode_cli/stderr_timestamp.py",
@@ -71,14 +71,14 @@ def test_pm_generation_does_not_require_a_legacy_console_script(tmp_path, monkey
     project, home, command = _tree(tmp_path, monkeypatch)
     selected = _generation(project)
     _pm_source(project, home)
-    assert _launchers.stage_launcher("hermes", project, command.parent) == command
+    assert _launchers.stage_launcher("akramcode", project, command.parent) == command
 
     doctor.run_doctor(Namespace(fix=True))
 
     out = capsys.readouterr().out
     assert "All checks passed" in out
     assert not (project / "venv").exists()
-    assert not (selected / "bin" / "hermes").exists()
+    assert not (selected / "bin" / "akramcode").exists()
     assert command.is_file() and not command.is_symlink()
 
 
@@ -89,7 +89,7 @@ def test_pm_fix_publishes_a_generation_aware_launcher(tmp_path, monkeypatch, cap
     _pm_source(project, home)
     selected = _generation(project)
     (site_packages(selected) / "selected_probe.py").write_text("VALUE = 'selected'\n", encoding="utf-8")
-    stale = project / "venv" / "bin" / "hermes"
+    stale = project / "venv" / "bin" / "akramcode"
     stale.parent.mkdir(parents=True)
     stale.write_text("#!/bin/sh\nexit 99\n", encoding="utf-8")
     stale.chmod(0o755)
@@ -168,12 +168,12 @@ def test_doctor_reports_selected_import_tree_not_interpreter_prefix(tmp_path, mo
 
 @pytest.mark.platforms("posix")
 @pytest.mark.parametrize("method, remedy", [
-    ("git", "hermes pm repair"), ("nix", "Nix"), ("docker", "docker pull"), ("apt", "pkg upgrade"),
+    ("git", "akramcode pm repair"), ("nix", "Nix"), ("docker", "docker pull"), ("apt", "pkg upgrade"),
 ])
 def test_remedies_and_launcher_repairs_respect_install_owner(tmp_path, monkeypatch, capsys, method, remedy):
     project, _home, command = _tree(tmp_path, monkeypatch)
     (project / ".install_method").write_text(method, encoding="utf-8")
-    entry = project / "venv" / "bin" / "hermes"
+    entry = project / "venv" / "bin" / "akramcode"
     entry.parent.mkdir(parents=True)
     entry.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
     entry.chmod(0o755)
@@ -191,4 +191,4 @@ def test_remedies_and_launcher_repairs_respect_install_owner(tmp_path, monkeypat
         assert command.is_symlink() and command.resolve() == entry
     else:
         assert not command.exists()
-        assert "hermes pm repair" not in out
+        assert "akramcode pm repair" not in out

@@ -1,4 +1,4 @@
-"""``hermes plugins remove``: tree + install-metadata removal kept consistent, config bookkeeping, and the
+"""``akramcode plugins remove``: tree + install-metadata removal kept consistent, config bookkeeping, and the
 dashboard/TUI remove path.
 
 Sibling of :mod:`akramcode_cli.plugins_cmd` (the facade re-exports the names other modules use and is
@@ -55,7 +55,7 @@ def cmd_remove(name: str) -> None:
     console.print(f"[red]✗[/red] Plugin [bold]{name}[/bold] removed from {plugins_dir}")
     if result.get("cleared_memory_provider"):
         console.print("[yellow]memory.provider pointed at this plugin and was reset; "
-                      "run `hermes memory setup` to pick another.[/yellow]")
+                      "run `akramcode memory setup` to pick another.[/yellow]")
     console.print()
 
 
@@ -81,7 +81,7 @@ def _remove_user_plugin(plugins_dir: Path, name: str, target: Path) -> dict[str,
 
 
 def dashboard_remove_user_plugin(name: str) -> dict[str, Any]:
-    """Delete a plugin tree under ``~/.hermes/plugins/`` only."""
+    """Delete a plugin tree under ``~/.akramcode/plugins/`` only."""
     plugins_dir = _pc()._plugins_dir()
     if any(n == name and src == "bundled" for n, _ver, _d, src, _path, _key in _pc()._discover_all_plugins()):
         return {"ok": False, "error": "Bundled plugins cannot be removed from the dashboard."}

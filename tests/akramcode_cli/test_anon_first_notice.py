@@ -50,8 +50,8 @@ class _NoticeCLI(CLIAgentSetupMixin):
 
 @pytest.fixture(autouse=True)
 def _isolated_store(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
-    monkeypatch.setenv("HERMES_GUEST_ONBOARDING", "1")
+    monkeypatch.setenv("AKRAMCODE_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
+    monkeypatch.setenv("AKRAMCODE_GUEST_ONBOARDING", "1")
 
 
 def test_notice_prints_once_after_identity_appears_and_persists_the_flag():
@@ -80,7 +80,7 @@ def test_signed_in_account_is_never_told_about_the_free_tier():
     with _auth_store_lock():
         store = _load_auth_store()
         store.setdefault("providers", {})["nous"] = {
-            "auth_method": "oauth", "access_token": _jwt(client_id="hermes-cli", account_tier="pro"),
+            "auth_method": "oauth", "access_token": _jwt(client_id="akramcode-cli", account_tier="pro"),
             "refresh_token": "rt", "expires_at": "2999-01-01T00:00:00+00:00"}
         _save_auth_store(store)
     cli = _NoticeCLI()

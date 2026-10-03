@@ -1,11 +1,11 @@
 """Phase-1 bullet 3 (#91277): the dashboard/Desktop READ the update receipt.
 
-The update receipt (written by every `hermes update` run since #91283,
+The update receipt (written by every `akramcode update` run since #91283,
 `latest.json` pointer) is the durable outcome record. These tests pin:
 
-- GET /api/hermes/update/receipt returns the full receipt + summary; 404
+- GET /api/akramcode/update/receipt returns the full receipt + summary; 404
   when none exists.
-- GET /api/actions/hermes-update/status attaches the receipt summary, and
+- GET /api/actions/akramcode-update/status attaches the receipt summary, and
   uses a finished receipt as the outcome when both in-memory registries AND
   the log marker are gone (dashboard restarted + log rotated).
 """
@@ -37,7 +37,7 @@ def _write_receipt(tmp_path: Path, monkeypatch, *, outcome="success") -> dict:
         "schema": 1,
         "started_at": "2026-08-23T07:00:00+00:00",
         "finished_at": "2026-08-23T07:03:20+00:00",
-        "argv": ["hermes", "update"],
+        "argv": ["akramcode", "update"],
         "pid": 12345,
         "outcome": outcome,
         "pre_update": {"sha": "a" * 40, "version": "0.20.4"},
@@ -63,7 +63,7 @@ class TestUpdateReceiptEndpoint:
     def test_receipt_endpoint_returns_full_receipt_and_summary(self, client, tmp_path, monkeypatch):
         receipt = _write_receipt(tmp_path, monkeypatch)
 
-        resp = client.get("/api/hermes/update/receipt")
+        resp = client.get("/api/akramcode/update/receipt")
 
         assert resp.status_code == 200
         data = resp.json()
@@ -81,7 +81,7 @@ class TestUpdateReceiptEndpoint:
 
         monkeypatch.setattr(ur, "_receipt_dir", lambda: tmp_path / "none")
 
-        resp = client.get("/api/hermes/update/receipt")
+        resp = client.get("/api/akramcode/update/receipt")
 
         assert resp.status_code == 404
 
@@ -100,7 +100,7 @@ class TestUpdateStatusReadsReceipt:
         _write_receipt(tmp_path, monkeypatch)
         self._clear_registries(monkeypatch, tmp_path)
 
-        resp = client.get("/api/actions/hermes-update/status")
+        resp = client.get("/api/actions/akramcode-update/status")
 
         assert resp.status_code == 200
         data = resp.json()
@@ -112,7 +112,7 @@ class TestUpdateStatusReadsReceipt:
         _write_receipt(tmp_path, monkeypatch, outcome="success")
         self._clear_registries(monkeypatch, tmp_path)
 
-        resp = client.get("/api/actions/hermes-update/status")
+        resp = client.get("/api/actions/akramcode-update/status")
 
         data = resp.json()
         assert data["running"] is False
@@ -122,7 +122,7 @@ class TestUpdateStatusReadsReceipt:
         _write_receipt(tmp_path, monkeypatch, outcome="partial")
         self._clear_registries(monkeypatch, tmp_path)
 
-        resp = client.get("/api/actions/hermes-update/status")
+        resp = client.get("/api/actions/akramcode-update/status")
 
         assert resp.json()["exit_code"] == 1
 
@@ -132,7 +132,7 @@ class TestUpdateStatusReadsReceipt:
         receipt = _write_receipt(tmp_path, monkeypatch, outcome="running")
         self._clear_registries(monkeypatch, tmp_path)
 
-        resp = client.get("/api/actions/hermes-update/status")
+        resp = client.get("/api/actions/akramcode-update/status")
 
         assert resp.json()["exit_code"] is None
 

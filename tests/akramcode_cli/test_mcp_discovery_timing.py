@@ -24,7 +24,7 @@ import types
 import pytest
 
 from akramcode_cli import mcp_startup
-from hermes_constants import hermes_home_key
+from akramcode_constants import akramcode_home_key
 
 @pytest.fixture(autouse=True)
 def _reset_mcp_startup_state():
@@ -161,7 +161,7 @@ def test_init_agent_forwards_single_query_flag(monkeypatch):
     """Single-query mode forwards single_query=True to the discovery wait."""
     import cli as cli_mod
 
-    cli = cli_mod.HermesCLI(compact=True)
+    cli = cli_mod.AkramCodeCLI(compact=True)
     cli._session_db = object()
     cli._resumed = False
     cli.conversation_history = []
@@ -190,7 +190,7 @@ def test_init_agent_defaults_to_interactive(monkeypatch):
     """Without _single_query_mode, the helper uses interactive (short) bound."""
     import cli as cli_mod
 
-    cli = cli_mod.HermesCLI(compact=True)
+    cli = cli_mod.AkramCodeCLI(compact=True)
     cli._session_db = object()
     cli._resumed = False
     cli.conversation_history = []
@@ -225,7 +225,7 @@ def test_wait_stays_bounded_when_discovery_is_slow(monkeypatch):
     stop = threading.Event()
     thread = threading.Thread(target=lambda: stop.wait(10), daemon=True)
     thread.start()
-    mcp_startup._mcp_discovery_thread[hermes_home_key()] = thread
+    mcp_startup._mcp_discovery_thread[akramcode_home_key()] = thread
 
     try:
         start = time.monotonic()

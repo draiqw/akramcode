@@ -13,7 +13,7 @@ from tools import bot_live_delivery as mailbox
 
 @pytest.fixture
 def owner(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     db = SessionDB(db_path=tmp_path / "state.db")
     db.create_session(session_id="chat", source="tui")
     db.set_session_title("chat", "Bot Chat")
@@ -127,7 +127,7 @@ def test_named_bot_chat_uses_recipient_policy_not_launch_home(owner, monkeypatch
     launch.mkdir()
     policy(home, owner_suppressed)
     policy(launch, not owner_suppressed)
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(launch))
     monkeypatch.setattr("akramcode_cli.profiles.get_profile_dir", lambda name: home)
     job = {"id": "job", "execution_id": "recipient-run"}
     result = delivery._deliver_to_bot_chat(job, "diagnostic", "recipient", for_failure=True)

@@ -1,6 +1,6 @@
 """``nous.anthropic_wire`` selects the Portal route for ``anthropic/*``: ``chat`` (default) rides
 /v1/chat/completions, ``native`` rides /v1/messages. Read through the real config loader against a
-temp HERMES_HOME (the loader is keyed on config path + mtime, so a fresh home is a fresh read), and
+temp AKRAMCODE_HOME (the loader is keyed on config path + mtime, so a fresh home is a fresh read), and
 through ``resolve_runtime_provider`` so the api_mode a live agent gets is what is asserted."""
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ PORTAL = "https://inference-api.nousresearch.com/v1"
 
 
 def _cfg(tmp_path, body: str, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     (tmp_path / "config.yaml").write_text(body, encoding="utf-8")
 
 

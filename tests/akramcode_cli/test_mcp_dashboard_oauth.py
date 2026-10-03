@@ -70,7 +70,7 @@ def test_hosted_callback_bypasses_gated_cookie_auth(monkeypatch):
         flow_id="flow-gated",
         server_name="reports",
         profile=None,
-        hermes_home="/tmp/hermes-test",
+        akramcode_home="/tmp/akramcode-test",
         redirect_uri="https://agent.example/api/mcp/oauth/callback/reports",
     )
     asyncio.run(
@@ -101,7 +101,7 @@ def test_hosted_auth_allows_same_server_name_in_different_profiles(tmp_path, mon
         flow_id="existing-default",
         server_name="reports",
         profile=None,
-        hermes_home=str(tmp_path / "default"),
+        akramcode_home=str(tmp_path / "default"),
         redirect_uri="https://agent.example/callback/existing",
     )
     _web_server_mcp._mcp_oauth_flows[existing.flow_id] = existing
@@ -128,7 +128,7 @@ def test_flow_status_does_not_expose_authorization_code():
         flow_id="flow-status",
         server_name="reports",
         profile=None,
-        hermes_home="/tmp/hermes-test",
+        akramcode_home="/tmp/akramcode-test",
         redirect_uri="https://agent.example/api/mcp/oauth/callback/flow-status",
     )
     flow.authorization_url = "https://idp.example/authorize"
@@ -153,7 +153,7 @@ def test_cancel_marks_the_flow_terminal_for_a_retrying_worker():
         flow_id="flow-cancel-retry",
         server_name="reports",
         profile=None,
-        hermes_home="/tmp/hermes-test",
+        akramcode_home="/tmp/akramcode-test",
         redirect_uri="https://agent.example/api/mcp/oauth/callback/reports",
     )
     asyncio.run(flow.publish_authorization_url("https://idp.example/authorize?state=first"))

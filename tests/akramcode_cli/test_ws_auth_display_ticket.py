@@ -30,8 +30,8 @@ def _ws(ticket: str):
 
 def test_display_ticket_is_refused_as_a_gateway_login(gated_state):
     ticket = mint_ticket(user_id="display:v", provider="bot-desktop",
-                         extra={"hermes_home": "/srv/hermes/bot-a", "viewer_id": "v"})
+                         extra={"akramcode_home": "/srv/akramcode/bot-a", "viewer_id": "v"})
     ws = _ws(ticket)
     reason, _credential = _web_server_chat._ws_auth_reason(ws)
     assert reason == "ticket_invalid"
-    assert not hasattr(ws, "_hermes_auth_identity")
+    assert not hasattr(ws, "_akramcode_auth_identity")

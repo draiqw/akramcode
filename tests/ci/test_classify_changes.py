@@ -303,8 +303,8 @@ CASES = {
         ["scripts/install.sh"],
         _lanes(python=True, bootstrap=True, python_prod=True, e2e_upgrade=True, e2e_desktop_update=True),
     ),
-    "setup-hermes.sh → bootstrap lane": (
-        ["setup-hermes.sh"],
+    "setup-akramcode.sh → bootstrap lane": (
+        ["setup-akramcode.sh"],
         _lanes(python=True, bootstrap=True, python_prod=True, e2e_upgrade=True),
     ),
     "tauri installer source → bootstrap + rust": (
@@ -407,7 +407,7 @@ _REPO = Path(__file__).resolve().parents[2]
 
 
 def _yaml(rel: str) -> dict:
-    yaml = pytest.importorskip("akram_core.hermes_yaml")
+    yaml = pytest.importorskip("akram_core.akramcode_yaml")
     return yaml.safe_load((_REPO / rel).read_text(encoding="utf-8"))
 
 
@@ -478,20 +478,20 @@ def _write_event(tmp_path, number: int | None = 88442) -> Path:
 
 def test_pull_request_changed_files_skips_non_pr_events(monkeypatch):
     monkeypatch.setenv("EVENT_NAME", "push")
-    monkeypatch.setenv("REPO", "NousResearch/hermes-agent")
+    monkeypatch.setenv("REPO", "NousResearch/akramcode-agent")
     assert pull_request_changed_files() == []
 
 
 def test_pull_request_changed_files_skips_without_pr_number(tmp_path, monkeypatch):
     monkeypatch.setenv("EVENT_NAME", "pull_request")
-    monkeypatch.setenv("REPO", "NousResearch/hermes-agent")
+    monkeypatch.setenv("REPO", "NousResearch/akramcode-agent")
     monkeypatch.setenv("GITHUB_EVENT_PATH", str(_write_event(tmp_path, number=None)))
     assert pull_request_changed_files() == []
 
 
 def test_pull_request_changed_files_parses_gh_output(tmp_path, monkeypatch):
     monkeypatch.setenv("EVENT_NAME", "pull_request")
-    monkeypatch.setenv("REPO", "NousResearch/hermes-agent")
+    monkeypatch.setenv("REPO", "NousResearch/akramcode-agent")
     monkeypatch.setenv("GITHUB_EVENT_PATH", str(_write_event(tmp_path)))
 
     def fake_run(*args, **kwargs):
@@ -511,7 +511,7 @@ def test_pull_request_changed_files_parses_gh_output(tmp_path, monkeypatch):
 
 def test_pull_request_changed_files_returns_empty_when_gh_fails(tmp_path, monkeypatch):
     monkeypatch.setenv("EVENT_NAME", "pull_request")
-    monkeypatch.setenv("REPO", "NousResearch/hermes-agent")
+    monkeypatch.setenv("REPO", "NousResearch/akramcode-agent")
     monkeypatch.setenv("GITHUB_EVENT_PATH", str(_write_event(tmp_path)))
 
     def fake_run(*args, **kwargs):
@@ -563,7 +563,7 @@ def test_pull_request_labels_prefers_the_live_labels_over_the_replayed_event(tmp
     event = tmp_path / "event.json"
     event.write_text(json.dumps({"pull_request": {"number": 7, "labels": []}}), encoding="utf-8")
     monkeypatch.setenv("EVENT_NAME", "pull_request")
-    monkeypatch.setenv("REPO", "NousResearch/hermes-agent")
+    monkeypatch.setenv("REPO", "NousResearch/akramcode-agent")
     monkeypatch.setenv("GITHUB_EVENT_PATH", str(event))
 
     live = subprocess.CompletedProcess([], 0, stdout="run-e2e\n", stderr="")

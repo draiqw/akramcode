@@ -1,10 +1,10 @@
 """Tests for _refresh_bootstrap_cache_scripts (the stale-installer-cache fix).
 
-Pre-#67193 hermes-setup binaries reuse ``bootstrap-cache/install-<branch>.ps1``
+Pre-#67193 akramcode-setup binaries reuse ``bootstrap-cache/install-<branch>.ps1``
 forever without re-downloading, so a script cached at install time executes
 months-stale code on every GUI update/repair (the 2026-08-09 incident: a
 June 4 cached venv stage without the #81327 tree-kill sweep died on
-``Access denied``). Those binaries have no self-update path, so ``hermes
+``Access denied``). Those binaries have no self-update path, so ``akramcode
 update`` now rewrites the mutable-ref cache entries from the fresh checkout —
 the stale binary's unconditional reuse then always executes current code.
 
@@ -28,8 +28,8 @@ BOM = b"\xef\xbb\xbf"
 
 
 def _setup(tmp_path, *, ps1=b"WRITE-HOST current\n", sh=b"echo current\n"):
-    home = tmp_path / "hermes_home"
-    root = tmp_path / "hermes-agent"
+    home = tmp_path / "akramcode_home"
+    root = tmp_path / "akramcode-agent"
     (root / "scripts").mkdir(parents=True)
     (home / "bootstrap-cache").mkdir(parents=True)
     if ps1 is not None:
@@ -40,7 +40,7 @@ def _setup(tmp_path, *, ps1=b"WRITE-HOST current\n", sh=b"echo current\n"):
 
 
 def _run(home, root, branch="main"):
-    with patch.object(cli_main, "get_hermes_home", return_value=str(home)), patch.object(
+    with patch.object(cli_main, "get_akramcode_home", return_value=str(home)), patch.object(
         cli_main, "PROJECT_ROOT", root
     ):
         cli_main._refresh_bootstrap_cache_scripts(branch)
@@ -147,5 +147,5 @@ def test_missing_sources_is_noop(tmp_path):
 
 def test_never_raises_on_io_error(tmp_path):
     home, root = _setup(tmp_path)
-    with patch.object(cli_main, "get_hermes_home", side_effect=OSError("boom")):
+    with patch.object(cli_main, "get_akramcode_home", side_effect=OSError("boom")):
         cli_main._refresh_bootstrap_cache_scripts()  # must not raise

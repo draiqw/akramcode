@@ -9,7 +9,7 @@ import time
 
 import pytest
 
-from tools.code_execution_tool import generate_hermes_tools_module
+from tools.code_execution_tool import generate_akramcode_tools_module
 from tools.code_execution_rpc import _rpc_poll_loop
 
 
@@ -38,15 +38,15 @@ def test_generated_file_rpc_kwargs_correlation_and_authority(tmp_path, monkeypat
     assert shell
     rpc = tmp_path / "rpc with spaces"
     rpc.mkdir()
-    monkeypatch.delenv("HERMES_RPC_DIR", raising=False)
+    monkeypatch.delenv("AKRAMCODE_RPC_DIR", raising=False)
     monkeypatch.setattr("tempfile.gettempdir", lambda: str(tmp_path))
     namespace = {}
-    exec(generate_hermes_tools_module([], transport="file"), namespace)
-    assert namespace["_RPC_DIR"] == str(tmp_path / "hermes_rpc")
+    exec(generate_akramcode_tools_module([], transport="file"), namespace)
+    assert namespace["_RPC_DIR"] == str(tmp_path / "akramcode_rpc")
     assert "terminal" not in namespace
-    monkeypatch.setenv("HERMES_RPC_DIR", str(rpc))
-    monkeypatch.setenv("HERMES_RPC_TOKEN", "right-token")
-    exec(generate_hermes_tools_module(list(CALLS), transport="file"), namespace)
+    monkeypatch.setenv("AKRAMCODE_RPC_DIR", str(rpc))
+    monkeypatch.setenv("AKRAMCODE_RPC_TOKEN", "right-token")
+    exec(generate_akramcode_tools_module(list(CALLS), transport="file"), namespace)
     seen, log, counter = [], [], [0]
 
     def dispatch(name, args, **kwargs):

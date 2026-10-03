@@ -2,10 +2,10 @@
 
 A Desktop-driven update that fails at the Electron rebuild (updater exit 6)
 stores its root cause in exactly two files: ``logs/update.log`` (full
-stdout/stderr mirror of ``hermes update``) and
+stdout/stderr mirror of ``akramcode update``) and
 ``logs/desktop-update-handoff.log`` (hand-off stages incl. the rebuild
 retry). The updater's failure message and the Desktop error box both point
-users at ``hermes debug share``, yet the share captured neither file, so
+users at ``akramcode debug share``, yet the share captured neither file, so
 update-failure reports arrived with zero root-cause signal (#100874).
 
 These tests fail against the pre-fix capture set (five logs only).
@@ -16,7 +16,7 @@ import pytest
 # Lines the writers really produce (main.py _UpdateOutputStream mirror and
 # scripts/desktop-update/windows.ps1 Write-HandoffLog / posix.sh log()).
 UPDATE_LOG_BODY = (
-    "=== hermes update started 2026-09-02T03:21:09 ===\n"
+    "=== akramcode update started 2026-09-02T03:21:09 ===\n"
     "→ Fetching updates...\n"
     "→ Building desktop packaged app...\n"
     "✗ Desktop GUI build failed\n"
@@ -29,8 +29,8 @@ HANDOFF_LOG_BODY = (
 
 @pytest.fixture
 def home_with_update_logs(tmp_path, monkeypatch):
-    """Isolated HERMES_HOME whose logs directory holds the update pair."""
-    home = tmp_path / "hermes_test_home"
+    """Isolated AKRAMCODE_HOME whose logs directory holds the update pair."""
+    home = tmp_path / "akramcode_test_home"
     logs = home / "logs"
     logs.mkdir(parents=True)
     (logs / "agent.log").write_text(
@@ -38,19 +38,19 @@ def home_with_update_logs(tmp_path, monkeypatch):
     )
     (logs / "update.log").write_text(UPDATE_LOG_BODY)
     (logs / "desktop-update-handoff.log").write_text(HANDOFF_LOG_BODY)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     return home
 
 
 @pytest.fixture
 def home_without_update_logs(tmp_path, monkeypatch):
-    """Isolated HERMES_HOME with only the classic five logs present."""
-    home = tmp_path / "hermes_test_home"
+    """Isolated AKRAMCODE_HOME with only the classic five logs present."""
+    home = tmp_path / "akramcode_test_home"
     logs = home / "logs"
     logs.mkdir(parents=True)
     for name in ("agent.log", "errors.log", "gateway.log", "gui.log", "desktop.log"):
         (logs / name).write_text("2026-09-02 03:21:00 INFO x: one line\n")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     return home
 
 
@@ -183,7 +183,7 @@ class TestFullLogUploadLabels:
 
 
 class TestLogsRegistry:
-    """LOG_FILES gains readable keys for files `hermes logs list` already shows."""
+    """LOG_FILES gains readable keys for files `akramcode logs list` already shows."""
 
     def test_update_and_handoff_keys_resolve_real_filenames(self):
         from akramcode_cli.logs import LOG_FILES
@@ -191,8 +191,8 @@ class TestLogsRegistry:
         assert LOG_FILES.get("update") == "update.log"
         assert LOG_FILES.get("handoff") == "desktop-update-handoff.log"
 
-    def test_tail_log_reads_update_log_from_hermes_home(self, home_with_update_logs):
-        """End-to-end: `hermes logs update` resolves and prints the file."""
+    def test_tail_log_reads_update_log_from_akramcode_home(self, home_with_update_logs):
+        """End-to-end: `akramcode logs update` resolves and prints the file."""
         from akramcode_cli import logs as logs_mod
 
         logs_mod.tail_log("update", num_lines=10)

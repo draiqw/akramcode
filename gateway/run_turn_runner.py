@@ -219,7 +219,7 @@ class TurnRunner:
     def _progress_onboarding_hint(self, kwargs: dict) -> None:
         """First-touch onboarding: the first time a tool exceeds _LONG_TOOL_THRESHOLD_S while
         streaming every tool (progress_mode == "all"), append a one-time /verbose hint."""
-        from gateway.run import _hermes_home, _load_gateway_config
+        from gateway.run import _akramcode_home, _load_gateway_config
         ctx = self._ctx
         try:
             if (kwargs.get("duration") or 0) >= ctx._LONG_TOOL_THRESHOLD_S and ctx.progress_mode == "all":
@@ -229,7 +229,7 @@ class TurnRunner:
                 if gate_on and not is_seen(cfg, TOOL_PROGRESS_FLAG):
                     ctx.long_tool_hint_fired[0] = True
                     ctx.progress_queue.put(tool_progress_hint_gateway())
-                    mark_seen(_hermes_home / "config.yaml", TOOL_PROGRESS_FLAG)
+                    mark_seen(_akramcode_home / "config.yaml", TOOL_PROGRESS_FLAG)
         except Exception as err:
             logger.debug("tool-progress onboarding hint failed: %s", err)
 
@@ -1030,7 +1030,7 @@ class TurnRunner:
         """gateway.platforms.<plat>.skip_context_files: messaging platforms may opt out of
         filesystem-heavy context-file discovery (SOUL.md, AGENTS.md, .cursorrules)."""
         platforms_cfg = (self._ctx.user_config.get("gateway") or {}).get("platforms") or {}
-        # ``hermes gateway setup`` writes ``gateway.platforms`` as a LIST of enabled platform names,
+        # ``akramcode gateway setup`` writes ``gateway.platforms`` as a LIST of enabled platform names,
         # not a dict; treat any non-dict shape as "no per-platform overrides" rather than crashing.
         if not isinstance(platforms_cfg, dict):
             return False
@@ -1911,7 +1911,7 @@ class TurnRunner:
 
         The turn message lives on the shared TurnContext (``ctx.message``) so ``_run_agent_inner`` sees
         every rebind. session_key propagates via contextvars (_set_session_env / set_current_session_key)
-        — never os.environ["HERMES_SESSION_KEY"], which would misroute approvals across sessions.
+        — never os.environ["AKRAMCODE_SESSION_KEY"], which would misroute approvals across sessions.
         """
         from gateway.run import _current_max_iterations, _normalize_empty_agent_response, _sanitize_gateway_final_response
         ctx = self._ctx
@@ -1919,13 +1919,13 @@ class TurnRunner:
         # Platform.LOCAL ("local") maps to the "cli" hint key the agent understands.
         # session_key is propagated via contextvars in _set_session_env() (_SESSION_KEY) and via
         # set_current_session_key() (_approval_session_key) below — both concurrency-safe and inherited by
-        # tool worker threads. We deliberately do NOT write os.environ["HERMES_SESSION_KEY"] here:
+        # tool worker threads. We deliberately do NOT write os.environ["AKRAMCODE_SESSION_KEY"] here:
         # os.environ is process-global, so concurrent gateway sessions (e.g. two Discord threads) would
         # clobber each other's value, and a tool thread whose contextvar is unset would fall back to
         # os.environ and read the wrong session key — misrouting command-approval prompts to the wrong
         # thread (#24100). The non-gateway surfaces don't depend on this write: CLI and cron bind the
         # session via contextvars (set_current_session_key / session context), and only the TUI slash-worker
-        # *subprocess* exports HERMES_SESSION_KEY (from its own --session-key argv, a separate process) — so
+        # *subprocess* exports AKRAMCODE_SESSION_KEY (from its own --session-key argv, a separate process) — so
         # removing this in-process gateway write does not affect any of them.
         platform_key = "cli" if ctx.source.platform == Platform.LOCAL else ctx.source.platform.value
         combined_ephemeral = self._combined_ephemeral_prompt()

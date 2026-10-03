@@ -16,15 +16,15 @@ import pytest
 
 @pytest.fixture()
 def isolated_kanban_home_with_profiles(monkeypatch):
-    """Spin up a fresh HERMES_HOME with kanban DB + alpha/beta profiles."""
+    """Spin up a fresh AKRAMCODE_HOME with kanban DB + alpha/beta profiles."""
     test_home = tempfile.mkdtemp(prefix="kanban_per_profile_cap_test_")
     for prof in ("alpha", "beta", "default"):
         os.makedirs(os.path.join(test_home, "profiles", prof), exist_ok=True)
         with open(os.path.join(test_home, "profiles", prof, "config.yaml"), "w") as fh:
             fh.write("{}\n")  # identity marker: a bare dir is not a profile
-    monkeypatch.setenv("HERMES_HOME", test_home)
+    monkeypatch.setenv("AKRAMCODE_HOME", test_home)
     for mod in list(sys.modules.keys()):
-        if mod.startswith("akramcode_cli") or mod.startswith("akramcode_state") or mod == "hermes_constants":
+        if mod.startswith("akramcode_cli") or mod.startswith("akramcode_state") or mod == "akramcode_constants":
             del sys.modules[mod]
     from akramcode_cli import kanban_db
     yield kanban_db

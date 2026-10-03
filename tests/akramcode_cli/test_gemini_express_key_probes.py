@@ -1,7 +1,7 @@
 """Key-validation surfaces never reroute a key by its prefix, matching chat (#115306).
 
 Google issues ``AQ.`` keys for both Google AI Studio and Vertex express mode, so a key prefix can
-no longer pick the surface: ``hermes doctor`` and the dashboard key test probe the default Studio
+no longer pick the surface: ``akramcode doctor`` and the dashboard key test probe the default Studio
 host, and an express key reaches aiplatform only through an explicitly configured base URL.
 """
 

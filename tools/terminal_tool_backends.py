@@ -25,7 +25,7 @@ from tools.tool_backend_helpers import (has_direct_modal_credentials, managed_no
 logger = logging.getLogger("tools.terminal_tool")
 
 # Human reason for the most recent failed requirements check (None after a passing one). The CLI
-# startup notice and `hermes doctor` read it through terminal_backend_unavailable_reason() so the user
+# startup notice and `akramcode doctor` read it through terminal_backend_unavailable_reason() so the user
 # hears WHY the terminal tool is missing instead of discovering it on first use.
 _last_unavailable_reason: Optional[str] = None
 
@@ -136,7 +136,7 @@ def _build_local_env(*, cwd, timeout, **_):
 def _build_docker_env(*, image, cwd, timeout, cc, task_id, host_cwd, **_):
     from tools.terminal_tool import (_docker_session_isolation_enabled, _has_isolation_overrides,
                                      _maybe_reap_docker_orphans)
-    # One-shot reaper for labeled containers orphaned by prior Hermes processes that died before
+    # One-shot reaper for labeled containers orphaned by prior AkramCode processes that died before
     # atexit (SIGKILL / OOM / closed terminal); ``terminal.docker_orphan_reaper: false`` disables it.
     _maybe_reap_docker_orphans(cc)
     # A session-keyed container must not outlive its session, so cross-process reuse/persist is
@@ -241,7 +241,7 @@ def _build_plugin_env(*, env_type, image, cwd, timeout, cc, task_id, **_):
         # Stamp the backend name so path-resolution and progress surfaces can identify plugin
         # backends without class-name sniffing. Test doubles may reject attributes.
         try:
-            env_obj._hermes_backend_name = provider.name.strip().lower()
+            env_obj._akramcode_backend_name = provider.name.strip().lower()
         except AttributeError:
             pass
         return env_obj
@@ -300,7 +300,7 @@ def _check_vercel(config: Dict[str, Any]) -> bool:
                        "Use the default shared setting (51200 MB).")
     if importlib.util.find_spec("vercel") is None:
 
-        return _reject("vercel is required for the Vercel Sandbox terminal backend. Run hermes setup terminal and select Vercel Sandbox.")
+        return _reject("vercel is required for the Vercel Sandbox terminal backend. Run akramcode setup terminal and select Vercel Sandbox.")
     from agent.secret_scope import get_secret
     if get_secret("VERCEL_OIDC_TOKEN"):
         return True
@@ -327,7 +327,7 @@ def _ssh_pre(config: Dict[str, Any]) -> bool:
     if config.get("ssh_host") and config.get("ssh_user"):
         return True
     return _reject("the SSH host and user are not configured (TERMINAL_SSH_HOST / TERMINAL_SSH_USER); "
-                   "run `hermes setup terminal` to enter them or pick the 'local' backend")
+                   "run `akramcode setup terminal` to enter them or pick the 'local' backend")
 
 
 def _daytona_post(config: Dict[str, Any]) -> bool:
@@ -351,7 +351,7 @@ _BACKEND_SPECS: Dict[str, Dict[str, Any]] = {
     "singularity": {"binary": (lambda: shutil.which("apptainer") or shutil.which("singularity"), "--version", None)},
     "ssh": {"pre": _ssh_pre},
     "modal": {"pre": _modal_pre,
-              "module": ("modal", "modal is required for direct modal terminal backend. Run hermes setup terminal and select Modal.")},
+              "module": ("modal", "modal is required for direct modal terminal backend. Run akramcode setup terminal and select Modal.")},
     "vercel_sandbox": {"pre": _check_vercel},
     "opensandbox": {
         "pre": _opensandbox_pre,

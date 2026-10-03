@@ -430,9 +430,9 @@ class TestOwnershipIntegration:
         from agent import auxiliary_client as auxiliary_mod
         from akramcode_cli import config as config_mod
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text(
+        akramcode_home = tmp_path / ".akramcode"
+        akramcode_home.mkdir()
+        (akramcode_home / "config.yaml").write_text(
             """
 auxiliary:
   classifier:
@@ -443,7 +443,7 @@ auxiliary:
 """,
             encoding="utf-8",
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
         monkeypatch.setattr(config_mod, "_LOAD_CONFIG_CACHE", {})
         monkeypatch.setattr(config_mod, "_RAW_CONFIG_CACHE", {})
 
@@ -513,9 +513,9 @@ auxiliary:
     def test_sync_fallback_reports_the_successful_route(self, tmp_path, monkeypatch):
         from akramcode_cli import config as config_mod
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text(
+        akramcode_home = tmp_path / ".akramcode"
+        akramcode_home.mkdir()
+        (akramcode_home / "config.yaml").write_text(
             """
 auxiliary:
   classifier:
@@ -527,7 +527,7 @@ auxiliary:
 """,
             encoding="utf-8",
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
         monkeypatch.setattr(config_mod, "_LOAD_CONFIG_CACHE", {})
         monkeypatch.setattr(config_mod, "_RAW_CONFIG_CACHE", {})
         _set_registry(monkeypatch, [{"key": "classifier", "plugin": "my-plugin"}])
@@ -561,9 +561,9 @@ auxiliary:
     def test_async_fallback_reports_the_successful_route(self, tmp_path, monkeypatch):
         from akramcode_cli import config as config_mod
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        (hermes_home / "config.yaml").write_text(
+        akramcode_home = tmp_path / ".akramcode"
+        akramcode_home.mkdir()
+        (akramcode_home / "config.yaml").write_text(
             """
 auxiliary:
   classifier:
@@ -575,7 +575,7 @@ auxiliary:
 """,
             encoding="utf-8",
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
         monkeypatch.setattr(config_mod, "_LOAD_CONFIG_CACHE", {})
         monkeypatch.setattr(config_mod, "_RAW_CONFIG_CACHE", {})
         _set_registry(monkeypatch, [{"key": "classifier", "plugin": "my-plugin"}])

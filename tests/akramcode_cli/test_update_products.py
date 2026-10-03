@@ -23,8 +23,8 @@ from akramcode_cli import main, update_cmd
 def test_command_reports_outcome_and_releases_real_lock(tmp_path, monkeypatch, failure, exception, code, reexec):
     from akramcode_cli import update_lock, update_receipt
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.setenv("HERMES_UPDATE_REEXEC", "1" if reexec else "")
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_UPDATE_REEXEC", "1" if reexec else "")
     monkeypatch.setattr("os._exit", lambda *_: pytest.fail("normal cleanup bypassed"))
     monkeypatch.setattr(main, "_update_preflight_handled", lambda args: False)
     monkeypatch.setattr(main, "_install_hangup_protection", lambda **kw: None)

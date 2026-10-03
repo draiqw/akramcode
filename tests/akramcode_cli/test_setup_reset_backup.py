@@ -1,7 +1,7 @@
 """Ordering guarantees for the setup wizard's config.yaml backup (#3522).
 
 The wizard copies ``config.yaml`` into ``backups/config/`` so a user
-can recover values setup overwrote. ``hermes setup --reset`` replaces that same
+can recover values setup overwrote. ``akramcode setup --reset`` replaces that same
 file with ``DEFAULT_CONFIG``, so the copy is only useful if it is taken *before*
 the reset runs — and the user has to be told where it landed even when --reset
 exits the wizard early.
@@ -62,7 +62,7 @@ class TestResetBackupOrdering:
         """
         from akramcode_cli.setup import run_setup_wizard
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
         config_path = _write_user_config(tmp_path)
 
         run_setup_wizard(_make_setup_args(non_interactive=True, reset=True))
@@ -85,7 +85,7 @@ class TestResetBackupOrdering:
         """--reset can exit early, so it must surface the backup path itself."""
         from akramcode_cli.setup import run_setup_wizard
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
         _write_user_config(tmp_path)
 
         run_setup_wizard(_make_setup_args(non_interactive=True, reset=True))

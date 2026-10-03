@@ -6,7 +6,7 @@ author: Anthropic (adapted by Nous Research)
 license: Apache-2.0
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
+  akramcode:
     tags: [finance, valuation, comps, excel, openpyxl, modeling, investment-banking]
     related_skills: [excel-author, pptx-author, dcf-model, lbo-model]
 ---
@@ -359,7 +359,7 @@ If you have more than 15 metrics, you're probably including noise. Edit ruthless
 
 ### Sanity Checks
 - **Margin test**: Gross margin > EBITDA margin > Net margin (always true by definition)
-- **Multiple reasonableness**: 
+- **Multiple reasonableness**:
   - EV/Revenue: typically 0.5-20x (varies widely by industry)
   - EV/EBITDA: typically 8-25x (fairly consistent across industries)
   - P/E: typically 10-50x (depends on growth rate)
@@ -542,18 +542,18 @@ Add if relevant: Asset Turnover, Inventory Turns, Backlog
 ## Section 10: Red Flags & Warning Signs
 
 ### Data Quality Issues
-🚩 Inconsistent time periods (mixing quarterly and annual)  
-🚩 Missing data without explanation  
+🚩 Inconsistent time periods (mixing quarterly and annual)
+🚩 Missing data without explanation
 🚩 Significant differences between data sources (>10% variance)
 
 ### Valuation Red Flags
-🚩 Negative EBITDA companies being valued on EBITDA multiples (use revenue multiples instead)  
-🚩 P/E ratios >100x without hypergrowth story  
+🚩 Negative EBITDA companies being valued on EBITDA multiples (use revenue multiples instead)
+🚩 P/E ratios >100x without hypergrowth story
 🚩 Margins that don't make sense for the industry
 
 ### Comparability Issues
-🚩 Different fiscal year ends (causes timing problems)  
-🚩ixing pure-play and conglomerates  
+🚩 Different fiscal year ends (causes timing problems)
+🚩ixing pure-play and conglomerates
 🚩 Materially different business models labeled as "comps"
 
 **When in doubt, exclude the company.** Better to have 3 perfect comps than 6 questionable ones.
@@ -647,9 +647,9 @@ The best comp analyses evolve with each iteration. Save templates, learn from fe
 
 ## Data sources — MCP first, web fallback
 
-Many passages below say "use the S&P Kensho MCP / Daloopa MCP / FactSet MCP". Those are commercial financial-data MCPs from the original Cowork plugin context. In Hermes:
+Many passages below say "use the S&P Kensho MCP / Daloopa MCP / FactSet MCP". Those are commercial financial-data MCPs from the original Cowork plugin context. In AkramCode:
 
-- **If you have any structured financial-data MCP configured** (Hermes supports MCP — see `native-mcp` skill), prefer it for point-in-time comps, precedent transactions, and filings.
+- **If you have any structured financial-data MCP configured** (AkramCode supports MCP — see `native-mcp` skill), prefer it for point-in-time comps, precedent transactions, and filings.
 - **Otherwise**, fall back to:
   - `web_search` / `web_extract` against SEC EDGAR (`https://www.sec.gov/cgi-bin/browse-edgar`) for US filings
   - Company IR pages for press releases, earnings decks

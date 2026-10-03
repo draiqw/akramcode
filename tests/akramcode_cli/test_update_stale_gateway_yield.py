@@ -15,13 +15,13 @@ import pytest
 @pytest.fixture
 def cron_home(tmp_path, monkeypatch):
     home = tmp_path / "home"
-    (home / ".hermes").mkdir(parents=True)
+    (home / ".akramcode").mkdir(parents=True)
     monkeypatch.setenv("HOME", str(home))
-    monkeypatch.setenv("HERMES_HOME", str(home / ".hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home / ".akramcode"))
     for name in list(sys.modules):
-        if name.split(".")[0] in ("cron", "gateway", "akramcode_cli", "hermes_constants"):
+        if name.split(".")[0] in ("cron", "gateway", "akramcode_cli", "akramcode_constants"):
             monkeypatch.delitem(sys.modules, name, raising=False)
-    return home / ".hermes"
+    return home / ".akramcode"
 
 
 def _status_block(pids):

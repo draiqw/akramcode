@@ -14,7 +14,7 @@ from akramcode_cli.config import load_config
 
 def _load(tmp_path, model_section: str):
     (tmp_path / "config.yaml").write_text(f"model:\n{model_section}", encoding="utf-8")
-    with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}):
+    with patch.dict(os.environ, {"AKRAMCODE_HOME": str(tmp_path)}):
         return load_config()
 
 

@@ -12,7 +12,7 @@ def _profile(root, name, *, identity=True):
 
 
 def test_legacy_models_move_into_the_machine_dir_without_clobbering(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     new_dir = bootstrap.models_dir()
     new_dir.mkdir(parents=True)
     (new_dir / "shared.gguf").write_bytes(b"current")
@@ -43,7 +43,7 @@ def test_boot_and_status_both_adopt_legacy_models(tmp_path, monkeypatch):
     from akramcode_cli.local_runtime import binaries
     from akramcode_cli.web_routers import local_models as lm
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     monkeypatch.setattr(binaries, "installed_engine", lambda backend="auto": None)
     work = _profile(tmp_path, "work")
 

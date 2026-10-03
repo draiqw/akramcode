@@ -167,10 +167,10 @@ def cmd_channel(args) -> None:
         if args.channel:
             bundle_env = parse_assignments(args.bundle_env, args.bundle_unset)
             if args.channel_specific_data_dirs:
-                bundle_env["HERMES_DATA_DIR_SUFFIX"] = f"-channel-build-{args.channel}"
-                bundle_env["HERMES_HOME"] = None
-                bundle_env["HERMES_DESKTOP_USER_DATA_DIR"] = None
-                bundle_env["HERMES_SHARED_AUTH_DIR"] = None
+                bundle_env["AKRAMCODE_DATA_DIR_SUFFIX"] = f"-channel-build-{args.channel}"
+                bundle_env["AKRAMCODE_HOME"] = None
+                bundle_env["AKRAMCODE_DESKTOP_USER_DATA_DIR"] = None
+                bundle_env["AKRAMCODE_SHARED_AUTH_DIR"] = None
 
             result = prepare_build(
                 name=args.channel,
@@ -246,14 +246,14 @@ def add_arguments(parser) -> None:
     parser.add_argument(
         "--channel-specific-data-dirs",
         action="store_true",
-        help="Set HERMES_HOME et al to a directory specific for this channel",
+        help="Set AKRAMCODE_HOME et al to a directory specific for this channel",
     )
     parser.add_argument(
         "--branding",
         choices=BRANDINGS,
         default="preview",
         help="App name, icon and package ID for --channel: 'stable' installs as the "
-        "regular Hermes app (fixed when the channel is created), 'preview' as "
+        "regular AkramCode app (fixed when the channel is created), 'preview' as "
         "its own side-by-side app",
     )
     parser.add_argument(
@@ -303,10 +303,10 @@ def validate_arguments(parser, args) -> bool:
 
         env = parse_assignments(args.bundle_env, args.bundle_unset)
         banned = (
-            "HERMES_DATA_DIR_SUFFIX",
-            "HERMES_HOME",
-            "HERMES_SHARED_AUTH_DIR",
-            "HERMES_DESKTOP_USER_DATA_DIR",
+            "AKRAMCODE_DATA_DIR_SUFFIX",
+            "AKRAMCODE_HOME",
+            "AKRAMCODE_SHARED_AUTH_DIR",
+            "AKRAMCODE_DESKTOP_USER_DATA_DIR",
         )
         bad_vars = [e for e in env if e in banned]
         if bad_vars:

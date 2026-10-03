@@ -65,11 +65,11 @@ def test_repair_refuses_while_another_connection_holds_the_db(tmp_path):
 
     Gated on ``requires_wal``: repair admission
     (``akramcode_state.holders.live_writer_holds_db``) first scans for foreign
-    holders — deleted sidecar generations, uninspectable Hermes processes —
+    holders — deleted sidecar generations, uninspectable AkramCode processes —
     and then probes SQLite with ``PRAGMA locking_mode=EXCLUSIVE`` +
     ``BEGIN IMMEDIATE``, which a concurrent connection makes fail with
     SQLITE_BUSY through the WAL index. This test exercises the probe leg: on
-    SQLite builds carrying the WAL-reset bug (and on NFS/SMB) Hermes runs
+    SQLite builds carrying the WAL-reset bug (and on NFS/SMB) AkramCode runs
     ``state.db`` in ``journal_mode=DELETE``, where a held reader takes only a
     SHARED lock and ``BEGIN IMMEDIATE`` still acquires RESERVED, so the probe
     alone cannot see the holder. The conftest auto-skips this test where WAL
@@ -196,10 +196,10 @@ def test_uninspectable_watched_descriptor_blocks_repair_before_sqlite(
         (["python3", "-m", "akramcode_cli.main", "gateway"], True),
     ),
 )
-def test_uninspectable_unknown_descriptor_uses_hermes_identity_at_repair_boundary(
+def test_uninspectable_unknown_descriptor_uses_akramcode_identity_at_repair_boundary(
     tmp_path, monkeypatch, argv, should_block
 ):
-    """An unknown fd target blocks only when argv identifies Hermes."""
+    """An unknown fd target blocks only when argv identifies AkramCode."""
     db = _make_wal_db(tmp_path)
 
     def _listdir(path):
@@ -223,7 +223,7 @@ def test_uninspectable_unknown_descriptor_uses_hermes_identity_at_repair_boundar
     if should_block:
 
         def _unexpected_probe(*_args, **_kwargs):
-            pytest.fail("repair opened SQLite with an unproven Hermes descriptor")
+            pytest.fail("repair opened SQLite with an unproven AkramCode descriptor")
 
         monkeypatch.setattr(
             akramcode_state.repair, "_connect_repair_durable",
@@ -299,10 +299,10 @@ def test_uninspectable_watched_identity_blocks_alias_before_sqlite(
 
 
 @pytest.mark.platforms("linux")
-def test_uninspectable_alias_descriptor_for_hermes_blocks_before_sqlite(
+def test_uninspectable_alias_descriptor_for_akramcode_blocks_before_sqlite(
     tmp_path, monkeypatch
 ):
-    """Hermes cannot make an aliased fd safe when its identity is unreadable."""
+    """AkramCode cannot make an aliased fd safe when its identity is unreadable."""
     db = _make_wal_db(tmp_path)
     alias = tmp_path / "namespace-alias" / "state.db"
 
@@ -332,7 +332,7 @@ def test_uninspectable_alias_descriptor_for_hermes_blocks_before_sqlite(
     )
 
     def _unexpected_probe(*_args, **_kwargs):
-        pytest.fail("repair opened SQLite with an unproven Hermes alias fd")
+        pytest.fail("repair opened SQLite with an unproven AkramCode alias fd")
 
     monkeypatch.setattr(akramcode_state.repair, "_connect_repair_durable", _unexpected_probe)
 

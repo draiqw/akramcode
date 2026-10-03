@@ -1,8 +1,8 @@
-"""#93349 — ``hermes update`` restarts only the gateways of the home it is updating.
+"""#93349 — ``akramcode update`` restarts only the gateways of the home it is updating.
 
-``hermes-gateway*`` units and ``gateway run`` processes are host-wide namespaces shared by every
-Hermes install under the account. A scratch home's update used to drain and restart the account's
-real ``hermes-gateway.service`` and SIGTERM sibling installs' gateways because they were listed,
+``akramcode-gateway*`` units and ``gateway run`` processes are host-wide namespaces shared by every
+AkramCode install under the account. A scratch home's update used to drain and restart the account's
+real ``akramcode-gateway.service`` and SIGTERM sibling installs' gateways because they were listed,
 not because they ran the updated code.
 """
 
@@ -18,25 +18,25 @@ import pytest
 from akramcode_cli import update_cmd_fleet as fleet
 from akramcode_cli import dashboard_procs
 
-FOREIGN_HOME = "/srv/other-account-home/.hermes"
+FOREIGN_HOME = "/srv/other-account-home/.akramcode"
 
 
 @pytest.fixture
 def own_home(monkeypatch, tmp_path):
-    home = tmp_path / "homeA" / ".hermes"
+    home = tmp_path / "homeA" / ".akramcode"
     home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     # The plan inventory is this install only; the fixture home has no profiles dir.
     monkeypatch.setattr("akramcode_cli.update_receipt._profile_homes", lambda: [("default", home)])
     return home
 
 
 def _pid_homes(monkeypatch, mapping: dict):
-    monkeypatch.setattr(dashboard_procs, "_hermes_home_for_pid", lambda pid: mapping.get(pid))
+    monkeypatch.setattr(dashboard_procs, "_akramcode_home_for_pid", lambda pid: mapping.get(pid))
 
 
 def test_systemd_unit_of_another_home_is_left_alone(monkeypatch, own_home):
-    """user/hermes-gateway runs on another HERMES_HOME → no drain, no restart, not a failure;
+    """user/akramcode-gateway runs on another AKRAMCODE_HOME → no drain, no restart, not a failure;
     the same unit running on the updating home is still restarted (control)."""
     homes = {4242: FOREIGN_HOME, 4343: str(own_home)}
     _pid_homes(monkeypatch, homes)
@@ -62,17 +62,17 @@ def test_systemd_unit_of_another_home_is_left_alone(monkeypatch, own_home):
     restarted: list[str] = []
     failed: list[str] = []
     fleet._restart_one_systemd_gateway_unit(
-        "hermes-gateway", scope="user", scope_cmd=["systemctl", "--user"], drain_budget=5.0,
+        "akramcode-gateway", scope="user", scope_cmd=["systemctl", "--user"], drain_budget=5.0,
         _manage_cmd_cache={}, restarted_services=restarted, failed_or_stale_units=failed,
     )
     assert drained == [] and write_verbs == [] and restarted == [] and failed == []
 
     main_pid["value"] = 4343  # control: same unit name, this update's home
     fleet._restart_one_systemd_gateway_unit(
-        "hermes-gateway", scope="user", scope_cmd=["systemctl", "--user"], drain_budget=5.0,
+        "akramcode-gateway", scope="user", scope_cmd=["systemctl", "--user"], drain_budget=5.0,
         _manage_cmd_cache={}, restarted_services=restarted, failed_or_stale_units=failed,
     )
-    assert drained == [4343] and restarted == ["hermes-gateway"] and failed == []
+    assert drained == [4343] and restarted == ["akramcode-gateway"] and failed == []
 
 
 def test_manual_gateway_of_another_home_is_not_stopped(monkeypatch, own_home):

@@ -9,7 +9,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from akramcode_constants import hermes_home_key
+from akramcode_constants import akramcode_home_key
 from tools.connectors.contract import Actor, SettleReason, TargetState
 from tools.connectors.gateway.config import operation_session_key
 from tools.connectors.operation import ConnectionOperation, DetachedOperation, IllegalTransition, Target
@@ -117,7 +117,7 @@ class _CatalogBackend:
 
     def installs_with_oauth(self, name: str) -> bool:
         """A catalog entry whose own OAuth the card must run. Provider-mediated OAuth is not one:
-        its token comes from ``hermes auth <provider>``, so the plain probe covers it."""
+        its token comes from ``akramcode auth <provider>``, so the plain probe covers it."""
         auth = _catalog_entry(name).auth
         return auth.type == "oauth" and not auth.provider
 
@@ -347,7 +347,7 @@ def _late_key(operation: ConnectionOperation) -> Tuple[str, str]:
     """The ``(profile, session)`` pairing ``live.open`` keys an operation by. ``profile_key``
     is stamped there; the detached no-card path never opens, so fall back to the calling
     thread's home — ``close`` runs on the tool thread under the turn's profile scope."""
-    return (operation.profile_key or hermes_home_key(), operation.session_key)
+    return (operation.profile_key or akramcode_home_key(), operation.session_key)
 
 
 # (profile key, session key) -> {server: attempt} for OAuth attempts that outlived their card.
@@ -362,7 +362,7 @@ def adopt_late_connections(agent: Any) -> List[str]:
     them to the agent's toolset selection. Runs between turns, so the result that said "not
     connected" is followed by a turn in which the tools are there."""
     session_key = operation_session_key(getattr(agent, "session_id", None))
-    key = (hermes_home_key(), session_key)
+    key = (akramcode_home_key(), session_key)
     attempts = _LATE_ATTEMPTS.get(key)
     if not attempts:
         return []
@@ -629,10 +629,10 @@ def _install_now(runner: _Runner, operation: ConnectionOperation, target: Target
         _fail(operation, target, _detail(exc, runner, target))
         return
     if missing:
-        from akramcode_constants import display_hermes_home
+        from akramcode_constants import display_akramcode_home
 
         _fail(operation, target, f"set {', '.join(missing)} in the environment or "
-                                 f"{display_hermes_home()}/.env, then install again")
+                                 f"{display_akramcode_home()}/.env, then install again")
         return
     actor = _actor(target)
     if _installs_with_oauth(runner, target):

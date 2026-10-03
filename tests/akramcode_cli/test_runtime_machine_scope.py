@@ -14,18 +14,18 @@ import pytest
 
 @pytest.fixture
 def profile_home(tmp_path, monkeypatch):
-    """A NAMED-profile HERMES_HOME under <root>/profiles/<name>."""
-    root = tmp_path / ".hermes"
+    """A NAMED-profile AKRAMCODE_HOME under <root>/profiles/<name>."""
+    root = tmp_path / ".akramcode"
     profile = root / "profiles" / "coder"
     profile.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(profile))
-    # hermes_constants memoizes root resolution per (native, env) pair;
+    monkeypatch.setenv("AKRAMCODE_HOME", str(profile))
+    # akramcode_constants memoizes root resolution per (native, env) pair;
     # reload to make the new env authoritative for this test.
-    import hermes_constants
+    import akramcode_constants
 
-    importlib.reload(hermes_constants)
+    importlib.reload(akramcode_constants)
     yield root, profile
-    importlib.reload(hermes_constants)
+    importlib.reload(akramcode_constants)
 
 
 def test_models_and_runtimes_resolve_to_the_shared_root(profile_home):
@@ -64,14 +64,14 @@ def test_all_runtime_state_follows_runtimes_root(profile_home):
 
 
 def test_default_profile_paths_unchanged(tmp_path, monkeypatch):
-    """HERMES_HOME at the root itself (default profile) resolves exactly
+    """AKRAMCODE_HOME at the root itself (default profile) resolves exactly
     as before the scoping change — no migration for existing installs."""
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".akramcode"
     root.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(root))
-    import hermes_constants
+    monkeypatch.setenv("AKRAMCODE_HOME", str(root))
+    import akramcode_constants
 
-    importlib.reload(hermes_constants)
+    importlib.reload(akramcode_constants)
     try:
         import akramcode_cli.local_runtime.binaries as binaries
         import akramcode_cli.local_runtime.bootstrap as bootstrap
@@ -79,4 +79,4 @@ def test_default_profile_paths_unchanged(tmp_path, monkeypatch):
         assert bootstrap.models_dir() == root / "models"
         assert binaries.runtimes_root() == root / "runtimes" / "llamacpp"
     finally:
-        importlib.reload(hermes_constants)
+        importlib.reload(akramcode_constants)

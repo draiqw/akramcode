@@ -92,7 +92,7 @@ class TestLatencyFlagResolution:
             'apiKey': 'k',
             'queryRewrite': False,
             'firstTurnBaseWait': 3,
-            'hosts': {'hermes': {
+            'hosts': {'akramcode': {
                 'queryRewrite': True,
                 'firstTurnBaseWait': 0,
                 'firstTurnDialecticWait': 0.5,
@@ -109,7 +109,7 @@ class TestLatencyFlagResolution:
         config_path.write_text(json.dumps({
             'apiKey': 'k',
             'timeout': 30,
-            'hosts': {'hermes': {'timeout': 5}},
+            'hosts': {'akramcode': {'timeout': 5}},
         }))
         cfg = HonchoClientConfig.from_global_config(config_path=config_path)
         assert cfg.timeout == 5.0
@@ -155,13 +155,13 @@ class TestProfileKeyIsolationWarning:
         config_path = tmp_path / 'config.json'
         config_path.write_text(json.dumps({
             'hosts': {
-                'hermes': {'apiKey': 'shared-key'},
-                'hermes_coder': {'baseUrl': 'http://192.168.1.50:8000'},
+                'akramcode': {'apiKey': 'shared-key'},
+                'akramcode_coder': {'baseUrl': 'http://192.168.1.50:8000'},
             },
         }))
         with caplog.at_level(logging.WARNING, logger='plugins.memory.honcho.client'):
             cfg = HonchoClientConfig.from_global_config(
-                host='hermes_coder', config_path=config_path,
+                host='akramcode_coder', config_path=config_path,
             )
         assert cfg.api_key is None  # isolation preserved — no silent inheritance
         assert any('NOT inherited' in r.message for r in caplog.records)
@@ -172,13 +172,13 @@ class TestProfileKeyIsolationWarning:
         config_path = tmp_path / 'config.json'
         config_path.write_text(json.dumps({
             'hosts': {
-                'hermes': {'apiKey': 'shared-key'},
-                'hermes_coder': {'apiKey': 'coder-key'},
+                'akramcode': {'apiKey': 'shared-key'},
+                'akramcode_coder': {'apiKey': 'coder-key'},
             },
         }))
         with caplog.at_level(logging.WARNING, logger='plugins.memory.honcho.client'):
             cfg = HonchoClientConfig.from_global_config(
-                host='hermes_coder', config_path=config_path,
+                host='akramcode_coder', config_path=config_path,
             )
         assert cfg.api_key == 'coder-key'
         assert not any('NOT inherited' in r.message for r in caplog.records)
@@ -188,11 +188,11 @@ class TestProfileKeyIsolationWarning:
         monkeypatch.delenv('HONCHO_API_KEY', raising=False)
         config_path = tmp_path / 'config.json'
         config_path.write_text(json.dumps({
-            'hosts': {'hermes': {'baseUrl': 'http://localhost:8000'}},
+            'hosts': {'akramcode': {'baseUrl': 'http://localhost:8000'}},
         }))
         with caplog.at_level(logging.WARNING, logger='plugins.memory.honcho.client'):
             HonchoClientConfig.from_global_config(
-                host='hermes', config_path=config_path,
+                host='akramcode', config_path=config_path,
             )
         assert not any('NOT inherited' in r.message for r in caplog.records)
 
@@ -219,8 +219,8 @@ def test_save_config_holds_the_refresh_locks_so_a_rotation_survives(tmp_path, mo
     import threading
     from plugins.memory.honcho import oauth
     config_path = tmp_path / "honcho.json"
-    config_path.write_text(json.dumps({"hosts": {"hermes": {"apiKey": "hch-at-old", "oauth": {"refreshToken": "hch-rt-old"}}}}))
-    rotated = oauth.OAuthCredential("hch-at-new", "hch-rt-new", 10_000, "hermes-desktop", "http://localhost:8000/oauth/token")
+    config_path.write_text(json.dumps({"hosts": {"akramcode": {"apiKey": "hch-at-old", "oauth": {"refreshToken": "hch-rt-old"}}}}))
+    rotated = oauth.OAuthCredential("hch-at-new", "hch-rt-new", 10_000, "akramcode-desktop", "http://localhost:8000/oauth/token")
     save_read, rotation_done = threading.Event(), threading.Event()
     real_read = oauth._read_config_strict
 
@@ -234,7 +234,7 @@ def test_save_config_holds_the_refresh_locks_so_a_rotation_survives(tmp_path, mo
     def rotate():
         save_read.wait(2)
         with oauth._refresh_lock, oauth._config_refresh_lock(config_path):
-            oauth._persist_credential(config_path, "hermes", rotated)
+            oauth._persist_credential(config_path, "akramcode", rotated)
         rotation_done.set()
 
     monkeypatch.setattr(oauth, "_read_config_strict", read_then_wait)
@@ -244,4 +244,4 @@ def test_save_config_holds_the_refresh_locks_so_a_rotation_survives(tmp_path, mo
     thread.join(2)
     assert rotation_done.is_set()
     data = json.loads(config_path.read_text())
-    assert data["hosts"]["hermes"]["apiKey"] == "hch-at-new" and data["logging"] is True
+    assert data["hosts"]["akramcode"]["apiKey"] == "hch-at-new" and data["logging"] is True

@@ -29,7 +29,7 @@ def validate_applications(labels: object) -> list[str]:
 
 
 def _application_roots() -> list[Path]:
-    # OS home, NOT HERMES_HOME: profiles do not change the backend machine's apps.
+    # OS home, NOT AKRAMCODE_HOME: profiles do not change the backend machine's apps.
     home = Path.home()
     if sys.platform == "darwin":
         return [Path("/Applications"), Path("/System/Applications"), home / "Applications"]

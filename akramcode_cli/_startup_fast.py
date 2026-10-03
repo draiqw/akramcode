@@ -28,7 +28,7 @@ import os
 import sys
 
 __all__ = [
-    "project_root_str", "normalize_hermes_home_env",
+    "project_root_str", "normalize_akramcode_home_env",
     "ensure_project_root_on_path",
     "is_global_fast_version_argv",
     "is_container_startup_environment",
@@ -56,23 +56,23 @@ def project_root_str() -> str:
     return os.path.realpath(os.path.join(os.path.dirname(__file__), os.pardir))
 
 
-def normalize_hermes_home_env() -> None:
-    """Expand ``~``/``$VAR`` in ``HERMES_HOME`` once, at process entry, and write it back.
+def normalize_akramcode_home_env() -> None:
+    """Expand ``~``/``$VAR`` in ``AKRAMCODE_HOME`` once, at process entry, and write it back.
 
     fish does not expand ``~`` inside ``VAR=~/...`` and every shell passes a quoted value
-    through verbatim, so a literal tilde reaches the process. ``Path("~/.hermes")`` is
-    *relative*: the many raw ``os.environ["HERMES_HOME"]`` readers (this fast path, the
+    through verbatim, so a literal tilde reaches the process. ``Path("~/.akramcode")`` is
+    *relative*: the many raw ``os.environ["AKRAMCODE_HOME"]`` readers (this fast path, the
     active_profile probe, profile re-home, the dotenv loader) would each resolve it against
-    cwd and scaffold a full home under ``<cwd>/~/.hermes``. One expansion here gives every
+    cwd and scaffold a full home under ``<cwd>/~/.akramcode``. One expansion here gives every
     reader the same absolute spelling; ``akramcode_constants`` expands as well for non-CLI
     entry points. A relative value that is not tilde/variable-shaped is left alone.
     """
-    raw = os.environ.get("HERMES_HOME", "")
+    raw = os.environ.get("AKRAMCODE_HOME", "")
     if not raw.strip():
         return
     expanded = os.path.expanduser(os.path.expandvars(raw.strip()))
     if expanded != raw:
-        os.environ["HERMES_HOME"] = expanded
+        os.environ["AKRAMCODE_HOME"] = expanded
 
 
 def _realpath_or_self(path: str) -> str:
@@ -107,7 +107,7 @@ def is_desktop_ssh_backend_argv(argv: list[str]) -> bool:
 
     That child has a fixed identity: Desktop names the remote profile explicitly (or none for
     the root home) and hands its session token through a 0600 FILE, never the
-    ``HERMES_DASHBOARD_SESSION_TOKEN`` env var the local pool spawn uses. Every reader of
+    ``AKRAMCODE_DASHBOARD_SESSION_TOKEN`` env var the local pool spawn uses. Every reader of
     "is this process Desktop's backend" needs both shapes; this is the argv half.
     """
     return "--ssh-session-token-file" in argv
@@ -121,18 +121,18 @@ def is_container_startup_environment() -> bool:
     return "docker" in cgroup or "podman" in cgroup or "/lxc/" in cgroup
 
 
-def active_profile_may_override_home(hermes_root: str) -> bool:
-    """Cheap probe: does an active non-default profile redirect HERMES_HOME?"""
-    active = (_read_text(os.path.join(hermes_root, "active_profile")) or "").strip()
+def active_profile_may_override_home(akramcode_root: str) -> bool:
+    """Cheap probe: does an active non-default profile redirect AKRAMCODE_HOME?"""
+    active = (_read_text(os.path.join(akramcode_root, "active_profile")) or "").strip()
     return bool(active and active != "default")
 
 
 def _default_home() -> str:
-    return os.path.join(os.path.expanduser("~"), ".hermes")
+    return os.path.join(os.path.expanduser("~"), ".akramcode")
 
 
 def _resolved_home() -> str:
-    return os.environ.get("HERMES_HOME", "").strip() or _default_home()
+    return os.environ.get("AKRAMCODE_HOME", "").strip() or _default_home()
 
 
 def container_mode_may_be_active() -> bool:
@@ -142,14 +142,14 @@ def container_mode_may_be_active() -> bool:
     they'd print the host's version instead of the container's — so any profile ambiguity means "may
     be active".
     """
-    if os.environ.get("HERMES_DEV") == "1" or is_container_startup_environment():
+    if os.environ.get("AKRAMCODE_DEV") == "1" or is_container_startup_environment():
         return False
-    hermes_home = os.environ.get("HERMES_HOME", "").strip()
-    if hermes_home:
-        if os.path.exists(os.path.join(hermes_home, ".container-mode")):
+    akramcode_home = os.environ.get("AKRAMCODE_HOME", "").strip()
+    if akramcode_home:
+        if os.path.exists(os.path.join(akramcode_home, ".container-mode")):
             return True
-        parent_name = os.path.basename(os.path.dirname(os.path.normpath(hermes_home)))
-        return parent_name != "profiles" and active_profile_may_override_home(hermes_home)
+        parent_name = os.path.basename(os.path.dirname(os.path.normpath(akramcode_home)))
+        return parent_name != "profiles" and active_profile_may_override_home(akramcode_home)
     default_home = _default_home()
     return active_profile_may_override_home(default_home) or os.path.exists(
         os.path.join(default_home, ".container-mode"))
@@ -184,7 +184,7 @@ def read_install_method() -> str | None:
 
 
 def print_fast_version_info(*, check_updates: bool = True) -> None:
-    """THE canonical ``hermes --version`` output (also used by /version).
+    """THE canonical ``akramcode --version`` output (also used by /version).
 
     Every lazy block degrades gracefully — a broken/heavy import can never take the basic version
     output down.
@@ -199,7 +199,7 @@ def print_fast_version_info(*, check_updates: bool = True) -> None:
         from akramcode_cli import __release_date__
         from akramcode_cli.version_info import get_version_info
 
-        print(f"Hermes Agent v{get_version_info().derived_version} ({__release_date__})")
+        print(f"AkramCode Agent v{get_version_info().derived_version} ({__release_date__})")
     print(f"Install directory: {project_root_str()}")
     # Authoritative resolver first (code-scoped stamp → managed → nix → git → pip; also self-heals
     # poisoned shared-home 'docker' stamps); cheap stdlib stamp probe only if it fails.
@@ -237,7 +237,7 @@ def print_fast_version_info(*, check_updates: bool = True) -> None:
 
 
 def try_fast_version(argv: list[str] | None = None) -> bool:
-    """Handle ``hermes --version`` before the heavy import wall.
+    """Handle ``akramcode --version`` before the heavy import wall.
 
     Only ``--version``/``-V`` (the ``version`` subcommand was removed —
     ``--version`` now carries the full output incl. update status), and

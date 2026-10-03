@@ -73,7 +73,7 @@ def install_keypress_data_normalization() -> int:
         return 0
 
     _orig_call_handler = _vt100_mod.Vt100Parser._call_handler
-    if getattr(_orig_call_handler, "_hermes_char_data_normalized", False):
+    if getattr(_orig_call_handler, "_akramcode_char_data_normalized", False):
         return 0
 
     def _patched_call_handler(self, key, insert_text):
@@ -84,7 +84,7 @@ def install_keypress_data_normalization() -> int:
             insert_text = key
         return _orig_call_handler(self, key, insert_text)
 
-    _patched_call_handler._hermes_char_data_normalized = True
+    _patched_call_handler._akramcode_char_data_normalized = True
     _vt100_mod.Vt100Parser._call_handler = _patched_call_handler
     return 1
 

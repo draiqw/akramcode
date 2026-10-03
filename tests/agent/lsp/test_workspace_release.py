@@ -118,9 +118,9 @@ def _kanban_scratch(project, tmp_path, monkeypatch):
     from akramcode_cli import kanban_db as kb
     from akramcode_cli import kanban_db_connect as kbc
     from akramcode_cli import kanban_db_workspace as kbw
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
     with kbc.connect() as conn:
@@ -141,7 +141,7 @@ def _kanban_scratch(project, tmp_path, monkeypatch):
                          ids=lambda f: f.__name__.strip("_"))
 def test_workspace_removal_releases_only_its_language_servers(entry, mock_pyright, project, tmp_path,
                                                                  monkeypatch):
-    """Every in-process workspace-removal path (kanban worktree/scratch cleanup, ``hermes -w`` exit, the
+    """Every in-process workspace-removal path (kanban worktree/scratch cleanup, ``akramcode -w`` exit, the
     delegate_task worktree prune) shuts down (single-root) or detaches (multi-root) exactly the removed
     root's servers BEFORE the tree goes: the sibling keeps serving diagnostics, the released state is gone
     everywhere, and a repeat release is a no-op."""
@@ -175,7 +175,7 @@ def test_workspace_removal_releases_only_its_language_servers(entry, mock_pyrigh
 
 
 def test_reaper_shuts_down_client_whose_root_was_deleted(mock_pyright, tmp_path):
-    """A root deleted outside Hermes is reaped on the next sweep even though the client is not idle."""
+    """A root deleted outside AkramCode is reaped on the next sweep even though the client is not idle."""
     repo = _make_repo(tmp_path, "repo")
     svc = _service()
     try:

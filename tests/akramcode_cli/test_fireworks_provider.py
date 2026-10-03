@@ -69,7 +69,7 @@ class TestFireworksDoctor:
         dropped — that heuristic is for aggregator vendor slugs only."""
         from akramcode_cli import doctor as doctor_mod
 
-        home = tmp_path / ".hermes"
+        home = tmp_path / ".akramcode"
         home.mkdir(parents=True)
         (home / "config.yaml").write_text(
             "model:\n"
@@ -82,7 +82,7 @@ class TestFireworksDoctor:
         project = tmp_path / "project"
         project.mkdir()
 
-        monkeypatch.setattr(doctor_mod, "HERMES_HOME", home)
+        monkeypatch.setattr(doctor_mod, "AKRAMCODE_HOME", home)
         monkeypatch.setattr(doctor_mod, "PROJECT_ROOT", project)
         monkeypatch.setattr(doctor_mod, "_DHH", str(home))
         monkeypatch.setenv("FIREWORKS_API_KEY", "fw_test")
@@ -136,17 +136,17 @@ class TestFireworksAuxiliary:
         client, model, kwargs = self._resolve("fireworks")
         assert client is not None
         headers = kwargs.get("default_headers", {})
-        assert headers["HTTP-Referer"] == "https://hermes-agent.nousresearch.com"
-        assert headers["X-Title"] == "Hermes Agent"
+        assert headers["HTTP-Referer"] == "https://akramcode-agent.nousresearch.com"
+        assert headers["X-Title"] == "AkramCode Agent"
         assert kwargs["base_url"] == "https://api.fireworks.ai/inference/v1"
 
-    def test_client_sends_hermes_user_agent(self, monkeypatch):
+    def test_client_sends_akramcode_user_agent(self, monkeypatch):
         """The profile's User-Agent survives the generic default_headers
         fallback and reaches OpenAI client construction."""
         monkeypatch.setenv("FIREWORKS_API_KEY", "fw_test_key")
         _client, _model, kwargs = self._resolve("fireworks")
         headers = kwargs.get("default_headers", {})
-        assert headers["User-Agent"].startswith("HermesAgent/")
+        assert headers["User-Agent"].startswith("AkramCodeAgent/")
 
 
 class TestFireworksModelMetadata:

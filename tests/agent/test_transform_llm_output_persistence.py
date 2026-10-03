@@ -36,9 +36,9 @@ def _fake_completion(text):
 
 @pytest.fixture
 def db_agent(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-    (tmp_path / ".hermes").mkdir()
-    db = SessionDB(db_path=tmp_path / ".hermes" / "state.db")
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / ".akramcode"))
+    (tmp_path / ".akramcode").mkdir()
+    db = SessionDB(db_path=tmp_path / ".akramcode" / "state.db")
     with (
         patch("model_tools.get_tool_definitions", return_value=[]),
         patch("model_tools.check_toolset_requirements", return_value={}),

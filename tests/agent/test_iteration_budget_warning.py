@@ -5,7 +5,7 @@ import pytest
 
 
 def _agent(tmp_path, monkeypatch, ratio):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     (tmp_path / "config.yaml").write_text(
         f"agent:\n  budget_warning_ratio: {ratio}\n", encoding="utf-8"
     )

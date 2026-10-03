@@ -8,7 +8,7 @@ Covers the copilot-acp fix class:
     (env token or on-disk GitHub Copilot credential store) while remaining
     honest — no evidence means unknown, never "signed out".
   * The Accounts-tab sign-in ``cli_command`` reflects the executable the
-    user actually configured (``HERMES_COPILOT_ACP_COMMAND`` /
+    user actually configured (``AKRAMCODE_COPILOT_ACP_COMMAND`` /
     ``COPILOT_CLI_PATH``), and its default is a valid Copilot CLI
     invocation (``copilot login`` — ``copilot /login`` is not a command).
 """
@@ -31,8 +31,8 @@ def _clean_copilot_env(tmp_path, monkeypatch):
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
     for var in (
         "COPILOT_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN",
-        "HERMES_COPILOT_ACP_COMMAND", "COPILOT_CLI_PATH",
-        "HERMES_COPILOT_ACP_ARGS", "COPILOT_ACP_BASE_URL",
+        "AKRAMCODE_COPILOT_ACP_COMMAND", "COPILOT_CLI_PATH",
+        "AKRAMCODE_COPILOT_ACP_ARGS", "COPILOT_ACP_BASE_URL",
     ):
         monkeypatch.delenv(var, raising=False)
 
@@ -46,7 +46,7 @@ def test_get_auth_status_dispatches_external_process_by_auth_type(
     fake = tmp_path / ("copilot.exe" if os.name == "nt" else "copilot")
     fake.write_text("", encoding="utf-8")
     fake.chmod(0o755)
-    monkeypatch.setenv("HERMES_COPILOT_ACP_COMMAND", str(fake))
+    monkeypatch.setenv("AKRAMCODE_COPILOT_ACP_COMMAND", str(fake))
     # Point HOME somewhere empty so on-disk credential stores don't leak in.
     monkeypatch.setenv("HOME", str(tmp_path))
 
@@ -214,7 +214,7 @@ def test_cli_command_reflects_configured_executable(tmp_path, monkeypatch, _clea
     fake = tmp_path / ("copilot.exe" if os.name == "nt" else "copilot")
     fake.write_text("", encoding="utf-8")
     fake.chmod(0o755)
-    monkeypatch.setenv("HERMES_COPILOT_ACP_COMMAND", str(fake))
+    monkeypatch.setenv("AKRAMCODE_COPILOT_ACP_COMMAND", str(fake))
 
     rendered = _external_process_cli_command("copilot-acp", "copilot login")
 
@@ -224,7 +224,7 @@ def test_cli_command_reflects_configured_executable(tmp_path, monkeypatch, _clea
 def test_cli_command_untouched_for_non_external_providers(_clean_copilot_env):
     from akramcode_cli.web_server_oauth import _external_process_cli_command
 
-    assert _external_process_cli_command("nous", "hermes auth add nous") == "hermes auth add nous"
+    assert _external_process_cli_command("nous", "akramcode auth add nous") == "akramcode auth add nous"
 
 
 def test_cli_command_default_when_no_override(monkeypatch, _clean_copilot_env):

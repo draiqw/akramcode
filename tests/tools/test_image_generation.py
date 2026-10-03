@@ -286,7 +286,7 @@ class TestManagedGatewayErrorTranslation:
         monkeypatch.setattr(image_tool, "fal_client", object())
 
     def test_4xx_translates_to_value_error_with_remediation(self, image_tool, monkeypatch):
-        """403 from managed gateway → ValueError mentioning FAL_KEY + hermes tools."""
+        """403 from managed gateway → ValueError mentioning FAL_KEY + akramcode tools."""
         from unittest.mock import MagicMock
 
         # Simulate: managed mode active, managed submit raises 4xx.

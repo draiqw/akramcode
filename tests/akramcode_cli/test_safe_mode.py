@@ -1,4 +1,4 @@
-"""Tests for `hermes chat --safe-mode` isolation."""
+"""Tests for `akramcode chat --safe-mode` isolation."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import types
 import pytest
 
 
-_VARS = ("HERMES_SAFE_MODE", "HERMES_IGNORE_USER_CONFIG", "HERMES_IGNORE_RULES")
+_VARS = ("AKRAMCODE_SAFE_MODE", "AKRAMCODE_IGNORE_USER_CONFIG", "AKRAMCODE_IGNORE_RULES")
 
 
 @pytest.fixture(autouse=True)
@@ -32,9 +32,9 @@ def test_cmd_chat_safe_mode_sets_env_before_startup(monkeypatch):
     fake_cli = types.ModuleType("cli")
 
     def fake_has_provider() -> bool:
-        assert os.environ["HERMES_SAFE_MODE"] == "1"
-        assert os.environ["HERMES_IGNORE_USER_CONFIG"] == "1"
-        assert os.environ["HERMES_IGNORE_RULES"] == "1"
+        assert os.environ["AKRAMCODE_SAFE_MODE"] == "1"
+        assert os.environ["AKRAMCODE_IGNORE_USER_CONFIG"] == "1"
+        assert os.environ["AKRAMCODE_IGNORE_RULES"] == "1"
         return True
 
     def fake_main(**kwargs):
@@ -55,7 +55,7 @@ def test_cmd_chat_safe_mode_sets_env_before_startup(monkeypatch):
 
 
 def test_plugin_discovery_skipped(monkeypatch):
-    monkeypatch.setenv("HERMES_SAFE_MODE", "1")
+    monkeypatch.setenv("AKRAMCODE_SAFE_MODE", "1")
     from akramcode_cli.plugins import PluginManager
 
     mgr = PluginManager()

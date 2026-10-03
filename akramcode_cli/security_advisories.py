@@ -1,4 +1,4 @@
-"""Security advisory checker for Hermes Agent.
+"""Security advisory checker for AkramCode Agent.
 
 Cheap (one ``importlib.metadata.version()`` call per advisory package, safe on every CLI startup)
 and silent unless a compromised package is actually installed.
@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Optional
 
-from akramcode_constants import display_hermes_home
+from akramcode_constants import display_akramcode_home
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +29,8 @@ logger = logging.getLogger(__name__)
 class Advisory:
     """``id`` is lowercase-hyphen, stable and never reused (it is what acks key on). ``remediation``
     is ordered: uninstall command first, then credential audit/rotation guidance. Steps may use
-    ``{hermes_home}``; ``full_remediation_text`` fills it with ``display_hermes_home()`` at render
-    time so a profile / HERMES_HOME user is sent to their own .env.
+    ``{akramcode_home}``; ``full_remediation_text`` fills it with ``display_akramcode_home()`` at render
+    time so a profile / AKRAMCODE_HOME user is sent to their own .env.
     """
 
     id: str
@@ -53,7 +53,7 @@ ADVISORIES: tuple[Advisory, ...] = (
             "environment variables and credential files (~/.npmrc, ~/.pypirc, "
             "~/.aws/credentials, GitHub PATs, cloud SDK tokens) and exfils "
             "them to a hardcoded webhook. If you ran any Python process that "
-            "imported mistralai 2.4.6 — including hermes when configured "
+            "imported mistralai 2.4.6 — including akramcode when configured "
             "with provider=mistral for TTS or STT — assume those credentials "
             "are exposed. PyPI has since removed 2.4.6 and the project ships "
             "clean releases again (2.4.7, 2.4.8); this advisory only fires if "
@@ -63,13 +63,13 @@ ADVISORIES: tuple[Advisory, ...] = (
         compromised=(("mistralai", frozenset({"2.4.6"})),),
         remediation=(
             "Run: pip uninstall -y mistralai  (or: uv pip uninstall mistralai)",
-            "Rotate API keys in {hermes_home}/.env (OpenRouter, Anthropic, OpenAI, "
+            "Rotate API keys in {akramcode_home}/.env (OpenRouter, Anthropic, OpenAI, "
             "Nous, GitHub, AWS, Google, Mistral, etc.).",
             "Audit ~/.npmrc, ~/.pypirc, ~/.aws/credentials, ~/.config/gh/hosts.yml, "
             "and any other credential files for tokens that may have been read.",
             "Check GitHub for unexpected new SSH keys, deploy keys, or webhook "
             "additions on repos you have admin on.",
-            "After cleanup: hermes doctor --ack shai-hulud-2026-05  to dismiss "
+            "After cleanup: akramcode doctor --ack shai-hulud-2026-05  to dismiss "
             "this warning.",
         ),
         published="2026-05-12",
@@ -171,7 +171,7 @@ def short_banner_lines(hits: list[AdvisoryHit]) -> list[str]:
     lines = [
         f"SECURITY ADVISORY [{primary.advisory.id}]: {primary.advisory.title}",
         f"  Detected: {primary.package}=={primary.installed_version}",
-        "  Run 'hermes doctor' for remediation steps.",
+        "  Run 'akramcode doctor' for remediation steps.",
     ]
     if len(hits) > 1:
         lines.insert(1, f"  ({len(hits) - 1} additional advisor{'ies' if len(hits) > 2 else 'y'} also active.)")
@@ -190,12 +190,12 @@ def full_remediation_text(hit: AdvisoryHit) -> list[str]:
         a.summary,
         "",
         "Remediation:",
-        *(f"  {i}. {step.format(hermes_home=display_hermes_home())}" for i, step in enumerate(a.remediation, 1)),
+        *(f"  {i}. {step.format(akramcode_home=display_akramcode_home())}" for i, step in enumerate(a.remediation, 1)),
     ]
 
 
 # ─── Startup-banner gating ────────────────────────────────────────────────────
-# Once the banner is seen we cache that in ``~/.hermes/cache/advisory_banner_seen`` (one
+# Once the banner is seen we cache that in ``~/.akramcode/cache/advisory_banner_seen`` (one
 # ``<id> <timestamp>`` line per advisory). Acked advisories never re-banner; cached-but-not-acked
 # ones re-banner after 24h so the user doesn't fully forget.
 
@@ -205,8 +205,8 @@ _BANNER_REPEAT_HOURS = 24
 
 def _banner_cache_path() -> Optional[Path]:
     try:
-        from akramcode_constants import get_hermes_home
-        cache_dir = Path(get_hermes_home()) / "cache"
+        from akramcode_constants import get_akramcode_home
+        cache_dir = Path(get_akramcode_home()) / "cache"
         cache_dir.mkdir(parents=True, exist_ok=True)
         return cache_dir / _BANNER_CACHE_FILE
     except Exception:
@@ -276,4 +276,4 @@ def gateway_log_message(hits: list[AdvisoryHit]) -> Optional[str]:
         return (f"Security advisory [{h.advisory.id}] active: {h.package}=={h.installed_version} "
                 f"matches {h.advisory.title}. See {h.advisory.url}")
     return (f"{len(fresh)} security advisories active (IDs: {', '.join(h.advisory.id for h in fresh)}). "
-            "Run `hermes doctor` on the gateway host for details.")
+            "Run `akramcode doctor` on the gateway host for details.")

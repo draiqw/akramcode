@@ -6,10 +6,10 @@ from pathlib import Path
 def test_review_unknown_argument_rejects_before_handoff(tmp_path, monkeypatch):
     home = tmp_path / 'home'
     home.mkdir()
-    monkeypatch.setenv('HERMES_HOME', str(home))
-    monkeypatch.setenv('HERMES_KANBAN_HOME', str(home))
+    monkeypatch.setenv('AKRAMCODE_HOME', str(home))
+    monkeypatch.setenv('AKRAMCODE_KANBAN_HOME', str(home))
     monkeypatch.setattr(Path, 'home', lambda: tmp_path)
-    for key in ('HERMES_KANBAN_TASK', 'HERMES_KANBAN_DB', 'HERMES_KANBAN_BOARD', 'HERMES_KANBAN_RUN_ID'):
+    for key in ('AKRAMCODE_KANBAN_TASK', 'AKRAMCODE_KANBAN_DB', 'AKRAMCODE_KANBAN_BOARD', 'AKRAMCODE_KANBAN_RUN_ID'):
         monkeypatch.delenv(key, raising=False)
     from akramcode_cli import kanban_db as kb
     from akramcode_cli import kanban_db_connect as kbc

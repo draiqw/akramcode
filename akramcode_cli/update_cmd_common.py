@@ -1,4 +1,4 @@
-"""Shared leaf helpers for the ``hermes update`` modules (no Hermes imports; no cycle)."""
+"""Shared leaf helpers for the ``akramcode update`` modules (no AkramCode imports; no cycle)."""
 
 import logging
 from contextlib import contextmanager

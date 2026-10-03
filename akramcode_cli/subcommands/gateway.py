@@ -1,4 +1,4 @@
-"""``hermes gateway`` and ``hermes proxy`` subcommand parsers."""
+"""``akramcode gateway`` and ``akramcode proxy`` subcommand parsers."""
 
 from __future__ import annotations
 
@@ -75,7 +75,7 @@ def build_gateway_parser(
             "Inside the s6-overlay Docker image, normally `gateway run` is "
             "automatically redirected to the supervised s6 service (so the "
             "gateway gets auto-restart on crash, plus a supervised dashboard "
-            "if HERMES_DASHBOARD is set). Pass --no-supervise to opt out and "
+            "if AKRAMCODE_DASHBOARD is set). Pass --no-supervise to opt out and "
             "get the historical pre-s6 foreground behavior: the gateway is "
             "the container's main process and the container exits with the "
             "gateway's exit code. No effect outside an s6 container."),
@@ -143,10 +143,10 @@ def build_gateway_parser(
     gateway_subparsers.add_parser("setup", help="Configure messaging platforms")
 
     gateway_migrate_legacy = gateway_subparsers.add_parser(
-        "migrate-legacy", help="Remove legacy hermes.service units from pre-rename installs",
-        description="Stop, disable, and remove legacy Hermes gateway unit files "
-            "(e.g. hermes.service) left over from older installs. Profile "
-            "units (hermes-gateway-<profile>.service) and unrelated "
+        "migrate-legacy", help="Remove legacy akramcode.service units from pre-rename installs",
+        description="Stop, disable, and remove legacy AkramCode gateway unit files "
+            "(e.g. akramcode.service) left over from older installs. Profile "
+            "units (akramcode-gateway-<profile>.service) and unrelated "
             "third-party services are never touched.")
     _flag(gateway_migrate_legacy, "--dry-run", dest="dry_run",
         help="List what would be removed without doing it")
@@ -173,8 +173,8 @@ def build_gateway_parser(
             "Authenticates as your Nous Portal account (the connector derives the "
             "authoritative tenant from it), mints this gateway's per-gateway secret "
             "and per-tenant delivery key, and writes GATEWAY_RELAY_ID / "
-            "GATEWAY_RELAY_SECRET / GATEWAY_RELAY_DELIVERY_KEY into ~/.hermes/.env. "
-            "Requires being logged in (hermes setup). Not available in managed installs.")
+            "GATEWAY_RELAY_SECRET / GATEWAY_RELAY_DELIVERY_KEY into ~/.akramcode/.env. "
+            "Requires being logged in (akramcode setup). Not available in managed installs.")
     gateway_enroll.add_argument("--token", default=None,
         help="The single-use enrollment token from the connector (delivered with "
             "your gateway config). Also settable via GATEWAY_RELAY_ENROLL_TOKEN.")
@@ -189,7 +189,7 @@ def build_gateway_parser(
         help="Phase 5 §5.2 wake URL: a reachable URL the connector pokes "
             "(payload-free GET) to wake this gateway when buffered work arrives "
             "while it's idle/suspended, so it reconnects and drains. Persisted as "
-            "GATEWAY_RELAY_WAKE_URL in ~/.hermes/.env and forwarded at provision. "
+            "GATEWAY_RELAY_WAKE_URL in ~/.akramcode/.env and forwarded at provision. "
             "Optional — without it the gateway still drains whenever it next "
             "reconnects on its own.")
     gateway_enroll.set_defaults(func=cmd_gateway_enroll)
@@ -206,7 +206,7 @@ def build_gateway_parser(
 
     proxy_start = proxy_subparsers.add_parser("start", help="Run the proxy in the foreground")
     proxy_start.add_argument("--provider", default="nous",
-        help="Upstream provider: nous or xai (default: nous). See `hermes proxy providers`.")
+        help="Upstream provider: nous or xai (default: nous). See `akramcode proxy providers`.")
     proxy_start.add_argument("--host", default=None,
         help="Bind address (default: 127.0.0.1). Use 0.0.0.0 to expose on LAN.")
     proxy_start.add_argument("--port", type=int, default=None, help="Bind port (default: 8645)")

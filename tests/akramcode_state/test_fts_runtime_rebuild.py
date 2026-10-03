@@ -137,33 +137,33 @@ class TestRuntimeFtsRebuild:
     @pytest.mark.parametrize(
         "argv",
         (
-            ("journalctl", "-u", "hermes-agent.service"),
-            ("grep", "hermes-agent", "/var/log/syslog"),
+            ("journalctl", "-u", "akramcode-agent.service"),
+            ("grep", "akramcode-agent", "/var/log/syslog"),
             (
                 "/usr/sbin/tailscaled",
                 "be-child",
                 "ssh",
                 "--cmd=python -m akramcode_cli.main gateway",
             ),
-            ("tmux", "new-session", "/opt/hermes-agent/.venv/bin/hermes gateway"),
-            ("python3", "/opt/hermes-agent/tools/check_state.py"),
-            ("hermes-monitor", "gateway"),
-            ("hermesctl", "serve"),
+            ("tmux", "new-session", "/opt/akramcode-agent/.venv/bin/akramcode gateway"),
+            ("python3", "/opt/akramcode-agent/tools/check_state.py"),
+            ("akramcode-monitor", "gateway"),
+            ("akramcodectl", "serve"),
             ("python3", "worker.py", "akramcode_cli.main"),
             ("python3", "-m", "other.module", "akramcode_cli.main"),
             ("python3", "-c", "akramcode_cli.main"),
             ("python3", "-Icprint('akramcode_cli.main')", "akramcode_cli/main.py"),
         ),
     )
-    def test_uninspectable_non_hermes_process_is_not_a_holder(self, argv):
-        assert not akramcode_state.holders._looks_like_hermes(argv)
+    def test_uninspectable_non_akramcode_process_is_not_a_holder(self, argv):
+        assert not akramcode_state.holders._looks_like_akramcode(argv)
 
     @pytest.mark.parametrize(
         "argv",
         (
-            ("/usr/local/bin/hermes", "gateway"),
-            ("/usr/local/bin/hermes-agent", "serve"),
-            ("/usr/local/bin/hermes-acp", "--stdio"),
+            ("/usr/local/bin/akramcode", "gateway"),
+            ("/usr/local/bin/akramcode-agent", "serve"),
+            ("/usr/local/bin/akramcode-acp", "--stdio"),
             ("/usr/bin/python3", "-m", "akramcode_cli.main", "gateway"),
             ("/usr/bin/python3", "-m", "acp_adapter"),
             ("/usr/bin/python3", "-Im", "akramcode_cli.main", "gateway"),
@@ -171,16 +171,16 @@ class TestRuntimeFtsRebuild:
             ("/usr/bin/python3", "-W", "ignore", "-m", "akramcode_cli.main"),
             ("/usr/bin/python3", "-Xdev", "-m", "akramcode_cli.main"),
             (
-                "/opt/hermes-agent/.venv/bin/python",
-                "/opt/hermes-agent/akramcode_cli/main.py",
+                "/opt/akramcode-agent/.venv/bin/python",
+                "/opt/akramcode-agent/akramcode_cli/main.py",
                 "gateway",
             ),
             ("python.exe", "--", "akramcode_cli/main.py", "gateway"),
-            ("python3", "/opt/hermes-agent/run_agent.py", "--query", "hello"),
+            ("python3", "/opt/akramcode-agent/run_agent.py", "--query", "hello"),
         ),
     )
-    def test_uninspectable_hermes_process_remains_a_holder(self, argv):
-        assert akramcode_state.holders._looks_like_hermes(argv)
+    def test_uninspectable_akramcode_process_remains_a_holder(self, argv):
+        assert akramcode_state.holders._looks_like_akramcode(argv)
 
     @pytest.mark.platforms("linux")
     def test_foreign_holder_detection_proc_readlink_deleted_wal(
@@ -242,7 +242,7 @@ class TestRuntimeFtsRebuild:
         self, db, tmp_path, monkeypatch
     ):
         """A process whose fd table is unreadable (different user) is still
-        flagged when /proc/<pid>/cmdline identifies it as a Hermes process."""
+        flagged when /proc/<pid>/cmdline identifies it as a AkramCode process."""
         db_path = tmp_path / "state.db"
 
         proc_root = tmp_path / "proc"
@@ -250,7 +250,7 @@ class TestRuntimeFtsRebuild:
             (proc_root / str(pid) / "fd").mkdir(parents=True)
         # PID 222's fd dir is unreadable (PermissionError)
         os.chmod(proc_root / "222" / "fd", 0o000)
-        # PID 222's cmdline is world-readable and looks like Hermes
+        # PID 222's cmdline is world-readable and looks like AkramCode
         cmdline_path = proc_root / "222" / "cmdline"
         cmdline_path.write_bytes(
             b"python3\x00-m\x00akramcode_cli.main\x00chat\x00"

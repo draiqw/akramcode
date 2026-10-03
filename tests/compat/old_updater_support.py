@@ -63,7 +63,7 @@ class FreshChild:
         assert context.parent == result.parent and context != result
         request = json.loads(context.read_text(encoding="utf-8"))
         assert request["root"] == str(ROOT)
-        assert request["home"] == os.environ["HERMES_HOME"]
+        assert request["home"] == os.environ["AKRAMCODE_HOME"]
         assert request["argv"] == sys.argv
         self.requests.append(request)
         self.paths.append((context, result))
@@ -76,7 +76,7 @@ class FreshChild:
         before_calls = len(self.requests)
         before_env = dict(os.environ)
         before_modules = dict(sys.modules)
-        home = Path(os.environ["HERMES_HOME"])
+        home = Path(os.environ["AKRAMCODE_HOME"])
         before_files = {p: p.read_bytes() for p in home.rglob("*") if p.is_file()}
         real_import = builtins.__import__
         real_import_module = importlib.import_module

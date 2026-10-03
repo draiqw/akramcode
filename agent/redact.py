@@ -33,8 +33,8 @@ _VAULT_REDACTION_LOCK = threading.Lock()
 
 
 def _vault_scope() -> str:
-    from akramcode_constants import get_hermes_home
-    return str(get_hermes_home())
+    from akramcode_constants import get_akramcode_home
+    return str(get_akramcode_home())
 
 
 def register_vault_redaction_value(value) -> None:
@@ -87,17 +87,17 @@ _SENSITIVE_QUERY_PARAMS = frozenset({
 })
 
 # Snapshot at import time so runtime env mutations (e.g. an LLM-generated
-# `export HERMES_REDACT_SECRETS=false`) cannot disable redaction mid-session.
+# `export AKRAMCODE_REDACT_SECRETS=false`) cannot disable redaction mid-session.
 # ON by default; `security.redact_secrets: false` bridges to this env var.
 # ON by default — secure default per issue #17691. Users who need raw credential values in tool output (e.g.
 # working on the redactor itself) can opt out via `security.redact_secrets: false` in config.yaml (bridged
-# to this env var in akramcode_cli/main.py, gateway/run.py, and cli.py) or `HERMES_REDACT_SECRETS=false` in
-# ~/.hermes/.env. An opt-out warning is logged at gateway and CLI startup so operators see the downgrade —
+# to this env var in akramcode_cli/main.py, gateway/run.py, and cli.py) or `AKRAMCODE_REDACT_SECRETS=false` in
+# ~/.akramcode/.env. An opt-out warning is logged at gateway and CLI startup so operators see the downgrade —
 # see `_log_redaction_status()` in gateway/run.py and cli.py.
-_REDACT_ENABLED = os.getenv("HERMES_REDACT_SECRETS", "true").lower() in {"1", "true", "yes", "on"}
+_REDACT_ENABLED = os.getenv("AKRAMCODE_REDACT_SECRETS", "true").lower() in {"1", "true", "yes", "on"}
 
 # Routed multiplex profiles: the import-time snapshot above is the LAUNCH profile's policy. A profile
-# served under a HERMES_HOME override resolves its own ``security.redact_secrets`` (its ``.env``
+# served under a AKRAMCODE_HOME override resolves its own ``security.redact_secrets`` (its ``.env``
 # value first, like the standalone bridge in akramcode_cli/main.py), cached per home so the hot path
 # stays a dict lookup. Still not a live ``os.environ`` read, so a shell ``export`` cannot flip it.
 _REDACT_ENABLED_BY_HOME: dict = {}
@@ -106,10 +106,10 @@ _REDACT_ENABLED_LOCK = threading.Lock()
 
 def _redact_enabled() -> bool:
     """Effective redaction switch for the active profile (launch snapshot when no override)."""
-    from akramcode_constants import get_hermes_home_override, hermes_home_key
-    if get_hermes_home_override() is None:
+    from akramcode_constants import get_akramcode_home_override, akramcode_home_key
+    if get_akramcode_home_override() is None:
         return _REDACT_ENABLED
-    home_key = hermes_home_key()
+    home_key = akramcode_home_key()
     cached = _REDACT_ENABLED_BY_HOME.get(home_key)
     if cached is not None:
         return cached
@@ -117,12 +117,12 @@ def _redact_enabled() -> bool:
     try:
         from agent.secret_scope import current_secret_scope
         scope = current_secret_scope()
-        raw = scope.get("HERMES_REDACT_SECRETS") if scope else None
+        raw = scope.get("AKRAMCODE_REDACT_SECRETS") if scope else None
         if raw is None and scope is None:
             # No live scope (the log listener thread formats routed records): read the profile's own .env, as
             # its scope would, or a first call there would cache a config-only answer for the whole process.
             from akramcode_cli.config import load_env
-            raw = load_env().get("HERMES_REDACT_SECRETS")
+            raw = load_env().get("AKRAMCODE_REDACT_SECRETS")
         if raw is None:
             from akramcode_cli.config import load_config_readonly
             cfg_val = (load_config_readonly().get("security") or {}).get("redact_secrets")
@@ -634,7 +634,7 @@ _DISPLAY_CONTROL_RE = re.compile(r"[\x00-\x1f\x7f\x80-\x9f\u200b-\u200f\u202a-\u
 
 def mask_secret(value: str, *, head: int = 4, tail: int = 4, floor: int = 12,
                 placeholder: str = "***", empty: str = "") -> str:
-    """Mask a secret for display (``hermes config`` / ``status`` / ``dump``):
+    """Mask a secret for display (``akramcode config`` / ``status`` / ``dump``):
     ``sk-p...7890``; shorter than ``floor`` (after control-byte stripping) →
     ``placeholder``; falsy → ``empty``."""
     value = _DISPLAY_CONTROL_RE.sub("", value) if value else value
@@ -1001,7 +1001,7 @@ _ENV_DUMP_COMMANDS = frozenset({"env", "printenv", "set", "export", "declare"})
 
 # Commands that read file contents to stdout, plus the filter readers (``grep``/``awk``/``sed``)
 # the model reaches for on config files. A secret-bearing target (``.env`` per AGENTS.md,
-# a shell rc/profile, Hermes' own ``config.yaml`` where ``hermes mcp add --env`` writes
+# a shell rc/profile, AkramCode' own ``config.yaml`` where ``akramcode mcp add --env`` writes
 # tokens) is a credential dump, so the ENV/YAML assignment pass must run. Arbitrary
 # ``config.yaml`` / source files stay on the code_file path (``MAX_TOKENS: 100``).
 _FILE_READ_COMMANDS = frozenset({
@@ -1015,8 +1015,8 @@ _SHELL_RC_BASENAMES = frozenset({
 # Filter readers take a PATTERN/program as their first positional; only the operands after
 # it are files, so ``grep .bashrc app.py`` must not gate on the pattern.
 _PATTERN_FIRST_COMMANDS = frozenset({"grep", "awk", "sed"})
-_HERMES_HOME_PREFIXES = ("$HERMES_HOME/", "${HERMES_HOME}/")
-# ``$HOME/.hermes/config.yaml`` keeps the ``.hermes`` segment, so stripping the prefix is
+_AKRAMCODE_HOME_PREFIXES = ("$AKRAMCODE_HOME/", "${AKRAMCODE_HOME}/")
+# ``$HOME/.akramcode/config.yaml`` keeps the ``.akramcode`` segment, so stripping the prefix is
 # enough to gate it; ``~/`` already survives the ``$``-bearing-path bail-out.
 _HOME_PREFIXES = ("$HOME/", "${HOME}/")
 
@@ -1051,22 +1051,22 @@ def _command_segments(command: str) -> list[str]:
     return segments
 
 
-def _is_under_hermes_home(path: str) -> bool:
-    """True when an absolute ``config.yaml`` path sits under the active Hermes home or root.
+def _is_under_akramcode_home(path: str) -> bool:
+    """True when an absolute ``config.yaml`` path sits under the active AkramCode home or root.
 
-    The default home's basename is an installation detail — ``.hermes`` on POSIX, ``hermes``
-    under ``AppData/Local`` on Windows — and a resolved path never spells ``$HERMES_HOME``,
+    The default home's basename is an installation detail — ``.akramcode`` on POSIX, ``akramcode``
+    under ``AppData/Local`` on Windows — and a resolved path never spells ``$AKRAMCODE_HOME``,
     so the literal-segment test in ``_is_secret_file_arg`` cannot see a native Windows path.
     Compare against the resolved homes instead. Only reached for a ``config.yaml`` basename,
     so the resolve cost stays off the per-token command scan.
     """
-    from agent.file_safety import _hermes_dirs
+    from agent.file_safety import _akramcode_dirs
 
     try:
         target = os.path.normcase(os.path.realpath(os.path.expanduser(path)))
     except (OSError, ValueError):
         return False
-    for home in _hermes_dirs():
+    for home in _akramcode_dirs():
         try:
             base = os.path.normcase(os.path.realpath(str(home)))
         except (OSError, ValueError):
@@ -1078,15 +1078,15 @@ def _is_under_hermes_home(path: str) -> bool:
 
 def _is_secret_file_arg(arg: str) -> bool:
     """``.env``-style or shell rc basename anywhere; ``config.yaml`` only under a
-    ``.hermes`` directory, ``$HERMES_HOME``, or the resolved Hermes home (never arbitrary
+    ``.akramcode`` directory, ``$AKRAMCODE_HOME``, or the resolved AkramCode home (never arbitrary
     YAML). The resolved-home arm is what covers native Windows, where the home directory
-    is ``%LOCALAPPDATA%\\hermes`` and carries no ``.hermes`` segment."""
+    is ``%LOCALAPPDATA%\\akramcode`` and carries no ``.akramcode`` segment."""
     path = arg.strip("\"'").replace("\\", "/")
-    hermes_home = False
-    for prefix in _HERMES_HOME_PREFIXES:
+    akramcode_home = False
+    for prefix in _AKRAMCODE_HOME_PREFIXES:
         if path.startswith(prefix):
             path = path[len(prefix):]
-            hermes_home = True
+            akramcode_home = True
             break
     for prefix in _HOME_PREFIXES:
         if path.startswith(prefix):
@@ -1099,11 +1099,11 @@ def _is_secret_file_arg(arg: str) -> bool:
         return False
     if parts[-1] in _ENV_FILE_BASENAMES or parts[-1] in _SHELL_RC_BASENAMES:
         return True
-    # ``config.yaml`` plus the ``config.yaml.good.<stamp>`` / ``.corrupt.<stamp>`` copies Hermes
+    # ``config.yaml`` plus the ``config.yaml.good.<stamp>`` / ``.corrupt.<stamp>`` copies AkramCode
     # writes under ``backups/config/`` — same contents, same secrets.
     if parts[-1] != "config.yaml" and not parts[-1].startswith(("config.yaml.good.", "config.yaml.corrupt.")):
         return False
-    return hermes_home or ".hermes" in parts[:-1] or _is_under_hermes_home(path)
+    return akramcode_home or ".akramcode" in parts[:-1] or _is_under_akramcode_home(path)
 
 
 def _command_reads_secret_file(command: str | None) -> bool:
@@ -1167,7 +1167,7 @@ def redact_for_egress(text: str) -> str:
 def redact_terminal_output(output: str, command: str | None = None, *, force: bool = False) -> str:
     """Single redaction policy for ALL terminal-output surfaces: the ENV/YAML-assignment
     pass runs only when ``command`` is an env dump or reads a secret-bearing file (``.env``,
-    shell rc, Hermes ``config.yaml``); otherwise code_file=True avoids false positives on
+    shell rc, AkramCode ``config.yaml``); otherwise code_file=True avoids false positives on
     source/config dumps."""
     if not output:
         return output

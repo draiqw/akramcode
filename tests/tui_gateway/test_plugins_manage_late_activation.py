@@ -41,7 +41,7 @@ def _commit_plugin_selection(enabled, disabled, **_kwargs):
 
 
 def test_plugins_manage_install_rescans_fires_on_plugin_loaded_and_exposes_mcp_servers():
-    (Path(os.environ["HERMES_HOME"]) / "plugins").mkdir(exist_ok=True)
+    (Path(os.environ["AKRAMCODE_HOME"]) / "plugins").mkdir(exist_ok=True)
     manager = get_plugin_manager()
     manager.discover_and_load()  # the serve process booted long before the install
     events: list = []

@@ -13,12 +13,12 @@ import threading
 import time
 from unittest.mock import MagicMock, patch
 
-from cli import HermesCLI
+from cli import AkramCodeCLI
 from agent.i18n import t
 
 
 def _make_cli_stub():
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = AkramCodeCLI.__new__(AkramCodeCLI)
     cli._clarify_state = None
     cli._clarify_freetext = False
     cli._clarify_multi_base = None

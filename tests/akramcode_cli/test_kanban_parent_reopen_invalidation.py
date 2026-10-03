@@ -158,16 +158,16 @@ def test_dashboard_and_db_paths_produce_identical_outcomes(tmp_path, monkeypatch
     import importlib.util
     import sys
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
 
     repo_root = Path(__file__).resolve().parents[2]
     plugin_file = repo_root / "plugins" / "kanban" / "dashboard" / "plugin_api.py"
     spec = importlib.util.spec_from_file_location(
-        "hermes_dashboard_plugin_kanban_m3_test", plugin_file,
+        "akramcode_dashboard_plugin_kanban_m3_test", plugin_file,
     )
     assert spec is not None and spec.loader is not None
     mod = importlib.util.module_from_spec(spec)

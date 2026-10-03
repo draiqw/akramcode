@@ -1,7 +1,7 @@
 """The update→restart obligation is HOST-scoped, and one update restarts the host gateway once.
 
-Multiplex-only (Teknium ruling): exactly one ``hermes gateway run`` per host serves every
-profile. The obligation used to live in ONE profile's ``HERMES_HOME``, so ``hermes -p coder
+Multiplex-only (Teknium ruling): exactly one ``akramcode gateway run`` per host serves every
+profile. The obligation used to live in ONE profile's ``AKRAMCODE_HOME``, so ``akramcode -p coder
 update`` armed and cleared coder's copy while restarting the SHARED process; no other profile
 could see that obligation, and every profile that ran the catch-up killed the same gateway
 again. These tests pin the host-scoped contract:
@@ -38,8 +38,8 @@ def _units_belong_to_this_update(monkeypatch):
 
 @pytest.fixture
 def two_profiles(tmp_path, monkeypatch):
-    """Two profile HERMES_HOMEs behind ONE host state dir — the real multiplex topology."""
-    monkeypatch.setenv("HERMES_GATEWAY_LOCK_DIR", str(tmp_path / "gateway-locks"))
+    """Two profile AKRAMCODE_HOMEs behind ONE host state dir — the real multiplex topology."""
+    monkeypatch.setenv("AKRAMCODE_GATEWAY_LOCK_DIR", str(tmp_path / "gateway-locks"))
     homes = {}
     for name in ("coder", "writer"):
         home = tmp_path / "profiles" / name
@@ -49,7 +49,7 @@ def two_profiles(tmp_path, monkeypatch):
 
 
 def _enter(monkeypatch, home) -> None:
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
 
 
 def _arm(profile_runtime: str) -> None:
@@ -111,15 +111,15 @@ def test_leftover_per_profile_units_restart_their_one_host_process_once(monkeypa
 
     failed: list = []
     fleet._restart_systemd_gateway_units_best_effort(
-        failed, _listing(["hermes-gateway.service", "hermes-gateway-coder.service", "hermes-gateway-writer.service"]))
+        failed, _listing(["akramcode-gateway.service", "akramcode-gateway-coder.service", "akramcode-gateway-writer.service"]))
 
-    assert restarted == ["hermes-gateway"]
+    assert restarted == ["akramcode-gateway"]
     assert failed == []
 
 
 def test_units_with_distinct_live_pids_are_each_restarted(monkeypatch):
     """Control: genuinely separate processes are still separate restart targets."""
-    pids = {"hermes-gateway": 1, "hermes-gateway-coder": 2}
+    pids = {"akramcode-gateway": 1, "akramcode-gateway-coder": 2}
     monkeypatch.setattr(fleet, "_unit_main_pid", lambda scope_cmd, svc: pids[svc], raising=False)
     restarted: list[str] = []
     monkeypatch.setattr(
@@ -129,15 +129,15 @@ def test_units_with_distinct_live_pids_are_each_restarted(monkeypatch):
     monkeypatch.setattr(fleet, "_SYSTEMD_SCOPES", (("user", ["systemctl", "--user"]),))
 
     fleet._restart_systemd_gateway_units_best_effort(
-        [], _listing(["hermes-gateway.service", "hermes-gateway-coder.service"]))
+        [], _listing(["akramcode-gateway.service", "akramcode-gateway-coder.service"]))
 
-    assert sorted(restarted) == ["hermes-gateway", "hermes-gateway-coder"]
+    assert sorted(restarted) == ["akramcode-gateway", "akramcode-gateway-coder"]
 
 
 def _host_record(tmp_path, monkeypatch, profiles: list[str]) -> None:
     lock_dir = tmp_path / "gateway-locks"
     lock_dir.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_GATEWAY_LOCK_DIR", str(lock_dir))
+    monkeypatch.setenv("AKRAMCODE_GATEWAY_LOCK_DIR", str(lock_dir))
     (lock_dir / "host-gateway.json").write_text(
         json.dumps({"role": "gateway", "pid": os.getpid(), "profiles": profiles}), encoding="utf-8")
 
@@ -162,7 +162,7 @@ def test_recovery_restarts_one_host_process_for_all_the_profiles_it_serves(tmp_p
 
 def test_recovery_keeps_separate_processes_separate(tmp_path, monkeypatch):
     """Control: with no host record, each profile is its own restart target."""
-    monkeypatch.setenv("HERMES_GATEWAY_LOCK_DIR", str(tmp_path / "empty-locks"))
+    monkeypatch.setenv("AKRAMCODE_GATEWAY_LOCK_DIR", str(tmp_path / "empty-locks"))
     argvs: list[list[str]] = []
 
     def fake_run(argv, **kwargs):
@@ -180,7 +180,7 @@ def test_recovery_keeps_separate_processes_separate(tmp_path, monkeypatch):
 def test_unwritable_host_state_dir_still_arms_the_obligation(two_profiles, no_live_fleet, monkeypatch, tmp_path):
     """An unwritable host state dir must never silently disarm the update→restart obligation.
 
-    The host record moved out of ``$HERMES_HOME`` (writable by construction) into the host state
+    The host record moved out of ``$AKRAMCODE_HOME`` (writable by construction) into the host state
     dir, which a read-only mount or a container UID mismatch can make unwritable. Losing the
     obligation there is the #117275 outage shape: an interrupted update leaves stale code running
     with no warning and no catch-up restart.
@@ -231,17 +231,17 @@ def test_a_failing_main_pid_probe_keeps_its_own_restart():
 
 
 @pytest.mark.parametrize("env", [
-    {"HERMES_GATEWAY_LOCK_DIR": "/srv/override/locks"},
+    {"AKRAMCODE_GATEWAY_LOCK_DIR": "/srv/override/locks"},
     {"XDG_STATE_HOME": "/srv/xdg-state"},
     {"XDG_STATE_HOME": "relative/state"},
     {},
 ])
 def test_recovery_host_state_dir_matches_the_gateway_resolver(monkeypatch, env):
-    """``update_restart_recovery`` re-implements the lock-dir rule (it may import no Hermes code
+    """``update_restart_recovery`` re-implements the lock-dir rule (it may import no AkramCode code
     at runtime); the duplicate must not drift from ``gateway.status._get_lock_dir``."""
     from gateway.status import _get_lock_dir
 
-    for name in ("HERMES_GATEWAY_LOCK_DIR", "XDG_STATE_HOME"):
+    for name in ("AKRAMCODE_GATEWAY_LOCK_DIR", "XDG_STATE_HOME"):
         monkeypatch.delenv(name, raising=False)
     for name, value in env.items():
         monkeypatch.setenv(name, value)

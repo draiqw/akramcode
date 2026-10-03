@@ -67,11 +67,11 @@ def test_runtime_selected_copilot_exchanges_ambient_pool_token(tmp_path, monkeyp
     `--provider copilot`) must still hand the EXCHANGED token and the enterprise base_url to the
     client: the seeder leaves an ambient gh-CLI credential raw while copilot is not configured
     (#114740), and a raw token 400s on enterprise-only models."""
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    (hermes_home / "auth.json").write_text(json.dumps({"version": 1, "credential_pool": {}}))
-    (hermes_home / "config.yaml").write_text("model:\n  provider: deepseek\n  default: deepseek-chat\n")
+    akramcode_home = tmp_path / "akramcode"
+    akramcode_home.mkdir()
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
+    (akramcode_home / "auth.json").write_text(json.dumps({"version": 1, "credential_pool": {}}))
+    (akramcode_home / "config.yaml").write_text("model:\n  provider: deepseek\n  default: deepseek-chat\n")
     from akramcode_cli import config as _cfg
     _cfg._LOAD_CONFIG_CACHE.clear()
     _cfg._RAW_CONFIG_CACHE.clear()
@@ -112,7 +112,7 @@ def test_resolve_runtime_provider_uses_credential_pool(monkeypatch):
     assert resolved["source"] == "manual"
 
 
-def test_codex_pool_honors_hermes_codex_base_url(monkeypatch):
+def test_codex_pool_honors_akramcode_codex_base_url(monkeypatch):
     """The profile-wide Codex endpoint override must apply to pool credentials too."""
     class _Entry:
         access_token = "pool-token"
@@ -128,7 +128,7 @@ def test_codex_pool_honors_hermes_codex_base_url(monkeypatch):
 
     monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "openai-codex")
     monkeypatch.setattr(rp, "load_pool", lambda provider: _Pool())
-    monkeypatch.setenv("HERMES_CODEX_BASE_URL", "http://127.0.0.1:8787/v1")
+    monkeypatch.setenv("AKRAMCODE_CODEX_BASE_URL", "http://127.0.0.1:8787/v1")
 
     resolved = rp.resolve_runtime_provider(requested="openai-codex")
 
@@ -153,7 +153,7 @@ def test_codex_pool_honors_model_base_url(monkeypatch):
 
     monkeypatch.setattr(rp, "resolve_provider", lambda *a, **k: "openai-codex")
     monkeypatch.setattr(rp, "load_pool", lambda provider: _Pool())
-    monkeypatch.delenv("HERMES_CODEX_BASE_URL", raising=False)
+    monkeypatch.delenv("AKRAMCODE_CODEX_BASE_URL", raising=False)
     monkeypatch.setattr(rp, "_get_model_config", lambda: {
         "provider": "openai-codex", "default": "gpt-5.3-codex", "base_url": "http://127.0.0.1:8400/backend-api/codex/"})
 
@@ -811,7 +811,7 @@ def test_codex_app_server_opt_in_routes_only_named_custom_providers(monkeypatch)
     resolved = rp.resolve_runtime_provider(requested="custom:my-gateway")
     assert (resolved["provider"], resolved["requested_provider"], resolved["api_mode"]) == (
         "custom", "custom:my-gateway", "codex_app_server")
-    assert resolved["api_key"] == "test-key"  # Hermes' own aux/fallback client keeps the credential
+    assert resolved["api_key"] == "test-key"  # AkramCode' own aux/fallback client keeps the credential
 
     anonymous = rp.resolve_runtime_provider(requested="custom", explicit_base_url="https://gateway.example.com/v1",
                                             explicit_api_key="k")
@@ -1235,7 +1235,7 @@ def test_explicit_openrouter_config_mirror_bypasses_pool(monkeypatch):
     assert resolved["api_key"] == "router-key"
     assert resolved.get("credential_pool") is None
 
-    # The canonical URL that `hermes setup` persists is NOT a mirror: the pool must still serve it.
+    # The canonical URL that `akramcode setup` persists is NOT a mirror: the pool must still serve it.
     monkeypatch.setattr(rp, "_get_model_config", lambda: {"provider": "openrouter", "base_url": "https://openrouter.ai/api/v1"})
     canonical = rp.resolve_runtime_provider(requested="openrouter")
     assert canonical["api_key"] == "pool-key" and canonical.get("credential_pool") is not None
@@ -2169,7 +2169,7 @@ def test_bare_custom_resolves_model_key_env_for_configured_base_url(monkeypatch)
     monkeypatch.setenv("CUSTOM_BASE_URL", "https://other.example.test/v1")
     assert rp.resolve_runtime_provider(requested="custom")["api_key"] == "no-key-required"
 
-    # Direct-alias rung (`hermes --resume` provider change, `/model` direct aliases pass explicit_base_url):
+    # Direct-alias rung (`akramcode --resume` provider change, `/model` direct aliases pass explicit_base_url):
     # the declared key follows the configured endpoint and stays home for any other endpoint.
     monkeypatch.delenv("CUSTOM_BASE_URL", raising=False)
     direct = rp.resolve_runtime_provider(requested="custom", explicit_base_url="https://api.example.test/v1")
@@ -2196,7 +2196,7 @@ def test_configured_key_env_resolving_empty_is_logged(monkeypatch, caplog):
 # ── model.openai_runtime: codex_app_server on every ladder rung (#115169) ─────────────────
 
 _CODEX_STORE_CREDS = {"base_url": "https://chatgpt.com/backend-api/codex", "api_key": "tok",
-                      "source": "hermes-auth-store", "last_refresh": 1}
+                      "source": "akramcode-auth-store", "last_refresh": 1}
 
 
 def _codex_rung(monkeypatch, rung: str) -> dict:

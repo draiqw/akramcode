@@ -1,4 +1,4 @@
-"""#69283: kanban write guard prevents tests from writing to real ~/.hermes."""
+"""#69283: kanban write guard prevents tests from writing to real ~/.akramcode."""
 
 from __future__ import annotations
 
@@ -12,10 +12,10 @@ pytestmark = pytest.mark.allow_real_home_io
 
 
 def test_connect_succeeds_under_test_home(tmp_path, monkeypatch):
-    """When HERMES_HOME is a temp dir, kanban connect succeeds normally."""
-    home = tmp_path / "hermes_home"
+    """When AKRAMCODE_HOME is a temp dir, kanban connect succeeds normally."""
+    home = tmp_path / "akramcode_home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     conn = kbc.connect()
     try:
         assert str(kanban_db.kanban_db_path()).startswith(str(home))

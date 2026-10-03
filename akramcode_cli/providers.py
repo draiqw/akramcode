@@ -1,4 +1,4 @@
-"""Single source of truth for provider identity in Hermes Agent."""
+"""Single source of truth for provider identity in AkramCode Agent."""
 
 from __future__ import annotations
 
@@ -11,11 +11,11 @@ from utils import base_url_host_matches, base_url_hostname
 logger = logging.getLogger(__name__)
 
 
-# -- Hermes overlay: metadata models.dev doesn't provide ----------------------
+# -- AkramCode overlay: metadata models.dev doesn't provide ----------------------
 
 @dataclass(frozen=True)
-class HermesOverlay:
-    """Hermes-specific provider metadata layered on top of models.dev."""
+class AkramCodeOverlay:
+    """AkramCode-specific provider metadata layered on top of models.dev."""
 
     transport: str = "openai_chat"        # openai_chat | anthropic_messages | codex_responses
     is_aggregator: bool = False
@@ -25,70 +25,70 @@ class HermesOverlay:
     base_url_env_var: str = ""            # env var for user-custom base URL
 
 
-HERMES_OVERLAYS: Dict[str, HermesOverlay] = {
-    "moa": HermesOverlay(auth_type="virtual", base_url_override="moa://local"),
-    "openrouter": HermesOverlay(is_aggregator=True, base_url_env_var="OPENROUTER_BASE_URL"),
-    "nous": HermesOverlay(auth_type="oauth_device_code", base_url_override="https://inference-api.nousresearch.com/v1"),
-    "openai-codex": HermesOverlay(transport="codex_responses", auth_type="oauth_external",
+AKRAMCODE_OVERLAYS: Dict[str, AkramCodeOverlay] = {
+    "moa": AkramCodeOverlay(auth_type="virtual", base_url_override="moa://local"),
+    "openrouter": AkramCodeOverlay(is_aggregator=True, base_url_env_var="OPENROUTER_BASE_URL"),
+    "nous": AkramCodeOverlay(auth_type="oauth_device_code", base_url_override="https://inference-api.nousresearch.com/v1"),
+    "openai-codex": AkramCodeOverlay(transport="codex_responses", auth_type="oauth_external",
                                   base_url_override="https://chatgpt.com/backend-api/codex"),
-    "openai-api": HermesOverlay(transport="codex_responses", base_url_override="https://api.openai.com/v1",
+    "openai-api": AkramCodeOverlay(transport="codex_responses", base_url_override="https://api.openai.com/v1",
                                 base_url_env_var="OPENAI_BASE_URL"),
-    "xai-oauth": HermesOverlay(transport="codex_responses", auth_type="oauth_external",
+    "xai-oauth": AkramCodeOverlay(transport="codex_responses", auth_type="oauth_external",
                                base_url_override="https://api.x.ai/v1", base_url_env_var="XAI_BASE_URL"),
-    "qwen-oauth": HermesOverlay(auth_type="oauth_external", base_url_override="https://portal.qwen.ai/v1",
-                                base_url_env_var="HERMES_QWEN_BASE_URL"),
-    "lmstudio": HermesOverlay(extra_env_vars=("LM_API_KEY",), base_url_override="http://127.0.0.1:1234/v1",
+    "qwen-oauth": AkramCodeOverlay(auth_type="oauth_external", base_url_override="https://portal.qwen.ai/v1",
+                                base_url_env_var="AKRAMCODE_QWEN_BASE_URL"),
+    "lmstudio": AkramCodeOverlay(extra_env_vars=("LM_API_KEY",), base_url_override="http://127.0.0.1:1234/v1",
                               base_url_env_var="LM_BASE_URL"),
-    "copilot-acp": HermesOverlay(transport="codex_responses", auth_type="external_process",
+    "copilot-acp": AkramCodeOverlay(transport="codex_responses", auth_type="external_process",
                                  base_url_override="acp://copilot", base_url_env_var="COPILOT_ACP_BASE_URL"),
-    "github-copilot": HermesOverlay(extra_env_vars=("COPILOT_GITHUB_TOKEN", "GH_TOKEN")),
-    "anthropic": HermesOverlay(transport="anthropic_messages", extra_env_vars=("ANTHROPIC_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN")),
-    "zai": HermesOverlay(extra_env_vars=("GLM_API_KEY", "ZAI_API_KEY", "Z_AI_API_KEY"), base_url_env_var="GLM_BASE_URL"),
-    "kimi-for-coding": HermesOverlay(base_url_env_var="KIMI_BASE_URL"),
-    "stepfun": HermesOverlay(extra_env_vars=("STEPFUN_API_KEY",),
+    "github-copilot": AkramCodeOverlay(extra_env_vars=("COPILOT_GITHUB_TOKEN", "GH_TOKEN")),
+    "anthropic": AkramCodeOverlay(transport="anthropic_messages", extra_env_vars=("ANTHROPIC_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN")),
+    "zai": AkramCodeOverlay(extra_env_vars=("GLM_API_KEY", "ZAI_API_KEY", "Z_AI_API_KEY"), base_url_env_var="GLM_BASE_URL"),
+    "kimi-for-coding": AkramCodeOverlay(base_url_env_var="KIMI_BASE_URL"),
+    "stepfun": AkramCodeOverlay(extra_env_vars=("STEPFUN_API_KEY",),
                              base_url_override="https://api.stepfun.ai/step_plan/v1",
                              base_url_env_var="STEPFUN_BASE_URL"),
-    "minimax": HermesOverlay(transport="anthropic_messages", base_url_env_var="MINIMAX_BASE_URL"),
-    "minimax-oauth": HermesOverlay(transport="anthropic_messages", auth_type="oauth_external",
+    "minimax": AkramCodeOverlay(transport="anthropic_messages", base_url_env_var="MINIMAX_BASE_URL"),
+    "minimax-oauth": AkramCodeOverlay(transport="anthropic_messages", auth_type="oauth_external",
                                    base_url_override="https://api.minimax.io/anthropic"),
-    "minimax-cn": HermesOverlay(transport="anthropic_messages", base_url_env_var="MINIMAX_CN_BASE_URL"),
-    "deepseek": HermesOverlay(base_url_env_var="DEEPSEEK_BASE_URL"),
-    "alibaba": HermesOverlay(base_url_env_var="DASHSCOPE_BASE_URL"),
-    "alibaba-coding-plan": HermesOverlay(base_url_env_var="ALIBABA_CODING_PLAN_BASE_URL"),
-    "vercel": HermesOverlay(is_aggregator=True),
-    "opencode": HermesOverlay(is_aggregator=True, base_url_env_var="OPENCODE_ZEN_BASE_URL"),
-    "opencode-go": HermesOverlay(is_aggregator=True, base_url_env_var="OPENCODE_GO_BASE_URL"),
-    "kilo": HermesOverlay(is_aggregator=True, base_url_env_var="KILOCODE_BASE_URL"),
-    "huggingface": HermesOverlay(is_aggregator=True, base_url_env_var="HF_BASE_URL"),
-    "novita": HermesOverlay(is_aggregator=True, base_url_env_var="NOVITA_BASE_URL"),
-    "xai": HermesOverlay(transport="codex_responses", base_url_override="https://api.x.ai/v1", base_url_env_var="XAI_BASE_URL"),
-    "nvidia": HermesOverlay(base_url_override="https://integrate.api.nvidia.com/v1", base_url_env_var="NVIDIA_BASE_URL"),
-    "xiaomi": HermesOverlay(base_url_env_var="XIAOMI_BASE_URL"),
-    "tencent-tokenhub": HermesOverlay(base_url_env_var="TOKENHUB_BASE_URL"),
-    "tencent-tokenplan": HermesOverlay(transport="anthropic_messages",
+    "minimax-cn": AkramCodeOverlay(transport="anthropic_messages", base_url_env_var="MINIMAX_CN_BASE_URL"),
+    "deepseek": AkramCodeOverlay(base_url_env_var="DEEPSEEK_BASE_URL"),
+    "alibaba": AkramCodeOverlay(base_url_env_var="DASHSCOPE_BASE_URL"),
+    "alibaba-coding-plan": AkramCodeOverlay(base_url_env_var="ALIBABA_CODING_PLAN_BASE_URL"),
+    "vercel": AkramCodeOverlay(is_aggregator=True),
+    "opencode": AkramCodeOverlay(is_aggregator=True, base_url_env_var="OPENCODE_ZEN_BASE_URL"),
+    "opencode-go": AkramCodeOverlay(is_aggregator=True, base_url_env_var="OPENCODE_GO_BASE_URL"),
+    "kilo": AkramCodeOverlay(is_aggregator=True, base_url_env_var="KILOCODE_BASE_URL"),
+    "huggingface": AkramCodeOverlay(is_aggregator=True, base_url_env_var="HF_BASE_URL"),
+    "novita": AkramCodeOverlay(is_aggregator=True, base_url_env_var="NOVITA_BASE_URL"),
+    "xai": AkramCodeOverlay(transport="codex_responses", base_url_override="https://api.x.ai/v1", base_url_env_var="XAI_BASE_URL"),
+    "nvidia": AkramCodeOverlay(base_url_override="https://integrate.api.nvidia.com/v1", base_url_env_var="NVIDIA_BASE_URL"),
+    "xiaomi": AkramCodeOverlay(base_url_env_var="XIAOMI_BASE_URL"),
+    "tencent-tokenhub": AkramCodeOverlay(base_url_env_var="TOKENHUB_BASE_URL"),
+    "tencent-tokenplan": AkramCodeOverlay(transport="anthropic_messages",
                                        base_url_override="https://api.lkeap.cloud.tencent.com/plan/anthropic",
                                        base_url_env_var="TOKENPLAN_BASE_URL"),
-    "arcee": HermesOverlay(base_url_override="https://api.arcee.ai/api/v1", base_url_env_var="ARCEE_BASE_URL"),
-    "gmi": HermesOverlay(extra_env_vars=("GMI_API_KEY",), base_url_override="https://api.gmi-serving.com/v1",
+    "arcee": AkramCodeOverlay(base_url_override="https://api.arcee.ai/api/v1", base_url_env_var="ARCEE_BASE_URL"),
+    "gmi": AkramCodeOverlay(extra_env_vars=("GMI_API_KEY",), base_url_override="https://api.gmi-serving.com/v1",
                          base_url_env_var="GMI_BASE_URL"),
-    "fireworks": HermesOverlay(extra_env_vars=("FIREWORKS_API_KEY",),
+    "fireworks": AkramCodeOverlay(extra_env_vars=("FIREWORKS_API_KEY",),
                                base_url_override="https://api.fireworks.ai/inference/v1"),
-    "actual": HermesOverlay(transport="chat_completions", extra_env_vars=("ACTUAL_API_KEY",),
+    "actual": AkramCodeOverlay(transport="chat_completions", extra_env_vars=("ACTUAL_API_KEY",),
                             base_url_override="https://api.actual.inc/v1", base_url_env_var="ACTUAL_BASE_URL"),
-    "upstage": HermesOverlay(extra_env_vars=("UPSTAGE_API_KEY",), base_url_override="https://api.upstage.ai/v1",
+    "upstage": AkramCodeOverlay(extra_env_vars=("UPSTAGE_API_KEY",), base_url_override="https://api.upstage.ai/v1",
                              base_url_env_var="UPSTAGE_BASE_URL"),
-    "nebius-token-factory": HermesOverlay(extra_env_vars=("NEBIUS_API_KEY", "NEBIUS_TOKEN_FACTORY_API_KEY"),
+    "nebius-token-factory": AkramCodeOverlay(extra_env_vars=("NEBIUS_API_KEY", "NEBIUS_TOKEN_FACTORY_API_KEY"),
                                           base_url_override="https://api.tokenfactory.nebius.com/v1",
                                           base_url_env_var="NEBIUS_BASE_URL"),
-    "ollama-cloud": HermesOverlay(base_url_override="https://ollama.com/v1", base_url_env_var="OLLAMA_BASE_URL"),
+    "ollama-cloud": AkramCodeOverlay(base_url_override="https://ollama.com/v1", base_url_env_var="OLLAMA_BASE_URL"),
     # Azure Foundry serves OpenAI- and Anthropic-style endpoints; transport comes from model.api_mode.
-    "azure-foundry": HermesOverlay(base_url_env_var="AZURE_FOUNDRY_BASE_URL"),
-    "bedrock": HermesOverlay(transport="bedrock_converse", auth_type="aws_sdk"),
+    "azure-foundry": AkramCodeOverlay(base_url_env_var="AZURE_FOUNDRY_BASE_URL"),
+    "bedrock": AkramCodeOverlay(transport="bedrock_converse", auth_type="aws_sdk"),
     # Vertex is OAuth2 (service-account JSON / ADC), resolved by agent/vertex_adapter.py. Without an
     # overlay get_provider("vertex") is None and auxiliary_client._preserve_provider_with_base_url
     # would treat a Vertex MoA slot as an unknown custom endpoint, losing the identity
     # _refresh_provider_credentials() needs to re-mint an expired token on 401.
-    "vertex": HermesOverlay(auth_type="vertex"),
+    "vertex": AkramCodeOverlay(auth_type="vertex"),
 }
 
 
@@ -107,7 +107,7 @@ class ProviderDef:
     is_aggregator: bool = False
     auth_type: str = "api_key"
     doc: str = ""
-    source: str = ""                      # "models.dev", "hermes", "user-config"
+    source: str = ""                      # "models.dev", "akramcode", "user-config"
 
 
 # -- Aliases: human-friendly / legacy names grouped by canonical (models.dev where possible) id;
@@ -185,20 +185,20 @@ def _models_dev_info(canonical: str, allow_network: bool = True):
         return None
 
 
-def _overlay_pdef(canonical, ov: HermesOverlay, name, env_vars, base_url, doc, source) -> ProviderDef:
+def _overlay_pdef(canonical, ov: AkramCodeOverlay, name, env_vars, base_url, doc, source) -> ProviderDef:
     return ProviderDef(id=canonical, name=name, transport=ov.transport, api_key_env_vars=env_vars, base_url=base_url,
                        base_url_env_var=ov.base_url_env_var, is_aggregator=ov.is_aggregator, auth_type=ov.auth_type, doc=doc,
                        source=source)
 
 
 def get_provider(name: str, *, allow_network: bool = True) -> Optional[ProviderDef]:
-    """Look up a built-in provider by id or alias: models.dev catalog merged with the Hermes overlay;
-    Hermes-only overlay (nous, openai-codex, …); plugin provider profiles with a concrete endpoint."""
+    """Look up a built-in provider by id or alias: models.dev catalog merged with the AkramCode overlay;
+    AkramCode-only overlay (nous, openai-codex, …); plugin provider profiles with a concrete endpoint."""
     canonical = normalize_provider(name)
     mdev_info = _models_dev_info(canonical, allow_network)
-    overlay = HERMES_OVERLAYS.get(canonical)
+    overlay = AKRAMCODE_OVERLAYS.get(canonical)
     if mdev_info is not None:
-        ov = overlay or HermesOverlay()
+        ov = overlay or AkramCodeOverlay()
         env_vars = list(mdev_info.env)
         for ev in ov.extra_env_vars:
             if ev not in env_vars:
@@ -207,9 +207,9 @@ def get_provider(name: str, *, allow_network: bool = True) -> Optional[ProviderD
                              mdev_info.doc, "models.dev")
     if overlay is not None:
         return _overlay_pdef(canonical, overlay, _LABEL_OVERRIDES.get(canonical, canonical), overlay.extra_env_vars,
-                             overlay.base_url_override, "", "hermes")
+                             overlay.base_url_override, "", "akramcode")
     # Plugin-registered profiles (plugins/model-providers/<name>/) absent from models.dev and
-    # HERMES_OVERLAYS would otherwise be "Unknown provider" in /model, --provider and model-switch
+    # AKRAMCODE_OVERLAYS would otherwise be "Unknown provider" in /model, --provider and model-switch
     # even though the picker lists them. Only profiles with a literal or env-configured endpoint
     # resolve at this rung: placeholder profiles like ``custom`` (aliases ollama/local/vllm) ship
     # an empty base_url and are completed by config.yaml custom_providers — resolving them would
@@ -475,7 +475,7 @@ def resolve_custom_provider(name: str, custom_providers: Optional[List[Dict[str,
 
 
 def _lossy_alias_registry_pdef(raw: str, canonical: str) -> Optional[ProviderDef]:
-    """Exact Hermes registry ids win over LOSSY alias collapsing (kimi-coding-cn must stay distinct
+    """Exact AkramCode registry ids win over LOSSY alias collapsing (kimi-coding-cn must stay distinct
     from kimi-coding instead of collapsing through the shared models.dev alias "kimi-for-coding").
     A collapse is lossy only when MULTIPLE registry providers normalize to the same canonical name;
     single-entry rewrites ("copilot" -> "github-copilot") are correct routing and keep resolving
@@ -488,7 +488,7 @@ def _lossy_alias_registry_pdef(raw: str, canonical: str) -> Optional[ProviderDef
         if sum(1 for _rid in _AUTH_PROVIDER_REGISTRY if normalize_provider(_rid) == canonical) > 1:
             return ProviderDef(id=_pcfg.id, name=_pcfg.name, transport="openai_chat",
                                api_key_env_vars=tuple(_pcfg.api_key_env_vars or ()), base_url=_pcfg.inference_base_url or "",
-                               source="hermes-auth-registry")
+                               source="akramcode-auth-registry")
     except Exception:
         pass
     return None
@@ -502,7 +502,7 @@ LLAMACPP_ALIASES: Tuple[str, ...] = (LLAMACPP_PROVIDER_ID, "llama.cpp", "llama-c
 
 
 def _has_staged_local_models() -> bool:
-    """True when GGUFs are staged under the Hermes home's ``models/`` — the model the picker's Local
+    """True when GGUFs are staged under the AkramCode home's ``models/`` — the model the picker's Local
     row offers, which the runtime seam serves by booting/attaching a server on selection."""
     try:
         from akramcode_cli.local_runtime.bootstrap import staged_model_ids
@@ -575,7 +575,7 @@ def resolve_provider_full(name: str, user_providers: Optional[Dict[str, Any]] = 
         pass
     # Plugin profiles whose endpoint is minted at runtime (empty base_url, e.g. a token exchange
     # that also returns the host) are still real providers: /model --provider, the model picker
-    # and `hermes model` must not reject them as unknown. Last rung, so every user-configured
+    # and `akramcode model` must not reject them as unknown. Last rung, so every user-configured
     # entry above wins; the bare ``custom`` placeholder is excluded because model-switch completes
     # it from the current endpoint (see get_provider).
     pdef = _plugin_profile_pdef(canonical)

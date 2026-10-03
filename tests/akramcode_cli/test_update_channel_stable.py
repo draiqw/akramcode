@@ -45,7 +45,7 @@ class TestSourceUpdateChannel:
         monkeypatch.setattr(update_cmd._m(), "PROJECT_ROOT", root)
         home = tmp_path / "home"
         home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(home))
         (home / "config.yaml").write_text(json.dumps(config), encoding="utf-8")
         assert _source_update_channel(_Args()) == "stable"
 
@@ -58,11 +58,11 @@ class TestSourceUpdateChannel:
         import akramcode_cli.update_cmd as update_cmd
 
         monkeypatch.setattr(update_cmd._m(), "PROJECT_ROOT", root)
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
         assert _source_update_channel(_Args()) == "main"
 
     def test_config_failure_never_changes_the_subscription(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
         (tmp_path / "config.yaml").write_text("update: [broken", encoding="utf-8")
         with pytest.raises(RuntimeError, match="formatting error"):
             _source_update_channel(_Args())

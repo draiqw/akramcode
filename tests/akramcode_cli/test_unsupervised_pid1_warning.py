@@ -1,5 +1,5 @@
 """The PID-1-with-no-init startup warning (#111577): a Compose ``entrypoint:`` override
-makes hermes PID 1 with no reaper above it, so orphaned children pile up as zombies."""
+makes akramcode PID 1 with no reaper above it, so orphaned children pile up as zombies."""
 
 from akramcode_cli.main import _warn_if_unsupervised_pid1
 

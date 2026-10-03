@@ -11,10 +11,10 @@ Three live proofs (no mocks of the code under test):
 
 2. ``TestWatcherRespawnLive`` — drives the REAL
    ``akramcode_cli.gateway._spawn_gateway_restart_watcher`` end to end with a
-   real stub gateway process, against a temp HERMES_HOME:
+   real stub gateway process, against a temp AKRAMCODE_HOME:
    - the respawned process's stderr must land in ``logs/gateway-stdio.log``
      (on unfixed main it went to DEVNULL: a job-teardown kill left ZERO trace);
-   - the respawn env must carry ``_HERMES_GATEWAY_BREAKAWAY=1`` (the stamp
+   - the respawn env must carry ``_AKRAMCODE_GATEWAY_BREAKAWAY=1`` (the stamp
      that makes a later job-teardown death diagnosable in exit-diag).
 
 3. ``TestResumeVerificationLive`` — the user-visible symptom: the updater's
@@ -224,7 +224,7 @@ class TestWatcherRespawnLive:
     """Drive the real ``_spawn_gateway_restart_watcher`` with real processes."""
 
     def _run_watcher_cycle(self, tmp_path: Path, monkeypatch) -> tuple[Path, Path]:
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
         (tmp_path / "home").mkdir(parents=True, exist_ok=True)
 
         marker = tmp_path / "respawned.marker"
@@ -233,7 +233,7 @@ class TestWatcherRespawnLive:
         stub = (
             "import os, pathlib, sys\n"
             f"pathlib.Path(r'{marker}').write_text(\n"
-            "    os.environ.get('_HERMES_GATEWAY_BREAKAWAY', 'MISSING'),\n"
+            "    os.environ.get('_AKRAMCODE_GATEWAY_BREAKAWAY', 'MISSING'),\n"
             "    encoding='utf-8')\n"
             "print('stub-gateway-stderr-trace', file=sys.stderr)\n"
         )
@@ -281,7 +281,7 @@ class TestResumeVerificationLive:
     """The user-visible lie: '✓ Restarting' printed for a dead gateway."""
 
     def test_dead_relaunch_is_not_reported_as_success(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
         (tmp_path / "home").mkdir(parents=True, exist_ok=True)
 
         import akramcode_cli.gateway as gateway

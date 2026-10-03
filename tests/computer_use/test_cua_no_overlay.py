@@ -2,7 +2,7 @@
 
 cua-driver's cursor overlay rendering loop can consume CPU indefinitely when
 idle (#28152, #47032), and on Linux/X11 its fullscreen always-on-top overlay
-window can wedge the desktop when a session ends uncleanly. Hermes passes
+window can wedge the desktop when a session ends uncleanly. AkramCode passes
 ``--no-overlay`` to suppress it when the ``computer_use.no_overlay`` config is
 enabled (or auto-detected on macOS, headless Linux / WSL2, and Linux X11).
 
@@ -135,7 +135,7 @@ class TestDriverSupportsNoOverlay:
 
 
 class TestMcpInvocationUsesResolvedCommand:
-    """Surface 8 (NousResearch/hermes-agent#47072) + sweeper feedback
+    """Surface 8 (NousResearch/akramcode-agent#47072) + sweeper feedback
     #4701565902: when the manifest surfaces a relocated executable for
     ``mcp_invocation.command``, the support probe must run against THAT
     binary, not the system-resolved ``_CUA_DRIVER_CMD``. Otherwise a

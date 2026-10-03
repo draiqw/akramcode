@@ -110,9 +110,9 @@ def _ensure_sdk(extra: str) -> None:
             pm.sync_venv([extra], explicit=True)
         except (pm.InstallError, OSError, ValueError) as exc:
             _setup.print_warning(f"Install failed: {exc}")
-            _setup.print_info("Retry with: hermes setup terminal")
+            _setup.print_info("Retry with: akramcode setup terminal")
         else:
-            _setup.print_success(f"{extra} SDK installed. Restart Hermes to use it.")
+            _setup.print_success(f"{extra} SDK installed. Restart AkramCode to use it.")
 
 
 def _report_binary(found: str | None, missing: str, install_hint: str, found_prefix: str = "Found: ") -> None:
@@ -126,7 +126,7 @@ def _report_binary(found: str | None, missing: str, install_hint: str, found_pre
 def _setup_backend_local(config: dict) -> None:
     _setup.print_success("Terminal backend: Local")
     _setup.print_info("Commands run directly on this machine.")
-    # Gateway cwd defaults to home; sudo stays off. Both configurable via `hermes setup terminal`.
+    # Gateway cwd defaults to home; sudo stays off. Both configurable via `akramcode setup terminal`.
     config["terminal"].setdefault("cwd", str(Path.home()))
 
 
@@ -137,7 +137,7 @@ def _setup_backend_docker(config: dict) -> None:
                    "Install Docker: https://docs.docker.com/get-docker/ "
                    "or Podman: https://podman.io/docs/installation",
                    f"{docker_runtime_name(docker_exe)} found: " if docker_exe else "")
-    # Image and resource limits use defaults; tune via `hermes setup terminal`.
+    # Image and resource limits use defaults; tune via `akramcode setup terminal`.
     config["terminal"].setdefault("docker_image", _SANDBOX_IMAGE)
     _setup._info(None, "Docker sandboxes can be protected with the egress credential firewall.",
                  "It routes sandbox traffic through iron-proxy so containers receive "
@@ -149,9 +149,9 @@ def _setup_backend_docker(config: dict) -> None:
         proxy_cfg.setdefault("enforce_on_docker", True)
         _setup.print_success("Egress firewall enabled in config")
         _setup.print_info(
-            "Run `hermes egress setup` then `hermes egress start` to mint tokens and launch the proxy.")
+            "Run `akramcode egress setup` then `akramcode egress start` to mint tokens and launch the proxy.")
     else:
-        _setup.print_info("Skipping egress firewall. You can enable it later with `hermes egress setup`.")
+        _setup.print_info("Skipping egress firewall. You can enable it later with `akramcode egress setup`.")
 
 
 def _setup_backend_singularity(config: dict) -> None:
@@ -213,7 +213,7 @@ def _setup_backend_daytona(config: dict) -> None:
 def _setup_backend_vercel(config: dict) -> None:
     _setup.print_success("Terminal backend: Vercel Sandbox")
     _setup._info("Cloud microVM sandboxes with snapshot-backed filesystem persistence.",
-                 "Requires the optional Vercel SDK (installed through Hermes PM).")
+                 "Requires the optional Vercel SDK (installed through AkramCode PM).")
     _ensure_sdk("vercel")
     _prompt_vercel_sandbox_settings(config)
 
@@ -283,14 +283,14 @@ def setup_terminal_backend(config: dict):
     """Configure the terminal execution backend."""
     import platform as _platform
     _setup.print_header("Terminal Backend")
-    _setup._info("Choose where Hermes runs shell commands and code.",
+    _setup._info("Choose where AkramCode runs shell commands and code.",
                  "This affects tool execution, file access, and isolation.",
                  f"   Guide: {_setup._DOCS_BASE}/user-guide/configuration#terminal-backend-configuration", None)
     current_backend = _setup.cfg_get(config, "terminal", "backend", default="local")
     backends = list(_BUILTIN_TERMINAL_BACKENDS)
     if _platform.system() == "Linux":
         backends.append(("singularity", "Singularity/Apptainer - HPC-friendly container"))
-    # Plugin-registered backends (~/.hermes/plugins/). Fail-soft: a broken plugin must not take
+    # Plugin-registered backends (~/.akramcode/plugins/). Fail-soft: a broken plugin must not take
     # the wizard down.
     plugin_backend_names = []
     try:

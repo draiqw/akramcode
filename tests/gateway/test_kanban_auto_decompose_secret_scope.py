@@ -24,7 +24,7 @@ def test_auto_decompose_tick_reads_launch_profile_secrets_under_multiplex(monkey
     import akramcode_cli
 
     (tmp_path / ".env").write_text("ANTHROPIC_API_KEY=launch-profile-key\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     monkeypatch.setattr(kwd, "_board_slugs", lambda kb: ["default"])
 
     seen = {}

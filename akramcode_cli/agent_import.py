@@ -1,8 +1,8 @@
-"""hermes import-agent — import Claude Code / Codex CLI setups into Hermes.
+"""akramcode import-agent — import Claude Code / Codex CLI setups into AkramCode.
 
 Secrets are NEVER imported: credential files are never read, and MCP env vars with secret-looking
 names (KEY, TOKEN, SECRET, PASSWORD, ...) are stripped and reported so the user re-adds them via
-``hermes setup`` or config.yaml.
+``akramcode setup`` or config.yaml.
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ from utils import atomic_write_text, atomic_yaml_write
 
 logger = logging.getLogger(__name__)
 
-# Entry delimiter of the Hermes memory store (memories/MEMORY.md) and the openclaw script.
+# Entry delimiter of the AkramCode memory store (memories/MEMORY.md) and the openclaw script.
 ENTRY_DELIMITER = "\n§\n"
 # Character budget for merged memory files (openclaw script default).
 MEMORY_CHAR_LIMIT = 20_000
@@ -60,7 +60,7 @@ def load_yaml_file(path: Path) -> Dict[str, Any]:
     :class:`ConfigReadError` so the caller refuses and leaves the file byte-identical."""
     if not path.exists():
         return {}
-    fix_hint = "Fix it with `hermes config edit` (or move it aside), then re-run the import."
+    fix_hint = "Fix it with `akramcode config edit` (or move it aside), then re-run the import."
 
     def refusal(detail: str) -> ConfigReadError:
         return ConfigReadError(f"Refusing to overwrite {path}: {detail}")
@@ -205,29 +205,29 @@ def sanitize_mcp_env(env: Any) -> Tuple[Dict[str, str], List[str]]:
 
 
 def _translate_mcp_server(name: str, srv: Dict[str, Any]) -> Tuple[Dict[str, Any], List[str]]:
-    """Map one Claude/Codex MCP server entry to Hermes shape; returns (server, stripped secret paths)."""
-    hermes_srv: Dict[str, Any] = {}
+    """Map one Claude/Codex MCP server entry to AkramCode shape; returns (server, stripped secret paths)."""
+    akramcode_srv: Dict[str, Any] = {}
     stripped: List[str] = []
     if srv.get("command"):
-        hermes_srv["command"] = srv["command"]
+        akramcode_srv["command"] = srv["command"]
         if srv.get("args"):
-            hermes_srv["args"] = srv["args"]
+            akramcode_srv["args"] = srv["args"]
         env_kept, env_stripped = sanitize_mcp_env(srv.get("env"))
         if env_kept:
-            hermes_srv["env"] = env_kept
+            akramcode_srv["env"] = env_kept
         stripped.extend(f"mcp_servers.{name}.env.{k}" for k in env_stripped)
         if srv.get("cwd"):
-            hermes_srv["cwd"] = srv["cwd"]
+            akramcode_srv["cwd"] = srv["cwd"]
     if srv.get("url"):
-        hermes_srv["url"] = srv["url"]
+        akramcode_srv["url"] = srv["url"]
         headers = srv.get("headers")
         if isinstance(headers, dict):
             kept_headers = {k: v for k, v in headers.items()
                             if not is_secret_key(str(k)) and "authorization" not in str(k).lower()}
             if kept_headers:
-                hermes_srv["headers"] = kept_headers
+                akramcode_srv["headers"] = kept_headers
             stripped.extend(f"mcp_servers.{name}.headers.{k}" for k in headers if k not in kept_headers)
-    return hermes_srv, stripped
+    return akramcode_srv, stripped
 
 
 class AgentImporter:
@@ -317,7 +317,7 @@ class AgentImporter:
         commands_dir = self.source_root / "commands"
         if commands_dir.is_dir() and any(commands_dir.glob("*.md")):
             self.record("slash-commands", commands_dir, None, "skipped",
-                        "Claude slash commands have no direct Hermes equivalent — "
+                        "Claude slash commands have no direct AkramCode equivalent — "
                         "consider converting them into skills")
 
     def _run_codex(self) -> None:
@@ -473,14 +473,14 @@ class AgentImporter:
                 continue
             if name in existing and not self.overwrite:
                 self.record(kind, name, f"mcp_servers.{name}", "conflict",
-                            "MCP server already exists in Hermes config")
+                            "MCP server already exists in AkramCode config")
                 continue
-            hermes_srv, stripped = _translate_mcp_server(name, srv)
+            akramcode_srv, stripped = _translate_mcp_server(name, srv)
             self.stripped_secrets.extend(stripped)
-            if not hermes_srv:
+            if not akramcode_srv:
                 self.record(kind, name, None, "skipped", "Server has neither a command nor a url")
                 continue
-            existing[name] = hermes_srv
+            existing[name] = akramcode_srv
             added += 1
             self.record(kind, name, f"config.yaml mcp_servers.{name}", "imported")
         if added > 0 and self.execute:
@@ -488,7 +488,7 @@ class AgentImporter:
             dump_yaml_file(destination, config)
 
     def import_skills(self, source_root: Path) -> None:
-        """skills/<name>/SKILL.md dirs → HERMES_HOME/skills/<category>/<name>."""
+        """skills/<name>/SKILL.md dirs → AKRAMCODE_HOME/skills/<category>/<name>."""
         destination_root = self.target_root / "skills" / _SKILL_CATEGORY[self.agent]
         if not source_root.is_dir():
             self.record("skills", None, destination_root, "skipped", "No skills directory found")
@@ -522,9 +522,9 @@ class AgentImporter:
 
 
 def import_agent_command(args) -> None:
-    """Handle ``hermes import-agent`` (invoked from akramcode_cli.main)."""
+    """Handle ``akramcode import-agent`` (invoked from akramcode_cli.main)."""
     from akramcode_cli.config import get_config_path, load_config, save_config
-    from akramcode_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
     from akramcode_cli.setup import (Colors, color, print_header, print_info, print_success,
                                   print_error, prompt_yes_no)
 
@@ -540,33 +540,33 @@ def import_agent_command(args) -> None:
         if not detected:
             print()
             print_error("No supported agent setup found (~/.claude or ~/.codex).")
-            print_info("Specify one explicitly: hermes import-agent claude-code --source /path")
+            print_info("Specify one explicitly: akramcode import-agent claude-code --source /path")
             return
         if len(detected) > 1 and explicit_source is None:
             print()
             print_info("Multiple agent setups detected: " + ", ".join(detected))
-            print_info("Pick one: hermes import-agent claude-code   or   hermes import-agent codex")
+            print_info("Pick one: akramcode import-agent claude-code   or   akramcode import-agent codex")
             return
         agent = detected[0]
     source_dir = Path(explicit_source or Path.home() / _AGENT_DEFAULT_DIRS[agent])
 
     print()
     print(color("┌─────────────────────────────────────────────────────────┐", Colors.MAGENTA))
-    print(color("│          ☤ Hermes — Import From Another Agent          │", Colors.MAGENTA))
+    print(color("│          ☤ AkramCode — Import From Another Agent          │", Colors.MAGENTA))
     print(color("└─────────────────────────────────────────────────────────┘", Colors.MAGENTA))
     if not source_dir.is_dir():
         print()
         print_error(f"Agent directory not found: {source_dir}")
-        print_info(f"Specify a custom path: hermes import-agent {agent} --source /path/to/{_AGENT_DEFAULT_DIRS[agent]}")
+        print_info(f"Specify a custom path: akramcode import-agent {agent} --source /path/to/{_AGENT_DEFAULT_DIRS[agent]}")
         return
-    hermes_home = get_hermes_home()
+    akramcode_home = get_akramcode_home()
     print()
     print_header("Import Settings")
     print_info(f"Agent:       {agent}")
     print_info(f"Source:      {source_dir}")
-    print_info(f"Target:      {hermes_home}")
+    print_info(f"Target:      {akramcode_home}")
     print_info(f"Overwrite:   {'yes' if overwrite else 'no (skip conflicts)'}")
-    print_info("Secrets:     never imported — run 'hermes setup' for credentials")
+    print_info("Secrets:     never imported — run 'akramcode setup' for credentials")
     # Ensure config.yaml exists before the import tries to merge into it
     if not get_config_path().exists():
         save_config(load_config())
@@ -574,7 +574,7 @@ def import_agent_command(args) -> None:
     def run_import(execute: bool, phase: str) -> Optional[Dict[str, Any]]:
         """Run the importer; on failure print the error and return None."""
         try:
-            return AgentImporter(agent, source_dir.resolve(), hermes_home.resolve(),
+            return AgentImporter(agent, source_dir.resolve(), akramcode_home.resolve(),
                                  execute=execute, overwrite=overwrite).run()
         except Exception as e:
             print()
@@ -604,7 +604,7 @@ def import_agent_command(args) -> None:
     if not args.yes:
         if not sys.stdin.isatty():
             print_info("Non-interactive session — preview only.")
-            print_info(f"To execute, re-run with: hermes import-agent {agent} --yes")
+            print_info(f"To execute, re-run with: akramcode import-agent {agent} --yes")
             return
         if not prompt_yes_no("Proceed with import?", default=True):
             print_info("Import cancelled.")
@@ -615,15 +615,15 @@ def import_agent_command(args) -> None:
     print_import_report(report, dry_run=False)
     from akramcode_cli.agent_import_sync import update_sync_manifest
     try:
-        update_sync_manifest(agent, source_dir.resolve(), hermes_home.resolve(), overwrite, report)
-        print_info("Source registered for sync — re-run 'hermes import-agent --sync' "
+        update_sync_manifest(agent, source_dir.resolve(), akramcode_home.resolve(), overwrite, report)
+        print_info("Source registered for sync — re-run 'akramcode import-agent --sync' "
                    "any time to pull in changes.")
     except OSError as exc:
         logger.warning("Could not update import sync manifest: %s", exc)
     print()
     print_success("Import complete.")
-    print_info("API keys and credentials were NOT imported — run 'hermes setup' "
-               "to configure providers, or add them to ~/.hermes/.env.")
+    print_info("API keys and credentials were NOT imported — run 'akramcode setup' "
+               "to configure providers, or add them to ~/.akramcode/.env.")
 
 
 def print_import_report(report: Dict[str, Any], dry_run: bool) -> None:
@@ -657,7 +657,7 @@ def print_import_report(report: Dict[str, Any], dry_run: bool) -> None:
         print(color("  ⚷ Secrets stripped (never imported):", Colors.YELLOW))
         for name in stripped:
             print(f"      {name}")
-        print_info("Re-add credentials deliberately via 'hermes setup' or ~/.hermes/.env.")
+        print_info("Re-add credentials deliberately via 'akramcode setup' or ~/.akramcode/.env.")
         print()
     summary = report.get("summary", {})
     parts = [f"{summary[k]} {label}" for k, _, _, label in groups if summary.get(k)]

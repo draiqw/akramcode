@@ -89,7 +89,7 @@ def test_only_managed_search_may_use_billed_fallback(
     from tools import web_tools
     from tests.tools.conftest import register_all_web_providers
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     atomic_config_write(tmp_path / "config.yaml", {
         "web": {**selection, "keyless_rescue": False, "cache_enabled": True},
     })
@@ -116,7 +116,7 @@ def test_only_managed_search_may_use_billed_fallback(
             managed = path == "/perplexity/search"
             assert body.get("search_type") == ("fast" if managed else None)
             assert body["search_context_size"] == "low"
-            assert headers.get("X-Pplx-Integration") == (None if managed else "hermes-agent")
+            assert headers.get("X-Pplx-Integration") == (None if managed else "akramcode-agent")
 
 
 def test_unentitled_managed_search_names_the_gateway(monkeypatch, tmp_path, local_gateway):
@@ -124,13 +124,13 @@ def test_unentitled_managed_search_names_the_gateway(monkeypatch, tmp_path, loca
     from tools import managed_tool_gateway, web_tools
     from tests.tools.conftest import register_all_web_providers
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     atomic_config_write(tmp_path / "config.yaml", {"web": {"backend": "nous", "keyless_rescue": False}})
     monkeypatch.delenv("PERPLEXITY_API_KEY", raising=False)
     monkeypatch.setattr(managed_tool_gateway, "managed_nous_tools_enabled", lambda **kw: False)
     register_all_web_providers()
 
     error = json.loads(web_tools.web_search_tool("local fixture", limit=3))["error"]
-    assert "Nous Tool Gateway" in error and "hermes tools" in error
+    assert "Nous Tool Gateway" in error and "akramcode tools" in error
     assert "PERPLEXITY_API_KEY" not in error
     assert local_gateway == []

@@ -1,4 +1,4 @@
-"""Interactive setup wizard for Hermes Agent (config lives in ~/.hermes/).
+"""Interactive setup wizard for AkramCode Agent (config lives in ~/.akramcode/).
 
 Independently-runnable sections: Model & Provider, Terminal Backend, Agent Settings, Messaging
 Platforms, Tools. Section bodies live in sibling setup_* modules and are re-exported here; they
@@ -18,11 +18,11 @@ from pathlib import Path
 from typing import Callable
 
 from akramcode_cli.curses_ui import MenuNavigationEvent, MenuNavigationStart
-# Config helpers are re-exported (tests patch them on this module). display_hermes_home is
-# imported lazily at call sites (stale-module safety during hermes update).
+# Config helpers are re-exported (tests patch them on this module). display_akramcode_home is
+# imported lazily at call sites (stale-module safety during akramcode update).
 from akramcode_cli.config import (
-    cfg_get, DEFAULT_CONFIG, get_hermes_home, get_config_path, get_env_path, load_config, save_config,
-    save_env_value, remove_env_value, get_env_value, ensure_hermes_home,
+    cfg_get, DEFAULT_CONFIG, get_akramcode_home, get_config_path, get_env_path, load_config, save_config,
+    save_env_value, remove_env_value, get_env_value, ensure_akramcode_home,
 )
 from akramcode_cli.colors import Colors, color
 from akramcode_cli.cli_output import print_error, print_info, print_success, print_warning
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
-_DOCS_BASE = "https://hermes-agent.nousresearch.com/docs"
+_DOCS_BASE = "https://akramcode-agent.nousresearch.com/docs"
 _BRACKETED_PASTE_PATTERN = re.compile(r"\x1b\[\s*200~|\x1b\[\s*201~")
 
 
@@ -85,17 +85,17 @@ def is_interactive_stdin() -> bool:
 def print_noninteractive_setup_guidance(reason: str | None = None) -> None:
     """Print guidance for headless/non-interactive setup flows."""
     print()
-    print(color("☤ Hermes Setup — Non-interactive mode", Colors.CYAN, Colors.BOLD))
+    print(color("☤ AkramCode Setup — Non-interactive mode", Colors.CYAN, Colors.BOLD))
     print()
     if reason:
         print_info(reason)
     _info("The interactive wizard cannot be used here.", None,
-          "Configure Hermes using environment variables or config commands:",
-          "  hermes config set model.provider custom",
-          "  hermes config set model.base_url http://localhost:8080/v1",
-          "  hermes config set model.default your-model-name", None,
+          "Configure AkramCode using environment variables or config commands:",
+          "  akramcode config set model.provider custom",
+          "  akramcode config set model.base_url http://localhost:8080/v1",
+          "  akramcode config set model.default your-model-name", None,
           "Or set OPENROUTER_API_KEY (OpenRouter) / OPENAI_API_KEY (OpenAI) in your environment.",
-          "Run 'hermes setup' in an interactive terminal to use the full wizard.", None)
+          "Run 'akramcode setup' in an interactive terminal to use the full wizard.", None)
 
 
 def _sanitize_pasted_input(value: str) -> str:
@@ -155,7 +155,7 @@ class _SetupNavigationState:
         self.replay_choices: list[object] = copy.deepcopy(replay or [])
 
 
-_SETUP_NAVIGATION: ContextVar[_SetupNavigationState | None] = ContextVar("hermes_setup_navigation", default=None)
+_SETUP_NAVIGATION: ContextVar[_SetupNavigationState | None] = ContextVar("akramcode_setup_navigation", default=None)
 
 
 def _handle_setup_menu_navigation(event: MenuNavigationEvent, value: object = None) -> MenuNavigationStart | None:
@@ -246,7 +246,7 @@ def run_setup_action_with_navigation(
     label: str, action: Callable[[], None], *, cancelled_message: str = "Setup cancelled."
 ) -> None:
     """Run a setup-style menu flow with Escape and nested Left navigation — for commands such as
-    ``hermes model`` that use the wizard's pickers outside ``run_setup_wizard``."""
+    ``akramcode model`` that use the wizard's pickers outside ``run_setup_wizard``."""
     with _setup_navigation_scope():
         try:
             _run_setup_steps([(label, action)])
@@ -279,13 +279,13 @@ def prompt_choice(question: str, choices: list, default: int = 0, description: s
 
 def is_noninteractive() -> bool:
     """True when no human is available to answer a prompt: the dashboard/desktop spawn CLI actions
-    with ``stdin=DEVNULL`` and ``HERMES_NONINTERACTIVE=1`` (``akramcode_cli/web_server.py``), where a
+    with ``stdin=DEVNULL`` and ``AKRAMCODE_NONINTERACTIVE=1`` (``akramcode_cli/web_server.py``), where a
     prompt that aborts on EOF would kill the spawned action — callers fall back to their default."""
-    return os.environ.get("HERMES_NONINTERACTIVE", "").strip().lower() in {"1", "true", "yes", "on"}
+    return os.environ.get("AKRAMCODE_NONINTERACTIVE", "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def prompt_yes_no(question: str, default: bool = True) -> bool:
-    """Prompt for yes/no. Ctrl+C exits; empty input, ``HERMES_NONINTERACTIVE=1`` or a
+    """Prompt for yes/no. Ctrl+C exits; empty input, ``AKRAMCODE_NONINTERACTIVE=1`` or a
     closed/redirected stdin return ``default`` instead of aborting the whole process."""
     if is_noninteractive():
         return default
@@ -338,7 +338,7 @@ def _prompt_api_key(var: dict):
     if var.get("url"):
         print_info(f"  Get your key at: {var['url']}")
     print()
-    _prompt_and_save_env_var(var, "  ✓ Saved", "  Skipped (configure later with 'hermes setup')")
+    _prompt_and_save_env_var(var, "  ✓ Saved", "  Skipped (configure later with 'akramcode setup')")
 
 
 def _prompt_and_save_env_var(var: dict, saved_msg: str, skipped_msg: str) -> None:
@@ -373,7 +373,7 @@ def _print_banner(*lines: str) -> None:
 
 
 def setup_model_provider(config: dict, *, quick: bool = False):
-    """Configure the inference provider and default model via the ``hermes model`` flow (one code
+    """Configure the inference provider and default model via the ``akramcode model`` flow (one code
     path — any provider added there is available here). *quick* is accepted for the first-time
     quick setup caller; rotation, vision and TTS keep safe defaults either way."""
     from akramcode_cli.config import load_config, save_config
@@ -390,14 +390,14 @@ def setup_model_provider(config: dict, *, quick: bool = False):
     except Exception as exc:
         logger.debug("select_provider_and_model error during setup: %s", exc)
         from akramcode_cli.auth_error_copy import provider_setup_failure_lines
-        lead, *rest = provider_setup_failure_lines(exc, retry_command="hermes model")
+        lead, *rest = provider_setup_failure_lines(exc, retry_command="akramcode model")
         print_warning(lead)
         for line in rest:
             print_info(line)
 
     # Re-sync from disk in place: cmd_model saved via its own load/save cycle and the wizard's
     # final save_config(config) must not clobber it with stale values. Rotation, vision and TTS
-    # keep safe defaults (configure via `hermes auth add` / `hermes setup tts`).
+    # keep safe defaults (configure via `akramcode auth add` / `akramcode setup tts`).
     config.clear()
     config.update(load_config())
     save_config(config)
@@ -411,15 +411,15 @@ def setup_model_provider(config: dict, *, quick: bool = False):
 def _apply_default_agent_settings(config: dict):
     """Apply recommended defaults for all agent settings without prompting."""
     config.setdefault("agent", {})["max_turns"] = 150
-    # config.yaml is authoritative for max_turns (the gateway bridges it into HERMES_MAX_ITERATIONS);
+    # config.yaml is authoritative for max_turns (the gateway bridges it into AKRAMCODE_MAX_ITERATIONS);
     # a stale .env entry silently shadowing it caused the 60-vs-500 bug, so drop it.
-    remove_env_value("HERMES_MAX_ITERATIONS")
+    remove_env_value("AKRAMCODE_MAX_ITERATIONS")
     config.setdefault("compression", {})["enabled"] = True
     config["compression"]["threshold"] = 0.50
     save_config(config)
     print_success("Applied recommended defaults:")
     _info("  Max iterations: 150", "  Compression threshold: 0.50",
-          "  Run `hermes setup agent` later to customize.")
+          "  Run `akramcode setup agent` later to customize.")
 
 
 def _prompt_number(label: str, current, cast=int):
@@ -443,7 +443,7 @@ _TOOL_PROGRESS_HELP = (
     "  new     — Show tool name only when it changes (less noise)",
     "  all     — Show every tool call with a short preview",
     "  verbose — Full args, results, and debug logs",
-    "  log     — Silent in chat; write every tool call to ~/.hermes/logs/tool_calls.log (gateway only)",
+    "  log     — Silent in chat; write every tool call to ~/.akramcode/logs/tool_calls.log (gateway only)",
 )
 def setup_agent_settings(config: dict):
     """Configure agent behavior: iterations, progress display and compression."""
@@ -461,10 +461,10 @@ def setup_agent_settings(config: dict):
     if max_iter is None:
         print_warning("Invalid number, keeping current value")
     elif max_iter > 0:
-        # config.yaml only; gateway/run.py derives HERMES_MAX_ITERATIONS from agent.max_turns.
+        # config.yaml only; gateway/run.py derives AKRAMCODE_MAX_ITERATIONS from agent.max_turns.
         config.setdefault("agent", {})["max_turns"] = max_iter
         config.pop("max_turns", None)
-        remove_env_value("HERMES_MAX_ITERATIONS")
+        remove_env_value("AKRAMCODE_MAX_ITERATIONS")
         print_success(f"Max iterations set to {max_iter}")
 
     # ── Tool Progress Display ──
@@ -501,7 +501,7 @@ def setup_agent_settings(config: dict):
 
 
 def setup_tools(config: dict, first_install: bool = False):
-    """`hermes setup tools` == `hermes tools`: platform selection → toolset toggles → provider keys.
+    """`akramcode setup tools` == `akramcode tools`: platform selection → toolset toggles → provider keys.
     ``first_install`` selects the simplified flow (no platform menu, prompts for all missing keys)."""
     from akramcode_cli.tools_config import tools_command
     tools_command(first_install=first_install, config=config)
@@ -528,7 +528,7 @@ def setup_telemetry(config: dict):
     _info("Shared metrics contain only bounded counters: activity, session length,",
           "outcomes, error classes, model routes and token totals, built-in tool, command",
           "and catalog names, bucketed setup counts, update results and timing, crashes,",
-          "startup and reply speed, messaging-platform health, how Hermes gets used",
+          "startup and reply speed, messaging-platform health, how AkramCode gets used",
           "(agent accuracy and efficiency, active time per surface, which features and",
           "settings are used or switched off, provider setup outcomes), and coarse",
           "machine facts (RAM range, GPU type, version age and channel, updates behind,",
@@ -605,26 +605,26 @@ def run_setup_wizard(args):
 
 
 def _run_setup_section(config: dict, section: str) -> None:
-    """``hermes setup <section>``: run one SETUP_SECTIONS entry under the banner."""
+    """``akramcode setup <section>``: run one SETUP_SECTIONS entry under the banner."""
     entry = next(((label, func) for key, label, func in SETUP_SECTIONS if key == section), None)
     if entry is None:
         print_error(f"Unknown setup section: {section}")
         print_info(f"Available sections: {', '.join(k for k, _, _ in SETUP_SECTIONS)}")
         return
     label, func = entry
-    _print_banner(f"│     ☤ Hermes Setup — {label:<34s} │")
+    _print_banner(f"│     ☤ AkramCode Setup — {label:<34s} │")
     _run_setup_steps([(label, lambda: func(config))])
     save_config(config)
     print()
     print_success(f"{label} configuration complete!")
 
 
-def _run_full_setup(config: dict, hermes_home, *, is_existing: bool, migration_ran: bool) -> None:
+def _run_full_setup(config: dict, akramcode_home, *, is_existing: bool, migration_ran: bool) -> None:
     """Full Setup — run all sections, honoring post-migration skips."""
     print_header("Configuration Location")
     _info(f"Config file:  {get_config_path()}", f"Secrets file: {get_env_path()}",
-          f"Data folder:  {hermes_home}", f"Install dir:  {PROJECT_ROOT}", None,
-          "You can edit these files directly or use 'hermes config edit'")
+          f"Data folder:  {akramcode_home}", f"Install dir:  {PROJECT_ROOT}", None,
+          "You can edit these files directly or use 'akramcode config edit'")
     if migration_ran:
         _info(None, "Settings were imported from OpenClaw.",
               "Each section below will show what was imported — press Enter to keep,",
@@ -667,12 +667,12 @@ _FIRST_TIME_MODES = (
 
 def _run_setup_wizard_impl(args):
     """Run the interactive setup wizard: full/quick (auto-detected), ``--portal``, or one
-    ``hermes setup <section>`` from SETUP_SECTIONS."""
+    ``akramcode setup <section>`` from SETUP_SECTIONS."""
     from akramcode_cli.config import is_managed, managed_error
     if is_managed():
         managed_error("run setup wizard")
         return
-    ensure_hermes_home()
+    ensure_akramcode_home()
     # Back up BEFORE --reset: save_config below overwrites the very file we copy (#3522, #77299).
     config_path = get_config_path()
     from akramcode_cli.config_backups import backup_config
@@ -685,7 +685,7 @@ def _run_setup_wizard_impl(args):
     reconfigure_requested = bool(getattr(args, "reconfigure", False))
     quick_requested = bool(getattr(args, "quick", False))
     config = load_config()
-    hermes_home = get_hermes_home()
+    akramcode_home = get_akramcode_home()
 
     # Non-interactive environments (headless SSH, Docker, CI/CD)
     if getattr(args, 'non_interactive', False) or not is_interactive_stdin():
@@ -703,9 +703,9 @@ def _run_setup_wizard_impl(args):
     from akramcode_cli.auth import get_active_provider
     is_existing = bool(get_env_value("OPENROUTER_API_KEY") or get_env_value("OPENAI_BASE_URL")
                        or get_active_provider() is not None)
-    _print_banner("│             ☤ Hermes Agent Setup Wizard                │",
+    _print_banner("│             ☤ AkramCode Agent Setup Wizard                │",
                   "├─────────────────────────────────────────────────────────┤",
-                  "│  Let's configure your Hermes Agent installation.       │",
+                  "│  Let's configure your AkramCode Agent installation.       │",
                   "│  Press Ctrl+C at any time to exit.                     │")
     migration_ran = False
     if is_existing:
@@ -713,31 +713,31 @@ def _run_setup_wizard_impl(args):
         # narrows it to missing items (partial OpenClaw import, cleared key). --reconfigure is a
         # backwards-compatible no-op here.
         if quick_requested:
-            _run_setup_steps([("Quick Setup", lambda: _run_quick_setup(config, hermes_home))])
+            _run_setup_steps([("Quick Setup", lambda: _run_quick_setup(config, akramcode_home))])
             _record_setup_completed(config)
             return
         print_header("Reconfigure", gap=True)
-        print_success("You already have Hermes configured.")
+        print_success("You already have AkramCode configured.")
         _info("Running the full wizard — each prompt shows your current value.",
               "Press Enter to keep it, or type a new value to change it.", "",
-              "Tip: jump straight to a section with 'hermes setup model|terminal|",
+              "Tip: jump straight to a section with 'akramcode setup model|terminal|",
               "     gateway|tools|agent', or fill only missing items with --quick.")
     else:
         # First-time setup (--reconfigure / --quick are meaningless here; fall through)
         print()
         if reconfigure_requested or quick_requested:
             _info("No existing configuration found — running first-time setup.", None)
-        migration_ran = _offer_openclaw_migration(hermes_home)  # before configuration begins
+        migration_ran = _offer_openclaw_migration(akramcode_home)  # before configuration begins
         if migration_ran:
             config = load_config()
-        setup_mode = prompt_choice("How would you like to set up Hermes?", [label for label, _ in _FIRST_TIME_MODES], 0)
+        setup_mode = prompt_choice("How would you like to set up AkramCode?", [label for label, _ in _FIRST_TIME_MODES], 0)
         label, runner = _FIRST_TIME_MODES[setup_mode]
         if runner is not None:
             from akramcode_cli import setup_quick
-            _run_setup_steps([(label, lambda: getattr(setup_quick, runner)(config, hermes_home, is_existing))])
+            _run_setup_steps([(label, lambda: getattr(setup_quick, runner)(config, akramcode_home, is_existing))])
             _record_setup_completed(config)
             return
-    _run_full_setup(config, hermes_home, is_existing=is_existing, migration_ran=migration_ran)
+    _run_full_setup(config, akramcode_home, is_existing=is_existing, migration_ran=migration_ran)
 
     # Save and show summary
     save_config(config)
@@ -745,7 +745,7 @@ def _run_setup_wizard_impl(args):
         _info(f"Previous config backed up to: {_backup_path}",
               "If setup changed a value you customized, restore it with:",
               f"  cp {_backup_path} {config_path}")
-    _print_setup_summary(config, hermes_home)
+    _print_setup_summary(config, akramcode_home)
     _record_setup_completed(config)
 
 

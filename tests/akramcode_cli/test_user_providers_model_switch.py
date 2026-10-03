@@ -28,12 +28,12 @@ def _no_live_builtin_provider_probes(monkeypatch):
 
 def test_list_authenticated_providers_includes_full_models_list_from_user_providers(monkeypatch):
     """User-defined providers should expose both default_model and full models list.
-    
+
     Regression test: previously only default_model was shown in /model picker.
     """
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
-    monkeypatch.setattr("akramcode_cli.providers.HERMES_OVERLAYS", {})
-    
+    monkeypatch.setattr("akramcode_cli.providers.AKRAMCODE_OVERLAYS", {})
+
     user_providers = {
         "local-ollama": {
             "name": "Local Ollama",
@@ -47,20 +47,20 @@ def test_list_authenticated_providers_includes_full_models_list_from_user_provid
             ],
         }
     }
-    
+
     providers = list_authenticated_providers(
         current_provider="local-ollama",
         user_providers=user_providers,
         custom_providers=[],
         max_models=50,
     )
-    
+
     # Find our user provider
     user_prov = next(
         (p for p in providers if p.get("is_user_defined") and p["slug"] == "local-ollama"),
         None
     )
-    
+
     assert user_prov is not None, "User provider 'local-ollama' should be in results"
     assert user_prov["total_models"] == 4, f"Expected 4 models, got {user_prov['total_models']}"
     assert "minimax-m2.7:cloud" in user_prov["models"]
@@ -71,14 +71,14 @@ def test_list_authenticated_providers_includes_full_models_list_from_user_provid
 
 def test_list_authenticated_providers_enumerates_dict_format_models(monkeypatch):
     """providers: dict entries with ``models:`` as a dict keyed by model id
-    (canonical Hermes write format) should surface every key in the picker.
+    (canonical AkramCode write format) should surface every key in the picker.
 
     Regression: the ``providers:`` dict path previously only accepted
     list-format ``models:`` and silently dropped dict-format entries,
-    even though Hermes's own writer and downstream readers use dict format.
+    even though AkramCode's own writer and downstream readers use dict format.
     """
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
-    monkeypatch.setattr("akramcode_cli.providers.HERMES_OVERLAYS", {})
+    monkeypatch.setattr("akramcode_cli.providers.AKRAMCODE_OVERLAYS", {})
 
     user_providers = {
         "local-ollama": {
@@ -122,7 +122,7 @@ def test_list_authenticated_providers_uses_live_models_for_user_provider(monkeyp
     /v1/models endpoint exposed newly added models.
     """
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
-    monkeypatch.setattr("akramcode_cli.providers.HERMES_OVERLAYS", {})
+    monkeypatch.setattr("akramcode_cli.providers.AKRAMCODE_OVERLAYS", {})
     monkeypatch.setenv("CRS_TEST_KEY", "sk-test")
 
     calls = []
@@ -176,16 +176,16 @@ def test_list_authenticated_providers_uses_live_models_for_user_provider(monkeyp
 
 
 def test_list_authenticated_providers_accepts_base_url_and_singular_model(monkeypatch):
-    """providers: dict entries written in canonical Hermes shape
+    """providers: dict entries written in canonical AkramCode shape
     (``base_url`` + singular ``model``) should resolve the same as the
     legacy ``api`` + ``default_model`` shape.
 
     Regression: section 3 previously only read ``api``/``url`` and
-    ``default_model``, so new-shape entries written by Hermes's own writer
+    ``default_model``, so new-shape entries written by AkramCode's own writer
     surfaced with empty ``api_url`` and no default.
     """
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
-    monkeypatch.setattr("akramcode_cli.providers.HERMES_OVERLAYS", {})
+    monkeypatch.setattr("akramcode_cli.providers.AKRAMCODE_OVERLAYS", {})
 
     user_providers = {
         "custom": {
@@ -222,7 +222,7 @@ def test_list_authenticated_providers_splits_comma_default_model_chain(monkeypat
     pick; the split ids follow, deduped in order.
     """
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
-    monkeypatch.setattr("akramcode_cli.providers.HERMES_OVERLAYS", {})
+    monkeypatch.setattr("akramcode_cli.providers.AKRAMCODE_OVERLAYS", {})
     monkeypatch.setattr("akramcode_cli.models.fetch_api_models", lambda *_a, **_kw: None)
 
     user_providers = {
@@ -264,7 +264,7 @@ def test_list_authenticated_providers_dedupes_when_user_and_custom_overlap(monke
     overlapping entries produced two picker rows for the same provider.
     """
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
-    monkeypatch.setattr("akramcode_cli.providers.HERMES_OVERLAYS", {})
+    monkeypatch.setattr("akramcode_cli.providers.AKRAMCODE_OVERLAYS", {})
 
     providers = list_authenticated_providers(
         current_provider="custom",
@@ -304,7 +304,7 @@ def test_list_authenticated_providers_no_duplicate_labels_across_schemas(monkeyp
     identically, bypassing ``seen_slugs`` dedup because the slug shapes differ.
     """
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
-    monkeypatch.setattr("akramcode_cli.providers.HERMES_OVERLAYS", {})
+    monkeypatch.setattr("akramcode_cli.providers.AKRAMCODE_OVERLAYS", {})
     # Singular ``model:``-only entries are un-narrowed → section 3 now probes
     # them; stub the probe so the test stays hermetic (endpoints are fake).
     monkeypatch.setattr("akramcode_cli.models.fetch_api_models", lambda *a, **k: None)
@@ -364,7 +364,7 @@ def test_list_authenticated_providers_dedup_honors_base_url_env_override(monkeyp
             }
         },
     )
-    monkeypatch.setattr("akramcode_cli.providers.HERMES_OVERLAYS", {})
+    monkeypatch.setattr("akramcode_cli.providers.AKRAMCODE_OVERLAYS", {})
 
     custom_providers = [
         {
@@ -402,8 +402,8 @@ def test_list_authenticated_providers_dedup_honors_base_url_env_override(monkeyp
 
 def test_switch_model_resolves_user_provider_credentials(monkeypatch, tmp_path):
     """/model switch should resolve credentials for providers: dict providers."""
-    import akram_core.hermes_yaml as yaml
-    
+    import akram_core.akramcode_yaml as yaml
+
     config = {
         "providers": {
             "local-ollama": {
@@ -413,17 +413,17 @@ def test_switch_model_resolves_user_provider_credentials(monkeypatch, tmp_path):
             }
         }
     }
-    
+
     config_file = tmp_path / "config.yaml"
     config_file.write_text(yaml.safe_dump(config))
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
+
     # Mock validation to pass
     monkeypatch.setattr(
         "akramcode_cli.models_validate.validate_requested_model",
         lambda *a, **k: {"accepted": True, "persist": True, "recognized": True, "message": None}
     )
-    
+
     result = switch_model(
         raw_input="kimi-k2.5:cloud",
         current_provider="local-ollama",
@@ -515,7 +515,7 @@ def test_section3_probes_no_key_endpoint_without_explicit_models(monkeypatch):
     list because section 3 gated probing on ``api_url and api_key``.
     """
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
-    monkeypatch.setattr("akramcode_cli.providers.HERMES_OVERLAYS", {})
+    monkeypatch.setattr("akramcode_cli.providers.AKRAMCODE_OVERLAYS", {})
 
     probed = {}
 
@@ -562,7 +562,7 @@ def test_section3_probes_no_key_endpoint_with_singular_default_model(monkeypatch
     showed a one-line menu for local no-auth endpoints.
     """
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
-    monkeypatch.setattr("akramcode_cli.providers.HERMES_OVERLAYS", {})
+    monkeypatch.setattr("akramcode_cli.providers.AKRAMCODE_OVERLAYS", {})
 
     probed = {}
 
@@ -609,7 +609,7 @@ def test_current_custom_model_is_surfaced_in_builtin_provider_row(monkeypatch):
     current provider's list.
     """
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
-    monkeypatch.setattr("akramcode_cli.providers.HERMES_OVERLAYS", {})
+    monkeypatch.setattr("akramcode_cli.providers.AKRAMCODE_OVERLAYS", {})
     monkeypatch.setenv("OPENROUTER_API_KEY", "sk-test")
     # Pin a small curated catalog so the assertion is deterministic.
     monkeypatch.setattr(
@@ -637,7 +637,7 @@ def test_current_custom_model_not_leaked_into_other_provider_rows(monkeypatch):
     """The current model is only injected into the CURRENT provider's row,
     never into other providers (which can't serve it)."""
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
-    monkeypatch.setattr("akramcode_cli.providers.HERMES_OVERLAYS", {})
+    monkeypatch.setattr("akramcode_cli.providers.AKRAMCODE_OVERLAYS", {})
     monkeypatch.setenv("OPENROUTER_API_KEY", "sk-test")
     monkeypatch.setenv("NOUS_API_KEY", "sk-test")
     monkeypatch.setattr(
@@ -659,13 +659,13 @@ def test_current_custom_model_not_leaked_into_other_provider_rows(monkeypatch):
 
 
 def test_overlay_provider_row_merges_configured_models(monkeypatch):
-    """A ``providers.<overlay>.models`` block extends a Hermes-overlay row (azure-foundry) the way
+    """A ``providers.<overlay>.models`` block extends a AkramCode-overlay row (azure-foundry) the way
     it already extends built-in rows; the picker used to show only the live/current id (#27989)."""
-    from akramcode_cli.providers import HERMES_OVERLAYS
+    from akramcode_cli.providers import AKRAMCODE_OVERLAYS
 
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr("agent.models_dev.PROVIDER_TO_MODELS_DEV", {})
-    monkeypatch.setattr("akramcode_cli.providers.HERMES_OVERLAYS", {"azure-foundry": HERMES_OVERLAYS["azure-foundry"]})
+    monkeypatch.setattr("akramcode_cli.providers.AKRAMCODE_OVERLAYS", {"azure-foundry": AKRAMCODE_OVERLAYS["azure-foundry"]})
     monkeypatch.setattr("akramcode_cli.models.cached_provider_model_ids", lambda *_a, **_k: ["gpt-5.6-sol", "shared"])
     monkeypatch.setenv("AZURE_FOUNDRY_API_KEY", "test-key")
 
@@ -673,7 +673,7 @@ def test_overlay_provider_row_merges_configured_models(monkeypatch):
         current_provider="azure-foundry", max_models=50,
         user_providers={"azure-foundry": {"models": ["gpt-5.5", "shared", "gpt-4.1-mini"]}})
     row = next(r for r in rows if r["slug"] == "azure-foundry")
-    assert row["source"] == "hermes"
+    assert row["source"] == "akramcode"
     assert row["models"] == ["gpt-5.5", "shared", "gpt-4.1-mini", "gpt-5.6-sol"]
     assert row["total_models"] == 4
 
@@ -684,11 +684,11 @@ def test_entra_only_azure_foundry_row_is_listed_without_api_key(monkeypatch, bas
     ever exists; the picker and the prefetch scan must still treat the provider as configured
     once its endpoint is set — and not before (#27989). No token is minted for the listing."""
     from akramcode_cli.model_switch_providers import _collect_authed_provider_slugs
-    from akramcode_cli.providers import HERMES_OVERLAYS
+    from akramcode_cli.providers import AKRAMCODE_OVERLAYS
 
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr("agent.models_dev.PROVIDER_TO_MODELS_DEV", {})
-    monkeypatch.setattr("akramcode_cli.providers.HERMES_OVERLAYS", {"azure-foundry": HERMES_OVERLAYS["azure-foundry"]})
+    monkeypatch.setattr("akramcode_cli.providers.AKRAMCODE_OVERLAYS", {"azure-foundry": AKRAMCODE_OVERLAYS["azure-foundry"]})
     monkeypatch.setattr("akramcode_cli.models.cached_provider_model_ids", lambda *_a, **_k: ["gpt-5.6-sol"])
     monkeypatch.setattr("akramcode_cli.models._get_model_config_dict",
                         lambda: {"provider": "azure-foundry", "auth_mode": "entra_id", "base_url": base_url})
@@ -720,7 +720,7 @@ def test_cli_picker_provider_select_reads_the_disk_cached_catalog(monkeypatch):
         _invalidate=lambda **_k: None,
         _close_model_picker=lambda: pytest.fail("picker closed"),
     )
-    cli_mod.HermesCLI._handle_model_picker_selection.__get__(self_, SimpleNamespace)(persist_global=True)
+    cli_mod.AkramCodeCLI._handle_model_picker_selection.__get__(self_, SimpleNamespace)(persist_global=True)
 
     assert seen == ["azure-foundry"]
     assert self_._model_picker_state["stage"] == "model"

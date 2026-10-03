@@ -249,11 +249,11 @@ class TestHelpers:
     def test_to_image_url_part_blocks_credential_store(self, tmp_path, monkeypatch):
         from plugins.image_gen.openrouter import _to_image_url_part
 
-        hermes_home = tmp_path / ".hermes"
-        hermes_home.mkdir()
-        auth_json = hermes_home / "auth.json"
+        akramcode_home = tmp_path / ".akramcode"
+        akramcode_home.mkdir()
+        auth_json = akramcode_home / "auth.json"
         auth_json.write_text('{"api_key":"sk-secret"}', encoding="utf-8")
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
         with pytest.raises(ValueError, match="credential store"):
             _to_image_url_part(str(auth_json))

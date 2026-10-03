@@ -60,8 +60,8 @@ def _origin_from_env(
     schedule: Union[str, Dict[str, Any], None] = None,
 ) -> Optional[Dict[str, str]]:
     from gateway.session_context import async_delivery_supported, get_session_env
-    origin_platform = get_session_env("HERMES_SESSION_PLATFORM")
-    origin_chat_id = get_session_env("HERMES_SESSION_CHAT_ID")
+    origin_platform = get_session_env("AKRAMCODE_SESSION_PLATFORM")
+    origin_chat_id = get_session_env("AKRAMCODE_SESSION_CHAT_ID")
     if not (origin_platform and origin_chat_id):
         return None
     # A non-push surface (api_server: request/response, ``send()`` is a stub) cannot receive a
@@ -69,7 +69,7 @@ def _origin_from_env(
     # fire (#69304). No origin => the home-channel fallback + creation-time notice apply.
     if not async_delivery_supported():
         return None
-    thread_id = get_session_env("HERMES_SESSION_THREAD_ID") or None
+    thread_id = get_session_env("AKRAMCODE_SESSION_THREAD_ID") or None
     # Slack stamps every TOP-LEVEL message's own id as the session thread (a per-message
     # KEY, not a location); persisting it would pin all future deliveries inside an
     # ephemeral thread, so thread == creating message id is synthetic and dropped — unless
@@ -77,7 +77,7 @@ def _origin_from_env(
     # default reply_in_thread the exchange under a top-level message lives in exactly that
     # thread, so a near one-shot must deliver back into it.
     if thread_id and origin_platform == "slack":
-        message_id = get_session_env("HERMES_SESSION_MESSAGE_ID") or None
+        message_id = get_session_env("AKRAMCODE_SESSION_MESSAGE_ID") or None
         if message_id and str(thread_id) == str(message_id):
             if _first_fire_within_thread_horizon(schedule):
                 logger.debug(
@@ -98,12 +98,12 @@ def _origin_from_env(
             thread_id, origin_platform, origin_chat_id)
     return {
         "platform": origin_platform, "chat_id": origin_chat_id,
-        "chat_name": get_session_env("HERMES_SESSION_CHAT_NAME") or None, "thread_id": thread_id,
+        "chat_name": get_session_env("AKRAMCODE_SESSION_CHAT_NAME") or None, "thread_id": thread_id,
         # Lets a delivery mirror resolve the participant's session in per-user-isolated groups.
-        "user_id": get_session_env("HERMES_SESSION_USER_ID") or None,
+        "user_id": get_session_env("AKRAMCODE_SESSION_USER_ID") or None,
         # Workspace/server scope (Slack team, Discord guild...): Slack session keys embed it,
         # so a continuable cron seed built without it would never resolve a scoped reply.
-        "scope_id": get_session_env("HERMES_SESSION_SCOPE_ID") or None,
+        "scope_id": get_session_env("AKRAMCODE_SESSION_SCOPE_ID") or None,
     }
 
 
@@ -112,7 +112,7 @@ def _local_delivery_notice(job: Dict[str, Any], user_deliver: Optional[str]) -> 
     origin, so deliver='origin' (or omitted) saves output but never delivers it. None when the
     user explicitly asked for ``local`` or the job resolves to a real target.
 
-    TUI/CLI sessions cannot be captured as a cron ``origin`` (no ``HERMES_SESSION_PLATFORM``/``CHAT_ID`` is
+    TUI/CLI sessions cannot be captured as a cron ``origin`` (no ``AKRAMCODE_SESSION_PLATFORM``/``CHAT_ID`` is
     set for them), so a ``deliver="origin"`` request — or an omitted ``deliver`` that defaults to
     origin-or-local — produces a job that runs and saves output to ``last_output`` but is never delivered
     back into the session. This is by design (there is no live-delivery channel for local sessions), but
@@ -129,7 +129,7 @@ def _local_delivery_notice(job: Dict[str, Any], user_deliver: Optional[str]) -> 
             # home channel: tell the creating client where the report goes (#69304).
             from gateway.session_context import async_delivery_supported, get_session_env
             fallback = [t for t in targets if t.get("_resolved_from") == "origin_fallback"]
-            if fallback and get_session_env("HERMES_SESSION_PLATFORM") and not async_delivery_supported():
+            if fallback and get_session_env("AKRAMCODE_SESSION_PLATFORM") and not async_delivery_supported():
                 return ("Note: this stateless HTTP API session cannot receive cron delivery, so this "
                         f"job will report to the home channel {fallback[0]['platform']}:"
                         f"{fallback[0]['chat_id']} instead of back here.")
@@ -277,7 +277,7 @@ def _validate_bot_chat_deliver(deliver: Optional[str]) -> Optional[str]:
             return (
                 f"bot-chat delivery profile '{profile_arg}' not found on this "
                 "gateway's machine. Bot Chat delivery is machine-local — use a "
-                "profile that exists here (hermes profile list), or omit the "
+                "profile that exists here (akramcode profile list), or omit the "
                 "name (deliver='bot-chat') for the job's own profile.")
     return None
 
@@ -286,19 +286,19 @@ def _resolve_cron_context_deliver(deliver: Optional[str]) -> Optional[str]:
     """Resolve ``origin`` to a concrete target for creates made FROM a cron run (the creating
     session is ephemeral, so by fire time there is no origin). Non-cron sessions: unchanged.
     Cron sessions: ``origin`` (or omitted) becomes the creating run's ``platform:chat_id[:thread]``
-    from HERMES_CRON_AUTO_DELIVER_*, or ``local`` when it has no concrete target; other
+    from AKRAMCODE_CRON_AUTO_DELIVER_*, or ``local`` when it has no concrete target; other
     elements pass through. Otherwise the scheduler would guess a home channel."""
     from gateway.session_context import get_session_env
     from utils import is_truthy_value
-    if not is_truthy_value(get_session_env("HERMES_CRON_SESSION", "")):
+    if not is_truthy_value(get_session_env("AKRAMCODE_CRON_SESSION", "")):
         return deliver
 
     def _creator_target() -> str:
-        platform = get_session_env("HERMES_CRON_AUTO_DELIVER_PLATFORM", "").strip()
-        chat_id = get_session_env("HERMES_CRON_AUTO_DELIVER_CHAT_ID", "").strip()
+        platform = get_session_env("AKRAMCODE_CRON_AUTO_DELIVER_PLATFORM", "").strip()
+        chat_id = get_session_env("AKRAMCODE_CRON_AUTO_DELIVER_CHAT_ID", "").strip()
         if not platform or not chat_id:
             return "local"
-        thread_id = get_session_env("HERMES_CRON_AUTO_DELIVER_THREAD_ID", "").strip()
+        thread_id = get_session_env("AKRAMCODE_CRON_AUTO_DELIVER_THREAD_ID", "").strip()
         return f"{platform}:{chat_id}:{thread_id}" if thread_id else f"{platform}:{chat_id}"
 
     if deliver is None:
@@ -363,14 +363,14 @@ def _validate_cron_base_url(
 
 
 def _validate_cron_script_path(script: Optional[str]) -> Optional[str]:
-    """Scripts must be relative paths within HERMES_HOME/scripts/ (absolute / ~ / drive-letter
+    """Scripts must be relative paths within AKRAMCODE_HOME/scripts/ (absolute / ~ / drive-letter
     rejected — prompt-injection guard). Error string if blocked, else None; empty = clear."""
     if not script or not script.strip():
         return None
 
-    from akramcode_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
     raw = script.strip()
-    scripts_dir = get_hermes_home() / "scripts"
+    scripts_dir = get_akramcode_home() / "scripts"
     if raw.startswith(("/", "~")) or (len(raw) >= 2 and raw[1] == ":"):
         return (
             f"Script path must be relative to {scripts_dir}/. "
@@ -493,9 +493,9 @@ def _gateway_liveness_notice(plural: bool = False) -> dict:
         return {
             "gateway_running": False,
             "warning": (
-                f"The Hermes gateway is not running — {subject} "
+                f"The AkramCode gateway is not running — {subject} "
                 "but will NOT fire until the gateway is started "
-                "(hermes gateway install / hermes gateway start). "
+                "(akramcode gateway install / akramcode gateway start). "
                 "Tell the user the task is scheduled but not active yet."),
         }
     return {"gateway_running": None if _gw is None else True}

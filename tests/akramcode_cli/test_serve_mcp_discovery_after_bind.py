@@ -1,5 +1,5 @@
 """Desktop `serve` starts background MCP discovery only after the socket binds; a standalone
-`hermes dashboard` arms it at boot and the first /api/ws client (or agent build) fires it (#58733).
+`akramcode dashboard` arms it at boot and the first /api/ws client (or agent build) fires it (#58733).
 
 The MCP SDK import (~350ms) used to run on a thread started BEFORE
 web_server was imported, holding the GIL against the main thread's own
@@ -86,15 +86,15 @@ def _stub_dashboard_runtime(monkeypatch):
     monkeypatch.setattr(main_mod, "_sync_bundled_skills_quietly", lambda: None)
     monkeypatch.setitem(sys.modules, "fastapi", types.SimpleNamespace())
     monkeypatch.setitem(sys.modules, "uvicorn", types.SimpleNamespace())
-    monkeypatch.setitem(sys.modules, "akram_core.hermes_logging", types.SimpleNamespace(setup_logging=lambda **_k: None))
+    monkeypatch.setitem(sys.modules, "akram_core.akramcode_logging", types.SimpleNamespace(setup_logging=lambda **_k: None))
     monkeypatch.setitem(sys.modules, "akramcode_cli.plugins", types.SimpleNamespace(discover_plugins=lambda: None))
     return main_mod
 
 
 def test_standalone_dashboard_boot_arms_discovery_without_starting_it(monkeypatch):
-    """#58733: an idle, unvisited `hermes dashboard` must not spawn the configured MCP servers."""
+    """#58733: an idle, unvisited `akramcode dashboard` must not spawn the configured MCP servers."""
     _reset_discovery_state(monkeypatch)
-    monkeypatch.delenv("HERMES_DESKTOP", raising=False)
+    monkeypatch.delenv("AKRAMCODE_DESKTOP", raising=False)
     main_mod = _stub_dashboard_runtime(monkeypatch)
     calls: list[str] = []
     monkeypatch.setattr(

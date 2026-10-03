@@ -1,5 +1,5 @@
 """Tests for kanban DB corruption repair, backup retention, WAL checkpointing,
-and the ``hermes kanban repair`` CLI verb."""
+and the ``akramcode kanban repair`` CLI verb."""
 
 from __future__ import annotations
 
@@ -203,7 +203,7 @@ def test_dispatch_tick_runs_wal_checkpoint_at_interval(tmp_path, monkeypatch):
     interval elapses the next tick checkpoints again."""
     db_path = tmp_path / "kanban.db"
     _build_board_db(db_path, tasks=1)
-    monkeypatch.setenv("HERMES_KANBAN_DB", str(db_path))
+    monkeypatch.setenv("AKRAMCODE_KANBAN_DB", str(db_path))
     # Fresh per-path clock so previous tests can't have claimed the slot.
     monkeypatch.setattr(kbc, "_LAST_WAL_CHECKPOINT", {})
 
@@ -239,11 +239,11 @@ def test_dispatch_tick_runs_wal_checkpoint_at_interval(tmp_path, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# repair_db() API + `hermes kanban repair` CLI verb
+# repair_db() API + `akramcode kanban repair` CLI verb
 # ---------------------------------------------------------------------------
 
 def _run_kanban_cli(argv: list[str]) -> int:
-    """Drive the real argparse surface exactly like `hermes kanban …`."""
+    """Drive the real argparse surface exactly like `akramcode kanban …`."""
     import argparse
 
     from akramcode_cli import kanban as kc
@@ -257,10 +257,10 @@ def _run_kanban_cli(argv: list[str]) -> int:
 
 @pytest.fixture
 def cli_home(tmp_path, monkeypatch):
-    """Isolated HERMES_HOME so kanban_db_path() resolves inside tmp_path."""
-    home = tmp_path / ".hermes"
+    """Isolated AKRAMCODE_HOME so kanban_db_path() resolves inside tmp_path."""
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     return home
 

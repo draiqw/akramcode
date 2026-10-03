@@ -23,8 +23,8 @@ def server():
     with patch.dict(
         "sys.modules",
         {
-            "hermes_constants": MagicMock(
-                get_hermes_home=MagicMock(return_value="/tmp/hermes_test_review_summary")
+            "akramcode_constants": MagicMock(
+                get_akramcode_home=MagicMock(return_value="/tmp/akramcode_test_review_summary")
             ),
             "akramcode_cli.env_loader": MagicMock(),
             "akramcode_cli.banner": MagicMock(),
@@ -86,7 +86,7 @@ def test_init_session_attaches_background_review_callback(server, monkeypatch):
     captured_emits.clear()
 
     # Invoke the callback the way AIAgent._spawn_background_review would.
-    cb("💾 Self-improvement review: Skill 'hermes-release' patched")
+    cb("💾 Self-improvement review: Skill 'akramcode-release' patched")
 
     # Exactly one review.summary event should have been emitted, bound to
     # the session id we passed in, carrying the full message text.
@@ -95,7 +95,7 @@ def test_init_session_attaches_background_review_callback(server, monkeypatch):
     event, sid, payload = matched[0]
     assert sid == "sid-abc"
     assert payload == {
-        "text": "💾 Self-improvement review: Skill 'hermes-release' patched"
+        "text": "💾 Self-improvement review: Skill 'akramcode-release' patched"
     }
 
 

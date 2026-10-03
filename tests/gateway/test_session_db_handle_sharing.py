@@ -38,13 +38,13 @@ def home(tmp_path, monkeypatch):
     """A gateway home under tmp_path, with path resolution going through it."""
     import akramcode_state
 
-    root = tmp_path / "hermes"
+    root = tmp_path / "akramcode"
     root.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(root))
     # The suite-wide fixture re-points DEFAULT_DB_PATH, which trips the
     # deliberate escape hatch in _default_db_path() and would pin every lookup
     # to one fixed path. Restore the import-time snapshot so resolution runs
-    # through get_hermes_home() the way production does; HERMES_HOME above
+    # through get_akramcode_home() the way production does; AKRAMCODE_HOME above
     # keeps it inside tmp_path. Same reasoning as
     # test_multiplex_session_db_profile_scope.py.
     monkeypatch.setattr(

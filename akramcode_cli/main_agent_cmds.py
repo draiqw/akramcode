@@ -20,8 +20,8 @@ def _cmd_memory_off():
 
 
 def _cmd_memory_reset(args):
-    from akramcode_constants import get_hermes_home, display_hermes_home
-    mem_dir = get_hermes_home() / "memories"
+    from akramcode_constants import get_akramcode_home, display_akramcode_home
+    mem_dir = get_akramcode_home() / "memories"
     target = getattr(args, "target", "all")
     files_to_reset = []
     if target in {"all", "memory"}:
@@ -31,7 +31,7 @@ def _cmd_memory_reset(args):
 
     existing = [(f, desc) for f, desc in files_to_reset if (mem_dir / f).exists()]
     if not existing:
-        print(f"\n  Nothing to reset — no memory files found in {display_hermes_home()}/memories/\n")
+        print(f"\n  Nothing to reset — no memory files found in {display_akramcode_home()}/memories/\n")
         return
 
     print("\n  This will permanently erase the following memory files:")
@@ -54,7 +54,7 @@ def _cmd_memory_reset(args):
         print(f"  ✓ Deleted {f} ({desc})")
 
     print("\n  Memory reset complete. New sessions will start with a blank slate.")
-    print(f"  Files were in: {display_hermes_home()}/memories/\n")
+    print(f"  Files were in: {display_akramcode_home()}/memories/\n")
 
 
 def cmd_memory(args):
@@ -78,15 +78,15 @@ _ACP_FLAGS = (
 
 
 def cmd_acp(args):
-    """Launch Hermes Agent as an ACP server."""
+    """Launch AkramCode Agent as an ACP server."""
     try:
         from acp_adapter.entry import main as acp_main
         acp_main([flag for attr, flag in _ACP_FLAGS if getattr(args, attr, False)])
     except ImportError as e:
         print("The ACP server can't start: its protocol packages are missing from this install.", file=sys.stderr)
-        print("From the Hermes environment, run: "
+        print("From the AkramCode environment, run: "
               f"{install_hint('acp')}", file=sys.stderr)
-        print("Then restart Hermes.", file=sys.stderr)
+        print("Then restart AkramCode.", file=sys.stderr)
         print(f"Details: {e}", file=sys.stderr)
         sys.exit(1)
 
@@ -160,7 +160,7 @@ def cmd_monitoring(args):
         else:
             print("  OTLP endpoint:  not configured (monitoring.export.otlp)")
         print(f"  OTel SDK:       {'installed' if otlp_exporter.is_available() else 'not installed'} "
-              f"(optional extra: hermes-agent[otlp])")
+              f"(optional extra: akramcode-agent[otlp])")
         print("\n  Scope: gateway service health + redacted diagnostics only.")
         print("  No prompts, messages, tool args/results, usage analytics, or traces.")
         return
@@ -184,7 +184,7 @@ def cmd_skills(args):
 
 
 def _cmd_skills_trust(args):
-    """``hermes skills trust|untrust [path]`` — manage ``skills.trusted_project_dirs``.
+    """``akramcode skills trust|untrust [path]`` — manage ``skills.trusted_project_dirs``.
 
     With no path, operates on the project root enclosing the current directory
     (nearest ancestor with ``.git``).

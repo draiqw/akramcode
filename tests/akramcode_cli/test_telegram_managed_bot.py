@@ -29,7 +29,7 @@ class TestQRCode:
 
     def test_print_qr_code_tip_targets_active_interpreter(self, capsys):
         # Regression for #111695: a bare `pip install` targets the wrong
-        # environment when Hermes runs in an isolated venv (which has no pip
+        # environment when AkramCode runs in an isolated venv (which has no pip
         # module at all). The fallback tip must route through PM instead.
         from pm import install_hint
 
@@ -47,28 +47,28 @@ class TestCreatePairing:
         mock_resp.json.return_value = {
             "pairing_id": "abcdefghijklmnop",
             "poll_token": "secret-token",
-            "suggested_username": "hermes_abcdefghijklmnop_bot",
-            "deep_link": "https://t.me/newbot/HermesSetupBot/hermes_abcdefghijklmnop_bot?name=Hermes+Agent",
-            "qr_payload": "https://t.me/newbot/HermesSetupBot/hermes_abcdefghijklmnop_bot?name=Hermes+Agent",
+            "suggested_username": "akramcode_abcdefghijklmnop_bot",
+            "deep_link": "https://t.me/newbot/AkramCodeSetupBot/akramcode_abcdefghijklmnop_bot?name=AkramCode+Agent",
+            "qr_payload": "https://t.me/newbot/AkramCodeSetupBot/akramcode_abcdefghijklmnop_bot?name=AkramCode+Agent",
             "expires_at": "2026-05-18T00:00:00.000Z",
         }
 
         with patch(
             "akramcode_cli.telegram_managed_bot.httpx.post", return_value=mock_resp
         ) as post:
-            pairing = create_pairing("https://api.example.com", bot_name="Hermes Agent")
+            pairing = create_pairing("https://api.example.com", bot_name="AkramCode Agent")
 
         assert pairing == TelegramPairing(
             pairing_id="abcdefghijklmnop",
             poll_token="secret-token",
-            suggested_username="hermes_abcdefghijklmnop_bot",
-            deep_link="https://t.me/newbot/HermesSetupBot/hermes_abcdefghijklmnop_bot?name=Hermes+Agent",
-            qr_payload="https://t.me/newbot/HermesSetupBot/hermes_abcdefghijklmnop_bot?name=Hermes+Agent",
+            suggested_username="akramcode_abcdefghijklmnop_bot",
+            deep_link="https://t.me/newbot/AkramCodeSetupBot/akramcode_abcdefghijklmnop_bot?name=AkramCode+Agent",
+            qr_payload="https://t.me/newbot/AkramCodeSetupBot/akramcode_abcdefghijklmnop_bot?name=AkramCode+Agent",
             expires_at="2026-05-18T00:00:00.000Z",
         )
         post.assert_called_once_with(
             "https://api.example.com/v1/telegram/pairings",
-            json={"bot_name": "Hermes Agent"},
+            json={"bot_name": "AkramCode Agent"},
             timeout=10.0,
         )
 
@@ -97,16 +97,16 @@ class TestPollForToken:
         return TelegramPairing(
             pairing_id="abcdefghijklmnop",
             poll_token="secret-token",
-            suggested_username="hermes_abcdefghijklmnop_bot",
-            deep_link="https://t.me/newbot/HermesSetupBot/hermes_abcdefghijklmnop_bot",
-            qr_payload="https://t.me/newbot/HermesSetupBot/hermes_abcdefghijklmnop_bot",
+            suggested_username="akramcode_abcdefghijklmnop_bot",
+            deep_link="https://t.me/newbot/AkramCodeSetupBot/akramcode_abcdefghijklmnop_bot",
+            qr_payload="https://t.me/newbot/AkramCodeSetupBot/akramcode_abcdefghijklmnop_bot",
         )
 
     def test_immediate_success(self):
         mock_resp = MagicMock()
         mock_resp.status_code = 200
         mock_resp.json.return_value = {
-            "bot_username": "hermes_abcdefghijklmnop_bot",
+            "bot_username": "akramcode_abcdefghijklmnop_bot",
             "owner_user_id": 42,
             "status": "ready",
             "token": VALID_TOKEN,
@@ -163,10 +163,10 @@ class TestSetupTelegramAuto:
         from akramcode_cli import setup
 
         seen = {}
-        profile_home = tmp_path / ".hermes" / "profiles" / "oracle"
+        profile_home = tmp_path / ".akramcode" / "profiles" / "oracle"
         profile_home.mkdir(parents=True)
 
-        monkeypatch.setattr(setup, "get_hermes_home", lambda: profile_home)
+        monkeypatch.setattr(setup, "get_akramcode_home", lambda: profile_home)
 
         def fake_auto_setup_telegram_bot_result(*, profile_name=None):
             seen["profile_name"] = profile_name
@@ -181,11 +181,11 @@ class TestSetupTelegramAuto:
         assert seen["profile_name"] == "oracle"
 
     def test_profile_name_from_home_path_handles_windows_separators(self):
-        from akramcode_cli.setup_platforms import _profile_name_from_hermes_home
+        from akramcode_cli.setup_platforms import _profile_name_from_akramcode_home
 
         assert (
-            _profile_name_from_hermes_home(
-                PureWindowsPath(r"C:\Users\test\AppData\Local\hermes\profiles\oracle")
+            _profile_name_from_akramcode_home(
+                PureWindowsPath(r"C:\Users\test\AppData\Local\akramcode\profiles\oracle")
             )
             == "oracle"
         )

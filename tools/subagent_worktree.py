@@ -2,7 +2,7 @@
 
 Git-only (outside a repo children share the parent's cwd); local terminal backend only (on
 docker/ssh/modal the host worktree is invisible in the sandbox, so isolation is skipped). One
-worktree per child under ``<repo>/.worktrees/subagent-<id>``, branch ``hermes-subagent/<id>``;
+worktree per child under ``<repo>/.worktrees/subagent-<id>``, branch ``akramcode-subagent/<id>``;
 pruned only on proof (zero commits AND clean, both probes ok), else kept + ``inspection_failed``.
 """
 
@@ -78,7 +78,7 @@ def create_subagent_worktree(parent_cwd: Optional[str], subagent_id: Optional[st
     if not repo_root:
         return None
     wt_name = f"subagent-{(subagent_id or uuid.uuid4().hex[:8]).replace('/', '-')}"
-    branch = f"hermes-subagent/{wt_name}"
+    branch = f"akramcode-subagent/{wt_name}"
     wt_path = Path(repo_root) / ".worktrees" / wt_name
     try:
         wt_path.parent.mkdir(parents=True, exist_ok=True)

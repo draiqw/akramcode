@@ -325,8 +325,8 @@ class DingTalkAdapter(BasePlatformAdapter):
         if not _is_sdk_incompat(exc) or getattr(self, "_fatal_error_code", None) == "dingtalk_stream_error":
             return
         msg = (f"dingtalk-stream cannot open its websocket with the installed websockets package ({exc}). "
-               "Hermes pins dingtalk-stream==0.24.3 with websockets==15.0.1; reinstall the dingtalk extra "
-               "so those versions are used (e.g. `pip install 'hermes-agent[dingtalk]'`).")
+               "AkramCode pins dingtalk-stream==0.24.3 with websockets==15.0.1; reinstall the dingtalk extra "
+               "so those versions are used (e.g. `pip install 'akramcode-agent[dingtalk]'`).")
         logger.error("[%s] %s", self.name, msg)
         # Not retryable: only a reinstall + restart fixes it, and connect() returns True before the
         # socket exists, so a gateway reconnect would re-fail every watcher tick forever.
@@ -525,7 +525,7 @@ class DingTalkAdapter(BasePlatformAdapter):
                 return result
             logger.warning("[%s] AI Card send failed, falling back to webhook", self.name)
         logger.debug("[%s] Sending via webhook", self.name)
-        payload = {"msgtype": "markdown", "markdown": {"title": "Hermes", "text": self._normalize_markdown(content[: self.MAX_MESSAGE_LENGTH])}}
+        payload = {"msgtype": "markdown", "markdown": {"title": "AkramCode", "text": self._normalize_markdown(content[: self.MAX_MESSAGE_LENGTH])}}
         try:
             resp = await self._http_client.post(session_webhook, json=payload, timeout=15.0)
             if resp.status_code < 300:
@@ -575,7 +575,7 @@ class DingTalkAdapter(BasePlatformAdapter):
             token = await self._get_access_token()
             if not token:
                 return None
-            out_track_id, models = f"hermes_{uuid.uuid4().hex[:12]}", dingtalk_card_models
+            out_track_id, models = f"akramcode_{uuid.uuid4().hex[:12]}", dingtalk_card_models
             is_group = str(getattr(message, "conversation_type", "1")) == "2"
             sender_staff_id = getattr(message, "sender_staff_id", "") or ""
             create_request = models.CreateCardRequest(
@@ -847,7 +847,7 @@ def _is_connected(config) -> bool:
 
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the Hermes plugin system."""
+    """Plugin entry point — called by the AkramCode plugin system."""
     ctx.register_platform(
         name="dingtalk", label="DingTalk", adapter_factory=DingTalkAdapter, check_fn=dingtalk_deps_present,
         ensure_deps_fn=ensure_dingtalk_deps, is_connected=_is_connected, validate_config=_is_connected,

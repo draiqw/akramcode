@@ -14,7 +14,7 @@ if not tag.isalnum():
 home = Path(tempfile.mkdtemp(prefix=f"updater-{tag}-"))
 allowed = {key: os.environ[key] for key in ("PATH", "XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS") if key in os.environ}
 os.environ.clear()
-os.environ.update(allowed, HOME=str(home), HERMES_HOME=str(home / "hermes"))
+os.environ.update(allowed, HOME=str(home), AKRAMCODE_HOME=str(home / "akramcode"))
 sys.path.insert(0, repo)
 from akramcode_cli import update_cmd_fleet as fleet
 _systemctl_reset_and_restart = fleet._systemctl_reset_and_restart
@@ -23,12 +23,12 @@ def scoped_systemctl(argv, *, timeout):
     if "list-units" in argv:
         if "--user" not in argv:
             return subprocess.CompletedProcess(argv, 0, "", "")
-        argv = [arg for arg in argv if arg not in ("hermes-gateway*", "hermes-serve*")] + [unit + ".service"]
+        argv = [arg for arg in argv if arg not in ("akramcode-gateway*", "akramcode-serve*")] + [unit + ".service"]
     return actual_systemctl(argv, timeout=timeout)
 if catchup:
     # Bound discovery to our transient unit; never enumerate user services.
     fleet._systemctl = scoped_systemctl
-unit = f"hermes-serve-audit-089c35aa-{tag}"
+unit = f"akramcode-serve-audit-089c35aa-{tag}"
 cmd = ["systemctl", "--user"]
 def run(args):
     return subprocess.run(args, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=65)

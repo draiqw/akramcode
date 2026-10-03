@@ -37,8 +37,8 @@ async def test_voices_route_scope_failure_never_borrows_env(tmp_path, monkeypatc
     from agent import secret_scope as ss
     from akramcode_cli.web_routers.audio import get_elevenlabs_voices
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-    (tmp_path / ".hermes").mkdir()
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / ".akramcode"))
+    (tmp_path / ".akramcode").mkdir()
     monkeypatch.setenv("ELEVENLABS_API_KEY", "sk-foreign-profile")
 
     def _urlopen(*a, **k):

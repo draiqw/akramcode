@@ -18,17 +18,17 @@ def overlay_locales(tmp_path, monkeypatch):
     (fake / "zh.yaml").write_text(
         "cli:\n  model:\n    effort_keep_current: 保持当前\n", encoding="utf-8")
     monkeypatch.setattr(i18n, "_locales_dir", lambda: fake)
-    monkeypatch.delenv("HERMES_LANGUAGE", raising=False)
+    monkeypatch.delenv("AKRAMCODE_LANGUAGE", raising=False)
     i18n.reset_language_cache()
     yield fake
     i18n.reset_language_cache()
 
 
 def test_picker_effort_rows_follow_language_at_call_time(overlay_locales, monkeypatch):
-    monkeypatch.setenv("HERMES_LANGUAGE", "en")
+    monkeypatch.setenv("AKRAMCODE_LANGUAGE", "en")
     i18n.reset_language_cache()
     en_rows = ms._picker_reasoning_rows()
-    monkeypatch.setenv("HERMES_LANGUAGE", "zh")
+    monkeypatch.setenv("AKRAMCODE_LANGUAGE", "zh")
     i18n.reset_language_cache()
     zh_rows = ms._picker_reasoning_rows()
     # Values (identifiers) are stable; the keep-current label moved with the language.

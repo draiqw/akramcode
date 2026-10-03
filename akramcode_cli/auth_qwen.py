@@ -128,7 +128,7 @@ def resolve_qwen_runtime_credentials(
 
     return {
         "provider": "qwen-oauth",
-        "base_url": os.getenv("HERMES_QWEN_BASE_URL", "").strip().rstrip("/") or DEFAULT_QWEN_BASE_URL,
+        "base_url": os.getenv("AKRAMCODE_QWEN_BASE_URL", "").strip().rstrip("/") or DEFAULT_QWEN_BASE_URL,
         "api_key": access_token, "source": "qwen-cli", "expires_at_ms": tokens.get("expiry_date"),
         "auth_file": str(_qwen_cli_auth_path()),
     }
@@ -138,7 +138,7 @@ def get_qwen_auth_status() -> Dict[str, Any]:
     from akramcode_cli.auth import _qwen_cli_auth_path, resolve_qwen_runtime_credentials
     auth_path = _qwen_cli_auth_path()
     try:
-        # Refresh-validate: otherwise stale CLI tokens read as "logged in" and break `hermes model`.
+        # Refresh-validate: otherwise stale CLI tokens read as "logged in" and break `akramcode model`.
         creds = resolve_qwen_runtime_credentials(refresh_if_expiring=True)
         return {
             "logged_in": True, "auth_file": str(auth_path), "source": creds.get("source"),

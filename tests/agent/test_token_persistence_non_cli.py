@@ -79,12 +79,12 @@ def test_session_search_lazily_opens_db_when_entrypoint_did_not_pass_one(monkeyp
     agent = _make_agent(None, platform="acp")
     result = json.loads(agent._invoke_tool(
         "session_search",
-        {"query": "Hermes", "detail": "full"},
+        {"query": "AkramCode", "detail": "full"},
         "task-id",
     ))
 
     assert result["success"] is True
     assert captured["db"] is sentinel_db
-    assert captured["query"] == "Hermes"
+    assert captured["query"] == "AkramCode"
     assert captured["detail"] == "full"
     assert agent._session_db is sentinel_db

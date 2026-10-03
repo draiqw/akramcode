@@ -10,7 +10,7 @@ with the rest. Only a core that cannot build on its own still fails.
 Disabling needs evidence about the plugin itself: its requires-python against the pinned
 interpreter, its manifest contract, a resolver proof, or its build failing. A fetch or
 tooling failure could be the moment, so the plugin gets one retry before it is disabled.
-requires_hermes is judged against a version identity that can lag (a checkout without its
+requires_akramcode is judged against a version identity that can lag (a checkout without its
 release tags), so a misfit there only sits out: config is untouched, boot skips it the same
 way, and it rejoins when the verdict flips. A secondary profile whose config cannot be read
 sits out until its config is fixed.
@@ -47,7 +47,7 @@ def _interpreter_version() -> str:
 
 def static_verdicts(entries: list[Entry], python_version: str) -> tuple[dict[Path, str], dict[Path, str]]:
     """``(disable, sit out)`` reasons found without a resolver, keyed by resolved dir."""
-    from akramcode_cli.plugins_manifest import requires_hermes_error
+    from akramcode_cli.plugins_manifest import requires_akramcode_error
     from pm.plugin_declarations import manifest_version_error, read_python_declaration
 
     reasons: dict[Path, str] = {}
@@ -62,9 +62,9 @@ def static_verdicts(entries: list[Entry], python_version: str) -> tuple[dict[Pat
             reasons[key] = f"its dependency declaration is invalid: {exc}"
             continue
         # Mirrors enabled_member_dirs, so the recorded stamp is the one boot expects.
-        hermes = requires_hermes_error(declaration.manifest)
-        if hermes:
-            waiting[key] = hermes
+        akramcode = requires_akramcode_error(declaration.manifest)
+        if akramcode:
+            waiting[key] = akramcode
             continue
         manifest = manifest_version_error(declaration.manifest, plugin_dir.name)
         reason = (manifest.removeprefix(f"Plugin '{plugin_dir.name}' ") if manifest
@@ -201,7 +201,7 @@ def sync_evicting(package, facts, fact: dict, *, extras, shipped, frozen, explic
             notices.append(f"Disabled plugin '{name}' in {plugins_dir.parent}: {reasons[key]}")
         elif key in waiting:
             notices.append(f"Left plugin '{name}' in {plugins_dir.parent} out of this update: {waiting[key]}; "
-                           "it stays enabled and rejoins once Hermes reports a version it accepts")
+                           "it stays enabled and rejoins once AkramCode reports a version it accepts")
     for message in notices:
         print(f"⚠ {message}", file=sys.stderr, flush=True)
         receipt.record_warning(message)

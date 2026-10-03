@@ -73,7 +73,7 @@ def _context_pruned_argument_paths(tool_name: str, args: Any) -> list[str]:
     """Paths whose values contain model-visible context-compression artifacts.
 
     The compressor's current marker carries numeric omitted/total counts. Match
-    that rendered shape rather than the prefix alone so Hermes can still edit
+    that rendered shape rather than the prefix alone so AkramCode can still edit
     source/docs that mention the compression marker constant or its template.
     Unknown/plugin/MCP tools stay effect-capable by default; known read-only
     tools may inspect or quote compressed history.
@@ -497,7 +497,7 @@ _ELISION_SCAN_MIN_CHARS = 1_000
 _ELISION_SCAN_MAX_CHARS = 65_536
 
 _UPSTREAM_ELISION_NOTICE = (
-    '\n[hermes note: this result contains provider-side elision markers '
+    '\n[akramcode note: this result contains provider-side elision markers '
     '(e.g. "...N more items" / has_more:true). The data shown is INCOMPLETE '
     '— page/fetch the remainder before treating any enumeration as complete.]'
 )

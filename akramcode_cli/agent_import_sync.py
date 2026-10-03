@@ -1,6 +1,6 @@
-"""``hermes import-agent --sync`` — keep previously imported Claude Code / Codex setups current.
+"""``akramcode import-agent --sync`` — keep previously imported Claude Code / Codex setups current.
 
-Every successful ``hermes import-agent`` run records its source in ``HERMES_HOME/import-sync.json``
+Every successful ``akramcode import-agent`` run records its source in ``AKRAMCODE_HOME/import-sync.json``
 (the sync manifest); ``--sync`` re-imports every registered source whose files changed since the
 last run. Change detection is a content digest over exactly the files the importer reads, so an
 unchanged source is a cheap no-op and credential files (never read by the importer) can never
@@ -128,19 +128,19 @@ def update_sync_manifest(agent: str, source_root: Path, target_root: Path,
 
 
 def sync_imported_agents(args) -> None:
-    """Handle ``hermes import-agent --sync``: re-import every registered source whose digest
+    """Handle ``akramcode import-agent --sync``: re-import every registered source whose digest
     changed. Prompt-free (cron-friendly); ``--dry-run`` previews without touching the manifest."""
     from akramcode_cli.agent_import import AgentImporter, print_import_report
     from akramcode_cli.setup import print_error, print_header, print_info, print_success
-    from akramcode_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
 
     dry_run = bool(getattr(args, "dry_run", False))
-    hermes_home = get_hermes_home().resolve()
-    agents: Dict[str, Any] = load_sync_manifest(hermes_home).get("agents", {})
+    akramcode_home = get_akramcode_home().resolve()
+    agents: Dict[str, Any] = load_sync_manifest(akramcode_home).get("agents", {})
     if not agents:
         print()
         print_info("No import sources registered yet.")
-        print_info("Run 'hermes import-agent' first — successful imports are "
+        print_info("Run 'akramcode import-agent' first — successful imports are "
                    "registered for sync automatically.")
         return
 
@@ -163,7 +163,7 @@ def sync_imported_agents(args) -> None:
                    + (" (dry run)" if dry_run else " — re-importing"))
         overwrite = bool(entry.get("overwrite", False))
         try:
-            report = AgentImporter(agent_name, source_dir, hermes_home, execute=not dry_run,
+            report = AgentImporter(agent_name, source_dir, akramcode_home, execute=not dry_run,
                                    overwrite=overwrite, sync_skills=managed_skills(entry)).run()
         except Exception as exc:  # noqa: BLE001 — keep syncing the other sources
             print_error(f"{agent_name}: sync failed: {exc}")
@@ -177,7 +177,7 @@ def sync_imported_agents(args) -> None:
         if not dry_run:
             try:
                 # Errors keep the old source digest so the next sync retries the failed items.
-                update_sync_manifest(agent_name, source_dir, hermes_home, overwrite, report,
+                update_sync_manifest(agent_name, source_dir, akramcode_home, overwrite, report,
                                      refresh_digest=not had_errors)
             except OSError as exc:
                 logger.warning("Could not update import sync manifest: %s", exc)

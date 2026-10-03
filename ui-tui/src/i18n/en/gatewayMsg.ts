@@ -44,7 +44,7 @@ export const gatewayMsgEn = {
     },
     wake: {
       // {0}=profile name (used twice: in the notice and in the suggested command)
-      otherProfile: (profile: string) => `wake phrase for profile '${profile}' — run: hermes -p ${profile} --tui`,
+      otherProfile: (profile: string) => `wake phrase for profile '${profile}' — run: akramcode -p ${profile} --tui`,
       failed: (message: string) => `wake: ${message}`
     },
     protocol: {

@@ -22,8 +22,8 @@ from typing import Any, Callable, Iterator, Optional
 
 from agent.redact import redact_sensitive_text
 from cron.executions import _owner_is_live, _process_start_time
-from akramcode_constants import get_hermes_home
-from akram_core.akramcode_time import now as _hermes_now
+from akramcode_constants import get_akramcode_home
+from akram_core.akramcode_time import now as _akramcode_now
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +78,7 @@ def queue_path(home: Optional[Path] = None) -> Path:
     """The queue file of ``home`` (the active home when None); a test override wins."""
     if DELIVERY_DB is not None:
         return DELIVERY_DB
-    root = Path(home) if home is not None else get_hermes_home()
+    root = Path(home) if home is not None else get_akramcode_home()
     return root.resolve() / "cron" / "deliveries.db"
 
 
@@ -194,7 +194,7 @@ def enqueue(
                 json.dumps(job, ensure_ascii=False, sort_keys=True),
                 str(content),
                 int(bool(for_failure)),
-                _hermes_now().isoformat(),
+                _akramcode_now().isoformat(),
             ),
         )
         row = conn.execute(
@@ -268,7 +268,7 @@ def _finish(execution_id: str, *, error: Optional[str], suppressed: bool = False
                  AND owner_process_id=? AND owner_pid=?""",
             (
                 status,
-                _hermes_now().isoformat(),
+                _akramcode_now().isoformat(),
                 safe_error,
                 execution_id,
                 _PROCESS_ID,
@@ -305,7 +305,7 @@ def recover_abandoned() -> int:
                 """UPDATE deliveries SET status='unknown', finished_at=?, error=?
                    WHERE execution_id=? AND status='delivering'""",
                 (
-                    _hermes_now().isoformat(),
+                    _akramcode_now().isoformat(),
                     error,
                     row["execution_id"],
                 ),
@@ -353,7 +353,7 @@ def _terminalize_wait_timeout(execution_id: str) -> str:
     a message the drain will still send.  Only a row caught mid-send is
     uncertain and gets fenced ``unknown``.
     """
-    now = _hermes_now().isoformat()
+    now = _akramcode_now().isoformat()
     uncertain_error = (
         "timed out while gateway delivery was in progress; outcome is unknown and "
         "was not retried"

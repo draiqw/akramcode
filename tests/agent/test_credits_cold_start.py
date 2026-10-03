@@ -1,7 +1,7 @@
 """Tests for cold-start credits hydration at session open.
 
 The L3 cold-start seed primes agent._credits_state from /api/oauth/account (or a
-HERMES_DEV_CREDITS_FIXTURE) so depletion AND the 90% grant warning fire immediately
+AKRAMCODE_DEV_CREDITS_FIXTURE) so depletion AND the 90% grant warning fire immediately
 at session open, not only after the first inference header. These tests assert the
 notice policy fires correctly for a seed-shaped CreditsState with the warn90 latch
 primed the way conversation_loop does it.
@@ -48,7 +48,7 @@ def test_cold_start_healthy_no_notice():
 
 
 def test_dev_fixtures_drive_cold_start():
-    """Every HERMES_DEV_CREDITS_FIXTURE state produces a valid seed CreditsState."""
+    """Every AKRAMCODE_DEV_CREDITS_FIXTURE state produces a valid seed CreditsState."""
     import os
 
     from agent.credits_tracker import dev_fixture_credits_state
@@ -59,15 +59,15 @@ def test_dev_fixtures_drive_cold_start():
         "depleted": ["credits.depleted"],
     }
     for name, want in expected.items():
-        os.environ["HERMES_DEV_CREDITS"] = "1"  # fixtures gate on the dev flag
-        os.environ["HERMES_DEV_CREDITS_FIXTURE"] = name
+        os.environ["AKRAMCODE_DEV_CREDITS"] = "1"  # fixtures gate on the dev flag
+        os.environ["AKRAMCODE_DEV_CREDITS_FIXTURE"] = name
         try:
             fx = dev_fixture_credits_state()
             assert fx is not None, name
             assert _cold_start_notices(fx) == want, (name, _cold_start_notices(fx))
         finally:
-            os.environ.pop("HERMES_DEV_CREDITS_FIXTURE", None)
-            os.environ.pop("HERMES_DEV_CREDITS", None)
+            os.environ.pop("AKRAMCODE_DEV_CREDITS_FIXTURE", None)
+            os.environ.pop("AKRAMCODE_DEV_CREDITS", None)
 
 
 # ── seed_credits_at_session_start: the shared session-open hydrator ───────────
@@ -113,13 +113,13 @@ def _seed(agent, fixture):
 
     from agent.credits_tracker import seed_credits_at_session_start
 
-    os.environ["HERMES_DEV_CREDITS"] = "1"  # fixtures gate on the dev flag
-    os.environ["HERMES_DEV_CREDITS_FIXTURE"] = fixture
+    os.environ["AKRAMCODE_DEV_CREDITS"] = "1"  # fixtures gate on the dev flag
+    os.environ["AKRAMCODE_DEV_CREDITS_FIXTURE"] = fixture
     try:
         return seed_credits_at_session_start(agent)
     finally:
-        os.environ.pop("HERMES_DEV_CREDITS_FIXTURE", None)
-        os.environ.pop("HERMES_DEV_CREDITS", None)
+        os.environ.pop("AKRAMCODE_DEV_CREDITS_FIXTURE", None)
+        os.environ.pop("AKRAMCODE_DEV_CREDITS", None)
 
 
 
@@ -313,7 +313,7 @@ def _run_bg_seed(monkeypatch, agent, *, warm):
         spawned.append(thread)
         return thread
 
-    monkeypatch.delenv("HERMES_DEV_CREDITS", raising=False)  # fixtures would take the sync path
+    monkeypatch.delenv("AKRAMCODE_DEV_CREDITS", raising=False)  # fixtures would take the sync path
     monkeypatch.setattr(credits_tracker, "_warm_nous_pricing_cache", _gated_warm)
     monkeypatch.setattr(memory_provider, "spawn_context_thread", _capture_spawn)
     monkeypatch.setattr(nous_account, "get_nous_portal_account_info", lambda *a, **kw: _DepletedAccount())

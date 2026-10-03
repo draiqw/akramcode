@@ -1,6 +1,6 @@
 """prepare_launch() recognizes the store interpreter it would re-exec into (#122513).
 
-PM spells the store Python through HERMES_HOME, which may contain '..', while
+PM spells the store Python through AKRAMCODE_HOME, which may contain '..', while
 the OS reports ``sys.executable`` normalized. The identity check must be
 lexical: comparing the raw spellings relaunched every child forever, and
 following symlinks would treat a venv interpreter as the store interpreter.
@@ -25,8 +25,8 @@ def launch(tmp_path, monkeypatch):
     (root / ".git").mkdir(parents=True)
     (root / "pyproject.toml").write_text("[project]\nname='example'\n", encoding="utf-8")
     (root / "install-stamp.json").write_text('{"updateMechanism": "self"}', encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
-    monkeypatch.delenv("HERMES_DISABLE_LAZY_INSTALLS", raising=False)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
+    monkeypatch.delenv("AKRAMCODE_DISABLE_LAZY_INSTALLS", raising=False)
     monkeypatch.setattr(pm, "venv_is_current", lambda **kw: True)
     store_python = tmp_path / "store" / "cpython-3.14" / "bin" / "python3"
     store_python.parent.mkdir(parents=True)
@@ -43,7 +43,7 @@ def launch(tmp_path, monkeypatch):
 
 
 def test_store_python_spelled_through_dotdot_home_is_current(launch):
-    """HERMES_HOME=<x>/work/../store...: the normalized sys.executable is the same interpreter."""
+    """AKRAMCODE_HOME=<x>/work/../store...: the normalized sys.executable is the same interpreter."""
     tmp_path, store_python, run = launch
     dotted = tmp_path / "work" / ".." / store_python.relative_to(tmp_path)
     (tmp_path / "work").mkdir()

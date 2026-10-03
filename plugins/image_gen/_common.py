@@ -1,5 +1,5 @@
 """Shared helpers for the bundled ``image_gen`` provider plugins. Providers are loaded by path
-(``hermes_plugins.image_gen__<name>``) and resolve this via the repo root on ``sys.path``;
+(``akramcode_plugins.image_gen__<name>``) and resolve this via the repo root on ``sys.path``;
 not a plugin itself (the scanner only looks at directories)."""
 
 from __future__ import annotations

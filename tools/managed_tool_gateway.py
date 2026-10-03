@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from dataclasses import dataclass
 from typing import Callable, Optional
 
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 from tools.tool_backend_helpers import managed_nous_tools_enabled
 
 logger = logging.getLogger(__name__)
@@ -33,8 +33,8 @@ def _clean(value: object) -> Optional[str]:
 
 
 def auth_json_path():
-    """Return the Hermes auth store path, respecting HERMES_HOME overrides."""
-    return get_hermes_home() / "auth.json"
+    """Return the AkramCode auth store path, respecting AKRAMCODE_HOME overrides."""
+    return get_akramcode_home() / "auth.json"
 
 
 def _read_nous_provider_state() -> Optional[dict]:
@@ -44,7 +44,7 @@ def _read_nous_provider_state() -> Optional[dict]:
 
     Resolves through the same profile-then-global-root fallback every other credential reader
     uses: a profile created with ``share_auth`` has no ``auth.json`` of its own and signs in with
-    the root identity. Reading only ``HERMES_HOME/auth.json`` made that profile look signed out to
+    the root identity. Reading only ``AKRAMCODE_HOME/auth.json`` made that profile look signed out to
     the connector gate alone, so ``manage_connections`` vanished from its tool list."""
     try:
         from akramcode_cli.auth import get_provider_auth_state

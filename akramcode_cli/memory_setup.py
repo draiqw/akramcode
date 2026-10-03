@@ -1,4 +1,4 @@
-"""hermes memory setup|status — configure memory provider plugins."""
+"""akramcode memory setup|status — configure memory provider plugins."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import sys
 import shlex
 from pathlib import Path
 
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 from akramcode_cli.secret_prompt import masked_secret_prompt
 
 _CANCELLED = -1
@@ -100,7 +100,7 @@ def _install_dependencies(provider_name: str) -> None:
     if status:
         print(f"  ✓ Dependencies prepared for {provider_name}")
         if status == "restart_required":
-            print("  Restart Hermes to use the prepared dependencies.")
+            print("  Restart AkramCode to use the prepared dependencies.")
 
     # Also show external (non-pip) dependencies that are missing.
     for dep in meta.get("external_dependencies", []):
@@ -160,7 +160,7 @@ def _post_setup_hook(provider, config: dict) -> bool:
     if not isinstance(config.get("memory"), dict):
         config["memory"] = {}
     if hasattr(provider, "post_setup"):
-        provider.post_setup(str(get_hermes_home()), config)
+        provider.post_setup(str(get_akramcode_home()), config)
         return True
     return False
 
@@ -172,7 +172,7 @@ def cmd_setup_provider(provider_name: str) -> None:
     match = _find_provider(_get_available_providers(), provider_name)
     if not match:
         print(f"\n  Memory provider '{provider_name}' not found.")
-        print("  Run 'hermes memory setup' to see available providers.\n")
+        print("  Run 'akramcode memory setup' to see available providers.\n")
         return
     name, _, provider = match
 
@@ -249,7 +249,7 @@ def cmd_setup(args) -> None:
     providers = _get_available_providers()
     if not providers:
         print("\n  No memory provider plugins detected.")
-        print("  Install a plugin to ~/.hermes/plugins/ and try again.\n")
+        print("  Install a plugin to ~/.akramcode/plugins/ and try again.\n")
         return
 
     items = [(name, f"— {desc}") for name, desc, _ in providers]
@@ -290,7 +290,7 @@ def cmd_setup(args) -> None:
 
     if provider_config and hasattr(provider, "save_config"):
         try:
-            provider.save_config(provider_config, str(get_hermes_home()))
+            provider.save_config(provider_config, str(get_akramcode_home()))
         except Exception as e:
             print(f"  Failed to write provider config: {e}")
     if env_writes:
@@ -306,14 +306,14 @@ def cmd_setup(args) -> None:
 
 
 def _write_env_vars(
-    env_writes: dict, hermes_home: str | os.PathLike[str] | None = None) -> None:
+    env_writes: dict, akramcode_home: str | os.PathLike[str] | None = None) -> None:
     """Persist memory-provider env vars through the canonical ``.env`` writer.
 
     Delegates to ``akramcode_cli.config.save_env_value`` so every key flows
     through the same input-validation gate as every other ``.env`` writer:
     the ``_ENV_VAR_NAME_RE`` regex (no malformed identifiers), the
     ``_ENV_VAR_NAME_DENYLIST`` (no ``LD_PRELOAD`` / ``PYTHONPATH`` /
-    ``HERMES_HOME`` / etc.), CR/LF stripping on the value, and the atomic
+    ``AKRAMCODE_HOME`` / etc.), CR/LF stripping on the value, and the atomic
     0o600-from-creation write (no TOCTOU permission window).
 
     Validation failures (``ValueError`` from ``save_env_value`` — a
@@ -324,16 +324,16 @@ def _write_env_vars(
     intentionally NOT caught — those indicate the wizard cannot safely
     persist any subsequent key either and should propagate.
 
-    ``hermes_home`` may be supplied by plugin ``post_setup`` hooks that
+    ``akramcode_home`` may be supplied by plugin ``post_setup`` hooks that
     already received an explicit home directory (e.g. a non-default
-    profile). It is applied through the context-local Hermes home override
+    profile). It is applied through the context-local AkramCode home override
     so ``save_env_value`` still owns the validation, sanitization, and
     atomic-write path without mutating global ``os.environ``.
     """
     from akramcode_cli.config import save_env_value
-    from akramcode_constants import reset_hermes_home_override, set_hermes_home_override
+    from akramcode_constants import reset_akramcode_home_override, set_akramcode_home_override
 
-    token = set_hermes_home_override(hermes_home) if hermes_home is not None else None
+    token = set_akramcode_home_override(akramcode_home) if akramcode_home is not None else None
     try:
         for key, val in env_writes.items():
             try:
@@ -342,7 +342,7 @@ def _write_env_vars(
                 print(f"  Skipping {key}: {exc}")
     finally:
         if token is not None:
-            reset_hermes_home_override(token)
+            reset_akramcode_home_override(token)
 
 
 def _mark(enabled) -> str:
@@ -408,11 +408,11 @@ def cmd_status(args) -> None:
                         if url and not is_set:
                             line += f"  → {url}"
                         print(line)
-                print("  Note: systemd/gateway services do not inherit ~/.hermes/.env —")
+                print("  Note: systemd/gateway services do not inherit ~/.akramcode/.env —")
                 print("        set any variables above in the service environment.")
         else:
             print("\n  Plugin:    NOT installed ✗")
-            print(f"  Install the '{provider_name}' memory plugin to ~/.hermes/plugins/")
+            print(f"  Install the '{provider_name}' memory plugin to ~/.akramcode/plugins/")
 
     if providers:
         print("\n  Installed plugins:")

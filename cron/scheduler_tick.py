@@ -37,7 +37,7 @@ def _tick_admitted(
         return 0
 
     try:
-        # `hermes pause` ESTOP: skip dispatch, never touch in-flight runs; check_paused logs once.
+        # `akramcode pause` ESTOP: skip dispatch, never touch in-flight runs; check_paused logs once.
         with contextlib.suppress(ImportError):
             from agent.estop import check_paused as _estop_check_paused
             if _estop_check_paused("cron", _sched.logger):
@@ -70,12 +70,12 @@ def _tick_admitted(
                 # load_config()). Still run the post-tick MCP orphan sweep: main intentionally sweeps on
                 # idle ticks so orphaned stdio children from crashed jobs are reaped even when nothing is
                 # due.
-                _sched.logger.info("%s - No jobs due", _sched._hermes_now().strftime('%H:%M:%S'))
+                _sched.logger.info("%s - No jobs due", _sched._akramcode_now().strftime('%H:%M:%S'))
             _sched._sweep_mcp_orphans()
             return 0
 
         if verbose:
-            _sched.logger.info("%s - %s job(s) due", _sched._hermes_now().strftime('%H:%M:%S'), len(due_jobs))
+            _sched.logger.info("%s - %s job(s) due", _sched._akramcode_now().strftime('%H:%M:%S'), len(due_jobs))
 
         # Advance next_run_at for recurring jobs FIRST, under the lock, before any execution
         # (at-most-once). Re-advancing running jobs keeps the grace window alive; mark_job_run

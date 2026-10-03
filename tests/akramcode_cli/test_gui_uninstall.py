@@ -14,40 +14,40 @@ import pytest
 import akramcode_cli.gui_uninstall as gu
 
 
-def _make_agent(hermes_home: Path) -> Path:
+def _make_agent(akramcode_home: Path) -> Path:
     """Create a fake agent install: source package + venv."""
-    agent_root = hermes_home / "hermes-agent"
+    agent_root = akramcode_home / "akramcode-agent"
     (agent_root / "akramcode_cli").mkdir(parents=True)
     (agent_root / "akramcode_cli" / "__init__.py").write_text("")
     (agent_root / "venv" / "bin").mkdir(parents=True)
     return agent_root
 
 
-def _make_gui_build(hermes_home: Path) -> None:
-    """Create the source-built GUI artifacts a `hermes desktop` run produces."""
-    desktop = hermes_home / "hermes-agent" / "apps" / "desktop"
+def _make_gui_build(akramcode_home: Path) -> None:
+    """Create the source-built GUI artifacts a `akramcode desktop` run produces."""
+    desktop = akramcode_home / "akramcode-agent" / "apps" / "desktop"
     (desktop / "dist").mkdir(parents=True)
     (desktop / "dist" / "index.html").write_text("<html>")
     (desktop / "release" / "linux-unpacked").mkdir(parents=True)
     (desktop / "node_modules").mkdir(parents=True)
-    (hermes_home / "hermes-agent" / "node_modules").mkdir(parents=True)
-    (hermes_home / "desktop-build-stamp.json").write_text("{}")
+    (akramcode_home / "akramcode-agent" / "node_modules").mkdir(parents=True)
+    (akramcode_home / "desktop-build-stamp.json").write_text("{}")
 
 
 def test_gui_install_summary_shape(tmp_path, monkeypatch):
-    hermes_home = tmp_path / ".hermes"
-    _make_agent(hermes_home)
-    _make_gui_build(hermes_home)
+    akramcode_home = tmp_path / ".akramcode"
+    _make_agent(akramcode_home)
+    _make_gui_build(akramcode_home)
     monkeypatch.setattr(gu, "packaged_gui_app_paths", lambda: [])
     monkeypatch.setattr(gu, "desktop_userdata_dir", lambda: tmp_path / "none")
 
-    summary = gu.gui_install_summary(hermes_home)
+    summary = gu.gui_install_summary(akramcode_home)
     # JSON-serializable primitives the desktop UI gates on.
     assert summary["agent_installed"] is True
     assert summary["gui_installed"] is True
     assert isinstance(summary["source_built_artifacts"], list)
     assert all(isinstance(p, str) for p in summary["source_built_artifacts"])
-    assert summary["hermes_home"] == str(hermes_home)
+    assert summary["akramcode_home"] == str(akramcode_home)
     assert summary["platform"] == sys.platform
 
 
@@ -70,22 +70,22 @@ def test_uninstall_removes_launcher_entry_and_refreshes_cache(tmp_path, monkeypa
         lde, "refresh_desktop_databases", lambda d: refreshed.append(d) or ["kbuildsycoca6"]
     )
 
-    hermes_home = tmp_path / ".hermes"
-    _make_agent(hermes_home)
-    icon = lde.icon_path(hermes_home / "hermes-agent")
+    akramcode_home = tmp_path / ".akramcode"
+    _make_agent(akramcode_home)
+    icon = lde.icon_path(akramcode_home / "akramcode-agent")
     icon.parent.mkdir(parents=True, exist_ok=True)
     icon.write_bytes(b"\x89PNG")
     monkeypatch.setattr(gu, "desktop_userdata_dir", lambda: tmp_path / "none")
 
-    removed = gu.uninstall_gui(hermes_home)
+    removed = gu.uninstall_gui(akramcode_home)
 
     assert entry in removed and not entry.exists()
     assert legacy_alias in removed and not legacy_alias.exists()
     assert refreshed == [entry.parent]
     # The icon lives in the checkout. A GUI uninstall must not delete it.
-    assert lde.icon_path(hermes_home / "hermes-agent").exists()
+    assert lde.icon_path(akramcode_home / "akramcode-agent").exists()
     # The agent itself survives a GUI uninstall.
-    assert (hermes_home / "hermes-agent" / "akramcode_cli").is_dir()
+    assert (akramcode_home / "akramcode-agent" / "akramcode_cli").is_dir()
 
 
 @pytest.mark.platforms("posix")  # POSIX symlink semantics

@@ -1,9 +1,9 @@
 
 """Regression test: the TUI launcher must not spend time on plugin discovery.
 
-`hermes --tui` just spawns a Node process; the spawned tui_gateway backend
+`akramcode --tui` just spawns a Node process; the spawned tui_gateway backend
 performs its own plugin discovery. Running discover_plugins() in the
-launcher added ~0.5s to every `hermes --tui` startup for work the backend
+launcher added ~0.5s to every `akramcode --tui` startup for work the backend
 then redoes. Plain chat must still discover plugins.
 """
 

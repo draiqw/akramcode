@@ -10,7 +10,7 @@ from tests.gateway.test_display_config import assert_keeps_platform_display_defa
 
 
 def _config_edit(tmp_path, monkeypatch, cfg, *, template):
-    """`hermes config edit` on a home with no config.yaml (seeds via seed_config_file, like `doctor --fix`)."""
+    """`akramcode config edit` on a home with no config.yaml (seeds via seed_config_file, like `doctor --fix`)."""
     monkeypatch.setenv("EDITOR", "true")
     monkeypatch.setattr(cfg.subprocess, "run", lambda *a, **k: None)
     if not template:
@@ -19,7 +19,7 @@ def _config_edit(tmp_path, monkeypatch, cfg, *, template):
 
 
 def _setup_agent_enter(tmp_path, monkeypatch, cfg):
-    """`hermes setup agent` on a fresh home, pressing Enter (the offered default) on every prompt."""
+    """`akramcode setup agent` on a fresh home, pressing Enter (the offered default) on every prompt."""
     import akramcode_cli.setup as setup
 
     monkeypatch.setattr(setup, "prompt", lambda question, default=None, *a, **k: default or "")
@@ -43,15 +43,15 @@ def _blank_slate(tmp_path, monkeypatch, cfg):
 
 
 def _doctor_fix(tmp_path, monkeypatch, cfg):
-    """`hermes doctor --fix` on a home with no config.yaml: the real config-file check, fix enabled."""
+    """`akramcode doctor --fix` on a home with no config.yaml: the real config-file check, fix enabled."""
     import akramcode_cli.doctor as doctor
     from akramcode_cli.doctor_config import _check_config_file
 
     root = tmp_path / "checkout"  # only the template, so a stray cli-config.yaml cannot short-circuit the seed
     root.mkdir()
     shutil.copy2(cfg.get_project_root() / "cli-config.yaml.example", root / "cli-config.yaml.example")
-    home = cfg.get_hermes_home()
-    monkeypatch.setattr(doctor, "HERMES_HOME", home)
+    home = cfg.get_akramcode_home()
+    monkeypatch.setattr(doctor, "AKRAMCODE_HOME", home)
     monkeypatch.setattr(doctor, "PROJECT_ROOT", root)
     assert _check_config_file(True).fixed == 1
     if os.name == "posix":
@@ -75,7 +75,7 @@ def test_every_seeder_keeps_every_platform_display_default(tmp_path, monkeypatch
 
     home = tmp_path / "home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
 
     SEEDERS[seeder](tmp_path, monkeypatch, cfg)
 

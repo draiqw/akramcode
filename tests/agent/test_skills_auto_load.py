@@ -69,7 +69,7 @@ class TestBuildAutoLoadPrompt:
 class TestSharedPromptPath:
     def test_prompt_is_byte_stable_after_config_and_skill_mutation(self, tmp_path, monkeypatch):
         """The whole point: rebuilds (model switch, compression) reuse the first resolution."""
-        monkeypatch.delenv("HERMES_IGNORE_RULES", raising=False)
+        monkeypatch.delenv("AKRAMCODE_IGNORE_RULES", raising=False)
         skill_file = _write_skill(tmp_path, "stable-skill", "ORIGINAL SKILL BYTES")
         cfg = {"skills": {"auto_load": ["stable-skill"]}}
         agent = _bare_agent()
@@ -85,18 +85,18 @@ class TestSharedPromptPath:
         assert "ORIGINAL SKILL BYTES" in rebuilt and "MUTATED BYTES" not in rebuilt
 
     def test_gates_suppress_auto_load(self, tmp_path, monkeypatch):
-        """HERMES_IGNORE_RULES, skip_context_files (delegate children / internal forks) and a session without
+        """AKRAMCODE_IGNORE_RULES, skip_context_files (delegate children / internal forks) and a session without
         the skills toolset all keep pinned skills out of the prompt."""
         _write_skill(tmp_path, "stable-skill", "ORIGINAL SKILL BYTES")
         cfg = {"skills": {"auto_load": ["stable-skill"]}}
         with patch("tools.skills_tool.SKILLS_DIR", tmp_path), \
              patch("akramcode_cli.config.load_config_readonly", return_value=cfg):
-            monkeypatch.setenv("HERMES_IGNORE_RULES", "true")
+            monkeypatch.setenv("AKRAMCODE_IGNORE_RULES", "true")
             agent = _bare_agent()
             assert "ORIGINAL SKILL BYTES" not in agent._build_system_prompt()
             assert agent._auto_load_skills_resolved is True and agent._auto_load_skills_result == ("", [], [])
 
-            monkeypatch.delenv("HERMES_IGNORE_RULES")
+            monkeypatch.delenv("AKRAMCODE_IGNORE_RULES")
             child = _bare_agent("child")
             child.skip_context_files = True
             assert "ORIGINAL SKILL BYTES" not in child._build_system_prompt()

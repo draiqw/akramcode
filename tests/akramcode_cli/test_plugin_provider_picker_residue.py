@@ -1,6 +1,6 @@
 """An admitted plugin provider is selectable and status-accurate on every surface (#116408).
 
-Residue after picker admission: `hermes model` had no flow for a plugin profile (selection was a silent
+Residue after picker admission: `akramcode model` had no flow for a plugin profile (selection was a silent
 no-op), OAuth-shaped plugins had no ``_STATUS_BY_AUTH_TYPE`` builder (``authenticated`` stayed False with
 a live pool entry) and external-process sign-in evidence existed for one bundled vendor only, so the
 Desktop ``explicit_only`` picker hid out-of-tree ACP rows.
@@ -53,8 +53,8 @@ def _pool_entry(provider: str, **fields):
     return entry
 
 
-def test_hermes_model_routes_registered_plugin_profiles_to_the_generic_flow(plugin, monkeypatch, tmp_path):
-    """Selecting an admitted external-process or OAuth plugin in `hermes model` persists config.model;
+def test_akramcode_model_routes_registered_plugin_profiles_to_the_generic_flow(plugin, monkeypatch, tmp_path):
+    """Selecting an admitted external-process or OAuth plugin in `akramcode model` persists config.model;
     an api_key profile still takes the api-key flow and an unknown slug stays a no-op."""
     import akramcode_cli.main as main
     from akramcode_cli import auth
@@ -92,7 +92,7 @@ def test_hermes_model_routes_registered_plugin_profiles_to_the_generic_flow(plug
 def test_oauth_plugin_status_follows_the_credential_pool(plugin):
     """``get_auth_status``/``authenticated`` for an OAuth-shaped plugin read the pool: live token →
     logged in; expired token with refresh material → needs_refresh; nothing → signed out with the
-    `hermes auth add` hint. Bundled OAuth providers never reach this builder."""
+    `akramcode auth add` hint. Bundled OAuth providers never reach this builder."""
     from akramcode_cli import auth, models
 
     plugin(ProviderProfile(name="example-oauth", auth_type="oauth_external",
@@ -101,7 +101,7 @@ def test_oauth_plugin_status_follows_the_credential_pool(plugin):
 
     signed_out = auth.get_auth_status("example-oauth")
     assert signed_out["logged_in"] is False and signed_out["configured"] is True
-    assert "hermes auth add example-oauth" in signed_out["hint"]
+    assert "akramcode auth add example-oauth" in signed_out["hint"]
     assert models._provider_has_credentials("example-oauth") is True  # registered = usable with provider:model
 
     _pool_entry("example-oauth", access_token="tok-1", refresh_token="rt-1")

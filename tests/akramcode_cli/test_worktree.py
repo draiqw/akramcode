@@ -101,12 +101,12 @@ class TestWorktreeLockReaping:
         p = repo / ".worktrees" / name
         (repo / ".worktrees").mkdir(exist_ok=True)
         subprocess.run(
-            ["git", "worktree", "add", str(p), "-b", f"hermes/{name}", "HEAD"],
+            ["git", "worktree", "add", str(p), "-b", f"akramcode/{name}", "HEAD"],
             cwd=repo, capture_output=True,
         )
         if pid is not None:
             subprocess.run(
-                ["git", "worktree", "lock", "--reason", f"hermes pid={pid}", str(p)],
+                ["git", "worktree", "lock", "--reason", f"akramcode pid={pid}", str(p)],
                 cwd=repo, capture_output=True,
             )
         if unpushed:
@@ -120,13 +120,13 @@ class TestWorktreeLockReaping:
 
     def test_live_locked_survives_at_any_age(self, git_repo):
         import cli
-        wt = self._mk(cli, git_repo, "hermes-live", pid=os.getpid())
+        wt = self._mk(cli, git_repo, "akramcode-live", pid=os.getpid())
         cli._prune_stale_worktrees(str(git_repo))
         assert wt.exists(), "live-locked worktree (this pid) must never be reaped"
 
     def test_dead_locked_clean_is_reaped(self, git_repo):
         import cli
-        wt = self._mk(cli, git_repo, "hermes-dead", pid=999999)
+        wt = self._mk(cli, git_repo, "akramcode-dead", pid=999999)
         # sanity: this is the accumulation bug — remove --force alone can't do it
         assert worktree_ops._worktree_lock_is_live(str(git_repo), str(wt)) == "dead"
         cli._prune_stale_worktrees(str(git_repo))
@@ -134,25 +134,25 @@ class TestWorktreeLockReaping:
 
     def test_dead_locked_dirty_survives(self, git_repo):
         import cli
-        wt = self._mk(cli, git_repo, "hermes-deaddirty", pid=999999, dirty=True)
+        wt = self._mk(cli, git_repo, "akramcode-deaddirty", pid=999999, dirty=True)
         cli._prune_stale_worktrees(str(git_repo))
         assert wt.exists(), "dead-locked worktree with uncommitted work must survive"
 
     def test_dead_locked_unpushed_survives(self, git_repo):
         import cli
-        wt = self._mk(cli, git_repo, "hermes-deadunp", pid=999999, unpushed=True)
+        wt = self._mk(cli, git_repo, "akramcode-deadunp", pid=999999, unpushed=True)
         cli._prune_stale_worktrees(str(git_repo))
         assert wt.exists(), "dead-locked worktree with unpushed commits must survive"
 
     def test_unlocked_clean_stale_is_reaped(self, git_repo):
         import cli
-        wt = self._mk(cli, git_repo, "hermes-nolock", pid=None)
+        wt = self._mk(cli, git_repo, "akramcode-nolock", pid=None)
         cli._prune_stale_worktrees(str(git_repo))
         assert not wt.exists(), "clean unlocked stale worktree should be reaped"
 
     def test_dirty_survives_over_72h(self, git_repo):
         import cli
-        wt = self._mk(cli, git_repo, "hermes-dirty72", pid=None, dirty=True, age_h=100)
+        wt = self._mk(cli, git_repo, "akramcode-dirty72", pid=None, dirty=True, age_h=100)
         cli._prune_stale_worktrees(str(git_repo))
         assert wt.exists(), "dirty worktree must survive even past the 72h tier"
 
@@ -164,7 +164,7 @@ class TestWorktreeLockPredicate:
         p = repo / ".worktrees" / name
         (repo / ".worktrees").mkdir(exist_ok=True)
         subprocess.run(
-            ["git", "worktree", "add", str(p), "-b", f"hermes/{name}", "HEAD"],
+            ["git", "worktree", "add", str(p), "-b", f"akramcode/{name}", "HEAD"],
             cwd=repo, capture_output=True,
         )
         subprocess.run(
@@ -174,17 +174,17 @@ class TestWorktreeLockPredicate:
         return p
 
     def test_unlocked_returns_none(self, git_repo):
-        p = git_repo / ".worktrees" / "hermes-x"
+        p = git_repo / ".worktrees" / "akramcode-x"
         (git_repo / ".worktrees").mkdir(exist_ok=True)
         subprocess.run(
-            ["git", "worktree", "add", str(p), "-b", "hermes/hermes-x", "HEAD"],
+            ["git", "worktree", "add", str(p), "-b", "akramcode/akramcode-x", "HEAD"],
             cwd=git_repo, capture_output=True,
         )
         assert worktree_ops._worktree_lock_is_live(str(git_repo), str(p)) is None
 
 
     def test_foreign_lock_reason_returns_dead(self, git_repo):
-        p = self._mk_locked(git_repo, "hermes-foreign", "some other tool")
+        p = self._mk_locked(git_repo, "akramcode-foreign", "some other tool")
         assert worktree_ops._worktree_lock_is_live(str(git_repo), str(p)) == "dead"
 
     def test_bad_repo_root_fails_safe_to_live(self, tmp_path):
@@ -196,7 +196,7 @@ class TestWidenedPruner:
     """Behavior contracts for the widened pruner (#all-.worktrees coverage,
     squash-merge escape hatch, kanban exclusion, preserved-work warning).
 
-    Previously only ``hermes-*`` directories were considered, so salvage/
+    Previously only ``akramcode-*`` directories were considered, so salvage/
     review/port lanes created with raw ``git worktree add`` accumulated
     forever (real incident: 117 dirs / 26 GB). And squash-merged branches'
     local commits are unreachable from refs/remotes/* forever, so the
@@ -252,7 +252,7 @@ class TestWidenedPruner:
             cwd=repo, capture_output=True,
         )
 
-    # -- named (non hermes-*) directories are now covered ------------------
+    # -- named (non akramcode-*) directories are now covered ------------------
 
     def test_named_clean_stale_tree_is_reaped(self, git_repo):
         import cli
@@ -271,7 +271,7 @@ class TestWidenedPruner:
 
     def test_squash_merged_tree_is_reaped(self, git_repo):
         import cli
-        wt, sha = self._mk(git_repo, "hermes-merged", commit=True, age_h=100)
+        wt, sha = self._mk(git_repo, "akramcode-merged", commit=True, age_h=100)
         self._merge_upstream(git_repo, sha)
         assert cli._worktree_has_unpushed_commits(str(wt)), (
             "precondition: commit unreachable from remotes (the leak this fixes)"
@@ -290,7 +290,7 @@ class TestWidenedPruner:
         """No remote: the local trunk is the baseline (a tree at trunk IS merged). No trunk at
         all — detached main checkout, no main/master — leaves nothing to compare against -> False."""
         repo = git_repo_no_remote
-        p = repo / ".worktrees" / "hermes-noremote"
+        p = repo / ".worktrees" / "akramcode-noremote"
         (repo / ".worktrees").mkdir(exist_ok=True)
         subprocess.run(
             ["git", "worktree", "add", str(p), "-b", "wt/noremote", "HEAD"],
@@ -312,7 +312,7 @@ class TestWidenedPruner:
 
 class TestMergeVerdictCache:
     """The ``git cherry`` patch-equivalence probe is memoized on disk because it
-    dominates ``hermes -w`` startup (~0.2-1.0s per worktree, re-run on every
+    dominates ``akramcode -w`` startup (~0.2-1.0s per worktree, re-run on every
     launch for every tree preserved as unpushed).
 
     The invariant that makes caching safe: the verdict is a pure function of the
@@ -327,7 +327,7 @@ class TestMergeVerdictCache:
 
     def test_cache_hit_matches_uncached_verdict(self, git_repo):
         """A cached verdict must equal what the real git call returns."""
-        wt, sha = self._mk(git_repo, "hermes-cachehit", commit=True)
+        wt, sha = self._mk(git_repo, "akramcode-cachehit", commit=True)
         self._merge_upstream(git_repo, sha)
 
         uncached = worktree_ops._worktree_commits_all_merged_upstream(str(wt))
@@ -345,7 +345,7 @@ class TestMergeVerdictCache:
         This is the guard against the cache turning a 'merged, reapable' verdict
         into a stale approval to delete a tree that has since gained real work.
         """
-        wt, sha = self._mk(git_repo, "hermes-moves", commit=True)
+        wt, sha = self._mk(git_repo, "akramcode-moves", commit=True)
         self._merge_upstream(git_repo, sha)
 
         cache = {}
@@ -385,19 +385,19 @@ class TestPruneParallelEquivalence:
         """A board covering every verdict branch: reapable, dirty, unpushed."""
         names = {}
         for i in range(3):
-            n = f"hermes-merged{tag}{i}"
+            n = f"akramcode-merged{tag}{i}"
             wt, sha = self._mk(git_repo, n, commit=True)
             self._merge_upstream(git_repo, sha)
             names[n] = wt
         for i in range(3):
-            n = f"hermes-unpushed{tag}{i}"
+            n = f"akramcode-unpushed{tag}{i}"
             wt, _ = self._mk(git_repo, n, commit=True)
             names[n] = wt
         for i in range(2):
-            n = f"hermes-dirty{tag}{i}"
+            n = f"akramcode-dirty{tag}{i}"
             wt, _ = self._mk(git_repo, n, dirty=True)
             names[n] = wt
-        n = f"hermes-fresh{tag}"
+        n = f"akramcode-fresh{tag}"
         wt, _ = self._mk(git_repo, n, commit=True, age_h=1)
         names[n] = wt
         # Every tree must really exist, otherwise the survivor comparison below
@@ -412,7 +412,7 @@ class TestPruneParallelEquivalence:
         out = set()
         for n in survivors:
             for kind in ("merged", "unpushed", "dirty", "fresh"):
-                if n.startswith(f"hermes-{kind}"):
+                if n.startswith(f"akramcode-{kind}"):
                     out.add(kind)
         return out
 
@@ -447,7 +447,7 @@ class TestPruneParallelEquivalence:
         """A ThreadPoolExecutor failure must not block startup."""
         import cli
 
-        wt, sha = self._mk(git_repo, "hermes-poolfail", commit=True)
+        wt, sha = self._mk(git_repo, "akramcode-poolfail", commit=True)
         self._merge_upstream(git_repo, sha)
 
         class _Boom:
@@ -468,7 +468,7 @@ class TestShallowCloneDeepening:
     guard: the shallow boundary disconnects an older worktree HEAD from
     origin/*, so `git log HEAD --not --remotes` misreports already-public
     commits as unpushed and every aged worktree is preserved forever
-    (real incident: 21 of 25 hermes-* trees stuck on a default install).
+    (real incident: 21 of 25 akramcode-* trees stuck on a default install).
 
     These build a REAL shallow clone over file:// and verify the pruner
     deepens it and reaps the false-positive tree.
@@ -526,10 +526,10 @@ class TestShallowCloneDeepening:
         clone = self._shallow_clone(tmp_path, up)
         assert cli._repo_is_shallow(str(clone)), "fixture must start shallow"
 
-        wt = clone / ".worktrees" / "hermes-shallowstuck"
+        wt = clone / ".worktrees" / "akramcode-shallowstuck"
         (clone / ".worktrees").mkdir()
         self._run(
-            ["git", "worktree", "add", str(wt), "-b", "hermes/hermes-shallowstuck", "HEAD"],
+            ["git", "worktree", "add", str(wt), "-b", "akramcode/akramcode-shallowstuck", "HEAD"],
             clone,
         )
 
@@ -648,7 +648,7 @@ class TestPrMergedEscapeHatch:
         p = repo / ".worktrees" / name
         (repo / ".worktrees").mkdir(exist_ok=True)
         subprocess.run(
-            ["git", "worktree", "add", str(p), "-b", f"hermes/{name}", "HEAD"],
+            ["git", "worktree", "add", str(p), "-b", f"akramcode/{name}", "HEAD"],
             cwd=repo, capture_output=True,
         )
         (p / "salvaged.txt").write_text("diff that was reworked during salvage\n")
@@ -667,7 +667,7 @@ class TestPrMergedEscapeHatch:
 
     def test_merged_pr_tree_is_reaped(self, git_repo, tmp_path, monkeypatch):
         import cli
-        wt = self._mk_diverged(git_repo, "hermes-rebase-merged")
+        wt = self._mk_diverged(git_repo, "akramcode-rebase-merged")
         assert worktree_ops._worktree_commits_all_merged_upstream(str(wt)) is False, (
             "precondition: cherry must NOT consider this merged — the PR "
             "check is the only thing that can reap it"
@@ -680,14 +680,14 @@ class TestPrMergedEscapeHatch:
 
     def test_no_merged_pr_preserved(self, git_repo, tmp_path, monkeypatch):
         import cli
-        wt = self._mk_diverged(git_repo, "hermes-pr-open")
+        wt = self._mk_diverged(git_repo, "akramcode-pr-open")
         self._stub_gh(tmp_path, monkeypatch, stdout="[]")
         cli._prune_stale_worktrees(str(git_repo))
         assert wt.exists(), "no merged PR -> still unpushed work, preserve"
 
     def test_gh_failure_fails_safe(self, git_repo, tmp_path, monkeypatch):
         import cli
-        wt = self._mk_diverged(git_repo, "hermes-gh-down")
+        wt = self._mk_diverged(git_repo, "akramcode-gh-down")
         self._stub_gh(tmp_path, monkeypatch, stdout="", exit_code=1)
         cli._prune_stale_worktrees(str(git_repo))
         assert wt.exists(), "gh failure must preserve the tree (fail safe)"
@@ -696,7 +696,7 @@ class TestPrMergedEscapeHatch:
         self, git_repo, tmp_path, monkeypatch
     ):
         import cli
-        wt = self._mk_diverged(git_repo, "hermes-dirty-merged")
+        wt = self._mk_diverged(git_repo, "akramcode-dirty-merged")
         (wt / "uncommitted.txt").write_text("in-flight\n")
         self._age(wt, 100)
         self._stub_gh(tmp_path, monkeypatch)
@@ -706,7 +706,7 @@ class TestPrMergedEscapeHatch:
     def test_merged_verdict_memoized_by_branch_and_head(
         self, git_repo, tmp_path, monkeypatch
     ):
-        wt = self._mk_diverged(git_repo, "hermes-memo")
+        wt = self._mk_diverged(git_repo, "akramcode-memo")
         self._stub_gh(tmp_path, monkeypatch)
         cache: dict = {}
         assert worktree_ops._worktree_branch_pr_merged(str(wt), cache=cache) is True
@@ -717,7 +717,7 @@ class TestPrMergedEscapeHatch:
         assert worktree_ops._worktree_branch_pr_merged(str(wt), cache=cache) is True
 
     def test_negative_verdict_not_cached(self, git_repo, tmp_path, monkeypatch):
-        wt = self._mk_diverged(git_repo, "hermes-nocache-neg")
+        wt = self._mk_diverged(git_repo, "akramcode-nocache-neg")
         self._stub_gh(tmp_path, monkeypatch, stdout="[]")
         cache: dict = {}
         assert worktree_ops._worktree_branch_pr_merged(str(wt), cache=cache) is False

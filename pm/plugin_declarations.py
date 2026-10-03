@@ -33,9 +33,9 @@ def read_native_manifest(path: Path) -> dict:
 
 
 def manifest_version_error(manifest: dict, name: str) -> str | None:
-    from akramcode_cli.plugins_manifest import SUPPORTED_MANIFEST_VERSION, requires_hermes_error
+    from akramcode_cli.plugins_manifest import SUPPORTED_MANIFEST_VERSION, requires_akramcode_error
 
-    reason = requires_hermes_error(manifest)
+    reason = requires_akramcode_error(manifest)
     if reason:
         return f"Plugin '{name}' {reason}"
     version = manifest.get("manifest_version")
@@ -80,7 +80,7 @@ class PythonDeclaration:
             return None
         if SpecifierSet(self.requires_python).contains(version, prereleases=True):
             return None
-        return f"requires Python {self.requires_python}, but Hermes runs on Python {version}"
+        return f"requires Python {self.requires_python}, but AkramCode runs on Python {version}"
 
     def __post_init__(self) -> None:
         if not self.external:
@@ -90,7 +90,7 @@ class PythonDeclaration:
 def applicable_requirements(specs: tuple[str, ...] | list[str]) -> tuple[str, ...]:
     """Index requirements only; let uv evaluate markers for the target interpreter.
 
-    The application checkout supplies Hermes itself. Installing it from an index
+    The application checkout supplies AkramCode itself. Installing it from an index
     would replace that checkout; direct URLs bypass the reviewed package source.
     Markers must survive snapshots built for a different Python or platform.
     """
@@ -98,7 +98,7 @@ def applicable_requirements(specs: tuple[str, ...] | list[str]) -> tuple[str, ..
     from packaging.utils import canonicalize_name
 
     return tuple(spec for spec in specs
-                 if not (req := Requirement(spec)).url and canonicalize_name(req.name) != "hermes-agent")
+                 if not (req := Requirement(spec)).url and canonicalize_name(req.name) != "akramcode-agent")
 
 
 def unsupported_requirements(specs: tuple[str, ...] | list[str]) -> tuple[str, ...]:

@@ -1,5 +1,5 @@
 """Tests for akramcode_cli.gateway.ensure_gateway_service — the zero-prompt
-service install/start path used by `hermes setup` and `hermes import`.
+service install/start path used by `akramcode setup` and `akramcode import`.
 
 The helper's contract:
   * never prompts, never raises (returns False on any failure)
@@ -14,7 +14,7 @@ import akramcode_cli.gateway as gateway_mod
 
 
 def _patch_host(monkeypatch, *, container=False, systemd=True, macos=False, windows=False):
-    monkeypatch.setattr("hermes_constants.is_container", lambda: container)
+    monkeypatch.setattr("akramcode_constants.is_container", lambda: container)
     monkeypatch.setattr(gateway_mod, "supports_systemd_services", lambda: systemd)
     monkeypatch.setattr(gateway_mod, "is_macos", lambda: macos)
     monkeypatch.setattr(gateway_mod, "is_windows", lambda: windows)
@@ -35,7 +35,7 @@ class TestEnsureGatewayService:
         _patch_host(monkeypatch, systemd=False)
         assert gateway_mod.ensure_gateway_service() is False
         out = capsys.readouterr().out
-        assert "hermes gateway" in out
+        assert "akramcode gateway" in out
 
     def test_already_running_short_circuits(self, monkeypatch):
         _patch_host(monkeypatch)
@@ -109,7 +109,7 @@ class TestEnsureGatewayService:
 
         assert gateway_mod.ensure_gateway_service() is False
         out = capsys.readouterr().out
-        assert "hermes gateway install" in out
+        assert "akramcode gateway install" in out
 
     def test_never_raises_on_sys_exit(self, monkeypatch, capsys):
         """Install paths that sys.exit() must not abort setup/import."""
@@ -125,7 +125,7 @@ class TestEnsureGatewayService:
 
         assert gateway_mod.ensure_gateway_service() is False
         out = capsys.readouterr().out
-        assert "hermes gateway install" in out
+        assert "akramcode gateway install" in out
 
     def test_user_systemd_unreachable_reports_remediation(self, monkeypatch, capsys):
         _patch_host(monkeypatch)

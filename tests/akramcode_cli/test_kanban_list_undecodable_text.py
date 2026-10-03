@@ -2,7 +2,7 @@
 board listing (issue #111743).
 
 A ``body`` stored as TEXT holding invalid UTF-8 made sqlite3 abort the whole
-``fetchall`` ("Could not decode to UTF-8 column 'body'"), so ``hermes kanban list``
+``fetchall`` ("Could not decode to UTF-8 column 'body'"), so ``akramcode kanban list``
 failed for every card until the row was deleted by hand; a BLOB-typed body came
 back as ``bytes`` and crashed ``--json``. Board connections now decode lossily
 (U+FFFD) and the ``from_row`` constructors (task, comment, event, run) coerce
@@ -25,9 +25,9 @@ from akramcode_cli import kanban_db_dispatch as kbd
 
 @pytest.fixture
 def board(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     db_path = kb.kanban_db_path(board="default")
     kb._INITIALIZED_PATHS.discard(str(db_path.resolve()))

@@ -1,6 +1,6 @@
-"""Argument layer for the legacy ``hermes-agent`` runner (``run_agent.main``).
+"""Argument layer for the legacy ``akramcode-agent`` runner (``run_agent.main``).
 
-A console script calls its target with no arguments, so pointing ``hermes-agent``
+A console script calls its target with no arguments, so pointing ``akramcode-agent``
 at ``run_agent.main`` ignored argv entirely: ``--help``, ``--version`` and a bare
 invocation all ran a real model turn with ``main()``'s built-in demo query, and
 ``--query`` was silently dropped (#54648). ``python run_agent.py`` routes through
@@ -13,9 +13,9 @@ from __future__ import annotations
 try:
     import akram_core.akramcode_bootstrap  # noqa: F401
 except ModuleNotFoundError:
-    pass  # partial `hermes update` — only skips the Windows UTF-8 stdio setup
+    pass  # partial `akramcode update` — only skips the Windows UTF-8 stdio setup
 
-# The `hermes-agent` console script lands here without akramcode_cli.main: repair a `hermes update` killed
+# The `akramcode-agent` console script lands here without akramcode_cli.main: repair a `akramcode update` killed
 # while git wrote the new tree before importing anything else from the checkout.
 from akramcode_cli import _early_recovery
 
@@ -30,10 +30,10 @@ def _build_parser() -> argparse.ArgumentParser:
     from akramcode_cli import __release_date__, __version__
 
     parser = argparse.ArgumentParser(
-        prog="hermes-agent",
-        description="Legacy single-query Hermes Agent runner. For the full CLI use `hermes`.",
+        prog="akramcode-agent",
+        description="Legacy single-query AkramCode Agent runner. For the full CLI use `akramcode`.",
     )
-    parser.add_argument("--version", action="version", version=f"Hermes Agent v{__version__} ({__release_date__})")
+    parser.add_argument("--version", action="version", version=f"AkramCode Agent v{__version__} ({__release_date__})")
     parser.add_argument("prompt", nargs="*", help="query to run (same as --query)")
     parser.add_argument("--query", "-q", help="natural-language query to run")
     parser.add_argument("--model", default="", help="model id (provider/model)")
@@ -71,7 +71,7 @@ def main(argv: Optional[List[str]] = None, *, run: Optional[Callable[..., object
     query = args.query or positional or None
     if query is None and not args.list_tools:
         parser.print_help()
-        print("\nNo query given: pass one with --query (or run `hermes` for the interactive CLI).")
+        print("\nNo query given: pass one with --query (or run `akramcode` for the interactive CLI).")
         return 0
 
     if run is None:

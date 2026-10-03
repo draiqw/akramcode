@@ -1,8 +1,8 @@
-"""`hermes debug` must not report a shell-only API key as plainly "set".
+"""`akramcode debug` must not report a shell-only API key as plainly "set".
 
 The dump reads ``os.getenv`` — the invoking terminal's environment — but the
 managed backends (launchd / systemd / the desktop-spawned ``serve`` process)
-load credentials from ``~/.hermes/.env``, not the login shell. A key exported
+load credentials from ``~/.akramcode/.env``, not the login shell. A key exported
 in the shell but absent from ``.env`` is invisible to the backend, yet the dump
 used to print a bare "set", sending support down a phantom "the key is
 configured" path (the real cause behind gated tools like ``web_search`` going
@@ -22,11 +22,11 @@ def _api_key_line(out: str, label: str) -> str:
 
 def test_dump_flags_shell_only_key_not_in_dotenv(monkeypatch, capsys, tmp_path):
     from akramcode_cli import dump
-    from akramcode_cli.config import get_hermes_home
+    from akramcode_cli.config import get_akramcode_home
 
     monkeypatch.setattr(dump, "get_project_root", lambda: tmp_path / "noproject")
 
-    home = get_hermes_home()
+    home = get_akramcode_home()
     home.mkdir(parents=True, exist_ok=True)
     # .env has some OTHER key but NOT firecrawl.
     (home / ".env").write_text("OPENROUTER_API_KEY=sk-or-xxxx\n")
@@ -43,13 +43,13 @@ def test_dump_flags_shell_only_key_not_in_dotenv(monkeypatch, capsys, tmp_path):
 
 def test_dump_leaves_unset_key_untouched(monkeypatch, capsys, tmp_path):
     from akramcode_cli import dump
-    from akramcode_cli.config import get_hermes_home
+    from akramcode_cli.config import get_akramcode_home
 
     monkeypatch.setattr(dump, "get_project_root", lambda: tmp_path / "noproject")
     monkeypatch.delenv("KEENABLE_API_KEY", raising=False)
     monkeypatch.delenv("TAVILY_API_KEY", raising=False)
 
-    home = get_hermes_home()
+    home = get_akramcode_home()
     home.mkdir(parents=True, exist_ok=True)
     (home / ".env").write_text("OPENROUTER_API_KEY=sk-or-xxxx\n")
 

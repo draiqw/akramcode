@@ -72,7 +72,7 @@ def get_random_tip(exclude_recent: int = 0) -> str:
 def get_random_composer_placeholder() -> str:
     """Return a rotating task-oriented placeholder for the empty composer, in the active language.
 
-    Kept generic — Hermes is not a coding-only agent, so the prompts must fit any project or none.
+    Kept generic — AkramCode is not a coding-only agent, so the prompts must fit any project or none.
     """
     keys = composer_placeholder_keys()
     return t(random.choice(keys)) if keys else ""

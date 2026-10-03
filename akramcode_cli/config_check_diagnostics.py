@@ -9,7 +9,7 @@ from typing import Any
 def config_check_diagnostics(config: dict[str, Any], get_env_value: Callable[[str], str | None]) -> list[str]:
     """Report saved selections that would otherwise be lost in startup output.
 
-    Toolset names are judged by the resolver ``hermes config migrate`` also uses, disabled platforms
+    Toolset names are judged by the resolver ``akramcode config migrate`` also uses, disabled platforms
     by the runtime's own ``plugins.disabled`` reader and the manifest-name gate of
     ``plugins_discovery.gate_manifest``. A configured credential is only a reason to *mention* a
     disabled platform; disabling it may have been intentional.
@@ -29,6 +29,6 @@ def config_check_diagnostics(config: dict[str, Any], get_env_value: Callable[[st
         if required and all(get_env_value(env) for env in required):
             diagnostics.append(
                 f"platform plugin '{key}' is disabled while its required credentials are configured. "
-                f"Run `hermes plugins enable {key}` if you want it active."
+                f"Run `akramcode plugins enable {key}` if you want it active."
             )
     return diagnostics

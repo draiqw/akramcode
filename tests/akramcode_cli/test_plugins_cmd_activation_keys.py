@@ -1,6 +1,6 @@
 """Plugin activation writes and reads the SAME key on every surface (#27548, #73131, #82898).
 
-Runs the real ``akramcode_cli.plugins_cmd`` commands against a temp HERMES_HOME and checks the verdict
+Runs the real ``akramcode_cli.plugins_cmd`` commands against a temp AKRAMCODE_HOME and checks the verdict
 through the loader's own gate (``plugins_discovery.gate_manifest``) — never by re-reading the list
 the command just wrote.
 """
@@ -24,11 +24,11 @@ def _write_plugin(root, rel, name, extra=""):
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    hermes_home = tmp_path / "hermes-home"
-    (hermes_home / "plugins").mkdir(parents=True)
-    (hermes_home / "config.yaml").write_text("plugins:\n  enabled: []\n  disabled: []\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    return hermes_home
+    akramcode_home = tmp_path / "akramcode-home"
+    (akramcode_home / "plugins").mkdir(parents=True)
+    (akramcode_home / "config.yaml").write_text("plugins:\n  enabled: []\n  disabled: []\n", encoding="utf-8")
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
+    return akramcode_home
 
 
 @pytest.fixture(autouse=True)
@@ -48,7 +48,7 @@ def _lists():
 
 
 def test_disable_bundled_platform_by_manifest_name_gates_the_loader(home):
-    """`hermes plugins disable photon-platform` must produce a key the loader's gate matches; the
+    """`akramcode plugins disable photon-platform` must produce a key the loader's gate matches; the
     CLI wrote ``platforms/photon`` while discovery keyed the adapter ``photon-platform``."""
     plugins_cmd.cmd_disable("photon-platform")
 

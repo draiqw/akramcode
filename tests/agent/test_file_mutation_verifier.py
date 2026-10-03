@@ -272,7 +272,7 @@ class TestFormatFooter:
         import tempfile
         from gateway.platforms.base import BasePlatformAdapter
 
-        tmp = tempfile.mkdtemp(prefix="hermes_footer_")
+        tmp = tempfile.mkdtemp(prefix="akramcode_footer_")
         try:
             cfg = os.path.join(tmp, "config.yaml")
             with open(cfg, "w") as fh:
@@ -301,13 +301,13 @@ class TestVerifierEnabled:
 
     @pytest.mark.parametrize("value", ["0", "FALSE", "off"])
     def test_env_disables(self, monkeypatch, value):
-        monkeypatch.setenv("HERMES_FILE_MUTATION_VERIFIER", value)
+        monkeypatch.setenv("AKRAMCODE_FILE_MUTATION_VERIFIER", value)
         agent = _bare_agent()
         assert agent._file_mutation_verifier_enabled() is False
 
     def test_config_value_disables(self, monkeypatch):
         """``display.file_mutation_verifier: false`` turns the verifier off."""
-        monkeypatch.delenv("HERMES_FILE_MUTATION_VERIFIER", raising=False)
+        monkeypatch.delenv("AKRAMCODE_FILE_MUTATION_VERIFIER", raising=False)
         agent = _bare_agent()
 
         import akramcode_cli.config as _cfg_mod

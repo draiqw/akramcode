@@ -21,9 +21,9 @@ def test_clean_config_prints_nothing(capsys):
 
 
 def test_stale_records_warned_with_reason_texts(tmp_path, capsys, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     gone = tmp_path / "gone"
     live = tmp_path / "live"
     live.mkdir()

@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import cli as cli_module
 from agent.i18n import t
-from cli import HermesCLI
+from cli import AkramCodeCLI
 
 
 class _FakeBuffer:
@@ -20,7 +20,7 @@ class _FakeBuffer:
 
 
 def _make_cli_stub():
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = AkramCodeCLI.__new__(AkramCodeCLI)
     cli._approval_state = None
     cli._approval_deadline = 0
     cli._approval_lock = threading.Lock()
@@ -259,9 +259,9 @@ class TestCliApprovalUi:
                 _thread.join(timeout=10)
 
         assert seen["approval"].__self__ is cli
-        assert seen["approval"].__func__ is HermesCLI._approval_callback
+        assert seen["approval"].__func__ is AkramCodeCLI._approval_callback
         assert seen["sudo"].__self__ is cli
-        assert seen["sudo"].__func__ is HermesCLI._sudo_password_callback
+        assert seen["sudo"].__func__ is AkramCodeCLI._sudo_password_callback
         assert not cli._background_tasks
 
 
@@ -272,7 +272,7 @@ def _make_real_paint_cli_stub():
     _last_invalidate inside the throttle window. A throttled _invalidate() would
     be dropped under these conditions — _paint_now must paint regardless.
     """
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = AkramCodeCLI.__new__(AkramCodeCLI)
     cli._approval_state = None
     cli._approval_deadline = 0
     cli._approval_lock = threading.Lock()
@@ -283,8 +283,8 @@ def _make_real_paint_cli_stub():
     cli._clarify_deadline = 0
     cli._modal_input_snapshot = None
     # Real methods, not mocks.
-    cli._paint_now = HermesCLI._paint_now.__get__(cli, HermesCLI)
-    cli._invalidate = HermesCLI._invalidate.__get__(cli, HermesCLI)
+    cli._paint_now = AkramCodeCLI._paint_now.__get__(cli, AkramCodeCLI)
+    cli._invalidate = AkramCodeCLI._invalidate.__get__(cli, AkramCodeCLI)
     cli._resize_recovery_pending = True       # gate 1: resize in flight
     cli._last_invalidate = time.monotonic()   # gate 2: inside throttle window
     cli._app = SimpleNamespace(invalidate=MagicMock(), current_buffer=_FakeBuffer())

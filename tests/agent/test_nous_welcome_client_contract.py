@@ -135,7 +135,7 @@ class TestRefusalCopy:
         card = anon_auth.welcome_refusal_copy(refusal, model="gpt-5", in_chat=True, door=False)
         assert chat == f"{card} {anon_auth._SIGNIN_CHAT}"   # door=False drops exactly the tail
         terminal = anon_auth.welcome_refusal_copy(refusal, model="gpt-5", in_chat=False)
-        assert "`hermes auth upgrade`" in terminal and "/login" not in terminal
+        assert "`akramcode auth upgrade`" in terminal and "/login" not in terminal
 
 
     @pytest.mark.parametrize("copy_fn, args", [

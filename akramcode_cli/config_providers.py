@@ -112,7 +112,7 @@ _CAMEL_ALIASES: Dict[str, str] = {
 
 
 _KNOWN_PROVIDER_KEYS = {
-    # ``provider`` duplicates the ``providers.<name>`` mapping key and is unused here, but Hermes'
+    # ``provider`` duplicates the ``providers.<name>`` mapping key and is unused here, but AkramCode'
     # own config writer has historically emitted it. Accept it so self-written configs don't warn.
     "provider",
     "name", "api", "url", "base_url", "api_key", "key_env", "api_key_env", "key_cmd",
@@ -243,7 +243,7 @@ def _normalize_custom_provider_entry(
     # Catalogued vendor whose models this endpoint resells (metadata lookups only, never routing).
     _put("catalog_provider", _stripped("catalog_provider"))
 
-    # ``models_discovered`` marks a mapping auto-discovered by Hermes, not hand-curated.
+    # ``models_discovered`` marks a mapping auto-discovered by AkramCode, not hand-curated.
     models_dict, discovered = _normalize_provider_models(entry.get("models"))
     _put("models", models_dict)
     if entry.get("models_discovered") is True or discovered:
@@ -515,7 +515,7 @@ def get_custom_provider_session_affinity_header(
     config: Optional[Dict[str, Any]] = None) -> str:
     """Header NAME declared as ``session_affinity_header`` on the route-matching entry, else "".
 
-    Opt-in per provider (default off): Hermes never ships a session identifier to an endpoint
+    Opt-in per provider (default off): AkramCode never ships a session identifier to an endpoint
     that did not ask for one (#86241).
     """
     for entry in _entries_for_route(base_url, custom_providers, config):

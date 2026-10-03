@@ -24,14 +24,14 @@ PROVIDER = "example-pkce"
 
 @pytest.fixture
 def idp(monkeypatch, tmp_path):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode"))
     server = FakeIdP().start()
     yield server
     server.stop()
 
 
 def _config(idp: FakeIdP, **overrides) -> pkce.OAuthPKCEConfig:
-    base = pkce.OAuthPKCEConfig(client_id="hermes-example", authorize_url=f"{idp.base}/authorize",
+    base = pkce.OAuthPKCEConfig(client_id="akramcode-example", authorize_url=f"{idp.base}/authorize",
                                 token_url=f"{idp.base}/token", scopes=("inference",), timeout_seconds=5)
     return replace(base, **overrides)
 
@@ -60,9 +60,9 @@ def test_pkce_handler_add_status_refresh_logout_against_fake_idp(idp, monkeypatc
     exchange = idp.token_requests[-1]
     assert exchange["grant_type"] == "authorization_code" and exchange["code_verifier"]
     assert exchange["redirect_uri"].startswith("http://127.0.0.1:")
-    rows = json.loads((tmp_path / "hermes" / "auth.json").read_text())["credential_pool"][PROVIDER]
+    rows = json.loads((tmp_path / "akramcode" / "auth.json").read_text())["credential_pool"][PROVIDER]
     assert [(r["auth_type"], r["source"], r["oauth_pkce"]["client_id"]) for r in rows] == [
-        ("oauth", pkce.POOL_SOURCE, "hermes-example")]
+        ("oauth", pkce.POOL_SOURCE, "akramcode-example")]
     assert rows[0]["refresh_token"] in idp.refresh_tokens and rows[0]["expires_at_ms"]
     assert handler("status", args) is True
     assert handler("refresh", args) is False  # declined → the pool's generic refresh owns it
@@ -73,7 +73,7 @@ def test_pkce_handler_add_status_refresh_logout_against_fake_idp(idp, monkeypatc
     rotated = pool.try_refresh_matching(credential_id=rows[0]["id"])
     assert rotated is not None and rotated.refresh_token != before and rotated.access_token != rows[0]["access_token"]
     assert idp.token_requests[-1] == {"grant_type": "refresh_token", "refresh_token": before, "scope": "inference",
-                                      "client_id": "hermes-example"}
+                                      "client_id": "akramcode-example"}
     assert before not in idp.refresh_tokens
     # A peer that already rotated on disk is adopted without spending the refresh token again.
     stale = load_pool(PROVIDER).entries()[0]
@@ -122,7 +122,7 @@ def test_spent_refresh_token_is_grant_dead_and_marks_the_pool_row_dead(idp, monk
                                   akramcode_cli.auth.PROVIDER_REGISTRY.pop(PROVIDER, None)))
     args = SimpleNamespace(provider=PROVIDER, no_browser=False)
     assert handler("add", args) is True
-    rows = json.loads((tmp_path / "hermes" / "auth.json").read_text())["credential_pool"][PROVIDER]
+    rows = json.loads((tmp_path / "akramcode" / "auth.json").read_text())["credential_pool"][PROVIDER]
     spent = rows[0]["refresh_token"]
     idp.refresh_tokens.discard(spent)
 
@@ -134,12 +134,12 @@ def test_spent_refresh_token_is_grant_dead_and_marks_the_pool_row_dead(idp, monk
     pool = load_pool(PROVIDER)
     result = pool.try_refresh_matching(credential_id=rows[0]["id"])
     assert result is None or result.last_status == STATUS_DEAD
-    disk = json.loads((tmp_path / "hermes" / "auth.json").read_text())["credential_pool"][PROVIDER][0]
+    disk = json.loads((tmp_path / "akramcode" / "auth.json").read_text())["credential_pool"][PROVIDER][0]
     assert disk["last_status"] == STATUS_DEAD
 
 
 def test_alias_login_stores_the_row_under_the_canonical_profile_name(idp, monkeypatch, tmp_path, request):
-    """hermes auth add <alias> must write the pool under ProviderProfile.name, not the typed alias."""
+    """akramcode auth add <alias> must write the pool under ProviderProfile.name, not the typed alias."""
     from agent.credential_pool import load_pool
 
     alias = "example-pkce-alias"
@@ -158,7 +158,7 @@ def test_alias_login_stores_the_row_under_the_canonical_profile_name(idp, monkey
         akramcode_cli.auth.PROVIDER_REGISTRY.pop(alias, None)))
     args = SimpleNamespace(provider=alias, no_browser=False)
     assert handler("add", args) is True
-    pool = json.loads((tmp_path / "hermes" / "auth.json").read_text())["credential_pool"]
+    pool = json.loads((tmp_path / "akramcode" / "auth.json").read_text())["credential_pool"]
     assert PROVIDER in pool and alias not in pool
     assert handler("status", args) is True
     assert load_pool(PROVIDER).entries()[0].provider == PROVIDER

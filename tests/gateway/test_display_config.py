@@ -169,7 +169,7 @@ class TestInstallerSeededConfigThroughGatewayResolver:
         from gateway.config import Platform
         from gateway.run import _load_gateway_config, _resolve_gateway_display_bool
 
-        seeded = _load_gateway_config(self._seed_like_installer(tmp_path / "hermes-home"))
+        seeded = _load_gateway_config(self._seed_like_installer(tmp_path / "akramcode-home"))
         assert "display" in seeded  # the loader fails open to {}, which would pass vacuously
 
         assert_keeps_platform_display_defaults(seeded)
@@ -201,7 +201,7 @@ class TestConfigMigration:
 
     def test_migration_creates_platforms_entries(self, tmp_path, monkeypatch):
         """Old overrides are migrated into display.platforms.<plat>.tool_progress."""
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
 
         config_path = tmp_path / "config.yaml"
         config = {
@@ -215,8 +215,8 @@ class TestConfigMigration:
         }
         config_path.write_text(yaml.safe_dump(config), encoding="utf-8")
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-        # Re-import to pick up the new HERMES_HOME
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
+        # Re-import to pick up the new AKRAMCODE_HOME
         import importlib
         import akramcode_cli.config as cfg_mod
         importlib.reload(cfg_mod)

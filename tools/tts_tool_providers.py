@@ -21,7 +21,7 @@ from typing import Any, Dict, Optional
 from urllib.parse import urlparse
 
 from tools.tts_tool_delivery import _origin, _section, _wrap_pcm_as_wav, _write_wav_bytes_as
-from tools.xai_http import hermes_xai_user_agent
+from tools.xai_http import akramcode_xai_user_agent
 
 logger = logging.getLogger("tools.tts_tool")
 
@@ -293,7 +293,7 @@ def _generate_xai_tts(text: str, output_path: str, tts_config: Dict[str, Any]) -
     creds = resolve_xai_http_credentials(prefer_api_key=True)
     api_key = str(creds.get("api_key") or "").strip()
     if not api_key:
-        raise ValueError("No xAI credentials found. Configure xAI OAuth in `hermes model` or set XAI_API_KEY.")
+        raise ValueError("No xAI credentials found. Configure xAI OAuth in `akramcode model` or set XAI_API_KEY.")
     xai_config = tts_config.get("xai") or {}
     voice_id = str(xai_config.get("voice_id", DEFAULT_XAI_VOICE_ID)).strip() or DEFAULT_XAI_VOICE_ID
     language = str(xai_config.get("language", DEFAULT_XAI_LANGUAGE)).strip() or DEFAULT_XAI_LANGUAGE
@@ -336,7 +336,7 @@ def _generate_xai_tts(text: str, output_path: str, tts_config: Dict[str, Any]) -
         payload["text_normalization"] = True
     response = _post_json(f"{base_url}/tts", payload, {
         "Authorization": f"Bearer {api_key}", "Content-Type": "application/json",
-        "User-Agent": hermes_xai_user_agent()})
+        "User-Agent": akramcode_xai_user_agent()})
     response.raise_for_status()
     return _write_bytes(output_path, _read_tts_response_bytes(response, label="xAI TTS"))
 
@@ -470,15 +470,15 @@ def _generate_mistral_tts(text: str, output_path: str, tts_config: Dict[str, Any
 
 # --- Google Gemini TTS ---
 def _read_gemini_persona_prompt(gemini_config: Dict[str, Any]) -> str:
-    """Read ``tts.gemini.persona_prompt_file`` (relative -> under HERMES_HOME), failing soft."""
+    """Read ``tts.gemini.persona_prompt_file`` (relative -> under AKRAMCODE_HOME), failing soft."""
     raw = gemini_config.get("persona_prompt_file")
     if not isinstance(raw, str) or not raw.strip():
         return ""
     path = Path(os.path.expandvars(raw.strip())).expanduser()
     if not path.is_absolute():
         try:
-            from akramcode_constants import get_hermes_home
-            path = get_hermes_home() / path
+            from akramcode_constants import get_akramcode_home
+            path = get_akramcode_home() / path
         except Exception:
             path = Path.cwd() / path
     try:
@@ -597,9 +597,9 @@ def _generate_gemini_tts(text: str, output_path: str, tts_config: Dict[str, Any]
     if urlparse(base_url).hostname == "generativelanguage.googleapis.com":
         try:
             from akramcode_cli.version_info import get_version_info
-            headers["X-Goog-Api-Client"] = f"hermes-agent/{get_version_info().base_version}"
+            headers["X-Goog-Api-Client"] = f"akramcode-agent/{get_version_info().base_version}"
         except Exception:
-            headers["X-Goog-Api-Client"] = "hermes-agent/0.0.0"
+            headers["X-Goog-Api-Client"] = "akramcode-agent/0.0.0"
     response = _post_json(f"{base_url}/models/{model}:generateContent", payload, headers)
     if response.status_code != 200:
         raise RuntimeError(f"Gemini TTS API error (HTTP {response.status_code}): {_gemini_error_detail(response)}")

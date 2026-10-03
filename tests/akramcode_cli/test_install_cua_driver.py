@@ -51,7 +51,7 @@ def test_pm_failure_is_reported_without_vendor_fallback(monkeypatch, capsys, upg
     import pm
     from akramcode_cli import tools_config_cua as cua
 
-    monkeypatch.delenv("HERMES_CUA_DRIVER_CMD", raising=False)
+    monkeypatch.delenv("AKRAMCODE_CUA_DRIVER_CMD", raising=False)
     monkeypatch.setattr(cua, "_resolved_cua_driver_cmd", lambda: None)
     with patch.object(pm, "ensure", side_effect=pm.InstallError("cua-driver", "offline")) as ensure, \
          patch.object(cua.subprocess, "Popen", side_effect=AssertionError("vendor installer")):
@@ -65,7 +65,7 @@ def test_broken_override_never_acquires_standard_driver(tmp_path, monkeypatch, u
     import pm
     from akramcode_cli import tools_config_cua as cua
 
-    monkeypatch.setenv("HERMES_CUA_DRIVER_CMD", str(tmp_path / "missing-driver"))
+    monkeypatch.setenv("AKRAMCODE_CUA_DRIVER_CMD", str(tmp_path / "missing-driver"))
     with patch.object(pm, "ensure", side_effect=AssertionError("override was replaced")):
         assert not cua.install_cua_driver(upgrade=upgrade)
 
@@ -194,7 +194,7 @@ def test_setup_preserves_host_registration_failure(monkeypatch, registered):
     import pm
     from akramcode_cli import tools_config_cua as cua
 
-    monkeypatch.delenv("HERMES_CUA_DRIVER_CMD", raising=False)
+    monkeypatch.delenv("AKRAMCODE_CUA_DRIVER_CMD", raising=False)
     monkeypatch.setattr(pm, "ensure", lambda *a, **kw: None)
     monkeypatch.setattr(cua, "_resolved_cua_driver_cmd", lambda: "cua-driver.exe")
     monkeypatch.setattr(cua, "_cua_driver_contract_status", lambda *a: {"ready": True})
@@ -210,7 +210,7 @@ def test_setup_refuses_bare_binary_without_required_signed_app(monkeypatch, tmp_
     driver = tmp_path / "cua-driver"
     driver.write_text("#!/bin/sh\nexit 0\n")
     driver.chmod(0o755)
-    monkeypatch.setenv("HERMES_CUA_DRIVER_CMD", str(driver))
+    monkeypatch.setenv("AKRAMCODE_CUA_DRIVER_CMD", str(driver))
     monkeypatch.setattr(cua, "_cua_driver_contract_status", lambda *a: {"ready": True})
     assert not cua.install_cua_driver(show_installer_progress=False)
 
@@ -225,7 +225,7 @@ def test_setup_registers_only_the_validated_selected_app(monkeypatch, tmp_path):
     driver.parent.mkdir(parents=True)
     driver.write_text("#!/bin/sh\nexit 0\n")
     driver.chmod(0o755)
-    monkeypatch.setenv("HERMES_CUA_DRIVER_CMD", str(driver))
+    monkeypatch.setenv("AKRAMCODE_CUA_DRIVER_CMD", str(driver))
     monkeypatch.setattr(cua, "_cua_driver_contract_status", lambda *a: {"ready": True})
     with patch.object(daemon, "_validate_cua_driver_app_signature") as validate, \
          patch.object(cua, "_run_text", return_value=SimpleNamespace(returncode=0)) as register:

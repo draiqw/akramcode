@@ -71,7 +71,7 @@ def test_sealed_stamp_reader_honors_external_install_root(tmp_path, monkeypatch)
     stamped = tmp_path / "payload"
     stamped.mkdir()
     (tmp_path / "install-stamp.json").write_text(json.dumps({"updateMechanism": "external"}), encoding="utf-8")
-    monkeypatch.setenv("HERMES_INSTALL_ROOT", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_INSTALL_ROOT", str(tmp_path))
     # The executing tree may be mapped into a wrapper-owned installation root.
     monkeypatch.setattr(paths, "repo_root", lambda: stamped)
     monkeypatch.setattr(paths, "install_root", lambda: tmp_path)

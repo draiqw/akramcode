@@ -12,7 +12,7 @@ import agent.curator as curator_mod
 
 
 def test_startup_maintenance_returns_while_curator_still_running(monkeypatch):
-    from cli import HermesCLI
+    from cli import AkramCodeCLI
 
     release, entered = threading.Event(), threading.Event()
     seen = {}
@@ -23,7 +23,7 @@ def test_startup_maintenance_returns_while_curator_still_running(monkeypatch):
         release.wait(10)
 
     monkeypatch.setattr(curator_mod, "maybe_run_curator", _slow_curator)
-    obj = HermesCLI.__new__(HermesCLI)
+    obj = AkramCodeCLI.__new__(AkramCodeCLI)
     obj._console_print = MagicMock()
     started = time.monotonic()
     try:

@@ -45,13 +45,13 @@ def runtime_command(repo_root: Path, args=(), *, module: str = "akramcode_cli.ma
     entry = f"exec({_inline_string_literal(code)})" if code is not None else (
         f"runpy.run_module({_inline_string_literal(module)}, run_name='__main__', alter_sys=True)")
     default_home = (_inline_string_literal(str(home)) if home is not None else
-                    "str(__import__('akramcode_constants').get_default_hermes_root())")
+                    "str(__import__('akramcode_constants').get_default_akramcode_root())")
     bootstrap = (
         "import os, sys, runpy; "
         "os.environ.pop('PYTHONHOME', None); os.environ.pop('PYTHONPATH', None); "
         "os.environ.pop('VIRTUAL_ENV', None); "
         f"sys.path.insert(0, {_inline_string_literal(str(root))}); "
-        f"os.environ['HERMES_HOME'] = os.environ.get('HERMES_HOME') or {default_home}; "
+        f"os.environ['AKRAMCODE_HOME'] = os.environ.get('AKRAMCODE_HOME') or {default_home}; "
         "import akram_core.akramcode_bootstrap; "
         + entry
     )
@@ -82,17 +82,17 @@ def installation_command(repo_root: Path, args=(), *, module: str = "akramcode_c
     if resolve_store_python(root) is None:
         return runtime_command(root, args, module=module, python=python, home=home)
     prefix = [] if module == "akramcode_cli.main" else ["--run-module", module]
-    return [str(root / ".hermes" / "bin" / "hermes"), *prefix, *args]
+    return [str(root / ".akramcode" / "bin" / "akramcode"), *prefix, *args]
 
 #: Launcher command names — keep in lockstep with scripts/install.ps1
 #: Publish-UserCommand and akramcode_cli/_install_repair.py.
-WINDOWS_BIN_LAUNCHERS = ("hermes", "hermes-acp")
+WINDOWS_BIN_LAUNCHERS = ("akramcode", "akramcode-acp")
 
 #: command name -> (entry module, callable) — mirrors pyproject.toml
 #: [project.scripts].
 ENTRY_POINTS = {
-    "hermes": ("akramcode_cli.main", "main"),
-    "hermes-acp": ("acp_adapter.entry", "main"),
+    "akramcode": ("akramcode_cli.main", "main"),
+    "akramcode-acp": ("acp_adapter.entry", "main"),
 }
 
 
@@ -148,12 +148,12 @@ def exe_is_venv_bound(exe: Path, venv_dir: Path | None) -> bool:
         return False
     needles = set()
     for interpreter in (
-        venv_dir / "Scripts" / "hermes.exe",
-        venv_dir / "Scripts" / "hermes-acp.exe",
+        venv_dir / "Scripts" / "akramcode.exe",
+        venv_dir / "Scripts" / "akramcode-acp.exe",
         venv_dir / "Scripts" / "python.exe",
         venv_dir / "bin" / "python3",
-        venv_dir / "bin" / "hermes",
-        venv_dir / "bin" / "hermes-acp",
+        venv_dir / "bin" / "akramcode",
+        venv_dir / "bin" / "akramcode-acp",
     ):
         for enc in ("utf-8", "utf-16-le"):
             try:
@@ -284,8 +284,8 @@ def _launcher_script(name: str, repo_root: Path, dependencies: Path | None) -> s
         "os.environ.pop('PYTHONPATH', None)\n"
         f"sys.path.insert(0, {str(repo_root.resolve())!r})\n"
         "if sys.argv[1:2] == ['--print-runtime-command']: sys.dont_write_bytecode = True\n"
-        "from akramcode_constants import get_default_hermes_root\n"
-        "os.environ['HERMES_HOME'] = os.environ.get('HERMES_HOME') or str(get_default_hermes_root())\n"
+        "from akramcode_constants import get_default_akramcode_root\n"
+        "os.environ['AKRAMCODE_HOME'] = os.environ.get('AKRAMCODE_HOME') or str(get_default_akramcode_root())\n"
         "if sys.argv[1:2] == ['--print-runtime-command']:\n"
         "    from pathlib import Path\n"
         "    from akramcode_cli._launchers import print_runtime_command\n"
@@ -294,7 +294,7 @@ def _launcher_script(name: str, repo_root: Path, dependencies: Path | None) -> s
         "import akram_core.akramcode_bootstrap\n"
         "if sys.argv[1:2] == ['--run-module']:\n"
         "    import runpy\n"
-        "    if len(sys.argv) < 3: sys.exit('hermes: --run-module needs a module')\n"
+        "    if len(sys.argv) < 3: sys.exit('akramcode: --run-module needs a module')\n"
         "    module = sys.argv.pop(2)\n"
         "    del sys.argv[1]\n"
         "    runpy.run_module(module, run_name='__main__', alter_sys=True)\n"
@@ -334,18 +334,18 @@ def _owns_launcher(target: Path, root: Path) -> bool:
     except (OSError, UnicodeError, ValueError):
         return False
     paths = {str(root / p) for p in (
-        "hermes", "run_agent.py", "venv/bin/python", "venv/bin/python3",
-        "venv/bin/hermes", "venv/bin/akramcode",
-        ".hermes/bin/hermes", ".hermes/bin/hermes-acp",
+        "akramcode", "run_agent.py", "venv/bin/python", "venv/bin/python3",
+        "venv/bin/akramcode", "venv/bin/akramcode",
+        ".akramcode/bin/akramcode", ".akramcode/bin/akramcode-acp",
     )}
     # Current store launchers pass this Python bootstrap as one shell argument.
     bootstrap = f"sys.path.insert(0, {str(root)!r})"
     if paths.intersection(tokens) or any(bootstrap in token for token in tokens):
         return True
-    # The historical updater wrote ACP as a sibling-hermes forwarder. Adopt
+    # The historical updater wrote ACP as a sibling-akramcode forwarder. Adopt
     # it only when that sibling demonstrably belongs to this installation.
-    if target.name == "hermes-acp":
-        sibling = target.with_name("hermes")
+    if target.name == "akramcode-acp":
+        sibling = target.with_name("akramcode")
         return (tokens == ["exec", str(sibling), "acp", "$@"]
                 and _owns_launcher(sibling, root))
     return False
@@ -363,8 +363,8 @@ def _publish_conveniences(root: Path, out_dir: Path, names, *, create: bool = Tr
         if (not create or target.exists() or target.is_symlink()) and not _owns_launcher(target, root):
             continue
         before = target.lstat().st_mtime_ns if target.exists() or target.is_symlink() else None
-        command = ([str(root / ".hermes/bin/hermes"), "--run-module", "run_agent"]
-                   if name == "hermes-agent" else [str(root / ".hermes/bin" / name)])
+        command = ([str(root / ".akramcode/bin/akramcode"), "--run-module", "run_agent"]
+                   if name == "akramcode-agent" else [str(root / ".akramcode/bin" / name)])
         if _write_shell(target, command) is None:
             raise OSError(f"could not publish launcher {target}")
         published[target] = before != target.lstat().st_mtime_ns
@@ -391,7 +391,7 @@ def stage_launcher(name: str, repo_root: Path, out_dir: Path) -> Path | None:
 def ensure_install_launchers(repo_root: Path, out_dir: Path) -> list[str]:
     """Publish exact-install commands; conveniences follow them across Python repins."""
     root = Path(repo_root).resolve()
-    local = root / ".hermes" / "bin"
+    local = root / ".akramcode" / "bin"
     local.mkdir(parents=True, exist_ok=True)
     written = [str(path) for name in WINDOWS_BIN_LAUNCHERS
                if (path := stage_launcher(name, root, local)) is not None]
@@ -421,7 +421,7 @@ def expose_cli(project_root: Path | None = None, *, create: bool = True) -> dict
 
     root = Path(project_root or install_root()).resolve()
     if _is_windows():
-        # The installer stages the user-facing commands into $HERMES_HOME\bin
+        # The installer stages the user-facing commands into $AKRAMCODE_HOME\bin
         # and registers that directory in the User PATH. An update skipped both
         # (this used to answer "windows-installer-owned"), so a machine updated
         # from a release predating that convention kept the old
@@ -447,20 +447,20 @@ def expose_cli(project_root: Path | None = None, *, create: bool = True) -> dict
     if resolve_store_python(root) is None:
         return {"ok": True, "skipped": "no-store-python"}
     try:
-        local = root / ".hermes" / "bin"
+        local = root / ".akramcode" / "bin"
         if len(ensure_install_launchers(root, local)) != len(WINDOWS_BIN_LAUNCHERS):
             return {"ok": False, "error": "source launcher publication failed"}
         dirs = [Path.home() / ".local" / "bin"]
         # Repair existing FHS/custom-home exposure, but never create new global
         # entries or reclaim a convenience that was repointed to another root.
-        from akramcode_constants import get_default_hermes_root
-        for directory in (get_default_hermes_root() / "bin", Path("/usr/local/bin")):
-            if directory not in dirs and (not create or _owns_launcher(directory / "hermes", root)):
+        from akramcode_constants import get_default_akramcode_root
+        for directory in (get_default_akramcode_root() / "bin", Path("/usr/local/bin")):
+            if directory not in dirs and (not create or _owns_launcher(directory / "akramcode", root)):
                 dirs.append(directory)
         written = []
         for directory in dirs:
             published = _publish_conveniences(
-                root, directory, (*WINDOWS_BIN_LAUNCHERS, "akramcode", "akramcode-acp", "hermes-agent"),
+                root, directory, (*WINDOWS_BIN_LAUNCHERS, "akramcode", "akramcode-acp", "akramcode-agent"),
                 create=create,
             )
             written.extend(path.name for path, changed in published.items() if changed)
@@ -520,14 +520,14 @@ def _broadcast_environment_change() -> None:
 def _expose_windows_user_bin(root: Path, *, create: bool) -> dict:
     """Windows twin of expose_cli's POSIX half.
 
-    Stage the user-facing commands into ``$HERMES_HOME\\bin`` and register that
+    Stage the user-facing commands into ``$AKRAMCODE_HOME\\bin`` and register that
     directory in the User PATH -- the same two things scripts/install.ps1 does --
     so an update converges a machine installed under the older venv\\Scripts
     convention instead of leaving it there forever.
     """
-    from akramcode_constants import get_default_hermes_root
+    from akramcode_constants import get_default_akramcode_root
 
-    directory = get_default_hermes_root() / "bin"
+    directory = get_default_akramcode_root() / "bin"
     try:
         if not create:
             # Bootstrap: repair only commands we already own, enable nothing new.
@@ -558,7 +558,7 @@ def _is_bundled_payload(root: Path) -> bool:
 
 
 def _symlink_sealed_launchers(payload_bin) -> dict:
-    """Link ~/.local/bin/{akramcode,akramcode-acp,hermes,...} at a sealed
+    """Link ~/.local/bin/{akramcode,akramcode-acp,akramcode,...} at a sealed
     bundle's own prebuilt shims (macOS only).
 
     Symlinks, not copies: the shims are signed as part of the app bundle,
@@ -568,7 +568,7 @@ def _symlink_sealed_launchers(payload_bin) -> dict:
 
     Ownership guard mirrors expose_cli's wrapper logic: an existing
     entry is replaced only when it is ours — a symlink into THIS app
-    bundle's payload — or missing/broken. A user's own `hermes` (pipx,
+    bundle's payload — or missing/broken. A user's own `akramcode` (pipx,
     another checkout's wrapper) is never touched.
     """
     link_dir = Path.home() / ".local" / "bin"
@@ -576,7 +576,7 @@ def _symlink_sealed_launchers(payload_bin) -> dict:
     written: list[str] = []
     try:
         link_dir.mkdir(parents=True, exist_ok=True)
-        for name in ("akramcode", "akramcode-acp", "hermes", "hermes-agent", "hermes-acp"):
+        for name in ("akramcode", "akramcode-acp", "akramcode", "akramcode-agent", "akramcode-acp"):
             source = payload_bin / name
             if not source.is_file():
                 continue
@@ -613,9 +613,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
     repo_root = Path(__file__).resolve().parents[1]
     if resolve_store_python(repo_root) is None:
-        parser.exit(1, "hermes: store interpreter is missing; finish pm install before publishing launchers\n")
+        parser.exit(1, "akramcode: store interpreter is missing; finish pm install before publishing launchers\n")
     args.out_dir.mkdir(parents=True, exist_ok=True)
     written = ensure_install_launchers(repo_root, args.out_dir)
     if len(written) != len(ENTRY_POINTS):
-        parser.exit(1, "hermes: launcher publication failed\n")
+        parser.exit(1, "akramcode: launcher publication failed\n")
     print("\n".join(written))

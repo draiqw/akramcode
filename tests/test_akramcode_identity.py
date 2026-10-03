@@ -2,19 +2,19 @@
 
 from pathlib import Path
 
-import hermes_constants as constants
+import akramcode_constants as constants
 
 
 def test_akramcode_home_environment_variable_is_primary(monkeypatch, tmp_path):
     target = tmp_path / ".akramcode"
-    monkeypatch.delenv("HERMES_HOME", raising=False)
+    monkeypatch.delenv("AKRAMCODE_HOME", raising=False)
     monkeypatch.setenv("AKRAMCODE_HOME", str(target))
 
-    assert constants.get_process_hermes_home() == target
+    assert constants.get_process_akramcode_home() == target
 
 
 def test_migrate_legacy_home_moves_data_once(tmp_path):
-    legacy = tmp_path / ".hermes"
+    legacy = tmp_path / ".akramcode"
     current = tmp_path / ".akramcode"
     legacy.mkdir()
     (legacy / "config.yaml").write_text("model: test\n")

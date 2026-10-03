@@ -46,7 +46,7 @@ def test_ssh_workspace_fs_lists_and_reads_remote_paths():
             },
             {
                 "returncode": 0,
-                "output": "__HERMES_FS_SIZE__:5\naGVsbG8=\n",
+                "output": "__AKRAMCODE_FS_SIZE__:5\naGVsbG8=\n",
             },
         ]
     )
@@ -69,7 +69,7 @@ def test_ssh_workspace_fs_lists_and_reads_remote_paths():
 
 
 def test_ssh_workspace_fs_maps_remote_size_failure():
-    env = FakeEnv([{"returncode": 47, "output": "__HERMES_FS_ERROR__:EFBIG\n"}])
+    env = FakeEnv([{"returncode": 47, "output": "__AKRAMCODE_FS_ERROR__:EFBIG\n"}])
     backend = SshWorkspaceFs(env)
 
     with pytest.raises(SshWorkspaceFsError, match="EFBIG") as raised:
@@ -82,7 +82,7 @@ def test_ssh_workspace_fs_inspects_resolved_file_before_streaming(monkeypatch):
     resolved = "/srv/repos/.env"
     encoded = base64.b64encode(resolved.encode()).decode()
     env = FakeEnv(
-        [{"returncode": 0, "output": f"__HERMES_FS_TARGET__:{encoded}\n__HERMES_FS_SIZE__:6\n"}]
+        [{"returncode": 0, "output": f"__AKRAMCODE_FS_TARGET__:{encoded}\n__AKRAMCODE_FS_SIZE__:6\n"}]
     )
     backend = SshWorkspaceFs(env)
 

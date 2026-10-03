@@ -2,11 +2,11 @@
 
 
 def _write_env(monkeypatch, tmp_path, content):
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / ".env").write_text(content, encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    return hermes_home
+    akramcode_home = tmp_path / ".akramcode"
+    akramcode_home.mkdir()
+    (akramcode_home / ".env").write_text(content, encoding="utf-8")
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
+    return akramcode_home
 
 
 class TestDeprecatedCwdWarning:
@@ -49,10 +49,10 @@ class TestDeprecatedCwdWarning:
     def test_dotenv_terminal_cwd_warns_with_explicit_config(
         self, monkeypatch, tmp_path, capsys
     ):
-        hermes_home = _write_env(
+        akramcode_home = _write_env(
             monkeypatch, tmp_path, "TERMINAL_CWD=/legacy/path\n"
         )
-        (hermes_home / "config.yaml").write_text(
+        (akramcode_home / "config.yaml").write_text(
             "terminal:\n  cwd: /current/path\n", encoding="utf-8"
         )
 

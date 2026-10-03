@@ -2,7 +2,7 @@
 
 ``profiles_to_serve`` takes the multiplex flag as an ARGUMENT and never reads config, so the eager
 gate has to consult the operator's setting itself; and ``named_profile_has_identity`` accepts an
-empty ``.env``, which is all a crashed ``hermes profile create`` leaves behind. Both made a host
+empty ``.env``, which is all a crashed ``akramcode profile create`` leaves behind. Both made a host
 arm a one-way, process-wide guard it was never meant to arm.
 """
 import pytest
@@ -13,11 +13,11 @@ from tui_gateway import launch_profile_policy
 
 @pytest.fixture
 def two_profile_host(tmp_path, monkeypatch):
-    """Fake HOME so ``profiles/`` never resolves to the live install (see hermes-agent-dev)."""
-    home = tmp_path / "fakehome" / ".hermes"
+    """Fake HOME so ``profiles/`` never resolves to the live install (see akramcode-agent-dev)."""
+    home = tmp_path / "fakehome" / ".akramcode"
     (home / "profiles" / "b").mkdir(parents=True)
     monkeypatch.setenv("HOME", str(tmp_path / "fakehome"))
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     monkeypatch.setattr(secret_scope, "_MULTIPLEX_ACTIVE", False)
     monkeypatch.setattr(launch_profile_policy, "_snapshot", None)
     monkeypatch.delenv("GATEWAY_MULTIPLEX_PROFILES", raising=False)

@@ -13,7 +13,7 @@ from akramcode_cli import kanban_ops
 @pytest.fixture
 def board(tmp_path, monkeypatch):
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode"))
     return tmp_path
 
 def _done_task_with_old_event(conn):

@@ -7,7 +7,7 @@ Covers two layers:
 2. The per-profile dedupe marker (#54432) — the notice must show at most once
    per profile/config state. Before the fix it re-fired on every agent init,
    and because the gateway rebuilds the agent per inbound message it spammed
-   Discord etc. The gate persists a marker under ``$HERMES_HOME``
+   Discord etc. The gate persists a marker under ``$AKRAMCODE_HOME``
    (profile-scoped, isolated to a tempdir by the conftest autouse fixture)
    keyed on the model slug + displayed from→to percentages, so an unchanged
    threshold stays silent across restarts while a changed threshold (or a
@@ -20,7 +20,7 @@ import contextlib
 import io
 from pathlib import Path
 
-from hermes_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 from akramcode_state import SessionDB
 from run_agent import AIAgent
 
@@ -96,9 +96,9 @@ def test_codex_gpt55_autoraise_notice_deduped_across_agent_inits(monkeypatch, tm
 
 # ── per-profile dedupe marker (#54432) ───────────────────────────────────────
 
-def test_marker_lives_under_hermes_home() -> None:
+def test_marker_lives_under_akramcode_home() -> None:
     marker = _codex_gpt55_autoraise_notice_marker()
-    assert marker.parent == get_hermes_home()
+    assert marker.parent == get_akramcode_home()
 
 def test_changed_threshold_renotifies_once() -> None:
     _record_codex_gpt55_autoraise_notice(AUTORAISE)

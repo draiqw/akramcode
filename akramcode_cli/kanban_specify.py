@@ -1,6 +1,6 @@
 """Kanban triage specifier — flesh out a one-liner into a real spec.
 
-``hermes kanban specify [task_id | --all]`` asks the auxiliary LLM for a
+``akramcode kanban specify [task_id | --all]`` asks the auxiliary LLM for a
 tightened title + concrete body for a Triage task, then flips it
 ``triage -> todo`` via ``kanban_db.specify_triage_task``.
 
@@ -24,12 +24,12 @@ from akramcode_cli import kanban_db_connect as kbc
 
 from utils import env_int
 
-HERMES_KANBAN_SPECIFY_MAX_TOKENS = max(1500, env_int("HERMES_KANBAN_SPECIFY_MAX_TOKENS", 6000))
+AKRAMCODE_KANBAN_SPECIFY_MAX_TOKENS = max(1500, env_int("AKRAMCODE_KANBAN_SPECIFY_MAX_TOKENS", 6000))
 
 logger = logging.getLogger(__name__)
 
 
-_SYSTEM_PROMPT = """You are the Kanban triage specifier for the Hermes Agent board.
+_SYSTEM_PROMPT = """You are the Kanban triage specifier for the AkramCode Agent board.
 A user dropped a rough idea into the Triage column. Your job is to turn it
 into a concrete, actionable task spec that an autonomous worker can pick up
 and execute without further clarification.
@@ -203,7 +203,7 @@ def specify_task(
     raw, reason = _call_aux(
         "specify", task_id, aux_task="triage_specifier", system=_SYSTEM_PROMPT,
         user=_USER_TEMPLATE.format(**_task_prompt_fields(task)),
-        max_tokens=HERMES_KANBAN_SPECIFY_MAX_TOKENS, timeout=timeout or 120,
+        max_tokens=AKRAMCODE_KANBAN_SPECIFY_MAX_TOKENS, timeout=timeout or 120,
     )
     if raw is None:
         return SpecifyOutcome(task_id, False, reason)

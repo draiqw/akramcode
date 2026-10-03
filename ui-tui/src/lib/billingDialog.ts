@@ -1,4 +1,4 @@
-import type { BillingBlock } from '@hermes/shared/billing'
+import type { BillingBlock } from '@akramcode/shared/billing'
 
 import { t } from '../i18n/runtime.js'
 

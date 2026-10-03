@@ -74,8 +74,8 @@ class TestA2aRouting:
     def test_bot_colliding_with_this_agents_ai_peer_is_skipped(self):
         """One peer cannot be both sides of a session."""
         provider = _provider()
-        provider._manager.resolve_author_peer_id.return_value = "hermes"
-        provider._manager.assistant_peer_id.return_value = "hermes"
+        provider._manager.resolve_author_peer_id.return_value = "akramcode"
+        provider._manager.assistant_peer_id.return_value = "akramcode"
 
         _sync(provider, turn_author=BOT_AUTHOR)
 
@@ -99,7 +99,7 @@ class TestA2aRouting:
 
         assert east["id"] == "bot:east/coder"
         assert provider._a2a_session_key(east) != provider._a2a_session_key(west)
-        assert provider._a2a_session_key(east).startswith("Bot-Chat:a2a:hermes-assistant:bot-east-coder-")
+        assert provider._a2a_session_key(east).startswith("Bot-Chat:a2a:akramcode-assistant:bot-east-coder-")
 
 
 class TestToolWritesDuringBotTurn:
@@ -158,7 +158,7 @@ class TestHumanTurnUnchanged:
 
 class TestManagerUserPeerOverride:
     def test_get_or_create_uses_the_override_as_user_peer(self):
-        mgr = HonchoSessionManager(honcho=MagicMock(), config=HonchoClientConfig(api_key="k", peer_name="eri", ai_peer="hermes"),
+        mgr = HonchoSessionManager(honcho=MagicMock(), config=HonchoClientConfig(api_key="k", peer_name="eri", ai_peer="akramcode"),
                                    runtime_user_peer_name="7654321")
         mgr._get_or_create_peer = MagicMock(side_effect=lambda pid: MagicMock(name=f"peer:{pid}"))
         mgr._get_or_create_honcho_session = MagicMock(return_value=(MagicMock(), [], None))
@@ -166,7 +166,7 @@ class TestManagerUserPeerOverride:
         session = mgr.get_or_create("Bot-Chat:a2a:bot-coder-0123abcd", user_peer_id="coder")
 
         assert session.user_peer_id == "coder"
-        assert session.assistant_peer_id == "hermes"
+        assert session.assistant_peer_id == "akramcode"
         joined = [c[0][0] for c in mgr._get_or_create_peer.call_args_list]
         assert "7654321" not in joined
 

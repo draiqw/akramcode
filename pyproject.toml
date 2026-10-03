@@ -252,11 +252,11 @@ akramcode = "akramcode_cli.main:main"
 akramcode-agent = "agent.legacy_cli:main"
 akramcode-acp = "acp_adapter.entry:main"
 
-[tool.hermes]
+[tool.akramcode]
 opt-in-extras = ["kittentts"]
 
 
-[tool.hermes.extras-platforms]
+[tool.akramcode.extras-platforms]
 matrix = "sys_platform == 'linux'"
 google-chat = "platform_machine != 'ARM64' or sys_platform != 'win32'"
 mem0 = "platform_machine != 'ARM64' or sys_platform != 'win32'"
@@ -425,10 +425,10 @@ testpaths = ["tests"]
 markers = [
   "integration: marks tests requiring external services (API keys, Modal, etc.)",
   "live: secrets-gated canaries against REAL LLM provider APIs (spends money; select with -m live)",
-  "real_concurrent_gate: opt out of the autouse stub that disables _detect_concurrent_hermes_instances",
+  "real_concurrent_gate: opt out of the autouse stub that disables _detect_concurrent_akramcode_instances",
   "real_agent_prewarm: opt out of the autouse stub that disables the tui_gateway deferred agent pre-warm timer",
   "real_retry_backoff: opt out of the tests/agent autouse stub that zeroes jittered_backoff",
-  "requires_wal: needs the runtime to actually enable SQLite WAL mode (skipped where Hermes falls back to journal_mode=DELETE)",
+  "requires_wal: needs the runtime to actually enable SQLite WAL mode (skipped where AkramCode falls back to journal_mode=DELETE)",
   "no_isolate: opt out of per-file subprocess isolation (tests share mutable module-level state)",
   "ssh: marks tests requiring a reachable SSH server (skipped in normal CI)",
   "platforms(*specs, arch=None, arch_negate=False): run only on hosts matching at least one spec — linux/macos/windows/posix/any, 'not X' negation, optional arch filter",

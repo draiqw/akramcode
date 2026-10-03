@@ -1,7 +1,7 @@
 """Container-boot reconciliation of per-profile gateway s6 services.
 
 Wired into the image as /etc/cont-init.d/02-reconcile-profiles. Runs as root after
-01-hermes-setup (the stage2 hook) has chowned the volume and seeded $HERMES_HOME, but
+01-akramcode-setup (the stage2 hook) has chowned the volume and seeded $AKRAMCODE_HOME, but
 before s6-rc starts user services.
 """
 from __future__ import annotations
@@ -66,9 +66,9 @@ def _slot_action(profile: str, profile_dir: Path, prior_state: str | None, start
                            folded_into_root=folded_into_root)
 
 
-def _named_profile_dirs(hermes_home: Path) -> list[tuple[str, Path]]:
-    """Every real named profile under ``$HERMES_HOME/profiles`` (``SOUL.md`` is the marker)."""
-    profiles_root = hermes_home / "profiles"
+def _named_profile_dirs(akramcode_home: Path) -> list[tuple[str, Path]]:
+    """Every real named profile under ``$AKRAMCODE_HOME/profiles`` (``SOUL.md`` is the marker)."""
+    profiles_root = akramcode_home / "profiles"
     if not profiles_root.is_dir():
         return []
     found: list[tuple[str, Path]] = []
@@ -85,20 +85,20 @@ def _named_profile_dirs(hermes_home: Path) -> list[tuple[str, Path]]:
 
 
 def reconcile_profile_gateways(
-    *, hermes_home: Path, scandir: Path, dry_run: bool = False,
+    *, akramcode_home: Path, scandir: Path, dry_run: bool = False,
     container_argv: Sequence[str] | None = None) -> list[ReconcileAction]:
     """Recreate s6 service registrations for every persistent profile.
 
     Always registers a ``gateway-default`` slot for the root profile (the implicit profile at
-    the top of ``$HERMES_HOME``): ``akramcode_cli.gateway`` maps an empty profile suffix to it,
-    so it is what ``hermes gateway start`` (no ``-p``) targets.
+    the top of ``$AKRAMCODE_HOME``): ``akramcode_cli.gateway`` maps an empty profile suffix to it,
+    so it is what ``akramcode gateway start`` (no ``-p``) targets.
 
-    Without it, bare ``hermes gateway start`` inside the container would land on ``s6-svc -u
+    Without it, bare ``akramcode gateway start`` inside the container would land on ``s6-svc -u
     /run/service/gateway-default`` → uncaught ``CalledProcessError`` → traceback to the user (PR #30136
     review).
     """
     actions: list[ReconcileAction] = []
-    # ONE multiplexing gateway per container: named slots are registered (so `hermes -p X gateway
+    # ONE multiplexing gateway per container: named slots are registered (so `akramcode -p X gateway
     # start` has a target and `s6-svstat` can report them) but are never booted from their persisted
     # run intent, except a `gateway.standalone` profile's (below).
     # This is the s6 leg of the multiplex-only convergence: an image upgraded from a release that
@@ -108,7 +108,7 @@ def reconcile_profile_gateways(
     # It used to be gated on `gateway.multiplex_profiles`, which made the UNSET default (on) boot
     # the slots anyway — the container shipped the opt-out topology by accident. The key is retired
     # as a topology switch (akramcode_cli/gateway_multiplex_mode.py), so there is nothing to read.
-    named = [(name, entry, _read_desired_state(entry)) for name, entry in _named_profile_dirs(hermes_home)]
+    named = [(name, entry, _read_desired_state(entry)) for name, entry in _named_profile_dirs(akramcode_home)]
     # The exception is a `gateway.standalone` profile: the root multiplexer never serves it
     # (profiles_to_serve excludes it), so it boots its own slot from its own intent, beside the root.
     from akramcode_cli.profiles import profile_is_standalone
@@ -116,10 +116,10 @@ def reconcile_profile_gateways(
 
     # A legacy `gateway run` container with no state yet seeds `running` (pre-s6 behavior).
     legacy_default_state = _maybe_migrate_legacy_gateway_run_state(
-        hermes_home, container_argv=container_argv, dry_run=dry_run)
-    default_prior_state = legacy_default_state or _read_desired_state(hermes_home)
+        akramcode_home, container_argv=container_argv, dry_run=dry_run)
+    default_prior_state = legacy_default_state or _read_desired_state(akramcode_home)
     # The root slot INHERITS every named slot's autostart intent, because it is the one process
-    # that serves them. Without this an image only ever driven as `hermes -p coder gateway start`
+    # that serves them. Without this an image only ever driven as `akramcode -p coder gateway start`
     # booted with ZERO gateways: it has no root state (or "stopped"), every named slot is now
     # registered down unconditionally, and every action reported "registered" — a container that
     # looks healthy while nothing is listening.
@@ -129,9 +129,9 @@ def reconcile_profile_gateways(
     if folded and default_prior_state not in _AUTOSTART_STATES:
         log.warning("%s", boot_notice(folded))
     if not dry_run:
-        _cleanup_stale_runtime_files(hermes_home)
+        _cleanup_stale_runtime_files(akramcode_home)
         _register_service(scandir, "default", start=default_should_start)
-    actions.append(_slot_action("default", hermes_home, default_prior_state, default_should_start,
+    actions.append(_slot_action("default", akramcode_home, default_prior_state, default_should_start,
                                 folded_into_root=bool(folded)))
 
     for name, entry, prior_state in named:
@@ -143,7 +143,7 @@ def reconcile_profile_gateways(
         actions.append(_slot_action(name, entry, prior_state, should_start,
                                     folded_into_root=name in folded))
     if not dry_run:
-        _write_reconcile_log(hermes_home, actions)
+        _write_reconcile_log(akramcode_home, actions)
     return actions
 
 
@@ -155,13 +155,13 @@ def boot_notice(folded: Sequence[str]) -> str:
 
 
 def _maybe_migrate_legacy_gateway_run_state(
-    hermes_home: Path, *, container_argv: Sequence[str] | None, dry_run: bool) -> str | None:
+    akramcode_home: Path, *, container_argv: Sequence[str] | None, dry_run: bool) -> str | None:
     """Seed root gateway_state for pre-s6 `gateway run` containers (the tini image let users run
     the gateway as the container command; post-s6 it would register down and never start)."""
-    state_file = hermes_home / "gateway_state.json"
+    state_file = akramcode_home / "gateway_state.json"
     if state_file.exists():
         return None
-    if os.environ.get("HERMES_GATEWAY_NO_SUPERVISE", "").lower() in ("1", "true", "yes"):
+    if os.environ.get("AKRAMCODE_GATEWAY_NO_SUPERVISE", "").lower() in ("1", "true", "yes"):
         return None
     argv = tuple(container_argv) if container_argv is not None else _read_container_argv()
     if not _is_legacy_gateway_run_request(argv):
@@ -205,7 +205,7 @@ def _read_container_argv() -> tuple[str, ...]:
 
 
 def _strip_container_argv_prefix(argv: Sequence[str]) -> list[str]:
-    """Strip the s6/wrapper prefix off the container argv, leaving the hermes args.
+    """Strip the s6/wrapper prefix off the container argv, leaving the akramcode args.
 
     Drops everything through the ``main-wrapper.sh`` token — the stable boundary the image
     owns — rather than peeling tokens positionally (which broke on the s6 v2→v3 bump).
@@ -218,7 +218,7 @@ def _strip_container_argv_prefix(argv: Sequence[str]) -> list[str]:
         args = args[1:]
     if args and args[0].endswith("entrypoint-dispatch.sh"):  # non-PID-1 dispatch shim
         args = args[1:]
-    if args and Path(args[0]).name == "hermes":  # the wrapper re-execs `hermes <subcommand>`
+    if args and Path(args[0]).name == "akramcode":  # the wrapper re-execs `akramcode <subcommand>`
         args = args[1:]
     return args
 
@@ -308,10 +308,10 @@ def _register_service(scandir: Path, profile: str, *, start: bool) -> None:
         _write_exec(tmp_dir / "finish", S6ServiceManager._render_finish_script())
         (tmp_dir / "log").mkdir()
         _write_exec(tmp_dir / "log" / "run", S6ServiceManager._render_log_run(profile))
-        if not start:  # `hermes -p <profile> gateway start` brings it up later (s6-svc -u)
+        if not start:  # `akramcode -p <profile> gateway start` brings it up later (s6-svc -u)
             (tmp_dir / "down").touch()
-        # Pre-create supervise/ with hermes ownership BEFORE publishing so s6-supervise inherits
-        # it and runtime s6-svc calls as the hermes user won't EACCES.
+        # Pre-create supervise/ with akramcode ownership BEFORE publishing so s6-supervise inherits
+        # it and runtime s6-svc calls as the akramcode user won't EACCES.
         _seed_supervise_skeleton(tmp_dir)
         if service_dir.exists():
             shutil.rmtree(service_dir)
@@ -325,8 +325,8 @@ def _register_service(scandir: Path, profile: str, *, start: bool) -> None:
 _LOG_ROTATE_BYTES = 256 * 1024
 
 
-def _write_reconcile_log(hermes_home: Path, actions: list[ReconcileAction]) -> None:
-    """Append one line per profile to $HERMES_HOME/logs/container-boot.log (rotated to ``.1``) —
+def _write_reconcile_log(akramcode_home: Path, actions: list[ReconcileAction]) -> None:
+    """Append one line per profile to $AKRAMCODE_HOME/logs/container-boot.log (rotated to ``.1``) —
     a separate greppable file for "why didn't my profile come back up".
 
     Size-bounded: when the file exceeds ``_LOG_ROTATE_BYTES`` (defaults to 256 KiB ≈ 3000 reconcile lines),
@@ -336,7 +336,7 @@ def _write_reconcile_log(hermes_home: Path, actions: list[ReconcileAction]) -> N
     item O3).
     """
     import time
-    log_dir = hermes_home / "logs"
+    log_dir = akramcode_home / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     log_path = log_dir / "container-boot.log"
     try:
@@ -354,16 +354,16 @@ def _write_reconcile_log(hermes_home: Path, actions: list[ReconcileAction]) -> N
 
 def main() -> int:
     """Entry point invoked from /etc/cont-init.d/02-reconcile-profiles."""
-    # A dashboard-only container must not reconcile: with a shared bind-mounted HERMES_HOME both
+    # A dashboard-only container must not reconcile: with a shared bind-mounted AKRAMCODE_HOME both
     # containers race to flock() the same s6-log files → "Resource busy" restart storm. Detected
     # from PID 1 argv, not an operator flag (a flag can be forgotten in a hand-written manifest).
     if _is_dashboard_container(_read_container_argv()):
         print("reconcile: skipping (dashboard container — does not need per-profile gateways)")
         return 0
 
-    hermes_home = Path(os.environ.get("HERMES_HOME", "/opt/data"))
+    akramcode_home = Path(os.environ.get("AKRAMCODE_HOME", "/opt/data"))
     scandir = Path(os.environ.get("S6_PROFILE_GATEWAY_SCANDIR", "/run/service"))
-    actions = reconcile_profile_gateways(hermes_home=hermes_home, scandir=scandir)
+    actions = reconcile_profile_gateways(akramcode_home=akramcode_home, scandir=scandir)
     folded = [a.profile for a in actions if a.profile != "default" and a.folded_into_root]
     if folded:
         print(boot_notice(folded))

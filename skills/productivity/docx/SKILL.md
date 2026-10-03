@@ -6,7 +6,7 @@ author: Nous Research
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
+  akramcode:
     tags: [word, docx, documents, office, templates, revisions, comments]
     category: productivity
     related_skills: [pdf, xlsx, powerpoint]

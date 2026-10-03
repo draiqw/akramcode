@@ -17,7 +17,7 @@ def isolated_external_auth_stores(tmp_path, monkeypatch):
     from pathlib import Path
 
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_SHARED_AUTH_DIR", str(tmp_path / "shared"))
+    monkeypatch.setenv("AKRAMCODE_SHARED_AUTH_DIR", str(tmp_path / "shared"))
 
 
 def _rows():

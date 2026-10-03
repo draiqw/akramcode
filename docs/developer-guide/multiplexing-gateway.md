@@ -9,7 +9,7 @@ One gateway process can serve every profile in the install. The mode is on by
 default (`gateway.multiplex_profiles`, default `true`), and everything it
 changes reverts the moment the flag is off. An *unset* flag is settled at boot
 by `akramcode_cli/gateway_multiplex_mode.py::resolve_multiplex_mode`, which runs
-the `hermes gateway migrate` preflight and keeps the gateway standalone when a
+the `akramcode gateway migrate` preflight and keeps the gateway standalone when a
 secondary still runs its own gateway, a blocker exists, or the host cannot be
 migrated (see "The mode flag"). This document is the design rationale
 referenced from `agent/secret_scope.py` ("Workstream A"): what is isolated per
@@ -54,7 +54,7 @@ is documented as a known limitation at the end of this document.
   a plain module global, not a contextvar: it describes the deployment mode,
   not a per-task value. Its only job is to arm the fail-closed behavior in
   `get_secret()`.
-- The dashboard/Desktop backend (`hermes serve`) has no such flag, so
+- The dashboard/Desktop backend (`akramcode serve`) has no such flag, so
   `akramcode_cli/web_server.py::start_server` calls
   `tui_gateway.launch_profile_policy.activate_multi_profile_hosting_eagerly()`
   as its LAST boot step: the host arms the guard when the machine has more than
@@ -96,7 +96,7 @@ profile_routes match ──► served-set check ──► SessionSource.profile 
    │                                           (gateway/profile_routing.py)
    ▼
 _profile_runtime_scope(profile_home)           (gateway/run.py)
-   ├── set_hermes_home_override(home)          config / state.db / skills /
+   ├── set_akramcode_home_override(home)          config / state.db / skills /
    │                                           memory / sessions resolve here
    └── set_secret_scope(profile .env + secret sources)
    │                                           provider keys, platform tokens
@@ -135,7 +135,7 @@ B's turns and into every subprocess spawned with `env=dict(os.environ)`.
     rather than silently reading the process environment. An un-migrated call
     site fails loud at that exact line instead of leaking another profile's
     value.
-- A small allowlist (`HERMES_HOME`, `HERMES_PROFILE`, proxy settings,
+- A small allowlist (`AKRAMCODE_HOME`, `AKRAMCODE_PROFILE`, proxy settings,
   `API_SERVER_*` listener settings — but deliberately not `API_SERVER_KEY`)
   stays global because those describe the process, not a profile.
 - Cloud SDK *default credential chains* are ambient by construction
@@ -149,7 +149,7 @@ B's turns and into every subprocess spawned with `env=dict(os.environ)`.
 Because the per-turn `.env` reload is a no-op under multiplexing, rotated
 credentials are picked up through the profile scope on the next turn — never
 via `os.environ`. This holds at the loader boundary, not just the gateway's
-reload helper: `akramcode_cli.env_loader.load_hermes_dotenv` skips the
+reload helper: `akramcode_cli.env_loader.load_akramcode_dotenv` skips the
 process-global load whenever multiplexing is active *and* a profile-home
 override is installed (import-time and cron callers hit it mid-turn), while
 still hydrating the profile's external secret sources into its private
@@ -162,14 +162,14 @@ routed turn can reach: `${VAR}` / `${env:VAR}` references in a profile's
 `/pair` grant mirror) update the installed scope mapping instead of the
 process environment (`#88441`).
 
-## The HERMES_HOME override
+## The AKRAMCODE_HOME override
 
-`hermes_constants.py` holds a context-local override consulted by
-`get_hermes_home()` before the `HERMES_HOME` env var. Everything that resolves
+`akramcode_constants.py` holds a context-local override consulted by
+`get_akramcode_home()` before the `AKRAMCODE_HOME` env var. Everything that resolves
 paths through it — config, `state.db`, skills, memory, SOUL, sessions, kanban,
 goals, plugin discovery, MCP startup — follows the active profile
-automatically. `get_process_hermes_home()` exists for the few machine-level
-assets that must not follow the override. `hermes_home_key()` gives
+automatically. `get_process_akramcode_home()` exists for the few machine-level
+assets that must not follow the override. `akramcode_home_key()` gives
 per-home registries a stable scope key. A one-shot warning (`#18594`) fires if
 profile-scoped code runs without the override where one is expected.
 
@@ -195,7 +195,7 @@ still run its own standalone gateway.
 ## Per-profile persistence
 
 `SessionStore` binds no database handle at construction (`#88532`). Session
-DB handles are resolved at call time through the active HERMES_HOME override —
+DB handles are resolved at call time through the active AKRAMCODE_HOME override —
 one cached handle per resolved `profiles/<name>/state.db` — so sessions land
 in the owning profile's store even when the store object itself is shared.
 Pairing stores are constructed per served profile.
@@ -280,7 +280,7 @@ profile enumeration and configuration live in
 `tui_gateway/methods_profiles.py`: `profiles.list`, `profiles.create`,
 `profiles.describe`, `profiles.configure`, `profiles.set_asset`,
 `profiles.get_asset`. Reads and writes run under the target profile's
-HERMES_HOME override. Asset writes are atomic, type- and size-capped.
+AKRAMCODE_HOME override. Asset writes are atomic, type- and size-capped.
 
 ## Failure modes
 
@@ -315,7 +315,7 @@ Process-global state that is not yet profile-scoped:
 | --- | --- |
 | MCP discovery and tool registration | Process-global; the first profile to build an agent wins the discovery slot. Full per-profile MCP registries are tracked in `#67605`. |
 | Terminal / sandbox env (`TERMINAL_*`) | Global by allowlist; tools read it from the process environment. |
-| Built-in tool registry | Built-ins are process-global; plugin-registered tools are overlaid per profile via `hermes_home_key()`. |
+| Built-in tool registry | Built-ins are process-global; plugin-registered tools are overlaid per profile via `akramcode_home_key()`. |
 | Provider/capability registries | Same hybrid overlay pattern (browser, image-gen, TTS, transcription, video-gen, web-search, secret sources). |
 | HTTP listener, relay ingress, process lock | One per process, owned by the default/active profile. Per-profile `runtime_status.json` is still written. |
 
@@ -331,6 +331,6 @@ out of scope for this document.
 
 - [Multi-profile gateways](../user-guide/multi-profile-gateways.md) — user-facing guide, including `profile_routes`
   and the standalone one-gateway-per-profile alternative.
-- `agent/secret_scope.py`, `hermes_constants.py`, `gateway/profile_routing.py`,
+- `agent/secret_scope.py`, `akramcode_constants.py`, `gateway/profile_routing.py`,
   `gateway/run.py` (`_profile_runtime_scope`), `akramcode_cli/profiles.py`
   (`profiles_to_serve`), `gateway/session.py`, `tui_gateway/methods_profiles.py`.

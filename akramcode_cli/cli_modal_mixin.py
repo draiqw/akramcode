@@ -1,7 +1,7 @@
 """Modal overlays for the interactive CLI: clarify, approval, sudo/secret capture, command palette,
 slash-confirm, external editor.
 
-Mixin split out of ``cli.py``; bound onto ``HermesCLI`` via the MRO. cli.py-internal symbols are
+Mixin split out of ``cli.py``; bound onto ``AkramCodeCLI`` via the MRO. cli.py-internal symbols are
 imported LAZILY inside each method — the mixin never imports ``cli`` at module load time (cycle).
 """
 

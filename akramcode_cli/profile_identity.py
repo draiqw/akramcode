@@ -30,7 +30,7 @@ def migrate_profile_identity(old_name: str, new_name: str) -> bool:
     """Retry the durable identity migration of a rename that already completed.
 
     ``rename_profile`` runs the migration itself; this is the standalone retry behind
-    ``hermes profile migrate-identity <old> <new>`` for when that attempt failed. The rename
+    ``akramcode profile migrate-identity <old> <new>`` for when that attempt failed. The rename
     cannot simply be repeated — ``profiles/<old>`` is gone — and the identity to migrate is read
     from rows/metadata that still name the old profile or old absolute workdir, so only the new
     profile has to exist here.
@@ -93,8 +93,8 @@ def _purge_profile_identity(canon: str, live_mux: bool) -> bool:
     it. Never fatal to the delete, which has already happened by this point.
     """
     if live_mux:
-        from akramcode_constants import get_default_hermes_root
-        root = get_default_hermes_root()
+        from akramcode_constants import get_default_akramcode_root
+        root = get_default_akramcode_root()
         try:
             from gateway.control_socket import purge_gateway_profile_identity
             answer = purge_gateway_profile_identity(root, canon)
@@ -110,14 +110,14 @@ def _purge_profile_identity(canon: str, live_mux: bool) -> bool:
         print(
             "⚠ Profile was deleted, but the live gateway could not purge its session identity"
             f" ({reason}). Restart the gateway, then run:\n"
-            f"    hermes profile purge-identity {canon}",
+            f"    akramcode profile purge-identity {canon}",
             file=sys.stderr)
         return False
 
     from akramcode_cli.profiles import get_profile_dir
-    from akramcode_constants import get_default_hermes_root
+    from akramcode_constants import get_default_akramcode_root
     from akramcode_state.registry import acquire, release_or_close
-    root = get_default_hermes_root()
+    root = get_default_akramcode_root()
     purged = True
     for db_path in (root / "state.db", get_profile_dir(canon) / "state.db"):
         if not db_path.exists():
@@ -176,7 +176,7 @@ def _migrate_checkpoint_identity(old_canon: str, new_canon: str) -> bool:
     print(
         "⚠ Profile was renamed, but checkpoint identity migration failed for "
         f"{result['errors']} project(s). Retry with:\n"
-        f"    hermes profile migrate-identity {old_canon} {new_canon}",
+        f"    akramcode profile migrate-identity {old_canon} {new_canon}",
         file=sys.stderr,
     )
     return False
@@ -193,8 +193,8 @@ def _migrate_profile_identity(old_canon: str, new_canon: str, live_mux: bool) ->
     checkpoint_migrated = _migrate_checkpoint_identity(old_canon, new_canon)
 
     if live_mux:
-        from akramcode_constants import get_default_hermes_root
-        root = get_default_hermes_root()
+        from akramcode_constants import get_default_akramcode_root
+        root = get_default_akramcode_root()
         try:
             from gateway.control_socket import migrate_gateway_profile_identity
             answer = migrate_gateway_profile_identity(root, old_canon, new_canon)
@@ -210,14 +210,14 @@ def _migrate_profile_identity(old_canon: str, new_canon: str, live_mux: bool) ->
         print(
             "⚠ Profile was renamed, but the live gateway could not migrate session identity"
             f" ({reason}). Restart the gateway, then run:\n"
-            f"    hermes profile migrate-identity {old_canon} {new_canon}",
+            f"    akramcode profile migrate-identity {old_canon} {new_canon}",
             file=sys.stderr)
         return False
 
     from akramcode_cli.profiles import get_profile_dir
     from akramcode_state.registry import acquire, release_or_close
-    from akramcode_constants import get_default_hermes_root
-    root = get_default_hermes_root()
+    from akramcode_constants import get_default_akramcode_root
+    root = get_default_akramcode_root()
     migrated = checkpoint_migrated
     for db_path in (root / "state.db", get_profile_dir(new_canon) / "state.db"):
         if not db_path.exists():

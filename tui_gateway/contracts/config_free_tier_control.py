@@ -272,7 +272,7 @@ class SharedMetricsStartupLatencyParams(ProfileParams):
     """``elapsed_ms`` = the client's own launch (TUI process start / Desktop app start) to ready
     (TUI gateway ready / Desktop backend attached), measured once per launch by the client. The
     client names its surface because a Desktop may attach to a URL/cloud backend where
-    ``HERMES_DESKTOP`` is unset; without it the backend falls back to its own client detection.
+    ``AKRAMCODE_DESKTOP`` is unset; without it the backend falls back to its own client detection.
     ``launch_id`` is an opaque per-launch token the backend latches on (never recorded), so a
     reconnect re-sending the same launch counts once while a new launch counts again."""
 
@@ -293,7 +293,7 @@ method("shared_metrics.startup_latency", params=SharedMetricsStartupLatencyParam
 # ---- v4 reliability ----
 class SharedMetricsUpdateRunParams(ProfileParams):
     """One Desktop PACKAGED self-update (electron-updater / App Installer / Store). Source-checkout
-    hand-offs run ``hermes update`` and are counted from its receipt, never here. Raw words; the
+    hand-offs run ``akramcode update`` and are counted from its receipt, never here. Raw words; the
     backend buckets them: ``outcome`` success|failed|noop|refused, ``failed_stage``
     download|verify|apply|restart, ``mechanism`` the updater strategy kind, ``duration_ms`` wall
     time, ``from_commit_date`` the updated-from build's commit time (epoch seconds) when known."""

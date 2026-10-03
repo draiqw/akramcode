@@ -38,10 +38,10 @@ def _failed_result(request: dict, result_path: Path, code: int) -> int:
 def run_completion(request: dict) -> dict:
     """Wait for new code; zero exit without a correlated terminal result fails closed."""
     root = Path(request["source"])
-    env = dict(os.environ, HERMES_HOME=request["home"], PYTHONUNBUFFERED="1")
+    env = dict(os.environ, AKRAMCODE_HOME=request["home"], PYTHONUNBUFFERED="1")
     for key in ("PYTHONPATH", "PYTHONHOME", "VIRTUAL_ENV"):
         env.pop(key, None)
-    with tempfile.TemporaryDirectory(prefix="hermes-completion-") as directory:
+    with tempfile.TemporaryDirectory(prefix="akramcode-completion-") as directory:
         request_path = Path(directory) / "request.json"
         result_path = Path(directory) / "result.json"
         request = {**request, "stdout_isatty": sys.stdout.isatty()}
@@ -217,7 +217,7 @@ def _complete_selected(request: dict) -> None:
         # Discharges the obligation this run armed when the live fleet vouches for it; a
         # fleet still owing the restart fails closed exactly like a stale matrix would.
         if update_cmd._pending_fleet_restart_needed():
-            print("  ⚠ Gateways are still off the checkout code. Recover with: hermes gateway restart")
+            print("  ⚠ Gateways are still off the checkout code. Recover with: akramcode gateway restart")
             raise SystemExit(1)
         if not complete:
             raise SystemExit(1)

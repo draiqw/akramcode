@@ -21,9 +21,9 @@ def test_source_checkout_gets_venv_setup_hint():
     assert _hint_for("source") == "CMD-source"
 
 
-def test_git_install_gets_hermes_managed_hint():
+def test_git_install_gets_akramcode_managed_hint():
     assert _hint_for("git") == (
-        "Hermes-managed installs can repair the embedded runtime with `CMD-git`"
+        "AkramCode-managed installs can repair the embedded runtime with `CMD-git`"
     )
 
 

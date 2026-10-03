@@ -34,9 +34,9 @@ class _Adapter:
 
 
 def _runner(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     (home / "profiles").mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     runner = object.__new__(GatewayRunner)
     runner.config = GatewayConfig(multiplex_profiles=True)
@@ -236,7 +236,7 @@ async def test_deleted_profile_is_torn_down_and_unrouted_others_untouched(tmp_pa
         reconnect = asyncio.get_running_loop().create_task(asyncio.sleep(3600))
         runner._profile_failed_platforms = {"gamma": {Platform.TELEGRAM: reconnect}}
 
-        from hermes_constants import mark_named_profile_deleted
+        from akramcode_constants import mark_named_profile_deleted
         mark_named_profile_deleted(gamma_dir)  # what ``delete_profile`` does before rmtree
         result = await runner.reconcile_served_profiles()
 

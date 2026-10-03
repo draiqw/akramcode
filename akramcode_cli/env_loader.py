@@ -1,4 +1,4 @@
-"""Helpers for loading Hermes .env files consistently across entrypoints."""
+"""Helpers for loading AkramCode .env files consistently across entrypoints."""
 
 from __future__ import annotations
 
@@ -23,13 +23,13 @@ logger = logging.getLogger(__name__)
 # arbitrary user env vars are never silently altered.
 _CREDENTIAL_SUFFIXES = ("_API_KEY", "_TOKEN", "_SECRET", "_KEY")
 
-# Once-per-process guards: load_hermes_dotenv() runs repeatedly (user + project env, gateway hot-reload,
+# Once-per-process guards: load_akramcode_dotenv() runs repeatedly (user + project env, gateway hot-reload,
 # lazy imports mid-turn, tests) so warnings/logs fire once per key/path/home.
 _WARNED_KEYS: set[str] = set()          # credential names already given the non-ASCII warning
 _WARNED_UTF32_PATHS: set[str] = set()   # .env paths already given the UTF-32 refuse-to-mangle warning
 _SCOPED_SKIP_LOGGED: set[str] = set()   # routed profile homes whose multiplex dotenv skip was logged
 
-# env-var name → source label ("bitwarden", …) for externally injected credentials; setup / `hermes
+# env-var name → source label ("bitwarden", …) for externally injected credentials; setup / `akramcode
 # model` tell users WHERE a key came from when .env lacks it.
 _SECRET_SOURCES: dict[str, str] = {}
 # Every env-var name an external source SUPPLIED for some home, whether it was applied or lost to a
@@ -58,7 +58,7 @@ _SECRET_SOURCE_RESTORE_BY_HOME: dict[str, dict[str, str]] = {}
 # cleared by a per-home ``reset_secret_source_cache``: it describes ``os.environ``, which a reset does not
 # touch, and the next pass needs it to revoke.
 _SECRET_SOURCE_WRITES_BY_HOME: dict[str, dict[str, tuple[str, str, str | None]]] = {}
-# HERMES_HOME paths already pulled external secrets for: load_hermes_dotenv() runs at import time from
+# AKRAMCODE_HOME paths already pulled external secrets for: load_akramcode_dotenv() runs at import time from
 # several hot modules, so without this the Bitwarden status line prints 3-5x per startup and the config
 # re-parse + ASCII sweep re-run each time (Bitwarden's own cache only saves the network call).
 _APPLIED_HOMES: set[str] = set()
@@ -77,19 +77,19 @@ _DOTENV_PASSES = itertools.count()
 _DOTENV_LOCK = threading.RLock()
 
 # Per-process credentials a parent mints and injects into the child's environment (the Desktop shell /
-# a link-style launcher spawns `hermes dashboard` with a fresh HERMES_DASHBOARD_SESSION_TOKEN and keeps
+# a link-style launcher spawns `akramcode dashboard` with a fresh AKRAMCODE_DASHBOARD_SESSION_TOKEN and keeps
 # the same token for its own /api probes). They are never .env configuration, so a persisted value in
-# ~/.hermes/.env must not replace an injected one — the parent would then 401 against its own child
+# ~/.akramcode/.env must not replace an injected one — the parent would then 401 against its own child
 # (#115955). A value an earlier dotenv pass published is still reloaded normally.
-_SPAWN_CREDENTIAL_KEYS: frozenset[str] = frozenset({"HERMES_DASHBOARD_SESSION_TOKEN"})
+_SPAWN_CREDENTIAL_KEYS: frozenset[str] = frozenset({"AKRAMCODE_DASHBOARD_SESSION_TOKEN"})
 
-# Behavioral routing keys a parent Hermes process injects into child env that silently redirect a profile
+# Behavioral routing keys a parent AkramCode process injects into child env that silently redirect a profile
 # onto the wrong provider path; these — and ONLY these — are scrubbed at startup when absent from the
 # profile's .env. Credentials are excluded: shell exports are a documented way to supply them, and
 # read-time secret-scope checks (agent/secret_scope.py) own cross-profile credential isolation.
 _PROFILE_MANAGED_ENV_KEYS: frozenset[str] = frozenset({
-    "HERMES_ACP_AUTH_METHOD", "HERMES_ACP_AUTO_APPROVE", "HERMES_COPILOT_ACP_COMMAND",
-    "HERMES_COPILOT_ACP_ARGS", "COPILOT_CLI_PATH", "COPILOT_ACP_BASE_URL",
+    "AKRAMCODE_ACP_AUTH_METHOD", "AKRAMCODE_ACP_AUTO_APPROVE", "AKRAMCODE_COPILOT_ACP_COMMAND",
+    "AKRAMCODE_COPILOT_ACP_ARGS", "COPILOT_CLI_PATH", "COPILOT_ACP_BASE_URL",
 })
 
 
@@ -159,18 +159,18 @@ def managed_dotenv_keys() -> frozenset[str]:
     return frozenset(_MANAGED_DOTENV_KEYS)
 
 
-def get_secret_source_values(hermes_home: str | os.PathLike) -> dict[str, str]:
-    """Return the external-secret value snapshot for ``hermes_home``."""
-    return dict(_SECRET_SOURCE_VALUES_BY_HOME.get(str(Path(hermes_home).resolve()), {}))
+def get_secret_source_values(akramcode_home: str | os.PathLike) -> dict[str, str]:
+    """Return the external-secret value snapshot for ``akramcode_home``."""
+    return dict(_SECRET_SOURCE_VALUES_BY_HOME.get(str(Path(akramcode_home).resolve()), {}))
 
 
-def hydrate_profile_secret_sources(hermes_home: str | os.PathLike) -> dict[str, str]:
+def hydrate_profile_secret_sources(akramcode_home: str | os.PathLike) -> dict[str, str]:
     """Resolve one profile's configured sources without mutating ``os.environ``: multiplex gateways route
     turns to profiles that never ran the process-global dotenv path, so resolve against a private mapping
     seeded from that ``.env`` and record the per-home snapshot for ``build_profile_secret_scope()``.
     Fail-open / once-per-home like ``_apply_external_secret_sources``; never returns plaintext .env entries."""
     with _SECRET_SOURCE_CACHE_LOCK:
-        return _hydrate_profile_secret_sources(Path(hermes_home))
+        return _hydrate_profile_secret_sources(Path(akramcode_home))
 
 
 def _hydrate_profile_secret_sources(home: Path) -> dict[str, str]:
@@ -197,7 +197,7 @@ def _hydrate_profile_secret_sources(home: Path) -> dict[str, str]:
 
         local_env = {name: value for name, value in os.environ.items() if _is_global_env(name)}
         local_env.update(load_env_file(home / ".env"))
-        # Mirror load_hermes_dotenv()'s .op.env bootstrap (1Password token lives in gitignored .op.env)
+        # Mirror load_akramcode_dotenv()'s .op.env bootstrap (1Password token lives in gitignored .op.env)
         # or cold profiles fail 1Password hydration. .env wins.
         # Without seeding it here a cold profile configured for the supported .op.env flow fails 1Password
         # hydration (sweeper review on #74549). .env values win — never override an existing key.
@@ -205,7 +205,7 @@ def _hydrate_profile_secret_sources(home: Path) -> dict[str, str]:
         if op_env.exists():
             for _name, _value in load_env_file(op_env).items():
                 local_env.setdefault(_name, _value)
-        local_env["HERMES_HOME"] = str(home)
+        local_env["AKRAMCODE_HOME"] = str(home)
         report = apply_all(cfg, home, environ=local_env)
     except Exception:  # noqa: BLE001 — preserve fail-open startup behavior
         return {}
@@ -233,14 +233,14 @@ def _hydrate_profile_secret_sources(home: Path) -> dict[str, str]:
     return dict(values)
 
 
-def reset_secret_source_cache(hermes_home: str | os.PathLike | None = None) -> None:
+def reset_secret_source_cache(akramcode_home: str | os.PathLike | None = None) -> None:
     """Forget applied homes so the next load re-pulls (tests, long-running processes after config edits).
 
-    ``hermes_home`` limits the reset to ONE home: a multiplex gateway keeps every profile's snapshot in
+    ``akramcode_home`` limits the reset to ONE home: a multiplex gateway keeps every profile's snapshot in
     this process, and a per-fire cron re-pull or a plugin-discovery refresh for one home must not wipe
     a sibling's hydrated snapshot — the sibling's next scope build would run empty until it re-hydrated
     (#102041)."""
-    if hermes_home is None:
+    if akramcode_home is None:
         _APPLIED_HOMES.clear()
         _SECRET_SOURCES.clear()
         _SOURCE_SUPPLIED_NAMES.clear()
@@ -248,7 +248,7 @@ def reset_secret_source_cache(hermes_home: str | os.PathLike | None = None) -> N
         _SECRET_SOURCE_RESTORE_BY_HOME.clear()
         _SECRET_SOURCE_WRITES_BY_HOME.clear()
         return
-    home_key = str(Path(hermes_home).resolve())
+    home_key = str(Path(akramcode_home).resolve())
     _APPLIED_HOMES.discard(home_key)
     _SECRET_SOURCE_VALUES_BY_HOME.pop(home_key, None)
     _SECRET_SOURCE_RESTORE_BY_HOME.pop(home_key, None)
@@ -315,7 +315,7 @@ def _sanitize_loaded_credentials() -> None:
             "rich-text editor, or web page that substituted lookalike\n"
             "  Unicode glyphs for ASCII letters. If authentication fails "
             "(e.g. \"API key not valid\"), re-copy the key from the\n"
-            "  provider's dashboard and run `hermes setup` (or edit the "
+            "  provider's dashboard and run `akramcode setup` (or edit the "
             ".env file in a plain-text editor).",
             file=sys.stderr,
         )
@@ -328,9 +328,9 @@ def _load_dotenv_with_fallback(
     ``${VAR}`` / ``${VAR:-default}`` / precedence rules — except that ``${VAR}`` resolves against the value
     VAR had before this process's earlier passes published it (see ``_DOTENV_PUBLISHED``).
 
-    ``load_pass`` groups the layered files of one ``load_hermes_dotenv`` call: within a pass a later layer
+    ``load_pass`` groups the layered files of one ``load_akramcode_dotenv`` call: within a pass a later layer
     (project, managed) still sees the earlier layer's output, as it always did; only OTHER passes' output
-    is peeled. A bare call (``hermes send``'s direct reload) is its own pass."""
+    is peeled. A bare call (``akramcode send``'s direct reload) is its own pass."""
     raw = path.read_bytes()
     try:
         # utf-8-sig strips a leading BOM (PowerShell 5.1 / Notepad); plain utf-8 would keep U+FEFF on the
@@ -453,18 +453,18 @@ def _sanitize_env_file_if_needed(path: Path) -> None:
         pass  # best-effort — don't block gateway startup
 
 
-def load_hermes_dotenv(
+def load_akramcode_dotenv(
     *,
-    hermes_home: str | os.PathLike | None = None,
+    akramcode_home: str | os.PathLike | None = None,
     project_env: str | os.PathLike | None = None,
     load_external_secrets: bool = True,
 ) -> list[Path]:
-    """Load Hermes env files: ``~/.hermes/.env`` overrides stale shell exports; project ``.env`` is a dev
+    """Load AkramCode env files: ``~/.akramcode/.env`` overrides stale shell exports; project ``.env`` is a dev
     fallback that only fills gaps when the user env exists (and overrides shell vars when it does not)."""
     # Process home on purpose (never the per-turn override): a startup .env load must not follow a routed
     # profile — see the multiplex guard below.
-    from akramcode_constants import get_process_hermes_home
-    home_path = Path(hermes_home) if hermes_home else get_process_hermes_home()
+    from akramcode_constants import get_process_akramcode_home
+    home_path = Path(akramcode_home) if akramcode_home else get_process_akramcode_home()
 
     # Multiplex gateway: while a routed profile-home override is active, copying that profile's .env
     # into os.environ would expose its credentials to sibling turns and every spawned child. The launch
@@ -477,11 +477,11 @@ def load_hermes_dotenv(
     # (``is_multiplex_active()`` is also true, context-locally, for a routed cron fire in the desktop
     # backend — see ``cron.scheduler_provider.routed_profile_fire``.)
     from agent.secret_scope import is_multiplex_active
-    from akramcode_constants import get_hermes_home, get_hermes_home_override
+    from akramcode_constants import get_akramcode_home, get_akramcode_home_override
 
-    launch_home = _process_hermes_home().resolve()
-    if (is_multiplex_active() and get_hermes_home_override() is not None
-            and (home_path.resolve() != launch_home or get_hermes_home().resolve() != launch_home)):
+    launch_home = _process_akramcode_home().resolve()
+    if (is_multiplex_active() and get_akramcode_home_override() is not None
+            and (home_path.resolve() != launch_home or get_akramcode_home().resolve() != launch_home)):
         home_key = str(home_path.resolve())
         if home_key not in _SCOPED_SKIP_LOGGED:
             _SCOPED_SKIP_LOGGED.add(home_key)
@@ -538,7 +538,7 @@ def load_hermes_dotenv(
     # External secret sources are skipped in two updater situations: 1. ``load_external_secrets=False`` —
     # the caller is an ``update`` invocation that must not import optional secret-manager libraries
     # (Bitwarden → cryptography → ``_rust.pyd``) into the process that replaces that same environment on
-    # Windows (#73381, #86735). 2. A fresh ``hermes update`` retry just completed a deferred dependency
+    # Windows (#73381, #86735). 2. A fresh ``akramcode update`` retry just completed a deferred dependency
     # install before importing this module. Do not remap native secret-source dependencies in that same
     # updater process or the self-lock preflight will recreate the marker and exit 2 again. Dotenv and
     # managed env still load in both cases; only external source resolution is unnecessary for the updater.
@@ -547,13 +547,13 @@ def load_hermes_dotenv(
     _apply_managed_env(load_pass=load_pass)
 
     # config.yaml owns terminal.*, but the override=True loads above let a stale TERMINAL_ENV=docker in
-    # ~/.hermes/.env win on every reload and flip the backend mid-session in long-lived processes.
+    # ~/.akramcode/.env win on every reload and flip the backend mid-session in long-lived processes.
     # Re-apply the explicit terminal keys LAST, after the managed overlay, so the merged config lands.
     # config.yaml is the documented source of truth for terminal.* settings, but the dotenv loads above run
-    # with override=True — so a stale TERMINAL_ENV=docker left in ~/.hermes/.env (e.g. written by an older
-    # `hermes setup` before the user switched terminal.backend in config.yaml) silently wins again on every
+    # with override=True — so a stale TERMINAL_ENV=docker left in ~/.akramcode/.env (e.g. written by an older
+    # `akramcode setup` before the user switched terminal.backend in config.yaml) silently wins again on every
     # reload. Startup launchers bridge config→env once, but long-lived processes (gateway per-turn reload,
-    # cron standalone runs) call load_hermes_dotenv() repeatedly and used to flip the effective backend back
+    # cron standalone runs) call load_akramcode_dotenv() repeatedly and used to flip the effective backend back
     # to the stale .env value mid-session (#29186, #67323).
     _reapply_terminal_config_bridge(home_path)
 
@@ -565,7 +565,7 @@ def _reapply_terminal_config_bridge(home_path: Path) -> None:
     ``apply_terminal_config_to_env`` (also used by terminal_tool and the TUI/dashboard launchers) so the
     semantics can't drift between sites."""
     try:
-        if Path(home_path).resolve() != _process_hermes_home().resolve():
+        if Path(home_path).resolve() != _process_akramcode_home().resolve():
             return
         from akramcode_cli.config import apply_terminal_config_to_env
 
@@ -633,7 +633,7 @@ def _revoke_secret_source_writes(home_path: Path, *, keep) -> None:
 
 def _apply_external_secret_sources(home_path: Path) -> None:
     """Pull secrets from every enabled external source into env — AFTER dotenv (sources need .env bootstrap
-    tokens), BEFORE Hermes reads credentials; failures never block startup. Precedence/conflicts/provenance
+    tokens), BEFORE AkramCode reads credentials; failures never block startup. Precedence/conflicts/provenance
     live in ``registry.apply_all``; this wrapper owns the once-per-home guard, the post-apply ASCII sweep,
     the ``_SECRET_SOURCES`` map and status lines."""
     home_key = str(Path(home_path).resolve())
@@ -775,7 +775,7 @@ def _load_secrets_config(home_path: Path) -> dict:
         return {}
     # Prefer the shared raw-config cache: this is the first config.yaml read of a normal startup, so
     # populating it lets main.py's early bridge and akram_core.akramcode_logging reuse one parse instead of 3-4.
-    if home_path == _process_hermes_home():
+    if home_path == _process_akramcode_home():
         try:
             from akramcode_cli.config import read_raw_config
 
@@ -791,11 +791,11 @@ def _load_secrets_config(home_path: Path) -> dict:
     return data.get("secrets") or {}
 
 
-def _process_hermes_home() -> Path:
-    """The HERMES_HOME the running process was launched under.
+def _process_akramcode_home() -> Path:
+    """The AKRAMCODE_HOME the running process was launched under.
 
     Must be the *true* process home, ignoring any context-local
-    ``set_hermes_home_override`` a per-request task has installed. Both
+    ``set_akramcode_home_override`` a per-request task has installed. Both
     callers depend on that:
 
     * ``_reapply_terminal_config_bridge`` guards "only re-bridge config into
@@ -811,15 +811,15 @@ def _process_hermes_home() -> Path:
       (mtime,size)-keyed config cache is safe to reuse; under an override it
       must fall through to an isolated parse of the scoped profile.
 
-    ``akramcode_constants.get_routing_process_hermes_home()`` is the override-immune
+    ``akramcode_constants.get_routing_process_akramcode_home()`` is the override-immune
     resolver built for exactly this; delegate to it. It is also immune to a host
-    that mirrors the served profile into the live ``HERMES_HOME`` env var
-    (``pin_process_hermes_home``): without that, the mirrored profile satisfied
+    that mirrors the served profile into the live ``AKRAMCODE_HOME`` env var
+    (``pin_process_akramcode_home``): without that, the mirrored profile satisfied
     the guard above and bridged ITS ``terminal.*`` into the shared env.
     """
     try:
-        from akramcode_constants import get_routing_process_hermes_home
+        from akramcode_constants import get_routing_process_akramcode_home
 
-        return get_routing_process_hermes_home()
+        return get_routing_process_akramcode_home()
     except Exception:
-        return Path.home() / ".hermes"
+        return Path.home() / ".akramcode"

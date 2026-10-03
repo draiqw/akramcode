@@ -1,4 +1,4 @@
-"""`hermes debug` must report the EFFECTIVE terminal backend.
+"""`akramcode debug` must report the EFFECTIVE terminal backend.
 
 ``terminal.backend`` in config.yaml is bridged to the ``TERMINAL_ENV`` env var,
 but a ``TERMINAL_ENV`` set in .env / the shell overrides config and is what
@@ -34,13 +34,13 @@ def test_dump_surfaces_terminal_env_override(monkeypatch, capsys, tmp_path):
     pin it with a config.yaml that has no explicit backend key.
     """
     from akramcode_cli import dump
-    from akramcode_cli.config import get_hermes_home
+    from akramcode_cli.config import get_akramcode_home
 
     monkeypatch.setenv("TERMINAL_ENV", "docker")
     # Keep run_dump's project-.env fallback from touching the real repo.
     monkeypatch.setattr(dump, "get_project_root", lambda: tmp_path / "noproject")
 
-    home = get_hermes_home()
+    home = get_akramcode_home()
     # No explicit terminal.backend in config.yaml — merged default is 'local',
     # the env override is what actually runs.
     _seed(home, config_yaml="display:\n  streaming: true\n", env_text="")
@@ -57,16 +57,16 @@ def test_dump_surfaces_terminal_env_override(monkeypatch, capsys, tmp_path):
 
 def test_dump_reports_config_backend_winning_over_stale_env(monkeypatch, capsys, tmp_path):
     """Regression for #29186: a stale TERMINAL_ENV=docker in .env no longer
-    beats config.yaml terminal.backend=local — load_hermes_dotenv re-applies
+    beats config.yaml terminal.backend=local — load_akramcode_dotenv re-applies
     the explicit config keys, so the dump reports local with no override
     warning."""
     from akramcode_cli import dump
-    from akramcode_cli.config import get_hermes_home
+    from akramcode_cli.config import get_akramcode_home
 
     monkeypatch.delenv("TERMINAL_ENV", raising=False)
     monkeypatch.setattr(dump, "get_project_root", lambda: tmp_path / "noproject")
 
-    home = get_hermes_home()
+    home = get_akramcode_home()
     _seed(home, config_yaml="terminal:\n  backend: local\n", env_text="TERMINAL_ENV=docker\n")
 
     dump.run_dump(SimpleNamespace(show_keys=False))
@@ -78,12 +78,12 @@ def test_dump_reports_config_backend_winning_over_stale_env(monkeypatch, capsys,
 
 def test_dump_reports_config_backend_when_no_override(monkeypatch, capsys, tmp_path):
     from akramcode_cli import dump
-    from akramcode_cli.config import get_hermes_home
+    from akramcode_cli.config import get_akramcode_home
 
     monkeypatch.delenv("TERMINAL_ENV", raising=False)
     monkeypatch.setattr(dump, "get_project_root", lambda: tmp_path / "noproject")
 
-    home = get_hermes_home()
+    home = get_akramcode_home()
     _seed(home, config_yaml="terminal:\n  backend: docker\n", env_text="")
 
     dump.run_dump(SimpleNamespace(show_keys=False))

@@ -85,7 +85,7 @@ def test_every_credential_writer_creates_its_temp_file_at_0600(tmp_path, monkeyp
     pytest.importorskip("cryptography")
     home = tmp_path / "home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     old_umask = os.umask(0o022)  # a "write then chmod" regression would surface as 0o644
     try:
         for label, write, target in _writers(home, monkeypatch):

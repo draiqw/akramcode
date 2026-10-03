@@ -67,7 +67,7 @@ def parse_trusted_workspaces(value: Any) -> List[str]:
     if (roots := _path_list(value)) is None:
         eventlog.event_log.warning(
             "lsp.trusted_workspaces must be a list of directories, e.g. ['~/code/my-app'] (got %s); only the "
-            "workspaces you launched Hermes or opened a session in are trusted until the key is fixed",
+            "workspaces you launched AkramCode or opened a session in are trusted until the key is fixed",
             type(value).__name__)
     return roots or []
 
@@ -90,7 +90,7 @@ class _BackgroundLoop:
     def start(self) -> None:
         if self._thread is not None:
             return
-        self._thread = threading.Thread(target=self._run_forever, name="hermes-lsp-loop", daemon=True)
+        self._thread = threading.Thread(target=self._run_forever, name="akramcode-lsp-loop", daemon=True)
         self._thread.start()
         self._ready.wait(timeout=5.0)
 
@@ -260,7 +260,7 @@ class LSPService:
 
     def enabled_for(self, file_path: str) -> bool:
         """True iff LSP should run for this file: registered non-disabled server, git workspace,
-        and pair not broken (a failed server costs nothing until ``hermes lsp restart`` / exit)."""
+        and pair not broken (a failed server costs nothing until ``akramcode lsp restart`` / exit)."""
         srv = self._server_for(file_path) if self._enabled else None
         if srv is None or srv.server_id in self._disabled_servers:
             return False
@@ -466,7 +466,7 @@ class LSPService:
         clear_cache()
 
     def get_status(self) -> Dict[str, Any]:
-        """Return a snapshot of the service for ``hermes lsp status``."""
+        """Return a snapshot of the service for ``akramcode lsp status``."""
         with self._state_lock:
             clients = [
                 {"server_id": c.server_id, "workspace_root": c.workspace_root,

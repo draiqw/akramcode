@@ -1,4 +1,4 @@
-"""Skills configuration for Hermes Agent. `hermes skills` enters this module."""
+"""Skills configuration for AkramCode Agent. `akramcode skills` enters this module."""
 from typing import List, Optional, Set
 
 from akramcode_cli.config import cfg_get, load_config, save_config
@@ -41,7 +41,7 @@ def get_disabled_skills(config: dict, platform: Optional[str] = None) -> Set[str
 
 
 def save_disabled_skills(config: dict, disabled: Set[str], platform: Optional[str] = None):
-    """Persist disabled skill names to config; essential skills (e.g. ``hermes-agent``) are
+    """Persist disabled skill names to config; essential skills (e.g. ``akramcode-agent``) are
     silently dropped — they cannot be disabled from any surface."""
     from agent.skill_utils import ESSENTIAL_SKILLS
     disabled = set(disabled) - ESSENTIAL_SKILLS
@@ -111,7 +111,7 @@ def _toggle_by_category(skills: List[dict], disabled: Set[str]) -> Set[str]:
 
 
 def skills_command(args=None):
-    """Entry point for `hermes skills`."""
+    """Entry point for `akramcode skills`."""
     from akramcode_cli.curses_ui import curses_checklist
     config = load_config()
     skills = _list_all_skills()

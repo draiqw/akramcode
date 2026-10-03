@@ -13,7 +13,7 @@ import threading
 from types import SimpleNamespace
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from tui_gateway import server
 

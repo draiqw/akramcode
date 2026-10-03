@@ -65,7 +65,7 @@ def github(tmp_path, monkeypatch):
                   "print(urllib.request.urlopen(u).read().decode())\n")
     gh.chmod(0o755)
     monkeypatch.setenv("PATH", str(shim) + os.pathsep + os.environ["PATH"])
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
     kb.init_db()
     try:
         yield state
@@ -142,7 +142,7 @@ def test_acceptance_runs_gh_as_the_assignee_profile(tmp_path, monkeypatch):
 
     launch_home = tmp_path / "home"
     launch_home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(launch_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(launch_home))
     assignee_home = launch_home / "profiles" / "b"
     assignee_home.mkdir(parents=True)
     (assignee_home / ".env").write_text("GH_TOKEN=b-token\n", encoding="utf-8")
@@ -182,7 +182,7 @@ def test_assignee_without_own_gh_login_never_falls_through_to_ambient_login(tmp_
     to a profile-owned config dir, its 'not logged in' exit is classified `auth` naming the profile."""
     launch_home = tmp_path / "home"
     launch_home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(launch_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(launch_home))
     assignee_home = launch_home / "profiles" / "b"
     assignee_home.mkdir(parents=True)
     (assignee_home / ".env").write_text("", encoding="utf-8")
@@ -219,7 +219,7 @@ def test_assignee_without_own_gh_login_never_falls_through_to_ambient_login(tmp_
 def test_assigned_card_with_unresolvable_profile_is_auth_not_ambient(tmp_path, monkeypatch):
     """A card assigned to a profile that no longer exists must not run gh as the completing
     process's ambient login: classification `auth` naming the profile, gh never invoked."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
     monkeypatch.setenv("PATH", str(tmp_path / "empty-bin"))  # any gh spawn would fail as infra
     kb.init_db()
     with connect() as conn:

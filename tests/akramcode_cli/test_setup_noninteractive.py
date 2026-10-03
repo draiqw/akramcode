@@ -43,7 +43,7 @@ class TestNonInteractiveSetup:
         """--reset should rewrite config.yaml even when the wizard cannot run interactively."""
         from akramcode_cli.setup import run_setup_wizard
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
         cfg = load_config()
         cfg["model"] = {"provider": "custom", "base_url": "http://localhost:8080/v1", "default": "llama3"}
         cfg["agent"]["max_turns"] = 12
@@ -60,7 +60,7 @@ class TestNonInteractiveSetup:
         assert "Configuration reset to defaults." in out
 
     def test_chat_first_run_headless_skips_setup_prompt(self, capsys):
-        """Bare `hermes` should not prompt for input when no provider exists and stdin is headless."""
+        """Bare `akramcode` should not prompt for input when no provider exists and stdin is headless."""
         from akramcode_cli.main import cmd_chat
 
         args = _make_chat_args()
@@ -78,5 +78,5 @@ class TestNonInteractiveSetup:
         assert exc.value.code == 1
         mock_setup.assert_not_called()
         out = capsys.readouterr().out
-        assert "hermes config set model.provider custom" in out
+        assert "akramcode config set model.provider custom" in out
 

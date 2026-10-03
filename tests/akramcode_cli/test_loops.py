@@ -14,14 +14,14 @@ import pytest
 
 
 @pytest.fixture
-def hermes_home(tmp_path, monkeypatch):
-    """Isolated HERMES_HOME so SessionDB.state_meta writes don't clobber the real one."""
+def akramcode_home(tmp_path, monkeypatch):
+    """Isolated AKRAMCODE_HOME so SessionDB.state_meta writes don't clobber the real one."""
     from pathlib import Path
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
 
     from akramcode_cli import goals
 
@@ -240,7 +240,7 @@ class TestLoopStateSerde:
 
 
 class TestPersistence:
-    def test_save_load_clear(self, hermes_home):
+    def test_save_load_clear(self, akramcode_home):
         from akramcode_cli.loops import LoopManager, load_loop
 
         mgr = LoopManager(session_id="sess-1")
@@ -254,7 +254,7 @@ class TestPersistence:
         cleared = load_loop("sess-1")
         assert cleared is not None and cleared.status == "cleared"
 
-    def test_list_active_loops(self, hermes_home):
+    def test_list_active_loops(self, akramcode_home):
         from akramcode_cli.loops import LoopManager, list_active_loops
 
         LoopManager(session_id="a").set("task a", interval_seconds=60)
@@ -266,7 +266,7 @@ class TestPersistence:
         assert "a" in active
         assert "b" not in active
 
-    def test_migrate_to_session(self, hermes_home):
+    def test_migrate_to_session(self, akramcode_home):
         from akramcode_cli.loops import LoopManager, load_loop, migrate_loop_to_session
 
         LoopManager(session_id="parent").set("watch it", interval_seconds=60)
@@ -276,13 +276,13 @@ class TestPersistence:
         parent = load_loop("parent")
         assert parent is not None and parent.status == "cleared"
 
-    def test_migrate_no_source(self, hermes_home):
+    def test_migrate_no_source(self, akramcode_home):
         from akramcode_cli.loops import migrate_loop_to_session
 
         assert migrate_loop_to_session("nope", "child2") is False
         assert migrate_loop_to_session("same", "same") is False
 
-    def test_migrate_does_not_clobber_child(self, hermes_home):
+    def test_migrate_does_not_clobber_child(self, akramcode_home):
         from akramcode_cli.loops import LoopManager, load_loop, migrate_loop_to_session
 
         LoopManager(session_id="p2").set("parent loop", interval_seconds=60)
@@ -297,14 +297,14 @@ class TestPersistence:
 
 
 class TestTickLifecycle:
-    def test_due_immediately_on_create(self, hermes_home):
+    def test_due_immediately_on_create(self, akramcode_home):
         from akramcode_cli.loops import LoopManager
 
         mgr = LoopManager(session_id="t1")
         mgr.set("poll", interval_seconds=300)
         assert mgr.is_due() is True
 
-    def test_due_after_interval(self, hermes_home):
+    def test_due_after_interval(self, akramcode_home):
         from akramcode_cli.loops import LoopManager
 
         mgr = LoopManager(session_id="t2")
@@ -312,7 +312,7 @@ class TestTickLifecycle:
         state.next_due_at = time.time() - 1
         assert mgr.is_due() is True
 
-    def test_not_due_once_rescheduled(self, hermes_home):
+    def test_not_due_once_rescheduled(self, akramcode_home):
         from akramcode_cli.loops import LoopManager
 
         mgr = LoopManager(session_id="t2a")
@@ -320,7 +320,7 @@ class TestTickLifecycle:
         state.next_due_at = time.time() + 300
         assert mgr.is_due() is False
 
-    def test_self_paced_due_immediately_on_create(self, hermes_home):
+    def test_self_paced_due_immediately_on_create(self, akramcode_home):
         from akramcode_cli.loops import LoopManager
 
         mgr = LoopManager(session_id="t2c")
@@ -328,7 +328,7 @@ class TestTickLifecycle:
         assert state.mode == "self_paced"
         assert mgr.is_due() is True
 
-    def test_fire_marks_awaiting_and_blocks_refire(self, hermes_home):
+    def test_fire_marks_awaiting_and_blocks_refire(self, akramcode_home):
         from akramcode_cli.loops import LoopManager
 
         mgr = LoopManager(session_id="t3")
@@ -343,7 +343,7 @@ class TestTickLifecycle:
         assert mgr.is_due() is False  # can't double-fire mid-turn
         assert mgr.fire_tick() is None
 
-    def test_slash_prompt_returned_raw(self, hermes_home):
+    def test_slash_prompt_returned_raw(self, akramcode_home):
         from akramcode_cli.loops import LoopManager
 
         mgr = LoopManager(session_id="t4")
@@ -351,7 +351,7 @@ class TestTickLifecycle:
         state.next_due_at = time.time() - 1
         assert mgr.fire_tick() == "/recap"
 
-    def test_abandon_tick_rolls_back(self, hermes_home):
+    def test_abandon_tick_rolls_back(self, akramcode_home):
         from akramcode_cli.loops import LoopManager
 
         mgr = LoopManager(session_id="t5")
@@ -362,7 +362,7 @@ class TestTickLifecycle:
         assert mgr.state.awaiting_response is False
         assert mgr.state.ticks_fired == 0
 
-    def test_complete_tick_marker_stops(self, hermes_home):
+    def test_complete_tick_marker_stops(self, akramcode_home):
         from akramcode_cli.loops import LoopManager
 
         mgr = LoopManager(session_id="t6")
@@ -373,7 +373,7 @@ class TestTickLifecycle:
         assert decision["stopped"] is True
         assert decision["status"] == "done"
 
-    def test_complete_tick_times_cap(self, hermes_home):
+    def test_complete_tick_times_cap(self, akramcode_home):
         from akramcode_cli.loops import LoopManager
 
         mgr = LoopManager(session_id="t7")
@@ -385,7 +385,7 @@ class TestTickLifecycle:
         assert decision["status"] == "done"
         assert "1/1" in decision["message"]
 
-    def test_complete_tick_continues_and_reschedules(self, hermes_home):
+    def test_complete_tick_continues_and_reschedules(self, akramcode_home):
         from akramcode_cli.loops import LoopManager
 
         mgr = LoopManager(session_id="t8")
@@ -398,7 +398,7 @@ class TestTickLifecycle:
         assert mgr.state.awaiting_response is False
         assert mgr.state.next_due_at > time.time() + 250
 
-    def test_complete_tick_max_ticks_pauses(self, hermes_home):
+    def test_complete_tick_max_ticks_pauses(self, akramcode_home):
         from akramcode_cli.loops import LoopManager
 
         mgr = LoopManager(session_id="t9")
@@ -410,7 +410,7 @@ class TestTickLifecycle:
         assert decision["stopped"] is True
         assert decision["status"] == "paused"
 
-    def test_until_judge_done_stops(self, hermes_home):
+    def test_until_judge_done_stops(self, akramcode_home):
         from akramcode_cli.loops import LoopManager
 
         mgr = LoopManager(session_id="t10")
@@ -422,7 +422,7 @@ class TestTickLifecycle:
         assert decision["stopped"] is True
         assert decision["status"] == "done"
 
-    def test_until_judge_continue_loops(self, hermes_home):
+    def test_until_judge_continue_loops(self, akramcode_home):
         from akramcode_cli.loops import LoopManager
 
         mgr = LoopManager(session_id="t11")
@@ -433,7 +433,7 @@ class TestTickLifecycle:
             decision = mgr.complete_tick("3 tests still failing")
         assert decision["stopped"] is False
 
-    def test_until_judge_blocked_pauses(self, hermes_home):
+    def test_until_judge_blocked_pauses(self, akramcode_home):
         """An unachievable stop condition pauses the loop instead of spinning to the tick budget."""
         from akramcode_cli.loops import LoopManager
 
@@ -447,7 +447,7 @@ class TestTickLifecycle:
         assert decision["status"] == "paused"
         assert "unachievable" in decision["message"]
 
-    def test_until_judge_error_fails_open(self, hermes_home):
+    def test_until_judge_error_fails_open(self, akramcode_home):
         from akramcode_cli.loops import LoopManager
 
         mgr = LoopManager(session_id="t12")
@@ -460,7 +460,7 @@ class TestTickLifecycle:
 
 
 class TestSelfPacedBackoff:
-    def test_backoff_doubles_on_unchanged_and_resets_on_change(self, hermes_home):
+    def test_backoff_doubles_on_unchanged_and_resets_on_change(self, akramcode_home):
         from akramcode_cli.loops import LoopManager
 
         mgr = LoopManager(session_id="sp1")
@@ -492,7 +492,7 @@ class TestSelfPacedBackoff:
         mgr.complete_tick("queue depth is 2 — draining")
         assert mgr.state.current_delay == floor
 
-    def test_timestamp_only_changes_do_not_reset(self, hermes_home):
+    def test_timestamp_only_changes_do_not_reset(self, akramcode_home):
         from akramcode_cli.loops import LoopManager
 
         mgr = LoopManager(session_id="sp2")
@@ -513,14 +513,14 @@ class TestSelfPacedBackoff:
 
 
 class TestControls:
-    def test_min_interval_enforced(self, hermes_home):
+    def test_min_interval_enforced(self, akramcode_home):
         from akramcode_cli.loops import LoopManager, min_interval_seconds
 
         mgr = LoopManager(session_id="c1")
         state = mgr.set("poll", interval_seconds=1)
         assert state.interval_seconds >= min_interval_seconds()
 
-    def test_pause_resume(self, hermes_home):
+    def test_pause_resume(self, akramcode_home):
         from akramcode_cli.loops import LoopManager
 
         mgr = LoopManager(session_id="c2")
@@ -532,7 +532,7 @@ class TestControls:
         mgr.resume()
         assert mgr.is_active() is True
 
-    def test_paused_mid_tick_clears_awaiting(self, hermes_home):
+    def test_paused_mid_tick_clears_awaiting(self, akramcode_home):
         from akramcode_cli.loops import LoopManager
 
         mgr = LoopManager(session_id="c3")
@@ -550,19 +550,19 @@ class TestControls:
 
 
 class TestGoalMixing:
-    def test_active_goal_blocks_tick(self, hermes_home):
+    def test_active_goal_blocks_tick(self, akramcode_home):
         from akramcode_cli.goals import GoalManager
         from akramcode_cli.loops import goal_blocks_loop_tick
 
         GoalManager(session_id="g1").set("finish the migration")
         assert goal_blocks_loop_tick("g1") is True
 
-    def test_no_goal_does_not_block(self, hermes_home):
+    def test_no_goal_does_not_block(self, akramcode_home):
         from akramcode_cli.loops import goal_blocks_loop_tick
 
         assert goal_blocks_loop_tick("g2") is False
 
-    def test_paused_goal_does_not_block(self, hermes_home):
+    def test_paused_goal_does_not_block(self, akramcode_home):
         from akramcode_cli.goals import GoalManager
         from akramcode_cli.loops import goal_blocks_loop_tick
 
@@ -571,7 +571,7 @@ class TestGoalMixing:
         gm.pause()
         assert goal_blocks_loop_tick("g3") is False
 
-    def test_parked_goal_does_not_block(self, hermes_home):
+    def test_parked_goal_does_not_block(self, akramcode_home):
         from akramcode_cli.goals import GoalManager
         from akramcode_cli.loops import goal_blocks_loop_tick
 
@@ -588,7 +588,7 @@ class TestGoalMixing:
 
 class TestDispatchLoopCommand:
 
-    def test_create_self_paced(self, hermes_home):
+    def test_create_self_paced(self, akramcode_home):
         from akramcode_cli.loops import LoopManager, dispatch_loop_command
 
         mgr = LoopManager(session_id="d2")
@@ -596,7 +596,7 @@ class TestDispatchLoopCommand:
         assert result["created"] is True
         assert "Self-paced" in result["output"]
 
-    def test_create_fires_immediately(self, hermes_home):
+    def test_create_fires_immediately(self, akramcode_home):
         from akramcode_cli.loops import LoopManager, dispatch_loop_command
 
         mgr = LoopManager(session_id="d2a")
@@ -606,7 +606,7 @@ class TestDispatchLoopCommand:
         assert "fires now" in result["output"]
         assert mgr.is_due() is True
 
-    def test_status_empty(self, hermes_home):
+    def test_status_empty(self, akramcode_home):
         from akramcode_cli.loops import LoopManager, dispatch_loop_command
 
         mgr = LoopManager(session_id="d3")
@@ -614,7 +614,7 @@ class TestDispatchLoopCommand:
         assert result["created"] is False
         assert "No loop set" in result["output"]
 
-    def test_pause_resume_stop(self, hermes_home):
+    def test_pause_resume_stop(self, akramcode_home):
         from akramcode_cli.loops import LoopManager, dispatch_loop_command
 
         mgr = LoopManager(session_id="d4")
@@ -624,7 +624,7 @@ class TestDispatchLoopCommand:
         assert "stopped" in dispatch_loop_command(mgr, "stop")["output"].lower()
         assert "No active loop" in dispatch_loop_command(mgr, "stop")["output"]
 
-    def test_route_stored(self, hermes_home):
+    def test_route_stored(self, akramcode_home):
         from akramcode_cli.loops import LoopManager, dispatch_loop_command, load_loop
 
         mgr = LoopManager(session_id="d5")
@@ -633,7 +633,7 @@ class TestDispatchLoopCommand:
         assert load_loop("d5").route == route
 
 
-    def test_bad_times_error(self, hermes_home):
+    def test_bad_times_error(self, akramcode_home):
         from akramcode_cli.loops import LoopManager, dispatch_loop_command
 
         mgr = LoopManager(session_id="d7")
@@ -655,7 +655,7 @@ class TestDispatchLoopCommand:
 
 
 class TestListMetaPrefix:
-    def test_prefix_scan(self, hermes_home):
+    def test_prefix_scan(self, akramcode_home):
         from akramcode_state import SessionDB
 
         db = SessionDB()
@@ -665,7 +665,7 @@ class TestListMetaPrefix:
         rows = dict(db.list_meta_prefix("lmp-test:"))
         assert rows == {"lmp-test:aaa": "1", "lmp-test:bbb": "2"}
 
-    def test_wildcards_escaped(self, hermes_home):
+    def test_wildcards_escaped(self, akramcode_home):
         from akramcode_state import SessionDB
 
         db = SessionDB()
@@ -673,7 +673,7 @@ class TestListMetaPrefix:
         db.set_meta("prefix:y", "2")
         assert db.list_meta_prefix("pre%") == [("pre%fix:x", "1")]
 
-    def test_empty_prefix(self, hermes_home):
+    def test_empty_prefix(self, akramcode_home):
         from akramcode_state import SessionDB
 
         db = SessionDB()

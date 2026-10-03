@@ -1,5 +1,5 @@
 """Regression for #118388: a platform singleton secret (``TELEGRAM_BOT_TOKEN``) duplicated across
-local profile homes was invisible to ``hermes doctor`` / ``hermes gateway status``; the only signal
+local profile homes was invisible to ``akramcode doctor`` / ``akramcode gateway status``; the only signal
 was the losing standalone gateway's log. Doctor, status and the migrate preflight now share one
 duplicate-credential helper, so all three name the same profiles + key names (never the value)."""
 
@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-import hermes_constants
+import akramcode_constants
 from akramcode_cli import doctor_state, gateway, gateway_migrate as gm
 
 SECRET = "123456:shared-secret-value"
@@ -19,13 +19,13 @@ SECRET = "123456:shared-secret-value"
 
 @pytest.fixture
 def homes(tmp_path, monkeypatch):
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".akramcode"
     (root / "profiles" / "worker").mkdir(parents=True)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(root))
     for name in ("TELEGRAM_BOT_TOKEN", "DISCORD_BOT_TOKEN", "OPENAI_API_KEY"):
         monkeypatch.delenv(name, raising=False)
-    monkeypatch.setattr(hermes_constants, "_default_hermes_root_memo", None)
+    monkeypatch.setattr(akramcode_constants, "_default_akramcode_root_memo", None)
     monkeypatch.setattr(gm, "_live_gateway_pid", lambda home: None)
     monkeypatch.setattr(gm, "_installed_services", lambda home: [])
     return root, root / "profiles" / "worker"

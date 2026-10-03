@@ -1,6 +1,6 @@
 """Profile display_name (#45624): presentation-only label in profile.yaml.
 
-The canonical profile id ("default" for ~/.hermes) is never touched —
+The canonical profile id ("default" for ~/.akramcode) is never touched —
 resolution, comparison, and spawn paths must be provably unaffected.
 """
 
@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from akramcode_cli.profiles import (
     create_profile,
@@ -27,11 +27,11 @@ from akramcode_cli.profiles import (
 
 @pytest.fixture()
 def profile_env(tmp_path, monkeypatch):
-    """Isolated environment: Path.home() and HERMES_HOME under tmp_path."""
+    """Isolated environment: Path.home() and AKRAMCODE_HOME under tmp_path."""
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    default_home = tmp_path / ".hermes"
+    default_home = tmp_path / ".akramcode"
     default_home.mkdir(exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(default_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(default_home))
     return default_home
 
 
@@ -46,9 +46,9 @@ class TestMetaAndValidation:
     def test_missing_file_defaults_empty(self, profile_env):
         assert read_profile_meta(profile_env)["display_name"] == ""
 
-    def test_bot_title_read_from_hermes_bots_ui_meta(self, profile_env):
+    def test_bot_title_read_from_akramcode_bots_ui_meta(self, profile_env):
         (profile_env / "profile.yaml").write_text(
-            "ui_meta:\n  hermes-bots:\n    title: JordyV\n", encoding="utf-8")
+            "ui_meta:\n  akramcode-bots:\n    title: JordyV\n", encoding="utf-8")
         assert read_profile_meta(profile_env)["bot_title"] == "JordyV"
         # The web/Desktop roster carries it through the same dict the chips read.
         from akramcode_cli.web_routers.profiles import _profile_to_dict
@@ -61,10 +61,10 @@ class TestMetaAndValidation:
 
     def test_bot_title_never_raises_on_malformed_shapes(self, profile_env):
         (profile_env / "profile.yaml").write_text(
-            "ui_meta: hermes-bots\n", encoding="utf-8")  # ui_meta is a scalar
+            "ui_meta: akramcode-bots\n", encoding="utf-8")  # ui_meta is a scalar
         assert read_profile_meta(profile_env)["bot_title"] == ""
         (profile_env / "profile.yaml").write_text(
-            "ui_meta:\n  hermes-bots: 7\n", encoding="utf-8")  # not a mapping
+            "ui_meta:\n  akramcode-bots: 7\n", encoding="utf-8")  # not a mapping
         assert read_profile_meta(profile_env)["bot_title"] == ""
 
     def test_empty_clears_key_from_file(self, profile_env):

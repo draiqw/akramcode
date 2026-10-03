@@ -1,4 +1,4 @@
-"""Frozen exports for ``hermes update`` processes that predate the plugin compat layer's removal.
+"""Frozen exports for ``akramcode update`` processes that predate the plugin compat layer's removal.
 
 The Sep 2026 decomposition kept old import paths alive for external plugins until 2026-09-14; that
 layer, and the scanner that reported plugins still using it, is gone. An updater already running from

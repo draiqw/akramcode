@@ -11,18 +11,18 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 import tui_gateway.server as server
 
 
 @pytest.fixture
 def profile_dir(tmp_path, monkeypatch) -> Path:
-    """A temp HERMES_HOME root with one named profile, ``bot``, at ``<root>/profiles/bot``."""
-    root = tmp_path / "hermes_home"
+    """A temp AKRAMCODE_HOME root with one named profile, ``bot``, at ``<root>/profiles/bot``."""
+    root = tmp_path / "akramcode_home"
     path = root / "profiles" / "bot"
     path.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(root))
     return path
 
 
@@ -49,23 +49,23 @@ def test_describe_matches_the_runtime_once_legacy_disabled_is_migrated(profile_d
     migration turns it into the ``enabled: false`` the runtime resolver honours."""
     from akramcode_cli.config_migrations import run_migrations
     from akramcode_cli.tools_config import enabled_mcp_server_names
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from akramcode_constants import reset_akramcode_home_override, set_akramcode_home_override
 
     _write_mcp(profile_dir, {
         "on": {"command": "on", "enabled": True},
         "off": {"command": "off", "enabled": False},
-        # `hermes mcp add` writes `enabled: true`; the old editor then only added `disabled: true`.
+        # `akramcode mcp add` writes `enabled: true`; the old editor then only added `disabled: true`.
         "legacy-off": {"command": "legacy", "enabled": True, "disabled": True},
         "implicit-on": {"command": "implicit"},
     })
     expected = {"on": True, "off": False, "legacy-off": False, "implicit-on": True}
     assert _described() == expected
 
-    token = set_hermes_home_override(profile_dir)
+    token = set_akramcode_home_override(profile_dir)
     try:
         run_migrations(45, {"env_added": [], "config_added": [], "warnings": []}, quiet=True)
     finally:
-        reset_hermes_home_override(token)
+        reset_akramcode_home_override(token)
 
     live = enabled_mcp_server_names({"mcp_servers": _read_mcp(profile_dir)})
     assert {name: name in live for name in expected} == expected == _described()

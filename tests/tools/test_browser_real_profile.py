@@ -1,7 +1,7 @@
 """Tests for real-profile browsing: resolvers, snapshot, launch routing, consent.
 
 The consent path never drives the live default profile: it snapshots into
-``~/.hermes/browser-profile/<browser>/`` and launches the user's real binary
+``~/.akramcode/browser-profile/<browser>/`` and launches the user's real binary
 on the copy with a devtools port (see akramcode_cli.browser_connect). These tests
 exercise the real functions with real file I/O wherever possible — the mocks
 are limited to OS detection and process launch.
@@ -68,8 +68,8 @@ class TestSnapshotRealProfile:
     def test_fresh_snapshot_copies_auth_and_skips_caches(self, tmp_path, monkeypatch):
         import akramcode_cli.browser_connect as bc
         src = self._make_profile(tmp_path / "real")
-        home = tmp_path / "hermes-home"
-        monkeypatch.setattr(bc, "get_hermes_home", lambda: home)
+        home = tmp_path / "akramcode-home"
+        monkeypatch.setattr(bc, "get_akramcode_home", lambda: home)
 
         dst, err = bc.snapshot_real_profile("chrome", src=str(src))
         assert err is None
@@ -88,8 +88,8 @@ class TestSnapshotRealProfile:
     def test_existing_snapshot_refreshes_auth_files_only(self, tmp_path, monkeypatch):
         import akramcode_cli.browser_connect as bc
         src = self._make_profile(tmp_path / "real")
-        home = tmp_path / "hermes-home"
-        monkeypatch.setattr(bc, "get_hermes_home", lambda: home)
+        home = tmp_path / "akramcode-home"
+        monkeypatch.setattr(bc, "get_akramcode_home", lambda: home)
 
         dst, err = bc.snapshot_real_profile("chrome", src=str(src))
         assert err is None
@@ -106,7 +106,7 @@ class TestSnapshotRealProfile:
 
     def test_missing_source_fails_closed(self, tmp_path, monkeypatch):
         import akramcode_cli.browser_connect as bc
-        monkeypatch.setattr(bc, "get_hermes_home", lambda: tmp_path / "hh")
+        monkeypatch.setattr(bc, "get_akramcode_home", lambda: tmp_path / "hh")
         dst, err = bc.snapshot_real_profile("chrome", src=str(tmp_path / "nope"))
         assert dst is None
         assert err
@@ -122,8 +122,8 @@ class TestSnapshotRealProfile:
 
         import akramcode_cli.browser_connect as bc
         src = self._make_profile(tmp_path / "real")
-        home = tmp_path / "hermes-home"
-        monkeypatch.setattr(bc, "get_hermes_home", lambda: home)
+        home = tmp_path / "akramcode-home"
+        monkeypatch.setattr(bc, "get_akramcode_home", lambda: home)
         old_umask = os.umask(0o022)  # the common default that produced 0644
         try:
             dst, err = bc.snapshot_real_profile("chrome", src=str(src))
@@ -148,8 +148,8 @@ class TestSnapshotRealProfile:
 
         import akramcode_cli.browser_connect as bc
         src = self._make_profile(tmp_path / "real")
-        home = tmp_path / "hermes-home"
-        monkeypatch.setattr(bc, "get_hermes_home", lambda: home)
+        home = tmp_path / "akramcode-home"
+        monkeypatch.setattr(bc, "get_akramcode_home", lambda: home)
         dst, err = bc.snapshot_real_profile("chrome", src=str(src))
         assert err is None and dst
         cookies = os.path.join(dst, "Default", "Cookies")
@@ -288,7 +288,7 @@ class TestRealProfileCdpLaunch:
 
     @pytest.mark.parametrize("live_browser_id", ["/devtools/browser/x", "/devtools/browser/other"])
     def test_reattaches_to_surviving_chrome_instead_of_overlaying_its_profile(self, tmp_path, live_browser_id):
-        """The attach daemon of a crashed owner gets reaped, but its Chrome (Hermes-launched,
+        """The attach daemon of a crashed owner gets reaped, but its Chrome (AkramCode-launched,
         own session) survives holding the copy dir: re-attach, never re-run the snapshot.
         A DevToolsActivePort left by a crash whose port was recycled by ANOTHER CDP server
         (browser id mismatch) must not be attached to; the normal launch path runs."""
@@ -526,7 +526,7 @@ class TestChannelIdentity:
 
 
 class TestSnapshotIsCredentialStore:
-    """The copied Cookies/Login Data must live inside Hermes' secret lifecycle."""
+    """The copied Cookies/Login Data must live inside AkramCode' secret lifecycle."""
 
     def test_excluded_from_backup(self):
         import akramcode_cli.backup as bk
@@ -542,19 +542,19 @@ class TestSnapshotIsCredentialStore:
 
     def test_read_guard_blocks_snapshot(self, tmp_path, monkeypatch):
         import agent.file_safety as fs
-        home = tmp_path / ".hermes"
+        home = tmp_path / ".akramcode"
         (home / "browser-profile" / "chrome" / "Default").mkdir(parents=True)
         cookies = home / "browser-profile" / "chrome" / "Default" / "Cookies"
         cookies.write_text("secret-cookie-db")
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(home))
         err = fs.get_read_block_error(str(cookies))
         assert err
 
     def test_read_guard_allows_normal_file(self, tmp_path, monkeypatch):
         import agent.file_safety as fs
-        home = tmp_path / ".hermes"
+        home = tmp_path / ".akramcode"
         home.mkdir(parents=True)
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(home))
         normal = tmp_path / "notes.txt"
         normal.write_text("hello")
         assert fs.get_read_block_error(str(normal)) is None
@@ -583,7 +583,7 @@ class TestReviewBugFixes:
         import akramcode_cli.browser_connect as bc
         src = self._multi_profile(tmp_path / "real")
         home = tmp_path / "hh"
-        monkeypatch.setattr(bc, "get_hermes_home", lambda: home)
+        monkeypatch.setattr(bc, "get_akramcode_home", lambda: home)
         dst, err = bc.snapshot_real_profile("chrome", src=str(src))
         assert err is None
         # The copy's Default must carry PROFILE 6's session, not Default's.
@@ -603,7 +603,7 @@ class TestReviewBugFixes:
         import akramcode_cli.browser_connect as bc
         src = self._multi_profile(tmp_path / "real")
         home = tmp_path / "hh"
-        monkeypatch.setattr(bc, "get_hermes_home", lambda: home)
+        monkeypatch.setattr(bc, "get_akramcode_home", lambda: home)
         bc.snapshot_real_profile("chrome", src=str(src))          # fresh
         _auth_db((src / "Profile 6" / "Cookies"), "PROFILE6-REFRESHED")
         dst, err = bc.snapshot_real_profile("chrome", src=str(src))  # refresh
@@ -668,7 +668,7 @@ class TestReviewRound3:
         import akramcode_cli.browser_connect as bc
         src = self._multi(tmp_path / "real")
         home = tmp_path / "hh"
-        monkeypatch.setattr(bc, "get_hermes_home", lambda: home)
+        monkeypatch.setattr(bc, "get_akramcode_home", lambda: home)
         dst = bc.real_profile_copy_dir("chrome")
         # Simulate a torn first copy: Default exists but NO done marker.
         os.makedirs(os.path.join(dst, "Default"))
@@ -687,7 +687,7 @@ class TestReviewRound3:
         (src / "Profile 3").mkdir()
         _auth_db((src / "Profile 3" / "Cookies"), "PROFILE3-SHOULD-NOT-COPY")
         home = tmp_path / "hh"
-        monkeypatch.setattr(bc, "get_hermes_home", lambda: home)
+        monkeypatch.setattr(bc, "get_akramcode_home", lambda: home)
         dst, err = bc.snapshot_real_profile("chrome", src=str(src))
         assert err is None
         copy = home / "browser-profile" / "chrome"
@@ -700,7 +700,7 @@ class TestReviewRound3:
     def test_cleanup_removes_store(self, tmp_path, monkeypatch):
         import akramcode_cli.browser_connect as bc
         home = tmp_path / "hh"
-        monkeypatch.setattr(bc, "get_hermes_home", lambda: home)
+        monkeypatch.setattr(bc, "get_akramcode_home", lambda: home)
         store = home / "browser-profile" / "chrome" / "Default"
         store.mkdir(parents=True)
         (store / "Cookies").write_text("secret")
@@ -709,7 +709,7 @@ class TestReviewRound3:
 
     def test_cleanup_idempotent_when_absent(self, tmp_path, monkeypatch):
         import akramcode_cli.browser_connect as bc
-        monkeypatch.setattr(bc, "get_hermes_home", lambda: tmp_path / "hh")
+        monkeypatch.setattr(bc, "get_akramcode_home", lambda: tmp_path / "hh")
         bc.cleanup_real_profile_snapshots()  # no raise
 
     # ── Windows lock probe (unit; the live share-lock is proven in the
@@ -746,7 +746,7 @@ class TestReviewRound3:
         import akramcode_cli.browser_connect as bc
         src = self._multi(tmp_path / "real")
         home = tmp_path / "hh"
-        monkeypatch.setattr(bc, "get_hermes_home", lambda: home)
+        monkeypatch.setattr(bc, "get_akramcode_home", lambda: home)
         monkeypatch.setattr(bc, "_profile_is_locked", lambda s, p: True)
         monkeypatch.setattr(bc, "_real_profile_autoclose", lambda: False)
         called = {"copytree": 0}
@@ -762,11 +762,11 @@ class TestReviewRound3:
     def test_snapshot_blocks_when_locked_even_with_autoclose(self, tmp_path, monkeypatch):
         """Even with autoclose armed, snapshot_real_profile does NOT kill — it
         blocks and defers the close to the explicit, user-approved step. The
-        message offers the close (mentions Hermes can close it)."""
+        message offers the close (mentions AkramCode can close it)."""
         import akramcode_cli.browser_connect as bc
         src = self._multi(tmp_path / "real")
         home = tmp_path / "hh"
-        monkeypatch.setattr(bc, "get_hermes_home", lambda: home)
+        monkeypatch.setattr(bc, "get_akramcode_home", lambda: home)
         monkeypatch.setattr(bc, "_profile_is_locked", lambda s, p: True)
         monkeypatch.setattr(bc, "_real_profile_autoclose", lambda: True)
         killed = {"n": 0}
@@ -862,7 +862,7 @@ class TestWindowsLockedProfileCopy:
         src, con = self._locked_src(tmp_path / "real")
         con.execute("BEGIN"); con.execute("insert into cookies values('u','uncommitted')")
         home = tmp_path / "hh"
-        monkeypatch.setattr(bc, "get_hermes_home", lambda: home)
+        monkeypatch.setattr(bc, "get_akramcode_home", lambda: home)
         try:
             dst, err = bc.snapshot_real_profile("chrome", src=str(src))
         finally:
@@ -983,7 +983,7 @@ class TestWindowsLockedProfileCopy:
         (root / "Default" / "Cookies").write_text("not-a-db")
         (root / "Default" / "Preferences").write_text("{}")
         home = tmp_path / "hh"
-        monkeypatch.setattr(bc, "get_hermes_home", lambda: home)
+        monkeypatch.setattr(bc, "get_akramcode_home", lambda: home)
         # Force both sqlite-backup and raw copy to fail for the DB.
         monkeypatch.setattr(bc, "_copy_auth_file",
                             lambda s, d: "file is not a database" if os.path.basename(s) in bc._SQLITE_AUTH_DBS else None)

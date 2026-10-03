@@ -12,7 +12,7 @@ import threading
 from pathlib import Path
 
 from akramcode_cli.active_sessions import _FileLock
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ _running_lock = threading.Lock()
 
 
 def _root() -> Path:
-    return get_hermes_home().resolve() / "cron" / "bot_chat_pending"
+    return get_akramcode_home().resolve() / "cron" / "bot_chat_pending"
 
 
 def read_pending(key: str) -> dict | None:
@@ -146,7 +146,7 @@ def _drain(root: Path) -> None:
 
 def drain_in_background() -> None:
     """Do not hold up unrelated cron ticks while the eventual Bot Chat turn runs."""
-    home = get_hermes_home().resolve()
+    home = get_akramcode_home().resolve()
     root = home / "cron" / "bot_chat_pending"
     if not root.is_dir():
         return

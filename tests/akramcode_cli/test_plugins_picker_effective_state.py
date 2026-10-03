@@ -1,4 +1,4 @@
-"""The bare ``hermes plugins`` picker writes only the rows the user flipped.
+"""The bare ``akramcode plugins`` picker writes only the rows the user flipped.
 
 Bundled platforms are active without a ``plugins.enabled`` entry; the picker used to open them unticked
 and save every unticked row into ``plugins.disabled`` on any exit, so opening and closing it silenced
@@ -6,7 +6,7 @@ Telegram and Slack on the next gateway restart. Drives the real ``cmd_toggle`` (
 real admission.
 """
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from tests.akramcode_cli.plugin_worker_support import (
     plugin_world as plugin_world,

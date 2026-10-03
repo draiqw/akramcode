@@ -1,4 +1,4 @@
-"""Autostash handling for ``hermes update``: stash before the pull, restore/park/discard afterwards, warn about orphans.
+"""Autostash handling for ``akramcode update``: stash before the pull, restore/park/discard afterwards, warn about orphans.
 
 Split out of ``update_cmd.py``; names are re-imported there so ``akramcode_cli.update_cmd.<name>`` still resolves/monkeypatches.
 Origin helpers are imported lazily per function (no cycle; test patches on the origin stay effective).
@@ -16,7 +16,7 @@ logger = logging.getLogger("akramcode_cli.update_cmd")
 
 #: Autostash subject contract: this prefix + UTC YYYYMMDD-HHMMSS stamp
 #: (producer _stash_local_changes_if_needed, consumer _warn_orphaned_update_autostashes).
-_AUTOSTASH_NAME_PREFIX = "hermes-update-autostash-"
+_AUTOSTASH_NAME_PREFIX = "akramcode-update-autostash-"
 
 #: Age past which a leftover autostash is called out. Younger entries are normal
 #: (recent --keep-stash park); older ones are almost always forgotten.
@@ -116,7 +116,7 @@ def _stash_local_changes_if_needed(git_cmd: list[str], cwd: Path) -> Optional[st
             # No entry created: changes NOT saved — bail before touching HEAD.
             print("✗ Could not stash local changes — update aborted.")
             _print_first_line(push.stderr)
-            print("  Commit, stash, or clean up your local changes manually, then re-run `hermes update`.")
+            print("  Commit, stash, or clean up your local changes manually, then re-run `akramcode update`.")
             print("  (An index entry from `git add -N` is the usual cause of this error; `git add` the")
             print("   paths it names, or `git reset` them, and the update will proceed.)")
             raise subprocess.CalledProcessError(push.returncode, push.args, output=push.stdout, stderr=push.stderr)
@@ -163,7 +163,7 @@ def _unrestored_autostash_notice() -> Optional[str]:
     if _pending_autostash is None:
         return None
     stash_ref, file_count = _pending_autostash
-    return (f"⚠ hermes update stashed {file_count} local modification(s) and did NOT restore them.\n"
+    return (f"⚠ akramcode update stashed {file_count} local modification(s) and did NOT restore them.\n"
             f"  Stash ref: {stash_ref}\n"
             f"  Review with: git stash show --stat {stash_ref}\n"
             f"  Re-apply with: git stash show -p {stash_ref} | git apply --3way")
@@ -173,7 +173,7 @@ def _warn_orphaned_update_autostashes(git_cmd: list[str], cwd: Path) -> int:
     """Print a notice for update autostashes older than the warn threshold; return the count (0 on any git failure).
 
     Autostashes legitimately outlive a run (--keep-stash, failed restore) but nothing re-surfaces them.
-    Deliberately NOT a GC: a stash may be the only copy of the user's work, so Hermes never drops one.
+    Deliberately NOT a GC: a stash may be the only copy of the user's work, so AkramCode never drops one.
 
     Autostash entries legitimately outlive an update run (``--keep-stash`` parks them; a conflicted or
     failed restore preserves them for safety), but nothing ever re-surfaces them afterwards — they sit in
@@ -325,7 +325,7 @@ def _reject_unsafe_stash_restore(
     """Restore the clean updated tree, preserve the stash, and abort the update."""
     from akramcode_cli.update_cmd import _git_untracked_paths
     print()
-    print("✗ Restored local changes made the Hermes agent unexecutable.")
+    print("✗ Restored local changes made the AkramCode agent unexecutable.")
     print(f"  Health check failed: {failing_target}")
     if detail:
         for line in str(detail).splitlines()[:6]:
@@ -361,7 +361,7 @@ def _confirm_restore(stash_ref: str, input_fn) -> bool:
     print()
     print("⚠ Local changes were stashed before updating.")
     print("  Restoring them may reapply local customizations onto the updated codebase.")
-    print("  Review the result afterward if Hermes behaves unexpectedly.")
+    print("  Review the result afterward if AkramCode behaves unexpectedly.")
     print(f"Restore local changes now? {prompt_suffix}")
     if remote_prompt:
         response = input_fn(f"Restore local changes now? {prompt_suffix}", "n")
@@ -405,7 +405,7 @@ def _apply_stash(git_cmd: list[str], cwd: Path, stash_ref: str) -> list[str] | N
             print(f"  • {f}")
     print("\nYour stashed changes are preserved — nothing is lost.")
     print(f"  Stash ref: {stash_ref}")
-    _reset_hard(git_cmd, cwd)  # conflict markers make hermes unrunnable; changes stay in the stash
+    _reset_hard(git_cmd, cwd)  # conflict markers make akramcode unrunnable; changes stay in the stash
     print("Working tree reset to clean state.")
     print(f"Restore your changes later with: git stash apply {stash_ref}")
     _record_stash_disposition("parked", stash_ref, "restore hit conflicts")
@@ -416,13 +416,13 @@ def _drop_restored_stash(git_cmd: list[str], cwd: Path, stash_ref: str) -> None:
     from akramcode_cli.update_cmd_git import _git_run
     stash_selector = _resolve_stash_selector(git_cmd, cwd, stash_ref)
     if stash_selector is None:
-        print("⚠ Local changes were restored, but Hermes couldn't find the stash entry to drop.")
+        print("⚠ Local changes were restored, but AkramCode couldn't find the stash entry to drop.")
         print(_STASH_LEFT_IN_PLACE)
         _print_stash_cleanup_guidance(stash_ref)
         return
     drop = _git_run(git_cmd, ["stash", "drop", stash_selector], cwd)
     if drop.returncode != 0:
-        print("⚠ Local changes were restored, but Hermes couldn't drop the saved stash entry.")
+        print("⚠ Local changes were restored, but AkramCode couldn't drop the saved stash entry.")
         _print_nonempty(drop.stdout)
         _print_nonempty(drop.stderr)
         print(_STASH_LEFT_IN_PLACE)
@@ -473,7 +473,7 @@ def _restore_stashed_changes(
     _drop_restored_stash(git_cmd, cwd, stash_ref)
     _record_stash_disposition("restored", stash_ref)
     print("⚠ Local changes were restored on top of the updated codebase.")
-    print("  Review `git diff` / `git status` if Hermes behaves unexpectedly.")
+    print("  Review `git diff` / `git status` if AkramCode behaves unexpectedly.")
     return True
 
 
@@ -488,13 +488,13 @@ def _discard_stashed_changes(git_cmd: list[str], cwd: Path, stash_ref: str) -> b
     if stash_selector is None:
         print(
             "⚠ Configured to discard local changes on non-interactive update, "
-            "but Hermes couldn't find the stash entry to drop."
+            "but AkramCode couldn't find the stash entry to drop."
         )
         _print_stash_cleanup_guidance(stash_ref)
         return False
     drop = _git_run(git_cmd, ["stash", "drop", stash_selector], cwd)
     if drop.returncode != 0:
-        print("⚠ Configured to discard local changes, but Hermes couldn't drop the saved stash entry.")
+        print("⚠ Configured to discard local changes, but AkramCode couldn't drop the saved stash entry.")
         _print_first_line(drop.stderr)
         _print_stash_cleanup_guidance(stash_ref, stash_selector)
         _record_stash_disposition("parked", stash_ref, "configured discard failed")

@@ -140,7 +140,7 @@ def _watched_sqlite_sidecar_paths(db_path) -> Dict[str, str]:
     literal = (literal_base + "-wal", literal_base + "-shm")
     watched = {canonical_sqlite_path(path): path for path in literal}
     # /proc reports the kernel-resolved dentry, so the watched canonicals must also resolve
-    # symlinks -- with abspath alone a symlinked HERMES_HOME makes every deleted sidecar
+    # symlinks -- with abspath alone a symlinked AKRAMCODE_HOME makes every deleted sidecar
     # invisible to the scan. Both spellings are watched: the fully resolved path, which is
     # where current SQLite places -wal/-shm when the database file itself is a symlink, and
     # the realpath'd parent with the literal basename, which is where they land when SQLite
@@ -378,7 +378,7 @@ RETIRED_GENERATION_DIR_SUFFIX = ".retired-wal-"
 RETIRED_GENERATION_MANIFEST = "manifest.json"
 RETIRED_GENERATION_MANIFEST_VERSION = 1
 # Up to this size the main image is copied whole, so the artifact is a self-contained state.db + -wal
-# pair that `hermes sessions recover --source <dir>/state.db` can open. Above it only the 100-byte
+# pair that `akramcode sessions recover --source <dir>/state.db` can open. Above it only the 100-byte
 # header is kept (the manifest says so): unlike the WAL inode, the main file survives process exit at
 # its path, and a multi-GB copy inside a shutdown path is a worse failure than a header-only artifact.
 RETIRED_GENERATION_MAIN_IMAGE_MAX_BYTES = 512 * 1024 * 1024
@@ -533,7 +533,7 @@ def capture_retired_wal_generation(
                 suffix: list(ident) for suffix, ident in _stat_sqlite_sidecar_identity(db_path).items()},
             "note": ("Frames in the captured WAL were committed by the retired generation. Whether they "
                      "belong on top of the main file now at the path is an operator decision; inspect "
-                     "the copied image with `hermes sessions recover --inspect-only` first."),
+                     "the copied image with `akramcode sessions recover --inspect-only` first."),
         }
         shm_identity = tuple(sidecar_identity.get("-shm") or ())
         shm_fd = _own_descriptor_for_identity(shm_identity) if shm_identity else None
@@ -705,9 +705,9 @@ def quarantine_invalid_state_db(path: Path, *, already_locked: bool = False) -> 
         if not acquired:
             logger.error("quarantine lock for %s not acquired within 5s — refusing to "
                          "quarantine without the cross-process lock. The invalid file "
-                         "is left in place. If sessions fail to load, run `hermes sessions recover "
+                         "is left in place. If sessions fail to load, run `akramcode sessions recover "
                          "--source <state.db> --inspect-only`, or restore a snapshot with "
-                         "`/snapshot list` / `/snapshot restore <id>` (terminal `hermes` chat only).",
+                         "`/snapshot list` / `/snapshot restore <id>` (terminal `akramcode` chat only).",
                          path)
             return None
         return _do_quarantine()

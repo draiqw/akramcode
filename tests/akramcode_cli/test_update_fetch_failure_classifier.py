@@ -1,4 +1,4 @@
-"""Fetch-failure classification for `hermes update` / `hermes update --check`.
+"""Fetch-failure classification for `akramcode update` / `akramcode update --check`.
 
 A GitHub-side HTTP 429 (rate limit / outage) used to be reported as the
 generic "Failed to fetch updates from origin." — or worse, matched the
@@ -15,7 +15,7 @@ RATE_LIMIT_STDERR = (
     "fatal: expected flush after ref listing"
 )
 CURL_429_STDERR = (
-    "fatal: unable to access 'https://github.com/NousResearch/hermes-agent.git/':"
+    "fatal: unable to access 'https://github.com/NousResearch/akramcode-agent.git/':"
     " The requested URL returned error: 429"
 )
 
@@ -76,7 +76,7 @@ class TestClassifyFetchFailure:
             "fatal: Could not read from remote repository."
         )
         assert "SSH authentication failed" in msg
-        assert "https://github.com/NousResearch/hermes-agent.git" in msg
+        assert "https://github.com/NousResearch/akramcode-agent.git" in msg
 
     def test_ssh_host_key_failure_reports_ssh_auth(self):
         msg = update_cmd._classify_fetch_failure(
@@ -109,7 +109,7 @@ class TestPrintFetchFailure:
 def test_update_network_git_calls_never_prompt_for_credentials():
     """Every `git fetch`/`pull`/`push` in the updater runs with prompts disabled.
 
-    Live incident (Sep 2026): a GitHub-side 401 made `hermes update` sit on
+    Live incident (Sep 2026): a GitHub-side 401 made `akramcode update` sit on
     ``Username for 'https://github.com':`` instead of failing with a diagnosis.
     """
     import os

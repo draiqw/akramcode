@@ -49,9 +49,9 @@ def _float_env(name: str, default: float) -> float:
 
 
 def _exit_watchdog_timeout() -> float:
-    """``HERMES_EXIT_WATCHDOG_S`` as a float (default 30; ``0`` disables)."""
+    """``AKRAMCODE_EXIT_WATCHDOG_S`` as a float (default 30; ``0`` disables)."""
     from cli import _float_env
-    return _float_env("HERMES_EXIT_WATCHDOG_S", 30.0)
+    return _float_env("AKRAMCODE_EXIT_WATCHDOG_S", 30.0)
 
 
 def _arm_exit_watchdog(timeout_s: float | None = None, *, from_signal: bool = False) -> None:
@@ -59,7 +59,7 @@ def _arm_exit_watchdog(timeout_s: float | None = None, *, from_signal: bool = Fa
 
     Backstop for a cleanup step wedged on network I/O and for interpreter teardown
     blocked joining non-daemon threads (ThreadPoolExecutor's atexit join). The daemon
-    timer survives ``Py_FinalizeEx``'s joins. ``HERMES_EXIT_WATCHDOG_S=0`` disables.
+    timer survives ``Py_FinalizeEx``'s joins. ``AKRAMCODE_EXIT_WATCHDOG_S=0`` disables.
 
     1. 2. Interpreter teardown blocked joining non-daemon threads — stdlib ``ThreadPoolExecutor`` workers
     are joined unconditionally by ``concurrent.futures``' atexit hook even after ``shutdown(wait=False)``,

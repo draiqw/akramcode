@@ -3,7 +3,7 @@
 Writes rate limit state to a shared file so all sessions (CLI, gateway, cron,
 auxiliary) can check whether Nous Portal is currently rate-limited before making
 requests. Without it each 429 fans out into up to 9 calls per turn (3 SDK
-retries x 3 Hermes retries), all counted against RPH.
+retries x 3 AkramCode retries), all counted against RPH.
 """
 
 from __future__ import annotations
@@ -37,10 +37,10 @@ format_remaining = _fmt_seconds
 def _state_path(*, anonymous: bool = False) -> str:
     """Path to the Nous rate limit state file."""
     try:
-        from akramcode_constants import get_hermes_home
-        base = get_hermes_home()
+        from akramcode_constants import get_akramcode_home
+        base = get_akramcode_home()
     except ImportError:
-        base = os.path.join(os.path.expanduser("~"), ".hermes")
+        base = os.path.join(os.path.expanduser("~"), ".akramcode")
     # Signing in must not inherit the anonymous allowance's cooldown (or clear it for
     # another anonymous session). Keep the existing named-account file unchanged.
     return os.path.join(base, "rate_limits", "nous-anonymous.json" if anonymous else "nous.json")

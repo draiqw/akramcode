@@ -31,10 +31,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 @pytest.fixture()
-def hermes_home(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+def akramcode_home(tmp_path, monkeypatch):
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     return home
 
 @pytest.fixture()
@@ -101,11 +101,11 @@ def _approval_module():
 
 @pytest.mark.parametrize("yaml_text,expected_mode,expected_timeout", CASES)
 def test_mode_and_timeout_parity_across_surfaces(
-    hermes_home, tui_server, yaml_text, expected_mode, expected_timeout
+    akramcode_home, tui_server, yaml_text, expected_mode, expected_timeout
 ):
     approval_mod = _approval_module()
 
-    _write_config(hermes_home, yaml_text)
+    _write_config(akramcode_home, yaml_text)
 
     ctx = importlib.import_module("tools.approval_context")
     core_mode = ctx._get_approval_mode()

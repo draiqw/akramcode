@@ -11,7 +11,7 @@ A plugin MUST NOT modify `run_agent.py`, `cli.py`, `gateway/run.py`, `akramcode_
 If it needs a capability the framework lacks, widen the **generic** plugin surface (new hook, new
 ctx method) and have the plugin use it — never hardcode plugin-specific logic into core (PR #5295
 removed 95 lines of hardcoded honcho argparse from `main.py`). Plugin setup goes through
-`hermes memory setup` → `provider.post_setup(hermes_home, config)`, never a parallel top-level
+`akramcode memory setup` → `provider.post_setup(akramcode_home, config)`, never a parallel top-level
 command. A hook with no concrete consumer is speculative infrastructure and is rejected (root).
 
 ## What may live in this tree (policy)
@@ -21,32 +21,32 @@ command. A hook with no concrete consumer is speculative infrastructure and is r
   to the plugin catalog in Sep 2026 — `plugin-catalog/hindsight.yaml`, auto-installed by
   `akramcode_cli/memory_provider_migration.py` for homes still configured for it). New
   backends ship as standalone repos implementing the same `MemoryProvider` ABC, discovered through
-  the same path, integrated via `hermes memory setup` / `post_setup()`.
+  the same path, integrated via `akramcode memory setup` / `post_setup()`.
 - **No new third-party-product plugins (June 2026).** Observability/metrics backends, vendor SaaS
   connectors, analytics dashboards, paid-service tie-ins ship as standalone plugin repos
-  (`~/.hermes/plugins/` or pip entry point) promoted in Discord `#plugins-skills-and-skins`. Reason:
+  (`~/.akramcode/plugins/` or pip entry point) promoted in Discord `#plugins-skills-and-skins`. Reason:
   every absorbed product is our maintenance burden against a fast-moving core for a backend we don't
   own. `observability/`, `kanban/`, `disk-cleanup/` are precedent, not an invitation. Closing such a
   PR is a coupling decision, not a quality judgment.
 - Reference/docs-companion plugins (`example-dashboard`, `strike-freedom-cockpit`,
   `plugin-llm-example`, `plugin-llm-async-example`) live in
-  [`hermes-example-plugins`](https://github.com/NousResearch/hermes-example-plugins), not here.
+  [`akramcode-example-plugins`](https://github.com/NousResearch/akramcode-example-plugins), not here.
 
 ## Plugin catalog (`plugin-catalog/`, Sep 2026)
 
 The ONLY discovery system for out-of-tree plugins. One YAML per entry, 40-hex SHA pin mandatory,
 human-merged via PR (`plugin-catalog/README.md` = admission policy; `plugin-catalog-ci.yml` clones
-each changed entry at its pin and runs `hermes plugins validate`). `removed.yaml` is the kill list —
+each changed entry at its pin and runs `akramcode plugins validate`). `removed.yaml` is the kill list —
 every install path (CLI, dashboard, TUI) refuses matches (repo URLs compared by canonical
 `host/owner/repo`, so `git@`/`ssh://`/`www.` spellings match); only the CLI has a loud
 `--allow-removed`, which is recorded on the install record and is the only thing that exempts an
 installed plugin from the same check at `update`, `enable` and load (`gate_manifest`). Catalog
 provenance lives on the installer-owned `.install-metadata.json` record (`catalog` block, sha =
-checked-out commit), NEVER in the tree: the in-tree `.hermes-catalog.json` is a convenience copy the
+checked-out commit), NEVER in the tree: the in-tree `.akramcode-catalog.json` is a convenience copy the
 Desktop reads for "Install here"; Python never trusts it (a repo can ship a forged one).
 Code: `akramcode_cli/plugin_catalog.py` (loader, live refresh from
 `/docs/api/plugin-catalog.json` published by the docs build, in-tree fallback),
-`akramcode_cli/plugins_cmd_catalog.py` (resolution, `.hermes-catalog.json` provenance sidecar,
+`akramcode_cli/plugins_cmd_catalog.py` (resolution, `.akramcode-catalog.json` provenance sidecar,
 search/info/validate, re-pin on `update`, dashboard/TUI payloads). Never add a second name index:
 bare names resolve through the catalog or error.
 
@@ -54,9 +54,9 @@ bare names resolve through the catalog or error.
 
 | Kind | Where | Discovery | Notes |
 |---|---|---|---|
-| General | `plugins/<name>/`, `~/.hermes/plugins/`, `./.hermes/plugins/`, pip entry points | `PluginManager` (`akramcode_cli/plugins.py`), later-wins | `register(ctx)` registers hooks (`pre_tool_call`, `post_tool_call`, `pre_llm_call`, `post_llm_call`, `on_session_start`, `on_session_end`), tools (`ctx.register_tool`), CLI subcommands (`ctx.register_cli_command` — argparse tree wired into `hermes` at startup, no `main.py` change), language packs (`provides_locales` in the manifest auto-registers `locales/<lang>[.tui|.desktop].yaml` via `ctx.register_locale_dir`; manifest-only packs need no `__init__.py`; `akramcode_cli/plugin_validate_locales.py` validates them) |
-| Memory provider | `plugins/memory/<name>/` | `plugins/memory/__init__.py`: bundled → `$HERMES_HOME/plugins/` → `./.hermes/plugins/` (opt-in `HERMES_ENABLE_PROJECT_PLUGINS`) → `hermes_agent.memory_providers` entry points; **bundled-first** | Activated by name via `memory.provider`, so a dropped-in dir must not shadow a shipped one (reverse of general later-wins). Enumerates without importing. Implements `MemoryProvider` ABC (`agent/memory_provider.py`), orchestrated by `agent/memory_manager.py`: `sync_turn`, `prefetch`, `shutdown`, optional `post_setup`. `cli.py` with `register_cli(subparser)` is wired by `discover_plugin_cli_commands()` — only for the ACTIVE provider, so `hermes --help` stays clean |
-| Model provider | `plugins/model-providers/<name>/` | `providers/__init__.py._discover_providers()`, **lazy**, on first `get_provider_profile()`/`list_providers()`; bundled → `$HERMES_HOME/plugins/model-providers/` → legacy `providers/<name>.py` | `__init__.py` calls `providers.register_provider(ProviderProfile(...))` at load; **last-writer-wins** so a user plugin overrides a bundled profile. `PluginManager` records `kind: model-provider` manifests but does NOT import them (would double-instantiate); manifests without `kind:` are auto-coerced by source heuristic (`register_provider` + `ProviderProfile`) |
+| General | `plugins/<name>/`, `~/.akramcode/plugins/`, `./.akramcode/plugins/`, pip entry points | `PluginManager` (`akramcode_cli/plugins.py`), later-wins | `register(ctx)` registers hooks (`pre_tool_call`, `post_tool_call`, `pre_llm_call`, `post_llm_call`, `on_session_start`, `on_session_end`), tools (`ctx.register_tool`), CLI subcommands (`ctx.register_cli_command` — argparse tree wired into `akramcode` at startup, no `main.py` change), language packs (`provides_locales` in the manifest auto-registers `locales/<lang>[.tui|.desktop].yaml` via `ctx.register_locale_dir`; manifest-only packs need no `__init__.py`; `akramcode_cli/plugin_validate_locales.py` validates them) |
+| Memory provider | `plugins/memory/<name>/` | `plugins/memory/__init__.py`: bundled → `$AKRAMCODE_HOME/plugins/` → `./.akramcode/plugins/` (opt-in `AKRAMCODE_ENABLE_PROJECT_PLUGINS`) → `akramcode_agent.memory_providers` entry points; **bundled-first** | Activated by name via `memory.provider`, so a dropped-in dir must not shadow a shipped one (reverse of general later-wins). Enumerates without importing. Implements `MemoryProvider` ABC (`agent/memory_provider.py`), orchestrated by `agent/memory_manager.py`: `sync_turn`, `prefetch`, `shutdown`, optional `post_setup`. `cli.py` with `register_cli(subparser)` is wired by `discover_plugin_cli_commands()` — only for the ACTIVE provider, so `akramcode --help` stays clean |
+| Model provider | `plugins/model-providers/<name>/` | `providers/__init__.py._discover_providers()`, **lazy**, on first `get_provider_profile()`/`list_providers()`; bundled → `$AKRAMCODE_HOME/plugins/model-providers/` → legacy `providers/<name>.py` | `__init__.py` calls `providers.register_provider(ProviderProfile(...))` at load; **last-writer-wins** so a user plugin overrides a bundled profile. `PluginManager` records `kind: model-provider` manifests but does NOT import them (would double-instantiate); manifests without `kind:` are auto-coerced by source heuristic (`register_provider` + `ProviderProfile`) |
 | Context engine / image-gen / others | `plugins/context_engine/`, `plugins/image_gen/`, ... | ABC + orchestrator + per-plugin directory | Plug into `agent/context_engine.py`, `agent/image_gen_provider.py` |
 | Platform adapters | `plugins/platforms/<name>/adapter.py` | gateway | Token-lock and scoped-secret rules in `gateway/AGENTS.md` (`irc`, `feishu` are canonical) |
 
@@ -76,8 +76,8 @@ on an "existing config" signal (`_explicitly_configured`) so existing users keep
 `on_session_start`/`on_session_end`/`sync_turn`/`shutdown` are invoked from the turn (bound) AND
 from eviction, shutdown, `tui_gateway` teardown and cron completion (bound by the caller via
 `_run_release_in_profile_scope`, `_session_profile_runtime_scope`, `_profile_cron_scope`). One
-process serves several profiles, so a provider never caches `hermes_home` from `initialize()` as
-"the" home — key state by the home it is handed per call (`hermes_home_key()`) — and never reads
+process serves several profiles, so a provider never caches `akramcode_home` from `initialize()` as
+"the" home — key state by the home it is handed per call (`akramcode_home_key()`) — and never reads
 `os.environ` for credentials (`agent.secret_scope.get_secret`; a `check_fn` too). Background
 work starts via `agent.memory_provider.spawn_context_thread`, never a bare `threading.Thread`,
 or the worker runs with no scope and fails closed (or writes into the launch profile's tenant).
@@ -107,12 +107,12 @@ native `api:` match, or version literals on unrelated payloads. Documented surfa
 
 PR #102117 moved internals into `<stem>_<topic>` siblings. The temporary compat layer that kept the
 old import paths alive for external plugins was removed after its 2026-09-14 window; an old path now
-raises `ImportError`, surfaced as the plugin's load error in `hermes plugins list`. Plugins build on
+raises `ImportError`, surfaced as the plugin's load error in `akramcode plugins list`. Plugins build on
 `ctx` and the documented ABCs. Never add re-export shims for an internal move. `akramcode_cli/plugin_compat.py`
 survives only as three inert stubs that already-running pre-removal updaters import.
 
 ## Tests
 
-`tests/plugins/`. Load through real discovery with a temp `HERMES_HOME`; assert behaviour (tool
+`tests/plugins/`. Load through real discovery with a temp `AKRAMCODE_HOME`; assert behaviour (tool
 registered, hook fired with expected kwargs), not counts. Opt-in telemetry rule applies to plugins
 too: no attribution tag ships by default.

@@ -56,8 +56,8 @@ def _unscoped_profile_secrets() -> dict:
     if _UNSCOPED_PROFILE_SECRETS is None:
         try:
             from agent.secret_scope import build_profile_secret_scope
-            from akramcode_constants import get_hermes_home
-            _UNSCOPED_PROFILE_SECRETS = dict(build_profile_secret_scope(get_hermes_home()))
+            from akramcode_constants import get_akramcode_home
+            _UNSCOPED_PROFILE_SECRETS = dict(build_profile_secret_scope(get_akramcode_home()))
         except Exception:
             logger.warning(
                 "Could not build the profile secret scope; externally managed credentials will not be "
@@ -87,7 +87,7 @@ def platform_gate_env(name: str, default: str = "") -> str:
 
 
 def decode_json_list_literal(raw):
-    """Decode a JSON-encoded allowlist written by ``hermes config set``.
+    """Decode a JSON-encoded allowlist written by ``akramcode config set``.
 
     String-typed defaults keep list literals verbatim on write (``allowed_chats`` is
     declared as ``""``), so the config can hold ``'["-100","-200"]'`` as a string.

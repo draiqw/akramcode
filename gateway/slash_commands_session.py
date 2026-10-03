@@ -437,7 +437,7 @@ class GatewaySessionCommandsMixin:
         if getattr(getattr(self, "config", None), "multiplex_profiles", False):
             with contextlib.suppress(Exception):
                 home = self._resolve_profile_home_for_source(source)
-        record_model_friction(signal, session_id=session_id, hermes_home=home, turns=turns)
+        record_model_friction(signal, session_id=session_id, akramcode_home=home, turns=turns)
 
     async def _handle_undo_command(self, event: MessageEvent) -> str:
         """Handle /undo [N] — back up N user turns (default 1), soft-deleting the truncated rows and
@@ -743,7 +743,7 @@ class GatewaySessionCommandsMixin:
         if redact:
             from akramcode_cli.session_export_md import redact_session_data
             export_data = redact_session_data(export_data)
-        temp_dir = tempfile.mkdtemp(prefix="hermes_save_")
+        temp_dir = tempfile.mkdtemp(prefix="akramcode_save_")
         temp_path = os.path.join(temp_dir, filename)
         try:
             # Off-loop: render + write scale with transcript size (multi-MB) and would stall the loop.

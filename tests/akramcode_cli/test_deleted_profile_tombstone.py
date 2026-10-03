@@ -1,8 +1,8 @@
 """Deleted named profiles must stay gone until explicitly recreated.
 
 A live serve/logging process can mkdir ``profiles/<name>/logs`` after
-``hermes profile delete`` removes the tree. That empty shell then
-reappears in ``hermes profile list`` and Desktop Bot Mode. These tests
+``akramcode profile delete`` removes the tree. That empty shell then
+reappears in ``akramcode profile list`` and Desktop Bot Mode. These tests
 lock the tombstone + no-mkdir contract without depending on Desktop.
 """
 
@@ -14,7 +14,7 @@ from unittest.mock import patch
 import pytest
 
 from cron.scheduler_delivery import BOT_CHAT_PLATFORM, cron_delivery_targets
-from akramcode_cli.config import ensure_hermes_home
+from akramcode_cli.config import ensure_akramcode_home
 from akramcode_cli.profiles import (
     backfill_profile_envs,
     create_profile,
@@ -26,20 +26,20 @@ from akramcode_cli.profiles import (
     resolve_profile_env,
     set_active_profile,
 )
-from hermes_constants import (
+from akramcode_constants import (
     named_profile_home,
-    reset_hermes_home_override,
-    set_hermes_home_override,
+    reset_akramcode_home_override,
+    set_akramcode_home_override,
 )
-from akram_core.hermes_logging import setup_logging
+from akram_core.akramcode_logging import setup_logging
 
 
 @pytest.fixture()
 def profile_env(tmp_path, monkeypatch):
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    default_home = tmp_path / ".hermes"
+    default_home = tmp_path / ".akramcode"
     default_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(default_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(default_home))
     return tmp_path
 
 
@@ -65,12 +65,12 @@ class TestDeletedProfileTombstone:
         assert not profile_dir.exists()
         assert "worker" not in _named_homes(profile_env)
 
-        monkeypatch.setenv("HERMES_HOME", str(profile_dir))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(profile_dir))
         with pytest.raises(FileNotFoundError, match="Named profile home does not exist"):
-            setup_logging(hermes_home=profile_dir, force=True)
+            setup_logging(akramcode_home=profile_dir, force=True)
 
         assert not profile_dir.exists()
-        monkeypatch.setenv("HERMES_HOME", str(profile_env / ".hermes"))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(profile_env / ".akramcode"))
         assert "worker" not in _named_homes(profile_env)
 
     def test_late_reasoning_caps_save_does_not_recreate_deleted_home(self, profile_env):
@@ -80,14 +80,14 @@ class TestDeletedProfileTombstone:
         profile_dir = create_profile("worker", no_alias=True, no_skills=True)
         _delete("worker")
 
-        token = set_hermes_home_override(profile_dir)
+        token = set_akramcode_home_override(profile_dir)
         try:
             models_reasoning_caps._save_reasoning_caps_disk(
                 "https://example.test/v1/models",
                 {"example/model": {"supports_reasoning": True}},
             )
         finally:
-            reset_hermes_home_override(token)
+            reset_akramcode_home_override(token)
 
         assert not profile_dir.exists()
 
@@ -138,9 +138,9 @@ class TestDeletedProfileTombstone:
             delete_profile("worker", yes=True)
         profile_dir.mkdir(parents=True)
 
-        monkeypatch.setenv("HERMES_HOME", str(profile_dir))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(profile_dir))
         with pytest.raises(FileNotFoundError, match="Named profile home does not exist"):
-            ensure_hermes_home()
+            ensure_akramcode_home()
         assert not (profile_dir / "sessions").exists()
 
     def test_create_after_delete_clears_tombstone(self, profile_env):
@@ -186,7 +186,7 @@ class TestDeletedProfileTombstone:
         profile_dir = create_profile("worker", no_alias=True, no_skills=True)
         _delete("worker")
         profile_dir.mkdir(parents=True)
-        (profile_env / ".hermes" / ".env").write_text(
+        (profile_env / ".akramcode" / ".env").write_text(
             "OPENROUTER_API_KEY=root-key\n", encoding="utf-8"
         )
 
@@ -198,14 +198,14 @@ class TestDeletedProfileTombstone:
     def test_marker_less_shell_is_not_a_profile(self, profile_env):
         """A ``profiles/<name>`` dir with no identity file (a pre-tombstone ghost shell left by a
         cron ticker, or a stray infrastructure dir) is not listed, served, or seeded with the
-        default install's ``.env`` — that seeding is what legitimised ghosts on ``hermes update``
+        default install's ``.env`` — that seeding is what legitimised ghosts on ``akramcode update``
         (#95188 path D, #94823, #99392). ``profile create`` may take the name back."""
-        default_env = profile_env / ".hermes" / ".env"
+        default_env = profile_env / ".akramcode" / ".env"
         default_env.write_text("OPENAI_API_KEY=sk-real\n", encoding="utf-8")
-        shell = profile_env / ".hermes" / "profiles" / "ghost"
+        shell = profile_env / ".akramcode" / "profiles" / "ghost"
         (shell / "cron").mkdir(parents=True)
         (shell / "cron" / "ticker_heartbeat").write_text("1\n", encoding="utf-8")
-        legacy = profile_env / ".hermes" / "profiles" / "legacy"
+        legacy = profile_env / ".akramcode" / "profiles" / "legacy"
         legacy.mkdir()
         (legacy / "state.db").write_bytes(b"")
 
@@ -213,8 +213,8 @@ class TestDeletedProfileTombstone:
         assert not (shell / ".env").exists()
         assert _named_homes(profile_env) == ["legacy"]
         assert [name for name, _ in profiles_to_serve(True)] == ["default", "legacy"]
-        # ``hermes --profile ghost serve`` (a stale Desktop boot target) must not start a backend
-        # in the shell — its ensure_hermes_home() would rebuild the full profile tree.
+        # ``akramcode --profile ghost serve`` (a stale Desktop boot target) must not start a backend
+        # in the shell — its ensure_akramcode_home() would rebuild the full profile tree.
         assert not profile_exists("ghost")
         with pytest.raises(FileNotFoundError):
             resolve_profile_env("ghost")
@@ -232,7 +232,7 @@ class TestDeletedProfileTombstone:
     def test_dangling_symlink_marker_is_still_identity(self, profile_env):
         """A profile whose only marker is a dangling symlinked ``config.yaml`` (clone/migration
         leftover) stays resolvable: ``is_file()`` follows links and would make it invisible."""
-        legacy = profile_env / ".hermes" / "profiles" / "legacy"
+        legacy = profile_env / ".akramcode" / "profiles" / "legacy"
         legacy.mkdir(parents=True)
         (legacy / "config.yaml").symlink_to(profile_env / "gone" / "config.yaml")
         assert profile_exists("legacy")
@@ -267,36 +267,36 @@ class TestDeletedProfileTombstone:
 
 class TestNamedProfileHome:
     def test_logs_under_named_profile_resolve_to_profile_home(self, tmp_path):
-        # tmp_path acts as a real Hermes home (Docker/custom layout): it
+        # tmp_path acts as a real AkramCode home (Docker/custom layout): it
         # carries a home marker file, so profiles/ under it is canonical.
         (tmp_path / "config.yaml").write_text("{}\n", encoding="utf-8")
         worker = tmp_path / "profiles" / "worker"
         assert named_profile_home(worker / "logs") == worker
         assert named_profile_home(worker) == worker
 
-    def test_dot_hermes_layout_resolves_without_markers(self, tmp_path):
-        worker = tmp_path / ".hermes" / "profiles" / "worker"
+    def test_dot_akramcode_layout_resolves_without_markers(self, tmp_path):
+        worker = tmp_path / ".akramcode" / "profiles" / "worker"
         assert named_profile_home(worker / "logs") == worker
         assert named_profile_home(worker) == worker
 
     def test_default_home_with_profiles_in_path_is_not_named(self, tmp_path):
-        default_home = tmp_path / "foo" / "profiles" / "notahome" / ".hermes"
+        default_home = tmp_path / "foo" / "profiles" / "notahome" / ".akramcode"
         assert named_profile_home(default_home) is None
         assert named_profile_home(default_home / "logs") is None
 
     def test_unrelated_profiles_dir_is_not_named(self, tmp_path):
         # Review point 1 regression: a custom home like
         # /srv/profiles/buildcache must NOT be treated as a named profile —
-        # its parent is not a Hermes home, so logging must keep mkdir-ing.
+        # its parent is not a AkramCode home, so logging must keep mkdir-ing.
         custom_home = tmp_path / "srv" / "profiles" / "buildcache"
         assert named_profile_home(custom_home) is None
         assert named_profile_home(custom_home / "logs") is None
 
     def test_unrelated_profiles_dir_still_mkdirs(self, tmp_path):
-        from hermes_constants import mkdir_under_hermes_home
+        from akramcode_constants import mkdir_under_akramcode_home
 
         custom_home = tmp_path / "srv" / "profiles" / "buildcache"
-        log_dir = mkdir_under_hermes_home(custom_home / "logs")
+        log_dir = mkdir_under_akramcode_home(custom_home / "logs")
         assert log_dir.is_dir()
 
     def test_setup_logging_under_unrelated_profiles_dir_succeeds(self, tmp_path):
@@ -305,13 +305,13 @@ class TestNamedProfileHome:
         # must create the log dir instead of raising FileNotFoundError.
         custom_home = tmp_path / "srv" / "profiles" / "buildcache"
         custom_home.mkdir(parents=True)
-        log_dir = setup_logging(hermes_home=custom_home, force=True)
+        log_dir = setup_logging(akramcode_home=custom_home, force=True)
         assert log_dir == custom_home / "logs"
         assert log_dir.is_dir()
 
     def test_tombstone_dir_marks_profiles_root(self, tmp_path):
         # A profiles/.deleted directory is only ever created by
-        # `hermes profile delete` — its presence alone anchors recognition,
+        # `akramcode profile delete` — its presence alone anchors recognition,
         # so tombstones are honored even when root markers are missing.
         profiles_dir = tmp_path / "opt" / "profiles"
         (profiles_dir / ".deleted").mkdir(parents=True)

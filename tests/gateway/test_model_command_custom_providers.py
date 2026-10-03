@@ -3,7 +3,7 @@
 import threading
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from gateway.config import Platform
 from gateway.platforms.event import MessageEvent, MessageType
@@ -33,16 +33,16 @@ async def test_direct_model_switch_runs_off_the_event_loop(tmp_path, monkeypatch
     blocking models.dev HTTP fetch can't freeze the gateway event loop (#20525)."""
     from akramcode_cli.model_switch import ModelSwitchResult
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    akramcode_home = tmp_path / ".akramcode"
+    akramcode_home.mkdir()
+    (akramcode_home / "config.yaml").write_text(
         yaml.safe_dump({"model": {"default": "gpt-5.4", "provider": "openrouter"}}),
         encoding="utf-8",
     )
 
     import gateway.run as gateway_run
 
-    monkeypatch.setattr(gateway_run, "_hermes_home", hermes_home)
+    monkeypatch.setattr(gateway_run, "_akramcode_home", akramcode_home)
 
     switch_threads: list[int] = []
 

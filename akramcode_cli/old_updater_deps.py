@@ -19,7 +19,7 @@ def _refresh_active_memory_provider_dependencies() -> NoReturn:
     stop_for_relaunch()
 
 
-def _npm_lockfile_changed(hermes_root) -> NoReturn:
+def _npm_lockfile_changed(akramcode_root) -> NoReturn:
     # Do not authorize an old npm install through a fabricated currency result.
     stop_for_relaunch()
 

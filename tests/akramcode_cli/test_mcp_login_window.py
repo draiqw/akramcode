@@ -1,6 +1,6 @@
 """An OAuth login waits as long as ``oauth.timeout`` says, and a probe timeout names itself (#116278).
 
-``hermes mcp login`` (and the dashboard / Desktop re-auth twins) bounded the login probe at a fixed
+``akramcode mcp login`` (and the dashboard / Desktop re-auth twins) bounded the login probe at a fixed
 315 s floor, so ``oauth: {timeout: 3600}`` changed nothing; the expiry then surfaced as a bare
 ``asyncio.TimeoutError`` whose ``str()`` is empty — a blank ``✗ Authentication failed:`` line.
 """
@@ -15,7 +15,7 @@ import pytest
 def test_login_probe_window_follows_oauth_timeout(monkeypatch, tmp_path):
     """Production entry point ``_reauth_oauth_server``: with ``oauth.timeout: 3600`` the probe's
     connect bound is the callback window plus exchange headroom, not the old 315 s floor."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     import akramcode_cli.mcp_config as mc
 
     seen = {}

@@ -14,19 +14,19 @@ from akramcode_cli import main, update_cmd, update_cmd_fleet as fleet, update_cm
 from akramcode_cli import update_cmd_zip, update_receipt
 from akramcode_cli.config_defaults import DEFAULT_CONFIG
 from akramcode_cli.update_inventory import RuntimeRecord, UpdatePlan
-import akram_core.hermes_yaml
+import akram_core.akramcode_yaml
 
 
 @pytest.fixture
 def zip_update(tmp_path, monkeypatch, isolated_source_completion):
     home = tmp_path / "home"
-    active = home / ".hermes"
+    active = home / ".akramcode"
     sibling = active / "profiles/other"
     sibling.mkdir(parents=True)
     monkeypatch.setattr(Path, "home", lambda: home)
     monkeypatch.setenv("HOME", str(home))
-    monkeypatch.setenv("HERMES_HOME", str(active))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(tmp_path / "store"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(active))
+    monkeypatch.setenv("AKRAMCODE_RUNTIME_DIR", str(tmp_path / "store"))
     for profile in (active, sibling):
         (profile / "config.yaml").write_text(
             f"_config_version: {DEFAULT_CONFIG['_config_version'] - 1}\n"
@@ -41,18 +41,18 @@ def zip_update(tmp_path, monkeypatch, isolated_source_completion):
     root.mkdir()
     (root / "pyproject.toml").write_text('[project]\nversion="1.0"\n', encoding="utf-8")
     (root / "payload.txt").write_text("old", encoding="utf-8")
-    for name in ("tools/code.py", "apps/desktop/source.js", "apps/desktop/release/Hermes.exe",
+    for name in ("tools/code.py", "apps/desktop/source.js", "apps/desktop/release/AkramCode.exe",
                  "venv/keep", "node_modules/keep", ".env"):
         path = root / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("retained", encoding="utf-8")
     archive = tmp_path / "source.zip"
     with zipfile.ZipFile(archive, "w") as out:
-        out.writestr("hermes-agent-main/pyproject.toml", '[project]\nversion="2.0"\n')
-        out.writestr("hermes-agent-main/payload.txt", "new")
+        out.writestr("akramcode-agent-main/pyproject.toml", '[project]\nversion="2.0"\n')
+        out.writestr("akramcode-agent-main/payload.txt", "new")
         for name in ("new-entry/data", "tools/code.py", "apps/desktop/source.js",
                      "venv/keep", "node_modules/keep", ".env"):
-            out.writestr("hermes-agent-main/" + name, "new")
+            out.writestr("akramcode-agent-main/" + name, "new")
     # Only redirect transport: extraction, staging, dirty recheck and swap run.
     monkeypatch.setattr("urllib.request.urlretrieve", lambda url, dst: urlretrieve(archive.as_uri(), dst))
     monkeypatch.setattr(main, "PROJECT_ROOT", root)
@@ -135,7 +135,7 @@ def test_zip_command_migrates_profiles_recovers_snapshot_and_verifies_fleet(
     update_cmd._cmd_update_impl(SimpleNamespace(branch="main", yes=True), gateway_mode)
 
     for profile in (state.active, state.sibling):
-        config = akram_core.hermes_yaml.safe_load((profile / "config.yaml").read_text())
+        config = akram_core.akramcode_yaml.safe_load((profile / "config.yaml").read_text())
         assert config["_config_version"] == DEFAULT_CONFIG["_config_version"]
         assert config["model"]["default"] == "retained-model"
     assert (state.sibling / ".env").read_bytes() == (state.active / ".env").read_bytes()
@@ -143,7 +143,7 @@ def test_zip_command_migrates_profiles_recovers_snapshot_and_verifies_fleet(
     assert (state.root / "payload.txt").read_text() == "new"
     for name in ("tools/code.py", "apps/desktop/source.js", "new-entry/data"):
         assert (state.root / name).read_text(encoding="utf-8") == "new"
-    for name in ("apps/desktop/release/Hermes.exe", "venv/keep", "node_modules/keep", ".env"):
+    for name in ("apps/desktop/release/AkramCode.exe", "venv/keep", "node_modules/keep", ".env"):
         assert (state.root / name).read_text(encoding="utf-8") == "retained"
     assert state.events == ["prepare", *([("marker", True)] if gateway_mode else []),
                             "restart", "resume", "finalize"]
@@ -152,7 +152,7 @@ def test_zip_command_migrates_profiles_recovers_snapshot_and_verifies_fleet(
     assert receipt["runtime_outcomes"][0]["outcome"] == "restarted"
     assert update_receipt._current.get() is None
     assert state.token["resume_needed"] is False
-    assert not list(state.root.glob("*.hermes-update-*"))
+    assert not list(state.root.glob("*.akramcode-update-*"))
 
 
 @pytest.mark.parametrize("verdict", ["healthy", "unsafe-sqlite", "stale-fleet"])
@@ -208,7 +208,7 @@ def test_zip_failure_recovers_pause_without_completion_mutations(zip_update, mon
         rename = os.rename
 
         def fail_second_swap(src, dst):
-            if str(src).endswith(".hermes-update-staging"):
+            if str(src).endswith(".akramcode-update-staging"):
                 installed.append(dst)
                 if len(installed) == (5 if failure == "late-swap" else 2):
                     raise OSError("locked replacement")
@@ -221,7 +221,7 @@ def test_zip_failure_recovers_pause_without_completion_mutations(zip_update, mon
         copytree = shutil.copytree
 
         def fail_copy(src, dst, *args, **kwargs):
-            if str(dst).endswith(".hermes-update-staging"):
+            if str(dst).endswith(".akramcode-update-staging"):
                 raise OSError("staging disk full")
             return copytree(src, dst, *args, **kwargs)
         monkeypatch.setattr(shutil, "copytree", fail_copy)
@@ -248,7 +248,7 @@ def test_zip_failure_recovers_pause_without_completion_mutations(zip_update, mon
     assert not (state.sibling / ".env").exists()
     assert json.loads(state.jobs.read_text()) == state.original_jobs
     assert not (state.active / "logs/update_receipts/latest.json").exists()
-    assert not list(state.root.glob("*.hermes-update-*"))
+    assert not list(state.root.glob("*.akramcode-update-*"))
 
 
 @pytest.mark.parametrize("entry", ["payload.txt", "tools"])
@@ -257,9 +257,9 @@ def test_zip_recovers_crashed_backup_before_failed_copy_and_retry(zip_update, mo
 
     root = zip_update.root
     target = root / entry
-    backup = root / (entry + ".hermes-update-old")
+    backup = root / (entry + ".akramcode-update-old")
     target.rename(backup)
-    leftover = root / (entry + ".hermes-update-staging")
+    leftover = root / (entry + ".akramcode-update-staging")
     leftover.write_text("interrupted copy", encoding="utf-8")
     function = "copytree" if entry == "tools" else "copy2"
     original = getattr(shutil, function)
@@ -276,10 +276,10 @@ def test_zip_recovers_crashed_backup_before_failed_copy_and_retry(zip_update, mo
         assert error.value.code == 1
     witness = target / "code.py" if entry == "tools" else target
     assert witness.read_text(encoding="utf-8") == ("retained" if entry == "tools" else "old")
-    assert not list(root.glob("*.hermes-update-*"))
+    assert not list(root.glob("*.akramcode-update-*"))
     update_cmd_zip._download_and_swap_zip("main", "local fixture")
     assert witness.read_text(encoding="utf-8") == "new"
-    assert not list(root.glob("*.hermes-update-*"))
+    assert not list(root.glob("*.akramcode-update-*"))
 
 
 def test_atomic_directory_compat_entrypoint(tmp_path):
@@ -291,7 +291,7 @@ def test_atomic_directory_compat_entrypoint(tmp_path):
     update_cmd_zip._atomic_replace_dir(str(src), str(dst))
     assert {p.name for p in dst.iterdir()} == {"new"}
     assert (dst / "new").read_text(encoding="utf-8") == "new"
-    assert not list(tmp_path.glob("*.hermes-update-*"))
+    assert not list(tmp_path.glob("*.akramcode-update-*"))
 
 
 def test_zip_refuses_non_main_before_transport(zip_update, monkeypatch, capsys):
@@ -318,17 +318,17 @@ def test_venv_layout_explicit_and_native(tmp_path, windows, folder, executable):
 @pytest.mark.platforms("macos")
 @pytest.mark.parametrize(("mechanism", "rebuilt"), [("self", True), ("electron-updater", False)])
 def test_installed_app_without_a_checkout_build_is_still_rebuilt(zip_update, monkeypatch, tmp_path, mechanism, rebuilt):
-    """#52339: an installed Hermes.app only ``hermes update`` refreshes needs a Desktop build even
+    """#52339: an installed AkramCode.app only ``akramcode update`` refreshes needs a Desktop build even
     when release/ is gone, or it never gets newer. A self-updating release is not ours to rebuild."""
-    installed = tmp_path / "Applications" / "Hermes.app"
+    installed = tmp_path / "Applications" / "AkramCode.app"
     (installed / "Contents" / "Resources").mkdir(parents=True)
     (installed / "Contents" / "Resources" / "install-stamp.json").write_text(
         json.dumps({"updateMechanism": mechanism}), encoding="utf-8")
     monkeypatch.setattr("akramcode_cli.gui_uninstall.packaged_gui_app_paths", lambda: [installed])
-    # The checkout under the default Hermes home is the one an installed app runs.
+    # The checkout under the default AkramCode home is the one an installed app runs.
     (tmp_path / "default-home").mkdir()
-    (tmp_path / "default-home" / "hermes-agent").symlink_to(zip_update.root)
-    monkeypatch.setattr("hermes_constants.get_default_hermes_root", lambda **kw: tmp_path / "default-home")
+    (tmp_path / "default-home" / "akramcode-agent").symlink_to(zip_update.root)
+    monkeypatch.setattr("akramcode_constants.get_default_akramcode_root", lambda **kw: tmp_path / "default-home")
     built = []
     monkeypatch.setattr("akramcode_cli.source_build.build_update_products",
                         lambda selected, *, desktop: built.append(desktop))

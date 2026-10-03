@@ -1,6 +1,6 @@
 """Profile deletion must release the profile-routed log handlers this process holds (#112538).
 
-A long-lived multiplex process (the Desktop's ``hermes serve`` backend) routes records to every
+A long-lived multiplex process (the Desktop's ``akramcode serve`` backend) routes records to every
 served profile's ``logs/*.log`` through ``_ProfileRoutingFileHandler``, which lazily opens one
 rotating handler per home. On Windows that handler is ``ConcurrentRotatingFileHandler`` and keeps
 ``logs/.__<name>.lock`` open, so ``delete_profile`` run inside that process fails ``rmtree`` with
@@ -14,52 +14,52 @@ from pathlib import Path
 
 import pytest
 
-import akram_core.hermes_logging
+import akram_core.akramcode_logging
 from akramcode_cli import profiles
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from akramcode_constants import reset_akramcode_home_override, set_akramcode_home_override
 
 
 @pytest.fixture
 def routed_profile(tmp_path, monkeypatch):
     """A default home logging in-process plus a created profile; host services are not touched."""
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     monkeypatch.setattr(profiles, "_cleanup_gateway_service", lambda *_: None)
     monkeypatch.setattr(profiles, "_maybe_unregister_gateway_service", lambda *_: None)
     monkeypatch.setattr(profiles, "_stop_profile_backends", lambda *_: None)
     monkeypatch.setattr(profiles, "_notify_multiplexer", lambda *_: None)
     profile = profiles.create_profile("routed-log-delete", no_alias=True)
-    akram_core.hermes_logging.setup_logging(hermes_home=home, force=True)
+    akram_core.akramcode_logging.setup_logging(akramcode_home=home, force=True)
     try:
         yield home, profile
     finally:
         # Keep a pre-fix failure from leaking open handles into tempdir cleanup.
-        akram_core.hermes_logging._reset_queued_handlers()
-        akram_core.hermes_logging._logging_initialized = False
+        akram_core.akramcode_logging._reset_queued_handlers()
+        akram_core.akramcode_logging._logging_initialized = False
 
 
 def _log_into(profile: Path, *, adopt: bool) -> None:
     """Route one record to *profile*: explicitly (Desktop cron startup) or through the
-    ``setup_logging(hermes_home=<profile>)`` adoption path ``agent_init`` takes."""
+    ``setup_logging(akramcode_home=<profile>)`` adoption path ``agent_init`` takes."""
     logger = logging.getLogger("agent.tests.profile-delete")
-    token = set_hermes_home_override(profile)
+    token = set_akramcode_home_override(profile)
     try:
         if adopt:
-            akram_core.hermes_logging.setup_logging(hermes_home=profile)
+            akram_core.akramcode_logging.setup_logging(akramcode_home=profile)
         else:
-            assert akram_core.hermes_logging.enable_profile_log_routing([Path(profile).parent.parent, profile]) is True
+            assert akram_core.akramcode_logging.enable_profile_log_routing([Path(profile).parent.parent, profile]) is True
         logger.error("routed record before deletion")
     finally:
-        reset_hermes_home_override(token)
-    akram_core.hermes_logging.flush_log_queue()
+        reset_akramcode_home_override(token)
+    akram_core.akramcode_logging.flush_log_queue()
     assert "routed record before deletion" in (profile / "logs" / "agent.log").read_text(encoding="utf-8")
 
 
 def _routers() -> list:
-    return [h for h in akram_core.hermes_logging._queued_file_handlers
-            if isinstance(h, akram_core.hermes_logging._ProfileRoutingFileHandler)]
+    return [h for h in akram_core.akramcode_logging._queued_file_handlers
+            if isinstance(h, akram_core.akramcode_logging._ProfileRoutingFileHandler)]
 
 
 @pytest.mark.parametrize("adopt", [False, True], ids=["explicit-routing", "setup_logging-adoption"])

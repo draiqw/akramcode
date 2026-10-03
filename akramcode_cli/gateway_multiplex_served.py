@@ -3,7 +3,7 @@
 ``gateway/run_adapters.py::_record_served_profiles`` writes ``served_profiles`` into the default
 home's ``gateway_state.json`` at startup. That record is the truth about the running process; the
 default ``config.yaml`` plus ``GATEWAY_MULTIPLEX_PROFILES`` as seen by the *CLI* process is only a
-guess (``hermes -p coder ...`` loads coder's ``.env``, so an env-only opt-in on the default profile
+guess (``akramcode -p coder ...`` loads coder's ``.env``, so an env-only opt-in on the default profile
 is invisible to it, and an allowlist edited after start flips the guess before the restart).
 """
 
@@ -25,20 +25,20 @@ def live_default_gateway_pid() -> Optional[int]:
     recycled by an unrelated process must not make its ``served_profiles`` authoritative. Never key this
     off the record's ``updated_at``: an idle gateway never advances it.
     """
-    from akramcode_constants import get_default_hermes_root
+    from akramcode_constants import get_default_akramcode_root
     from gateway.status import live_gateway_pid_for_home
-    return live_gateway_pid_for_home(get_default_hermes_root())
+    return live_gateway_pid_for_home(get_default_akramcode_root())
 
 
 def recorded_served_profiles(default_root: Optional[Path] = None) -> Optional[list[str]]:
     """``served_profiles`` the live default gateway recorded, or None when the key is absent (a record
     from before the multiplexer recorded it, or a stopped/absent gateway). Callers fall back to config
     derivation only on None: an empty list is an authoritative "serves nobody else"."""
-    from akramcode_constants import get_default_hermes_root
+    from akramcode_constants import get_default_akramcode_root
     from gateway.status import read_runtime_status
     if live_default_gateway_pid() is None:
         return None
-    runtime = read_runtime_status((default_root or get_default_hermes_root()) / "gateway_state.json")
+    runtime = read_runtime_status((default_root or get_default_akramcode_root()) / "gateway_state.json")
     served = (runtime or {}).get("served_profiles")
     return [str(p) for p in served] if isinstance(served, list) else None
 
@@ -52,11 +52,11 @@ def served_profile_unserved_platforms(profile: str) -> dict[str, str]:
     """``{platform: reason}`` for a served profile's platforms the multiplexer deliberately does not run
     (WhatsApp/Relay are shared ingress owned by the default; ``gateway.run_adapters`` stamps
     ``<profile>:<platform>`` as ``disabled`` with ``error_code=multiplex_shared_ingress``)."""
-    from akramcode_constants import get_default_hermes_root
+    from akramcode_constants import get_default_akramcode_root
     from gateway.status import read_runtime_status
     if not profile or live_default_gateway_pid() is None:
         return {}
-    runtime = read_runtime_status(get_default_hermes_root() / "gateway_state.json") or {}
+    runtime = read_runtime_status(get_default_akramcode_root() / "gateway_state.json") or {}
     platforms = runtime.get("platforms")
     if not isinstance(platforms, dict):
         return {}
@@ -73,11 +73,11 @@ def served_profile_ingress_urls(profile: Optional[str] = None) -> dict[str, dict
     """``{profile: {platform: url}}`` for every secondary inbound-port platform the live multiplexer
     serves on its shared listener (``<profile>:<platform>`` entries carrying ``ingress_url``). This is
     what the user pastes into the vendor console (Twilio, LINE, Teams, ...). ``profile`` narrows the map."""
-    from akramcode_constants import get_default_hermes_root
+    from akramcode_constants import get_default_akramcode_root
     from gateway.status import read_runtime_status, shared_listener_mirror_platforms
     if live_default_gateway_pid() is None:
         return {}
-    runtime = read_runtime_status(get_default_hermes_root() / "gateway_state.json") or {}
+    runtime = read_runtime_status(get_default_akramcode_root() / "gateway_state.json") or {}
     platforms = runtime.get("platforms")
     if not isinstance(platforms, dict):
         return {}
@@ -112,11 +112,11 @@ def notify_multiplexer_profiles_changed(profile_name: str, *, timeout: float = 8
     served-profile list the gateway answered with, or None when no multiplexer answered (no live default
     gateway, single-profile gateway, or a gateway predating the verb). Never raises."""
     try:
-        from akramcode_constants import get_default_hermes_root
+        from akramcode_constants import get_default_akramcode_root
         from gateway.control_socket import rescan_gateway_profiles
         if live_default_gateway_pid() is None:
             return None
-        answer = rescan_gateway_profiles(get_default_hermes_root(), timeout=timeout)
+        answer = rescan_gateway_profiles(get_default_akramcode_root(), timeout=timeout)
     except Exception:
         logger.debug("multiplexer rescan notification failed for %r", profile_name, exc_info=True)
         return None

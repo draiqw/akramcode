@@ -1,6 +1,6 @@
-"""An old `hermes update` must still find every name it loads mid-swap.
+"""An old `akramcode update` must still find every name it loads mid-swap.
 
-`hermes update` replaces the checkout underneath a RUNNING process. The
+`akramcode update` replaces the checkout underneath a RUNNING process. The
 old process then lazy-imports from the new tree: whatever it asks for
 must still exist, or the user's update dies half-applied. The names it
 can ask for are the contract of updaters shipped BEFORE the PM migration:
@@ -16,9 +16,9 @@ Regeneration requires a full clone. These tests deliberately consume the
 checked-in names and resolve them against the current tree, so shallow CI can
 enforce the contract without reconstructing (or silently truncating) it.
 
-`managed_uv._reload_hermes_constants` is the scar proving the failure
+`managed_uv._reload_akramcode_constants` is the scar proving the failure
 mode is real: a live updater hit ``cannot import name 'venv_python_path'
-from 'hermes_constants'`` while the NEW file on disk plainly held it.
+from 'akramcode_constants'`` while the NEW file on disk plainly held it.
 
 If this test fails you have two honest options:
 * restore the name (a stub with the old signature is fine), or
@@ -103,8 +103,8 @@ class TestTheFrozenFileIsSane:
         # pass vacuously.
         bare = set(_load_surface()["bare"])
         for anchor in (
-            "hermes_constants::with_hermes_node_path",
-            "hermes_constants::venv_python_path",
+            "akramcode_constants::with_akramcode_node_path",
+            "akramcode_constants::venv_python_path",
             "akramcode_cli.gitlock::clear_stale_git_locks",
             "akramcode_cli.managed_uv::ensure_uv",
             "akramcode_cli.managed_uv::rebuild_venv",

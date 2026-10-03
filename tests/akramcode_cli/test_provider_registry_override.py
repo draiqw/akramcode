@@ -1,4 +1,4 @@
-"""A `$HERMES_HOME` provider plugin re-registering a bundled name reaches the runtime (#48450).
+"""A `$AKRAMCODE_HOME` provider plugin re-registering a bundled name reaches the runtime (#48450).
 
 ``register_provider()`` is last-writer-wins for the profile, and the docs promise that dropping
 ``plugins/model-providers/<bundled-name>/`` points that provider at another endpoint. The runtime
@@ -35,7 +35,7 @@ def _run(tmp_path: Path, plugin_source: str) -> dict:
     plugin_dir = home / "plugins" / "model-providers" / "stepfun"
     plugin_dir.mkdir(parents=True)
     (plugin_dir / "__init__.py").write_text(plugin_source, encoding="utf-8")
-    env = {**os.environ, "HERMES_HOME": str(home), "PYTHONPATH": str(REPO), "STEPFUN_API_KEY": "sk-fixture"}
+    env = {**os.environ, "AKRAMCODE_HOME": str(home), "PYTHONPATH": str(REPO), "STEPFUN_API_KEY": "sk-fixture"}
     env.pop("STEPFUN_BASE_URL", None)
     proc = subprocess.run([sys.executable, "-c", _PROBE], env=env, capture_output=True, text=True, timeout=120,
                           cwd=str(REPO), check=False)

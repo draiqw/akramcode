@@ -422,7 +422,7 @@ def test_repair_stale_btree_index_preserves_rows(tmp_path):
 # Cross-process serialisation of the schema surgery
 # ---------------------------------------------------------------------------
 # A normal host runs several independent processes against one state.db: the
-# gateway service, the Desktop app's own `hermes serve` backend, interactive
+# gateway service, the Desktop app's own `akramcode serve` backend, interactive
 # CLI sessions and the TUI slash worker. `_repair_attempt_lock` is a
 # threading.Lock and covers none of that, so two of them hitting a malformed
 # DB at once each ran the full writable_schema surgery + VACUUM on a private
@@ -672,11 +672,11 @@ def _mode_of(db_path) -> str:
 
 
 def _configure_journal_mode(monkeypatch, tmp_path, mode) -> None:
-    import akram_core.hermes_yaml as yaml
+    import akram_core.akramcode_yaml as yaml
 
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "akramcode-home"
     home.mkdir(exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     (home / "config.yaml").write_text(
         yaml.safe_dump({"database": {"journal_mode": mode}}), encoding="utf-8",
     )

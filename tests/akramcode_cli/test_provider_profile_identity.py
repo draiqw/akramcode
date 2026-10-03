@@ -1,6 +1,6 @@
 """Plugin ProviderProfiles resolve wherever a provider NAME is resolved at switch time (#69576).
 
-Discovery is real (a plugin dir under the test HERMES_HOME); only the remote model probe is stubbed.
+Discovery is real (a plugin dir under the test AKRAMCODE_HOME); only the remote model probe is stubbed.
 """
 
 from __future__ import annotations
@@ -8,12 +8,12 @@ from __future__ import annotations
 import sys
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from akramcode_cli import auth as auth_mod
 from akramcode_cli.model_switch import switch_model
 from akramcode_cli.providers import resolve_provider_full
-from hermes_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 
 KEY = "test-profile-credential"
 ACCEPT = {"accepted": True, "persist": True, "recognized": True, "message": None}
@@ -34,8 +34,8 @@ def install_profile(monkeypatch):
     def _install(name: str, *, aliases=(), base_url: str, env_var: str, api_mode: str = "chat_completions"):
         monkeypatch.setenv(env_var, KEY)
         monkeypatch.setattr(profiles, "_discovered", False)
-        monkeypatch.delitem(sys.modules, f"_hermes_user_provider_{name}", raising=False)
-        plugin_dir = get_hermes_home() / "plugins" / "model-providers" / name
+        monkeypatch.delitem(sys.modules, f"_akramcode_user_provider_{name}", raising=False)
+        plugin_dir = get_akramcode_home() / "plugins" / "model-providers" / name
         plugin_dir.mkdir(parents=True, exist_ok=True)
         (plugin_dir / "plugin.yaml").write_text(
             f"name: {name}\nkind: model-provider\nversion: 0.0.1\ndescription: switch fixture\n", encoding="utf-8")
@@ -90,7 +90,7 @@ def test_persisted_alias_config_applies_to_the_canonical_runtime_provider(instal
     from akramcode_cli import runtime_provider as rp
 
     install_profile("testgw", aliases=("testgw-alias",), base_url="https://gw.example.test/v1", env_var="TESTGW_API_KEY")
-    (get_hermes_home() / "config.yaml").write_text(yaml.safe_dump(
+    (get_akramcode_home() / "config.yaml").write_text(yaml.safe_dump(
         {"model": {"provider": "testgw-alias", "default": "test-model", "base_url": "https://cfg.example.test/v1"}}),
         encoding="utf-8")
 

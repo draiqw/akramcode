@@ -106,7 +106,7 @@
   },
   {
     "path": "gateway/run.py",
-    "symbol": "_resolve_hermes_bin",
+    "symbol": "_resolve_akramcode_bin",
     "kind": "bare_which"
   },
   {
@@ -231,7 +231,7 @@
   },
   {
     "path": "akramcode_cli/kanban_db_dispatch.py",
-    "symbol": "_resolve_hermes_argv",
+    "symbol": "_resolve_akramcode_argv",
     "kind": "bare_which"
   },
   {
@@ -341,7 +341,7 @@
   },
   {
     "path": "akramcode_cli/relaunch.py",
-    "symbol": "resolve_hermes_bin",
+    "symbol": "resolve_akramcode_bin",
     "kind": "bare_which"
   },
   {
@@ -425,7 +425,7 @@
     "kind": "bare_which"
   },
   {
-    "path": "hermes_constants.py",
+    "path": "akramcode_constants.py",
     "symbol": "find_node_executable",
     "kind": "bare_which"
   },
@@ -516,7 +516,7 @@
   },
   {
     "path": "tools/environments/local.py",
-    "symbol": "_resolve_hermes_bin_dir",
+    "symbol": "_resolve_akramcode_bin_dir",
     "kind": "bare_which"
   },
   {

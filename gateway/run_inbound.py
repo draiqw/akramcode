@@ -57,9 +57,9 @@ def rehome_inbound_media(event: MessageEvent) -> None:
     """
     if not event.media_urls:
         return
-    from akramcode_constants import get_hermes_home, get_routing_process_hermes_home, hermes_home_key
-    active, launch = Path(get_hermes_home()), Path(get_routing_process_hermes_home())
-    if hermes_home_key(active) == hermes_home_key(launch):
+    from akramcode_constants import get_akramcode_home, get_routing_process_akramcode_home, akramcode_home_key
+    active, launch = Path(get_akramcode_home()), Path(get_routing_process_akramcode_home())
+    if akramcode_home_key(active) == akramcode_home_key(launch):
         return
     from tools.credential_files import to_agent_visible_cache_path
     rewritten = list(event.media_urls)
@@ -190,10 +190,10 @@ class GatewayInboundMixin:
     async def _hm_report_ignored_dm(self, source: SessionSource) -> None:
         """Unauthorized DM under behaviour ``ignore``: nothing goes to the sender. The owner gets the
         sender's ID and the allowlist fix in the WARNING log and, once per sender, in the home channel."""
-        from akramcode_constants import display_hermes_home
+        from akramcode_constants import display_akramcode_home
         platform_name = source.platform.value if source.platform else "unknown"
         hint = unauthorized_owner_hint(
-            platform_name, source.user_id, source.user_name or "", hermes_home=display_hermes_home(),
+            platform_name, source.user_id, source.user_name or "", akramcode_home=display_akramcode_home(),
         )
         logger.warning("Unauthorized user (ignored): %s", hint)
         notifier = getattr(self, "_unauthorized_owner_notifier", None)
@@ -213,7 +213,7 @@ class GatewayInboundMixin:
         _config = getattr(self, "config", None)
 
         # 🔴 Cross-session leak guard: this per-message task was create_task()'d with a copy of the
-        # spawning context, which may carry ANOTHER message's HERMES_SESSION_* ContextVars; until
+        # spawning context, which may carry ANOTHER message's AKRAMCODE_SESSION_* ContextVars; until
         # _set_session_env binds ours a subprocess would read the foreign identity. Reset to _UNSET.
         try:
             from gateway.session_context import reset_session_vars
@@ -256,7 +256,7 @@ class GatewayInboundMixin:
         if (
             getattr(self, "_startup_restore_in_progress", False)
             and not is_internal
-            and not getattr(event, "_hermes_startup_restore_replay", False)
+            and not getattr(event, "_akramcode_startup_restore_replay", False)
         ):
             self._queue_startup_restore_event(event)
             return None
@@ -328,7 +328,7 @@ class GatewayInboundMixin:
     def _hm_estop_gate(
         self, event: "MessageEvent", source: SessionSource, is_internal: bool
     ) -> Optional[str]:
-        """Global emergency-stop (`hermes pause`) notice when this turn must be blocked, else None.
+        """Global emergency-stop (`akramcode pause`) notice when this turn must be blocked, else None.
         Placed after auth so unauthorized senders can't probe pause state."""
         if is_internal:
             return None
@@ -349,13 +349,13 @@ class GatewayInboundMixin:
     @staticmethod
     def _hm_write_update_response(response_text: str) -> Optional[str]:
         """Atomically hand *response_text* to the detached update process; returns the OSError str."""
-        from gateway.run import _hermes_home
-        response_path = _hermes_home / ".update_response"
+        from gateway.run import _akramcode_home
+        response_path = _akramcode_home / ".update_response"
         try:
             tmp = response_path.with_suffix(".tmp")
             tmp.write_text(response_text, encoding="utf-8")
             tmp.replace(response_path)
-            (_hermes_home / ".update_prompt.json").unlink(missing_ok=True)
+            (_akramcode_home / ".update_prompt.json").unlink(missing_ok=True)
         except OSError as e:
             return str(e)
         return None
@@ -537,7 +537,7 @@ class GatewayInboundMixin:
         wall-clock age. The pending sentinel is never evicted (no get_activity_summary() → idle
         reads inf and would race the async setup path)."""
         from gateway.run import _AGENT_PENDING_SENTINEL, _float_env
-        _raw_stale_timeout = _float_env("HERMES_AGENT_TIMEOUT", 1800)
+        _raw_stale_timeout = _float_env("AKRAMCODE_AGENT_TIMEOUT", 1800)
         _quick_state = self._peek_session_state(_quick_key)
         _stale_ts = _quick_state.turn.started_ts if _quick_state else 0
         if _quick_state is None or _quick_state.turn.agent is None or not _stale_ts:
@@ -658,7 +658,7 @@ class GatewayInboundMixin:
         self, event: "MessageEvent", source: SessionSource, _quick_key: str, effective_busy_input_mode: str
     ) -> bool:
         """Queue a Telegram text follow-up that lands within the post-start grace window."""
-        _grace = float(os.getenv("HERMES_TELEGRAM_FOLLOWUP_GRACE_SECONDS", "3.0"))
+        _grace = float(os.getenv("AKRAMCODE_TELEGRAM_FOLLOWUP_GRACE_SECONDS", "3.0"))
         _grace_state = self._peek_session_state(_quick_key)
         _started_at = _grace_state.turn.started_ts if _grace_state else 0
         if not (
@@ -1110,7 +1110,7 @@ class GatewayInboundMixin:
                 from akramcode_cli.plugins import get_plugin_command_handler
                 plugin_handler = get_plugin_command_handler(command.replace("_", "-"))
                 if plugin_handler:
-                    # The agent-turn path binds HERMES_SESSION_* via _set_session_env; this dispatch
+                    # The agent-turn path binds AKRAMCODE_SESSION_* via _set_session_env; this dispatch
                     # sits before it, so a handler reading get_session_env() would see an empty or a
                     # foreign (cron agent's os.environ) session (#108698). No session_entry exists yet,
                     # so session_key is derived from source. Sync handlers run on the gateway pool
@@ -1930,7 +1930,7 @@ class GatewayInboundMixin:
             text=content, message_type=MessageType.TEXT, source=source, internal=True,
             allow_gateway_control=False,
             metadata={
-                "hermes_plugin_id": plugin_id, "hermes_plugin_injection": True,
+                "akramcode_plugin_id": plugin_id, "akramcode_plugin_injection": True,
                 "gateway_session_key": session_key, "gateway_session_id": entry.session_id,
                 "gateway_session_strict": True,
             },

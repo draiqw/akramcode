@@ -3,7 +3,7 @@
 ``collect_fleet_versions()`` swallows every probe failure via
 ``logger.debug()`` and ``print_fleet_version_matrix([])`` early-returns
 ``False``, so an empty fleet snapshot used to read as "healthy fleet" and
-``hermes update`` exited 0 with zero rows — even when a gateway was
+``akramcode update`` exited 0 with zero rows — even when a gateway was
 verifiably live before the update.
 
 The first guard (PR #93410) keyed on ``(restarted_services or killed_pids)``,
@@ -83,7 +83,7 @@ class TestCallSiteWiring:
             verify()
             assert events == ["probe"]
         assert restart.incomplete is had_gateway
-        receipt = json.loads((update_cmd.get_hermes_home() / "logs/update_receipts/latest.json").read_text())
+        receipt = json.loads((update_cmd.get_akramcode_home() / "logs/update_receipts/latest.json").read_text())
         assert receipt["outcome"] == ("partial" if had_gateway else "success")
 
 

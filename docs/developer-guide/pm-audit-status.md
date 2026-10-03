@@ -8,7 +8,7 @@ retroactively extend earlier test receipts.
 
 For current implementation contracts, use [Package management](../reference/package-management.md),
 [shared bundle builds](shared-bundle-builds.md), [stable releases](stable-releases.md),
-and [bundled update acceptance](https://github.com/NousResearch/hermes-agent/blob/main/tests/install/BUNDLED_UPDATES.md).
+and [bundled update acceptance](https://github.com/NousResearch/akramcode-agent/blob/main/tests/install/BUNDLED_UPDATES.md).
 
 This change integrates repairs from the aggregate branch audit. It is not a
 release certificate. The audit compared `49945b14029e09fef608db9ede899377cdb54e11`
@@ -106,7 +106,7 @@ in `pm/environments.py`.
 
 - A separate fresh bundled MSIX was produced from payload tree `60c9fb44...`.
   The unpacked artifact's own CLI ran, imports resolved inside its payload,
-  and `hermes serve` answered HTTP 200. The Sandbox deployment attempt failed
+  and `akramcode serve` answered HTTP 200. The Sandbox deployment attempt failed
   on an incorrect unpacked path. It does not prove bundled installation.
 - Plugin checks now run from the first housekeeping tick, with the configured
   interval gate controlling network checks. A real isolated gateway wrote two
@@ -197,7 +197,7 @@ PR #95281 was closed as superseded by #102765, following the triage request
 for one canonical PM PR. The duplicate label was removed. No approval
 label was self-applied.
 
-[Verified CI at a27cd5902a](https://github.com/NousResearch/hermes-agent/actions/runs/34059149746).
+[Verified CI at a27cd5902a](https://github.com/NousResearch/akramcode-agent/actions/runs/34059149746).
 The exact-head validation uses the same workflow on an upstream validation
 branch. Earlier GitHub graph failures reported
 `resource_exhausted: gitmon refuses to schedule us: fail-fast:network`.

@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional, Union
 from akramcode_state.common import _BOUNDARY_END_REASONS
 from akram_core.akramcode_time import safe_strftime
 
-# Hidden from browsing/searching — integrations (HERMES_SESSION_SOURCE=tool), delegate
+# Hidden from browsing/searching — integrations (AKRAMCODE_SESSION_SOURCE=tool), delegate
 # subagent runs, kanban workers are not the user's history.
 _HIDDEN_SESSION_SOURCES = ("kanban", "subagent", "tool")
 # Searchable but DEMOTED below interactive sessions: cron vocabulary dominates bare
@@ -651,7 +651,7 @@ def check_session_search_requirements() -> bool:
 SESSION_SEARCH_SCHEMA = {
     "name": "session_search",
     "description": (
-        "Recall past conversations: search or read old Hermes sessions (FTS5), or "
+        "Recall past conversations: search or read old AkramCode sessions (FTS5), or "
         "scroll inside one. Four shapes, picked by args: `query` = discovery "
         "(top-N matching sessions, top result fully hydrated); `session_id` + "
         "`around_message_id` = scroll (window of messages around an anchor); "
@@ -769,7 +769,7 @@ SESSION_SEARCH_SCHEMA = {
             "profile": {
                 "type": "string",
                 "description": (
-                    "Optional. Read sessions from another Hermes profile's database "
+                    "Optional. Read sessions from another AkramCode profile's database "
                     "(read-only). Use when resolving an `@session:<profile>/<id>` link: "
                     "pass the profile segment here with session_id as the id segment. "
                     "Omit to use the current profile."

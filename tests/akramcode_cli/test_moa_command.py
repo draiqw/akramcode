@@ -1,10 +1,10 @@
 import queue
 from unittest.mock import patch
 
-from cli import HermesCLI
+from cli import AkramCodeCLI
 
 def _make_cli():
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = AkramCodeCLI.__new__(AkramCodeCLI)
     cli.config = {
         "moa": {
             "default_preset": "default",

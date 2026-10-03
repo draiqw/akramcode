@@ -27,13 +27,13 @@ def _yes_no(prompt: str) -> bool:
 
 
 def _whatsapp_choose_mode(get_env_value, save_env_value):
-    """Step 1 of ``hermes whatsapp``: ``"bot"`` / ``"self-chat"``, or None when cancelled."""
+    """Step 1 of ``akramcode whatsapp``: ``"bot"`` / ``"self-chat"``, or None when cancelled."""
     current_mode = get_env_value("WHATSAPP_MODE") or ""
     if current_mode:
         mode_label = "separate bot number" if current_mode == "bot" else "personal number (self-chat)"
         print(f"\n✓ Mode: {mode_label}")
         return current_mode
-    _say("", "How will you use WhatsApp with Hermes?", "",
+    _say("", "How will you use WhatsApp with AkramCode?", "",
          "  1. Separate bot number (recommended)",
          "     People message the bot's number directly — cleanest experience.",
          "     Requires a second phone number with WhatsApp installed on a device.", "",
@@ -67,7 +67,7 @@ def _whatsapp_choose_mode(get_env_value, save_env_value):
 
 
 def _whatsapp_allowed_users(wa_mode: str, get_env_value, save_env_value) -> None:
-    """Step 3 of ``hermes whatsapp``: show / set WHATSAPP_ALLOWED_USERS."""
+    """Step 3 of ``akramcode whatsapp``: show / set WHATSAPP_ALLOWED_USERS."""
     current_users = get_env_value("WHATSAPP_ALLOWED_USERS") or ""
     if current_users:
         print(f"✓ Allowed users: {current_users}")
@@ -95,8 +95,8 @@ def _whatsapp_allowed_users(wa_mode: str, get_env_value, save_env_value) -> None
 
 
 def _whatsapp_install_bridge(bridge_dir) -> bool:
-    """Step 4 of ``hermes whatsapp``: ``npm install`` the bridge when needed. False = stop."""
-    from akramcode_constants import find_node_executable, with_hermes_node_path
+    """Step 4 of ``akramcode whatsapp``: ``npm install`` the bridge when needed. False = stop."""
+    from akramcode_constants import find_node_executable, with_akramcode_node_path
     if (bridge_dir / "node_modules").exists():
         print("✓ Bridge dependencies already installed")
         return True
@@ -105,7 +105,7 @@ def _whatsapp_install_bridge(bridge_dir) -> bool:
 
     npm = find_node_executable("npm")
     try:
-        env = with_hermes_node_path()
+        env = with_akramcode_node_path()
         if npm is None:
             env = pm.ensure("npm", explicit=True).env
             installed = pm.installed_package("npm")
@@ -133,10 +133,10 @@ def _whatsapp_install_bridge(bridge_dir) -> bool:
 
 def cmd_whatsapp(args):
     """Set up WhatsApp: choose mode, configure, install bridge, pair via QR."""
-    from akramcode_cli.main import _require_tty, get_hermes_home
+    from akramcode_cli.main import _require_tty, get_akramcode_home
     _require_tty("whatsapp")
     from akramcode_cli.config import get_env_value, save_env_value
-    from akramcode_constants import find_node_executable, with_hermes_node_path
+    from akramcode_constants import find_node_executable, with_akramcode_node_path
     _say("", "☤ WhatsApp Setup", "=" * 50)
 
     wa_mode = _whatsapp_choose_mode(get_env_value, save_env_value)
@@ -145,7 +145,7 @@ def cmd_whatsapp(args):
 
     # WHATSAPP_ENABLED=true is deliberately NOT written here: an aborted wizard (Ctrl+C, failed npm
     # install, missed QR scan) would leave .env claiming WhatsApp is ready with no creds.json, and
-    # every `hermes gateway` would pay a 30s bridge timeout + indefinite retries. Set only after
+    # every `akramcode gateway` would pay a 30s bridge timeout + indefinite retries. Set only after
     # pairing succeeds; prior successful pairings stay enabled.
     print()
     if (get_env_value("WHATSAPP_ENABLED") or "").lower() == "true":
@@ -163,7 +163,7 @@ def cmd_whatsapp(args):
         return
 
     # Existing session: re-pair or keep.
-    session_dir = get_hermes_home() / "whatsapp" / "session"
+    session_dir = get_akramcode_home() / "whatsapp" / "session"
     session_dir.mkdir(parents=True, exist_ok=True)
     if (session_dir / "creds.json").exists():
         print("✓ Existing WhatsApp session found")
@@ -175,7 +175,7 @@ def cmd_whatsapp(args):
             # Older installs may have lost WHATSAPP_ENABLED; a kept pairing re-asserts it.
             if (get_env_value("WHATSAPP_ENABLED") or "").lower() != "true":
                 save_env_value("WHATSAPP_ENABLED", "true")
-            _say("\n✓ WhatsApp is configured and paired!", "  Start the gateway with: hermes gateway")
+            _say("\n✓ WhatsApp is configured and paired!", "  Start the gateway with: akramcode gateway")
             return
 
     # QR code pairing
@@ -201,32 +201,32 @@ def cmd_whatsapp(args):
     with contextlib.suppress(KeyboardInterrupt):
         subprocess.run(
             [node, str(bridge_script), "--pair-only", "--session", str(session_dir)],
-            cwd=str(bridge_dir), env=with_hermes_node_path())
+            cwd=str(bridge_dir), env=with_akramcode_node_path())
 
     print()
     if not (session_dir / "creds.json").exists():
-        print("⚠ Pairing may not have completed. Run 'hermes whatsapp' to try again.")
+        print("⚠ Pairing may not have completed. Run 'akramcode whatsapp' to try again.")
         return
     # Only enable WhatsApp now that pairing actually succeeded (see above).
     save_env_value("WHATSAPP_ENABLED", "true")
     _say("✓ WhatsApp paired successfully!", "")
     if wa_mode == "bot":
-        _say("  Next steps:", "    1. Start the gateway:  hermes gateway",
+        _say("  Next steps:", "    1. Start the gateway:  akramcode gateway",
              "    2. Send a message to the bot's WhatsApp number",
              "    3. The agent will reply automatically", "",
-             "  Tip: Agent responses are prefixed with '☤ Hermes Agent'")
+             "  Tip: Agent responses are prefixed with '☤ AkramCode Agent'")
     else:
-        _say("  Next steps:", "    1. Start the gateway:  hermes gateway",
+        _say("  Next steps:", "    1. Start the gateway:  akramcode gateway",
              "    2. Open WhatsApp → Message Yourself",
              "    3. Type a message — the agent will reply", "",
-             "  Tip: Agent responses are prefixed with '☤ Hermes Agent'",
+             "  Tip: Agent responses are prefixed with '☤ AkramCode Agent'",
              "  so you can tell them apart from your own messages.")
-    _say("", "  Or install as a service: hermes gateway install")
+    _say("", "  Or install as a service: akramcode gateway install")
 
 
 def cmd_whatsapp_cloud(args):
     """Set up WhatsApp Business Cloud API (official Meta integration) — complementary to the
-    ``hermes whatsapp`` Baileys bridge wizard. See ``akramcode_cli/setup_whatsapp_cloud.py``."""
+    ``akramcode whatsapp`` Baileys bridge wizard. See ``akramcode_cli/setup_whatsapp_cloud.py``."""
     from akramcode_cli.main import _require_tty
     _require_tty("whatsapp-cloud")
     from akramcode_cli.setup_whatsapp_cloud import run_whatsapp_cloud_setup
@@ -234,7 +234,7 @@ def cmd_whatsapp_cloud(args):
 
 
 _SYNC_USAGE = (
-    "usage: hermes sync "
+    "usage: akramcode sync "
     "<status|pull|push|now|enable|disable|device|propose>\n"
     "\n"
     "Your skills, across your devices:\n"
@@ -292,7 +292,7 @@ def _sync_toggle(args, sub: str) -> int:
     if not is_curation_eligible(skill):
         _err(f"'{skill}' is not sync-eligible (bundled, hub-installed, "
              f"external, or not found). Only agent-created / user-authored "
-             f"skills under ~/.hermes/skills/ can sync.")
+             f"skills under ~/.akramcode/skills/ can sync.")
         return 1
     set_sync(skill, sub == "enable")
     print(f"sync {'enabled' if sub == 'enable' else 'disabled'} for '{skill}'.")
@@ -312,7 +312,7 @@ def _sync_status(ssc) -> int:
         if modified:
             _err(f"  {len(modified)} with local edits not yet shared: "
                  f"{', '.join(modified)}\n"
-                 f"  Share them back with `hermes sync propose <skill>`. "
+                 f"  Share them back with `akramcode sync propose <skill>`. "
                  f"Org updates will not overwrite them.")
     elif status.get("logged_in"):
         _err("\nOrg skills: not applicable — this account isn't a member of a shared organisation.")
@@ -321,10 +321,10 @@ def _sync_status(ssc) -> int:
     elif not status.get("nous_admin"):
         _err("\nSync is not enabled for your account yet.")
     elif not status.get("feature_enabled"):
-        _err("\nSync feature is off for this instance (set HERMES_SYNC_ENABLED=1 "
+        _err("\nSync feature is off for this instance (set AKRAMCODE_SYNC_ENABLED=1 "
              "or config.yaml sync.enabled: true). Sync is inert.")
     elif not status.get("base_url"):
-        _err("\nNo sync base URL configured (config.yaml sync.base_url or HERMES_SYNC_BASE_URL). Sync is inert.")
+        _err("\nNo sync base URL configured (config.yaml sync.base_url or AKRAMCODE_SYNC_BASE_URL). Sync is inert.")
     return 0
 
 
@@ -351,9 +351,9 @@ def _sync_pull(ssc, identity):
 # gated (identity-checked) sync subcommands: name -> (ssc, identity) -> result
 _SYNC_GATED = {
     "pull": _sync_pull,
-    "push": lambda ssc, identity: ssc.push_skills(identity=identity, message="hermes sync push"),
+    "push": lambda ssc, identity: ssc.push_skills(identity=identity, message="akramcode sync push"),
     "now": lambda ssc, identity: {"pull": ssc.pull_skills(identity=identity),
-                                  "push": ssc.push_skills(identity=identity, message="hermes sync now")}}
+                                  "push": ssc.push_skills(identity=identity, message="akramcode sync now")}}
 
 
 def cmd_sync(args):
@@ -384,7 +384,7 @@ def cmd_sync(args):
         _err("sync unavailable: not enabled for your account yet.")
         return 1
     if not ssc.resolve_sync_base_url():
-        _err("sync inert: no sync base URL configured (config.yaml sync.base_url or HERMES_SYNC_BASE_URL).")
+        _err("sync inert: no sync base URL configured (config.yaml sync.base_url or AKRAMCODE_SYNC_BASE_URL).")
         return 1
 
     action = _SYNC_GATED.get(sub)
@@ -401,17 +401,17 @@ def cmd_sync(args):
 
 
 def cmd_slack(args):
-    """``hermes slack <subcommand>``; ``manifest`` prints or writes a Slack app manifest with
+    """``akramcode slack <subcommand>``; ``manifest`` prints or writes a Slack app manifest with
     every gateway command registered as a first-class slash."""
     sub = getattr(args, "slack_command", None)
     if sub in {None, ""}:
-        _err("usage: hermes slack <subcommand>\n"
+        _err("usage: akramcode slack <subcommand>\n"
              "\n"
              "subcommands:\n"
              "  manifest   Generate a Slack app manifest with every gateway\n"
              "             command registered as a native slash\n"
              "\n"
-             "Run `hermes slack manifest -h` for details.")
+             "Run `akramcode slack manifest -h` for details.")
         return 1
 
     if sub == "manifest":

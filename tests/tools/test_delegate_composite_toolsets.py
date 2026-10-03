@@ -9,13 +9,13 @@ class TestExpandParentToolsets(unittest.TestCase):
     """Verify _expand_parent_toolsets recognises individual toolsets within composites."""
 
     def test_composite_akramcode_cli_expands_web(self):
-        """hermes-cli includes web_search/web_extract → 'web' should be in expansion."""
-        expanded = _expand_parent_toolsets({"hermes-cli"})
+        """akramcode-cli includes web_search/web_extract → 'web' should be in expansion."""
+        expanded = _expand_parent_toolsets({"akramcode-cli"})
         self.assertIn("web", expanded)
         self.assertIn("terminal", expanded)
         self.assertIn("browser", expanded)
         # Original composite is preserved
-        self.assertIn("hermes-cli", expanded)
+        self.assertIn("akramcode-cli", expanded)
 
 
 
@@ -25,14 +25,14 @@ class TestExpandParentToolsets(unittest.TestCase):
         expanded = _expand_parent_toolsets({"debugging"})
         self.assertTrue({"debugging", "terminal", "web", "file"} <= expanded)
         self.assertNotIn("browser", expanded)
-        self.assertNotIn("hermes-cli", expanded)
+        self.assertNotIn("akramcode-cli", expanded)
 
     def test_composites_with_allowed_included_tools_are_not_stripped(self):
-        toolsets = ["safe", "hermes-gateway", "hermes-cli", "delegation", "kanban"]
+        toolsets = ["safe", "akramcode-gateway", "akramcode-cli", "delegation", "kanban"]
 
         self.assertEqual(
             _strip_blocked_tools(toolsets),
-            ["safe", "hermes-gateway", "hermes-cli"],
+            ["safe", "akramcode-gateway", "akramcode-cli"],
         )
 
 

@@ -7,8 +7,8 @@ def test_creator_origin_survives_without_dependency_parent(tmp_path, monkeypatch
     from akramcode_cli import kanban_db as kb, kanban_db_connect as kbc, kanban_db_notify as kn
     from akramcode_cli.kanban_db_graph import decompose_triage_task
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
+    monkeypatch.delenv("AKRAMCODE_KANBAN_TASK", raising=False)
     kb.init_db()
     with kbc.connect_closing() as conn:
         owner = kb.create_task(conn, title="owner", session_id="durable", triage=True)
@@ -26,7 +26,7 @@ def test_creator_origin_survives_without_dependency_parent(tmp_path, monkeypatch
             from akramcode_cli.kanban_parser import build_parser
             parser = argparse.ArgumentParser()
             build_parser(parser.add_subparsers())
-            monkeypatch.setenv("HERMES_KANBAN_TASK", owner)
+            monkeypatch.setenv("AKRAMCODE_KANBAN_TASK", owner)
             assert kanban_command(parser.parse_args(["kanban", "create", "child", "--json"])) == 0
             tid = json.loads(capsys.readouterr().out)["id"]
         assert kb.get_task(conn, tid).session_id == "durable"

@@ -1,6 +1,6 @@
 """Regression tests: -z/--oneshot must honor -s/--skills (#31548, #65119).
 
-The oneshot path builds its AIAgent directly (bypassing HermesCLI), so the
+The oneshot path builds its AIAgent directly (bypassing AkramCodeCLI), so the
 --skills preload has to be forwarded explicitly and injected via
 ``ephemeral_system_prompt``. These tests pin the forwarding contract and the
 partial-success semantics shared with normal CLI chat.

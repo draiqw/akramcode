@@ -10,11 +10,11 @@ import re
 from typing import Any, Dict, Mapping
 
 
-# Sources Hermes owns and may persist with secrets.  Any other non-empty,
+# Sources AkramCode owns and may persist with secrets.  Any other non-empty,
 # non-manual source is borrowed/reference-only so new external providers fail
 # closed at the disk boundary.
 _PERSISTABLE_PROVIDER_SOURCES = frozenset({
-    ("anthropic", "hermes_pkce"),
+    ("anthropic", "akramcode_pkce"),
     ("minimax-oauth", "oauth"),
     ("nous", "device_code"),
     ("openai-codex", "device_code"),

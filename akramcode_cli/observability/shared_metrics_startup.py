@@ -1,6 +1,6 @@
 """Startup / attach latency: one bucketed row per process start and surface.
 
-In-process surfaces (classic CLI, messaging gateway, ``hermes serve``) measure from the OS process
+In-process surfaces (classic CLI, messaging gateway, ``akramcode serve``) measure from the OS process
 creation time, the earliest timestamp available (it includes interpreter start and imports), to the
 moment they are ready. The Ink TUI and the Desktop app measure on their own side and report through
 the ``shared_metrics.startup_latency`` RPC. Recording goes through the shared ``_emit`` gate, so a
@@ -33,7 +33,7 @@ _MAX_RECORDED = 1024
 _LAUNCH_ID_MAX_LEN = 64
 # ``os.execvp`` keeps the PID, so a relaunched process (``sessions browse`` -> resume) would count
 # the picker time as startup; relaunch() stamps its PID here right before the exec.
-RELAUNCHED_PID_ENV = "HERMES_RELAUNCHED_PID"
+RELAUNCHED_PID_ENV = "AKRAMCODE_RELAUNCHED_PID"
 
 
 def latency_bucket(elapsed_ms: Any) -> str | None:
@@ -114,7 +114,7 @@ def record_process_ready(surface: str, *, background: bool = False) -> None:
         context = contextvars.copy_context()
         threading.Thread(
             target=context.run, args=(_record_since_process_start, surface, ready_at),
-            name="hermes-startup-latency", daemon=True,
+            name="akramcode-startup-latency", daemon=True,
         ).start()
     except Exception:
         logger.debug("Startup latency for %s not recorded", surface, exc_info=True)
@@ -132,7 +132,7 @@ def cli_prompt_ready_handler():
 def record_cli_one_shot_ready() -> None:
     """A ``-q`` run is ready to dispatch its query. Kanban workers are dispatched processes, not a
     user waiting on a prompt, so they stay out of the CLI startup distribution."""
-    if not os.environ.get("HERMES_KANBAN_TASK"):
+    if not os.environ.get("AKRAMCODE_KANBAN_TASK"):
         record_process_ready("cli")
 
 

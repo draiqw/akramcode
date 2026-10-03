@@ -20,14 +20,14 @@ from pm.package import InstallError
 
 def runtime_environment() -> dict[str, str]:
     """Do not let an activated application or a uv caller select PM's imports."""
-    from akramcode_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
     from pm.paths import store_root
 
     from pm.environment import _base_environment
 
     env = _base_environment()
-    env["HERMES_HOME"] = str(get_hermes_home())
-    env["HERMES_RUNTIME_DIR"] = str(store_root())
+    env["AKRAMCODE_HOME"] = str(get_akramcode_home())
+    env["AKRAMCODE_RUNTIME_DIR"] = str(store_root())
     return env
 
 
@@ -43,7 +43,7 @@ def _inputs(project: Path, python: Path, *, as_spelled: bool = False) -> str:
         digest.update((project / name).read_bytes())
         digest.update(b"\0")
     # A different interpreter must not reuse a venv pointing at the old one, but
-    # the same one reached through a symlinked store (a per-task HERMES_HOME whose
+    # the same one reached through a symlinked store (a per-task AKRAMCODE_HOME whose
     # tools/ links back) must. Only the directories resolve: the pinned
     # bin/python3 is itself a symlink, so resolving it would re-key every install.
     python = python.absolute()
@@ -155,11 +155,11 @@ def prepare_runtime(uv: Path, python: Path, root: Path, *, offline: bool = False
                 return _python(environment)
         if not bootstrap:
             raise InstallError("pm-runtime", "not installed or outdated and lazy installs are disabled",
-                               "run `hermes pm install` to prepare the independent PM runtime")
+                               "run `akramcode pm install` to prepare the independent PM runtime")
         generation = Path("generations") / uuid.uuid4().hex
         environment = root / generation
         try:
-            print("Preparing the isolated Hermes runtime…", file=sys.stderr, flush=True)
+            print("Preparing the isolated AkramCode runtime…", file=sys.stderr, flush=True)
             executable = stage_runtime(uv, python, environment, project=project, offline=offline, cache=cache)
             (environment / ".lease-managed").touch()
             _write(environment / "pm-runtime.json", {"inputs": identity})
@@ -229,7 +229,7 @@ def runtime_python(*, bootstrap: bool = True, cache: Path | None = None) -> Path
     if tools is None:
         if not bootstrap:
             raise InstallError("pm-runtime", "not installed and lazy installs are disabled",
-                               "run `hermes pm install` to prepare the independent PM runtime")
+                               "run `akramcode pm install` to prepare the independent PM runtime")
         from pm.lock import Lockfile
         from pm.paths import lockfile_path, store_root
         from pm.registry import get_package

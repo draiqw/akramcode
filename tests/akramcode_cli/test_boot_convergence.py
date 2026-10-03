@@ -24,11 +24,11 @@ def test_each_start_checks_pm_once_before_dispatch(surface, tmp_path, monkeypatc
         "commit": "abcdef012345", "payload": "bundled", "updateMechanism": "electron-updater",
     }))
     monkeypatch.setattr(Path, "home", lambda: home)
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(runtime))
-    monkeypatch.setenv("HERMES_INSTALL_ROOT", str(root))
-    monkeypatch.setenv("HERMES_DISABLE_LAZY_INSTALLS", "1")
-    monkeypatch.delenv("HERMES_DISABLE_FAST_SERVE_LAUNCH", raising=False)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_RUNTIME_DIR", str(runtime))
+    monkeypatch.setenv("AKRAMCODE_INSTALL_ROOT", str(root))
+    monkeypatch.setenv("AKRAMCODE_DISABLE_LAZY_INSTALLS", "1")
+    monkeypatch.delenv("AKRAMCODE_DISABLE_FAST_SERVE_LAUNCH", raising=False)
     checked = []
     real_check = pm.check
 
@@ -61,7 +61,7 @@ def test_each_start_checks_pm_once_before_dispatch(surface, tmp_path, monkeypatc
 
         monkeypatch.setattr(main, "cmd_dashboard", lambda args: dispatched.append(len(checked)))
         monkeypatch.setattr(main, "cmd_version", lambda args: dispatched.append(len(checked)))
-        monkeypatch.setattr(sys, "argv", ["hermes", "serve" if surface == "serve" else "--version"])
+        monkeypatch.setattr(sys, "argv", ["akramcode", "serve" if surface == "serve" else "--version"])
         run = main.main
     for _ in range(2):
         checked.clear()
@@ -121,8 +121,8 @@ def migrate():
 post_update.BOOT_HOME_STEPS = (('migrate', migrate), ('db', post_update.step_state_db_guard))
 print(json.dumps(boot_bootstrap.run_boot_bootstrap(root)))
 ''')
-    env = dict(os.environ, HOME=str(tmp_path), HERMES_HOME=str(home),
-               HERMES_RUNTIME_DIR=str(tmp_path / "tools"),
+    env = dict(os.environ, HOME=str(tmp_path), AKRAMCODE_HOME=str(home),
+               AKRAMCODE_RUNTIME_DIR=str(tmp_path / "tools"),
                PYTHONPATH=str(Path(__file__).resolve().parents[2]))
     command = [sys.executable, str(script), str(root), str(entered), str(release)]
     first = subprocess.Popen([*command, "hold"], env=env, stdout=subprocess.PIPE,
@@ -133,7 +133,7 @@ print(json.dumps(boot_bootstrap.run_boot_bootstrap(root)))
             assert first.poll() is None
             assert time.monotonic() < deadline
             time.sleep(0.02)
-        second = subprocess.run([*command, "go"], env=dict(env, HERMES_HOME=str(other)),
+        second = subprocess.run([*command, "go"], env=dict(env, AKRAMCODE_HOME=str(other)),
                                 capture_output=True, text=True, timeout=30)
         assert second.returncode == 0, second.stderr
         result = json.loads(second.stdout.splitlines()[-1])
@@ -166,8 +166,8 @@ print(json.dumps(boot_bootstrap.run_boot_bootstrap(root)))
             changed = subprocess.run([*command, 'go'], env=env, capture_output=True, text=True, timeout=30)
             assert changed.returncode == 0, changed.stderr
             assert json.loads(changed.stdout.splitlines()[-1])['home']['migrate']['ok']
-            import akram_core.hermes_yaml
-            assert akram_core.hermes_yaml.safe_load((home / 'config.yaml').read_text())['_config_version'] == DEFAULT_CONFIG['_config_version']
+            import akram_core.akramcode_yaml
+            assert akram_core.akramcode_yaml.safe_load((home / 'config.yaml').read_text())['_config_version'] == DEFAULT_CONFIG['_config_version']
     finally:
         release.touch()
         if first.poll() is None:
@@ -181,7 +181,7 @@ def test_failed_migration_is_restored_and_not_retried(tmp_path, monkeypatch):
     home = tmp_path / "home"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     root = tmp_path / "payload"
     root.mkdir()
     (root / "install-stamp.json").write_text(json.dumps({

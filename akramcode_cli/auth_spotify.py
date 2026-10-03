@@ -54,32 +54,32 @@ def _spotify_setting(
 
 def _spotify_client_id(explicit: Optional[str] = None, state: Optional[Dict[str, Any]] = None) -> str:
     client_id = _spotify_setting(
-        state, "client_id", ("HERMES_SPOTIFY_CLIENT_ID", "SPOTIFY_CLIENT_ID"), "", explicit=explicit,
+        state, "client_id", ("AKRAMCODE_SPOTIFY_CLIENT_ID", "SPOTIFY_CLIENT_ID"), "", explicit=explicit,
     )
     if client_id:
         return client_id
     raise _spotify_err(
-        "Spotify client_id is required. Set HERMES_SPOTIFY_CLIENT_ID or pass --client-id.",
+        "Spotify client_id is required. Set AKRAMCODE_SPOTIFY_CLIENT_ID or pass --client-id.",
         "spotify_client_id_missing",
     )
 
 
 def _spotify_redirect_uri(explicit: Optional[str] = None, state: Optional[Dict[str, Any]] = None) -> str:
     return _spotify_setting(
-        state, "redirect_uri", ("HERMES_SPOTIFY_REDIRECT_URI", "SPOTIFY_REDIRECT_URI"),
+        state, "redirect_uri", ("AKRAMCODE_SPOTIFY_REDIRECT_URI", "SPOTIFY_REDIRECT_URI"),
         DEFAULT_SPOTIFY_REDIRECT_URI, explicit=explicit,
     )
 
 
 def _spotify_api_base_url(state: Optional[Dict[str, Any]] = None) -> str:
     return _spotify_setting(
-        state, "api_base_url", ("HERMES_SPOTIFY_API_BASE_URL",), DEFAULT_SPOTIFY_API_BASE_URL, strip_slash=True,
+        state, "api_base_url", ("AKRAMCODE_SPOTIFY_API_BASE_URL",), DEFAULT_SPOTIFY_API_BASE_URL, strip_slash=True,
     )
 
 
 def _spotify_accounts_base_url(state: Optional[Dict[str, Any]] = None) -> str:
     return _spotify_setting(
-        state, "accounts_base_url", ("HERMES_SPOTIFY_ACCOUNTS_BASE_URL",), DEFAULT_SPOTIFY_ACCOUNTS_BASE_URL,
+        state, "accounts_base_url", ("AKRAMCODE_SPOTIFY_ACCOUNTS_BASE_URL",), DEFAULT_SPOTIFY_ACCOUNTS_BASE_URL,
         strip_slash=True,
     )
 
@@ -174,7 +174,7 @@ def _refresh_spotify_oauth_state(state: Dict[str, Any], *, timeout_seconds: floa
     refresh_token = _clean(state.get("refresh_token"))
     if not refresh_token:
         raise _spotify_err(
-            "Spotify refresh token missing. Run `hermes auth spotify` again.",
+            "Spotify refresh token missing. Run `akramcode auth spotify` again.",
             "spotify_refresh_token_missing", relogin=True,
         )
 
@@ -186,7 +186,7 @@ def _refresh_spotify_oauth_state(state: Dict[str, Any], *, timeout_seconds: floa
         timeout_seconds=timeout_seconds, what="token refresh", failed_code="spotify_refresh_failed",
         invalid_code="spotify_refresh_invalid",
         invalid_message="Spotify refresh response did not include an access_token.",
-        failed_suffix=" Run `hermes auth spotify` again.", relogin_required=True,
+        failed_suffix=" Run `akramcode auth spotify` again.", relogin_required=True,
     )
 
     return _spotify_token_payload_to_state(
@@ -207,7 +207,7 @@ def resolve_spotify_runtime_credentials(
         state = _load_provider_state(auth_store, "spotify")
         if not state:
             raise _spotify_err(
-                "Spotify is not authenticated. Run `hermes auth spotify` first.", "spotify_auth_missing", relogin=True,
+                "Spotify is not authenticated. Run `akramcode auth spotify` first.", "spotify_auth_missing", relogin=True,
             )
 
         should_refresh = bool(force_refresh)
@@ -231,7 +231,7 @@ def resolve_spotify_runtime_credentials(
     access_token = _clean(state.get("access_token"))
     if not access_token:
         raise _spotify_err(
-            "Spotify access token missing. Run `hermes auth spotify` again.",
+            "Spotify access token missing. Run `akramcode auth spotify` again.",
             "spotify_access_token_missing", relogin=True,
         )
 
@@ -264,7 +264,7 @@ def get_spotify_auth_status() -> Dict[str, Any]:
 
 
 def _spotify_interactive_setup(redirect_uri_hint: str) -> str:
-    """Walk the user through creating a Spotify developer app; persist the client_id to ~/.hermes/.env."""
+    """Walk the user through creating a Spotify developer app; persist the client_id to ~/.akramcode/.env."""
     from akramcode_cli.auth import _is_remote_session
     from akramcode_cli.config import save_env_value
     print(
@@ -276,7 +276,7 @@ def _spotify_interactive_setup(redirect_uri_hint: str) -> str:
         "Steps:\n"
         f"  1. Opening {SPOTIFY_DASHBOARD_URL} in your browser...\n"
         "  2. Click 'Create app' and fill in:\n"
-        "       App name:     anything (e.g. hermes-agent)\n"
+        "       App name:     anything (e.g. akramcode-agent)\n"
         "       Description:  anything\n"
         f"       Redirect URI: {redirect_uri_hint}\n"
         "       API/SDK:      Web API\n"
@@ -303,11 +303,11 @@ def _spotify_interactive_setup(redirect_uri_hint: str) -> str:
         raise SystemExit("Spotify setup cancelled: empty Client ID.")
 
     # Persist so later runs skip the wizard; only pin a NON-default redirect URI.
-    save_env_value("HERMES_SPOTIFY_CLIENT_ID", raw)
+    save_env_value("AKRAMCODE_SPOTIFY_CLIENT_ID", raw)
     if redirect_uri_hint and redirect_uri_hint != DEFAULT_SPOTIFY_REDIRECT_URI:
-        save_env_value("HERMES_SPOTIFY_REDIRECT_URI", redirect_uri_hint)
+        save_env_value("AKRAMCODE_SPOTIFY_REDIRECT_URI", redirect_uri_hint)
 
-    print("\nSaved HERMES_SPOTIFY_CLIENT_ID to ~/.hermes/.env\n")
+    print("\nSaved AKRAMCODE_SPOTIFY_CLIENT_ID to ~/.akramcode/.env\n")
     return raw
 
 
@@ -315,7 +315,7 @@ def login_spotify_command(args) -> None:
     from akramcode_cli.auth import _auth_store_lock, _can_open_graphical_browser, _is_remote_session, _load_auth_store, _print_loopback_ssh_hint, _save_auth_store, _store_provider_state, get_provider_auth_state
     existing_state = get_provider_auth_state("spotify") or {}
 
-    # No client_id anywhere -> wizard instead of "HERMES_SPOTIFY_CLIENT_ID is required".
+    # No client_id anywhere -> wizard instead of "AKRAMCODE_SPOTIFY_CLIENT_ID is required".
     try:
         client_id = _spotify_client_id(getattr(args, "client_id", None), existing_state)
     except AuthError as exc:
@@ -341,7 +341,7 @@ def login_spotify_command(args) -> None:
     print(
         f"Starting Spotify PKCE login...\nClient ID: {client_id}\nRedirect URI: {redirect_uri}\n"
         "Make sure this redirect URI is allow-listed in your Spotify app settings.\n\n"
-        f"Open this URL to authorize Hermes:\n{authorize_url}\n\nFull setup guide: {SPOTIFY_DOCS_URL}\n"
+        f"Open this URL to authorize AkramCode:\n{authorize_url}\n\nFull setup guide: {SPOTIFY_DOCS_URL}\n"
     )
 
     _print_loopback_ssh_hint(redirect_uri, docs_url=SPOTIFY_DOCS_URL)

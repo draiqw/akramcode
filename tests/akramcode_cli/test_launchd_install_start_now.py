@@ -1,7 +1,7 @@
-"""`hermes gateway install --no-start-now` and the setup wizard's "Start the gateway now?" = No on launchd.
+"""`akramcode gateway install --no-start-now` and the setup wizard's "Start the gateway now?" = No on launchd.
 
 The plist carries RunAtLoad, so loading it (`launchctl bootstrap`) starts the gateway on the spot. A
-no-start install must therefore write the plist without loading it; `hermes gateway start` loads it later.
+no-start install must therefore write the plist without loading it; `akramcode gateway start` loads it later.
 """
 import argparse
 import plistlib
@@ -13,7 +13,7 @@ import pytest
 import akramcode_cli.gateway as gateway_cli
 from akramcode_cli.subcommands.gateway import build_gateway_parser
 
-LABEL = "ai.hermes.gateway"
+LABEL = "ai.akramcode.gateway"
 DOMAIN = "gui/501"
 
 

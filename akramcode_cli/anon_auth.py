@@ -1,7 +1,7 @@
 """Nous free-tier identity: the ``anonymous`` auth method of the ``nous`` provider.
 
 The identity is created in exactly one place, at boot (``akramcode_cli.free_tier_bootstrap``), and only
-while ``HERMES_GUEST_ONBOARDING=1`` (see ``guest_enabled``). The bootstrap mints an anonymous Nous
+while ``AKRAMCODE_GUEST_ONBOARDING=1`` (see ``guest_enabled``). The bootstrap mints an anonymous Nous
 account (``POST /api/anonymous/create``); its ``anon_`` credential is later exchanged for short-lived
 JWTs (``POST /api/anonymous/token``). The result is persisted as the singleton ``providers.nous``. In
 the resolver ladder (``resolve_provider``) an existing free-tier identity sits directly above the
@@ -14,7 +14,7 @@ token acquisition (re-exchange the ``anon_`` credential; there is no refresh tok
 
 Users are never shown the words guest / anonymous / account for this state: surfaces say
 "Nous · free tier". Two user-facing verbs reach the same flow, both keeping the identity's
-connectors: ``hermes auth upgrade`` in a terminal and ``/login`` inside a chat.
+connectors: ``akramcode auth upgrade`` in a terminal and ``/login`` inside a chat.
 
 Lifecycle lives in ONE primitive, :func:`ensure_portal_identity`: adopt what the shared store already
 holds, else mint under the shared-store lock. It is the only minter; nothing else calls
@@ -44,19 +44,19 @@ GUEST_MODEL = "nous/welcome"
 ANON_SECRET_HEADER = "x-anonymous-api-secret"
 # The shared secret gates the anonymous surface during its integration phase. It is a deployment
 # secret (Sid's), read from the environment only.
-ANON_SECRET_ENV = "HERMES_ANON_API_SECRET"
+ANON_SECRET_ENV = "AKRAMCODE_ANON_API_SECRET"
 # Launch gate for the whole free tier while it is pre-GA: exactly "1" turns it on for this process
 # (CLI, gateway, serve backend alike); anything else leaves every surface behaving as if the free
 # tier did not exist. ``guest_enabled`` is the only reader. Not a user preference: never written to
 # config.yaml or .env, never shown in setup. Deleted at GA together with this comment.
-GUEST_ONBOARDING_ENV = "HERMES_GUEST_ONBOARDING"
+GUEST_ONBOARDING_ENV = "AKRAMCODE_GUEST_ONBOARDING"
 GUEST_MINT_TIMEOUT_SECONDS = 5.0
 # Copy shared by every surface that names the free tier (R-USR-1): never guest / anonymous / account.
 FREE_TIER_LABEL = "Nous · free tier"
-UPGRADE_HINT = "Run `hermes auth upgrade` to sign in with a Nous account, or /login inside a chat."
+UPGRADE_HINT = "Run `akramcode auth upgrade` to sign in with a Nous account, or /login inside a chat."
 FREE_TIER_NOT_SIGNED_IN = (
     "You're not signed in. Free inference and connectors are always on. "
-    "Run `hermes auth` to sign in with a Nous account.")
+    "Run `akramcode auth` to sign in with a Nous account.")
 
 
 class AnonCredentialDead(AuthError):
@@ -75,7 +75,7 @@ def _anon_err(message: str, code: str, *, retry_after: Optional[float] = None) -
 #
 # Every way the account service (NAS) or the wire can refuse the free tier, as one ``AuthError.code``
 # each. Surfaces key their copy on the code; the message on the error is the surface-agnostic
-# fallback (no ``/login``, no ``hermes`` verb, no guest / anonymous / credential). ``retryable``
+# fallback (no ``/login``, no ``akramcode`` verb, no guest / anonymous / credential). ``retryable``
 # says whether a later attempt can succeed at all; ``retry_after`` is the wait the server named.
 #
 # What NAS actually sends (nous-account-service ``api/anonymous/gate.ts`` and the routes behind it):
@@ -101,11 +101,11 @@ ANON_TERMINAL_CODES = frozenset({ANON_GATE_CLOSED, ANON_POW_REQUIRED, ANON_ACCOU
 ANON_UNREACHABLE_CODES = frozenset({ANON_UNREACHABLE, ANON_SERVER_ERROR})
 
 # Copy per code: what happened, then the one honest way forward. The free MODEL is never "off":
-# what is unavailable is using Hermes without signing in, and signing in is free.
+# what is unavailable is using AkramCode without signing in, and signing in is free.
 _SIGNIN_IS_FREE = "Signing in is free."
 ANON_FAILURE_COPY = {
     ANON_GATE_CLOSED: f"This version can't be used without a Nous account. {_SIGNIN_IS_FREE}",
-    ANON_GATE_PAUSED: f"Using Hermes without signing in is paused for a moment. {_SIGNIN_IS_FREE}",
+    ANON_GATE_PAUSED: f"Using AkramCode without signing in is paused for a moment. {_SIGNIN_IS_FREE}",
     ANON_RATE_LIMITED: "Lots of people are getting started right now. Try again in {wait}. "
                        "Signing in is free and skips the wait.",
     ANON_POW_REQUIRED: "The Nous server asked for a proof of work, but that isn't implemented in your "
@@ -209,11 +209,11 @@ WELCOME_HOSTS = frozenset({"welcome-api.nousresearch.com"})
 # ``127.0.0.1`` while ``NOUS_INFERENCE_BASE_URL`` points at a local stand-in). Read from the
 # environment, which the user controls, so it sits at the same trust level as the URL override
 # itself; it never widens the NETWORK-side allowlist in ``auth_nous``.
-EXTRA_WELCOME_HOSTS_ENV = "HERMES_EXTRA_WELCOME_HOSTS"
+EXTRA_WELCOME_HOSTS_ENV = "AKRAMCODE_EXTRA_WELCOME_HOSTS"
 
 
 def welcome_hosts() -> frozenset[str]:
-    """``WELCOME_HOSTS`` plus any ``HERMES_EXTRA_WELCOME_HOSTS`` entries (lowercased hostnames)."""
+    """``WELCOME_HOSTS`` plus any ``AKRAMCODE_EXTRA_WELCOME_HOSTS`` entries (lowercased hostnames)."""
     raw = os.environ.get(EXTRA_WELCOME_HOSTS_ENV) or ""
     extra = {part.strip().lower() for part in raw.split(",") if part.strip()}
     return WELCOME_HOSTS | frozenset(extra) if extra else WELCOME_HOSTS
@@ -432,8 +432,8 @@ _mint_failures: Dict[str, MintFailure] = {}
 
 
 def _mint_memo_key() -> str:
-    from akramcode_constants import get_hermes_home_override, hermes_home_key
-    return "" if get_hermes_home_override() is None else hermes_home_key()
+    from akramcode_constants import get_akramcode_home_override, akramcode_home_key
+    return "" if get_akramcode_home_override() is None else akramcode_home_key()
 
 
 def _mint_failure_for_profile() -> Optional[MintFailure]:
@@ -495,7 +495,7 @@ def _note_mint_failure(err: AuthError) -> MintFailure:
 def _reconcile_and_provision(*, timeout_seconds: float) -> Optional[Dict[str, Any]]:
     """The lifecycle body, run under profile lock THEN shared lock (the documented order).
 
-    1. The shared store is the identity of record for this Hermes root. If it holds an identity
+    1. The shared store is the identity of record for this AkramCode root. If it holds an identity
        that differs from the profile's, the profile adopts it (a stale guest never outlives a
        sibling profile's sign-in, and never overwrites it).
     2. Otherwise the profile's own identity stands.
@@ -633,7 +633,7 @@ WELCOME_TIER_GATE_REASONS = frozenset({"model_not_free", "feature_not_free"})
 # Gateway messages (lowercased substrings) for a request on the wrong host or a dark tier.
 _WELCOME_ROUTE_REFUSALS = (
     ("anonymous accounts must use", "anon_on_paid_host"),
-    ("serves anonymous hermes agent accounts only", "named_on_welcome_host"),
+    ("serves anonymous akramcode agent accounts only", "named_on_welcome_host"),
     ("anonymous accounts are not accepted", "tier_disabled"),
 )
 _WELCOME_ROUTE_COPY = {
@@ -642,14 +642,14 @@ _WELCOME_ROUTE_COPY = {
     "anon_on_paid_host": "This install is set to use a different Nous server (NOUS_INFERENCE_BASE_URL). "
                          "Unset it to use the free model, or sign in. {signin}",
     "named_on_welcome_host": "This Nous account needs to reconnect. {model_hint}",
-    "tier_disabled": "Using Hermes without signing in is switched off right now. "
+    "tier_disabled": "Using AkramCode without signing in is switched off right now. "
                      "Sign in to keep chatting, it's free. {signin}",
 }
 # The sign-in door, phrased for a chat surface (slash command) and for a terminal.
 _SIGNIN_CHAT = "To sign in: /login."
-_SIGNIN_TERMINAL = "To sign in: `hermes auth upgrade`."
+_SIGNIN_TERMINAL = "To sign in: `akramcode auth upgrade`."
 _MODEL_HINT_CHAT = "Run /model and pick the Nous row again."
-_MODEL_HINT_TERMINAL = "Run `hermes model` and pick the Nous row again."
+_MODEL_HINT_TERMINAL = "Run `akramcode model` and pick the Nous row again."
 # Terminal copy for a free-model outage once the retries are spent (5xx, transport failure).
 FREE_TIER_OUTAGE_COPY = ("The free model is having trouble responding right now. "
                          "Try sending your message again in a minute.")
@@ -692,7 +692,7 @@ def welcome_refusal_copy(refusal: Dict[str, Any], *, model: str = "", in_chat: b
     wait = friendly_wait(retry) if retry > 0 else "a little while"
     if reason == "model_not_free":
         what = f"{model} isn't" if model else "That model isn't"
-        return (f"{what} available without signing in, so Hermes uses {serves} for now. "
+        return (f"{what} available without signing in, so AkramCode uses {serves} for now. "
                 f"Sign in for more models. {signin}").rstrip()
     if reason == "feature_not_free":
         return f"That isn't available without signing in. Sign in to use it, it's free. {signin}".rstrip()
@@ -705,7 +705,7 @@ def welcome_refusal_copy(refusal: Dict[str, Any], *, model: str = "", in_chat: b
     if reason == "rate_limited":
         return (f"You've used up the allowance for chatting without signing in. It refreshes in {wait}. "
                 f"Sign in for a bigger allowance, it's free. {signin}").rstrip()
-    return f"Hermes couldn't send that without signing in. Signing in is free. {signin}".rstrip()
+    return f"AkramCode couldn't send that without signing in. Signing in is free. {signin}".rstrip()
 
 
 def welcome_route_refusal(status: Any, message: Any, base_url: Any = None) -> Optional[str]:
@@ -729,7 +729,7 @@ def welcome_route_refusal(status: Any, message: Any, base_url: Any = None) -> Op
 
 
 def welcome_route_refusal_copy(kind: str, *, in_chat: bool = True, door: bool = True) -> str:
-    template = _WELCOME_ROUTE_COPY.get(kind) or "Hermes couldn't reach the free model on this route."
+    template = _WELCOME_ROUTE_COPY.get(kind) or "AkramCode couldn't reach the free model on this route."
     return template.format(
         host=DEFAULT_NOUS_WELCOME_URL, signin=(_SIGNIN_CHAT if in_chat else _SIGNIN_TERMINAL) if door else "",
         model_hint=_MODEL_HINT_CHAT if in_chat else _MODEL_HINT_TERMINAL).rstrip()
@@ -771,7 +771,7 @@ def apply_model_switch(agent: Any) -> Optional[str]:
 
     Runs once per recorded header, between calls. The conversation keeps its history; only the id
     the next request carries changes, so a promoted account stops relying on the gateway's reverse
-    map. The config write is the same one a sign-in completion uses, so ``hermes model`` and the
+    map. The config write is the same one a sign-in completion uses, so ``akramcode model`` and the
     gateway's config re-read agree with the live session.
     """
     pending = getattr(agent, "_nous_pending_model_switch", None)
@@ -846,7 +846,7 @@ def mark_guest_notice_shown() -> bool:
     return True
 
 
-# --- ``hermes auth upgrade``: sign the guest into a real Nous account, keeping its connectors ---------
+# --- ``akramcode auth upgrade``: sign the guest into a real Nous account, keeping its connectors ---------
 #
 # Wire: the normal device-code flow, with a promotion intent registered on NAS BETWEEN the code
 # request and the token poll (``POST /api/anonymous/promotion-intent {token, user_code, device_code}``).
@@ -978,7 +978,7 @@ def settle_after_upgrade(account_state: Dict[str, Any]) -> Dict[str, Any]:
     same pick as ``GET /api/model/recommended-default``), through the same config write a plain Nous
     login uses. A config on the user's own model and host is left alone.
 
-    Every sign-in completion (CLI ``hermes auth upgrade``, the desktop poller) calls this once, after
+    Every sign-in completion (CLI ``akramcode auth upgrade``, the desktop poller) calls this once, after
     ``persist_nous_credentials``. Returns ``{"model": str, "changed": bool}``: ``model`` is the default
     the config now carries (``""`` when it carries none); ``changed`` says whether this call wrote it.
     Never raises: a failed pick or write is logged and reported as ``changed: False`` so the sign-in
@@ -1009,7 +1009,7 @@ def settle_after_upgrade(account_state: Dict[str, Any]) -> Dict[str, Any]:
         # One write: host and default move together, so a failure leaves the config as it was
         # rather than the account host paired with the welcome model. No eligible recommendation
         # (Portal unreachable, or the plan and org policy admit nothing) clears the default in that
-        # same write; the runtime's silent default applies until the user picks one with `hermes model`.
+        # same write; the runtime's silent default applies until the user picks one with `akramcode model`.
         _update_config_for_provider(
             "nous", str(account_state.get("inference_base_url") or ""),
             default_model=model if on_welcome_model else None,

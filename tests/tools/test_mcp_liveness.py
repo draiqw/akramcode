@@ -136,7 +136,7 @@ def test_hydrated_error_shape_for_registered_declaration(tmp_path, monkeypatch):
     assert payload["server"] == "example-server"
     # Static liveness cannot observe the app, so it must not claim the app is not
     # running: the honest state is the missing MCP connection (#119975).
-    assert payload["state"] == "hermes_not_connected"
+    assert payload["state"] == "akramcode_not_connected"
     assert payload["app"]["name"] == "Example App"
     assert payload["user_action"]
     assert payload["retry"] == "after_user_action"
@@ -155,7 +155,7 @@ def test_connected_interactive_session_server_is_offerable_from_a_service_sessio
         declaration.unregister("example-server")
 
 def test_running_app_with_live_endpoint_reports_the_missing_connection(tmp_path, monkeypatch):
-    """The #119975 report: the app runs and its endpoint answers, only Hermes' MCP connection
+    """The #119975 report: the app runs and its endpoint answers, only AkramCode' MCP connection
     is missing. That must read as a missing connection with a reconnect action — not as
     \"<slug> is not running. Start <slug>\" for an app that IS running."""
     import akramcode_cli.agent_plugins as agent_plugins
@@ -187,7 +187,7 @@ def test_running_app_with_live_endpoint_reports_the_missing_connection(tmp_path,
         declaration.unregister("example-server")
 
     assert current is not None
-    assert current.state == "hermes_not_connected"
+    assert current.state == "akramcode_not_connected"
     sentence = mcp_liveness.describe(decl, current.availability, current.state)
     assert "MCP connection is missing" in sentence
     assert "is not running" not in sentence
@@ -208,7 +208,7 @@ def test_static_liveness_cannot_claim_the_app_is_not_running(tmp_path, monkeypat
         declaration.unregister("example-server")
 
     assert current is not None
-    assert current.state == "hermes_not_connected"
+    assert current.state == "akramcode_not_connected"
     sentence = mcp_liveness.describe(decl, current.availability, current.state)
     assert "MCP connection is missing" in sentence
     assert "is not running" not in sentence
@@ -219,7 +219,7 @@ def test_describe_prefers_the_plugin_title_over_the_server_slug(tmp_path):
     from tools import mcp_liveness
 
     decl = _decl(tmp_path)
-    sentence = mcp_liveness.describe(decl, None, "hermes_not_connected", display_name="Example Tools")
+    sentence = mcp_liveness.describe(decl, None, "akramcode_not_connected", display_name="Example Tools")
     assert sentence.startswith("Example Tools")
     assert "Example App" not in sentence
     assert "MCP connection is missing" in sentence

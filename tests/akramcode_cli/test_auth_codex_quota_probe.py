@@ -3,7 +3,7 @@
 Covers issue #43747 (externally-reset variant): Codex 429s persist a
 ``last_error_reset_at`` that can be days in the future, but the upstream
 window can reopen early (banked reset redeemed, plan upgrade, upstream
-reset).  Hermes must detect that and lift the stale local cooldown instead
+reset).  AkramCode must detect that and lift the stale local cooldown instead
 of refusing requests until re-auth.
 """
 
@@ -129,9 +129,9 @@ def test_probe_sends_chatgpt_account_id_from_jwt(monkeypatch):
 # ---------------------------------------------------------------------------
 
 
-def _write_auth_store(hermes_home, payload):
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    (hermes_home / "auth.json").write_text(json.dumps(payload, indent=2))
+def _write_auth_store(akramcode_home, payload):
+    akramcode_home.mkdir(parents=True, exist_ok=True)
+    (akramcode_home / "auth.json").write_text(json.dumps(payload, indent=2))
 
 
 def _exhausted_pool_store(now=None):
@@ -223,9 +223,9 @@ def test_resolver_recovers_when_probe_confirms_reset(tmp_path, monkeypatch):
     """The screenshot bug: pool-only cooldown raises `quota exhausted (429);
     retry after Ns` even though the upstream window already reset.  A positive
     probe must clear the cooldown and return the pool credential."""
-    hermes_home = tmp_path / "hermes"
-    _write_auth_store(hermes_home, _pool_only_rate_limited_store())
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    akramcode_home = tmp_path / "akramcode"
+    _write_auth_store(akramcode_home, _pool_only_rate_limited_store())
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
     monkeypatch.setattr(
         auth_mod, "_probe_codex_quota_restored", lambda token, **kw: True
@@ -238,7 +238,7 @@ def test_resolver_recovers_when_probe_confirms_reset(tmp_path, monkeypatch):
     assert resolved["api_key"] == "tok-quota"
     assert resolved["source"] == "credential_pool"
 
-    store = json.loads((hermes_home / "auth.json").read_text())
+    store = json.loads((akramcode_home / "auth.json").read_text())
     entry = store["credential_pool"]["openai-codex"][0]
     assert entry["last_status"] is None
     assert entry["last_error_reset_at"] is None
@@ -262,9 +262,9 @@ def test_resolver_selects_entry_with_expired_millisecond_reset(tmp_path, monkeyp
         }
     )
     store["credential_pool"]["openai-codex"].append(reserve)
-    hermes_home = tmp_path / "hermes"
-    _write_auth_store(hermes_home, store)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    akramcode_home = tmp_path / "akramcode"
+    _write_auth_store(akramcode_home, store)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
     monkeypatch.setattr(auth_mod, "_probe_codex_quota_restored", lambda token, **kw: False)
     monkeypatch.setattr(auth_codex, "_probe_codex_quota_restored", lambda token, **kw: False)
 
@@ -291,8 +291,8 @@ def test_pool_probe_not_fired_for_non_quota_exhaustion(tmp_path, monkeypatch):
     entry["last_error_code"] = 401
     entry["last_error_reason"] = "token_expired"
     entry["last_error_message"] = "expired"
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
-    _write_auth_store(tmp_path / "hermes", store)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode"))
+    _write_auth_store(tmp_path / "akramcode", store)
 
     from agent.credential_pool import load_pool
 
@@ -363,9 +363,9 @@ def test_resolver_refreshes_expired_token_before_probe(tmp_path, monkeypatch):
     expired by the time the probe runs: /usage answers 401 -> None -> cooldown kept forever,
     even after a top-up / plan upgrade. Refresh (keeping the cooldown) and probe live."""
     now = time.time()
-    hermes_home = tmp_path / "hermes"
-    _write_auth_store(hermes_home, _expired_jwt_pool_store(now))
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    akramcode_home = tmp_path / "akramcode"
+    _write_auth_store(akramcode_home, _expired_jwt_pool_store(now))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
     fresh = _jwt({"exp": now + 3600})
     refresh_calls: list = []
     _fake_refresh(monkeypatch, fresh, refresh_calls)
@@ -376,7 +376,7 @@ def test_resolver_refreshes_expired_token_before_probe(tmp_path, monkeypatch):
     assert refresh_calls == ["rf-old"]
     assert http_calls[0]["headers"]["Authorization"] == f"Bearer {fresh}"
     assert resolved["api_key"] == fresh
-    entry = json.loads((hermes_home / "auth.json").read_text())["credential_pool"]["openai-codex"][0]
+    entry = json.loads((akramcode_home / "auth.json").read_text())["credential_pool"]["openai-codex"][0]
     assert entry["refresh_token"] == "rf-new"
     assert entry["last_status"] is None
 
@@ -387,13 +387,13 @@ def test_pool_selection_refreshes_expired_token_before_probe(tmp_path, monkeypat
     on BOTH sides (pool row + ``providers.openai-codex`` singleton) so the next selection's
     auth-store sync cannot re-adopt the consumed pair and lift the cooldown with it."""
     now = time.time()
-    hermes_home = tmp_path / "hermes"
+    akramcode_home = tmp_path / "akramcode"
     store = _expired_jwt_pool_store(now)
     stale = store["credential_pool"]["openai-codex"][0]
     store["providers"]["openai-codex"] = {
         "tokens": {"access_token": stale["access_token"], "refresh_token": "rf-old"}}
-    _write_auth_store(hermes_home, store)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    _write_auth_store(akramcode_home, store)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
     fresh = _jwt({"exp": now + 3600})
     refresh_calls: list = []
     _fake_refresh(monkeypatch, fresh, refresh_calls)
@@ -409,7 +409,7 @@ def test_pool_selection_refreshes_expired_token_before_probe(tmp_path, monkeypat
     assert [c["headers"]["Authorization"] for c in http_calls] == [f"Bearer {fresh}"]
     entry = pool._entries[0]
     assert (entry.access_token, entry.refresh_token, entry.last_status) == (fresh, "rf-new", "exhausted")
-    disk = json.loads((hermes_home / "auth.json").read_text())
+    disk = json.loads((akramcode_home / "auth.json").read_text())
     assert disk["credential_pool"]["openai-codex"][0]["refresh_token"] == "rf-new"
     assert disk["providers"]["openai-codex"]["tokens"]["refresh_token"] == "rf-new"
 
@@ -419,9 +419,9 @@ def test_pool_selection_throttles_failing_pre_probe_refresh(tmp_path, monkeypatc
     down) must not POST to the token endpoint on every selection — at most one attempt per
     probe interval, the same budget the probe itself has (<= 1 network call per 5 min)."""
     now = time.time()
-    hermes_home = tmp_path / "hermes"
-    _write_auth_store(hermes_home, _expired_jwt_pool_store(now))
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    akramcode_home = tmp_path / "akramcode"
+    _write_auth_store(akramcode_home, _expired_jwt_pool_store(now))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
     attempts: list = []
 
     def _failing_refresh(access_token, refresh_token, **kw):

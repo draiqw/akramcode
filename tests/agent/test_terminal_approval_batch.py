@@ -42,8 +42,8 @@ def _agent():
 def test_desktop_publishes_final_commands_before_wait_and_runs_in_order(tmp_path, monkeypatch, read_count, threaded_middleware):
     from tools.terminal_scope import reset_terminal_scope, set_terminal_scope
     from tools.terminal_tool_lifecycle import cleanup_vm
-    monkeypatch.delenv("HERMES_DESKTOP", raising=False)
-    monkeypatch.setenv("HERMES_EXEC_ASK", "1")
+    monkeypatch.delenv("AKRAMCODE_DESKTOP", raising=False)
+    monkeypatch.setenv("AKRAMCODE_EXEC_ASK", "1")
     monkeypatch.setenv("TERMINAL_ENV", "local")
     monkeypatch.setenv("TERMINAL_CWD", str(tmp_path))
     monkeypatch.setattr("tools.approval_context._get_approval_mode", lambda: "manual")
@@ -151,7 +151,7 @@ def test_cancelled_preparation_drains_requests_without_reusing_once(tmp_path, mo
     from tools.terminal_scope import reset_terminal_scope, set_terminal_scope
     from tools.terminal_tool_lifecycle import cleanup_vm
 
-    monkeypatch.setenv("HERMES_EXEC_ASK", "1")
+    monkeypatch.setenv("AKRAMCODE_EXEC_ASK", "1")
     monkeypatch.setattr("tools.approval_context._get_approval_mode", lambda: "manual")
     monkeypatch.setattr("tools.approval._tirith_scan", lambda command: {"action": "allow"})
     monkeypatch.setattr("agent.title_generator.maybe_auto_title", lambda *a, **kw: None)
@@ -242,8 +242,8 @@ def test_failed_command_re_gates_later_prepared_approvals(tmp_path, monkeypatch)
     from tools.terminal_scope import reset_terminal_scope, set_terminal_scope
     from tools.terminal_tool_lifecycle import cleanup_vm
 
-    monkeypatch.delenv("HERMES_DESKTOP", raising=False)
-    monkeypatch.setenv("HERMES_EXEC_ASK", "1")
+    monkeypatch.delenv("AKRAMCODE_DESKTOP", raising=False)
+    monkeypatch.setenv("AKRAMCODE_EXEC_ASK", "1")
     monkeypatch.setenv("TERMINAL_ENV", "local")
     monkeypatch.setenv("TERMINAL_CWD", str(tmp_path))
     monkeypatch.setattr("tools.approval_context._get_approval_mode", lambda: "manual")
@@ -330,7 +330,7 @@ def test_switching_yolo_off_mid_batch_re_gates_later_commands(tmp_path, monkeypa
     from tools.terminal_scope import reset_terminal_scope, set_terminal_scope
     from tools.terminal_tool_lifecycle import cleanup_vm
 
-    monkeypatch.setenv("HERMES_EXEC_ASK", "1")
+    monkeypatch.setenv("AKRAMCODE_EXEC_ASK", "1")
     monkeypatch.setattr("tools.approval_context._get_approval_mode", lambda: "manual")
     monkeypatch.setattr("tools.approval._tirith_scan", lambda command: {"action": "allow"})
     monkeypatch.setattr("agent.title_generator.maybe_auto_title", lambda *a, **kw: None)

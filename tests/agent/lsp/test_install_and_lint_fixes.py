@@ -2,7 +2,7 @@
 
 Covers:
 
-1. ``hermes lsp status`` surfaces a ``Backend warnings`` section when
+1. ``akramcode lsp status`` surfaces a ``Backend warnings`` section when
    bash-language-server is installed but ``shellcheck`` is missing.
 2. ``_check_lint`` returns ``skipped`` (not ``error``) when the linter
    command exists on PATH but couldn't actually run — e.g. ``npx tsc``
@@ -34,7 +34,7 @@ def test_install_python_server_uses_pm_tool_environment(tmp_path, monkeypatch):
 
     monkeypatch.setattr(pm, "ensure_python_tool", ensure)
     monkeypatch.setattr(pm, "python_tool", lambda *a, **kw: selected[0] if selected else None)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
     monkeypatch.setattr(install_mod, "INSTALL_RECIPES", {
         "fake-lsp": {"strategy": "pip", "pkg": "fake-lsp==1.0", "bin": "fake-language-server"},
     })
@@ -92,8 +92,8 @@ def test_lsp_package_manager_config_selects_installer_argv_and_never_falls_back_
 
     from agent.lsp import install as install_mod
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    staging = str(install_mod.hermes_lsp_bin_dir().parent)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
+    staging = str(install_mod.akramcode_lsp_bin_dir().parent)
     cfg = {"lsp": {}}
     monkeypatch.setattr("akramcode_cli.config.load_config_readonly", lambda: cfg)
     runs = []

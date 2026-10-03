@@ -25,10 +25,10 @@ def _isolated_receipt_context():
 
 @pytest.fixture
 def homed(tmp_path, monkeypatch):
-    """Receipt dir inside a temp hermes home."""
-    import hermes_constants
+    """Receipt dir inside a temp akramcode home."""
+    import akramcode_constants
 
-    monkeypatch.setattr(hermes_constants, "get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr(akramcode_constants, "get_akramcode_home", lambda: tmp_path)
     return tmp_path
 
 
@@ -81,7 +81,7 @@ def test_bare_python_can_report_a_failed_bootstrap(tmp_path, monkeypatch):
     import subprocess
     import sys
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
     repo = Path(__file__).resolve().parents[2]
     code = """
 import json

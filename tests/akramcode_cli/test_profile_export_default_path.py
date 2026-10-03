@@ -25,9 +25,9 @@ def profiles():
 def test_default_export_path_is_managed_and_outside_named_profiles(
     tmp_path, monkeypatch, profiles
 ):
-    default_home = tmp_path / ".hermes"
+    default_home = tmp_path / ".akramcode"
     default_home.mkdir()
-    monkeypatch.setattr(profiles, "_get_default_hermes_home", lambda: default_home)
+    monkeypatch.setattr(profiles, "_get_default_akramcode_home", lambda: default_home)
 
     result = profiles.get_profile_export_path(
         "Research-Bot", timestamp="20260823-120000"
@@ -41,7 +41,7 @@ def test_default_export_path_is_managed_and_outside_named_profiles(
     assert not (default_home / "profiles" / "research-bot" / result.name).exists()
 
 
-def test_custom_hermes_home_inside_a_checkout_uses_a_sibling_store(
+def test_custom_akramcode_home_inside_a_checkout_uses_a_sibling_store(
     tmp_path, monkeypatch, profiles
 ):
     checkout = tmp_path / "checkout"
@@ -49,7 +49,7 @@ def test_custom_hermes_home_inside_a_checkout_uses_a_sibling_store(
     (checkout / ".git").write_text("gitdir: ../git\n", encoding="utf-8")
     monkeypatch.chdir(checkout)
     monkeypatch.setattr(Path, "home", lambda: tmp_path / "home")
-    monkeypatch.setattr(profiles, "_get_default_hermes_home", lambda: checkout)
+    monkeypatch.setattr(profiles, "_get_default_akramcode_home", lambda: checkout)
 
     result = profiles.get_profile_export_path("default", timestamp="20260823-120000")
 
@@ -57,7 +57,7 @@ def test_custom_hermes_home_inside_a_checkout_uses_a_sibling_store(
 
 
 def test_checkout_detection_does_not_depend_on_cwd(tmp_path, monkeypatch, profiles):
-    """HERMES_HOME inside a checkout must be detected even when cwd is elsewhere.
+    """AKRAMCODE_HOME inside a checkout must be detected even when cwd is elsewhere.
 
     Regression for the cwd-anchored bypass: cron/service-manager invocations
     run from outside the checkout, and the original heuristic walked
@@ -66,13 +66,13 @@ def test_checkout_detection_does_not_depend_on_cwd(tmp_path, monkeypatch, profil
     checkout = tmp_path / "checkout"
     checkout.mkdir()
     (checkout / ".git").write_text("gitdir: ../git\n", encoding="utf-8")
-    hermes_home = checkout / "data_home"
-    hermes_home.mkdir()
+    akramcode_home = checkout / "data_home"
+    akramcode_home.mkdir()
     elsewhere = tmp_path / "elsewhere"
     elsewhere.mkdir()
     monkeypatch.chdir(elsewhere)  # cwd has no .git ancestor inside tmp_path
     monkeypatch.setattr(Path, "home", lambda: tmp_path / "home")
-    monkeypatch.setattr(profiles, "_get_default_hermes_home", lambda: hermes_home)
+    monkeypatch.setattr(profiles, "_get_default_akramcode_home", lambda: akramcode_home)
 
     result = profiles.get_profile_export_path("default", timestamp="20260823-120000")
 
@@ -84,9 +84,9 @@ def test_cli_export_rejects_bad_profile_name_without_traceback(
 ):
     """A bad name must print a clean error — the helper raises before export."""
     main_mod = importlib.import_module("akramcode_cli.main")
-    default_home = tmp_path / ".hermes"
+    default_home = tmp_path / ".akramcode"
     default_home.mkdir()
-    monkeypatch.setattr(profiles, "_get_default_hermes_home", lambda: default_home)
+    monkeypatch.setattr(profiles, "_get_default_akramcode_home", lambda: default_home)
 
     with pytest.raises(SystemExit):
         profile_cmd.cmd_profile(
@@ -105,15 +105,15 @@ def test_cli_export_default_does_not_write_into_the_current_checkout(
     tmp_path, monkeypatch, capsys, profiles
 ):
     main_mod = importlib.import_module("akramcode_cli.main")
-    default_home = tmp_path / ".hermes"
+    default_home = tmp_path / ".akramcode"
     default_home.mkdir()
     (default_home / "config.yaml").write_text("model: test\n", encoding="utf-8")
     checkout = tmp_path / "checkout"
     checkout.mkdir()
     monkeypatch.chdir(checkout)
-    monkeypatch.setattr(profiles, "_get_default_hermes_home", lambda: default_home)
+    monkeypatch.setattr(profiles, "_get_default_akramcode_home", lambda: default_home)
     monkeypatch.setattr(
-        "hermes_constants.get_default_hermes_root", lambda: default_home
+        "akramcode_constants.get_default_akramcode_root", lambda: default_home
     )
 
     profile_cmd.cmd_profile(
@@ -135,9 +135,9 @@ def test_slash_export_uses_the_same_managed_destination(
     tmp_path, monkeypatch, profiles
 ):
     mixin_mod = importlib.import_module("akramcode_cli.cli_commands_mixin")
-    default_home = tmp_path / ".hermes"
+    default_home = tmp_path / ".akramcode"
     default_home.mkdir()
-    monkeypatch.setattr(profiles, "_get_default_hermes_home", lambda: default_home)
+    monkeypatch.setattr(profiles, "_get_default_akramcode_home", lambda: default_home)
     monkeypatch.setattr(profiles, "get_active_profile_name", lambda: "default")
     calls = []
     monkeypatch.setattr(
@@ -160,7 +160,7 @@ def test_cwd_in_unrelated_checkout_does_not_prove_safety(
     tmp_path, monkeypatch, profiles
 ):
     """cwd inside unrelated checkout A must not stand in for the safety proof
-    of a HERMES_HOME inside checkout B."""
+    of a AKRAMCODE_HOME inside checkout B."""
     checkout_b = tmp_path / "checkout-b"
     checkout_b.mkdir()
     (checkout_b / ".git").mkdir()
@@ -169,7 +169,7 @@ def test_cwd_in_unrelated_checkout_does_not_prove_safety(
     (checkout_a / ".git").write_text("gitdir: ../git\n", encoding="utf-8")
     monkeypatch.chdir(checkout_a)
     monkeypatch.setattr(Path, "home", lambda: tmp_path / "home")
-    monkeypatch.setattr(profiles, "_get_default_hermes_home", lambda: checkout_b)
+    monkeypatch.setattr(profiles, "_get_default_akramcode_home", lambda: checkout_b)
 
     result = profiles.get_profile_export_path("default", timestamp="20260823-120000")
 
@@ -189,7 +189,7 @@ def test_every_candidate_inside_a_checkout_fails_closed(
     checkout.mkdir()
     (checkout / ".git").mkdir()
     monkeypatch.setattr(Path, "home", lambda: checkout / "home")
-    monkeypatch.setattr(profiles, "_get_default_hermes_home", lambda: checkout)
+    monkeypatch.setattr(profiles, "_get_default_akramcode_home", lambda: checkout)
     monkeypatch.setattr(tempfile, "gettempdir", lambda: str(checkout / "tmp"))
 
     with pytest.raises(ValueError, match="No safe automatic export destination"):
@@ -200,12 +200,12 @@ def test_every_candidate_inside_a_checkout_fails_closed(
 def test_export_dir_symlink_is_rejected(tmp_path, monkeypatch, profiles):
     """A pre-created symlink at the managed export path (predictable-path
     attack on shared hosts) must be refused, not silently followed."""
-    default_home = tmp_path / ".hermes"
+    default_home = tmp_path / ".akramcode"
     default_home.mkdir()
     elsewhere = tmp_path / "elsewhere"
     elsewhere.mkdir()
     (default_home / "profile-exports").symlink_to(elsewhere)
-    monkeypatch.setattr(profiles, "_get_default_hermes_home", lambda: default_home)
+    monkeypatch.setattr(profiles, "_get_default_akramcode_home", lambda: default_home)
 
     with pytest.raises(ValueError, match="symlink"):
         profiles.get_profile_export_path("default")

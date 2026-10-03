@@ -1,7 +1,7 @@
 """A session row deleted under a live agent must heal on the next flush (#123583).
 
 Before the fix, ``_flush_messages_to_session_db`` trusts the cached
-``_session_db_created`` flag: after ``hermes sessions delete`` (or Desktop delete /
+``_session_db_created`` flag: after ``akramcode sessions delete`` (or Desktop delete /
 bulk prune / profile-repair move / in-place store rebuild) removes the row, every
 later turn's append fails the FK and is dropped with one WARNING per turn — the
 durable transcript silently stops growing and leaves no trace in the store.

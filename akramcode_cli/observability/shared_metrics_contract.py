@@ -1,4 +1,4 @@
-"""Bounded product contract for the first Hermes shared-metrics slice."""
+"""Bounded product contract for the first AkramCode shared-metrics slice."""
 
 from __future__ import annotations
 
@@ -15,80 +15,80 @@ from agent.relay_runtime import (
 from akramcode_cli.platforms import PLATFORMS
 from toolsets import BUILTIN_TOOL_NAMES, BUILTIN_TOOLSET_NAMES
 
-SCHEMA_KEY = "hermes.metrics.schema_version"
+SCHEMA_KEY = "akramcode.metrics.schema_version"
 # A random per-emit token (no payload) on rows whose producer waits to learn they were SAVED: facts
 # recovered from a file that is deleted only then. Events persist on the Relay thread.
-COMMIT_TICKET_KEY = "hermes.shared_metrics.commit_ticket"
-SCHEMA_VERSION = "hermes.metrics.event.v3"
-MODEL_CALL_SCOPE = "hermes.model_call"
+COMMIT_TICKET_KEY = "akramcode.shared_metrics.commit_ticket"
+SCHEMA_VERSION = "akramcode.metrics.event.v3"
+MODEL_CALL_SCOPE = "akramcode.model_call"
 MODEL_CALL_PROFILE_MODEL = "unknown"
-TASK_SCOPE = "hermes.task_run"
-TOOL_CALL_SCOPE = "hermes.tool_call"
-CLIENT_ACTIVE_MARK = "hermes.client.active"
-TOOL_APPROVAL_MARK = "hermes.tool_approval"
-SKILL_LIFECYCLE_MARK = "hermes.skill.lifecycle"
-SKILL_LOAD_MARK = "hermes.skill.load"
-INSTALL_SNAPSHOT_MARK = "hermes.install.snapshot"
-SESSION_MARK = "hermes.session"
-SETUP_COMPLETED_MARK = "hermes.setup.completed"
-MODEL_TOKENS_MARK = "hermes.model_tokens"
-COMPRESSION_MARK = "hermes.compression"
-MODEL_SWITCH_MARK = "hermes.model_switch"
-FALLBACK_MARK = "hermes.fallback"
-SLASH_COMMAND_MARK = "hermes.slash_command"
-EXTENSION_INSTALL_MARK = "hermes.extension.install"
+TASK_SCOPE = "akramcode.task_run"
+TOOL_CALL_SCOPE = "akramcode.tool_call"
+CLIENT_ACTIVE_MARK = "akramcode.client.active"
+TOOL_APPROVAL_MARK = "akramcode.tool_approval"
+SKILL_LIFECYCLE_MARK = "akramcode.skill.lifecycle"
+SKILL_LOAD_MARK = "akramcode.skill.load"
+INSTALL_SNAPSHOT_MARK = "akramcode.install.snapshot"
+SESSION_MARK = "akramcode.session"
+SETUP_COMPLETED_MARK = "akramcode.setup.completed"
+MODEL_TOKENS_MARK = "akramcode.model_tokens"
+COMPRESSION_MARK = "akramcode.compression"
+MODEL_SWITCH_MARK = "akramcode.model_switch"
+FALLBACK_MARK = "akramcode.fallback"
+SLASH_COMMAND_MARK = "akramcode.slash_command"
+EXTENSION_INSTALL_MARK = "akramcode.extension.install"
 # ---- v4 install ----
-STARTUP_LATENCY_MARK = "hermes.startup.latency"
-SUBSCRIBER_NAME = "hermes.nemo_relay.shared_metrics"
-CLIENT_ACTIVE_METRIC = "hermes.client.active"
-LEGACY_MODEL_CALL_METRIC = "hermes.model_call.count"
-MODEL_ROUTE_METRIC = "hermes.model_route.count"
-TASK_STARTED_METRIC = "hermes.task_run.started"
-TASK_FINISHED_METRIC = "hermes.task_run.finished"
-TASK_DURATION_METRIC = "hermes.task_run.duration"
-TOOL_CALL_METRIC = "hermes.tool_call.count"
-TOOL_LATENCY_METRIC = "hermes.tool_call.latency"
-TOOL_APPROVAL_METRIC = "hermes.tool_approval.count"
-SKILL_LIFECYCLE_METRIC = "hermes.skill.lifecycle.count"
-SKILL_LOAD_METRIC = "hermes.skill.load.count"
-TOOL_USAGE_METRIC = "hermes.tool.usage.count"
-INSTALL_SNAPSHOT_METRIC = "hermes.install.snapshot"
-SESSION_METRIC = "hermes.session.count"
-MILESTONE_METRIC = "hermes.install.milestone"
-SETUP_COMPLETED_METRIC = "hermes.setup.completed"
-MODEL_TOKENS_METRIC = "hermes.model_tokens.sum"
-COMPRESSION_METRIC = "hermes.compression.count"
-MODEL_SWITCH_METRIC = "hermes.model_switch.count"
-FALLBACK_METRIC = "hermes.fallback.count"
-SLASH_COMMAND_METRIC = "hermes.slash_command.count"
-EXTENSION_INSTALL_METRIC = "hermes.extension.install.count"
+STARTUP_LATENCY_MARK = "akramcode.startup.latency"
+SUBSCRIBER_NAME = "akramcode.nemo_relay.shared_metrics"
+CLIENT_ACTIVE_METRIC = "akramcode.client.active"
+LEGACY_MODEL_CALL_METRIC = "akramcode.model_call.count"
+MODEL_ROUTE_METRIC = "akramcode.model_route.count"
+TASK_STARTED_METRIC = "akramcode.task_run.started"
+TASK_FINISHED_METRIC = "akramcode.task_run.finished"
+TASK_DURATION_METRIC = "akramcode.task_run.duration"
+TOOL_CALL_METRIC = "akramcode.tool_call.count"
+TOOL_LATENCY_METRIC = "akramcode.tool_call.latency"
+TOOL_APPROVAL_METRIC = "akramcode.tool_approval.count"
+SKILL_LIFECYCLE_METRIC = "akramcode.skill.lifecycle.count"
+SKILL_LOAD_METRIC = "akramcode.skill.load.count"
+TOOL_USAGE_METRIC = "akramcode.tool.usage.count"
+INSTALL_SNAPSHOT_METRIC = "akramcode.install.snapshot"
+SESSION_METRIC = "akramcode.session.count"
+MILESTONE_METRIC = "akramcode.install.milestone"
+SETUP_COMPLETED_METRIC = "akramcode.setup.completed"
+MODEL_TOKENS_METRIC = "akramcode.model_tokens.sum"
+COMPRESSION_METRIC = "akramcode.compression.count"
+MODEL_SWITCH_METRIC = "akramcode.model_switch.count"
+FALLBACK_METRIC = "akramcode.fallback.count"
+SLASH_COMMAND_METRIC = "akramcode.slash_command.count"
+EXTENSION_INSTALL_METRIC = "akramcode.extension.install.count"
 # ---- v4 loop ----
-MEMORY_OP_MARK = "hermes.memory.op"
-CURATOR_RUN_MARK = "hermes.curator.run"
-DELEGATION_RUN_MARK = "hermes.delegation.run"
-EXECUTION_BACKEND_MARK = "hermes.execution_backend"
-MEMORY_OP_METRIC = "hermes.memory.op.count"
-CURATOR_RUN_METRIC = "hermes.curator.run.count"
-DELEGATION_RUN_METRIC = "hermes.delegation.run.count"
-EXECUTION_BACKEND_METRIC = "hermes.execution_backend.count"
+MEMORY_OP_MARK = "akramcode.memory.op"
+CURATOR_RUN_MARK = "akramcode.curator.run"
+DELEGATION_RUN_MARK = "akramcode.delegation.run"
+EXECUTION_BACKEND_MARK = "akramcode.execution_backend"
+MEMORY_OP_METRIC = "akramcode.memory.op.count"
+CURATOR_RUN_METRIC = "akramcode.curator.run.count"
+DELEGATION_RUN_METRIC = "akramcode.delegation.run.count"
+EXECUTION_BACKEND_METRIC = "akramcode.execution_backend.count"
 # ---- end v4 loop ----
 # ---- v4 model ----
-MODEL_TOOL_QUALITY_MARK = "hermes.model_tool_quality"
-MODEL_FRICTION_MARK = "hermes.model_friction"
-CONTEXT_PEAK_MARK = "hermes.context_peak"
-MODEL_TOOL_QUALITY_METRIC = "hermes.model_tool_quality.count"
-MODEL_FRICTION_METRIC = "hermes.model_friction.count"
-CONTEXT_PEAK_METRIC = "hermes.context_peak.count"
+MODEL_TOOL_QUALITY_MARK = "akramcode.model_tool_quality"
+MODEL_FRICTION_MARK = "akramcode.model_friction"
+CONTEXT_PEAK_MARK = "akramcode.context_peak"
+MODEL_TOOL_QUALITY_METRIC = "akramcode.model_tool_quality.count"
+MODEL_FRICTION_METRIC = "akramcode.model_friction.count"
+CONTEXT_PEAK_METRIC = "akramcode.context_peak.count"
 # ---- end v4 model ----
 # ---- v4 install ----
-STARTUP_LATENCY_METRIC = "hermes.startup.latency"
+STARTUP_LATENCY_METRIC = "akramcode.startup.latency"
 # ---- v5 engagement ----
 # Not a counter: one attended turn's serving model, folded into the local daily engagement rollup.
-ENGAGEMENT_TURN_MARK = "hermes.engagement.turn"
-ENGAGEMENT_DAY_METRIC = "hermes.engagement.day.count"
-ENGAGEMENT_SURFACE_METRIC = "hermes.engagement.surface_day.count"
-MODEL_SWITCH_AFTER_MARK = "hermes.model_switch_after"
-MODEL_SWITCH_AFTER_METRIC = "hermes.model_switch_after.count"
+ENGAGEMENT_TURN_MARK = "akramcode.engagement.turn"
+ENGAGEMENT_DAY_METRIC = "akramcode.engagement.day.count"
+ENGAGEMENT_SURFACE_METRIC = "akramcode.engagement.surface_day.count"
+MODEL_SWITCH_AFTER_MARK = "akramcode.model_switch_after"
+MODEL_SWITCH_AFTER_METRIC = "akramcode.model_switch_after.count"
 # ---- end v5 engagement ----
 MODEL_IDENTIFIER_MAX_LENGTH = 256
 PROVIDER_IDENTIFIER_MAX_LENGTH = 64
@@ -137,7 +137,7 @@ CLIENT_ARCHITECTURES = frozenset({"arm", "arm64", "unknown", "x86", "x86_64"})
 CLIENT_INSTALL_METHODS = frozenset({
     "apt", "docker", "git", "home-manager", "homebrew", "nixos", "pip", "unknown",
 })
-CLIENT_RESOURCE_KEYS = frozenset({"architecture", "hermes_version", "install_method", "os_family"})
+CLIENT_RESOURCE_KEYS = frozenset({"architecture", "akramcode_version", "install_method", "os_family"})
 
 # ---- v3 taxonomies -------------------------------------------------------------------------
 MODEL_CALL_ROLES = frozenset({"auxiliary", "primary"})
@@ -256,10 +256,10 @@ EXECUTION_BACKENDS = BROWSER_BACKENDS | CODE_BACKENDS | TERMINAL_BACKENDS
 EXECUTION_OUTCOMES = frozenset({"failed", "success"})
 # ---- end v4 loop ----
 # ---- v4 gateway ----
-PLATFORM_HEALTH_MARK = PLATFORM_HEALTH_METRIC = "hermes.platform.health"
-PLATFORM_DELIVERY_MARK = PLATFORM_DELIVERY_METRIC = "hermes.platform.delivery"
-REPLY_LATENCY_MARK = REPLY_LATENCY_METRIC = "hermes.gateway.reply_latency"
-CRON_RUN_MARK = CRON_RUN_METRIC = "hermes.cron.run"
+PLATFORM_HEALTH_MARK = PLATFORM_HEALTH_METRIC = "akramcode.platform.health"
+PLATFORM_DELIVERY_MARK = PLATFORM_DELIVERY_METRIC = "akramcode.platform.delivery"
+REPLY_LATENCY_MARK = REPLY_LATENCY_METRIC = "akramcode.gateway.reply_latency"
+CRON_RUN_MARK = CRON_RUN_METRIC = "akramcode.cron.run"
 # Plugin platforms are named only when Nous ships them (plugins/platforms/) or the installer proved a
 # plugin-catalog install (shared_metrics_catalog.platform_metric_name); every other one is ``plugin``.
 _PLATFORM_CATALOGS = ("bundled_platform_names", "catalog_platform_names")
@@ -325,12 +325,12 @@ def long_size_bucket(count: int) -> str:
 # ---- end v5 engagement ----
 
 # ---- v4 reliability ----
-UPDATE_RUN_MARK = UPDATE_RUN_METRIC = "hermes.update.run"
-UPDATE_STAGE_MARK = UPDATE_STAGE_METRIC = "hermes.update.stage"
-PROCESS_EXIT_MARK = PROCESS_EXIT_METRIC = "hermes.process.exit"
+UPDATE_RUN_MARK = UPDATE_RUN_METRIC = "akramcode.update.run"
+UPDATE_STAGE_MARK = UPDATE_STAGE_METRIC = "akramcode.update.stage"
+PROCESS_EXIT_MARK = PROCESS_EXIT_METRIC = "akramcode.process.exit"
 UPDATE_KINDS = frozenset({"cli", "desktop"})
 UPDATE_OUTCOMES = frozenset({"failed", "noop", "refused", "success"})
-# `hermes update` pipeline stages, in pipeline order (the receipt's stage marks use these names).
+# `akramcode update` pipeline stages, in pipeline order (the receipt's stage marks use these names).
 UPDATE_STAGE_ORDER = ("plan", "snapshot", "apply", "deps", "build", "restart", "verify")
 UPDATE_STAGES = frozenset(UPDATE_STAGE_ORDER)
 # Desktop's packaged updaters (electron-updater, App Installer, Store) fail at their own steps.
@@ -351,11 +351,11 @@ _VERSION_AGE_THRESHOLDS = ((7 * _DAY_MS, "lt_7d"), (30 * _DAY_MS, "7d_to_30d"), 
 
 
 # ---- v5 signals ----
-TOOL_UNAVAILABLE_MARK = TOOL_UNAVAILABLE_METRIC = "hermes.tool_unavailable.count"
-PROVIDER_SETUP_MARK = PROVIDER_SETUP_METRIC = "hermes.provider_setup.count"
-FEATURE_ADOPTION_METRIC = "hermes.feature_adoption.count"
+TOOL_UNAVAILABLE_MARK = TOOL_UNAVAILABLE_METRIC = "akramcode.tool_unavailable.count"
+PROVIDER_SETUP_MARK = PROVIDER_SETUP_METRIC = "akramcode.provider_setup.count"
+FEATURE_ADOPTION_METRIC = "akramcode.feature_adoption.count"
 # Not a counter: a first-use fact the subscriber turns into at most one adoption row per feature.
-FEATURE_USED_MARK = "hermes.feature.used"
+FEATURE_USED_MARK = "akramcode.feature.used"
 PROVIDER_SETUP_SURFACES = frozenset({"cli_model", "cli_setup", "dashboard", "desktop", "tui"})
 PROVIDER_SETUP_EVENTS = frozenset({"abandoned", "completed", "failed", "started"})
 PROVIDER_SETUP_FAILURE_CLASSES = frozenset({"auth", "cancelled", "network", "no_models", "none", "other"})
@@ -364,7 +364,7 @@ FEATURES = frozenset({
     "memory", "plugins", "projects", "skills_created", "tui", "voice",
 })
 DAYS_SINCE_INSTALL_BUCKETS = frozenset({"same_day", "1d_to_7d", "7d_to_30d", "30d_to_90d", "gte_90d", "unknown"})
-FEATURE_DISABLED_MARK = FEATURE_DISABLED_METRIC = "hermes.feature_disabled.count"
+FEATURE_DISABLED_MARK = FEATURE_DISABLED_METRIC = "akramcode.feature_disabled.count"
 FEATURE_DISABLED_KINDS = frozenset({
     "compression", "curator", "memory", "platform", "plugin", "setting", "skill", "toolset",
 })
@@ -387,16 +387,16 @@ def version_age_bucket(age_ms: Any) -> str:
 # ---- end v4 reliability ----
 
 # ---- v5 harness ----
-FILE_EDIT_MARK = "hermes.file_edit"
-LOOP_GUARD_MARK = "hermes.loop_guard"
-TOOL_RECOVERY_MARK = "hermes.tool_recovery"
-TERMINAL_OUTCOME_MARK = "hermes.terminal.outcome"
-MODEL_REPLY_ISSUE_MARK = "hermes.model_reply_issue"
-FILE_EDIT_METRIC = "hermes.file_edit.count"
-LOOP_GUARD_METRIC = "hermes.loop_guard.count"
-TOOL_RECOVERY_METRIC = "hermes.tool_recovery.count"
-TERMINAL_OUTCOME_METRIC = "hermes.terminal.outcome.count"
-MODEL_REPLY_ISSUE_METRIC = "hermes.model_reply_issue.count"
+FILE_EDIT_MARK = "akramcode.file_edit"
+LOOP_GUARD_MARK = "akramcode.loop_guard"
+TOOL_RECOVERY_MARK = "akramcode.tool_recovery"
+TERMINAL_OUTCOME_MARK = "akramcode.terminal.outcome"
+MODEL_REPLY_ISSUE_MARK = "akramcode.model_reply_issue"
+FILE_EDIT_METRIC = "akramcode.file_edit.count"
+LOOP_GUARD_METRIC = "akramcode.loop_guard.count"
+TOOL_RECOVERY_METRIC = "akramcode.tool_recovery.count"
+TERMINAL_OUTCOME_METRIC = "akramcode.terminal.outcome.count"
+MODEL_REPLY_ISSUE_METRIC = "akramcode.model_reply_issue.count"
 FILE_EDIT_TOOLS = frozenset({"patch", "write_file"})
 FILE_EDIT_MODES = frozenset({"replace", "v4a", "whole_file"})
 FILE_EDIT_OUTCOMES = frozenset({"already_applied", "ambiguous", "applied", "failed", "no_match"})
@@ -425,12 +425,12 @@ TERMINAL_OUTCOMES = frozenset({"killed", "nonzero", "ok", "timeout"})
 MODEL_REPLY_ISSUES = frozenset({"empty", "none", "reasoning_only", "refusal", "truncated_length"})
 # ---- end v5 harness ----
 # ---- v5 efficiency ----
-TASK_COST_MARK = TASK_COST_METRIC = "hermes.task_cost.count"
-WASTED_TOKENS_MARK = WASTED_TOKENS_METRIC = "hermes.wasted_tokens.count"
-TOOL_OUTPUT_TRUNCATION_MARK = TOOL_OUTPUT_TRUNCATION_METRIC = "hermes.tool_output_truncation.count"
-TOOL_OVERHEAD_MARK = TOOL_OVERHEAD_METRIC = "hermes.tool_overhead.count"
-TOOL_ENABLED_UNUSED_MARK = TOOL_ENABLED_UNUSED_METRIC = "hermes.tool_enabled_unused.count"
-CACHE_BREAK_MARK = CACHE_BREAK_METRIC = "hermes.cache_break.count"
+TASK_COST_MARK = TASK_COST_METRIC = "akramcode.task_cost.count"
+WASTED_TOKENS_MARK = WASTED_TOKENS_METRIC = "akramcode.wasted_tokens.count"
+TOOL_OUTPUT_TRUNCATION_MARK = TOOL_OUTPUT_TRUNCATION_METRIC = "akramcode.tool_output_truncation.count"
+TOOL_OVERHEAD_MARK = TOOL_OVERHEAD_METRIC = "akramcode.tool_overhead.count"
+TOOL_ENABLED_UNUSED_MARK = TOOL_ENABLED_UNUSED_METRIC = "akramcode.tool_enabled_unused.count"
+CACHE_BREAK_MARK = CACHE_BREAK_METRIC = "akramcode.cache_break.count"
 # Prompt + completion tokens of one user turn, summed over its primary calls.
 TURN_TOKEN_BUCKETS = frozenset({
     "lt_2k", "2k_to_10k", "10k_to_50k", "50k_to_200k", "200k_to_1m", "gte_1m", "unknown",
@@ -441,17 +441,17 @@ TURN_ACTIVITY_BUCKETS = frozenset({
     "0", "1", "2", "3_to_5", "6_to_10", "11_to_25", "26_to_50", "51_to_100", "gte_101",
 })
 WASTE_REASONS = frozenset({"interrupt", "retry", "undo"})
-# Characters of one raw tool result, before Hermes spills or truncates it.
+# Characters of one raw tool result, before AkramCode spills or truncates it.
 TOOL_OUTPUT_SIZE_BUCKETS = frozenset({
     "lt_1k", "1k_to_10k", "10k_to_50k", "50k_to_100k", "100k_to_500k", "gte_500k", "unknown",
 })
 TOOL_SCHEMA_TOKEN_BUCKETS = frozenset({
     "0", "lt_2k", "2k_to_5k", "5k_to_10k", "10k_to_20k", "20k_to_40k", "gte_40k",
 })
-# Toolsets Hermes ships; MCP servers and plugin toolsets collapse to custom.
+# Toolsets AkramCode ships; MCP servers and plugin toolsets collapse to custom.
 TOOLSET_NAMES = BUILTIN_TOOLSET_NAMES | {"custom"}
-# compression is the expected cause; the rest are Hermes invalidating a warm prefix (bugs or
-# user-driven), or the provider reporting a cold read Hermes did not cause.
+# compression is the expected cause; the rest are AkramCode invalidating a warm prefix (bugs or
+# user-driven), or the provider reporting a cold read AkramCode did not cause.
 CACHE_BREAK_CAUSES = frozenset({
     "cache_expired", "compression", "model_switch", "provider_reported_miss", "system_prompt_rebuild",
     "toolset_change",
@@ -461,9 +461,9 @@ CACHE_BREAK_CAUSES = frozenset({
 # Desktop love/hate: which areas get used, what gets in the way, where first run stops. Every value
 # is a code-defined Desktop surface id (apps/desktop/src/store/desktop-metrics.ts mirrors these
 # sets); anything the client names outside them collapses to `other` before it is recorded.
-DESKTOP_FEATURE_USE_MARK = DESKTOP_FEATURE_USE_METRIC = "hermes.desktop.feature_use"
-DESKTOP_FRICTION_MARK = DESKTOP_FRICTION_METRIC = "hermes.desktop.friction"
-DESKTOP_ONBOARDING_MARK = DESKTOP_ONBOARDING_METRIC = "hermes.desktop.onboarding"
+DESKTOP_FEATURE_USE_MARK = DESKTOP_FEATURE_USE_METRIC = "akramcode.desktop.feature_use"
+DESKTOP_FRICTION_MARK = DESKTOP_FRICTION_METRIC = "akramcode.desktop.friction"
+DESKTOP_ONBOARDING_MARK = DESKTOP_ONBOARDING_METRIC = "akramcode.desktop.onboarding"
 # Settings views are `SETTINGS_VIEWS` in apps/desktop/src/app/settings/index.tsx (the legacy
 # `connections` tab redirects to `gateway`).
 DESKTOP_SETTINGS_AREAS = frozenset({
@@ -520,7 +520,7 @@ DESKTOP_ONBOARDING_STEPS = frozenset({
 })
 DESKTOP_ONBOARDING_EVENTS = frozenset({"abandoned", "completed", "reached"})
 # Bot Mode (a bot's canonical chat or a bot side-chat in front) vs regular Sessions mode, per day.
-DESKTOP_MODE_USE_MARK = DESKTOP_MODE_USE_METRIC = "hermes.desktop.mode_use"
+DESKTOP_MODE_USE_MARK = DESKTOP_MODE_USE_METRIC = "akramcode.desktop.mode_use"
 DESKTOP_MODES = frozenset({"bots", "sessions"})
 DESKTOP_ACTIVE_MINUTES_BUCKETS = frozenset({"0", "lt_5m", "5m_to_30m", "30m_to_2h", "2h_to_6h", "gte_6h"})
 _DESKTOP_ACTIVE_THRESHOLDS = ((300_000, "lt_5m"), (1_800_000, "5m_to_30m"), (7_200_000, "30m_to_2h"),
@@ -537,7 +537,7 @@ def desktop_active_minutes_bucket(active_ms: Any) -> str:
 # Button presses per day. Action ids are the Desktop keybinding registry (KEYBIND_ACTIONS in
 # apps/desktop/src/lib/keybinds/actions.ts) plus the typed button table DESKTOP_BUTTON_ACTIONS in
 # apps/desktop/src/store/desktop-metrics.ts; contributed/plugin actions collapse to `other`.
-DESKTOP_ACTION_USE_MARK = DESKTOP_ACTION_USE_METRIC = "hermes.desktop.action_use"
+DESKTOP_ACTION_USE_MARK = DESKTOP_ACTION_USE_METRIC = "akramcode.desktop.action_use"
 DESKTOP_KEYBIND_ACTION_IDS = frozenset({
     "appearance.toggleMode", "composer.cancel", "composer.dictate", "composer.focus", "composer.help",
     "composer.history", "composer.mention", "composer.modelPicker", "composer.newline", "composer.queue",
@@ -560,7 +560,7 @@ DESKTOP_ACTION_IDS = DESKTOP_KEYBIND_ACTION_IDS | DESKTOP_BUTTON_ACTION_IDS | {"
 DESKTOP_ACTION_VIAS = frozenset({"click", "menu", "palette", "shortcut"})
 # Dislike signals, each naming its target from a closed set (setting keys are DEFAULT_CONFIG leaf
 # paths, checked against the live schema by shared_metrics_desktop and shape-checked here).
-DESKTOP_DISLIKE_MARK = DESKTOP_DISLIKE_METRIC = "hermes.desktop.dislike"
+DESKTOP_DISLIKE_MARK = DESKTOP_DISLIKE_METRIC = "akramcode.desktop.dislike"
 DESKTOP_FLOW_IDS = frozenset({
     "command_palette", "free_tier_sign_in", "keybind_capture", "model_picker", "project_create", "provider_oauth",
     "session_picker", "session_switcher", "other",
@@ -614,19 +614,19 @@ def client_architecture(value: Any) -> str:
 
 
 def client_install_method(value: Any) -> str:
-    """Return an allowlisted Hermes installation method."""
+    """Return an allowlisted AkramCode installation method."""
     normalized = _norm(value)
     return _allowlisted("nixos" if normalized == "nix" else normalized, CLIENT_INSTALL_METHODS)
 
 
 def client_resource(
-    hermes_version: Any, *, os_name: Any, architecture: Any, install_method: Any
+    akramcode_version: Any, *, os_name: Any, architecture: Any, install_method: Any
 ) -> dict[str, str]:
     """Build the bounded client resource attached to aggregate packages."""
-    version = str(hermes_version or "").strip()
+    version = str(akramcode_version or "").strip()
     return {
         "architecture": client_architecture(architecture),
-        "hermes_version": version if 0 < len(version) <= 64 else "unknown",
+        "akramcode_version": version if 0 < len(version) <= 64 else "unknown",
         "install_method": client_install_method(install_method),
         "os_family": client_os_family(os_name),
     }
@@ -636,7 +636,7 @@ def client_resource_is_valid(resource: Any) -> bool:
     """Return whether a package resource exactly matches the bounded contract."""
     if not isinstance(resource, dict) or set(resource) != CLIENT_RESOURCE_KEYS:
         return False
-    version = resource.get("hermes_version")
+    version = resource.get("akramcode_version")
     return (
         isinstance(version, str)
         and 0 < len(version) <= 64
@@ -902,7 +902,7 @@ _METRIC_FIELDS: dict[str, frozenset[str]] = {
 }
 # Fields v2 carried on the per-task and per-tool-call rows. Together they made nearly every task and
 # tool call its own row; v3 moves duration/retries/latency to the small split counters above (call
-# counts per task are already on hermes.task_cost.count). Their values stay in the contract so rows
+# counts per task are already on akramcode.task_cost.count). Their values stay in the contract so rows
 # recorded before an upgrade still validate and package.
 _TASK_FINISHED_V2_ONLY = frozenset(
     {"duration_bucket", "model_call_count_bucket", "retry_count_bucket", "tool_call_count_bucket"}
@@ -1112,11 +1112,11 @@ def model_call_dimensions(event: Any) -> dict[str, str] | None:
 
 
 def _auxiliary_model_call_dimensions(event: Any) -> dict[str, str] | None:
-    """Project a terminal auxiliary route from its Hermes logical scope."""
+    """Project a terminal auxiliary route from its AkramCode logical scope."""
     metadata = _relay_metadata(
-        event, RUNTIME_SCHEMA_KEY, RUNTIME_SCHEMA_VERSION, "hermes.call_role"
+        event, RUNTIME_SCHEMA_KEY, RUNTIME_SCHEMA_VERSION, "akramcode.call_role"
     )
-    call_role = (metadata or {}).get("hermes.call_role")
+    call_role = (metadata or {}).get("akramcode.call_role")
     data = getattr(event, "data", None)
     if (
         not isinstance(call_role, str)
@@ -1161,7 +1161,7 @@ def task_duration_counter(event: Any) -> tuple[str, dict[str, str]] | None:
 
 
 # The task end payload (task_terminal_fields) also carries per-task call counts for other Relay
-# subscribers; hermes.task_cost.count already buckets them, so no counter projects them here.
+# subscribers; akramcode.task_cost.count already buckets them, so no counter projects them here.
 _TASK_END_FIELDS = (
     _METRIC_FIELDS[TASK_FINISHED_METRIC] | _METRIC_FIELDS[TASK_DURATION_METRIC]
     | {"model_call_count_bucket", "tool_call_count_bucket"}
@@ -1425,7 +1425,7 @@ def task_failure_class(kwargs: dict[str, Any], outcome: str | None = None) -> st
 
 
 def task_terminal_state(kwargs: dict[str, Any]) -> tuple[str, str, str]:
-    """Map Hermes terminal state to bounded (outcome, end_reason, termination)."""
+    """Map AkramCode terminal state to bounded (outcome, end_reason, termination)."""
     reason = _norm(kwargs.get("turn_exit_reason"))
     if kwargs.get("interrupted") or "interrupt" in reason or "cancel" in reason:
         return "cancelled", "user_cancelled", "user_cancelled"
@@ -1482,12 +1482,12 @@ _TOOL_CATEGORY_PREFIXES = (
     ("browser", "browser"),
     (("image", "tts", "video", "vision"), "media"),
     ("homeassistant", "home_automation"),
-    (("discord", "email", "feishu", "hermes-yuanbao", "slack", "sms"), "communication"),
+    (("discord", "email", "feishu", "akramcode-yuanbao", "slack", "sms"), "communication"),
 )
 
 
 def tool_category(kwargs: dict[str, Any]) -> str:
-    """Map Hermes registry toolset metadata to a low-cardinality category."""
+    """Map AkramCode registry toolset metadata to a low-cardinality category."""
     toolset = _norm(kwargs.get("toolset"))
     if not toolset:
         return "unknown"
@@ -1506,7 +1506,7 @@ _TOOL_STATUS_OUTCOMES = {
 
 
 def tool_outcome(kwargs: dict[str, Any]) -> str:
-    """Normalize the terminal Hermes tool status without inspecting its result."""
+    """Normalize the terminal AkramCode tool status without inspecting its result."""
     return _TOOL_STATUS_OUTCOMES.get(_norm(kwargs.get("status")), "unknown")
 
 
@@ -1567,7 +1567,7 @@ _TOOL_ERROR_TYPES = {
 
 
 def tool_error_class(kwargs: dict[str, Any], outcome: str | None = None) -> str:
-    """Closed failure class from Hermes's own error_type; exception class names become
+    """Closed failure class from AkramCode's own error_type; exception class names become
     ``exception`` so plugin-defined identifiers never leave the machine."""
     outcome = outcome or tool_outcome(kwargs)
     if outcome in _TOOL_STATUS_ERROR_CLASSES:
@@ -1606,7 +1606,7 @@ def _non_negative_number(value: Any) -> float | None:
 
 
 def model_call_fields(kwargs: dict[str, Any]) -> dict[str, str]:
-    """Return the terminal model identity and provider route known to Hermes."""
+    """Return the terminal model identity and provider route known to AkramCode."""
     from .shared_metrics_catalog import model_metric_name, provider_metric_name
 
     provider = provider_metric_name(kwargs.get("provider"))

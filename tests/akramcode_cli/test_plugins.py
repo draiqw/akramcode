@@ -1,4 +1,4 @@
-"""Tests for the Hermes plugin system (akramcode_cli.plugins)."""
+"""Tests for the AkramCode plugin system (akramcode_cli.plugins)."""
 
 import logging
 import json
@@ -9,7 +9,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from akramcode_cli.plugins import (
     ENTRY_POINTS_GROUP,
@@ -51,19 +51,19 @@ def _make_plugin_dir(base: Path, name: str, *, register_body: str = "pass",
     """Create a minimal plugin directory with plugin.yaml + __init__.py.
 
     If *auto_enable* is True (default), also write the plugin's name into
-    ``<hermes_home>/config.yaml`` under ``plugins.enabled``. Plugins are
+    ``<akramcode_home>/config.yaml`` under ``plugins.enabled``. Plugins are
     opt-in by default, so tests that expect the plugin to actually load
     need this. Pass ``auto_enable=False`` for tests that exercise the
     unenabled path.
 
-    *base* is expected to be ``<hermes_home>/plugins/``; we derive
-    ``<hermes_home>`` from it by walking one level up unless *home* is
+    *base* is expected to be ``<akramcode_home>/plugins/``; we derive
+    ``<akramcode_home>`` from it by walking one level up unless *home* is
     given explicitly.
 
-    Pass *home* explicitly whenever the target Hermes home for this
-    plugin isn't necessarily the current ``HERMES_HOME`` env var — e.g.
+    Pass *home* explicitly whenever the target AkramCode home for this
+    plugin isn't necessarily the current ``AKRAMCODE_HOME`` env var — e.g.
     when writing fixtures for two profiles up front and only switching
-    ``HERMES_HOME``/``set_hermes_home_override()`` per-profile afterwards
+    ``AKRAMCODE_HOME``/``set_akramcode_home_override()`` per-profile afterwards
     (as multi-profile regression tests do). Relying on the *current* env
     var here is a bug: if the caller hasn't switched homes yet (or is
     using the context-local override instead of the env var, which this
@@ -84,20 +84,20 @@ def _make_plugin_dir(base: Path, name: str, *, register_body: str = "pass",
     )
 
     if auto_enable:
-        # Write/merge plugins.enabled in <HERMES_HOME>/config.yaml.
-        # Config is always read from HERMES_HOME (not from the project
+        # Write/merge plugins.enabled in <AKRAMCODE_HOME>/config.yaml.
+        # Config is always read from AKRAMCODE_HOME (not from the project
         # dir for project plugins), so that's where we opt in.
         if home is not None:
-            hermes_home = Path(home)
+            akramcode_home = Path(home)
         else:
             import os
-            hermes_home_str = os.environ.get("HERMES_HOME")
-            if hermes_home_str:
-                hermes_home = Path(hermes_home_str)
+            akramcode_home_str = os.environ.get("AKRAMCODE_HOME")
+            if akramcode_home_str:
+                akramcode_home = Path(akramcode_home_str)
             else:
-                hermes_home = base.parent
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        cfg_path = hermes_home / "config.yaml"
+                akramcode_home = base.parent
+        akramcode_home.mkdir(parents=True, exist_ok=True)
+        cfg_path = akramcode_home / "config.yaml"
         cfg: dict = {}
         if cfg_path.exists():
             try:
@@ -170,7 +170,7 @@ class TestPluginDiscovery:
             json.dumps({
                 "$schema": PLUGIN_SCHEMA_V1,
                 "name": "portable.test",
-                "extensions": {"com.nousresearch.hermes": {"servers": {"worker": {
+                "extensions": {"com.nousresearch.akramcode": {"servers": {"worker": {
                     "app": {"darwin": {"presence": "executable", "location": str(app)}},
                     "requires": {"app": True},
                     "liveness": {"kind": "static"},
@@ -203,7 +203,7 @@ class TestPluginDiscovery:
         empty_bundled = tmp_path / "bundled"
         empty_bundled.mkdir()
         monkeypatch.setenv("HOME", str(tmp_path / "os-home"))
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(home))
         monkeypatch.setattr(plugins_mod, "get_bundled_plugins_dir", lambda: empty_bundled)
 
         manager = PluginManager()
@@ -237,7 +237,7 @@ class TestPluginDiscovery:
         from akramcode_cli.agent_plugins import MCP_SCHEMA_V1, PLUGIN_SCHEMA_V1
         from akramcode_cli import plugins as plugins_mod
 
-        home = tmp_path / ".hermes"
+        home = tmp_path / ".akramcode"
         # Two unrelated plugins both call their server "shared": one readable name, one owner.
         for plugin_name, command in (("alpha-tools", "python-a"), ("beta-tools", "python-b")):
             plugin = home / "plugins" / plugin_name
@@ -252,7 +252,7 @@ class TestPluginDiscovery:
         empty_bundled = tmp_path / "bundled"
         empty_bundled.mkdir()
         monkeypatch.setenv("HOME", str(tmp_path / "os-home"))
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(home))
         monkeypatch.setattr(plugins_mod, "get_bundled_plugins_dir", lambda: empty_bundled)
 
         manager = PluginManager()
@@ -285,7 +285,7 @@ class TestPluginDiscovery:
         empty_bundled = tmp_path / "bundled"
         empty_bundled.mkdir()
         monkeypatch.setenv("HOME", str(tmp_path / "os-home"))
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(home))
         monkeypatch.setattr(plugins_mod, "get_bundled_plugins_dir", lambda: empty_bundled)
 
         manager = PluginManager()
@@ -318,8 +318,8 @@ class TestPluginDiscovery:
         )
         bundled = tmp_path / "bundled"
         bundled.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(home))
-        monkeypatch.setenv("HERMES_BUNDLED_PLUGINS", str(bundled))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(home))
+        monkeypatch.setenv("AKRAMCODE_BUNDLED_PLUGINS", str(bundled))
 
         manager = PluginManager()
         manifests = manager._collect_directory_manifests()
@@ -350,7 +350,7 @@ class TestPluginDiscovery:
 
 
     def test_plugin_can_register_and_invoke_middleware(self, tmp_path, monkeypatch):
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "akramcode_test" / "plugins"
         _make_plugin_dir(
             plugins_dir,
             "mw_plugin",
@@ -361,7 +361,7 @@ class TestPluginDiscovery:
                 "lambda **kw: {'args': {**kw['args'], 'mw': True}})"
             ),
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -407,9 +407,9 @@ class TestPluginDiscovery:
         permanently, every later call would early-return against an empty
         registry ("No web provider configured") for the process lifetime.
         """
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "akramcode_test" / "plugins"
         _make_plugin_dir(plugins_dir, "retry_plugin")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode_test"))
 
         mgr = PluginManager()
 
@@ -423,7 +423,7 @@ class TestPluginDiscovery:
 
         # A later call (with discovery healthy again) must do the real scan.
         monkeypatch.undo()
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode_test"))
         mgr.discover_and_load()
         assert mgr._discovered is True
         non_bundled = {
@@ -441,11 +441,11 @@ class TestPluginDiscovery:
         used to look for ``.register`` on that function object, find nothing,
         and warn "no register() function" on every discovery pass.
         """
-        hermes_home = tmp_path / "hermes_test"
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        akramcode_home = tmp_path / "akramcode_test"
+        akramcode_home.mkdir(parents=True, exist_ok=True)
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
         # Entry-point plugins load only when opted into plugins.enabled.
-        (hermes_home / "config.yaml").write_text(
+        (akramcode_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["fn_plugin"]}})
         )
 
@@ -546,7 +546,7 @@ class TestPluginLoading:
         does not import/register() it. The real activation happens through
         ``plugins/memory/__init__.py`` via ``memory.provider`` config.
         """
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "akramcode_test" / "plugins"
         plugin_dir = plugins_dir / "mempalace"
         plugin_dir.mkdir(parents=True)
         # No explicit `kind:` — the heuristic should kick in.
@@ -559,11 +559,11 @@ class TestPluginLoading:
         )
         # Even if the user explicitly enables it in config, the loader
         # should still treat it as exclusive and skip general loading.
-        hermes_home = tmp_path / "hermes_test"
-        (hermes_home / "config.yaml").write_text(
+        akramcode_home = tmp_path / "akramcode_test"
+        (akramcode_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["mempalace"]}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -588,10 +588,10 @@ class TestPluginLoading:
         (chronos / "plugin.yaml").write_text(yaml.safe_dump({"name": "chronos"}), encoding="utf-8")
         (chronos / "__init__.py").write_text(
             "def register(ctx):\n    ctx.register_cron_scheduler(object())\n", encoding="utf-8")
-        hermes_home = tmp_path / "hermes_test"
-        hermes_home.mkdir(exist_ok=True)
-        (hermes_home / "config.yaml").write_text(yaml.safe_dump({"plugins": {"enabled": ["chronos"]}}))
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        akramcode_home = tmp_path / "akramcode_test"
+        akramcode_home.mkdir(exist_ok=True)
+        (akramcode_home / "config.yaml").write_text(yaml.safe_dump({"plugins": {"enabled": ["chronos"]}}))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
         from akramcode_cli import plugins as plugins_mod
         monkeypatch.setattr(plugins_mod, "get_bundled_plugins_dir", lambda: bundled)
 
@@ -603,14 +603,14 @@ class TestPluginLoading:
     def test_user_cron_plugin_auto_coerced_to_exclusive(self, tmp_path, monkeypatch):
         """A user-installed cron provider (no ``kind:``) routes to ``plugins.cron_providers`` like a
         memory provider does, instead of being imported by the general manager (#62951)."""
-        hermes_home = tmp_path / "hermes_test"
-        plugin_dir = hermes_home / "plugins" / "mycron"
+        akramcode_home = tmp_path / "akramcode_test"
+        plugin_dir = akramcode_home / "plugins" / "mycron"
         plugin_dir.mkdir(parents=True)
         (plugin_dir / "plugin.yaml").write_text(yaml.safe_dump({"name": "mycron"}), encoding="utf-8")
         (plugin_dir / "__init__.py").write_text(
             "def register(ctx):\n    ctx.register_cron_scheduler(object())\n", encoding="utf-8")
-        (hermes_home / "config.yaml").write_text(yaml.safe_dump({"plugins": {"enabled": ["mycron"]}}))
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        (akramcode_home / "config.yaml").write_text(yaml.safe_dump({"plugins": {"enabled": ["mycron"]}}))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -626,7 +626,7 @@ class TestPluginLoading:
         the general PluginManager.
 
         Regression test for the mnemosyne case: a pip plugin declaring a
-        ``hermes_agent.plugins`` entry point but exposing
+        ``akramcode_agent.plugins`` entry point but exposing
         ``register_memory_provider`` (not ``register()``) used to be
         eagerly imported in every process, pulling heavy deps (fastembed
         → onnxruntime, ~60 MB RSS) even though the import registered
@@ -662,11 +662,11 @@ class TestPluginLoading:
         # Even if the user explicitly enables it, the loader must treat it
         # as exclusive and skip the import (the bug: eager import of a
         # module with no register() function).
-        hermes_home = tmp_path / "hermes_test"
-        (hermes_home / "config.yaml").write_text(
+        akramcode_home = tmp_path / "akramcode_test"
+        (akramcode_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["mempalace_ep"]}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -712,11 +712,11 @@ class TestPluginLoading:
             ),
         )
 
-        hermes_home = tmp_path / "hermes_test"
-        (hermes_home / "config.yaml").write_text(
+        akramcode_home = tmp_path / "akramcode_test"
+        (akramcode_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["fakeprovider"]}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -774,9 +774,9 @@ class TestPluginLoading:
             ),
         )
 
-        # Same-name directory provider under $HERMES_HOME/plugins/.
-        hermes_home = tmp_path / "hermes_test"
-        plugins_dir = hermes_home / "plugins"
+        # Same-name directory provider under $AKRAMCODE_HOME/plugins/.
+        akramcode_home = tmp_path / "akramcode_test"
+        plugins_dir = akramcode_home / "plugins"
         provider_dir = plugins_dir / "mempalace_dup"
         provider_dir.mkdir(parents=True)
         (provider_dir / "__init__.py").write_text(
@@ -793,10 +793,10 @@ class TestPluginLoading:
         (provider_dir / "plugin.yaml").write_text(
             "name: mempalace_dup\ndescription: dup\n"
         )
-        (hermes_home / "config.yaml").write_text(
+        (akramcode_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["mempalace_dup"]}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
         monkeypatch.setattr(
             "plugins.memory._get_user_plugins_dir", lambda: plugins_dir
         )
@@ -867,11 +867,11 @@ class TestPluginLoading:
             ),
         )
 
-        hermes_home = tmp_path / "hermes_test"
-        (hermes_home / "config.yaml").write_text(
+        akramcode_home = tmp_path / "akramcode_test"
+        (akramcode_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["mempalace_dotted"]}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -897,7 +897,7 @@ class TestPluginHooks:
 
     def test_pre_gateway_dispatch_collects_action_dicts(self, tmp_path, monkeypatch):
         """pre_gateway_dispatch callbacks return action dicts (skip/rewrite/allow)."""
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "akramcode_test" / "plugins"
         _make_plugin_dir(
             plugins_dir, "predispatch_plugin",
             register_body=(
@@ -905,7 +905,7 @@ class TestPluginHooks:
                 'lambda **kw: {"action": "skip", "reason": "test"})'
             ),
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -921,7 +921,7 @@ class TestPluginHooks:
 
 
     def test_request_hooks_are_invokeable(self, tmp_path, monkeypatch):
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "akramcode_test" / "plugins"
         _make_plugin_dir(
             plugins_dir, "request_hook",
             register_body=(
@@ -930,7 +930,7 @@ class TestPluginHooks:
                 '"mc": kw.get("message_count"), "tc": kw.get("tool_count")})'
             ),
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -1244,12 +1244,12 @@ class TestForceReloadSymmetry:
         assert "boom" in results[0]["message"] and "RuntimeError: policy plugin blew up" in results[0]["message"]
 
     def test_hook_callback_timeout_reads_config(self, tmp_path, monkeypatch):
-        hermes_home = tmp_path / "hermes_test"
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        (hermes_home / "config.yaml").write_text(
+        akramcode_home = tmp_path / "akramcode_test"
+        akramcode_home.mkdir(parents=True, exist_ok=True)
+        (akramcode_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"hook_callback_timeout": 0.12}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
         import akramcode_cli.config as config_mod
 
@@ -1657,18 +1657,18 @@ class TestForceReloadSymmetry:
         import agent.shell_hooks as shell_hooks_mod
 
         cfg = {"hooks": {"on_session_start": [{"command": "/bin/true"}]}}
-        monkeypatch.setenv("HERMES_ACCEPT_HOOKS", "1")
+        monkeypatch.setenv("AKRAMCODE_ACCEPT_HOOKS", "1")
         monkeypatch.setattr("akramcode_cli.config.load_config", lambda: cfg)
         monkeypatch.setattr(
             PluginManager, "_discover_and_load_inner", lambda self_inner: None,
         )
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "profile-a"))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "profile-a"))
         mgr_a = PluginManager()
         plugins_mod._plugin_manager = mgr_a
         shell_hooks_mod.register_from_config(cfg, accept_hooks=True)
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "profile-b"))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "profile-b"))
         mgr_b = PluginManager()
         plugins_mod._plugin_manager = mgr_b
         shell_hooks_mod.register_from_config(cfg, accept_hooks=True)
@@ -1686,7 +1686,7 @@ class TestForceReloadSymmetry:
         # B's later adapter reconnect re-runs register_from_config(); its
         # idempotence key must still be intact, so this must be a no-op
         # rather than appending a second callback to B's live manager.
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "profile-b"))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "profile-b"))
         second = shell_hooks_mod.register_from_config(cfg, accept_hooks=True)
 
         assert second == []
@@ -2099,7 +2099,7 @@ class TestPluginContext:
             handler=lambda args, **kw: "built-in",
         )
         try:
-            plugins_dir = tmp_path / "hermes_test" / "plugins"
+            plugins_dir = tmp_path / "akramcode_test" / "plugins"
             plugin_dir = plugins_dir / "evil_override_plugin"
             plugin_dir.mkdir(parents=True)
             (plugin_dir / "plugin.yaml").write_text(yaml.safe_dump({"name": "evil_override_plugin"}), encoding="utf-8")
@@ -2113,13 +2113,13 @@ class TestPluginContext:
                 '        override=True,\n'
                 '    )\n'
             )
-            hermes_home = tmp_path / "hermes_test"
+            akramcode_home = tmp_path / "akramcode_test"
             # No allow_tool_override entry — plugin enabled but operator
             # has NOT opted in to letting it replace built-ins.
-            (hermes_home / "config.yaml").write_text(
+            (akramcode_home / "config.yaml").write_text(
                 yaml.safe_dump({"plugins": {"enabled": ["evil_override_plugin"]}})
             )
-            monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+            monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
             mgr = PluginManager()
             # PluginManager catches and logs the registration error, so the
@@ -2169,7 +2169,7 @@ class TestPluginContext:
             handler=lambda args, **kw: "built-in",
         )
         try:
-            plugins_dir = tmp_path / "hermes_test" / "plugins"
+            plugins_dir = tmp_path / "akramcode_test" / "plugins"
             plugin_dir = plugins_dir / "delayed_override_plugin"
             plugin_dir.mkdir(parents=True)
             (plugin_dir / "plugin.yaml").write_text(yaml.safe_dump({"name": "delayed_override_plugin"}), encoding="utf-8")
@@ -2189,11 +2189,11 @@ class TestPluginContext:
                 "def register(ctx):\n"
                 "    _pending.append(_do_override)\n"
             )
-            hermes_home = tmp_path / "hermes_test"
-            (hermes_home / "config.yaml").write_text(
+            akramcode_home = tmp_path / "akramcode_test"
+            (akramcode_home / "config.yaml").write_text(
                 yaml.safe_dump({"plugins": {"enabled": ["delayed_override_plugin"]}})
             )
-            monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+            monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
             mgr = PluginManager()
             mgr.discover_and_load()
@@ -2204,7 +2204,7 @@ class TestPluginContext:
 
             # Now fire the deferred override, simulating a post-load callback.
             import sys as _sys
-            mod = _sys.modules.get("hermes_plugins.delayed_override_plugin")
+            mod = _sys.modules.get("akramcode_plugins.delayed_override_plugin")
             assert mod is not None, "plugin module should be loaded"
             with pytest.raises(PermissionError):
                 mod._pending[0]()
@@ -2233,7 +2233,7 @@ class TestPluginToolVisibility:
         """
         import akramcode_cli.plugins as plugins_mod
 
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "akramcode_test" / "plugins"
         plugin_dir = plugins_dir / "vis_plugin"
         plugin_dir.mkdir(parents=True)
         (plugin_dir / "plugin.yaml").write_text(yaml.safe_dump({"name": "vis_plugin"}), encoding="utf-8")
@@ -2246,11 +2246,11 @@ class TestPluginToolVisibility:
             '        handler=lambda args, **kw: "ok",\n'
             '    )\n'
         )
-        hermes_home = tmp_path / "hermes_test"
-        (hermes_home / "config.yaml").write_text(
+        akramcode_home = tmp_path / "akramcode_test"
+        (akramcode_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["vis_plugin"]}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -2289,10 +2289,10 @@ class TestPluginManagerList:
 
     def test_list_returns_sorted(self, tmp_path, monkeypatch):
         """list_plugins() returns results sorted by key."""
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "akramcode_test" / "plugins"
         _make_plugin_dir(plugins_dir, "zulu")
         _make_plugin_dir(plugins_dir, "alpha")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -2311,10 +2311,10 @@ class TestPluginManagerList:
         already-loaded plugins, so when a later plugin registered a hook name
         an earlier plugin had already used, the shared name was attributed to
         the first plugin only and the later plugin reported 0 hooks in
-        `hermes plugins list`. Attribution now counts what each plugin's own
+        `akramcode plugins list`. Attribution now counts what each plugin's own
         register() added (per-registration delta), so both get credit.
         """
-        plugins_dir = tmp_path / "hermes_test" / "plugins"
+        plugins_dir = tmp_path / "akramcode_test" / "plugins"
         _make_plugin_dir(
             plugins_dir, "first_hooker",
             register_body='ctx.register_hook("post_tool_call", lambda **kw: None)',
@@ -2323,7 +2323,7 @@ class TestPluginManagerList:
             plugins_dir, "second_hooker",
             register_body='ctx.register_hook("post_tool_call", lambda **kw: None)',
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes_test"))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode_test"))
 
         mgr = PluginManager()
         mgr.discover_and_load()
@@ -2366,8 +2366,8 @@ class TestPluginCommands:
 
     def test_get_plugin_context_engine_discovers_plugins_lazily(self, tmp_path, monkeypatch):
         """Context engine lookup should work before any explicit discover_plugins() call."""
-        hermes_home = tmp_path / "hermes_test"
-        plugins_dir = hermes_home / "plugins"
+        akramcode_home = tmp_path / "akramcode_test"
+        plugins_dir = akramcode_home / "plugins"
         plugin_dir = plugins_dir / "engine-plugin"
         plugin_dir.mkdir(parents=True, exist_ok=True)
         (plugin_dir / "plugin.yaml").write_text(
@@ -2393,10 +2393,10 @@ class TestPluginCommands:
             "    ctx.register_context_engine(StubEngine())\n"
         )
         # Opt-in: plugins are opt-in by default, so enable in config.yaml
-        (hermes_home / "config.yaml").write_text(
+        (akramcode_home / "config.yaml").write_text(
             yaml.safe_dump({"plugins": {"enabled": ["engine-plugin"]}})
         )
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
         import akramcode_cli.plugins as plugins_mod
 
@@ -2405,18 +2405,18 @@ class TestPluginCommands:
             assert engine is not None
             assert engine.name == "stub-engine"
 
-    def test_plugin_manager_scoped_by_hermes_home_override(self, tmp_path):
-        """set_hermes_home_override() must get its own manager per profile.
+    def test_plugin_manager_scoped_by_akramcode_home_override(self, tmp_path):
+        """set_akramcode_home_override() must get its own manager per profile.
 
         This is the production path used by the gateway multiplexer
         (``gateway/run.py``'s ``_profile_scope`` context manager) and by
-        subagent/embedded callers: it swaps ``HERMES_HOME`` via a
+        subagent/embedded callers: it swaps ``AKRAMCODE_HOME`` via a
         context-local ContextVar, which — per
-        ``hermes_constants.set_hermes_home_override`` — deliberately does
+        ``akramcode_constants.set_akramcode_home_override`` — deliberately does
         NOT touch ``os.environ``. A regression test that only flips the
-        ``HERMES_HOME`` env var never exercises this path.
+        ``AKRAMCODE_HOME`` env var never exercises this path.
         """
-        from hermes_constants import set_hermes_home_override, reset_hermes_home_override
+        from akramcode_constants import set_akramcode_home_override, reset_akramcode_home_override
         import akramcode_cli.plugins as plugins_mod
 
         def write_engine_plugin(home: Path) -> None:
@@ -2432,7 +2432,7 @@ class TestPluginCommands:
                     "    from agent.context_engine import ContextEngine\n\n"
                     "    class HomeEngine(ContextEngine):\n"
                     "        def __init__(self):\n"
-                    "            self.home = os.environ.get('HERMES_HOME')\n\n"
+                    "            self.home = os.environ.get('AKRAMCODE_HOME')\n\n"
                     "        @property\n"
                     "        def name(self):\n"
                     "            return 'home-engine'\n\n"
@@ -2451,26 +2451,26 @@ class TestPluginCommands:
         write_engine_plugin(home_a)
         write_engine_plugin(home_b)
 
-        # Note: HomeEngine reads os.environ['HERMES_HOME'] itself (simulating
-        # a real plugin like hermes-lcm capturing its home at registration),
+        # Note: HomeEngine reads os.environ['AKRAMCODE_HOME'] itself (simulating
+        # a real plugin like akramcode-lcm capturing its home at registration),
         # so we set the env var to home_a as a baseline and only use the
         # context-local override to *switch away* to home_b — proving the
         # override, not the env var, is what get_plugin_manager() keys on.
-        token_a = set_hermes_home_override(str(home_a))
+        token_a = set_akramcode_home_override(str(home_a))
         try:
             manager_a = plugins_mod.get_plugin_manager()
             manager_a.discover_and_load()
             engine_a = manager_a._context_engine
         finally:
-            reset_hermes_home_override(token_a)
+            reset_akramcode_home_override(token_a)
 
-        token_b = set_hermes_home_override(str(home_b))
+        token_b = set_akramcode_home_override(str(home_b))
         try:
             manager_b = plugins_mod.get_plugin_manager()
             manager_b.discover_and_load()
             engine_b = manager_b._context_engine
         finally:
-            reset_hermes_home_override(token_b)
+            reset_akramcode_home_override(token_b)
 
         assert engine_a is not None
         assert engine_b is not None
@@ -2480,27 +2480,27 @@ class TestPluginCommands:
         # Re-entering home_a's override must return the SAME cached manager
         # (and engine) rather than rebuilding — proves the cache is keyed,
         # not last-write-wins.
-        token_a2 = set_hermes_home_override(str(home_a))
+        token_a2 = set_akramcode_home_override(str(home_a))
         try:
             manager_a2 = plugins_mod.get_plugin_manager()
         finally:
-            reset_hermes_home_override(token_a2)
+            reset_akramcode_home_override(token_a2)
         assert manager_a2 is manager_a
 
     def test_relative_import_not_leaked_across_home_switch(self, tmp_path):
         """A same-slug plugin's relative import must not reuse the prior home's submodule.
 
         ``_load_directory_module`` imports each plugin as
-        ``hermes_plugins.<slug>``, but a relative import inside the
+        ``akramcode_plugins.<slug>``, but a relative import inside the
         plugin's ``__init__.py`` (``from .state import STATE``) is cached
         separately in ``sys.modules`` under
-        ``hermes_plugins.<slug>.state``. If a profile switch replaces only
+        ``akramcode_plugins.<slug>.state``. If a profile switch replaces only
         the parent module, the child module survives in ``sys.modules``
         and Python's import system serves it back unchanged — silently
         leaking the previous profile's module-level state (and code) into
         the new profile.
         """
-        from hermes_constants import set_hermes_home_override, reset_hermes_home_override
+        from akramcode_constants import set_akramcode_home_override, reset_akramcode_home_override
         import akramcode_cli.plugins as plugins_mod
 
         def write_stateful_plugin(home: Path, marker: str) -> None:
@@ -2515,7 +2515,7 @@ class TestPluginCommands:
             )
             # `state.py` is imported via a *relative* import from
             # `__init__.py`, so it lands in sys.modules as
-            # `hermes_plugins.stateful_plugin.state`.
+            # `akramcode_plugins.stateful_plugin.state`.
             (plugin_dir / "state.py").write_text(f"MARKER = {marker!r}\n", encoding="utf-8")
             (plugin_dir / "__init__.py").write_text(
                 "from . import state\n\n"
@@ -2532,26 +2532,26 @@ class TestPluginCommands:
         write_stateful_plugin(home_a, "marker-a")
         write_stateful_plugin(home_b, "marker-b")
 
-        token_a = set_hermes_home_override(str(home_a))
+        token_a = set_akramcode_home_override(str(home_a))
         try:
             manager_a = plugins_mod.get_plugin_manager()
             manager_a.discover_and_load()
             module_a = manager_a._plugins["stateful-plugin"].module
         finally:
-            reset_hermes_home_override(token_a)
+            reset_akramcode_home_override(token_a)
 
         assert module_a is not None
         module_a_state = f"{module_a.__name__}.state"
         assert module_a_state in sys.modules
         assert sys.modules[module_a_state].MARKER == "marker-a"
 
-        token_b = set_hermes_home_override(str(home_b))
+        token_b = set_akramcode_home_override(str(home_b))
         try:
             manager_b = plugins_mod.get_plugin_manager()
             manager_b.discover_and_load()
             module_b = manager_b._plugins["stateful-plugin"].module
         finally:
-            reset_hermes_home_override(token_b)
+            reset_akramcode_home_override(token_b)
 
         # Each profile keeps a stable namespace, so concurrent/runtime relative
         # imports cannot resolve another profile's package or submodules.
@@ -2628,7 +2628,7 @@ class TestPluginDispatchTool:
 
 
 class TestPluginContextProfileName:
-    """ctx.profile_name resolves from HERMES_HOME in every context."""
+    """ctx.profile_name resolves from AKRAMCODE_HOME in every context."""
 
     def _ctx(self):
         mgr = PluginManager()
@@ -2636,19 +2636,19 @@ class TestPluginContextProfileName:
         return PluginContext(manifest, mgr)
 
     def test_default_profile(self, tmp_path, monkeypatch):
-        """HERMES_HOME at the root resolves to 'default'."""
-        home = tmp_path / ".hermes"
+        """AKRAMCODE_HOME at the root resolves to 'default'."""
+        home = tmp_path / ".akramcode"
         home.mkdir()
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(home))
         assert self._ctx().profile_name == "default"
 
     def test_named_profile(self, tmp_path, monkeypatch):
-        """HERMES_HOME under profiles/<name> resolves to that name."""
-        prof = tmp_path / ".hermes" / "profiles" / "coder"
+        """AKRAMCODE_HOME under profiles/<name> resolves to that name."""
+        prof = tmp_path / ".akramcode" / "profiles" / "coder"
         prof.mkdir(parents=True)
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("HERMES_HOME", str(prof))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(prof))
         assert self._ctx().profile_name == "coder"
 
 

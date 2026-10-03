@@ -243,7 +243,7 @@ def test_aiagent_reuses_existing_errors_log_handler():
     """Repeated AIAgent init should not accumulate duplicate errors.log handlers."""
     root_logger = logging.getLogger()
     original_handlers = list(root_logger.handlers)
-    error_log_path = (run_agent._hermes_home / "logs" / "errors.log").resolve()
+    error_log_path = (run_agent._akramcode_home / "logs" / "errors.log").resolve()
 
     try:
         for handler in list(root_logger.handlers):
@@ -1721,8 +1721,8 @@ class TestExecuteToolCalls:
         assert "tool was not executed" in messages[0]["content"].lower()
 
     def test_result_truncation_over_100k(self, agent, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-        (tmp_path / ".hermes").mkdir()
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / ".akramcode"))
+        (tmp_path / ".akramcode").mkdir()
         tc = _mock_tool_call(name="web_search", arguments="{}", call_id="c1")
         mock_msg = _mock_assistant_msg(content="", tool_calls=[tc])
         messages = []
@@ -3061,7 +3061,7 @@ class TestHandleMaxIterations:
         output ...'. The sanitizer renames the blank name to a non-empty
         sentinel so the call and its result stay PAIRED (no orphaned output,
         no 400) while the result content is preserved — it must NOT drop the
-        call, because hermes' dispatch loop keeps empty-name calls paired with
+        call, because akramcode' dispatch loop keeps empty-name calls paired with
         an anti-priming result for self-correction (#47967). (#12807)"""
         messages = [
             {
@@ -4218,7 +4218,7 @@ class TestRunConversation:
 
         Regression test for #20316: when running below the threshold_tokens
         cutoff, run_conversation must still consult the engine's
-        should_compress_preflight() hook so engines like hermes-lcm can
+        should_compress_preflight() hook so engines like akramcode-lcm can
         perform incremental maintenance (e.g. leaf-chunk compaction)
         without waiting for the 75% context fill threshold.
         """
@@ -4465,7 +4465,7 @@ class TestRunConversation:
         network drop — that wording sends the user chasing a network
         problem a stream_diag log with finish_reason_seen=False would
         already have ruled out."""
-        from hermes_constants import PARTIAL_STREAM_STUB_ID
+        from akramcode_constants import PARTIAL_STREAM_STUB_ID
 
         self._setup_agent(agent)
         bad_tc = _mock_tool_call(
@@ -4503,7 +4503,7 @@ class TestRunConversation:
         keep printing the original 'stream ended before completion'
         wording — issue #102766 asks that this case's existing wording
         stay as-is, only the clean-EOF case gets new wording."""
-        from hermes_constants import PARTIAL_STREAM_STUB_ID
+        from akramcode_constants import PARTIAL_STREAM_STUB_ID
 
         self._setup_agent(agent)
         bad_tc = _mock_tool_call(
@@ -4574,7 +4574,7 @@ class TestRunConversation:
         retry up to 3 times rather than hard-failing after one — and recover
         if a retry produces a complete tool call. Regression for the false
         'model hit max output tokens' on Opus when the stream simply dropped."""
-        from hermes_constants import PARTIAL_STREAM_STUB_ID
+        from akramcode_constants import PARTIAL_STREAM_STUB_ID
 
         self._setup_agent(agent)
         agent.valid_tool_names.add("write_file")
@@ -4619,7 +4619,7 @@ class TestRunConversation:
         carries a tool_calls list). Confirms the zero-byte trigger is wired
         end-to-end through the retry loop, not just detected at the
         chat_completion_helpers unit level."""
-        from hermes_constants import PARTIAL_STREAM_STUB_ID
+        from akramcode_constants import PARTIAL_STREAM_STUB_ID
 
         self._setup_agent(agent)
         agent.valid_tool_names.add("write_file")
@@ -4705,7 +4705,7 @@ class TestRunConversation:
         self._setup_agent(agent)
         agent.max_iterations = 2
 
-        monkeypatch.setenv("HERMES_KANBAN_TASK", "t_test_task_123")
+        monkeypatch.setenv("AKRAMCODE_KANBAN_TASK", "t_test_task_123")
 
         # Return a tool call for every iteration to exhaust the budget.
         tc = _mock_tool_call(name="web_search", arguments="{}", call_id="c1")
@@ -4752,12 +4752,12 @@ class TestRunConversation:
         assert call.kwargs.get("end_run") is True
 
     def test_no_kanban_block_when_not_in_kanban_mode(self, agent, monkeypatch):
-        """The exhaustion bridge must NOT fire when HERMES_KANBAN_TASK
+        """The exhaustion bridge must NOT fire when AKRAMCODE_KANBAN_TASK
         is unset (non-kanban runs are unaffected by #29747 gap 2)."""
         self._setup_agent(agent)
         agent.max_iterations = 2
 
-        monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+        monkeypatch.delenv("AKRAMCODE_KANBAN_TASK", raising=False)
 
         tc = _mock_tool_call(name="web_search", arguments="{}", call_id="c1")
         tool_resp = _mock_response(
@@ -6397,7 +6397,7 @@ class TestStreamingApiCall:
         # (id=PARTIAL_STREAM_STUB_ID, tool_calls=None so it can't execute,
         # finish_reason=length so the loop's continuation machinery fires with
         # chunking guidance) rather than stamping a normal 'length' truncation.
-        from hermes_constants import PARTIAL_STREAM_STUB_ID
+        from akramcode_constants import PARTIAL_STREAM_STUB_ID
         chunks = [
             _make_chunk(tool_calls=[_make_tc_delta(0, "call_1", "write_file", '{"path":"x.txt","content":"hel')]),
         ]
@@ -6434,7 +6434,7 @@ class TestStreamingApiCall:
         # Cut after the first digit of "timeout": 600. Every string is closed, so the
         # prefix repairs to valid JSON that carries timeout=6. Without a finish_reason
         # nothing says the model was done: retry, never run what happened to arrive.
-        from hermes_constants import PARTIAL_STREAM_STUB_ID
+        from akramcode_constants import PARTIAL_STREAM_STUB_ID
         raw = '{"command": "make deploy", "timeout": 6'
         chunks = [_make_chunk(tool_calls=[_make_tc_delta(0, "call_1", "terminal", raw)])]
         if finish_reason:

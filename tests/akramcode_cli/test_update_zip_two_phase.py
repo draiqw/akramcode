@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 
 from akramcode_cli import update_cmd
-from hermes_constants import venv_bin_dir, venv_python_path
+from akramcode_constants import venv_bin_dir, venv_python_path
 
 # ---------------------------------------------------------------------------
 # Two-phase replace
@@ -60,7 +60,7 @@ def test_commit_swaps_every_entry(tmp_path):
     assert (live / "agent" / "version.txt").read_text() == "new"
     assert (live / "tools" / "version.txt").read_text() == "new"
     # No staging/backup litter left behind.
-    assert not [p for p in os.listdir(live) if "hermes-update" in p]
+    assert not [p for p in os.listdir(live) if "akramcode-update" in p]
 
 def test_failed_swap_rolls_back_every_earlier_swap(tmp_path, monkeypatch):
     """The regression: a mid-loop failure must not leave a mixed-version tree.
@@ -112,7 +112,7 @@ def test_staging_clears_leftovers_from_an_interrupted_run(tmp_path):
     live, new = tmp_path / "live", tmp_path / "new"
     _live_tree(live, {"agent": "old"})
     _live_tree(new, {"agent": "new"})
-    stale = Path(f"{live / 'agent'}.hermes-update-staging")
+    stale = Path(f"{live / 'agent'}.akramcode-update-staging")
     stale.mkdir()
     (stale / "junk.txt").write_text("from a previous crash")
 
@@ -134,7 +134,7 @@ def test_venv_helpers_accept_str_and_path():
 
 def test_top_level_files_are_swapped_atomically(tmp_path):
     """The repo root holds 20 first-party modules (run_agent.py, cli.py,
-    hermes_constants.py, ...). Covering only directories would leave exactly
+    akramcode_constants.py, ...). Covering only directories would leave exactly
     the bug class this PR closes."""
     live, new = tmp_path / "live", tmp_path / "new"
     live.mkdir()
@@ -153,7 +153,7 @@ def test_top_level_files_are_swapped_atomically(tmp_path):
     update_cmd._commit_staged_replacements(staged)
 
     assert (live / "run_agent.py").read_text() == "new"
-    assert not [p for p in os.listdir(live) if "hermes-update" in p]
+    assert not [p for p in os.listdir(live) if "akramcode-update" in p]
 
 def test_file_swap_failure_restores_the_original_file(tmp_path, monkeypatch):
     """A mid-swap failure must not leave a stale-or-corrupt root module."""
@@ -223,7 +223,7 @@ def test_failed_staging_leaves_no_orphaned_copies(tmp_path, monkeypatch):
             raise
     monkeypatch.undo()
 
-    leftovers = [p for p in os.listdir(live) if "hermes-update" in p]
+    leftovers = [p for p in os.listdir(live) if "akramcode-update" in p]
     assert leftovers == [], f"orphaned staging copies: {leftovers}"
     # And nothing live was touched.
     for n in ("agent", "tools", "gateway"):
@@ -233,7 +233,7 @@ def test_venv_helpers_honour_an_explicit_platform_verdict():
     """Callers must be able to override the platform check (#76107 CI).
 
     The suite exercises Windows paths on Linux CI by patching predicates like
-    `hermes_main._is_windows`. A helper that reads `sys.platform`
+    `akramcode_main._is_windows`. A helper that reads `sys.platform`
     unconditionally silently drops those paths out of coverage -- and broke
     `test_verify_core_dependencies.py::test_uses_virtual_env_from_environment`,
     which patches `_is_windows` and then asserts on a `Scripts/python.exe`
@@ -264,7 +264,7 @@ def test_staging_restores_backup_when_dst_is_missing(tmp_path, monkeypatch):
     live.mkdir()
     _live_tree(new, {"agent": "new"})
     # Simulate the crashed state: dst gone, backup holds the old tree.
-    backup = live / "agent.hermes-update-old"
+    backup = live / "agent.akramcode-update-old"
     backup.mkdir()
     (backup / "version.txt").write_text("old")
 
@@ -285,7 +285,7 @@ def test_staging_restores_backup_when_dst_is_missing(tmp_path, monkeypatch):
     staged = _stage_all(live, new, ["agent"])
     update_cmd._commit_staged_replacements(staged)
     assert (live / "agent" / "version.txt").read_text() == "new"
-    assert not [p for p in os.listdir(live) if "hermes-update" in p]
+    assert not [p for p in os.listdir(live) if "akramcode-update" in p]
 
 def test_commit_failure_plus_discard_leaves_no_staging_litter(tmp_path, monkeypatch):
     """Phase-2 failure must not orphan staging copies for unswapped entries.
@@ -325,5 +325,5 @@ def test_commit_failure_plus_discard_leaves_no_staging_litter(tmp_path, monkeypa
     for n in ("agent", "tools", "gateway"):
         assert (live / n / "version.txt").read_text() == "old"
     # ...and zero litter of any kind (staging OR backup).
-    litter = [p for p in os.listdir(live) if "hermes-update" in p]
+    litter = [p for p in os.listdir(live) if "akramcode-update" in p]
     assert litter == [], f"orphaned update litter: {litter}"

@@ -33,7 +33,7 @@ def _load_auxiliary_client() -> None:
         extract_content_or_reasoning = extract_content_or_reasoning or _aux.extract_content_or_reasoning
 
 
-from akramcode_constants import get_hermes_dir
+from akramcode_constants import get_akramcode_dir
 from tools.debug_helpers import DebugSession
 from tools.website_policy import check_website_access
 from tools.vision_tools_history_budget import (
@@ -81,7 +81,7 @@ def _read_vision_setting(env_var: str, key: str, cast, minimum=None):
 
 
 # HTTP download timeout (separate from ``auxiliary.vision.timeout``, which governs the LLM call).
-_VISION_DOWNLOAD_TIMEOUT = _read_vision_setting("HERMES_VISION_DOWNLOAD_TIMEOUT", "download_timeout", float)
+_VISION_DOWNLOAD_TIMEOUT = _read_vision_setting("AKRAMCODE_VISION_DOWNLOAD_TIMEOUT", "download_timeout", float)
 if _VISION_DOWNLOAD_TIMEOUT is None:
     _VISION_DOWNLOAD_TIMEOUT = 30.0
 
@@ -104,8 +104,8 @@ def _detect_host_cpus() -> int:
 
 
 def _resolve_vision_cpu_workers() -> int:
-    """HERMES_VISION_MAX_CONCURRENCY → ``auxiliary.vision.max_concurrency`` → host cores (< 1 ignored)."""
-    val = _read_vision_setting("HERMES_VISION_MAX_CONCURRENCY", "max_concurrency", int, minimum=1)
+    """AKRAMCODE_VISION_MAX_CONCURRENCY → ``auxiliary.vision.max_concurrency`` → host cores (< 1 ignored)."""
+    val = _read_vision_setting("AKRAMCODE_VISION_MAX_CONCURRENCY", "max_concurrency", int, minimum=1)
     return val or _detect_host_cpus()
 
 
@@ -166,14 +166,14 @@ def _managed_install() -> bool:
 
 
 def _secure_cache_dir(new_subpath: str, old_name: str) -> Path:
-    """Resolve a Hermes media-cache dir, creating it owner-only (0700).
+    """Resolve a AkramCode media-cache dir, creating it owner-only (0700).
 
     A downloaded image or video is as sensitive as whatever the user pointed
     the agent at — a private attachment, an internal screenshot, a document
     scan. Created with a bare ``mkdir(parents=True, exist_ok=True)`` these
     inherited the umask and landed 0755, readable by every other local
-    account. ``HERMES_HOME`` is 0700 by default so default-config exposure is
-    narrow; the concrete scenario is the documented ``HERMES_HOME_MODE=0701``
+    account. ``AKRAMCODE_HOME`` is 0700 by default so default-config exposure is
+    narrow; the concrete scenario is the documented ``AKRAMCODE_HOME_MODE=0701``
     hatch (letting nginx/caddy traverse to a served subdirectory), where a
     0755 child really is world-readable.
 
@@ -182,7 +182,7 @@ def _secure_cache_dir(new_subpath: str, old_name: str) -> Path:
     Policy is then reconciled through ``akramcode_cli.config._secure_dir`` — the
     house helper — rather than a hand-rolled chmod, which is what keeps this
     correct off a single-user desktop: managed/NixOS installs are skipped,
-    ``HERMES_HOME_MODE`` stays honoured, and ``HERMES_UID``/``HERMES_GID``
+    ``AKRAMCODE_HOME_MODE`` stays honoured, and ``AKRAMCODE_UID``/``AKRAMCODE_GID``
     ownership is applied so a root-created dir does not lock out uid-mapped
     Docker workers (#34107).
 
@@ -191,23 +191,23 @@ def _secure_cache_dir(new_subpath: str, old_name: str) -> Path:
     directories the NixOS module's ``systemd.tmpfiles`` rules pre-create, so
     they are made lazily at runtime; a hardcoded 0700 here would be the only
     thing setting their mode and would silently override a design that pins
-    ``stateDir/.hermes`` to ``2770`` and runs the gateway with ``UMask =
-    "0007"`` so "interactive users in the hermes group can read/write"
+    ``stateDir/.akramcode`` to ``2770`` and runs the gateway with ``UMask =
+    "0007"`` so "interactive users in the akramcode group can read/write"
     gateway-created state. On such a host the gateway and a hostUsers CLI
-    share one ``$HERMES_HOME``, so a 0700 cache created by whichever ran
+    share one ``$AKRAMCODE_HOME``, so a 0700 cache created by whichever ran
     first makes vision fail with EACCES for the other. Skipping the explicit
     mode there lets the inherited setgid + umask land 2770, matching
-    ``ensure_hermes_home``'s managed branch and its ``logs/curator``
+    ``ensure_akramcode_home``'s managed branch and its ``logs/curator``
     lazy-mkdir precedent.
 
-    Running it unconditionally also heals a directory an older Hermes left at
+    Running it unconditionally also heals a directory an older AkramCode left at
     0755. That retroactive tighten is safe *here* because this is
-    Hermes-private scratch that the same user re-reads in the same call —
+    AkramCode-private scratch that the same user re-reads in the same call —
     there is no user-shared content to strand. Note ``parents=True`` applies
     the mode to the leaf only, so an intermediate ``cache/`` keeps its default
     mode; it is shared with other subsystems and holds only directory names.
     """
-    cache_dir = get_hermes_dir(new_subpath, old_name)
+    cache_dir = get_akramcode_dir(new_subpath, old_name)
     if _managed_install():
         # Managed mode: the NixOS-configured umask/setgid owns the mode, and
         # _secure_dir would no-op here anyway.
@@ -229,7 +229,7 @@ def _write_private_bytes(path: Path, data: bytes) -> None:
     """Write ``data`` to ``path`` with owner-only (0600) permissions.
 
     ``Path.write_bytes`` lands 0644 under a default umask. The enclosing cache
-    dir is 0700, so this matters only under ``HERMES_HOME_MODE=0701`` — but
+    dir is 0700, so this matters only under ``AKRAMCODE_HOME_MODE=0701`` — but
     ``tools.computer_use.tool`` already writes private captures into this
     very directory, and one directory with two file-mode conventions is the
     kind of inconsistency that rots. POSIX mode bits are advisory on Windows
@@ -678,7 +678,7 @@ async def _prepare_image(
 def _too_large_message(image_data_url: str) -> str:
     return (
         f"Image too large for vision API: base64 payload is {len(image_data_url) / (1024 * 1024):.1f} MB "
-        f"(limit {_MAX_BASE64_BYTES / (1024 * 1024):.0f} MB) even after resizing. Run `hermes pm repair` "
+        f"(limit {_MAX_BASE64_BYTES / (1024 * 1024):.0f} MB) even after resizing. Run `akramcode pm repair` "
         f"to restore Pillow for auto-resize, or compress the image manually.")
 
 
@@ -886,7 +886,7 @@ async def vision_analyze_tool(
     image_url: str, user_prompt: str, model: str = None,
     task_id: Optional[str] = None, region: Optional[list] = None) -> str:
     """Describe an image (URL, local path, data: URL) with the auxiliary vision LLM. ``user_prompt``
-    is pre-formatted by the caller. Temp images live under $HERMES_HOME/cache/vision/."""
+    is pre-formatted by the caller. Temp images live under $AKRAMCODE_HOME/cache/vision/."""
     async def stage(prompt: str, debug_call_data: dict, temp_paths: list) -> tuple:
         prepared = await _prepare_image(image_url, task_id, region, validate_decode=False)
         temp_paths.append(prepared.path)
@@ -1104,7 +1104,7 @@ async def _materialize_video(video_url: str, task_id: Optional[str], temp_paths:
         # a caller-supplied destination (tools/image_source.py hands its
         # sibling a /tmp NamedTemporaryFile it owns the mode of), and
         # chmod-ing an arbitrary caller's parent to 0700 would be a
-        # destructive side effect on a path Hermes does not own.
+        # destructive side effect on a path AkramCode does not own.
         temp_dir = _secure_cache_dir("cache/video", "temp_video_files")
         path = temp_dir / f"temp_video_{uuid.uuid4()}.mp4"
         temp_paths.append(path)

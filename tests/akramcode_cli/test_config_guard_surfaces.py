@@ -12,10 +12,10 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _isolated_config_env(monkeypatch, tmp_path):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.delenv("HERMES_IGNORE_USER_CONFIG", raising=False)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
+    monkeypatch.delenv("AKRAMCODE_IGNORE_USER_CONFIG", raising=False)
     yield
-    os.environ.pop("HERMES_IGNORE_USER_CONFIG", None)
+    os.environ.pop("AKRAMCODE_IGNORE_USER_CONFIG", None)
 
 def _write_corrupt_config(tmp_path):
     path = tmp_path / "config.yaml"
@@ -32,7 +32,7 @@ class TestGatewayGuard:
             _guard_corrupt_user_config()
 
         assert exc_info.value.code == 2
-        assert "Hermes stopped because your settings file" in capsys.readouterr().err
+        assert "AkramCode stopped because your settings file" in capsys.readouterr().err
 
     def test_gateway_allows_valid_config(self, tmp_path):
         from gateway.run import _guard_corrupt_user_config
@@ -49,7 +49,7 @@ class TestGatewayGuard:
         from gateway.run import _guard_corrupt_user_config
 
         _write_corrupt_config(tmp_path)
-        monkeypatch.setenv("HERMES_IGNORE_USER_CONFIG", "1")
+        monkeypatch.setenv("AKRAMCODE_IGNORE_USER_CONFIG", "1")
         _guard_corrupt_user_config()  # must not raise
 
 class TestCronRunJobGuard:
@@ -67,7 +67,7 @@ class TestCronRunJobGuard:
 
         assert success is False
         assert error is not None
-        assert "Hermes stopped because your settings file" in error
+        assert "AkramCode stopped because your settings file" in error
         assert "config.yaml" in error
         assert final_response == ""
 
@@ -79,11 +79,11 @@ class TestCronRunJobGuard:
         success, output_doc, final_response, error = run_job(
             self._job(no_agent=True, script="true", deliver="none")
         )
-        assert "Hermes stopped because your settings file" not in (error or "")
+        assert "AkramCode stopped because your settings file" not in (error or "")
 
 class TestServeGuard:
     def test_serve_headless_refuses_corrupt_config(self, tmp_path, capsys):
-        """The `hermes serve` headless path fails closed before startup."""
+        """The `akramcode serve` headless path fails closed before startup."""
         from argparse import Namespace
 
         from akramcode_cli import main as main_mod
@@ -102,4 +102,4 @@ class TestServeGuard:
             main_mod.cmd_dashboard(args)
 
         assert exc_info.value.code == 2
-        assert "Hermes stopped because your settings file" in capsys.readouterr().err
+        assert "AkramCode stopped because your settings file" in capsys.readouterr().err

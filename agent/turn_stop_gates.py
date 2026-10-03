@@ -163,7 +163,7 @@ def apply_stop_gates(
         logger.info(
             "kanban stop-loop nudge issued (attempt %d) task=%s",
             agent._kanban_stop_nudges,
-            os.environ.get("HERMES_KANBAN_TASK", ""),
+            os.environ.get("AKRAMCODE_KANBAN_TASK", ""),
         )
         agent._emit_diagnostic_status(
             "⚠️ Kanban worker tried to exit without a terminal board call "

@@ -4,7 +4,7 @@ SQLite protects a live WAL generation with two POSIX advisory locks: a SHARED lo
 file's lock range and a shared lock on the DMS byte of ``state.db-shm``. A sibling process may
 checkpoint and unlink ``-wal``/``-shm`` at its close only after taking both EXCLUSIVE. POSIX locks
 are per process, so any ``open()``/``close()`` of those two files inside the holder — a raw probe,
-a plugin, a tool reading ``~/.hermes`` — cancels both (sqlite.org/howtocorrupt.html §2.2) and the
+a plugin, a tool reading ``~/.akramcode`` — cancels both (sqlite.org/howtocorrupt.html §2.2) and the
 next foreign close strands the holder on a deleted generation (``DeletedWalGenerationError``).
 
 This module adds the same two ranges as *open file description* locks (``F_OFD_SETLK``) on the

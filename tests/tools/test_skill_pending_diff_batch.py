@@ -22,7 +22,7 @@ SK = (
 class TestSkillPendingDiffBatch(unittest.TestCase):
     def setUp(self):
         self.home = tempfile.mkdtemp(prefix="skdiff_t_")
-        os.environ["HERMES_HOME"] = self.home
+        os.environ["AKRAMCODE_HOME"] = self.home
         os.makedirs(os.path.join(self.home, "skills", "probe"), exist_ok=True)
         with open(os.path.join(self.home, "skills", "probe", "SKILL.md"), "w",
                   encoding="utf-8") as f:

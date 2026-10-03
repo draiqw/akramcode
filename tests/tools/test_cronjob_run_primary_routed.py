@@ -2,7 +2,7 @@
 
 Regression for #120330. A multiplexed satellite profile with no ``platforms.<p>`` credential of
 its own posts through the primary's bot via a root ``gateway.profile_routes`` entry, so only the
-gateway process holding that bot can deliver its jobs. ``hermes -p <profile> cron run`` used to
+gateway process holding that bot can deliver its jobs. ``akramcode -p <profile> cron run`` used to
 run the whole agent turn in the CLI process anyway, fail delivery with ``platform 'telegram' not
 configured/enabled`` and overwrite the job's ``last_status`` with ``delivery_failed``.
 """
@@ -29,7 +29,7 @@ def keeper_job(tmp_path, monkeypatch):
         "profile_routes": [{"name": "ops", "platform": "telegram", "chat_id": "-1004306455751",
                             "thread_id": "14", "profile": "keeper"}],
     }}), encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(keeper_home))  # what `hermes -p keeper` sets
+    monkeypatch.setenv("AKRAMCODE_HOME", str(keeper_home))  # what `akramcode -p keeper` sets
     from cron.jobs import create_job
     return create_job(prompt="infra report", schedule="0 9 * * *", name="infra", deliver=ROUTED_TARGET)
 

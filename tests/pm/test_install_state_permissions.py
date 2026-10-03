@@ -15,7 +15,7 @@ from pm.environments import install_state_dir, install_state_permission_message
 
 @pytest.mark.parametrize("phase", ["preparation", "activation"])
 def test_bootstrap_reports_unwritable_install_once(tmp_path, monkeypatch, phase):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
     root = Path(__file__).resolve().parents[2]
     target = install_state_dir(root) / (
         "pm-runtime/.prepare.lock" if phase == "preparation" else ".install.lock"
@@ -33,8 +33,8 @@ def denied(*args, **kwargs):
 venv_sync.prepare_launch = denied if phase == "preparation" else lambda *_: None
 _early_recovery.recover_if_needed = lambda *_: False
 environments.activate_dependencies = denied if phase == "activation" else lambda *_: None
-sys.argv = ["hermes", "-z", "hi"]
-import akram_core.hermes_bootstrap
+sys.argv = ["akramcode", "-z", "hi"]
+import akram_core.akramcode_bootstrap
 """
     result = subprocess.run(
         [sys.executable, "-S", "-c", code, str(target), phase],
@@ -42,17 +42,17 @@ import akram_core.hermes_bootstrap
         capture_output=True, text=True, timeout=30,
     )
     assert result.returncode == 1, result.stderr
-    assert result.stderr.count("hermes: ") == 1
+    assert result.stderr.count("akramcode: ") == 1
     assert "install state is not writable by this user" in result.stderr
     assert str(target) in result.stderr
     assert "source-update completion failed" not in result.stderr
-    assert "run `hermes update`" not in result.stderr
-    assert "hermes pm repair" not in result.stderr
+    assert "run `akramcode update`" not in result.stderr
+    assert "akramcode pm repair" not in result.stderr
     assert "Traceback" not in result.stderr
 
 
 def test_pm_repair_reports_unwritable_runtime_without_traceback(tmp_path, monkeypatch, capsys):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
     root = Path(__file__).resolve().parents[2]
     target = install_state_dir(root) / "pm-runtime" / ".prepare.lock"
     code = """
@@ -97,4 +97,4 @@ raise SystemExit(main(["repair"]))
     monkeypatch.setitem(sys.modules, "pm.recovery", recovery)
     with pytest.raises(PermissionError):
         _early_recovery.recover_if_needed(project, argv=["pm", "repair"], explicit=True)
-    assert "run `hermes pm repair`" not in capsys.readouterr().err
+    assert "run `akramcode pm repair`" not in capsys.readouterr().err

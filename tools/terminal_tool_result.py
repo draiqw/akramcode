@@ -125,7 +125,7 @@ def _sudo_annotations(command: str, output: str, env_type: str) -> tuple[str, bo
     auth_failed = _sudo_wrong_password_failure(output)
     cache_cleared = _invalidate_cached_sudo_on_auth_failure(command, output)
     can_reprompt = cache_cleared and (
-        tt._get_sudo_password_callback() is not None or env_var_enabled("HERMES_INTERACTIVE")
+        tt._get_sudo_password_callback() is not None or env_var_enabled("AKRAMCODE_INTERACTIVE")
     ) and not _in_delegated_child_context()
     if can_reprompt:
         output += ("\n\n⚠️ Sudo authentication failed — cached password "

@@ -16,13 +16,13 @@ import akramcode_cli.update_receipt as ur
 
 
 def _setup(monkeypatch, tmp_path, record: dict):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir(exist_ok=True)
     monkeypatch.setattr(
         "akramcode_cli.version_info.get_code_identity",
         lambda refresh=False: {"sha": "HEADSHA", "version": "1.0"},
     )
-    monkeypatch.setattr("akramcode_cli.profiles._get_default_hermes_home", lambda: home)
+    monkeypatch.setattr("akramcode_cli.profiles._get_default_akramcode_home", lambda: home)
     monkeypatch.setattr(
         "akramcode_cli.profiles._get_profiles_root", lambda: tmp_path / "no-profiles"
     )
@@ -45,7 +45,7 @@ def test_killed_never_replaced_gateway_is_a_down_row(monkeypatch, tmp_path):
     _setup(
         monkeypatch,
         tmp_path,
-        {"pid": _DEAD_PID, "gateway_state": "running", "kind": "hermes-gateway",
+        {"pid": _DEAD_PID, "gateway_state": "running", "kind": "akramcode-gateway",
          "code_version": "0.20.5"},
     )
     fleet = ur.collect_fleet_versions(pre_restart_pids=[_DEAD_PID])
@@ -61,7 +61,7 @@ def test_dead_pid_not_in_pre_restart_snapshot_keeps_no_row(monkeypatch, tmp_path
     _setup(
         monkeypatch,
         tmp_path,
-        {"pid": _DEAD_PID, "gateway_state": "running", "kind": "hermes-gateway"},
+        {"pid": _DEAD_PID, "gateway_state": "running", "kind": "akramcode-gateway"},
     )
     assert ur.collect_fleet_versions(pre_restart_pids=[12345]) == []
     assert ur.collect_fleet_versions(pre_restart_pids=None) == []
@@ -73,7 +73,7 @@ def test_cleanly_stopped_gateway_is_not_down(monkeypatch, tmp_path):
         _setup(
             monkeypatch,
             tmp_path,
-            {"pid": _DEAD_PID, "gateway_state": benign_state, "kind": "hermes-gateway"},
+            {"pid": _DEAD_PID, "gateway_state": benign_state, "kind": "akramcode-gateway"},
         )
         assert ur.collect_fleet_versions(pre_restart_pids=[_DEAD_PID]) == []
 
@@ -94,7 +94,7 @@ def test_recycled_pid_is_not_reported_stale(monkeypatch, tmp_path):
             "start_time": wrong_start_time,
             "gateway_state": "running",
             "code_sha": "OLDSHA",
-            "kind": "hermes-gateway",
+            "kind": "akramcode-gateway",
         },
     )
     fleet = ur.collect_fleet_versions(pre_restart_pids=[reused_pid])
@@ -116,7 +116,7 @@ def test_matching_start_time_is_still_live(monkeypatch, tmp_path):
             "start_time": _get_process_start_time(pid),
             "gateway_state": "running",
             "code_sha": "HEADSHA",
-            "kind": "hermes-gateway",
+            "kind": "akramcode-gateway",
         },
     )
     fleet = ur.collect_fleet_versions(pre_restart_pids=[pid])
@@ -131,7 +131,7 @@ def test_live_gateway_rows_unchanged(monkeypatch, tmp_path):
         monkeypatch,
         tmp_path,
         {"pid": os.getpid(), "gateway_state": "running", "code_sha": "HEADSHA",
-         "kind": "hermes-gateway"},
+         "kind": "akramcode-gateway"},
     )
     fleet = ur.collect_fleet_versions(pre_restart_pids=[os.getpid()])
     assert len(fleet) == 1
@@ -148,4 +148,4 @@ def test_down_and_stale_both_escalate_with_remediation(capsys):
     out = capsys.readouterr().out
     assert "STALE" in out
     assert "DOWN" in out
-    assert "hermes gateway restart" in out
+    assert "akramcode gateway restart" in out

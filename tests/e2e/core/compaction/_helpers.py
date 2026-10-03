@@ -132,9 +132,9 @@ def compaction_config(*, extra: str = "", slow: bool = False, threshold_tokens: 
     return cfg
 
 
-def write_home(hermes_home: Path, base_url: str, extra_config: str) -> None:
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    (hermes_home / "config.yaml").write_text(
+def write_home(akramcode_home: Path, base_url: str, extra_config: str) -> None:
+    akramcode_home.mkdir(parents=True, exist_ok=True)
+    (akramcode_home / "config.yaml").write_text(
         "model:\n"
         "  provider: custom\n"
         f"  base_url: {base_url}\n"
@@ -147,7 +147,7 @@ def write_home(hermes_home: Path, base_url: str, extra_config: str) -> None:
         + extra_config,
         encoding="utf-8",
     )
-    (hermes_home / ".env").write_text("OPENAI_API_KEY=sk-fake-e2e\n", encoding="utf-8")
+    (akramcode_home / ".env").write_text("OPENAI_API_KEY=sk-fake-e2e\n", encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------------------------------
@@ -499,7 +499,7 @@ class TurnRecord:
 
 @dataclass
 class Scenario:
-    """One session: its own HERMES_HOME, state.db and agent against the shared provider."""
+    """One session: its own AKRAMCODE_HOME, state.db and agent against the shared provider."""
 
     server: FakeLLMServer
     dispatch: Dispatch

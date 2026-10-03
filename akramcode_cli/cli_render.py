@@ -240,18 +240,18 @@ def _heal_cooked_mode_drift(fd: int) -> bool:
 def _detect_light_mode_uncached() -> bool:
     """The detection ladder documented above; may raise (caller maps errors to dark)."""
     from cli import _FALSE_RE, _LIGHT_DEFAULT_TERM_PROGRAMS, _TRUE_RE, _luminance_from_hex, _query_osc11_background
-    for var in ("HERMES_LIGHT", "HERMES_TUI_LIGHT"):
+    for var in ("AKRAMCODE_LIGHT", "AKRAMCODE_TUI_LIGHT"):
         v = (os.environ.get(var) or "").strip().lower()
         if _TRUE_RE.match(v):
             return True
         if _FALSE_RE.match(v):
             return False
-    theme = (os.environ.get("HERMES_TUI_THEME") or "").strip().lower()
+    theme = (os.environ.get("AKRAMCODE_TUI_THEME") or "").strip().lower()
     if theme == "light":
         return True
     if theme == "dark":
         return False
-    bg_lum = _luminance_from_hex(os.environ.get("HERMES_TUI_BACKGROUND") or "")
+    bg_lum = _luminance_from_hex(os.environ.get("AKRAMCODE_TUI_BACKGROUND") or "")
     if bg_lum is not None:
         return bg_lum >= 0.5
     last = (os.environ.get("COLORFGBG") or "").strip().split(";")[-1]
@@ -295,7 +295,7 @@ def _install_skin_light_mode_hook() -> None:
         from akramcode_cli.skin_engine import SkinConfig  # type: ignore[import]
     except Exception:
         return
-    if getattr(SkinConfig, "_hermes_light_mode_hook_installed", False):
+    if getattr(SkinConfig, "_akramcode_light_mode_hook_installed", False):
         return
     _orig_get_color = SkinConfig.get_color
 
@@ -307,7 +307,7 @@ def _install_skin_light_mode_hook() -> None:
             return value
 
     SkinConfig.get_color = _wrapped_get_color  # type: ignore[method-assign]
-    SkinConfig._hermes_light_mode_hook_installed = True  # type: ignore[attr-defined]
+    SkinConfig._akramcode_light_mode_hook_installed = True  # type: ignore[attr-defined]
 
 
 class _SkinAwareAnsi:
@@ -917,12 +917,12 @@ def _build_compact_banner() -> str:
     dim_color = _color("banner_dim", "#B8860B")
 
     if (getattr(_skin, "name", "default") if _skin else "default") == "default":
-        tiny_line = "☤ NOUS HERMES"
+        tiny_line = "☤ NOUS AKRAMCODE"
     else:
-        tiny_line = _skin.get_branding("agent_name", "Hermes Agent") if _skin else "Hermes Agent"
+        tiny_line = _skin.get_branding("agent_name", "AkramCode Agent") if _skin else "AkramCode Agent"
     line1 = t("cli.render.banner_tagline", name=tiny_line)
 
-    if os.environ.get("HERMES_FAST_STARTUP_BANNER") == "1":
+    if os.environ.get("AKRAMCODE_FAST_STARTUP_BANNER") == "1":
         from akramcode_cli import __release_date__ as _release_date
         from akramcode_cli.version_info import get_version_info
 

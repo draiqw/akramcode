@@ -79,7 +79,7 @@ def _spawn_lease_holder(
         if key.endswith("_API_KEY") or key.endswith("_TOKEN"):
             env.pop(key)
     env.update({
-        "HERMES_HOME": str(home),
+        "AKRAMCODE_HOME": str(home),
         "PYTHONPATH": os.pathsep.join(
             part for part in (str(repo_root), env.get("PYTHONPATH", "")) if part
         ),
@@ -568,9 +568,9 @@ def test_new_runtime_never_takes_a_live_foreign_or_attached_lease(
 ) -> None:
     """Takeover is same-process AND client-less only: a lease held by a live foreign process, or by a sibling
     runtime that still has a client (second window), keeps refusing."""
-    hermes_home = Path(os.environ["HERMES_HOME"])
+    akramcode_home = Path(os.environ["AKRAMCODE_HOME"])
     ready_file, release_file = tmp_path / "ready", tmp_path / "release"
-    child = _spawn_lease_holder(home=hermes_home, session_id="foreign-chat", ready_file=ready_file,
+    child = _spawn_lease_holder(home=akramcode_home, session_id="foreign-chat", ready_file=ready_file,
                                 release_file=release_file)
     try:
         _wait_for_child_file(child, ready_file, label="foreign lease holder")

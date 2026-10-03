@@ -1,4 +1,4 @@
-"""The interactive ``hermes plugins`` composite UI: general-plugin checkboxes (saved through the one
+"""The interactive ``akramcode plugins`` composite UI: general-plugin checkboxes (saved through the one
 admission authority) and the memory-provider / context-engine category pickers.
 
 Sibling of :mod:`akramcode_cli.plugins_cmd` (the facade re-exports the names other modules use and is
@@ -129,7 +129,7 @@ def _persist_plugin_selection(plugin_keys, chosen, disabled, initial, *, expecte
 
     Untouched rows are never persisted, so a never-ticked row is not mistaken for an explicit untick
     and list entries for plugins the picker didn't show survive. Canonical key only, with every alias
-    purged from the opposing list like ``hermes plugins enable/disable`` (#40190).
+    purged from the opposing list like ``akramcode plugins enable/disable`` (#40190).
     """
     turned_on = [plugin_keys[i] for i in sorted(chosen - initial)]
     turned_off = [plugin_keys[i] for i in sorted(initial - chosen)]
@@ -268,7 +268,7 @@ def _run_composite_ui(curses, plugin_keys, plugin_labels, plugin_selected, disab
         console.print(f"[red]✗[/red] Plugin selection refused, not saved: {exc}")
         console.print(
             "[dim]config.yaml and the active environment are unchanged. "
-            "Run `hermes pm install` to resolve, then retry.[/dim]"
+            "Run `akramcode pm install` to resolve, then retry.[/dim]"
         )
         return
     if turned_on or turned_off:

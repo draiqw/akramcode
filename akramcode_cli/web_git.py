@@ -580,7 +580,7 @@ def _ensure_repo(cwd: str) -> None:
     else:
         needs_root = not _ref_exists(cwd, "HEAD")
     if needs_root:
-        _git_ok(cwd, ["-c", "user.email=hermes@localhost", "-c", "user.name=Hermes",
+        _git_ok(cwd, ["-c", "user.email=akramcode@localhost", "-c", "user.name=AkramCode",
                       "commit", "--allow-empty", "-m", "Initial commit"])
 
 
@@ -656,7 +656,7 @@ def worktree_add(cwd: str, options: dict) -> dict:
         return _worktree_for_existing(root, options["existingBranch"])
 
     slug = _slugify(options.get("name") or f"work-{os.urandom(4).hex()}")
-    branch = _sanitize_branch(options.get("branch") or "") or f"hermes/{slug}"
+    branch = _sanitize_branch(options.get("branch") or "") or f"akramcode/{slug}"
     target = _unique_dir(os.path.join(root, ".worktrees", slug))
     args = ["worktree", "add", "-b", branch, target]
     if options.get("base"):

@@ -62,9 +62,9 @@ def pm_env(tmp_path, served, monkeypatch):
     docroot, base_url = served
     runtime = tmp_path / "runtime"
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(runtime))
-    monkeypatch.delenv("HERMES_DISABLE_LAZY_INSTALLS", raising=False)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / ".akramcode"))
+    monkeypatch.setenv("AKRAMCODE_RUNTIME_DIR", str(runtime))
+    monkeypatch.delenv("AKRAMCODE_DISABLE_LAZY_INSTALLS", raising=False)
     # Policy is pinned open here; the disabled-path tests pin it closed.
     import importlib
 
@@ -543,8 +543,8 @@ def test_python_package_stably_signs_macos_runtime(tmp_path):
     shutil.copy2(Path(sys._base_executable).resolve(), binary)
     subprocess.run(
         ["codesign", "--force", "--sign", "-", "--timestamp=none",
-         "--identifier", "test.hermes.downloaded", "--requirements",
-         '=designated => identifier "test.hermes.downloaded"', str(binary)],
+         "--identifier", "test.akramcode.downloaded", "--requirements",
+         '=designated => identifier "test.akramcode.downloaded"', str(binary)],
         check=True, capture_output=True, timeout=30,
     )
     python.stage(Store(tmp_path / "store"), staged, "fixture", current_target())
@@ -553,7 +553,7 @@ def test_python_package_stably_signs_macos_runtime(tmp_path):
                    check=True, capture_output=True, timeout=30)
     identity = subprocess.run(["codesign", "-d", "-r-", str(binary)],
                               check=True, capture_output=True, text=True, timeout=30)
-    assert 'designated => identifier "com.nousresearch.hermes.managed-python"' in identity.stdout + identity.stderr
+    assert 'designated => identifier "com.nousresearch.akramcode.managed-python"' in identity.stdout + identity.stderr
 
 
 @pytest.mark.platforms("not macos")
@@ -790,7 +790,7 @@ def test_store_path_dirs_include_node_npm_when_installed(tmp_path, monkeypatch):
     from pm.lock import Facts, Lockfile
 
     runtime = tmp_path / "runtime"
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(runtime))
+    monkeypatch.setenv("AKRAMCODE_RUNTIME_DIR", str(runtime))
     lock_dir = tmp_path / "repo-lock"
     lock_dir.mkdir()
     lockfile_path = lock_dir / "lock.json"

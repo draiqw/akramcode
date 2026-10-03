@@ -1,7 +1,7 @@
 import codecs
 import os
 
-from akramcode_cli.env_loader import load_hermes_dotenv
+from akramcode_cli.env_loader import load_akramcode_dotenv
 
 
 def test_recovered_update_retry_skips_external_secret_sources(tmp_path, monkeypatch):
@@ -9,7 +9,7 @@ def test_recovered_update_retry_skips_external_secret_sources(tmp_path, monkeypa
     import akramcode_cli.env_loader as env_loader
     from akramcode_cli import _early_recovery
 
-    home = tmp_path / "hermes"
+    home = tmp_path / "akramcode"
     home.mkdir()
     env_file = home / ".env"
     env_file.write_text("UPDATE_RETRY_DOTENV=loaded\n", encoding="utf-8")
@@ -22,7 +22,7 @@ def test_recovered_update_retry_skips_external_secret_sources(tmp_path, monkeypa
         lambda path: external_calls.append(path),
     )
 
-    loaded = load_hermes_dotenv(hermes_home=home)
+    loaded = load_akramcode_dotenv(akramcode_home=home)
 
     assert loaded == [env_file]
     assert os.environ["UPDATE_RETRY_DOTENV"] == "loaded"
@@ -36,7 +36,7 @@ def test_utf8_bom_does_not_mangle_first_key(tmp_path, monkeypatch):
     a BOM (EF BB BF). With encoding=utf-8, python-dotenv keeps U+FEFF on the
     first key so the canonical name is absent and callers see "not configured".
     """
-    home = tmp_path / "hermes"
+    home = tmp_path / "akramcode"
     home.mkdir()
     env_file = home / ".env"
     env_file.write_bytes(
@@ -47,7 +47,7 @@ def test_utf8_bom_does_not_mangle_first_key(tmp_path, monkeypatch):
     monkeypatch.delenv("SECOND_KEY", raising=False)
     monkeypatch.delenv("\ufeffFIRST_KEY", raising=False)
 
-    loaded = load_hermes_dotenv(hermes_home=home)
+    loaded = load_akramcode_dotenv(akramcode_home=home)
 
     assert loaded == [env_file]
     assert os.getenv("FIRST_KEY") == "first-value"
@@ -57,13 +57,13 @@ def test_utf8_bom_does_not_mangle_first_key(tmp_path, monkeypatch):
 
 def test_bom_first_key_is_seen_by_installer_and_scrub_alike(tmp_path, monkeypatch):
     """Invariant: the key set the dashboard/profile scrub computes (``_env_keys_defined_in_dotenv``) equals
-    the key set the installers define (``load_hermes_dotenv`` into os.environ, ``load_env_file`` into a
+    the key set the installers define (``load_akramcode_dotenv`` into os.environ, ``load_env_file`` into a
     profile scope). A BOM'd first line, ``export``, quotes and inline comments must not split them —
     a key one side sees and the other doesn't is a scrub miss."""
     from akramcode_cli.env_loader import _env_keys_defined_in_dotenv
     from agent.secret_scope import load_env_file
 
-    home = tmp_path / "hermes"
+    home = tmp_path / "akramcode"
     home.mkdir()
     env_file = home / ".env"
     env_file.write_bytes(
@@ -75,7 +75,7 @@ def test_bom_first_key_is_seen_by_installer_and_scrub_alike(tmp_path, monkeypatc
     for key in ("FIRST_KEY", "EXPORTED_KEY", "COMMENTED_KEY", "EMPTY_KEY", "\ufeffFIRST_KEY"):
         monkeypatch.delenv(key, raising=False)
 
-    load_hermes_dotenv(hermes_home=home)
+    load_akramcode_dotenv(akramcode_home=home)
     installed = {k for k in ("FIRST_KEY", "EXPORTED_KEY", "COMMENTED_KEY", "EMPTY_KEY") if k in os.environ}
     scoped = load_env_file(env_file)
 
@@ -98,7 +98,7 @@ def test_utf8_bom_plus_invalid_utf8_preserves_first_key(tmp_path, monkeypatch):
     latin-1 fallback, a leading EF BB BF would otherwise become part of the
     first key name under latin-1 and drop the canonical name.
     """
-    home = tmp_path / "hermes"
+    home = tmp_path / "akramcode"
     home.mkdir()
     env_file = home / ".env"
     # BOM + valid first key + latin-1 é (0xE9) in a later value.
@@ -110,7 +110,7 @@ def test_utf8_bom_plus_invalid_utf8_preserves_first_key(tmp_path, monkeypatch):
     monkeypatch.delenv("BAD", raising=False)
     monkeypatch.delenv("\ufeffANTHROPIC_API_KEY", raising=False)
 
-    loaded = load_hermes_dotenv(hermes_home=home)
+    loaded = load_akramcode_dotenv(akramcode_home=home)
 
     assert loaded == [env_file]
     assert os.getenv("ANTHROPIC_API_KEY") == "sk-test-123"
@@ -122,7 +122,7 @@ def test_latin1_fallback_stream_honors_override(tmp_path, monkeypatch):
     """Stream-based latin-1 fallback must honor override= identically to dotenv_path."""
     from akramcode_cli.env_loader import _load_dotenv_with_fallback
 
-    home = tmp_path / "hermes"
+    home = tmp_path / "akramcode"
     home.mkdir()
     env_file = home / ".env"
     # Invalid UTF-8 forces the stream/latin-1 path.
@@ -143,7 +143,7 @@ def test_latin1_fallback_stream_honors_override(tmp_path, monkeypatch):
 
 def test_latin1_fallback_stream_preserves_interpolation(tmp_path, monkeypatch):
     """Stream/latin-1 path must still expand ${VAR} like the dotenv_path form."""
-    home = tmp_path / "hermes"
+    home = tmp_path / "akramcode"
     home.mkdir()
     env_file = home / ".env"
     # 0xE9 forces latin-1 fallback; ${FOO} must still expand.
@@ -153,7 +153,7 @@ def test_latin1_fallback_stream_preserves_interpolation(tmp_path, monkeypatch):
     monkeypatch.delenv("BAR", raising=False)
     monkeypatch.delenv("LATIN1_VALUE", raising=False)
 
-    loaded = load_hermes_dotenv(hermes_home=home)
+    loaded = load_akramcode_dotenv(akramcode_home=home)
 
     assert loaded == [env_file]
     assert os.getenv("FOO") == "bar"
@@ -189,7 +189,7 @@ def test_utf16_le_bom_preserves_non_ascii_values(tmp_path, monkeypatch):
     Uses non-credential var names so _sanitize_loaded_credentials does not
     strip non-ASCII from values (that path only targets *_KEY/*_TOKEN/etc.).
     """
-    home = tmp_path / "hermes"
+    home = tmp_path / "akramcode"
     home.mkdir()
     env_file = home / ".env"
     content = "GREETING=café\nCJK_LABEL=日本語\n"
@@ -198,7 +198,7 @@ def test_utf16_le_bom_preserves_non_ascii_values(tmp_path, monkeypatch):
     monkeypatch.delenv("GREETING", raising=False)
     monkeypatch.delenv("CJK_LABEL", raising=False)
 
-    loaded = load_hermes_dotenv(hermes_home=home)
+    loaded = load_akramcode_dotenv(akramcode_home=home)
 
     assert loaded == [env_file]
     assert os.getenv("GREETING") == "café"
@@ -224,7 +224,7 @@ def test_utf32_le_bom_leaves_file_untouched(tmp_path, caplog):
     from akramcode_cli.env_loader import _sanitize_env_file_if_needed
 
     env_file = tmp_path / ".env"
-    content = "HERMES_TEST_KEY=hello_utf32\nSECOND_KEY=world\n"
+    content = "AKRAMCODE_TEST_KEY=hello_utf32\nSECOND_KEY=world\n"
     raw = codecs.BOM_UTF32_LE + content.encode("utf-32-le")
     env_file.write_bytes(raw)
 
@@ -252,7 +252,7 @@ def test_utf32_warning_fires_once_per_path(tmp_path, caplog, monkeypatch):
     monkeypatch.setattr(env_loader, "_WARNED_UTF32_PATHS", set())
 
     env_file = tmp_path / ".env"
-    content = "HERMES_TEST_KEY=hello_utf32\nSECOND_KEY=world\n"
+    content = "AKRAMCODE_TEST_KEY=hello_utf32\nSECOND_KEY=world\n"
     raw = codecs.BOM_UTF32_LE + content.encode("utf-32-le")
     env_file.write_bytes(raw)
 
@@ -270,7 +270,7 @@ def test_utf32_warning_fires_once_per_path(tmp_path, caplog, monkeypatch):
 
 def test_plain_utf8_env_regression(tmp_path, monkeypatch):
     """Plain UTF-8 .env must keep loading after the UTF-16 sanitize changes."""
-    home = tmp_path / "hermes"
+    home = tmp_path / "akramcode"
     home.mkdir()
     env_file = home / ".env"
     before = b"OPENAI_API_KEY=sk-plain\nSECOND_KEY=ok\n"
@@ -279,7 +279,7 @@ def test_plain_utf8_env_regression(tmp_path, monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.delenv("SECOND_KEY", raising=False)
 
-    loaded = load_hermes_dotenv(hermes_home=home)
+    loaded = load_akramcode_dotenv(akramcode_home=home)
 
     assert loaded == [env_file]
     assert os.getenv("OPENAI_API_KEY") == "sk-plain"
@@ -298,7 +298,7 @@ def test_cp1252_env_regression_does_not_crash(tmp_path, monkeypatch):
     errors=replace on values (original already replace-decoded equals
     sanitized), so _load_dotenv_with_fallback's latin-1 path recovers café.
     """
-    home = tmp_path / "hermes"
+    home = tmp_path / "akramcode"
     home.mkdir()
     env_file = home / ".env"
     before = b"ASCII_KEY=ok\nLATIN1_VALUE=caf\xe9\n"
@@ -307,7 +307,7 @@ def test_cp1252_env_regression_does_not_crash(tmp_path, monkeypatch):
     monkeypatch.delenv("ASCII_KEY", raising=False)
     monkeypatch.delenv("LATIN1_VALUE", raising=False)
 
-    loaded = load_hermes_dotenv(hermes_home=home)
+    loaded = load_akramcode_dotenv(akramcode_home=home)
 
     assert loaded == [env_file]
     assert os.getenv("ASCII_KEY") == "ok"
@@ -322,14 +322,14 @@ def test_cp1252_env_regression_does_not_crash(tmp_path, monkeypatch):
 
 
 def test_known_keys_absent_from_user_env_are_cleared(tmp_path, monkeypatch):
-    """Known Hermes keys inherited from parent process are removed when absent
+    """Known AkramCode keys inherited from parent process are removed when absent
     from the profile's .env.
 
     This is the startup equivalent of ``reload_env()``'s known-key cleanup and
     fixes the isolation gap where one profile's ACP/provider settings silently
     leak into another profile's runtime via ``os.environ`` inheritance.
     """
-    home = tmp_path / "hermes"
+    home = tmp_path / "akramcode"
     home.mkdir()
     (home / ".env").write_text(
         "OPENAI_BASE_URL=https://profile.example/v1\n", encoding="utf-8"
@@ -337,17 +337,17 @@ def test_known_keys_absent_from_user_env_are_cleared(tmp_path, monkeypatch):
 
     # Inherited known keys from parent process / other profile
     monkeypatch.setenv("OPENAI_BASE_URL", "https://stale.example/v1")
-    monkeypatch.setenv("HERMES_ACP_AUTH_METHOD", "cursor_login")
+    monkeypatch.setenv("AKRAMCODE_ACP_AUTH_METHOD", "cursor_login")
     monkeypatch.setenv("COPILOT_CLI_PATH", "/usr/bin/claude-code")
     # Unrelated shell var must NOT be touched
     monkeypatch.setenv("MY_SHELL_ONLY_VAR", "keep-me")
 
-    load_hermes_dotenv(hermes_home=home)
+    load_akramcode_dotenv(akramcode_home=home)
 
     # OPENAI_BASE_URL is defined in the profile .env → overridden to the new value
     assert os.getenv("OPENAI_BASE_URL") == "https://profile.example/v1"
-    # HERMES_ACP_AUTH_METHOD and COPILOT_CLI_PATH are NOT in the profile .env → cleared
-    assert "HERMES_ACP_AUTH_METHOD" not in os.environ
+    # AKRAMCODE_ACP_AUTH_METHOD and COPILOT_CLI_PATH are NOT in the profile .env → cleared
+    assert "AKRAMCODE_ACP_AUTH_METHOD" not in os.environ
     assert "COPILOT_CLI_PATH" not in os.environ
     # Unrelated shell vars must survive
     assert os.getenv("MY_SHELL_ONLY_VAR") == "keep-me"
@@ -357,75 +357,75 @@ def test_empty_assignment_in_user_env_is_preserved(tmp_path, monkeypatch):
     """An explicit ``KEY=`` (empty value) in the profile .env keeps the key
     in ``os.environ`` — distinct from a key absent from .env entirely.
 
-    Empty ``HERMES_ACP_AUTH_METHOD=`` tells the ACP adapter to skip
+    Empty ``AKRAMCODE_ACP_AUTH_METHOD=`` tells the ACP adapter to skip
     ``authenticate`` (the key exists, its value is just empty).  This is the
     documented workaround for the leak and must still work after the cleanup.
     """
-    home = tmp_path / "hermes"
+    home = tmp_path / "akramcode"
     home.mkdir()
-    (home / ".env").write_text("HERMES_ACP_AUTH_METHOD=\n", encoding="utf-8")
+    (home / ".env").write_text("AKRAMCODE_ACP_AUTH_METHOD=\n", encoding="utf-8")
 
-    monkeypatch.setenv("HERMES_ACP_AUTH_METHOD", "cursor_login")
+    monkeypatch.setenv("AKRAMCODE_ACP_AUTH_METHOD", "cursor_login")
     monkeypatch.setenv("COPILOT_CLI_PATH", "/usr/bin/sneaky")  # NOT in .env → cleared
 
-    load_hermes_dotenv(hermes_home=home)
+    load_akramcode_dotenv(akramcode_home=home)
 
     # KEY= in .env keeps the key (now empty string)
-    assert "HERMES_ACP_AUTH_METHOD" in os.environ
-    assert os.environ["HERMES_ACP_AUTH_METHOD"] == ""
+    assert "AKRAMCODE_ACP_AUTH_METHOD" in os.environ
+    assert os.environ["AKRAMCODE_ACP_AUTH_METHOD"] == ""
     # COPILOT_CLI_PATH is absent from .env → cleared
     assert "COPILOT_CLI_PATH" not in os.environ
 
 
 def test_no_user_env_does_not_clear_anything(tmp_path, monkeypatch):
-    """When no profile .env exists (bare profile), load_hermes_dotenv must not
+    """When no profile .env exists (bare profile), load_akramcode_dotenv must not
     wipe inherited known keys — the bare-profile case follows #66930 / #67027
     semantics and the user's shell environment should not be mutilated.
     """
-    home = tmp_path / "hermes"
+    home = tmp_path / "akramcode"
     home.mkdir()
     # No .env in home — bare profile
 
-    monkeypatch.setenv("HERMES_ACP_AUTH_METHOD", "cursor_login")
+    monkeypatch.setenv("AKRAMCODE_ACP_AUTH_METHOD", "cursor_login")
     monkeypatch.setenv("PATH", "/usr/bin:/bin")
 
-    load_hermes_dotenv(hermes_home=home)
+    load_akramcode_dotenv(akramcode_home=home)
 
-    assert os.getenv("HERMES_ACP_AUTH_METHOD") == "cursor_login"
+    assert os.getenv("AKRAMCODE_ACP_AUTH_METHOD") == "cursor_login"
     assert os.getenv("PATH") == "/usr/bin:/bin"
 
 
 def test_known_key_explicitly_set_in_user_env_is_kept(tmp_path, monkeypatch):
-    """A known Hermes key that IS explicitly set in the profile .env survives
+    """A known AkramCode key that IS explicitly set in the profile .env survives
     the cleanup (overrides the inherited value).
     """
-    home = tmp_path / "hermes"
+    home = tmp_path / "akramcode"
     home.mkdir()
     (home / ".env").write_text(
-        "HERMES_ACP_AUTH_METHOD=claude_code_cli\n", encoding="utf-8"
+        "AKRAMCODE_ACP_AUTH_METHOD=claude_code_cli\n", encoding="utf-8"
     )
 
-    monkeypatch.setenv("HERMES_ACP_AUTH_METHOD", "cursor_login")
+    monkeypatch.setenv("AKRAMCODE_ACP_AUTH_METHOD", "cursor_login")
 
-    load_hermes_dotenv(hermes_home=home)
+    load_akramcode_dotenv(akramcode_home=home)
 
-    assert os.getenv("HERMES_ACP_AUTH_METHOD") == "claude_code_cli"
+    assert os.getenv("AKRAMCODE_ACP_AUTH_METHOD") == "claude_code_cli"
 
 
 def test_export_prefixed_known_key_in_user_env_is_kept(tmp_path, monkeypatch):
-    """A known Hermes key defined with the bash-compatible ``export KEY=value``
+    """A known AkramCode key defined with the bash-compatible ``export KEY=value``
     form in the profile .env must be recognized as defined and survive the
     cleanup - mirrors the ``export `` stripping in config.py's load_env()
     (#6659).
     """
-    home = tmp_path / "hermes"
+    home = tmp_path / "akramcode"
     home.mkdir()
     (home / ".env").write_text(
-        "export HERMES_ACP_AUTH_METHOD=claude_code_cli\n", encoding="utf-8"
+        "export AKRAMCODE_ACP_AUTH_METHOD=claude_code_cli\n", encoding="utf-8"
     )
-    monkeypatch.setenv("HERMES_ACP_AUTH_METHOD", "cursor_login")
-    load_hermes_dotenv(hermes_home=home)
-    assert os.getenv("HERMES_ACP_AUTH_METHOD") == "claude_code_cli"
+    monkeypatch.setenv("AKRAMCODE_ACP_AUTH_METHOD", "cursor_login")
+    load_akramcode_dotenv(akramcode_home=home)
+    assert os.getenv("AKRAMCODE_ACP_AUTH_METHOD") == "claude_code_cli"
 
 
 def test_shell_exported_credentials_survive_cleanup(tmp_path, monkeypatch):
@@ -439,7 +439,7 @@ def test_shell_exported_credentials_survive_cleanup(tmp_path, monkeypatch):
     shell export from parent-process leakage, so credential isolation is
     owned by read-time secret scoping instead.
     """
-    home = tmp_path / "hermes"
+    home = tmp_path / "akramcode"
     home.mkdir()
     (home / ".env").write_text("SOME_OTHER_KEY=x\n", encoding="utf-8")
 
@@ -447,14 +447,14 @@ def test_shell_exported_credentials_survive_cleanup(tmp_path, monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-from-shell")
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "12345:token-from-shell")
     # A profile-managed routing key inherited alongside them IS cleared.
-    monkeypatch.setenv("HERMES_ACP_AUTH_METHOD", "cursor_login")
+    monkeypatch.setenv("AKRAMCODE_ACP_AUTH_METHOD", "cursor_login")
 
-    load_hermes_dotenv(hermes_home=home)
+    load_akramcode_dotenv(akramcode_home=home)
 
     assert os.getenv("OPENAI_API_KEY") == "sk-from-shell"
     assert os.getenv("ANTHROPIC_API_KEY") == "sk-ant-from-shell"
     assert os.getenv("TELEGRAM_BOT_TOKEN") == "12345:token-from-shell"
-    assert "HERMES_ACP_AUTH_METHOD" not in os.environ
+    assert "AKRAMCODE_ACP_AUTH_METHOD" not in os.environ
 
 
 def test_cleanup_scope_is_the_profile_managed_set():
@@ -475,7 +475,7 @@ def test_cleanup_scope_is_the_profile_managed_set():
 # ---------------------------------------------------------------------------
 # config.yaml terminal.* re-apply after dotenv loads (#29186 / #67323)
 #
-# load_hermes_dotenv loads .env with override=True, so a stale
+# load_akramcode_dotenv loads .env with override=True, so a stale
 # TERMINAL_ENV=docker in .env used to silently beat config.yaml's
 # terminal.backend on every reload (gateway per-turn reload, cron standalone
 # runs). The bridge re-applies config.yaml's EXPLICIT terminal keys last via
@@ -484,21 +484,21 @@ def test_cleanup_scope_is_the_profile_managed_set():
 
 
 def _seed_terminal_home(tmp_path, monkeypatch, *, config_yaml=None, env_text=None):
-    home = tmp_path / "hermes"
+    home = tmp_path / "akramcode"
     home.mkdir()
     if config_yaml is not None:
         (home / "config.yaml").write_text(config_yaml, encoding="utf-8")
     if env_text is not None:
         (home / ".env").write_text(env_text, encoding="utf-8")
-    # The bridge is scoped to the process HERMES_HOME (a different profile's
+    # The bridge is scoped to the process AKRAMCODE_HOME (a different profile's
     # load must not bridge this process's config), so point the process at
     # the seeded home like a real gateway/cron process would be.
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     return home
 
 
 def test_config_yaml_terminal_backend_overrides_stale_env(tmp_path, monkeypatch):
-    """Regression for #29186: a leftover TERMINAL_ENV=docker in ~/.hermes/.env
+    """Regression for #29186: a leftover TERMINAL_ENV=docker in ~/.akramcode/.env
     must not silently override the user's choice in config.yaml. config.yaml
     is the documented source of truth, so its value must win after load."""
     home = _seed_terminal_home(
@@ -509,7 +509,7 @@ def test_config_yaml_terminal_backend_overrides_stale_env(tmp_path, monkeypatch)
 
     monkeypatch.delenv("TERMINAL_ENV", raising=False)
 
-    load_hermes_dotenv(hermes_home=home)
+    load_akramcode_dotenv(akramcode_home=home)
 
     assert os.getenv("TERMINAL_ENV") == "local"
 
@@ -524,7 +524,7 @@ def test_config_yaml_terminal_backend_overrides_stale_shell(tmp_path, monkeypatc
 
     monkeypatch.setenv("TERMINAL_ENV", "docker")
 
-    load_hermes_dotenv(hermes_home=home)
+    load_akramcode_dotenv(akramcode_home=home)
 
     assert os.getenv("TERMINAL_ENV") == "local"
 
@@ -541,7 +541,7 @@ def test_no_terminal_section_leaves_env_value_alone(tmp_path, monkeypatch):
 
     monkeypatch.delenv("TERMINAL_ENV", raising=False)
 
-    load_hermes_dotenv(hermes_home=home)
+    load_akramcode_dotenv(akramcode_home=home)
 
     assert os.getenv("TERMINAL_ENV") == "docker"
 
@@ -557,7 +557,7 @@ def test_config_yaml_terminal_omitted_key_does_not_clear_env(tmp_path, monkeypat
 
     monkeypatch.delenv("TERMINAL_ENV", raising=False)
 
-    load_hermes_dotenv(hermes_home=home)
+    load_akramcode_dotenv(akramcode_home=home)
 
     assert os.getenv("TERMINAL_ENV") == "docker"
     assert os.getenv("TERMINAL_TIMEOUT") == "600"
@@ -573,7 +573,7 @@ def test_other_profile_home_does_not_bridge_process_config(tmp_path, monkeypatch
     (process_home / "config.yaml").write_text(
         "terminal:\n  backend: local\n", encoding="utf-8"
     )
-    monkeypatch.setenv("HERMES_HOME", str(process_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(process_home))
 
     other_home = tmp_path / "other-profile"
     other_home.mkdir()
@@ -581,44 +581,44 @@ def test_other_profile_home_does_not_bridge_process_config(tmp_path, monkeypatch
 
     monkeypatch.delenv("TERMINAL_ENV", raising=False)
 
-    load_hermes_dotenv(hermes_home=other_home)
+    load_akramcode_dotenv(akramcode_home=other_home)
 
     # The other profile's .env value stands; the process config was not applied.
     assert os.getenv("TERMINAL_ENV") == "docker"
 
 
 def test_parent_injected_dashboard_session_token_survives_dotenv(tmp_path, monkeypatch):
-    """A parent that spawns `hermes dashboard` mints HERMES_DASHBOARD_SESSION_TOKEN and keeps it for
-    its own /api probes; a persisted token in ~/.hermes/.env must not replace it, or the parent gets
+    """A parent that spawns `akramcode dashboard` mints AKRAMCODE_DASHBOARD_SESSION_TOKEN and keeps it for
+    its own /api probes; a persisted token in ~/.akramcode/.env must not replace it, or the parent gets
     HTTP 401 from its own child (#115955). Ordinary keys keep the documented .env-wins precedence."""
-    home = tmp_path / "hermes"
+    home = tmp_path / "akramcode"
     home.mkdir()
     (home / ".env").write_text(
-        "HERMES_DASHBOARD_SESSION_TOKEN=persisted-token\nHERMES_DASHBOARD_PUBLIC_URL=http://127.0.0.1:1\n",
+        "AKRAMCODE_DASHBOARD_SESSION_TOKEN=persisted-token\nAKRAMCODE_DASHBOARD_PUBLIC_URL=http://127.0.0.1:1\n",
         encoding="utf-8",
     )
-    monkeypatch.setenv("HERMES_DASHBOARD_SESSION_TOKEN", "link-token")
-    monkeypatch.setenv("HERMES_DASHBOARD_PUBLIC_URL", "http://127.0.0.1:43123")
+    monkeypatch.setenv("AKRAMCODE_DASHBOARD_SESSION_TOKEN", "link-token")
+    monkeypatch.setenv("AKRAMCODE_DASHBOARD_PUBLIC_URL", "http://127.0.0.1:43123")
 
-    load_hermes_dotenv(hermes_home=home)
-    assert os.environ["HERMES_DASHBOARD_SESSION_TOKEN"] == "link-token"
-    assert os.environ["HERMES_DASHBOARD_PUBLIC_URL"] == "http://127.0.0.1:1"  # control: .env still wins
+    load_akramcode_dotenv(akramcode_home=home)
+    assert os.environ["AKRAMCODE_DASHBOARD_SESSION_TOKEN"] == "link-token"
+    assert os.environ["AKRAMCODE_DASHBOARD_PUBLIC_URL"] == "http://127.0.0.1:1"  # control: .env still wins
 
     # Reload with the same injection: the injected value still holds.
-    load_hermes_dotenv(hermes_home=home)
-    assert os.environ["HERMES_DASHBOARD_SESSION_TOKEN"] == "link-token"
+    load_akramcode_dotenv(akramcode_home=home)
+    assert os.environ["AKRAMCODE_DASHBOARD_SESSION_TOKEN"] == "link-token"
 
 
 def test_dotenv_published_dashboard_session_token_still_reloads(tmp_path, monkeypatch):
     """No injection: the .env token is published, and a later edit + reload replaces the value the
     earlier pass published (the guard only protects values dotenv did not put there)."""
-    home = tmp_path / "hermes"
+    home = tmp_path / "akramcode"
     home.mkdir()
-    monkeypatch.delenv("HERMES_DASHBOARD_SESSION_TOKEN", raising=False)
-    (home / ".env").write_text("HERMES_DASHBOARD_SESSION_TOKEN=first\n", encoding="utf-8")
-    load_hermes_dotenv(hermes_home=home)
-    assert os.environ["HERMES_DASHBOARD_SESSION_TOKEN"] == "first"
+    monkeypatch.delenv("AKRAMCODE_DASHBOARD_SESSION_TOKEN", raising=False)
+    (home / ".env").write_text("AKRAMCODE_DASHBOARD_SESSION_TOKEN=first\n", encoding="utf-8")
+    load_akramcode_dotenv(akramcode_home=home)
+    assert os.environ["AKRAMCODE_DASHBOARD_SESSION_TOKEN"] == "first"
 
-    (home / ".env").write_text("HERMES_DASHBOARD_SESSION_TOKEN=second\n", encoding="utf-8")
-    load_hermes_dotenv(hermes_home=home)
-    assert os.environ["HERMES_DASHBOARD_SESSION_TOKEN"] == "second"
+    (home / ".env").write_text("AKRAMCODE_DASHBOARD_SESSION_TOKEN=second\n", encoding="utf-8")
+    load_akramcode_dotenv(akramcode_home=home)
+    assert os.environ["AKRAMCODE_DASHBOARD_SESSION_TOKEN"] == "second"

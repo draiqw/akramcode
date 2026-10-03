@@ -186,7 +186,7 @@ class TestCompactionPreview:
 
 
 class TestSkillScaffoldedSessionLookup:
-    """Backing queries for `hermes sessions retitle-skills`."""
+    """Backing queries for `akramcode sessions retitle-skills`."""
 
     def test_finds_only_titled_skill_sessions(self, db, tmp_path, monkeypatch):
         _install_skill(tmp_path, monkeypatch)

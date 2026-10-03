@@ -8,7 +8,7 @@ PARTIAL — it only carries the keys it overrides.
 Two layers live here:
 
 - **packs** — registered by plugins through ``PluginContext.register_locale`` (last registered wins);
-- **overlay** — ``$HERMES_HOME/locales/<lang>[.<surface>].yaml`` of the *current* profile home.
+- **overlay** — ``$AKRAMCODE_HOME/locales/<lang>[.<surface>].yaml`` of the *current* profile home.
 
 Merged views are cached per ``(lang, surface)`` / ``(home, lang, surface)``; :func:`clear_cache` (called
 by ``agent.i18n.reset_language_cache``) drops them, and every pack mutation resets the facade's caches

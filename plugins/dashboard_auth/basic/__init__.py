@@ -5,7 +5,7 @@ verify, refresh, ws-tickets and logout are the shared framework. Sessions are st
 HMAC-signed tokens (no IDP, no database); passwords use stdlib scrypt and login always hashes
 even for an unknown username (no username-enumeration timing oracle). Config: ``dashboard.
 basic_auth.{username,password_hash|password,secret,session_ttl_seconds}`` or the
-``HERMES_DASHBOARD_BASIC_AUTH_*`` env vars (env wins when non-empty; see ``_settings``).
+``AKRAMCODE_DASHBOARD_BASIC_AUTH_*`` env vars (env wins when non-empty; see ``_settings``).
 """
 
 from __future__ import annotations
@@ -192,13 +192,13 @@ def _resolve_secret(cfg_section: dict) -> bytes:
     """Resolve the token-signing secret (base64, hex, or raw text). When unset, generates
     a random per-process secret (sessions then don't survive a restart or span multiple
     workers — logged at INFO)."""
-    raw = resolve_env_or_cfg("HERMES_DASHBOARD_BASIC_AUTH_SECRET", cfg_section.get("secret"))
+    raw = resolve_env_or_cfg("AKRAMCODE_DASHBOARD_BASIC_AUTH_SECRET", cfg_section.get("secret"))
     if not raw:
         logger.info(
             "dashboard-auth-basic: no 'secret' configured; generating a random "
             "per-process signing key. Sessions will not survive a restart or span "
             "multiple workers. Set dashboard.basic_auth.secret (or "
-            "HERMES_DASHBOARD_BASIC_AUTH_SECRET) for stable sessions.")
+            "AKRAMCODE_DASHBOARD_BASIC_AUTH_SECRET) for stable sessions.")
         return secrets.token_bytes(32)
     for decoder in (base64.b64decode, bytes.fromhex):
         try:
@@ -217,13 +217,13 @@ def _settings() -> dict:
     def setting(env_name: str, cfg_key: str) -> str:
         return resolve_env_or_cfg(env_name, section.get(cfg_key, ""))
 
-    username = setting("HERMES_DASHBOARD_BASIC_AUTH_USERNAME", "username")
-    password_hash = setting("HERMES_DASHBOARD_BASIC_AUTH_PASSWORD_HASH", "password_hash")
-    plaintext = setting("HERMES_DASHBOARD_BASIC_AUTH_PASSWORD", "password")
-    ttl_raw = setting("HERMES_DASHBOARD_BASIC_AUTH_TTL_SECONDS", "session_ttl_seconds")
+    username = setting("AKRAMCODE_DASHBOARD_BASIC_AUTH_USERNAME", "username")
+    password_hash = setting("AKRAMCODE_DASHBOARD_BASIC_AUTH_PASSWORD_HASH", "password_hash")
+    plaintext = setting("AKRAMCODE_DASHBOARD_BASIC_AUTH_PASSWORD", "password")
+    ttl_raw = setting("AKRAMCODE_DASHBOARD_BASIC_AUTH_TTL_SECONDS", "session_ttl_seconds")
     if not username:
         raise SkipRegistration(
-            "dashboard.basic_auth.username is not set (and HERMES_DASHBOARD_BASIC_AUTH_USERNAME "
+            "dashboard.basic_auth.username is not set (and AKRAMCODE_DASHBOARD_BASIC_AUTH_USERNAME "
             "is empty). Set a username and a password (or password_hash) under "
             "dashboard.basic_auth in config.yaml to enable username/password dashboard "
             "login, or use the OAuth provider, or pass --insecure to skip the auth gate.")
@@ -236,7 +236,7 @@ def _settings() -> dict:
     # Precedence: env password (hashed in-memory) overrides any config password_hash so
     # operators can rotate without editing config; a config password_hash wins over a
     # config-only plaintext password (preferred at-rest form).
-    plaintext_from_env = os.environ.get("HERMES_DASHBOARD_BASIC_AUTH_PASSWORD", "").strip()
+    plaintext_from_env = os.environ.get("AKRAMCODE_DASHBOARD_BASIC_AUTH_PASSWORD", "").strip()
     if plaintext_from_env:
         password_hash = hash_password(plaintext_from_env)
         logger.info("dashboard-auth-basic: hashed env-supplied password in-memory (overrides any config password_hash).")

@@ -1,8 +1,8 @@
 """Cron external worker: the PM dependency boot its own entry point never gets.
 
 ``sys.executable -m cron.scheduler --external-worker-file ...``
-(``cron/scheduler.py::_launch_external_cron_worker``) is a full Hermes entry point that
-does not go through ``akram_core.akramcode_bootstrap``, and it imports Hermes packages the moment it
+(``cron/scheduler.py::_launch_external_cron_worker``) is a full AkramCode entry point that
+does not go through ``akram_core.akramcode_bootstrap``, and it imports AkramCode packages the moment it
 starts. ``cron/scheduler_worker_env.py`` restores the committed generation's
 ``site-packages`` on its ``PYTHONPATH`` so those imports resolve, but a pinned path is not a
 boot: the worker holds no lease on the generation, so the PM collector may remove it
@@ -32,8 +32,8 @@ from pathlib import Path
 
 # Set by ``_launch_external_cron_worker`` in the child's env and consumed here, so it never
 # reaches the worker's own children -- they inherit the activated PYTHONPATH instead.
-# Distinct from ``_HERMES_CRON_EXTERNAL_WORKER`` (the owning execution id) in scheduler.py.
-WORKER_MARKER = "_HERMES_CRON_WORKER_BOOT"
+# Distinct from ``_AKRAMCODE_CRON_EXTERNAL_WORKER`` (the owning execution id) in scheduler.py.
+WORKER_MARKER = "_AKRAMCODE_CRON_WORKER_BOOT"
 
 
 def worker_bootstrap() -> None:

@@ -253,7 +253,7 @@ class TestCompressionTriggerUsesAnchor:
 class TestCodexAppServerAnchor:
     """The codex_app_server runtime bypasses the conversation loop, so its
     usage recording is the only site that can maintain agent._usage_anchor.
-    Without it, hermes-mode preflight falls back to the rough mirror-transcript
+    Without it, akramcode-mode preflight falls back to the rough mirror-transcript
     heuristic, which grows monotonically (native compaction preserves the
     mirror) and fires thread compaction on tiny real threads (#100381)."""
 

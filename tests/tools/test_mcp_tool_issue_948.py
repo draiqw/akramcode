@@ -210,17 +210,17 @@ def _toolchain_bin(root, *names):
 
 
 def _pm_ships(monkeypatch, *, node_dirs=(), uv=None):
-    import hermes_constants
+    import akramcode_constants
     import pm
 
     monkeypatch.setattr(pm, "ensure", lambda name, **kw: None)
-    monkeypatch.setattr(hermes_constants, "with_hermes_node_path",
+    monkeypatch.setattr(akramcode_constants, "with_akramcode_node_path",
                         lambda env: {**env, "PATH": os.pathsep.join(map(str, node_dirs))})
     monkeypatch.setattr(pm, "uv_launcher", lambda name: uv.with_name(name) if uv else None)
 
 
 def test_bare_node_launchers_resolve_pm_node_ahead_of_the_users(tmp_path, monkeypatch):
-    """The packaged-toolchain rule: a bare ``npx`` runs Hermes's PM npx, with PM's npm and node
+    """The packaged-toolchain rule: a bare ``npx`` runs AkramCode's PM npx, with PM's npm and node
     dirs first on the child PATH (npx's ``env node``), even when the user's Node sorts first."""
     user_bin = _toolchain_bin(tmp_path / "user-node", "npx", "node")
     npm_bin = _toolchain_bin(tmp_path / "store" / "npm" / "bin", "npx", "npm")

@@ -10,8 +10,8 @@ from types import SimpleNamespace
 from unittest.mock import patch
 sys.path.insert(0,os.getcwd())
 home=tempfile.TemporaryDirectory(prefix='goals-probe-')
-os.environ['HERMES_HOME']=home.name
-os.environ['HERMES_TEST_MODE']='1'
+os.environ['AKRAMCODE_HOME']=home.name
+os.environ['AKRAMCODE_TEST_MODE']='1'
 from akramcode_cli import goals
 from tools import process_registry as pr,async_delegation as ad
 from akramcode_cli.cli_loops_mixin import CLILoopsMixin

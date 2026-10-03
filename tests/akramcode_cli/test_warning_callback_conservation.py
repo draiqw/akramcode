@@ -2,7 +2,7 @@
 from types import SimpleNamespace
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from agent.status_output import StatusOutputMixin
 from akramcode_cli.cli_stream_mixin import CLIStreamMixin
@@ -26,7 +26,7 @@ class CLI(CLIStreamMixin):
 @pytest.mark.parametrize("setting", [None, False, True])
 def test_cli_notice_and_wait_callbacks_keep_default_output(tmp_path, monkeypatch, setting):
     import cli
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     (tmp_path / "config.yaml").write_text(yaml.safe_dump(
         {} if setting is None else {"display": {"suppress_warning_notifications": setting}}))
     printed = []

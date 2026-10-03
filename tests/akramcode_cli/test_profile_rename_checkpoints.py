@@ -7,7 +7,7 @@ import pytest
 
 from akramcode_cli.profile_identity import migrate_profile_identity
 from akramcode_cli.profiles import create_profile, rename_profile
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from akramcode_constants import reset_akramcode_home_override, set_akramcode_home_override
 import tools.checkpoint_manager as cm
 from tools.checkpoint_manager import CheckpointManager
 from tools import checkpoint_maintenance as maintenance
@@ -15,11 +15,11 @@ from tools import checkpoint_maintenance as maintenance
 
 @pytest.fixture()
 def profile_env(tmp_path, monkeypatch):
-    """Isolate profile paths and the process-level Hermes root."""
+    """Isolate profile paths and the process-level AkramCode root."""
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    default_home = tmp_path / ".hermes"
+    default_home = tmp_path / ".akramcode"
     default_home.mkdir(exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(default_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(default_home))
     return default_home
 
 
@@ -40,7 +40,7 @@ def test_rename_preserves_profile_local_checkpoint_history(profile_env, tmp_path
     tracked = workdir / "note.txt"
     tracked.write_text("before\n", encoding="utf-8")
 
-    token = set_hermes_home_override(old_dir)
+    token = set_akramcode_home_override(old_dir)
     try:
         manager = CheckpointManager(enabled=True, max_snapshots=5)
         assert manager.ensure_checkpoint(str(workdir), "before profile rename") is True
@@ -50,7 +50,7 @@ def test_rename_preserves_profile_local_checkpoint_history(profile_env, tmp_path
         tracked.write_text("after\n", encoding="utf-8")
         manager.record_agent_write(str(tracked))
     finally:
-        reset_hermes_home_override(token)
+        reset_akramcode_home_override(token)
 
     with patch("akramcode_cli.profiles.check_alias_collision", return_value="skip"), \
          patch("akramcode_cli.profiles._live_default_multiplexer", return_value=False):
@@ -58,7 +58,7 @@ def test_rename_preserves_profile_local_checkpoint_history(profile_env, tmp_path
 
     new_workdir = new_dir / "project"
     new_tracked = new_workdir / "note.txt"
-    token = set_hermes_home_override(new_dir)
+    token = set_akramcode_home_override(new_dir)
     try:
         manager = CheckpointManager(enabled=True, max_snapshots=5)
         checkpoints = manager.list_checkpoints(str(new_workdir))
@@ -78,7 +78,7 @@ def test_rename_preserves_profile_local_checkpoint_history(profile_env, tmp_path
         assert restored["success"] is True
         assert new_tracked.read_text(encoding="utf-8") == "before\n"
     finally:
-        reset_hermes_home_override(token)
+        reset_akramcode_home_override(token)
 
 
 def test_retry_after_partial_rekey_keeps_checkpoints_taken_under_new_name(profile_env):
@@ -94,11 +94,11 @@ def test_retry_after_partial_rekey_keeps_checkpoints_taken_under_new_name(profil
     note = workdir / "note.txt"
     note.write_text("v1\n", encoding="utf-8")
 
-    token = set_hermes_home_override(old_dir)
+    token = set_akramcode_home_override(old_dir)
     try:
         assert CheckpointManager(enabled=True, max_snapshots=5).ensure_checkpoint(str(workdir), "c1") is True
     finally:
-        reset_hermes_home_override(token)
+        reset_akramcode_home_override(token)
 
     with patch("akramcode_cli.profiles.check_alias_collision", return_value="skip"), \
          patch("akramcode_cli.profiles._live_default_multiplexer", return_value=False), \
@@ -107,7 +107,7 @@ def test_retry_after_partial_rekey_keeps_checkpoints_taken_under_new_name(profil
 
     new_workdir = new_dir / "project"
     new_note = new_workdir / "note.txt"
-    token = set_hermes_home_override(new_dir)
+    token = set_akramcode_home_override(new_dir)
     try:
         new_note.write_text("v2\n", encoding="utf-8")
         manager = CheckpointManager(enabled=True, max_snapshots=5)
@@ -125,4 +125,4 @@ def test_retry_after_partial_rekey_keeps_checkpoints_taken_under_new_name(profil
         assert cm._load_ledger(store, cm._project_hash(str(new_workdir))) == ledger_before
         assert cm._list_project_refs(store, str(new_workdir)) == [cm._ref_name(cm._project_hash(str(new_workdir)))]
     finally:
-        reset_hermes_home_override(token)
+        reset_akramcode_home_override(token)

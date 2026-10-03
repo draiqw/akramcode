@@ -127,14 +127,14 @@ def step_state_db_guard() -> dict:
     """Verify the active home's state.db is intact.
 
     Boot bootstrap has no pre-update snapshot to restore from (that pairing
-    lives in ``hermes update``), so this is detection: a corrupt db is
+    lives in ``akramcode update``), so this is detection: a corrupt db is
     surfaced loudly in the log instead of the user silently losing session
     search. Read-only, idempotent.
     """
-    from akramcode_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
     from akramcode_cli.backup import verify_sqlite_integrity
 
-    state_path = get_hermes_home() / "state.db"
+    state_path = get_akramcode_home() / "state.db"
     if not state_path.exists():
         return {"ok": True, "skipped": "no-state-db"}
     result = verify_sqlite_integrity(state_path, check_header=True, run_pragma=True)
@@ -143,7 +143,7 @@ def step_state_db_guard() -> dict:
     message = result.get("message", "unknown error")
     logger.error(
         "state.db failed integrity check after a code update: %s — "
-        "restore a backup with `hermes backup` tooling or contact support",
+        "restore a backup with `akramcode backup` tooling or contact support",
         message,
     )
     return {"ok": False, "error": message}
@@ -152,14 +152,14 @@ def step_state_db_guard() -> dict:
 def step_drop_live_plugin_catalog() -> dict:
     """Drop the active home's cached live plugin catalog after a code change.
 
-    Bundled/sealed app updates never run ``hermes update``'s maintenance tail,
+    Bundled/sealed app updates never run ``akramcode update``'s maintenance tail,
     so without this a pre-update snapshot out-votes the newer in-tree catalog
     for the rest of its TTL (#119340). Per home, like the boot record.
     """
-    from akramcode_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
     from akramcode_cli.plugin_catalog import invalidate_live_cache_for_home
 
-    invalidate_live_cache_for_home(get_hermes_home())
+    invalidate_live_cache_for_home(get_akramcode_home())
     return {"ok": True}
 
 
@@ -169,7 +169,7 @@ def step_adopt_blessed_checkout(project_root: Path | None = None) -> dict:
     Main-era curl|sh / Setup installs created a ``.git`` checkout at a
     blessed managed root but never wrote a stamp — under the stamp-pure
     ladder they would all classify as "somebody's working tree" and
-    `hermes update` would refuse them. This step writes the missing fact
+    `akramcode update` would refuse them. This step writes the missing fact
     exactly once: blessed root + ``.git`` + no stamp → a minimal stamp
     with ``updateMechanism: self``.
 
@@ -188,14 +188,14 @@ def step_adopt_blessed_checkout(project_root: Path | None = None) -> dict:
     import json
     import tempfile
 
-    from akramcode_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
 
     root = install_root() if project_root is None else Path(project_root)
 
     # The blessed roots: the canonical locations installers create.
     blessed = (
-        get_hermes_home() / "hermes-agent",
-        Path("/usr/local/lib/hermes-agent"),
+        get_akramcode_home() / "akramcode-agent",
+        Path("/usr/local/lib/akramcode-agent"),
     )
 
     if not (root / ".git").exists():

@@ -93,7 +93,7 @@ def _post(endpoint: str, payload: bytes, *, timeout: int) -> _Response:
     """POST one package. Raises on transport failure; never on HTTP status."""
     headers = {
         "Content-Type": "application/json",
-        "User-Agent": "hermes-agent-shared-metrics/1",
+        "User-Agent": "akramcode-agent-shared-metrics/1",
     }
     body = payload
     if len(payload) > GZIP_THRESHOLD_BYTES:

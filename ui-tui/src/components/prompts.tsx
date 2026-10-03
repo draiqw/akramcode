@@ -1,4 +1,4 @@
-import { Box, Text, useInput, wrapAnsi } from '@hermes/ink'
+import { Box, Text, useInput, wrapAnsi } from '@akramcode/ink'
 import { useEffect, useState } from 'react'
 
 import { messages } from '../i18n/runtime.js'

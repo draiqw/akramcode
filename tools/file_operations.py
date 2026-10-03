@@ -140,16 +140,16 @@ IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.ico'}
 
 # Echoed by the size probe when the path exists but is not a regular file.
 # `wc -c` prints only digits, so this can never collide with a real size.
-NOT_REGULAR_SENTINEL = "__hermes_not_regular__"
+NOT_REGULAR_SENTINEL = "__akramcode_not_regular__"
 
 # Echoed by the compound read/write probes when the path does not exist. A
 # compound command only reports its *last* exit status, so the missing-file
 # signal that ``_probe_regular_file`` carries in ``exit 1`` travels in-band.
-MISSING_SENTINEL = "__hermes_missing__"
+MISSING_SENTINEL = "__akramcode_missing__"
 
-_READ_SENTINEL_PREFIX = "__HERMES_RF_"
-_WRITE_SENTINEL_PREFIX = "__HERMES_WF_"
-_BYTES_SENTINEL_PREFIX = "__HERMES_RB_"
+_READ_SENTINEL_PREFIX = "__AKRAMCODE_RF_"
+_WRITE_SENTINEL_PREFIX = "__AKRAMCODE_WF_"
+_BYTES_SENTINEL_PREFIX = "__AKRAMCODE_RB_"
 
 
 def _new_sentinel(prefix: str) -> str:
@@ -523,7 +523,7 @@ class ShellFileOperations(LintMixin, SearchMixin, FileOperations):
 
     def _escape_native_tool_arg(self, arg: str) -> str:
         """Quote a path for a NATIVE Windows binary (rg, node, git ...): those don't
-        understand the MSYS ``/c/...`` form and Hermes disables MSYS argument
+        understand the MSYS ``/c/...`` form and AkramCode disables MSYS argument
         conversion, so nothing translates it back (→ ``os error 3``). ``C:/Users/x``
         is accepted by every layer. Identical to ``_escape_shell_arg`` off Windows."""
         from tools.environments.local import _IS_WINDOWS, _msys_to_windows_path
@@ -546,7 +546,7 @@ class ShellFileOperations(LintMixin, SearchMixin, FileOperations):
         """
         q_path = self._escape_shell_arg(path)
         q_parent = self._escape_shell_arg(os.path.dirname(path) or ".")
-        tmpl = self._escape_shell_arg(".hermes-tmp.XXXXXX")
+        tmpl = self._escape_shell_arg(".akramcode-tmp.XXXXXX")
         script = (
             "set -e; "
             # One shell script, fully quoted. Notes: - `mkdir -p "$d"` is folded in here so the parent
@@ -571,8 +571,8 @@ class ShellFileOperations(LintMixin, SearchMixin, FileOperations):
             "fi; "
             'mkdir -p "$d"; '
             'tmp="$(mktemp -p "$d" ' + tmpl + ' 2>/dev/null '
-            '|| mktemp "$d/.hermes-tmp.$$.XXXXXX" 2>/dev/null '
-            '|| { tmp="$d/.hermes-tmp.$$"; : > "$tmp" && echo "$tmp"; })"; '
+            '|| mktemp "$d/.akramcode-tmp.$$.XXXXXX" 2>/dev/null '
+            '|| { tmp="$d/.akramcode-tmp.$$"; : > "$tmp" && echo "$tmp"; })"; '
             '[ -n "$tmp" ] || { echo "atomic write: could not create temp file" >&2; exit 1; }; '
             "trap 'rm -f \\\"$tmp\\\"' EXIT; "
             'if [ -e "$t" ]; then '
@@ -714,7 +714,7 @@ class ShellFileOperations(LintMixin, SearchMixin, FileOperations):
             "try:\n"
             "    size = os.path.getsize(p)\n"
             "    if size > MAX:\n"
-            "        print('HERMES_UTF16:NO'); sys.exit(0)\n"
+            "        print('AKRAMCODE_UTF16:NO'); sys.exit(0)\n"
             "    with open(p, 'rb') as f:\n"
             "        data = f.read()\n"
             "    sample = data[:SAMPLE]\n"
@@ -731,7 +731,7 @@ class ShellFileOperations(LintMixin, SearchMixin, FileOperations):
             "        elif odd == 0 and even >= 2:\n"
             "            enc = 'utf-16-be'\n"
             "    if enc is None:\n"
-            "        print('HERMES_UTF16:NO'); sys.exit(0)\n"
+            "        print('AKRAMCODE_UTF16:NO'); sys.exit(0)\n"
             "    text = data.decode(enc, 'replace')\n"
             "    if text[:1] == '\\ufeff':\n"
             "        text = text[1:]\n"
@@ -741,10 +741,10 @@ class ShellFileOperations(LintMixin, SearchMixin, FileOperations):
             "    sel = lines[offset - 1: offset - 1 + limit]\n"
             "    out = {'total_lines': total, 'encoding': enc,\n"
             "           'content': '\\n'.join(sel)}\n"
-            "    print('HERMES_UTF16:OK')\n"
+            "    print('AKRAMCODE_UTF16:OK')\n"
             "    print(json.dumps(out, ensure_ascii=True))\n"
             "except Exception:\n"
-            "    print('HERMES_UTF16:NO'); sys.exit(0)\n"
+            "    print('AKRAMCODE_UTF16:NO'); sys.exit(0)\n"
         )
 
         result = self._exec_python_snippet(snippet)
@@ -752,10 +752,10 @@ class ShellFileOperations(LintMixin, SearchMixin, FileOperations):
             result = self._exec_python_snippet(snippet, py="python")
 
         stdout = _strip_terminal_fence_leaks(result.stdout or "")
-        marker = stdout.find("HERMES_UTF16:OK")
+        marker = stdout.find("AKRAMCODE_UTF16:OK")
         if result.exit_code != 0 or marker < 0:
             return None
-        payload = stdout[marker + len("HERMES_UTF16:OK"):].strip()
+        payload = stdout[marker + len("AKRAMCODE_UTF16:OK"):].strip()
         try:
             data = json.loads(payload.split("\n", 1)[0] if "\n" in payload else payload)
             content = data["content"]
@@ -873,9 +873,9 @@ class ShellFileOperations(LintMixin, SearchMixin, FileOperations):
     def _native_read_enabled(self) -> bool:
         """Whether ``read_file`` and ``search_files`` may bypass the shell: only POSIX + ``LocalEnvironment``
         (file is on this host, path already native; Windows keeps the shell path since
-        file_operations holds Git-Bash-style paths there). ``HERMES_NATIVE_FILE_READ=0``
+        file_operations holds Git-Bash-style paths there). ``AKRAMCODE_NATIVE_FILE_READ=0``
         turns the fast path off."""
-        flag = os.environ.get("HERMES_NATIVE_FILE_READ", "1").strip().lower()
+        flag = os.environ.get("AKRAMCODE_NATIVE_FILE_READ", "1").strip().lower()
         if flag in ("0", "false", "no", "off"):
             return False
         # Same "is this env the local host" test the LSP path uses; isinstance is
@@ -1223,7 +1223,7 @@ class ShellFileOperations(LintMixin, SearchMixin, FileOperations):
         data, failed = self._read_exact_bytes(path)
         if data is None:
             return ReadResult(error=f"Failed to read file: {failed.stdout}")
-        # V4A writes this back, so no display cleanup (nothing has emitted the __HERMES_FENCE_ wrapper it
+        # V4A writes this back, so no display cleanup (nothing has emitted the __AKRAMCODE_FENCE_ wrapper it
         # targets since d684d7ee7e; it can only eat the file's own escape bytes), and surrogateescape
         # so write_file's encode restores any byte past the sample that UTF-8 cannot decode (#79178).
         # Strip a leading BOM (a phantom U+FEFF defeats an exact first-line match);

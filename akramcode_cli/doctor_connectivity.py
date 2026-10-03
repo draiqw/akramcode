@@ -1,4 +1,4 @@
-"""API connectivity probes for ``hermes doctor`` (split out of ``doctor.py``).
+"""API connectivity probes for ``akramcode doctor`` (split out of ``doctor.py``).
 
 Every probe is a pure function: one HTTP/SDK call returning a ``ProbeResult`` with the row(s) to
 print and issue strings to append. No printing inside workers — the caller prints in submission order.
@@ -16,7 +16,7 @@ from typing import NamedTuple
 from urllib.parse import urlsplit
 
 from akramcode_cli.colors import Colors, color
-from akramcode_cli.models import _HERMES_USER_AGENT
+from akramcode_cli.models import _AKRAMCODE_USER_AGENT
 from akramcode_constants import OPENROUTER_MODELS_URL
 from utils import base_url_host_matches
 
@@ -126,7 +126,7 @@ _OPENROUTER_STATUS = {
     401: ("(invalid API key)", "Check OPENROUTER_API_KEY in .env"),
     402: ("(out of credits — payment required)",
           "OpenRouter account has insufficient credits. "
-          "Fix: run 'hermes config set model.provider <provider>' "
+          "Fix: run 'akramcode config set model.provider <provider>' "
           "to switch providers, or fund your OpenRouter account "
           "at https://openrouter.ai/settings/credits"),
     429: ("(rate limited)", "OpenRouter rate limit hit — consider switching to a different provider or waiting"),
@@ -211,7 +211,7 @@ def _anthropic_messages_probe(base: str, key: str):
     from agent.anthropic_endpoints import _requires_bearer_auth
     normalized, kwargs = _base_client_kwargs(base, None)
     auth = {"Authorization": f"Bearer {key}"} if _requires_bearer_auth(normalized) else {"x-api-key": key}
-    headers = {"anthropic-version": "2023-06-01", "User-Agent": _HERMES_USER_AGENT, **auth}
+    headers = {"anthropic-version": "2023-06-01", "User-Agent": _AKRAMCODE_USER_AGENT, **auth}
     model = str(_model_cfg().get("default") or "").strip() or "claude-sonnet-4-5"
     body = {"model": model, "max_tokens": 1, "messages": [{"role": "user", "content": "ping"}]}
     return httpx.post(normalized + "/v1/messages", headers=headers, params=kwargs.get("default_query"), json=body, timeout=10)
@@ -242,7 +242,7 @@ def _apikey_request(key: str, base_env, default_url) -> tuple:
     if base_url_host_matches(base, "api.kimi.com") and base.rstrip("/").endswith("/coding"):
         base = base.rstrip("/") + "/v1"
     url = (base.rstrip("/") + "/models") if base else default_url
-    headers = {"Authorization": f"Bearer {key}", "User-Agent": _HERMES_USER_AGENT}
+    headers = {"Authorization": f"Bearer {key}", "User-Agent": _AKRAMCODE_USER_AGENT}
     if base_url_host_matches(base, "api.kimi.com"):
         headers["User-Agent"] = "claude-code/0.1.0"
     # Google's Generative Language API rejects ``Authorization: Bearer <api-key>`` with 401
@@ -279,9 +279,9 @@ def _probe_bedrock() -> ProbeResult:
         n = len(client.list_foundation_models().get("modelSummaries", []))
         return _row(name, "ok", f"({auth_var}, {region}, {n} models)", label=label)
     except ImportError:
-        hint = ("From the Hermes environment, run: "
+        hint = ("From the AkramCode environment, run: "
                 f"{install_hint('bedrock')}. "
-                "Then restart Hermes.")
+                "Then restart AkramCode.")
         return _row(name, "warn", "(boto3 not installed)", [hint], label=label)
     except Exception as e:
         err_name = type(e).__name__
@@ -313,9 +313,9 @@ def _probe_azure_entra() -> ProbeResult:
     except Exception as exc:
         return _row(name, "warn", f"(adapter import failed: {exc})", [f"Azure Foundry adapter import failed: {exc}"], label=label)
     if not has_azure_identity_installed():
-        return _row(name, "warn", "(azure-identity not installed)", ["From the Hermes environment, run: "
+        return _row(name, "warn", "(azure-identity not installed)", ["From the AkramCode environment, run: "
                      f"{install_hint('azure-identity')}. "
-                     "Then restart Hermes."], label=label)
+                     "Then restart AkramCode."], label=label)
     entra_cfg = model_cfg.get("entra") or {}
     scope = (str(entra_cfg.get("scope") or "").strip() if isinstance(entra_cfg, dict) else "") or SCOPE_AI_AZURE_DEFAULT
     info = describe_active_credential(config=EntraIdentityConfig(scope=scope), timeout_seconds=10.0)
@@ -395,7 +395,7 @@ def _probe_github_token() -> ProbeResult:
     try:
         import httpx
         r = httpx.get(GITHUB_API_PROBE_URL, timeout=10, headers={
-            "Authorization": f"Bearer {get_env_value(var)}", "User-Agent": _HERMES_USER_AGENT,
+            "Authorization": f"Bearer {get_env_value(var)}", "User-Agent": _AKRAMCODE_USER_AGENT,
             "Accept": "application/vnd.github+json"})
     except Exception as e:
         return _row(name, "fail", f"({e})", ["Check network connectivity"])

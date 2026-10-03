@@ -304,12 +304,12 @@ class TestConsentWindows:
         from akramcode_cli.sqlite_util import write_txn
 
         # Lay the store out exactly as production does, under a redirected
-        # HERMES_HOME: the boot reconciler probes the default path (without
+        # AKRAMCODE_HOME: the boot reconciler probes the default path (without
         # constructing the store — the constructor creates directories), so
         # the probe and the store must agree the way they do in production.
         home = tmp_path / "home"
         monkeypatch.setattr(
-            "hermes_constants.get_hermes_home", lambda: home
+            "akramcode_constants.get_akramcode_home", lambda: home
         )
         root = home / "telemetry" / "shared_metrics"
         store = SharedMetricsStore(

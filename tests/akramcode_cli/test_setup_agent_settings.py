@@ -8,11 +8,11 @@ from akramcode_cli.setup import setup_agent_settings
 def test_setup_agent_settings_prefers_config_over_stale_env(tmp_path, monkeypatch, capsys):
     """Config.yaml wins even when a stale .env value disagrees.
 
-    Regression guard for the bug where `.env HERMES_MAX_ITERATIONS=60`
-    from an old `hermes setup` run shadowed `agent.max_turns: 500` in
+    Regression guard for the bug where `.env AKRAMCODE_MAX_ITERATIONS=60`
+    from an old `akramcode setup` run shadowed `agent.max_turns: 500` in
     config.yaml. The wizard must now display the config value.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
 
     config = {
         "agent": {"max_turns": 500},  # user bumped this in config.yaml
@@ -25,7 +25,7 @@ def test_setup_agent_settings_prefers_config_over_stale_env(tmp_path, monkeypatc
     # Simulate stale .env value — the wizard must ignore this.
     monkeypatch.setattr(
         "akramcode_cli.setup.get_env_value",
-        lambda key: "60" if key == "HERMES_MAX_ITERATIONS" else "",
+        lambda key: "60" if key == "AKRAMCODE_MAX_ITERATIONS" else "",
     )
     monkeypatch.setattr("akramcode_cli.setup.prompt", lambda *args, **kwargs: next(prompt_answers))
     monkeypatch.setattr("akramcode_cli.setup.prompt_choice", lambda *args, **kwargs: 4)
@@ -45,4 +45,4 @@ def test_setup_agent_settings_prefers_config_over_stale_env(tmp_path, monkeypatc
     assert "Press Enter to keep 500." in out
     assert "Press Enter to keep 60." not in out
     # And the stale .env entry gets cleaned up
-    assert "HERMES_MAX_ITERATIONS" in removed_keys
+    assert "AKRAMCODE_MAX_ITERATIONS" in removed_keys

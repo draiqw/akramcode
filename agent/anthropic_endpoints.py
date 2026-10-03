@@ -99,7 +99,7 @@ def _is_deepseek_anthropic_endpoint(base_url: str | None) -> bool:
 
     Per DeepSeek's published compatibility matrix the blocks are unsigned (no Anthropic-proprietary
     signature, no ``redacted_thinking`` support), so this endpoint is handled with the same strip-signed /
-    keep-unsigned policy used for Kimi's ``/coding`` endpoint. See hermes-agent#16748.
+    keep-unsigned policy used for Kimi's ``/coding`` endpoint. See akramcode-agent#16748.
     """
     return base_url_host_matches(base_url or "", "api.deepseek.com") and "/anthropic" in _normalized_lower(base_url)
 

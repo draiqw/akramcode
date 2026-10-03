@@ -42,7 +42,7 @@ _DEFAULT_PORT = 18434
 
 
 def state_path() -> Path:
-    """Endpoint state for other Hermes processes (provider resolution routes llamacpp-alias
+    """Endpoint state for other AkramCode processes (provider resolution routes llamacpp-alias
     requests at the managed server from this)."""
     return runtimes_root() / "server.json"
 
@@ -108,7 +108,7 @@ def _direct_io_args(executable: Path) -> tuple[str, ...]:
 
 
 class LlamaServerSupervisor:
-    """Own one llama-server router process for the life of a Hermes session."""
+    """Own one llama-server router process for the life of a AkramCode session."""
 
     # A model that has gone quiet gets its VRAM back after this long. A constant, not a knob:
     # long enough that an active conversation never trips it, short enough that a wandered-off
@@ -231,8 +231,8 @@ class LlamaServerSupervisor:
                        "executable": proc.exe(), "owner_pid": os.getpid(),
                        "owner_create_time": psutil.Process().create_time()}
         path = state_path()
-        from akramcode_constants import mkdir_under_hermes_home
-        mkdir_under_hermes_home(path.parent)
+        from akramcode_constants import mkdir_under_akramcode_home
+        mkdir_under_akramcode_home(path.parent)
         atomic_json_write(path, self._state, mode=0o600)
 
     def _wait_health(self, timeout_s: int) -> None:

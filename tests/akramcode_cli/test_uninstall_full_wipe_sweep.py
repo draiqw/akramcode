@@ -1,5 +1,5 @@
 """Full-uninstall macOS sweep: dashboard/serve launchd jobs and Electron/setup
-caches that live OUTSIDE HERMES_HOME and survive the home rmtree (#62209)."""
+caches that live OUTSIDE AKRAMCODE_HOME and survive the home rmtree (#62209)."""
 from __future__ import annotations
 
 import plistlib
@@ -28,12 +28,12 @@ def test_remove_dashboard_launchd_jobs_boots_out_and_deletes_matching_plists(
         }))
         return path
 
-    dashboard = job("com.user.hermes-dashboard",
-                    ["/Users/u/.hermes/hermes-agent/venv/bin/hermes", "dashboard", "--port", "9200"],
+    dashboard = job("com.user.akramcode-dashboard",
+                    ["/Users/u/.akramcode/akramcode-agent/venv/bin/akramcode", "dashboard", "--port", "9200"],
                     agents_dir)
-    serve = job("com.user.hermes-serve", ["hermes", "serve"], agents_dir)
+    serve = job("com.user.akramcode-serve", ["akramcode", "serve"], agents_dir)
     unrelated = job("com.user.keep", ["/usr/bin/say", "hello"], agents_dir)
-    daemon = job("io.nousresearch.hermes-agent.dashboard", ["akramcode_cli.main", "dashboard"],
+    daemon = job("io.nousresearch.akramcode-agent.dashboard", ["akramcode_cli.main", "dashboard"],
                  daemons_dir)
 
     booted = []
@@ -45,9 +45,9 @@ def test_remove_dashboard_launchd_jobs_boots_out_and_deletes_matching_plists(
 
     assert sorted(removed) == sorted([dashboard, serve, daemon])
     assert not dashboard.exists() and not serve.exists() and not daemon.exists()
-    assert unrelated.exists()  # non-Hermes job is never touched
+    assert unrelated.exists()  # non-AkramCode job is never touched
     domains = {tuple(cmd[2].rsplit("/", 1)) for cmd in booted}
-    assert ("com.user.hermes-dashboard", "gui/501") in domains or \
+    assert ("com.user.akramcode-dashboard", "gui/501") in domains or \
         {d for d, _ in domains} >= {"gui/501", "user/501"} or booted  # bootout attempted per domain
     assert all(cmd[:2] == ["launchctl", "bootout"] for cmd in booted)
 
@@ -69,24 +69,24 @@ def test_remove_dashboard_launchd_jobs_skips_malformed_plists(monkeypatch, tmp_p
 @pytest.mark.skipif(sys.platform != "darwin", reason="macOS-only sweep")
 def test_full_uninstall_sweeps_macos_caches_and_dashboard_launchd(monkeypatch, tmp_path):
     """The full-wipe step must reach the caches + launchd sweep, keep-data must not."""
-    project_root = tmp_path / "hermes-agent"
-    hermes_home = tmp_path / ".hermes"
+    project_root = tmp_path / "akramcode-agent"
+    akramcode_home = tmp_path / ".akramcode"
     project_root.mkdir()
     # A .git dir marks the tree as a removable git checkout — without it the
     # install-kind gate refuses before the sweep runs.
     (project_root / ".git").mkdir()
-    hermes_home.mkdir()
+    akramcode_home.mkdir()
 
     removed_caches, removed_jobs = [], []
     cache_dirs = [tmp_path / "caches" / name for name in
-                  ("Hermes", "com.nousresearch.hermes", "hermes-setup",
-                   "com.nousresearch.hermes.setup")]
+                  ("AkramCode", "com.nousresearch.akramcode", "akramcode-setup",
+                   "com.nousresearch.akramcode.setup")]
     for d in cache_dirs:
         d.mkdir(parents=True)
         (d / "Cache").write_text("x", encoding="utf-8")
 
     monkeypatch.setattr(uninstall, "get_project_root", lambda: project_root)
-    monkeypatch.setattr(uninstall, "_is_default_hermes_home", lambda home: False)
+    monkeypatch.setattr(uninstall, "_is_default_akramcode_home", lambda home: False)
     monkeypatch.setattr(uninstall, "_discover_named_profiles", lambda: [])
     monkeypatch.setattr(uninstall, "_refuse_if_steward_owned", lambda: None)
     monkeypatch.setattr(uninstall, "uninstall_gateway_service", lambda: True)
@@ -95,7 +95,7 @@ def test_full_uninstall_sweeps_macos_caches_and_dashboard_launchd(monkeypatch, t
     monkeypatch.setattr(uninstall, "remove_node_symlinks", lambda home: [])
     monkeypatch.setattr(uninstall, "remove_legacy_runtime_trees", lambda home: [])
     monkeypatch.setattr(uninstall, "_rmtree_step",
-                        lambda path, **kw: None if path in (project_root, hermes_home)
+                        lambda path, **kw: None if path in (project_root, akramcode_home)
                         else (_ for _ in ()).throw(AssertionError(f"unexpected rmtree {path}")))
     monkeypatch.setattr("akramcode_cli.gui_uninstall.uninstall_gui", lambda home, **kw: True)
     monkeypatch.setattr(uninstall, "_macos_cache_leftover_dirs", lambda: cache_dirs)
@@ -104,26 +104,26 @@ def test_full_uninstall_sweeps_macos_caches_and_dashboard_launchd(monkeypatch, t
     monkeypatch.setattr(uninstall, "remove_dashboard_launchd_jobs",
                         lambda: removed_jobs.append("jobs") or [])
 
-    uninstall.run_uninstall(_args(hermes_home, project_root, full=True, yes=True))
+    uninstall.run_uninstall(_args(akramcode_home, project_root, full=True, yes=True))
 
     assert removed_caches == cache_dirs  # Electron + setup caches swept in the full wipe
     assert removed_jobs  # dashboard/serve launchd jobs booted out + deleted
 
     removed_caches.clear(), removed_jobs.clear()
-    uninstall.run_uninstall(_args(hermes_home, project_root, full=False, yes=True))
+    uninstall.run_uninstall(_args(akramcode_home, project_root, full=False, yes=True))
     assert removed_caches == []  # keep-data never touches caches outside the home
     assert not removed_jobs
 
 
-def _args(hermes_home, project_root, *, full, yes):
+def _args(akramcode_home, project_root, *, full, yes):
     from types import SimpleNamespace
-    import hermes_constants
-    monkey = {"HERMES_HOME": str(hermes_home)}
-    real_get = hermes_constants.get_hermes_home
-    hermes_constants.get_hermes_home = (lambda: Path(monkey["HERMES_HOME"]))
+    import akramcode_constants
+    monkey = {"AKRAMCODE_HOME": str(akramcode_home)}
+    real_get = akramcode_constants.get_akramcode_home
+    akramcode_constants.get_akramcode_home = (lambda: Path(monkey["AKRAMCODE_HOME"]))
     try:
-        # run_uninstall reads HERMES_HOME via the module-level import in uninstall.py
-        uninstall.get_hermes_home = lambda: Path(monkey["HERMES_HOME"])
+        # run_uninstall reads AKRAMCODE_HOME via the module-level import in uninstall.py
+        uninstall.get_akramcode_home = lambda: Path(monkey["AKRAMCODE_HOME"])
         return SimpleNamespace(dry_run=False, yes=yes, full=full, data=False, gui=False)
     finally:
-        hermes_constants.get_hermes_home = real_get
+        akramcode_constants.get_akramcode_home = real_get

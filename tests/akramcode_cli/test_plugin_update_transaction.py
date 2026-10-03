@@ -24,7 +24,7 @@ def _version(repo, version, *, broken=False, minimum="", libraries=("shared-libr
 
     (repo / "plugin.yaml").write_text(
         f"name: transactional\nversion: {version}\nmanifest_version: {SUPPORTED_MANIFEST_VERSION}\n"
-        f"requires_hermes: '{minimum}'\n", encoding="utf-8")
+        f"requires_akramcode: '{minimum}'\n", encoding="utf-8")
     (repo / "__init__.py").write_text(f"VERSION = {version!r}\ndef register(ctx):\n    pass\n", encoding="utf-8")
     (repo / ".gitignore").write_text("node_modules/\n", encoding="utf-8")
     deps = '["impossible-plugin-dep==1", "impossible-plugin-dep==2"]' if broken else '[]'
@@ -188,7 +188,7 @@ def test_failed_update_keeps_code_metadata_config_and_environment(installed, mon
         # A checkout without a vX.Y.Z tag (CI's depth-1 clone) runs an unparseable version,
         # which the gate deliberately treats as permissive; pin a real one so it can refuse.
         from akramcode_cli import plugins_manifest
-        monkeypatch.setattr(plugins_manifest, "running_hermes_version", lambda: "1.0.0")
+        monkeypatch.setattr(plugins_manifest, "running_akramcode_version", lambda: "1.0.0")
     if failure == "manifest":
         (repo / "plugin.yaml").write_text("name: [broken", encoding="utf-8")
         state["sha"] = _commit(repo, "invalid manifest")

@@ -1,4 +1,4 @@
-"""Drive the real ``hermes fallback add`` under a Linux PTY into an ordinary picker error.
+"""Drive the real ``akramcode fallback add`` under a Linux PTY into an ordinary picker error.
 
 Run from the checkout with the project Python. No provider requests are sent: the picker
 target is a saved custom provider with ``discover_models: false``. The auth store is made
@@ -45,8 +45,8 @@ def _persisted_model(root: Path, env: dict) -> dict:
 
 
 def run(root: Path, output: Path) -> dict:
-    with tempfile.TemporaryDirectory(prefix="hermes_test_fallback_") as home:
-        hh = Path(home) / ".hermes"
+    with tempfile.TemporaryDirectory(prefix="akramcode_test_fallback_") as home:
+        hh = Path(home) / ".akramcode"
         hh.mkdir()
         (hh / "config.yaml").write_text(CONFIG, encoding="utf-8")
         (hh / ".env").write_text("OPENROUTER_API_KEY=local-not-used\n", encoding="utf-8")
@@ -57,7 +57,7 @@ def run(root: Path, output: Path) -> dict:
         shim = Path(home) / "shim" / "curses"
         shim.mkdir(parents=True)
         (shim / "__init__.py").write_text("raise ImportError('curses disabled for PTY harness')\n")
-        env = {"PATH": os.environ["PATH"], "HOME": home, "HERMES_HOME": str(hh),
+        env = {"PATH": os.environ["PATH"], "HOME": home, "AKRAMCODE_HOME": str(hh),
                "PYTHONPATH": f"{shim.parent}{os.pathsep}{root}", "PYTHONUNBUFFERED": "1",
                "TERM": "dumb", "LANG": "C.UTF-8"}
         master, slave = pty.openpty()

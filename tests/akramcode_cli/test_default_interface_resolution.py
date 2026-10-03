@@ -1,19 +1,19 @@
 """Tests for the configurable default interface (cli vs tui).
 
-`hermes` launches the classic prompt_toolkit REPL by default, but users can
+`akramcode` launches the classic prompt_toolkit REPL by default, but users can
 flip ``display.interface: tui`` in config.yaml to make the modern Ink TUI the
-default for bare ``hermes`` / ``hermes chat``. Explicit flags always win:
+default for bare ``akramcode`` / ``akramcode chat``. Explicit flags always win:
 
     --cli                forces the classic REPL (highest precedence)
     --tui                forces the TUI
     (no TTY)             forces the classic REPL — ambient prefs don't apply
-    HERMES_TUI=1         the env default
+    AKRAMCODE_TUI=1         the env default
     display.interface    the configured default
     (unset)              classic REPL
 
 The no-TTY gate exists because ambient TUI preferences must never hijack
 non-interactive invocations: kanban workers / cron / pipelines run
-``hermes … chat -q`` on a pipe, and the TUI's no-TTY bail-out exits 0
+``akramcode … chat -q`` on a pipe, and the TUI's no-TTY bail-out exits 0
 without doing the work (a kanban worker then dies with "protocol
 violation" on every attempt).
 
@@ -40,9 +40,9 @@ from akramcode_cli import main as m
 @pytest.fixture(autouse=True)
 def _reset_early_cache(monkeypatch):
     # The early resolver memoizes the config read; clear it so each test sees
-    # a fresh value, and make sure no stray HERMES_TUI leaks in.
+    # a fresh value, and make sure no stray AKRAMCODE_TUI leaks in.
     monkeypatch.setattr(m, "_EARLY_INTERFACE_CACHE", None)
-    monkeypatch.delenv("HERMES_TUI", raising=False)
+    monkeypatch.delenv("AKRAMCODE_TUI", raising=False)
     yield
     monkeypatch.setattr(m, "_EARLY_INTERFACE_CACHE", None)
 
@@ -101,7 +101,7 @@ class TestWantsTuiEarly:
             (tmp_path / "config.yaml").write_text(
                 f"display:\n  interface: {interface}\n"
             )
-            monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+            monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
             monkeypatch.setattr(m, "_EARLY_INTERFACE_CACHE", None)
 
         return _make
@@ -112,22 +112,22 @@ class TestWantsTuiEarly:
         assert m._wants_tui_early([]) is False
 
     def test_missing_config_defaults_to_cli(self, tmp_path, monkeypatch):
-        # HERMES_HOME points at an empty dir — no config.yaml.
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        # AKRAMCODE_HOME points at an empty dir — no config.yaml.
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
         monkeypatch.setattr(m, "_EARLY_INTERFACE_CACHE", None)
         assert m._wants_tui_early([]) is False
 
     def test_unreadable_config_defaults_to_cli(self, tmp_path, monkeypatch):
         # Garbage YAML must not crash the hot path; falls back to cli.
         (tmp_path / "config.yaml").write_text("this: : : not valid yaml\n")
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
         monkeypatch.setattr(m, "_EARLY_INTERFACE_CACHE", None)
         assert m._wants_tui_early([]) is False
 
     # REGRESSION (#116902): mouse-residue suppression reads the interface
-    # before `_apply_profile_override()` sets HERMES_HOME, so a cache that
+    # before `_apply_profile_override()` sets AKRAMCODE_HOME, so a cache that
     # ignored the home answered every later caller with the DEFAULT home's
-    # interface — `hermes -p <name>` booted the wrong one.
+    # interface — `akramcode -p <name>` booted the wrong one.
     def test_reread_after_the_profile_rehomes_the_process(self, tmp_path, monkeypatch):
         default_home = tmp_path / "default"
         profile_home = tmp_path / "profiles" / "coder"
@@ -139,12 +139,12 @@ class TestWantsTuiEarly:
 
         # The import-time read, on the home the process starts in.
         _fake_tty(monkeypatch, True)
-        monkeypatch.setenv("HERMES_HOME", str(default_home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(default_home))
         m._suppress_mouse_residue_early()
         assert m._config_default_interface_early() == "cli"
 
         # What `-p coder` does, after that read already happened.
-        monkeypatch.setenv("HERMES_HOME", str(profile_home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(profile_home))
         assert m._config_default_interface_early() == "tui"
         assert m._wants_tui_early([]) is True
 

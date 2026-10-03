@@ -5,11 +5,11 @@ from pathlib import Path
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 
 root = Path(sys.argv[1]).resolve()
-home = tempfile.mkdtemp(prefix="hermes-104359-")
+home = tempfile.mkdtemp(prefix="akramcode-104359-")
 os.environ.clear()
 os.environ.update(
     HOME=home,
-    HERMES_HOME=home + "/.hermes",
+    AKRAMCODE_HOME=home + "/.akramcode",
     PATH="/usr/bin:/bin",
     PYTHONDONTWRITEBYTECODE="1",
     NO_PROXY="*",
@@ -17,7 +17,7 @@ os.environ.update(
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(root))
 os.chdir(home)
-Path(os.environ["HERMES_HOME"]).mkdir()
+Path(os.environ["AKRAMCODE_HOME"]).mkdir()
 # Prevent accidental provider/model metadata egress, even during production imports.
 connect = socket.socket.connect
 blocked = []
@@ -123,7 +123,7 @@ config = {
 }
 import akram_core.akramcode_yaml as yaml
 
-Path(os.environ["HERMES_HOME"], "config.yaml").write_text(yaml.safe_dump(config), encoding="utf-8")
+Path(os.environ["AKRAMCODE_HOME"], "config.yaml").write_text(yaml.safe_dump(config), encoding="utf-8")
 from akramcode_state import SessionDB
 from agent.moa_loop import MoAClient
 from agent.turn_request_assembly import _prepare_moa_request
@@ -131,7 +131,7 @@ from agent.transports.chat_completions import ChatCompletionsTransport
 from types import SimpleNamespace
 from openai import OpenAI
 
-db = SessionDB(Path(os.environ["HERMES_HOME"]) / "state.db")
+db = SessionDB(Path(os.environ["AKRAMCODE_HOME"]) / "state.db")
 db.create_session("probe-session", source="cli")
 db.append_message("probe-session", "user", "Remember this token")
 db.append_message("probe-session", "assistant", "Acknowledged")

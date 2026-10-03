@@ -8,13 +8,13 @@ import useBaseUrl from '@docusaurus/useBaseUrl';
 
 # Sessions
 
-Hermes Agent automatically saves every conversation as a session. Sessions enable conversation resume, cross-session search, and full conversation history management.
+AkramCode Agent automatically saves every conversation as a session. Sessions enable conversation resume, cross-session search, and full conversation history management.
 
 ## How Sessions Work
 
 Every conversation — whether from the CLI, Telegram, Discord, Slack, WhatsApp, Signal, Matrix, Teams, or any other messaging platform — is stored as a session with full message history. Sessions are tracked in:
 
-1. **SQLite database** (`~/.hermes/state.db`) — structured session metadata with FTS5 full-text search, plus full message history
+1. **SQLite database** (`~/.akramcode/state.db`) — structured session metadata with FTS5 full-text search, plus full message history
 
 The SQLite database stores:
 - Session ID, source platform, user ID
@@ -28,10 +28,10 @@ The SQLite database stores:
 
 ### What Counts Toward Context
 
-Hermes stores session history so it can resume conversations, but it does not
+AkramCode stores session history so it can resume conversations, but it does not
 keep re-sending every byte it has ever handled. On each turn, the model sees
 the selected system prompt, the current conversation window, and any content
-Hermes explicitly injects for that turn.
+AkramCode explicitly injects for that turn.
 
 Media attachments are handled as turn-scoped inputs:
 
@@ -44,8 +44,8 @@ Media attachments are handled as turn-scoped inputs:
   the raw image, audio, or binary file bytes are not repeatedly copied into
   future prompts.
 
-For example, if a user sends an image and asks Hermes to make a meme from it,
-Hermes may inspect that image once with vision and run an image-processing
+For example, if a user sends an image and asks AkramCode to make a meme from it,
+AkramCode may inspect that image once with vision and run an image-processing
 script. Future turns do not automatically carry the original JPEG in context.
 They carry only whatever was written into the conversation, such as the user's
 request, a short image description, a local cache path, or the final assistant
@@ -59,11 +59,11 @@ into chat.
 
 :::tip
 Use `/compress` when a session gets long, `/new` for a fresh thread, and
-`hermes sessions prune` only when you want to delete old ended sessions from
+`akramcode sessions prune` only when you want to delete old ended sessions from
 storage. If `state.db` has simply grown large, start with the non-destructive
-option first: `hermes sessions optimize` merges FTS5 index segments and
+option first: `akramcode sessions optimize` merges FTS5 index segments and
 VACUUMs the database without touching any session data. Both `optimize` and `prune` refuse
-while another Hermes process (gateway, Desktop, dashboard, cron) holds `state.db` — stop it
+while another AkramCode process (gateway, Desktop, dashboard, cron) holds `state.db` — stop it
 first, or pass `--force`; see [Session storage recovery](session-storage-recovery.md).
 Compression reduces the active context; it is not a privacy delete.
 Pass a name to `/new` (e.g. `/new payments-refactor`) to set the new session's
@@ -77,8 +77,8 @@ Each session is tagged with its source platform:
 
 | Source | Description |
 |--------|-------------|
-| `cli` | Interactive CLI (`hermes` or `hermes chat`) |
-| `oneshot` | Finite non-interactive runs: `hermes chat --oneshot -q`, `-Q`, `hermes -z`, and `-q` on non-TTY stdio. Hidden from the TUI, Desktop and dashboard session pickers (like `kanban` and `tool`), even when launched from inside a TUI or Desktop session — the run inherits that transport's environment but is not that conversation. Still counts as CLI history: `hermes -c` / `--resume latest` continue the last one-shot, and `hermes sessions list` shows it. An explicit `--source <tag>` always wins (`hermes chat -q --source tui` is stored as `tui`). |
+| `cli` | Interactive CLI (`akramcode` or `akramcode chat`) |
+| `oneshot` | Finite non-interactive runs: `akramcode chat --oneshot -q`, `-Q`, `akramcode -z`, and `-q` on non-TTY stdio. Hidden from the TUI, Desktop and dashboard session pickers (like `kanban` and `tool`), even when launched from inside a TUI or Desktop session — the run inherits that transport's environment but is not that conversation. Still counts as CLI history: `akramcode -c` / `--resume latest` continue the last one-shot, and `akramcode sessions list` shows it. An explicit `--source <tag>` always wins (`akramcode chat -q --source tui` is stored as `tui`). |
 | `telegram` | Telegram messenger |
 | `discord` | Discord server/DM |
 | `slack` | Slack workspace |
@@ -113,19 +113,19 @@ Resume previous conversations from the CLI using `--continue` or `--resume`:
 
 ```bash
 # Resume the most recent CLI session
-hermes --continue
-hermes -c
+akramcode --continue
+akramcode -c
 
 # Or with the chat subcommand
-hermes chat --continue
-hermes chat -c
+akramcode chat --continue
+akramcode chat -c
 ```
 
 This looks up the most recent `cli` session from the SQLite database and loads its full conversation history.
 
 #### Per-Terminal Continue
 
-A bare `-c` is terminal-aware: each CLI session drops a small breadcrumb file under `~/.hermes/terminal-sessions/` keyed by the terminal it runs in (tty device, tmux pane, kitty window, wezterm pane, Zellij pane, Windows Terminal session, ...). When you run `hermes -c` again in the *same* terminal, Hermes resumes that terminal's own session — so two panes side by side each continue their own conversation instead of both grabbing the globally most-recent one. If there's no breadcrumb for the terminal (first use, deleted session, or a stale breadcrumb older than 30 days), `-c` falls back to the most-recent-session behavior. `-c "name"` and `--resume` are unaffected. Disable with `session.terminal_continue: false` in `config.yaml`.
+A bare `-c` is terminal-aware: each CLI session drops a small breadcrumb file under `~/.akramcode/terminal-sessions/` keyed by the terminal it runs in (tty device, tmux pane, kitty window, wezterm pane, Zellij pane, Windows Terminal session, ...). When you run `akramcode -c` again in the *same* terminal, AkramCode resumes that terminal's own session — so two panes side by side each continue their own conversation instead of both grabbing the globally most-recent one. If there's no breadcrumb for the terminal (first use, deleted session, or a stale breadcrumb older than 30 days), `-c` falls back to the most-recent-session behavior. `-c "name"` and `--resume` are unaffected. Disable with `session.terminal_continue: false` in `config.yaml`.
 
 ### Resume by Name
 
@@ -133,31 +133,31 @@ If you've given a session a title (see [Session Naming](#session-naming) below),
 
 ```bash
 # Resume a named session
-hermes -c "my project"
+akramcode -c "my project"
 
 # If there are lineage variants (my project, my project #2, my project #3),
 # this automatically resumes the most recent one
-hermes -c "my project"   # → resumes "my project #3"
+akramcode -c "my project"   # → resumes "my project #3"
 ```
 
 ### Resume Specific Session
 
 ```bash
 # Resume a specific session by ID
-hermes --resume 20250305_091523_a1b2c3d4
-hermes -r 20250305_091523_a1b2c3d4
+akramcode --resume 20250305_091523_a1b2c3d4
+akramcode -r 20250305_091523_a1b2c3d4
 
 # Resume by title
-hermes --resume "refactoring auth"
+akramcode --resume "refactoring auth"
 
 # Resume the most recent session — same lookup as -c
-hermes --resume latest
+akramcode --resume latest
 
 # Or with the chat subcommand
-hermes chat --resume 20250305_091523_a1b2c3d4
+akramcode chat --resume 20250305_091523_a1b2c3d4
 ```
 
-Session IDs are shown when you exit a CLI session, and can be found with `hermes sessions list`.
+Session IDs are shown when you exit a CLI session, and can be found with `akramcode sessions list`.
 
 :::note
 `latest` is a reserved keyword for `--resume`. A session literally titled "latest" is still reachable by its ID or via `-c latest` (title match).
@@ -169,10 +169,10 @@ Pass `--in <dir>` to change into a directory before starting or resuming. Combin
 
 ```bash
 # Resume the latest session that belongs to ./my-project
-hermes --resume latest --in ./my-project
+akramcode --resume latest --in ./my-project
 
 # Works with the TUI too
-hermes --tui --resume latest --in ./my-project
+akramcode --tui --resume latest --in ./my-project
 ```
 
 `--in` also pins the session to that directory: the resumed session's recorded working directory is not restored (as if `--no-restore-cwd` were passed).
@@ -182,25 +182,25 @@ hermes --tui --resume latest --in ./my-project
 Resuming a CLI session also `cd`s back into the session's recorded working directory (its git repo root or project dir), so the conversation picks up in the workspace it belonged to. If you'd rather stay where you are, pass `--no-restore-cwd`:
 
 ```bash
-hermes --resume 20250305_091523_a1b2c3 --no-restore-cwd
+akramcode --resume 20250305_091523_a1b2c3 --no-restore-cwd
 ```
 
 A `↪ restored workspace dir: …` line confirms the switch. Restore failures never break the resume itself.
 
 ### Filtering Sessions by Workspace
 
-`hermes sessions list` accepts `--workspace <needle>` to show only sessions whose workspace key (git repo root, else cwd) matches — by path substring or exact directory basename:
+`akramcode sessions list` accepts `--workspace <needle>` to show only sessions whose workspace key (git repo root, else cwd) matches — by path substring or exact directory basename:
 
 ```bash
-hermes sessions list --workspace my-project
-hermes sessions list --workspace ~/code/hermes-agent
+akramcode sessions list --workspace my-project
+akramcode sessions list --workspace ~/code/akramcode-agent
 ```
 
 ### Conversation Recap on Resume
 
-When you resume a session, Hermes displays a compact recap of the previous conversation in a styled panel before the input prompt:
+When you resume a session, AkramCode displays a compact recap of the previous conversation in a styled panel before the input prompt:
 
-<img className="docs-terminal-figure" src={useBaseUrl('/img/docs/session-recap.svg')} alt="Stylized preview of the Previous Conversation recap panel shown when resuming a Hermes session." />
+<img className="docs-terminal-figure" src={useBaseUrl('/img/docs/session-recap.svg')} alt="Stylized preview of the Previous Conversation recap panel shown when resuming a AkramCode session." />
 <p className="docs-figure-caption">Resume mode shows a compact recap panel with recent user and assistant turns before returning you to the live prompt.</p>
 
 The recap:
@@ -211,7 +211,7 @@ The recap:
 - **Caps** at the last 10 exchanges with a "... N earlier messages ..." indicator
 - Uses **dim styling** to distinguish from the active conversation
 
-To disable the recap and keep the minimal one-liner behavior, set in `~/.hermes/config.yaml`:
+To disable the recap and keep the minimal one-liner behavior, set in `~/.akramcode/config.yaml`:
 
 ```yaml
 display:
@@ -251,7 +251,7 @@ What happens:
 
 6. From that point, the conversation lives on the platform. Reply in the new thread — anyone authorized in that channel shares the same session, and any later real user message in the thread joins seamlessly because thread sessions key without `user_id`.
 
-**Resume back to CLI:** when you want to come back to a desktop, just run `/resume <title>` (or `hermes -r "<title>"` from the shell) and pick up where the platform left off.
+**Resume back to CLI:** when you want to come back to a desktop, just run `/resume <title>` (or `akramcode -r "<title>"` from the shell) and pick up where the platform left off.
 
 **Failure modes:**
 - No home channel configured → CLI refuses with a `/sethome` hint.
@@ -268,7 +268,7 @@ Give sessions human-readable titles so you can find and resume them easily.
 
 ### Auto-Generated Titles
 
-Hermes automatically generates a short descriptive title (3–7 words) for each session after the first exchange. This runs in a background thread using a fast auxiliary model, so it adds no latency. You'll see auto-generated titles when browsing sessions with `hermes sessions list` or `hermes sessions browse`.
+AkramCode automatically generates a short descriptive title (3–7 words) for each session after the first exchange. This runs in a background thread using a fast auxiliary model, so it adds no latency. You'll see auto-generated titles when browsing sessions with `akramcode sessions list` or `akramcode sessions browse`.
 
 Auto-titling only fires once per session and is skipped if you've already set a title manually.
 
@@ -285,7 +285,7 @@ The title is applied immediately. If the session hasn't been created in the data
 You can also rename existing sessions from the command line:
 
 ```bash
-hermes sessions rename 20250305_091523_a1b2c3d4 "refactoring auth module"
+akramcode sessions rename 20250305_091523_a1b2c3d4 "refactoring auth module"
 ```
 
 ### Title Rules
@@ -297,13 +297,13 @@ hermes sessions rename 20250305_091523_a1b2c3d4 "refactoring auth module"
 
 ### Auto-Lineage on Compression
 
-When a session's context is compressed (manually via `/compress` or automatically), Hermes creates a new continuation session. If the original had a title, the new session automatically gets a numbered title:
+When a session's context is compressed (manually via `/compress` or automatically), AkramCode creates a new continuation session. If the original had a title, the new session automatically gets a numbered title:
 
 ```
 "my project" → "my project #2" → "my project #3"
 ```
 
-When you resume by name (`hermes -c "my project"`), it automatically picks the most recent session in the lineage.
+When you resume by name (`akramcode -c "my project"`), it automatically picks the most recent session in the lineage.
 
 ### /title in Messaging Platforms
 
@@ -314,19 +314,19 @@ The `/title` command works in all gateway platforms (Telegram, Discord, Slack, W
 
 ## Session Management Commands
 
-Hermes provides a full set of session management commands via `hermes sessions`:
+AkramCode provides a full set of session management commands via `akramcode sessions`:
 
 ### List Sessions
 
 ```bash
 # List recent sessions (default: last 20)
-hermes sessions list
+akramcode sessions list
 
 # Filter by platform
-hermes sessions list --source telegram
+akramcode sessions list --source telegram
 
 # Show more sessions
-hermes sessions list --limit 50
+akramcode sessions list --limit 50
 ```
 
 When more sessions exist than `--limit` allows, the listing ends with a `… more not shown (use --limit N to see more)` footer, so a capped page is never mistaken for the full list.
@@ -352,7 +352,7 @@ What's the weather in Las Vegas?                    3d ago        tele   2025030
 
 ### Export Sessions
 
-`hermes sessions export` is one surface for every export format, selected with `--format`:
+`akramcode sessions export` is one surface for every export format, selected with `--format`:
 
 | Format | Output | Use it for |
 |--------|--------|------------|
@@ -369,25 +369,25 @@ All formats share the same selection knobs: `--session-id` for one session, or t
 
 ```bash
 # Export all sessions to a JSONL file
-hermes sessions export backup.jsonl
+akramcode sessions export backup.jsonl
 
 # Export sessions from a specific platform
-hermes sessions export telegram-history.jsonl --source telegram
+akramcode sessions export telegram-history.jsonl --source telegram
 
 # Export a single session
-hermes sessions export session.jsonl --session-id 20250305_091523_a1b2c3d4
+akramcode sessions export session.jsonl --session-id 20250305_091523_a1b2c3d4
 
 # Point at a directory (existing, or ending in /) and the file is named for you:
-# ~/exports/hermes_session_20250305_091523_a1b2c3d4.jsonl
-hermes sessions export ~/exports/ --session-id 20250305_091523_a1b2c3d4
+# ~/exports/akramcode_session_20250305_091523_a1b2c3d4.jsonl
+akramcode sessions export ~/exports/ --session-id 20250305_091523_a1b2c3d4
 
 # Redact API keys/tokens/credentials from the exported content
-hermes sessions export backup.jsonl --redact
+akramcode sessions export backup.jsonl --redact
 ```
 
 Exported files contain one JSON object per line with full session metadata and all messages.
 
-Each record also carries a `timings` block derived from the message timestamps, so a reader of an export attached to a bug report can tell a single long model gap from many small tool round-trips without reconstructing it by hand. It holds only ids, roles, counts and durations — `wall_clock_ms`, `largest_gap_ms`, `role_counts`, `tool_calls_emitted` and per-message `intervals` — never prompt text, tool arguments or results, so it survives `--redact` unchanged. Hermes does not persist a model/tool stopwatch, so `complete` is always `false`; when a session has no timestamped messages, `available` is `false` and `unavailable_reason` says why. The block is rebuilt on every export and ignored (and not counted toward size limits) on import.
+Each record also carries a `timings` block derived from the message timestamps, so a reader of an export attached to a bug report can tell a single long model gap from many small tool round-trips without reconstructing it by hand. It holds only ids, roles, counts and durations — `wall_clock_ms`, `largest_gap_ms`, `role_counts`, `tool_calls_emitted` and per-message `intervals` — never prompt text, tool arguments or results, so it survives `--redact` unchanged. AkramCode does not persist a model/tool stopwatch, so `complete` is always `false`; when a session has no timestamped messages, `available` is `false` and `unavailable_reason` says why. The block is rebuilt on every export and ignored (and not counted toward size limits) on import.
 
 #### HTML
 
@@ -395,10 +395,10 @@ Each record also carries a `timings` block derived from the message timestamps, 
 
 ```bash
 # One session as a standalone HTML page
-hermes sessions export --format html --session-id 20250305_091523_a1b2c3d4 transcript.html
+akramcode sessions export --format html --session-id 20250305_091523_a1b2c3d4 transcript.html
 
 # All Telegram sessions from the last week in one file, secrets redacted
-hermes sessions export --format html --newer-than 1w --source telegram --redact archive.html
+akramcode sessions export --format html --newer-than 1w --source telegram --redact archive.html
 ```
 
 #### Prompts Only
@@ -407,53 +407,53 @@ hermes sessions export --format html --newer-than 1w --source telegram --redact 
 
 ```bash
 # One JSONL record per prompt (session id, index, timestamp, text)
-hermes sessions export prompts.jsonl --session-id 20250305_091523_a1b2c3d4 --only user-prompts
+akramcode sessions export prompts.jsonl --session-id 20250305_091523_a1b2c3d4 --only user-prompts
 
 # Markdown, straight to stdout
-hermes sessions export - --session-id 20250305_091523_a1b2c3d4 --only user-prompts --format md
+akramcode sessions export - --session-id 20250305_091523_a1b2c3d4 --only user-prompts --format md
 ```
 
 Works with `--format jsonl` (default) or `md`, honors the same filters for bulk export, and combines with `--redact`.
 
 #### Traces (HF Agent Trace Viewer)
 
-`--format trace` emits Claude Code JSONL — the transcript shape the Hugging Face Hub auto-detects for its [Agent Trace Viewer](https://huggingface.co/docs/hub/agent-traces). Write it locally, or add `--upload` to push it to your own private `hermes-traces` dataset (reads `HF_TOKEN`):
+`--format trace` emits Claude Code JSONL — the transcript shape the Hugging Face Hub auto-detects for its [Agent Trace Viewer](https://huggingface.co/docs/hub/agent-traces). Write it locally, or add `--upload` to push it to your own private `akramcode-traces` dataset (reads `HF_TOKEN`):
 
 ```bash
 # Trace of the most recent session, to stdout
-hermes sessions export --format trace
+akramcode sessions export --format trace
 
 # One session to a local trace file
-hermes sessions export --format trace --session-id 20250305_091523_a1b2c3d4 trace.jsonl
+akramcode sessions export --format trace --session-id 20250305_091523_a1b2c3d4 trace.jsonl
 
 # Upload straight to your private HF traces dataset
-hermes sessions export --format trace --session-id 20250305_091523_a1b2c3d4 --upload
+akramcode sessions export --format trace --session-id 20250305_091523_a1b2c3d4 --upload
 ```
 
 Trace exports are secret-redacted by default (they're meant to leave the machine); `--no-redact` opts out after manual review. `--upload` is private unless `--public`. Bulk trace export with filters writes one `<id>.trace.jsonl` per session.
 
 #### Markdown / QMD
 
-Pass `--format md` or `--format qmd` when you want a readable, file-based archive before hiding or deleting old sessions. Markdown/QMD exports write one file per session into a directory (default: `~/.hermes/session-exports`).
+Pass `--format md` or `--format qmd` when you want a readable, file-based archive before hiding or deleting old sessions. Markdown/QMD exports write one file per session into a directory (default: `~/.akramcode/session-exports`).
 
 ```bash
 # Export one session to Markdown
-hermes sessions export --format md --session-id 20250305_091523_a1b2c3d4
+akramcode sessions export --format md --session-id 20250305_091523_a1b2c3d4
 
 # Export a compression lineage as one logical document
-hermes sessions export --format md --session-id 20250305_091523_a1b2c3d4 --lineage logical
+akramcode sessions export --format md --session-id 20250305_091523_a1b2c3d4 --lineage logical
 
 # Preview ended sessions older than 90 days without writing files
-hermes sessions export --format md --older-than 90 --dry-run
+akramcode sessions export --format md --older-than 90 --dry-run
 
 # Export ended Telegram sessions older than 2 weeks to QMD files
-hermes sessions export --format qmd --older-than 2w --source telegram
+akramcode sessions export --format qmd --older-than 2w --source telegram
 
 # Export long Claude sessions, secrets redacted
-hermes sessions export --format md --model sonnet --min-messages 50 --redact
+akramcode sessions export --format md --model sonnet --min-messages 50 --redact
 
 # Only after verification, export and delete one explicitly named session
-hermes sessions export --format md --session-id 20250305_091523_a1b2c3d4 --delete-after-verified --yes
+akramcode sessions export --format md --session-id 20250305_091523_a1b2c3d4 --delete-after-verified --yes
 ```
 
 Markdown/QMD export writes one `.md` or `.qmd` file per exported session plus a `manifest.jsonl` with the file path, message count, lineage ids, and SHA-256. Bulk export requires at least one filter; a bare bulk export is refused. `--delete-after-verified` is intentionally limited to `--session-id` and requires `--yes`. Because deleting a parent session also removes its delegate/subagent sessions, this mode exports and verifies each delegate in a separate file before deleting anything. Markdown/QMD files hold the full history shown by the session, including turns archived by in-place compaction. Deletion compares that exact display transcript and the delegate set again inside the same database transaction that performs the delete; any intervening append, rewrite, rewind, compaction, or delegate change refuses deletion. The same display-history rule applies to `--format html`, `--only user-prompts` (with either Markdown or JSONL output), and `/save md|html`. Full-session JSON/JSONL exports and `/save json` remain live-only because importing archived turns would restore them as live model context. `--redact` scrubs secrets (API keys, tokens, credentials) from message content and tool output before writing — recommended for any export you plan to share.
@@ -462,10 +462,10 @@ Markdown/QMD export writes one `.md` or `.qmd` file per exported session plus a 
 
 ```bash
 # Delete a specific session (with confirmation)
-hermes sessions delete 20250305_091523_a1b2c3d4
+akramcode sessions delete 20250305_091523_a1b2c3d4
 
 # Delete without confirmation
-hermes sessions delete 20250305_091523_a1b2c3d4 --yes
+akramcode sessions delete 20250305_091523_a1b2c3d4 --yes
 ```
 
 Deleting a session that is still open in a running chat does not stop that chat: its next save recreates the session under the same id with the full in-memory transcript. Close the chat first if you want the session gone.
@@ -476,10 +476,10 @@ Deleting a session while a turn is actively executing or compressing is refused 
 
 ```bash
 # Set or change a session's title
-hermes sessions rename 20250305_091523_a1b2c3d4 "debugging auth flow"
+akramcode sessions rename 20250305_091523_a1b2c3d4 "debugging auth flow"
 
 # Multi-word titles don't need quotes in the CLI
-hermes sessions rename 20250305_091523_a1b2c3d4 debugging auth flow
+akramcode sessions rename 20250305_091523_a1b2c3d4 debugging auth flow
 ```
 
 If the title is already in use by another session, an error is shown.
@@ -493,59 +493,59 @@ and both see it.
 
 ```bash
 # Pin one or more sessions (unique ID prefixes work)
-hermes sessions pin 20250305_091523_a1b2c3d4
-hermes sessions pin 20250305 20250306
+akramcode sessions pin 20250305_091523_a1b2c3d4
+akramcode sessions pin 20250305 20250306
 
 # Remove the pin
-hermes sessions unpin 20250305_091523_a1b2c3d4
+akramcode sessions unpin 20250305_091523_a1b2c3d4
 
 # List pinned sessions
-hermes sessions pinned
+akramcode sessions pinned
 
 # Machine-readable output, e.g. for a nightly backup of your pin set
-hermes sessions pinned --json > pinned-sessions.json
+akramcode sessions pinned --json > pinned-sessions.json
 ```
 
 ### Prune Old Sessions
 
 ```bash
 # Delete ended sessions inactive for 90 days (default)
-hermes sessions prune
+akramcode sessions prune
 
 # Custom age threshold — bare numbers are days
-hermes sessions prune --older-than 30
+akramcode sessions prune --older-than 30
 
 # Durations work too: 5h, 30m, 2d, 1w
-hermes sessions prune --older-than 12h
+akramcode sessions prune --older-than 12h
 
 # Delete only a specific time window (e.g. a batch of test sessions
 # created in the last 5 hours)
-hermes sessions prune --newer-than 5h
+akramcode sessions prune --newer-than 5h
 
 # Explicit window with absolute timestamps
-hermes sessions prune --after "2026-07-05 09:00" --before "2026-07-05 14:30"
+akramcode sessions prune --after "2026-07-05 09:00" --before "2026-07-05 14:30"
 
 # Only prune sessions from a specific platform (all ages — any filter
 # disables the implicit 90-day default)
-hermes sessions prune --source telegram
-hermes sessions prune --source cron --older-than 60   # add a time flag to narrow
+akramcode sessions prune --source telegram
+akramcode sessions prune --source cron --older-than 60   # add a time flag to narrow
 
 # More filters — all AND together
-hermes sessions prune --newer-than 5h --title "smoke test"   # title substring
-hermes sessions prune --older-than 30 --max-messages 3        # tiny sessions
-hermes sessions prune --cwd ~/scratch --end-reason done       # by cwd / end reason
-hermes sessions prune --model gpt-5 --older-than 1w           # by model (substring)
-hermes sessions prune --provider openrouter --older-than 60   # by billing provider
-hermes sessions prune --branch feature/old-experiment         # by git branch
-hermes sessions prune --user 12345678 --chat-type group       # by messaging origin
-hermes sessions prune --max-tokens 500 --older-than 7         # by token usage
-hermes sessions prune --max-cost 0.01 --max-tool-calls 0      # cheap, tool-less runs
+akramcode sessions prune --newer-than 5h --title "smoke test"   # title substring
+akramcode sessions prune --older-than 30 --max-messages 3        # tiny sessions
+akramcode sessions prune --cwd ~/scratch --end-reason done       # by cwd / end reason
+akramcode sessions prune --model gpt-5 --older-than 1w           # by model (substring)
+akramcode sessions prune --provider openrouter --older-than 60   # by billing provider
+akramcode sessions prune --branch feature/old-experiment         # by git branch
+akramcode sessions prune --user 12345678 --chat-type group       # by messaging origin
+akramcode sessions prune --max-tokens 500 --older-than 7         # by token usage
+akramcode sessions prune --max-cost 0.01 --max-tool-calls 0      # cheap, tool-less runs
 
 # Preview what would be deleted, without deleting anything
-hermes sessions prune --newer-than 5h --dry-run
+akramcode sessions prune --newer-than 5h --dry-run
 
 # Skip confirmation
-hermes sessions prune --older-than 30 --yes
+akramcode sessions prune --older-than 30 --yes
 ```
 
 Time values (`--older-than`, `--newer-than`, `--before`, `--after`) accept a
@@ -562,9 +562,9 @@ exact), `--end-reason`, `--user`, `--chat-id`, `--chat-type` (exact),
 `--cwd` (path prefix), plus numeric bounds `--min/--max-messages`,
 `--min/--max-tokens` (input+output), `--min/--max-cost` (USD, actual falling
 back to estimated), and `--min/--max-tool-calls`. Using any filter disables
-the implicit 90-day default, so `hermes sessions prune --source cron` or
+the implicit 90-day default, so `akramcode sessions prune --source cron` or
 `--model gpt-4o` matches all ages — add a time flag to narrow it. Only a
-completely bare `hermes sessions prune` keeps the 90-day cutoff. Every
+completely bare `akramcode sessions prune` keeps the 90-day cutoff. Every
 non-`--yes` run shows the match count plus the oldest and newest matching
 session before asking for confirmation.
 
@@ -579,36 +579,36 @@ A conversation that compression split into several sessions is pruned as a unit:
 ### Bulk-Archive Sessions
 
 If you want sessions out of your listings without deleting anything,
-`hermes sessions archive` takes the same filters as `prune` but soft-hides
+`akramcode sessions archive` takes the same filters as `prune` but soft-hides
 matching sessions instead (sets the same archived flag as archiving a single
 session from the Desktop/Dashboard UI — messages and search stay intact):
 
 ```bash
 # Archive everything from the last 5 hours (e.g. 75 CI smoke-test sessions)
-hermes sessions archive --newer-than 5h
+akramcode sessions archive --newer-than 5h
 
 # Archive by title substring, preview first
-hermes sessions archive --title "dry run" --dry-run
-hermes sessions archive --title "dry run" --yes
+akramcode sessions archive --title "dry run" --dry-run
+akramcode sessions archive --title "dry run" --yes
 ```
 
-At least one filter is required — a bare `hermes sessions archive` refuses to
+At least one filter is required — a bare `akramcode sessions archive` refuses to
 archive your entire history. A compacted conversation is archived as a unit
 through its live tip: an old compression segment never matches on its own age,
 so a chat that is still active is never hidden because its history is long.
 Archived sessions are hidden from
-`hermes sessions list` and `/resume` but remain in the database and can be
+`akramcode sessions list` and `/resume` but remain in the database and can be
 unarchived from the Desktop/Dashboard session list.
 
 A chat hidden by the `sessions.auto_archive` idle sweep comes back on its own
 once it is live again — when it is resumed, or when new activity compresses it
 into a fresh continuation. A chat you archived yourself (sidebar, API, or
-`hermes sessions archive`) stays archived until you unarchive it.
+`akramcode sessions archive`) stays archived until you unarchive it.
 
 ### Session Statistics
 
 ```bash
-hermes sessions stats
+akramcode sessions stats
 ```
 
 Output:
@@ -622,7 +622,7 @@ Total messages: 3847
 Database size: 12.4 MB
 ```
 
-For deeper analytics — token usage, cost estimates, tool breakdown, and activity patterns — use [`hermes insights`](../reference/cli-commands.md#hermes-insights).
+For deeper analytics — token usage, cost estimates, tool breakdown, and activity patterns — use [`akramcode insights`](../reference/cli-commands.md#akramcode-insights).
 
 ### Repair Stranded Gateway Sessions
 
@@ -632,20 +632,20 @@ conversation may be stranded in a session row that lost its routing identity
 (the damage class fixed in the v0.21 session-continuity work; current versions
 prevent it by construction and self-heal at runtime).
 
-`hermes sessions repair-routing` finds message-bearing session rows with no
+`akramcode sessions repair-routing` finds message-bearing session rows with no
 routing identity and re-attaches each one to the conversation it continues —
 but only when the evidence is unambiguous:
 
 ```bash
 # Report only — shows each orphan, the proposed adoption, and the evidence
-hermes sessions repair-routing
+akramcode sessions repair-routing
 
 # Perform the adoptions (stop the gateway first — a running gateway holds
 # the old routing in memory and would write it back over the repair)
-hermes sessions repair-routing --apply
+akramcode sessions repair-routing --apply
 
 # Widen/narrow the contiguity window (default 900 seconds)
-hermes sessions repair-routing --max-gap-seconds 300
+akramcode sessions repair-routing --max-gap-seconds 300
 ```
 
 Evidence rules:
@@ -664,14 +664,14 @@ Repair is deliberately **not automatic**: if the chat has since built up a
 second history, choosing which thread it continues is your call. The stranded
 conversation stays readable via `/resume` and session search either way —
 routing is the only thing the repair changes. Back up first
-(`cp ~/.hermes/state.db ~/.hermes/state.db.bak`).
+(`cp ~/.akramcode/state.db ~/.akramcode/state.db.bak`).
 
 ### Repair Degraded Stored Prompts
 
 Older builds affected by #122822 could let gateway hygiene or gateway `/compress`
 persist a detached maintenance agent's reduced-toolset system prompt over the
 live session. After the root fix in PR #122825 is installed, use
-`hermes sessions repair-prompts` to find rows that were already degraded.
+`akramcode sessions repair-prompts` to find rows that were already degraded.
 
 The scan is conservative: it only proposes a repair when the stored prompt is
 missing the `## Skill Safety` guidance **and** the persisted `tools[]` pin
@@ -685,20 +685,20 @@ memory-only row also becomes repairable on its own: once the session is resumed,
 
 ```bash
 # Report verified candidates and unverifiable rows; writes nothing
-hermes sessions repair-prompts
+akramcode sessions repair-prompts
 
 # Clear verified degraded prompts after confirmation
-hermes sessions repair-prompts --apply
+akramcode sessions repair-prompts --apply
 
 # Machine-readable report
-hermes sessions repair-prompts --json
+akramcode sessions repair-prompts --json
 
 # Non-interactive automation: apply and report the ids actually cleared
-hermes sessions repair-prompts --apply --json
+akramcode sessions repair-prompts --apply --json
 
 # Explicit destructive override for one session (id or unique prefix).
 # This clears the stored prompt even when it is healthy.
-hermes sessions repair-prompts SESSION_ID --apply
+akramcode sessions repair-prompts SESSION_ID --apply
 ```
 
 Clearing the prompt intentionally stores NULL; the next turn rebuilds and persists healthy bytes,
@@ -711,7 +711,7 @@ Run the repair only after the #122822 root fix is present; otherwise a later
 maintenance compaction can degrade the row again.
 
 A running gateway keeps each cached session's old prompt in memory, so restart
-the gateway after `--apply` (`hermes gateway restart`) for repaired rows to
+the gateway after `--apply` (`akramcode gateway restart`) for repaired rows to
 take effect.
 
 ### Repair State Crossed Between Profiles
@@ -722,18 +722,18 @@ profile that owns the conversation (`agent:main:…` for the default profile,
 disagreeing — a named profile's rows written into the default store, a child
 session inheriting from another profile's row, a routing row copied into the
 wrong store, a Telegram topic or `/voice` setting saved without the bot's
-profile. Current versions put new state in the right place; `hermes sessions
+profile. Current versions put new state in the right place; `akramcode sessions
 repair-profiles` settles what is already crossed.
 
 ```bash
 # Report only — every store is scanned, nothing is written
-hermes sessions repair-profiles
+akramcode sessions repair-profiles
 
 # Perform the repairs (stop the gateway first; a snapshot of every store is taken)
-hermes sessions repair-profiles --apply
+akramcode sessions repair-profiles --apply
 
 # Machine-readable report
-hermes sessions repair-profiles --json
+akramcode sessions repair-profiles --json
 ```
 
 What it finds and does:
@@ -749,7 +749,7 @@ What it finds and does:
 
 Two cases are reported but never repaired without being told what they are:
 rows keyed to a profile that does not exist (create the profile, or
-`hermes profile migrate-identity <old> <new>`), and `agent:main:…` rows inside
+`akramcode profile migrate-identity <old> <new>`), and `agent:main:…` rows inside
 a named profile's store. The latter are either the history of a gateway that
 used to run standalone for that profile (`--legacy-main rekey` gives them the
 profile's namespace) or default-profile chats that leaked in under a scoped
@@ -763,18 +763,18 @@ finds nothing.
 
 ### Convert the Store Between WAL and DELETE Journal Mode
 
-`database.journal_mode: delete` only applies to databases Hermes creates. An
+`database.journal_mode: delete` only applies to databases AkramCode creates. An
 existing `state.db` that is already in WAL mode is **never** live-downgraded at
 open — other gateway, dashboard or cron processes may hold uncheckpointed WAL
-commits, and a downgrade underneath them destroys those commits — so Hermes
+commits, and a downgrade underneath them destroys those commits — so AkramCode
 keeps WAL and logs one `ERROR` per process telling you the configured `delete`
 did not apply. The self-service conversion is:
 
 ```bash
 # stop every process using the profile's store first (gateway, dashboard, CLIs, cron)
-hermes sessions set-journal-mode delete     # WAL -> rollback journal
-hermes sessions set-journal-mode wal        # back to WAL
-hermes sessions set-journal-mode delete --db ~/.hermes/kanban.db   # another Hermes store
+akramcode sessions set-journal-mode delete     # WAL -> rollback journal
+akramcode sessions set-journal-mode wal        # back to WAL
+akramcode sessions set-journal-mode delete --db ~/.akramcode/kanban.db   # another AkramCode store
 ```
 
 The command refuses — naming each PID and command — while any process still
@@ -786,7 +786,7 @@ because the next open re-applies the configured mode. The holder scan is local
 (open-file tables on Linux/macOS, the Restart Manager on Windows), so it
 cannot see a process in another container or VM sharing the volume. If the
 scan itself fails the command refuses because it cannot prove the store is
-quiet; `--force` waives only that case after you have stopped every Hermes
+quiet; `--force` waives only that case after you have stopped every AkramCode
 process yourself — a process the scan does find is always refused. Enabling
 WAL is also refused when the store sits on a cross-VM filesystem (virtiofs/9p),
 where WAL shared memory corrupts silently.
@@ -794,35 +794,35 @@ where WAL shared memory corrupts silently.
 
 ## Importing Sessions from Claude Code and Codex CLI
 
-Started a conversation in another agent CLI? You can pull it into Hermes and
-continue it here. Hermes reads Claude Code's session logs
+Started a conversation in another agent CLI? You can pull it into AkramCode and
+continue it here. AkramCode reads Claude Code's session logs
 (`~/.claude/projects/`, or `$CLAUDE_CONFIG_DIR/projects/` when Claude Code's
 config dir is relocated) and Codex CLI's rollouts (`~/.codex/sessions/`, or
 `$CODEX_HOME/sessions/`) — the foreign files are only read, never modified.
 
 ```bash
 # Interactive picker across both tools, newest first
-hermes sessions import
+akramcode sessions import
 
 # Limit to one tool, or point at a specific file
-hermes sessions import --from claude
-hermes sessions import --from codex ~/.codex/sessions/2026/08/15/rollout-....jsonl
+akramcode sessions import --from claude
+akramcode sessions import --from codex ~/.codex/sessions/2026/08/15/rollout-....jsonl
 
 # Import-and-resume in one step
-hermes --resume @claude
-hermes --resume @codex
+akramcode --resume @claude
+akramcode --resume @codex
 ```
 
-`hermes sessions import` creates a new Hermes session titled
+`akramcode sessions import` creates a new AkramCode session titled
 `Imported from Claude Code: <first user message>` (or Codex CLI) and prints
-the id plus a ready-to-paste `hermes --resume <id>` command.
+the id plus a ready-to-paste `akramcode --resume <id>` command.
 `--resume @claude` / `--resume @codex` show the same picker and drop you
 straight into the imported conversation.
 
-**Hermes Desktop** has the same importer in the command palette (**Import
+**AkramCode Desktop** has the same importer in the command palette (**Import
 session**). It lists the logs on the machine the
 connected backend runs on — not the computer running the app — shows a
-read-only preview, and **Continue in Hermes** copies the conversation into the
+read-only preview, and **Continue in AkramCode** copies the conversation into the
 selected profile. Browsing never writes to your session store, importing never
 touches the source file, and importing the same log twice opens the existing
 copy instead of making another.
@@ -929,13 +929,13 @@ On messaging platforms, sessions are keyed by a deterministic session key built 
 | Group thread/topic | `agent:main:<platform>:group:<chat_id>:<thread_id>` | Shared session for all thread participants (default). Per-user with `thread_sessions_per_user: true`. |
 | Channel | `agent:main:<platform>:channel:<chat_id>:<user_id>` | Per-user inside the channel when the platform exposes a user ID |
 
-When Hermes cannot get a participant identifier for a shared chat, it falls back to one shared session for that room.
+When AkramCode cannot get a participant identifier for a shared chat, it falls back to one shared session for that room.
 
 ### Shared vs Isolated Group Sessions
 
-By default, Hermes uses `group_sessions_per_user: true` in `config.yaml`. That means:
+By default, AkramCode uses `group_sessions_per_user: true` in `config.yaml`. That means:
 
-- Alice and Bob can both talk to Hermes in the same Discord channel without sharing transcript history
+- Alice and Bob can both talk to AkramCode in the same Discord channel without sharing transcript history
 - one user's long tool-heavy task does not pollute another user's context window
 - a running turn is keyed to the sender that started it, but `/stop` still reaches it — see below
 
@@ -961,9 +961,9 @@ Gateway conversations do not reset after inactivity or at a daily boundary. Use 
 or `/reset` for an explicit new conversation; context compression remains automatic.
 Core ignores legacy `session_reset` settings, reset-policy overrides and reset-timer
 environment variables. If your config still sets `session_reset.mode` to `idle`, `daily`
-or `both`, gateway startup and `hermes doctor` warn about it. To keep time-based resets,
+or `both`, gateway startup and `akramcode doctor` warn about it. To keep time-based resets,
 install the catalog plugin that reads the same block unchanged:
-`hermes plugins install hermes-session-reset-policy`. Cached agents may be released to reclaim resources without
+`akramcode plugins install akramcode-session-reset-policy`. Cached agents may be released to reclaim resources without
 replacing the durable conversation. Restart-recovery freshness limits automatic
 continuation, not the history loaded when you send a message.
 
@@ -1017,16 +1017,16 @@ holds across gateway crashes, restarts, and updates:
 
 | What | Path | Description |
 |------|------|-------------|
-| SQLite database | `~/.hermes/state.db` | All session metadata + messages with FTS5 |
-| Gateway messages    | `~/.hermes/state.db`   | SQLite — canonical store for all session messages |
-| Gateway routing index | `gateway_routing` table in `~/.hermes/state.db` | Maps session keys to active session IDs (origin metadata, expiry flags) |
-| Legacy routing mirror | `~/.hermes/sessions/sessions.json` | Backward-compat mirror of the routing index, written when `gateway.write_sessions_json: true` (the default) |
+| SQLite database | `~/.akramcode/state.db` | All session metadata + messages with FTS5 |
+| Gateway messages    | `~/.akramcode/state.db`   | SQLite — canonical store for all session messages |
+| Gateway routing index | `gateway_routing` table in `~/.akramcode/state.db` | Maps session keys to active session IDs (origin metadata, expiry flags) |
+| Legacy routing mirror | `~/.akramcode/sessions/sessions.json` | Backward-compat mirror of the routing index, written when `gateway.write_sessions_json: true` (the default) |
 
 The SQLite database uses WAL mode for concurrent readers and a single writer, which suits the gateway's multi-platform architecture well.
 
 :::warning `sessions.json` is not the session list
 The gateway routing index lives in the `gateway_routing` table inside
-`state.db`; `~/.hermes/sessions/sessions.json` is a **legacy mirror** of it,
+`state.db`; `~/.akramcode/sessions/sessions.json` is a **legacy mirror** of it,
 kept for backward compatibility (disable with
 `gateway.write_sessions_json: false`). It maps messaging session keys
 (`agent:main:<platform>:...`) to active session IDs.
@@ -1034,20 +1034,20 @@ It only ever contains gateway/messaging entries, so if you run a messaging
 platform you'll see only those (e.g. `agent:main:whatsapp:dm:...`).
 
 This is **expected** and does **not** mean your CLI sessions are missing.
-`hermes sessions list`, `/sessions`, and the dashboard all read `state.db`,
+`akramcode sessions list`, `/sessions`, and the dashboard all read `state.db`,
 which holds **every** session (CLI, TUI, and gateway). The `/save` snapshots
-under `~/.hermes/sessions/saved/*.json` are convenience exports, not the index.
+under `~/.akramcode/sessions/saved/*.json` are convenience exports, not the index.
 
-If CLI sessions genuinely don't appear in `hermes sessions list`, the cause is
-`state.db` not receiving them — run `hermes sessions repair` and watch for a
+If CLI sessions genuinely don't appear in `akramcode sessions list`, the cause is
+`state.db` not receiving them — run `akramcode sessions repair` and watch for a
 `⚠ Session store unavailable` warning at CLI startup, which means SQLite
 persistence failed for that run.
 :::
 
 :::note Legacy JSONL transcripts
 Sessions created before state.db became canonical may have leftover
-`*.jsonl` files in `~/.hermes/sessions/`. They are no longer written or
-read by Hermes. Safe to delete after verifying the corresponding session
+`*.jsonl` files in `~/.akramcode/sessions/`. They are no longer written or
+read by AkramCode. Safe to delete after verifying the corresponding session
 exists in state.db.
 :::
 
@@ -1068,9 +1068,9 @@ Key tables in `state.db`:
 - Auto-pruning (**on by default** since #54189): when `sessions.auto_prune` is `true`, ended sessions inactive for `sessions.retention_days` (default 90) are pruned at CLI/gateway/cron startup
 - `sessions.retention_days` must be a whole number of days `>= 0`. A negative value (or a missing one) is rejected: startup maintenance logs a warning naming the allowed range and skips the sweep instead of treating the future cutoff as "everything" — `sessions.auto_prune: false` is the switch that disables pruning
 - After a prune that actually removed rows, `state.db` is `VACUUM`ed to reclaim disk space only when **both** gates pass: at least `sessions.min_vacuum_interval_days` (default 30) have elapsed since the last successful `VACUUM`, **and** more than 25% of the file's pages are reclaimable (`PRAGMA freelist_count / page_count`). A dense database never pays for a full rewrite to reclaim a few MB (SQLite does not shrink the file on plain DELETE)
-- Pruning runs at most once per `sessions.min_interval_hours` (default 24); the last-run timestamp is tracked inside `state.db` itself so it's shared across every Hermes process in the same `HERMES_HOME`
+- Pruning runs at most once per `sessions.min_interval_hours` (default 24); the last-run timestamp is tracked inside `state.db` itself so it's shared across every AkramCode process in the same `AKRAMCODE_HOME`
 
-Without pruning, `state.db` grows without bound — multi-GB files within weeks were reported on gateway + cron installs. If you would rather keep every ended session forever (the pre-#54189 behavior), turn it off in `~/.hermes/config.yaml`:
+Without pruning, `state.db` grows without bound — multi-GB files within weeks were reported on gateway + cron installs. If you would rather keep every ended session forever (the pre-#54189 behavior), turn it off in `~/.akramcode/config.yaml`:
 
 ```yaml
 sessions:
@@ -1098,7 +1098,7 @@ session ended, and pruning only deletes *ended* rows. To keep those from
 accumulating forever, each auto-prune pass also *closes* open sessions from
 those state-owned sources (`cli`, `cron`, `kanban`, `acp`, `api_server`,
 `subagent`, `tool`, plus the `recovered` placeholders that
-`hermes sessions recover` synthesizes for orphaned messages) whose last
+`akramcode sessions recover` synthesizes for orphaned messages) whose last
 activity is older than `retention_days`
 (`end_reason: startup_orphan_reap`). Closing is non-destructive — the
 session stays resumable — and the row is aged from its close, so it is only
@@ -1133,22 +1133,22 @@ history of the conversation:
 
 When a resume is refused the client receives error code `4130` with the count
 and the scope it was measured against (`across its lineage` or
-`in its tip segment`). `hermes sessions export` still works for such sessions.
+`in its tip segment`). `akramcode sessions export` still works for such sessions.
 
 ### Manual Cleanup
 
 ```bash
 # Prune sessions older than 90 days
-hermes sessions prune
+akramcode sessions prune
 
 # Delete a specific session
-hermes sessions delete <session_id>
+akramcode sessions delete <session_id>
 
 # Export before pruning (backup)
-hermes sessions export backup.jsonl
-hermes sessions prune --older-than 30 --yes
+akramcode sessions export backup.jsonl
+akramcode sessions prune --older-than 30 --yes
 ```
 
 :::tip
-Auto-prune is **on by default**: ended sessions that have been inactive for `sessions.retention_days` (default 90) are removed at startup, and active sessions are never touched (see [Automatic Cleanup](#automatic-cleanup) above). Session history powers `session_search` recall across past conversations, so if you want to keep every ended session forever, set `sessions.auto_prune: false` in `config.yaml`, or raise `retention_days`. With auto-prune off, `hermes sessions prune` remains available for one-off cleanup (observed failure mode without any pruning: a 384 MB `state.db` with ~1000 sessions slowing down FTS5 inserts and `/resume` listing).
+Auto-prune is **on by default**: ended sessions that have been inactive for `sessions.retention_days` (default 90) are removed at startup, and active sessions are never touched (see [Automatic Cleanup](#automatic-cleanup) above). Session history powers `session_search` recall across past conversations, so if you want to keep every ended session forever, set `sessions.auto_prune: false` in `config.yaml`, or raise `retention_days`. With auto-prune off, `akramcode sessions prune` remains available for one-off cleanup (observed failure mode without any pruning: a 384 MB `state.db` with ~1000 sessions slowing down FTS5 inserts and `/resume` listing).
 :::

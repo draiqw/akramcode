@@ -1,4 +1,4 @@
-"""Pydantic request/response models for the Hermes dashboard web server."""
+"""Pydantic request/response models for the AkramCode dashboard web server."""
 
 from __future__ import annotations
 
@@ -399,7 +399,7 @@ class BackupRequest(BaseModel):
 
 class ImportRequest(BaseModel):
     archive: str
-    # --force: the spawned `hermes import` has stdin=DEVNULL, so its "Continue? [y/N]" prompt would
+    # --force: the spawned `akramcode import` has stdin=DEVNULL, so its "Continue? [y/N]" prompt would
     # hit EOF and abort; the dashboard confirms in its own modal.
     force: bool = False
 
@@ -441,8 +441,8 @@ class ProfileCreate(BaseModel):
     # Profile-builder additions, applied best-effort AFTER the profile dir exists (a hiccup never 500s).
     mcp_servers: List["MCPServerCreate"] = []
     keep_skills: List[str] = []  # skills to KEEP: non-empty = replace semantics (unlisted seeded ones disabled)
-    # Installed async via `hermes -p <name> skills install` (skills_hub.SKILLS_DIR is import-time-bound,
-    # so HERMES_HOME can't redirect it); PIDs go back for the UI to poll.
+    # Installed async via `akramcode -p <name> skills install` (skills_hub.SKILLS_DIR is import-time-bound,
+    # so AKRAMCODE_HOME can't redirect it); PIDs go back for the UI to poll.
     hub_skills: List[str] = []
 
 class ProfileRename(BaseModel):
@@ -450,7 +450,7 @@ class ProfileRename(BaseModel):
 
 class ProfileExport(BaseModel):
     extra_files: Dict[str, str] = {}  # extra root-level files, filename → text
-    output: str = ""  # archive path; empty → a staging path under HERMES_HOME
+    output: str = ""  # archive path; empty → a staging path under AKRAMCODE_HOME
 
 class ProfileImport(BaseModel):
     archive: str  # profile .tar.gz on the backend's filesystem

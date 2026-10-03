@@ -1,6 +1,6 @@
 """Is there ONE live host gateway, and does it already serve this profile?
 
-Multiplex-only (Teknium ruling): exactly one MULTIPLEXING ``hermes gateway run`` per host, serving
+Multiplex-only (Teknium ruling): exactly one MULTIPLEXING ``akramcode gateway run`` per host, serving
 every profile; standalone per-profile gateways coexist until that migration is forced (#109417).
 The lifecycle verbs therefore answer a different question than they used to — not "does THIS home
 hold a ``gateway.pid``?" but "is the host process live, and is this profile in its served set?" —
@@ -108,26 +108,26 @@ class HostGateway:
 def record_home(record) -> Path:
     """Home the owner was launched from. Records written before the field existed fall back to the
     default root — the home every pre-record multiplexer ran under."""
-    from akramcode_constants import get_default_hermes_root
+    from akramcode_constants import get_default_akramcode_root
 
-    return Path(record.home) if getattr(record, "home", "") else Path(get_default_hermes_root())
+    return Path(record.home) if getattr(record, "home", "") else Path(get_default_akramcode_root())
 
 
 def launched_by_other_tenant(owner_home: Path | str, our_home: Path | str) -> bool:
-    """Was the owner launched from ANOTHER Hermes root (a second tenant on this host)?
+    """Was the owner launched from ANOTHER AkramCode root (a second tenant on this host)?
 
-    The host record and lock are per OS user, and two tenants (separate ``HERMES_HOME`` roots)
+    The host record and lock are per OS user, and two tenants (separate ``AKRAMCODE_HOME`` roots)
     each expose a profile named ``default``: tenant A's multiplexer "serving default" is a name
     collision for tenant B, never coverage, so it is not this tenant's host gateway (#121352).
     A legacy record with no ``home`` proves nothing and counts as ours.
     """
     if not str(owner_home or ""):
         return False
-    from gateway.status import _same_hermes_home
-    from akramcode_constants import get_default_hermes_root
+    from gateway.status import _same_akramcode_home
+    from akramcode_constants import get_default_akramcode_root
 
-    return not _same_hermes_home(get_default_hermes_root(home=owner_home),
-                                 get_default_hermes_root(home=our_home))
+    return not _same_akramcode_home(get_default_akramcode_root(home=owner_home),
+                                 get_default_akramcode_root(home=our_home))
 
 
 def _identify(home: Path) -> Optional[dict]:
@@ -157,13 +157,13 @@ def _identity_matches(identity, record, home: Path) -> bool:
     """
     if not isinstance(identity, dict) or identity.get("pid") != record.pid:
         return False
-    reported = identity.get("hermes_home")
+    reported = identity.get("akramcode_home")
     if not reported:
         return True  # older gateway: PID + a socket keyed by this home is all it can prove
     try:
-        from gateway.status import _same_hermes_home
+        from gateway.status import _same_akramcode_home
 
-        return bool(_same_hermes_home(Path(str(reported)), home))
+        return bool(_same_akramcode_home(Path(str(reported)), home))
     except Exception:
         return str(reported) == str(home)
 
@@ -267,7 +267,7 @@ def attach_message(gateway: HostGateway, profile: str) -> str:
         f"✓ The host gateway already serves profile '{profile}' — nothing to start.\n"
         f"  {gateway.describe()}\n"
         f"  One gateway per host serves every profile; manage it with "
-        f"`hermes -p {gateway.profile_label} gateway restart`.")
+        f"`akramcode -p {gateway.profile_label} gateway restart`.")
 
 
 def _unknown_served_message(gateway: HostGateway, profile: str) -> str:
@@ -277,8 +277,8 @@ def _unknown_served_message(gateway: HostGateway, profile: str) -> str:
         f"   Whether it will serve profile '{profile}' is unknown, so starting a second gateway\n"
         f"   now could double-bind this profile's platforms. Nothing was started; this is a\n"
         f"   transient state and a service supervisor will retry.\n"
-        f"   Take the host over (only from the home that launched it):  hermes gateway run --replace\n"
-        f"   Start anyway:  hermes gateway run --force")
+        f"   Take the host over (only from the home that launched it):  akramcode gateway run --replace\n"
+        f"   Start anyway:  akramcode gateway run --force")
 
 
 def _refuse_message(gateway: HostGateway, profile: str) -> str:
@@ -290,7 +290,7 @@ def _refuse_message(gateway: HostGateway, profile: str) -> str:
         f"   Exactly one gateway per host serves every profile, so starting a second one\n"
         f"   would double-bind this profile's platforms.\n"
         f"   Fold this profile into it:   {MIGRATE_COMMAND}\n"
-        f"   Or start one anyway:         hermes gateway run --force\n"
+        f"   Or start one anyway:         akramcode gateway run --force\n"
         f"   (--replace only replaces an owner that serves this profile, so it would not take this one over.)")
 
 

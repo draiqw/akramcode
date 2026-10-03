@@ -97,7 +97,7 @@ class TestConfigFilePermissions(unittest.TestCase):
     def test_save_config_sets_0600(self):
         config_path = Path(self.tmpdir) / "config.yaml"
         with patch("akramcode_cli.config.get_config_path", return_value=config_path), \
-             patch("akramcode_cli.config.ensure_hermes_home"):
+             patch("akramcode_cli.config.ensure_akramcode_home"):
             from akramcode_cli.config import save_config
             save_config({"model": "test/model"})
 
@@ -107,18 +107,18 @@ class TestConfigFilePermissions(unittest.TestCase):
     def test_save_env_value_sets_0600(self):
         env_path = Path(self.tmpdir) / ".env"
         with patch("akramcode_cli.config.get_env_path", return_value=env_path), \
-             patch("akramcode_cli.config.ensure_hermes_home"):
+             patch("akramcode_cli.config.ensure_akramcode_home"):
             from akramcode_cli.config import save_env_value
             save_env_value("TEST_KEY", "test_value")
 
             file_mode = stat.S_IMODE(os.stat(env_path).st_mode)
             self.assertEqual(file_mode, 0o600)
 
-    def test_ensure_hermes_home_sets_0700(self):
-        home = Path(self.tmpdir) / ".hermes"
-        with patch("akramcode_cli.config.get_hermes_home", return_value=home):
-            from akramcode_cli.config import ensure_hermes_home
-            ensure_hermes_home()
+    def test_ensure_akramcode_home_sets_0700(self):
+        home = Path(self.tmpdir) / ".akramcode"
+        with patch("akramcode_cli.config.get_akramcode_home", return_value=home):
+            from akramcode_cli.config import ensure_akramcode_home
+            ensure_akramcode_home()
 
             home_mode = stat.S_IMODE(os.stat(home).st_mode)
             self.assertEqual(home_mode, 0o700)
@@ -137,17 +137,17 @@ class TestSecureHelpers(unittest.TestCase):
 
     def test_secure_dir_preserves_operator_mode_in_container(self):
         """A bind-mounted data dir shared with sibling containers must keep the operator's mode;
-        an explicit HERMES_HOME_MODE is still honored (#10757)."""
+        an explicit AKRAMCODE_HOME_MODE is still honored (#10757)."""
         from cron.jobs import _secure_dir
         with tempfile.TemporaryDirectory() as tmp:
             d = Path(tmp) / "cron"
             d.mkdir()
             os.chmod(d, 0o755)
-            with patch.dict(os.environ, {"HERMES_CONTAINER": "1"}, clear=False):
-                os.environ.pop("HERMES_HOME_MODE", None)
+            with patch.dict(os.environ, {"AKRAMCODE_CONTAINER": "1"}, clear=False):
+                os.environ.pop("AKRAMCODE_HOME_MODE", None)
                 _secure_dir(d)
                 self.assertEqual(stat.S_IMODE(os.stat(d).st_mode), 0o755)
-                os.environ["HERMES_HOME_MODE"] = "0701"
+                os.environ["AKRAMCODE_HOME_MODE"] = "0701"
                 _secure_dir(d)
                 self.assertEqual(stat.S_IMODE(os.stat(d).st_mode), 0o701)
 

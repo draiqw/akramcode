@@ -30,17 +30,17 @@ def source_build_env(base_env: dict | None = None, *, explicit: bool = False) ->
     from pm import ensure
     from pm.environments import project_python, running_from_selected_environment
     from pm.paths import repo_root
-    from akramcode_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
 
     # The historical update runs on store Python with the selected environment
     # activated in-process. Icon generation starts an isolated child, which needs
     # the selected venv executable rather than the store interpreter.
     root = repo_root()
     python = str(project_python(root)) if running_from_selected_environment(root) else sys.executable
-    env = {**os.environ, **(base_env or {}), "CI": "1", "HERMES_PYTHON": python,
+    env = {**os.environ, **(base_env or {}), "CI": "1", "AKRAMCODE_PYTHON": python,
            "PYTHON": python}
     env.pop("ESBUILD_BINARY_PATH", None)
-    npmrc = get_hermes_home() / "npmrc"
+    npmrc = get_akramcode_home() / "npmrc"
     if npmrc.is_file():
         env.setdefault("NPM_CONFIG_USERCONFIG", str(npmrc))
     return ensure("npm", base_env=env, explicit=explicit).env

@@ -62,7 +62,7 @@
   },
   {
    "q": "What exact error message did the agent receive when attempting to checkout a worktree while in the live source directory?",
-   "gold": "Blocked: `git checkout` would rewrite Hermes's live source checkout (/home/teknium/.hermes/hermes-agent) and can mix module versions in this running process.",
+   "gold": "Blocked: `git checkout` would rewrite AkramCode's live source checkout (/home/teknium/.akramcode/akramcode-agent) and can mix module versions in this running process.",
    "answer": "UNKNOWN \u2014 best guess: `fatal: '<branch>' is already checked out at '<worktree path>'`.",
    "score": 0,
    "why": "The answer provides a standard Git error message as a guess, which does not match the specific custom error message provided in the gold answer."

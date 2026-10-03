@@ -1,4 +1,4 @@
-"""Shared utility functions for hermes-agent."""
+"""Shared utility functions for akramcode-agent."""
 
 import errno
 import json
@@ -280,9 +280,9 @@ def _atomic_write(path: Path, write, *, prefix: str, encoding: str = "utf-8", mo
     # A profile delete leaves a tombstone beside its removed home.  Background
     # writers may retain that home in a context variable, so a plain mkdir here
     # would resurrect the profile before the write can fail.
-    from akramcode_constants import mkdir_under_hermes_home
+    from akramcode_constants import mkdir_under_akramcode_home
 
-    mkdir_under_hermes_home(path.parent)
+    mkdir_under_akramcode_home(path.parent)
     if mode is None and not path.exists():
         mode = default_new_file_mode()
     original_owner = _preserve_file_owner(path) if preserve_owner else None
@@ -383,7 +383,7 @@ def read_json_or_empty(path: Union[str, Path]) -> dict:
 def warn_if_credential_file_broadly_readable(path: Union[str, Path], *, label: str = "", log: logging.Logger | None = None) -> bool:
     """Warn when a credential file is group/world-readable; True when a warning was emitted.
 
-    Hand-made secret files (or ones older Hermes wrote without an explicit mode) commonly end up
+    Hand-made secret files (or ones older AkramCode wrote without an explicit mode) commonly end up
     0o644 under the default umask; call this before loading any token/credential file. No-op on
     non-POSIX (Windows ACLs don't map onto group/other bits; st_mode there is synthesized), when
     the file is missing, or when permissions are already tight.
@@ -442,15 +442,15 @@ def atomic_roundtrip_yaml_update(path: Union[str, Path], key_path: str, value: A
     """
     from ruamel.yaml.comments import CommentedMap
     # Honor escaped dots and prefer existing literal dotted keys (model IDs like ``glm-5.3``) over
-    # blind splitting — same navigation as ``hermes config set``'s ``_set_nested``; otherwise
+    # blind splitting — same navigation as ``akramcode config set``'s ``_set_nested``; otherwise
     # /model + TUI persistence wrote ``glm-5: {'3': ...}`` phantom siblings.
     # See #91607.
     from akramcode_cli.config import _greedy_literal_match, _split_key_path
 
     path = Path(path)
-    from akramcode_constants import mkdir_under_hermes_home
+    from akramcode_constants import mkdir_under_akramcode_home
 
-    mkdir_under_hermes_home(path.parent)
+    mkdir_under_akramcode_home(path.parent)
     yaml_rt, config = _roundtrip_load(path)
     current = config
     keys = _split_key_path(key_path)
@@ -518,9 +518,9 @@ def atomic_roundtrip_yaml_save(path: Union[str, Path], new_state: dict, *,
     from akramcode_cli.config import require_readable_config_before_write
 
     path = Path(path)
-    from akramcode_constants import mkdir_under_hermes_home
+    from akramcode_constants import mkdir_under_akramcode_home
 
-    mkdir_under_hermes_home(path.parent)
+    mkdir_under_akramcode_home(path.parent)
     require_readable_config_before_write(path)
     creating = not path.exists() or not path.read_text(encoding="utf-8").strip()
     yaml_rt, existing = _roundtrip_load(path)

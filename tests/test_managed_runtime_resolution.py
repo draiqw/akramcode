@@ -1,18 +1,18 @@
-"""Guard: Hermes-owned subprocesses must not resolve managed runtimes by bare PATH.
+"""Guard: AkramCode-owned subprocesses must not resolve managed runtimes by bare PATH.
 
-Hermes installs runtimes for itself — ``uv`` at ``$HERMES_HOME/bin/uv``, Node at
-``$HERMES_HOME/node``. Neither directory is on the ambient PATH of an arbitrary
-process, so ``shutil.which("uv")`` / ``shutil.which("node")`` in Hermes's own
+AkramCode installs runtimes for itself — ``uv`` at ``$AKRAMCODE_HOME/bin/uv``, Node at
+``$AKRAMCODE_HOME/node``. Neither directory is on the ambient PATH of an arbitrary
+process, so ``shutil.which("uv")`` / ``shutil.which("node")`` in AkramCode's own
 code has two failure modes:
 
 * the managed runtime is invisible, so the caller reports "not installed" or
   degrades to a slower tier on a machine that has exactly what it needed; and
-* when a system copy also exists, the one Hermes does not own wins — which is
+* when a system copy also exists, the one AkramCode does not own wins — which is
   how a generated systemd unit or launchd plist can bake a system Node in and
   keep resolving it across reboots.
 
 The fix per call site is one of ``find_node_executable()``,
-``iter_hermes_node_dirs()``, ``resolve_uv()``, or ``ensure_uv()``. This test is
+``iter_akramcode_node_dirs()``, ``resolve_uv()``, or ``ensure_uv()``. This test is
 the ratchet that stops a new bare lookup from being added back.
 
 Reading source is normally banned (see AGENTS.md). It is the right tool here and
@@ -45,11 +45,11 @@ _KNOWN_PATH_FRAGMENTS = (
     "WinGet",
 )
 
-# Runtimes Hermes provisions into HERMES_HOME and must therefore resolve
+# Runtimes AkramCode provisions into AKRAMCODE_HOME and must therefore resolve
 # through a managed-aware helper rather than PATH.
 _MANAGED_COMMANDS = frozenset({"uv", "node", "npm", "npx"})
 
-# Directories that are not Hermes-owned subprocess code: plugins ship their own
+# Directories that are not AkramCode-owned subprocess code: plugins ship their own
 # resolution policy, tests assert against PATH deliberately, and skills/scripts/
 # evals run as standalone user-invoked programs.
 _EXEMPT_DIRS = (
@@ -100,7 +100,7 @@ _ALLOWED: dict[tuple[str, str], str] = {
     ),
     ("apps/desktop/electron/fixtures/source-backend.py", "uv"): (
         "Test fixture drives the real uv deliberately placed on the test "
-        "runner's PATH; it is not Hermes-owned subprocess resolution."
+        "runner's PATH; it is not AkramCode-owned subprocess resolution."
     ),
 }
 
@@ -208,7 +208,7 @@ def _source_files() -> list[Path]:
     files: list[Path] = []
     # os.walk instead of Path.rglob: rglob raises FileNotFoundError when a
     # directory vanishes mid-scan — a sibling CI job's sdist extraction
-    # (hermes_agent-<version>/) gets created and deleted concurrently, and
+    # (akramcode_agent-<version>/) gets created and deleted concurrently, and
     # that TOCTOU failed this guard on runs 33531869442/33455779041-era
     # workspaces. os.walk tolerates vanishing dirs (onerror=None), and
     # pruning exempt/packaging dirs at the top level also skips their
@@ -318,15 +318,15 @@ def test_no_unreviewed_bare_managed_runtime_lookups():
     ]
 
     assert not unexpected, (
-        "Bare PATH lookup for a Hermes-managed runtime.\n\n"
+        "Bare PATH lookup for a AkramCode-managed runtime.\n\n"
         + "\n".join(f"  {rel}:{lineno}  which({cmd!r})" for rel, cmd, lineno in unexpected)
-        + "\n\n$HERMES_HOME/bin (uv) and $HERMES_HOME/node are not on an "
+        + "\n\n$AKRAMCODE_HOME/bin (uv) and $AKRAMCODE_HOME/node are not on an "
         "arbitrary process's PATH, so this resolves a system copy — or nothing "
         "— on an install that has a managed one.\n"
         "Use instead:\n"
         "  uv       -> managed_uv.resolve_uv() (lookup) or ensure_uv() (may install)\n"
-        "  node/npm -> hermes_constants.find_node_executable()\n"
-        "  PATH env -> hermes_constants.iter_hermes_node_dirs()\n"
+        "  node/npm -> akramcode_constants.find_node_executable()\n"
+        "  PATH env -> akramcode_constants.iter_akramcode_node_dirs()\n"
         "If PATH really is the right question, add the site to _ALLOWED with a "
         "reason."
     )
@@ -348,15 +348,15 @@ def test_allowlist_has_no_stale_entries():
     "helper",
     [
         "find_node_executable",
-        "iter_hermes_node_dirs",
-        "with_hermes_node_path",
+        "iter_akramcode_node_dirs",
+        "with_akramcode_node_path",
     ],
 )
 def test_managed_node_helpers_exist(helper):
     """The alternatives this guard points contributors at must be importable."""
-    import hermes_constants
+    import akramcode_constants
 
-    assert callable(getattr(hermes_constants, helper))
+    assert callable(getattr(akramcode_constants, helper))
 
 
 def test_managed_uv_helpers_exist():

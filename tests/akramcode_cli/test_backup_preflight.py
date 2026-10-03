@@ -15,7 +15,7 @@ def test_preflight_captures_committed_wal_without_application_imports(tmp_path):
 import runpy, sys
 class NoApplicationImports:
     def find_spec(self, fullname, path=None, target=None):
-        if fullname.startswith(('hermes', 'utils', 'yaml')):
+        if fullname.startswith(('akramcode', 'utils', 'yaml')):
             raise ImportError('application imports are broken')
 sys.meta_path.insert(0, NoApplicationImports())
 sys.argv = [sys.argv[1], sys.argv[2]]

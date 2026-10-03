@@ -22,10 +22,10 @@ from akramcode_cli import kanban_db_workspace as kbw
 
 @pytest.fixture
 def kanban_home(tmp_path, monkeypatch):
-    """Isolated HERMES_HOME with an empty kanban DB."""
-    home = tmp_path / ".hermes"
+    """Isolated AKRAMCODE_HOME with an empty kanban DB."""
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
     return home
@@ -331,7 +331,7 @@ def test_rate_limit_exit_requeues_without_counting_failure(
     from akramcode_cli import kanban_db_dispatch as _kbd
 
     monkeypatch.setattr(_kb, "_pid_alive", lambda _pid: False)
-    monkeypatch.setenv("HERMES_KANBAN_CRASH_GRACE_SECONDS", "0")
+    monkeypatch.setenv("AKRAMCODE_KANBAN_CRASH_GRACE_SECONDS", "0")
 
     with kbc.connect() as conn:
         host = _kb._claimer_id().split(":", 1)[0]
@@ -394,7 +394,7 @@ def test_terminal_provider_exit_blocks_after_one_attempt_in_either_lane(kanban_h
     from akramcode_cli import kanban_db_dispatch as _kbd
 
     monkeypatch.setattr(_kb, "_pid_alive", lambda _pid: False)
-    monkeypatch.setenv("HERMES_KANBAN_CRASH_GRACE_SECONDS", "0")
+    monkeypatch.setenv("AKRAMCODE_KANBAN_CRASH_GRACE_SECONDS", "0")
 
     with kbc.connect() as conn:
         host = _kb._claimer_id().split(":", 1)[0]
@@ -438,7 +438,7 @@ def test_respawn_guard_defers_rate_limited_within_cooldown(
     fall into ``blocker_auth`` (which would defer forever)."""
     import akramcode_cli.kanban_db as _kb
 
-    monkeypatch.setenv("HERMES_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS", "300")
+    monkeypatch.setenv("AKRAMCODE_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS", "300")
     now = 5_000_000
 
     with kbc.connect() as conn:
@@ -492,7 +492,7 @@ def test_respawn_guard_blocker_auth_curated_not_open_stem(
     ordinary English words like "author"/"authored"/"authoring"/"authoritative"
     in worker progress prose, parking a healthy ``ready`` card forever (#117009).
     The auth family must be a curated set of real auth-failure tokens."""
-    monkeypatch.setenv("HERMES_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS", "0")
+    monkeypatch.setenv("AKRAMCODE_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS", "0")
 
     with kbc.connect() as conn:
         tid = kb.create_task(conn, title="prose", assignee="a")
@@ -565,10 +565,10 @@ def test_infrastructure_spawn_refusal_never_charges_the_card(
     monkeypatch.setattr(process_registry, "_is_supervised_gateway_process", lambda: True)
     monkeypatch.setenv("INVOCATION_ID", "managed-gateway")
     monkeypatch.setattr(process_registry, "_systemd_run_user_scope_available", lambda: False)
-    monkeypatch.setenv("HERMES_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS", "0")
+    monkeypatch.setenv("AKRAMCODE_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS", "0")
 
     def spawn_via_real_boundary(task, workspace, board=None):
-        kbd._restart_safe_worker_argv(task, ["hermes", "chat"])  # raises: real probe verdict, real _degrade()
+        kbd._restart_safe_worker_argv(task, ["akramcode", "chat"])  # raises: real probe verdict, real _degrade()
         raise AssertionError("unreachable")
 
     with kbc.connect() as conn:
@@ -587,11 +587,11 @@ def test_infrastructure_spawn_refusal_never_charges_the_card(
         assert [r["outcome"] for r in runs] == ["spawn_failed"] * 3
         assert all(json.loads(r["metadata"])["infrastructure"] is True for r in runs)
 
-        monkeypatch.setenv("HERMES_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS", "300")
+        monkeypatch.setenv("AKRAMCODE_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS", "300")
         assert kbd.check_respawn_guard(conn, tid) == "infrastructure_cooldown"
 
         # Control: an ordinary spawn failure on the same card still spends budget.
-        monkeypatch.setenv("HERMES_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS", "0")
+        monkeypatch.setenv("AKRAMCODE_KANBAN_RATE_LIMIT_COOLDOWN_SECONDS", "0")
 
         def spawn_broken(task, workspace, board=None):
             raise RuntimeError("profile launcher exploded")
@@ -945,13 +945,13 @@ def test_dir_child_completion_unblocks_deferred_scratch_parent(kanban_home, tmp_
 
 
 def test_is_managed_scratch_path_rejects_kanban_metadata_subtrees(kanban_home):
-    """Hermes' own DB/metadata/log subtrees under ``<kanban_home>/kanban`` are NOT managed.
+    """AkramCode' own DB/metadata/log subtrees under ``<kanban_home>/kanban`` are NOT managed.
 
     Regression guard for the Copilot finding on #28819: a scratch task whose
     ``workspace_path`` was mis-set to the kanban home, the logs dir, or a
     board's metadata dir (i.e. the board root itself, not its ``workspaces/``
     child) must be refused. Without this, the containment check would happily
-    ``shutil.rmtree`` Hermes' DB/metadata/logs on task completion.
+    ``shutil.rmtree`` AkramCode' DB/metadata/logs on task completion.
     """
     kanban_root = kanban_home / "kanban"
     kanban_root.mkdir(parents=True, exist_ok=True)
@@ -1034,37 +1034,37 @@ def test_symlinked_workspaces_root_does_not_widen_scratch_cleanup(kanban_home, t
 # Shared-board path resolution (issue #19348)
 #
 # The kanban board is a cross-profile coordination primitive: a worker
-# spawned with `hermes -p <profile>` must read/write the same kanban.db
+# spawned with `akramcode -p <profile>` must read/write the same kanban.db
 # as the dispatcher that claimed the task. These tests exercise the
 # path-resolution layer directly and would have caught the regression
-# where `kanban_db_path()` resolved to the active profile's HERMES_HOME.
+# where `kanban_db_path()` resolved to the active profile's AKRAMCODE_HOME.
 # ---------------------------------------------------------------------------
 
 class TestSharedBoardPaths:
     """`kanban_home`/`kanban_db_path`/`workspaces_root`/`worker_log_path`
-    must anchor at the **shared root**, not the active profile's HERMES_HOME."""
+    must anchor at the **shared root**, not the active profile's AKRAMCODE_HOME."""
 
-    def _set_home(self, monkeypatch, tmp_path, hermes_home):
+    def _set_home(self, monkeypatch, tmp_path, akramcode_home):
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-        monkeypatch.delenv("HERMES_KANBAN_HOME", raising=False)
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
+        monkeypatch.delenv("AKRAMCODE_KANBAN_HOME", raising=False)
 
 
     def test_profile_worker_resolves_to_shared_root(
         self, tmp_path, monkeypatch
     ):
-        # Reproduces the bug: dispatcher uses ~/.hermes/kanban.db,
+        # Reproduces the bug: dispatcher uses ~/.akramcode/kanban.db,
         # worker spawned with -p <profile> previously resolved to
-        # ~/.hermes/profiles/<profile>/kanban.db. After the fix both
-        # converge on ~/.hermes/kanban.db.
-        default_home = tmp_path / ".hermes"
+        # ~/.akramcode/profiles/<profile>/kanban.db. After the fix both
+        # converge on ~/.akramcode/kanban.db.
+        default_home = tmp_path / ".akramcode"
         default_home.mkdir()
         profile_home = default_home / "profiles" / "nehemiahkanban"
         profile_home.mkdir(parents=True)
         self._set_home(monkeypatch, tmp_path, profile_home)
 
         # All four resolvers must anchor at the shared root, not the
-        # profile-local HERMES_HOME.
+        # profile-local AKRAMCODE_HOME.
         assert kb.kanban_home() == default_home
         assert kb.kanban_db_path() == default_home / "kanban.db"
         assert kb.workspaces_root() == default_home / "kanban" / "workspaces"
@@ -1086,9 +1086,9 @@ class TestSharedBoardPaths:
         self, tmp_path, monkeypatch
     ):
         # Belt-and-suspenders: round-trip a task across the two
-        # HERMES_HOME perspectives via a real SQLite file. Without the
+        # AKRAMCODE_HOME perspectives via a real SQLite file. Without the
         # fix the worker would open a different file and see no rows.
-        default_home = tmp_path / ".hermes"
+        default_home = tmp_path / ".akramcode"
         default_home.mkdir()
         profile_home = default_home / "profiles" / "nehemiahkanban"
         profile_home.mkdir(parents=True)
@@ -1099,8 +1099,8 @@ class TestSharedBoardPaths:
         with kbc.connect() as conn:
             task_id = kb.create_task(conn, title="cross-profile")
 
-        # Worker switches to the profile HERMES_HOME and reads.
-        monkeypatch.setenv("HERMES_HOME", str(profile_home))
+        # Worker switches to the profile AKRAMCODE_HOME and reads.
+        monkeypatch.setenv("AKRAMCODE_HOME", str(profile_home))
         with kbc.connect() as conn:
             task = kb.get_task(conn, task_id)
         assert task is not None
@@ -1113,11 +1113,11 @@ class TestSharedBoardPaths:
         self, tmp_path, monkeypatch
     ):
         # The dispatcher must pin board paths while stripping any unrelated
-        # HERMES_SESSION_* identity inherited from the long-lived gateway.
-        # The one exception is HERMES_SESSION_SOURCE, which the dispatcher
+        # AKRAMCODE_SESSION_* identity inherited from the long-lived gateway.
+        # The one exception is AKRAMCODE_SESSION_SOURCE, which the dispatcher
         # re-sets to its own `kanban` tag AFTER the strip — a value it owns,
         # never one inherited from whatever the gateway last routed.
-        default_home = tmp_path / ".hermes"
+        default_home = tmp_path / ".akramcode"
         default_home.mkdir()
         self._set_home(monkeypatch, tmp_path, default_home)
 
@@ -1160,14 +1160,14 @@ class TestSharedBoardPaths:
         kbd._default_spawn(task, str(tmp_path / "ws"))
 
         env = captured["env"]
-        assert env["HERMES_KANBAN_DB"] == str(default_home / "kanban.db")
-        assert env["HERMES_KANBAN_WORKSPACES_ROOT"] == str(
+        assert env["AKRAMCODE_KANBAN_DB"] == str(default_home / "kanban.db")
+        assert env["AKRAMCODE_KANBAN_WORKSPACES_ROOT"] == str(
             default_home / "kanban" / "workspaces"
         )
-        assert env["HERMES_KANBAN_TASK"] == "t_dispatch_env"
-        assert env["HERMES_KANBAN_BRANCH"] == "wt/t_dispatch_env"
+        assert env["AKRAMCODE_KANBAN_TASK"] == "t_dispatch_env"
+        assert env["AKRAMCODE_KANBAN_BRANCH"] == "wt/t_dispatch_env"
         for key in sc._VAR_MAP:
-            if key == "HERMES_SESSION_SOURCE":
+            if key == "AKRAMCODE_SESSION_SOURCE":
                 # Re-set by the dispatcher, so what matters is that it carries
                 # the worker's own tag rather than the inherited routing value.
                 assert env[key] == "kanban"
@@ -1196,7 +1196,7 @@ def test_connect_falls_back_to_delete_on_locking_protocol(tmp_path, monkeypatch,
     Without this fallback, the gateway's kanban dispatcher crashes every
     60s and the kanban migration (``consecutive_failures`` ADD COLUMN) is
     retried forever — which is what the real-world user report shows
-    (see hermes-agent issue #22032).
+    (see akramcode-agent issue #22032).
 
     NOTE: We do NOT use the ``kanban_home`` fixture here because that
     fixture pre-initializes the DB via ``kb.init_db()`` — putting the
@@ -1210,9 +1210,9 @@ def test_connect_falls_back_to_delete_on_locking_protocol(tmp_path, monkeypatch,
     import sqlite3 as _sqlite3
     from unittest.mock import patch as _patch
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
     # These tests exercise the WAL-attempt path; assume a fixed SQLite so the
@@ -1271,9 +1271,9 @@ def test_connect_works_when_wal_is_silently_refused(tmp_path, monkeypatch, caplo
     import sqlite3 as _sqlite3
     from unittest.mock import patch as _patch
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
     kb._INITIALIZED_PATHS.clear()
@@ -1449,7 +1449,7 @@ def test_unlink_tasks_triggers_recompute_ready(kanban_home):
     complete_task and unblock_task.
 
     Before the fix, child stayed 'todo' indefinitely after unlink; only the
-    next dispatcher tick or a manual 'hermes kanban recompute' would promote it.
+    next dispatcher tick or a manual 'akramcode kanban recompute' would promote it.
     """
     with kbc.connect() as conn:
         # A is done.
@@ -1562,12 +1562,12 @@ def test_connect_heals_reduced_tasks_schema_seeded_by_external_harness(kanban_ho
 
 
 # ---------------------------------------------------------------------------
-# Dispatcher spawn invocation — _resolve_hermes_argv()
+# Dispatcher spawn invocation — _resolve_akramcode_argv()
 #
-# Workers spawned by the dispatcher must use a `hermes` invocation that does
+# Workers spawned by the dispatcher must use a `akramcode` invocation that does
 # not depend on PATH being set up correctly. cron jobs, systemd User= services,
 # launchd jobs, and other detached processes routinely run with a stripped
-# $PATH that doesn't include the venv's bin/, so a bare `["hermes", ...]`
+# $PATH that doesn't include the venv's bin/, so a bare `["akramcode", ...]`
 # spawn fails with FileNotFoundError and the task gets stuck. The resolver
 # prefers the interpreter-bound module form (exactly this install; a PATH
 # shim could be attacker-planted or belong to another install, #111569) and
@@ -1575,26 +1575,26 @@ def test_connect_heals_reduced_tasks_schema_seeded_by_external_harness(kanban_ho
 # ---------------------------------------------------------------------------
 
 
-def test_resolve_hermes_argv_prefers_module_form_over_path_shim(monkeypatch):
-    """A `hermes` on PATH must not shadow the running install (#111569):
+def test_resolve_akramcode_argv_prefers_module_form_over_path_shim(monkeypatch):
+    """A `akramcode` on PATH must not shadow the running install (#111569):
     the module argv wins whenever ``akramcode_cli`` is importable; only an
-    explicit ``$HERMES_BIN`` overrides it."""
+    explicit ``$AKRAMCODE_BIN`` overrides it."""
     import shutil
     import sys
     from akramcode_cli import kanban_db_dispatch as kbd
 
-    monkeypatch.delenv("HERMES_BIN", raising=False)
-    monkeypatch.setattr(shutil, "which", lambda name: "/tmp/planted/hermes")
-    monkeypatch.setattr(kbd, "_safe_which_no_cwd", lambda name: "/tmp/planted/hermes")
-    assert kbd._resolve_hermes_argv() == [sys.executable, "-m", "akramcode_cli.main"]
+    monkeypatch.delenv("AKRAMCODE_BIN", raising=False)
+    monkeypatch.setattr(shutil, "which", lambda name: "/tmp/planted/akramcode")
+    monkeypatch.setattr(kbd, "_safe_which_no_cwd", lambda name: "/tmp/planted/akramcode")
+    assert kbd._resolve_akramcode_argv() == [sys.executable, "-m", "akramcode_cli.main"]
 
-    monkeypatch.setenv("HERMES_BIN", "/opt/hermes/bin/hermes")
-    assert kbd._resolve_hermes_argv() == ["/opt/hermes/bin/hermes"]
-
-
+    monkeypatch.setenv("AKRAMCODE_BIN", "/opt/akramcode/bin/akramcode")
+    assert kbd._resolve_akramcode_argv() == ["/opt/akramcode/bin/akramcode"]
 
 
-def test_resolve_hermes_argv_module_actually_runs():
+
+
+def test_resolve_akramcode_argv_module_actually_runs():
     """The fallback module name must be importable + runnable.
 
     A unit test that pins the literal string is necessary but not
@@ -1609,9 +1609,9 @@ def test_resolve_hermes_argv_module_actually_runs():
     import unittest.mock as mock
 
     with mock.patch.dict(os.environ, {}, clear=False):
-        os.environ.pop("HERMES_BIN", None)
+        os.environ.pop("AKRAMCODE_BIN", None)
         with mock.patch.object(shutil, "which", return_value=None):
-            argv = kbd._resolve_hermes_argv()
+            argv = kbd._resolve_akramcode_argv()
     r = subprocess.run(argv + ["--version"], capture_output=True, text=True, timeout=30)
     assert r.returncode == 0, (
         f"`{' '.join(argv)} --version` failed (rc={r.returncode}); "
@@ -1622,9 +1622,9 @@ def test_resolve_hermes_argv_module_actually_runs():
 def test_default_spawn_pins_repo_root_on_module_worker_pythonpath(tmp_path, monkeypatch):
     """A module-form worker must carry the import context that selected it.
 
-    ``_resolve_hermes_argv`` proves ``akramcode_cli`` importable in the gateway,
+    ``_resolve_akramcode_argv`` proves ``akramcode_cli`` importable in the gateway,
     where a store-python shim has the repo root on ``sys.path`` in-process;
-    the worker env scrub strips Hermes-owned PYTHONPATH entries, so the bare
+    the worker env scrub strips AkramCode-owned PYTHONPATH entries, so the bare
     ``sys.executable -m akramcode_cli.main`` child died on import and the board
     auto-blocked (#122299, #122487, #122500). The spawned env must put the
     running install's root first on PYTHONPATH — and never for a resolved shim
@@ -1637,13 +1637,13 @@ def test_default_spawn_pins_repo_root_on_module_worker_pythonpath(tmp_path, monk
     from akramcode_cli import kanban_db_dispatch as kbd
 
     root = str(Path(kbd.__file__).resolve().parents[1])
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.delenv("HERMES_KANBAN_HOME", raising=False)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
+    monkeypatch.delenv("AKRAMCODE_KANBAN_HOME", raising=False)
     monkeypatch.delenv("PYTHONPATH", raising=False)
-    monkeypatch.delenv("HERMES_BIN", raising=False)
+    monkeypatch.delenv("AKRAMCODE_BIN", raising=False)
 
     captured = {}
 
@@ -1662,11 +1662,11 @@ def test_default_spawn_pins_repo_root_on_module_worker_pythonpath(tmp_path, monk
         claim_expires=None, tenant=None, branch_name=None,
     )
 
-    monkeypatch.setattr(kbd, "_resolve_hermes_argv", lambda: [sys.executable, "-m", "akramcode_cli.main"])
+    monkeypatch.setattr(kbd, "_resolve_akramcode_argv", lambda: [sys.executable, "-m", "akramcode_cli.main"])
     kbd._default_spawn(task, str(tmp_path / "ws"))
     assert captured["env"]["PYTHONPATH"].split(os.pathsep)[0] == root
 
-    monkeypatch.setattr(kbd, "_resolve_hermes_argv", lambda: ["/opt/hermes/bin/hermes"])
+    monkeypatch.setattr(kbd, "_resolve_akramcode_argv", lambda: ["/opt/akramcode/bin/akramcode"])
     kbd._default_spawn(task, str(tmp_path / "ws"))
     assert root not in captured["env"].get("PYTHONPATH", "").split(os.pathsep)
 

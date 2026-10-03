@@ -383,7 +383,7 @@ class GatewayModelCommandsMixin:
         """Slash dispatch does not install the routed profile's scope, so a multiplexed runner binds
         the owning home for the switch row and its switch_away friction."""
         from akramcode_cli.observability.shared_metrics_events import record_model_switch
-        from akramcode_constants import reset_hermes_home_override, set_hermes_home_override
+        from akramcode_constants import reset_akramcode_home_override, set_akramcode_home_override
 
         home = None
         if getattr(getattr(self, "config", None), "multiplex_profiles", False):
@@ -392,14 +392,14 @@ class GatewayModelCommandsMixin:
         session_id = None
         with contextlib.suppress(Exception):
             session_id = getattr(self._cached_agent_for(ctx.session_key), "session_id", None)
-        token = set_hermes_home_override(str(home)) if home else None
+        token = set_akramcode_home_override(str(home)) if home else None
         try:
             record_model_switch(
                 from_provider=ctx.route_provider, to_provider=result.target_provider, surface="gateway",
                 from_model=ctx.current_model, session_id=session_id)
         finally:
             if token is not None:
-                reset_hermes_home_override(token)
+                reset_akramcode_home_override(token)
 
     async def _commit_model_switch_locked(self, result, ctx: _ModelSwitchContext, *, source, picker: bool) -> str:
         one_turn = False if picker else ctx.one_turn
@@ -530,7 +530,7 @@ class GatewayModelCommandsMixin:
             return await self._handle_model_command_locked(event)
 
     async def _handle_model_command_locked(self, event: MessageEvent) -> Optional[str]:
-        from gateway.run import _hermes_home
+        from gateway.run import _akramcode_home
         from akramcode_cli.model_switch import parse_model_switch_args, resolve_persist_behavior
 
         profile_home = None
@@ -563,7 +563,7 @@ class GatewayModelCommandsMixin:
             # (mcp_serve, mirror, channel directory) see the branch row fully formed with zero backfill gap.
             session_key=session_key,
             source=source,
-            config_path=(profile_home or _hermes_home) / "config.yaml",
+            config_path=(profile_home or _akramcode_home) / "config.yaml",
             persist_global=resolve_persist_behavior(
                 request.is_global, request.is_session, is_once=request.is_once,
                 explicit_provider=request.explicit_provider,
@@ -746,7 +746,7 @@ class GatewayModelCommandsMixin:
         if raw_args:  # typed path — same applier the picker uses
             return self._apply_reasoning_selection(session_key, platform_key, args, persist_global=persist_global)
         rc = self._reasoning_config
-        # Labels tell the truth about the route: a Hermes-internal step (``ultra``) that the wire
+        # Labels tell the truth about the route: a AkramCode-internal step (``ultra``) that the wire
         # clamps is shown as "ultra (sends max on this route)" instead of a distinct level (#61634).
         from agent.reasoning_effort import effort_display_label
         from gateway.run import _load_gateway_config

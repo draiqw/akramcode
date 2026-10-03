@@ -49,16 +49,16 @@ class _Args:
 
 @pytest.fixture
 def pin_env(tmp_path, monkeypatch):
-    """Isolated HERMES_HOME with freshly reloaded modules (same pattern as
+    """Isolated AKRAMCODE_HOME with freshly reloaded modules (same pattern as
     tests/agent/test_curator.py::curator_env but scoped for the CLI layer)."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     skills = home / "skills"
     skills.mkdir(parents=True)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
 
-    import hermes_constants
-    importlib.reload(hermes_constants)
+    import akramcode_constants
+    importlib.reload(akramcode_constants)
     from tools import skill_usage
     importlib.reload(skill_usage)
     # curator module reads config through its own loader; keep defaults.

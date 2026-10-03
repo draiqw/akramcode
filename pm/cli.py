@@ -1,4 +1,4 @@
-"""hermes pm: lock / install / repair / env / doctor / gc / bundle."""
+"""akramcode pm: lock / install / repair / env / doctor / gc / bundle."""
 
 from __future__ import annotations
 
@@ -297,14 +297,14 @@ def _install_flag_error(args, *, extras: list[str], cross_target, tools_only: bo
 def _install_defaults(names: list[str], *, verify: bool) -> None:
     """Install the optional defaults; a failure warns and never fails the install.
 
-    They are the browser and computer-use tools, not what Hermes needs to run:
+    They are the browser and computer-use tools, not what AkramCode needs to run:
     a Chromium download that fails behind a proxy must not abort an install
     whose required closure and venv are fine.
     """
     for name in names:
         if _install_names([name], verify=verify):
             print(f"⚠ optional {name} was not installed; its tools stay unavailable until "
-                  f"`hermes pm install {name}` succeeds", flush=True)
+                  f"`akramcode pm install {name}` succeeds", flush=True)
 
 
 def _install_python_environments(extras: list[str], *, sync: bool, test_environment) -> int:
@@ -315,7 +315,7 @@ def _install_python_environments(extras: list[str], *, sync: bool, test_environm
 
         try:
             # Default the venv to the [all] feature set — the same thing
-            # `hermes update` force-syncs on every run (update_cmd.py) and
+            # `akramcode update` force-syncs on every run (update_cmd.py) and
             # the installers' old `--extra all` did. sync_venv unions, so
             # any lazy extras already recorded survive this; it only makes
             # a fresh bootstrap match what the first update would do.
@@ -359,7 +359,7 @@ def cmd_install(args) -> int:
         from pm.defaults import record_declined
 
         # Persisted before anything installs: later bare installs and
-        # `hermes update` read the same record, so the opt-out sticks.
+        # `akramcode update` read the same record, so the opt-out sticks.
         record_declined(add=without)
     defaults: list[str] = []
     if not (args.names or extras):
@@ -444,7 +444,7 @@ def cmd_doctor(args) -> int:
         ):
             # Legacy fact: pre-dates digest-bound identity; installed()
             # treats it as not installed and forces one reinstall.
-            print(f"{'?' if soft else '✗'} {name}: legacy fact: no recorded identity, run `hermes pm install`")
+            print(f"{'?' if soft else '✗'} {name}: legacy fact: no recorded identity, run `akramcode pm install`")
             bad += 0 if soft else 1
             continue
         if not facts.installed(name, lockfile.version(name), store.root, identity):
@@ -617,7 +617,7 @@ def _refresh_npm_lock() -> int:
     npm = installed_package("npm")
     node = installed_package("node")
     if npm is None or npm.binary is None or node is None or node.binary is None:
-        print("✗ npm or Node: not installed; run `hermes pm install`")
+        print("✗ npm or Node: not installed; run `akramcode pm install`")
         return 1
     env = npm_env(writable_store_root() / ".npm-cache", env_for("npm"))
     code, tail = _run_live([str(npm.binary), "update"], cwd=str(repo_root()), env=env)
@@ -629,7 +629,7 @@ def _refresh_npm_lock() -> int:
 
 
 def cmd_update(args) -> int:
-    """`hermes pm update [names...] [--check] [--target T] [--uv] [--npm] [--termux]`.
+    """`akramcode pm update [names...] [--check] [--target T] [--uv] [--npm] [--termux]`.
 
     Resolve each package's latest via its own latest_versions() hook,
     intersect across targets, and (real mode) re-pin the lockfile + install
@@ -758,7 +758,7 @@ def cmd_repair(args) -> int:
 
     if not recover_if_needed(repo_root(), explicit=True):
         return 1
-    print("Restart Hermes to use the repaired dependency environment.")
+    print("Restart AkramCode to use the repaired dependency environment.")
     return 0
 
 
@@ -778,7 +778,7 @@ def main(argv=None) -> int:
             stream.reconfigure(errors="replace", line_buffering=True)
         except (AttributeError, OSError):
             pass
-    parser = argparse.ArgumentParser(prog="hermes pm")
+    parser = argparse.ArgumentParser(prog="akramcode pm")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     lock_parser = p = sub.add_parser(
@@ -797,7 +797,7 @@ def main(argv=None) -> int:
                    help="enable a declared dependency extra in the venv (repeatable)")
     p.add_argument("--without", action="append", default=[], metavar="NAME",
                    help="leave an optional default package (agent-browser, cua-driver) out of this and every later "
-                        "default install and update; `hermes pm install NAME` opts back in (repeatable)")
+                        "default install and update; `akramcode pm install NAME` opts back in (repeatable)")
     p.add_argument("--tools-only", action="store_true",
                    help="install the tool closure, put it on PATH, and stop before the venv sync")
     p.add_argument("--trust-recorded", action="store_true",

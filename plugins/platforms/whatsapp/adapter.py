@@ -18,7 +18,7 @@ from gateway.platforms._shared import (
     apply_yaml_bridge as _apply_yaml_bridge, extra_or_secret as _extra_or_secret, get_scoped_secret, send_error
 )
 from akramcode_cli._subprocess_compat import windows_detach_popen_kwargs
-from hermes_constants import (find_node_executable, get_hermes_dir, with_hermes_node_path)
+from akramcode_constants import (find_node_executable, get_akramcode_dir, with_akramcode_node_path)
 
 _IS_WINDOWS = platform.system() == "Windows"
 
@@ -202,7 +202,7 @@ def _cache_dirs() -> tuple:
 
 
 def _is_allowed_bridge_path(url: str) -> bool:
-    """Absolute bridge path resolves (symlinks included) inside a Hermes cache dir — a rogue bridge could hand back /etc/passwd."""
+    """Absolute bridge path resolves (symlinks included) inside a AkramCode cache dir — a rogue bridge could hand back /etc/passwd."""
     try:
         resolved = Path(url).resolve()
     except (OSError, ValueError):
@@ -236,7 +236,7 @@ def check_whatsapp_requirements() -> bool:
         # Let connect prepare a missing runtime, but never install during discovery.
         return lazy_installs_allowed()
     try:
-        return subprocess.run([_node, "--version"], timeout=5, env=with_hermes_node_path(), **_RUN_TEXT).returncode == 0
+        return subprocess.run([_node, "--version"], timeout=5, env=with_akramcode_node_path(), **_RUN_TEXT).returncode == 0
     except Exception:
         return False
 
@@ -291,7 +291,7 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
         self._bridge_process: Optional[subprocess.Popen] = None
         self._bridge_port: int = extra.get("bridge_port", 3000)
         self._bridge_script: str = extra.get("bridge_script", str(self._DEFAULT_BRIDGE_DIR / "bridge.js"))
-        self._session_path = Path(extra.get("session_path", get_hermes_dir("platforms/whatsapp/session", "whatsapp/session")))
+        self._session_path = Path(extra.get("session_path", get_akramcode_dir("platforms/whatsapp/session", "whatsapp/session")))
         self._reply_prefix: Optional[str] = extra.get("reply_prefix")
         self._dm_policy = str(_extra_or_secret(extra, "dm_policy", "WHATSAPP_DM_POLICY", "pairing")).strip().lower()
         self._allow_from = self._coerce_allow_list(self._select_dm_allowlist(extra, ("WHATSAPP_ALLOWED_USERS",), _wenv))
@@ -333,7 +333,7 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
 
     def _ensure_bridge_deps(self, bridge_dir: Path) -> bool:
         """npm install when node_modules is missing OR package.json hash != stamp file. False = fatal error set."""
-        _dep_stamp = bridge_dir / "node_modules" / ".hermes-pkg-hash"  # holds the package.json hash of the last install
+        _dep_stamp = bridge_dir / "node_modules" / ".akramcode-pkg-hash"  # holds the package.json hash of the last install
         _pkg_hash = _file_content_hash(bridge_dir / "package.json")
         try:
             if (bridge_dir / "node_modules").exists() and _dep_stamp.read_text(encoding="utf-8-sig").strip() == _pkg_hash and bool(_pkg_hash):
@@ -346,7 +346,7 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
             import pm
 
             _npm_bin = find_node_executable("npm")
-            env = with_hermes_node_path()
+            env = with_akramcode_node_path()
             if _npm_bin is None:
                 env = pm.ensure("npm").env
                 installed = pm.installed_package("npm")
@@ -367,7 +367,7 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
             print(f"[{self.name}] Failed to install dependencies: {e}")
             detail = f" ({e})"
         self._set_fatal_error("whatsapp_npm_install_failed", f"WhatsApp bridge npm install failed{detail}. "
-                              "Run `hermes whatsapp`, then restart `hermes gateway`.", retryable=False)
+                              "Run `akramcode whatsapp`, then restart `akramcode gateway`.", retryable=False)
         return False
 
     def _attach_to_bridge(self, managed_process) -> None:
@@ -401,10 +401,10 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
 
     def _bridge_env(self) -> dict:
         """Subprocess env: the adapter's EFFECTIVE profile policy + profile-resolved WHATSAPP_* values + cache dirs."""
-        # with_hermes_node_path() copies os.environ when called with no arg: under a multiplexed secondary
+        # with_akramcode_node_path() copies os.environ when called with no arg: under a multiplexed secondary
         # that copy carries the DEFAULT profile's WHATSAPP_* values, so every bridge-consumed key is
         # re-resolved from this profile (dropped on a scoped miss), never inherited from the launch env.
-        bridge_env = with_hermes_node_path()
+        bridge_env = with_akramcode_node_path()
         reply_prefix = _wenv("WHATSAPP_REPLY_PREFIX")
         if reply_prefix:
             bridge_env["WHATSAPP_REPLY_PREFIX"] = reply_prefix
@@ -428,9 +428,9 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
                 bridge_env[env_key] = ",".join(sorted(ids))
             else:
                 bridge_env.pop(env_key, None)
-        # Without these the bridge hardcodes ~/.hermes/{image,audio,document}_cache (wrong under HERMES_HOME/profiles/cache layout).
+        # Without these the bridge hardcodes ~/.akramcode/{image,audio,document}_cache (wrong under AKRAMCODE_HOME/profiles/cache layout).
         img_dir, audio_dir, _video_dir, doc_dir = _cache_dirs()
-        bridge_env.update(HERMES_IMAGE_CACHE_DIR=str(img_dir), HERMES_AUDIO_CACHE_DIR=str(audio_dir), HERMES_DOCUMENT_CACHE_DIR=str(doc_dir))
+        bridge_env.update(AKRAMCODE_IMAGE_CACHE_DIR=str(img_dir), AKRAMCODE_AUDIO_CACHE_DIR=str(audio_dir), AKRAMCODE_DOCUMENT_CACHE_DIR=str(doc_dir))
         return bridge_env
 
     def _bridge_died(self, detail: str) -> bool:
@@ -475,7 +475,7 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
             if connected is None:
                 print(f"[{self.name}] ⚠ WhatsApp not connected after 30s")
                 print(f"[{self.name}]   Bridge log: {self._bridge_log}")
-                print(f"[{self.name}]   If session expired, re-pair: hermes whatsapp")
+                print(f"[{self.name}]   If session expired, re-pair: akramcode whatsapp")
         return True
 
     def _preflight(self) -> bool:
@@ -484,12 +484,12 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
         creds_path = self._session_path / "creds.json"
         checks = (
             (check_whatsapp_requirements, ("[%s] Node.js not found. WhatsApp requires Node.js.", self.name),
-             "whatsapp_node_missing", "Node.js is not installed — install Node.js and re-run `hermes gateway`."),
+             "whatsapp_node_missing", "Node.js is not installed — install Node.js and re-run `akramcode gateway`."),
             (bridge_path.exists, ("[%s] Bridge script not found: %s", self.name, bridge_path),
              "whatsapp_bridge_missing", f"WhatsApp bridge script missing at {bridge_path}."),
             (creds_path.exists, ("[%s] WhatsApp is enabled but not paired (no creds.json at %s). Pair from the dashboard or run "
-                                 "`hermes whatsapp`; remove WHATSAPP_ENABLED from your .env to disable.", self.name, creds_path),
-             "whatsapp_not_paired", "WhatsApp enabled but not paired — pair from the dashboard or run `hermes whatsapp`."),
+                                 "`akramcode whatsapp`; remove WHATSAPP_ENABLED from your .env to disable.", self.name, creds_path),
+             "whatsapp_not_paired", "WhatsApp enabled but not paired — pair from the dashboard or run `akramcode whatsapp`."),
         )
         for ok, warn_args, code, message in checks:
             if not ok():
@@ -533,7 +533,7 @@ class WhatsAppAdapter(WhatsAppBehaviorMixin, BasePlatformAdapter):
             self._bridge_log_fh = bridge_log_fh = open(self._bridge_log, "a", encoding="utf-8")
             node = find_node_executable("node")
             if node is None:
-                raise RuntimeError("Node.js is no longer available; run `hermes pm install`")
+                raise RuntimeError("Node.js is no longer available; run `akramcode pm install`")
             self._bridge_process = subprocess.Popen(
                 [node, str(bridge_path), "--port", str(self._bridge_port), "--session", str(self._session_path),
                  "--mode", _wenv("WHATSAPP_MODE", "self-chat")], stdout=bridge_log_fh, stderr=bridge_log_fh, env=self._bridge_env(), **windows_detach_popen_kwargs())
@@ -971,7 +971,7 @@ async def _standalone_send(pconfig, chat_id, message, *, thread_id=None, media_f
                 if not (health.get("capabilities") or {}).get("outboundMentions"):
                     return {"error": (
                         "WhatsApp bridge does not support native mentions; "
-                        "restart it from the same Hermes version.")}
+                        "restart it from the same AkramCode version.")}
 
             async def _post(path, payload, total, error_label=None):
                 """``(messageId, None)`` on 200, else ``(None, error_dict)`` (body read only when labelled)."""

@@ -1,4 +1,4 @@
-"""``hermes update --list-venv-holders``: read-only JSON twin of the Windows venv-holder refusal.
+"""``akramcode update --list-venv-holders``: read-only JSON twin of the Windows venv-holder refusal.
 
 Drives ``cmd_update`` (the production entry point) so the wiring in ``_update_preflight_handled``
 is what is proven, not the helper alone.
@@ -30,10 +30,10 @@ def _quiet_preflight(monkeypatch):
 
 def test_list_venv_holders_json_and_exit_3_when_holders_present(monkeypatch, capsys, _quiet_preflight):
     holders = [
-        (4242, "python.exe", r"C:\hermes\venv\Scripts\python.exe -m akramcode_cli.main serve --port 8642"),
-        (4343, "python.exe", r"C:\hermes\venv\Scripts\python.exe -m akramcode_cli.main gateway run"),
-        (4444, "python.exe", r"C:\hermes\venv\Scripts\python.exe -m akramcode_cli.main -p work kanban list"),
-        (4545, "python.exe", r"C:\hermes\venv\Scripts\python.exe some_script.py"),
+        (4242, "python.exe", r"C:\akramcode\venv\Scripts\python.exe -m akramcode_cli.main serve --port 8642"),
+        (4343, "python.exe", r"C:\akramcode\venv\Scripts\python.exe -m akramcode_cli.main gateway run"),
+        (4444, "python.exe", r"C:\akramcode\venv\Scripts\python.exe -m akramcode_cli.main -p work kanban list"),
+        (4545, "python.exe", r"C:\akramcode\venv\Scripts\python.exe some_script.py"),
     ]
     monkeypatch.setattr(cli_main, "_detect_venv_python_processes", lambda: holders)
 
@@ -43,7 +43,7 @@ def test_list_venv_holders_json_and_exit_3_when_holders_present(monkeypatch, cap
     assert exc.value.code == update_cmd_windows.VENV_HOLDERS_EXIT == 3
     payload = json.loads(capsys.readouterr().out)
     assert [(h["pid"], h["kind"]) for h in payload] == [
-        (4242, "backend"), (4343, "gateway"), (4444, "hermes:kanban"), (4545, "python")]
+        (4242, "backend"), (4343, "gateway"), (4444, "akramcode:kanban"), (4545, "python")]
     assert set(payload[0]) == {"pid", "exe", "argv", "kind"}
     assert payload[0]["argv"].endswith("serve --port 8642")
 

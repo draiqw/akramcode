@@ -244,16 +244,16 @@ class TestResolveTaskProviderModel:
 class TestMoaAggregatorSharedResolution:
     """The shared MoA→aggregator helper and the layers that consume it.
 
-    Real-config tests: write an actual config.yaml under a temp HERMES_HOME
+    Real-config tests: write an actual config.yaml under a temp AKRAMCODE_HOME
     and exercise the genuine load_config() → resolve_moa_preset() boundary —
     no mocking of the configuration-resolution chain.
     """
 
     @staticmethod
     def _write_moa_config(tmp_path, monkeypatch, default_preset="opus-gpt"):
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
 
-        home = tmp_path / ".hermes"
+        home = tmp_path / ".akramcode"
         home.mkdir(exist_ok=True)
         (home / "config.yaml").write_text(
             yaml.safe_dump(
@@ -274,11 +274,11 @@ class TestMoaAggregatorSharedResolution:
                             "nous-mix": {
                                 "enabled": True,
                                 "reference_models": [
-                                    {"provider": "nous", "model": "hermes-4-70b"}
+                                    {"provider": "nous", "model": "akramcode-4-70b"}
                                 ],
                                 "aggregator": {
                                     "provider": "nous",
-                                    "model": "hermes-4-405b",
+                                    "model": "akramcode-4-405b",
                                 },
                             },
                         },
@@ -286,13 +286,13 @@ class TestMoaAggregatorSharedResolution:
                 }
             )
         )
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(home))
         return home
 
     def test_real_config_explicit_task_provider_moa(self, tmp_path, monkeypatch):
         """auxiliary.<task>.provider: moa in a REAL config.yaml resolves to the
         aggregator through the genuine load_config()/resolve_moa_preset() path."""
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
 
         home = self._write_moa_config(tmp_path, monkeypatch)
         cfg = yaml.safe_load((home / "config.yaml").read_text())
@@ -375,7 +375,7 @@ class TestBuildCallKwargsMaxTokens:
             ("zai", "glm-5.2", "https://api.z.ai/api/coding/paas/v4", "max_tokens"),
             ("openrouter", "deepseek/deepseek-v4-flash:nitro", "https://openrouter.ai/api/v1", "max_tokens"),
             ("copilot", "gpt-5.5", "https://api.githubcopilot.com", "max_completion_tokens"),
-            ("nous", "hermes-4", "https://inference-api.nousresearch.com/v1", "max_tokens"),
+            ("nous", "akramcode-4", "https://inference-api.nousresearch.com/v1", "max_tokens"),
         ],
     )
     def test_moa_task_sends_max_tokens_on_openai_compatible(self, provider, model, base_url, expected_key):
@@ -449,7 +449,7 @@ class TestNousTagsScoping:
 
         kwargs = aux._build_call_kwargs(
             provider="nous",
-            model="hermes-4",
+            model="akramcode-4",
             messages=[{"role": "user", "content": "hi"}],
         )
 
@@ -492,9 +492,9 @@ class TestResolveCodexCredentialToken:
     """Token half of ``_resolve_codex_credential_and_base`` with no pool (auth.json only)."""
 
     def test_valid_auth_store(self, tmp_path, monkeypatch):
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        (hermes_home / "auth.json").write_text(json.dumps({
+        akramcode_home = tmp_path / "akramcode"
+        akramcode_home.mkdir(parents=True, exist_ok=True)
+        (akramcode_home / "auth.json").write_text(json.dumps({
             "version": 1,
             "providers": {
                 "openai-codex": {
@@ -502,7 +502,7 @@ class TestResolveCodexCredentialToken:
                 },
             },
         }))
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
         with patch("agent.auxiliary_client._select_pool_entry", return_value=(False, None)):
             result = _resolve_codex_credential_and_base()[0]
         assert result == "tok-123"
@@ -518,9 +518,9 @@ class TestResolveCodexCredentialToken:
         payload = base64.urlsafe_b64encode(payload_data).rstrip(b"=").decode()
         expired_jwt = f"{header}.{payload}.fakesig"
 
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        (hermes_home / "auth.json").write_text(json.dumps({
+        akramcode_home = tmp_path / "akramcode"
+        akramcode_home.mkdir(parents=True, exist_ok=True)
+        (akramcode_home / "auth.json").write_text(json.dumps({
             "version": 1,
             "providers": {
                 "openai-codex": {
@@ -528,7 +528,7 @@ class TestResolveCodexCredentialToken:
                 },
             },
         }))
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
         with patch("agent.auxiliary_client._select_pool_entry", return_value=(False, None)):
             result = _resolve_codex_credential_and_base()[0]
         assert result is None, "Expired JWT should return None"
@@ -543,9 +543,9 @@ class TestResolveCodexCredentialToken:
         payload = base64.urlsafe_b64encode(payload_data).rstrip(b"=").decode()
         valid_jwt = f"{header}.{payload}.fakesig"
 
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        (hermes_home / "auth.json").write_text(json.dumps({
+        akramcode_home = tmp_path / "akramcode"
+        akramcode_home.mkdir(parents=True, exist_ok=True)
+        (akramcode_home / "auth.json").write_text(json.dumps({
             "version": 1,
             "providers": {
                 "openai-codex": {
@@ -553,7 +553,7 @@ class TestResolveCodexCredentialToken:
                 },
             },
         }))
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
         with patch("agent.auxiliary_client._select_pool_entry", return_value=(False, None)):
             result = _resolve_codex_credential_and_base()[0]
         assert result == valid_jwt
@@ -563,21 +563,21 @@ class TestResolveXaiOAuthForAux:
     def test_uses_pool_backed_credentials_without_singleton(self, tmp_path, monkeypatch):
         """Auxiliary xAI OAuth must see pool-only credentials.
 
-        ``hermes auth status`` already reports these as logged in; compression
+        ``akramcode auth status`` already reports these as logged in; compression
         should not fall through to "no auxiliary provider configured" just
         because the singleton auth-store entry is absent.
         """
         from agent.credential_pool import AUTH_TYPE_OAUTH, PooledCredential, load_pool
         from akramcode_cli.auth import DEFAULT_XAI_OAUTH_BASE_URL
 
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        (hermes_home / "auth.json").write_text(json.dumps({
+        akramcode_home = tmp_path / "akramcode"
+        akramcode_home.mkdir(parents=True, exist_ok=True)
+        (akramcode_home / "auth.json").write_text(json.dumps({
             "version": 1,
             "providers": {},
         }))
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-        monkeypatch.delenv("HERMES_XAI_BASE_URL", raising=False)
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
+        monkeypatch.delenv("AKRAMCODE_XAI_BASE_URL", raising=False)
         monkeypatch.delenv("XAI_BASE_URL", raising=False)
 
         pool = load_pool("xai-oauth")
@@ -602,14 +602,14 @@ class TestResolveXaiOAuthForAux:
         from agent.credential_pool import AUTH_TYPE_OAUTH, PooledCredential, load_pool
         from akramcode_cli.auth import DEFAULT_XAI_OAUTH_BASE_URL
 
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        (hermes_home / "auth.json").write_text(json.dumps({
+        akramcode_home = tmp_path / "akramcode"
+        akramcode_home.mkdir(parents=True, exist_ok=True)
+        (akramcode_home / "auth.json").write_text(json.dumps({
             "version": 1,
             "providers": {},
         }))
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-        monkeypatch.setenv("HERMES_XAI_BASE_URL", "https://example.x.ai/v1/")
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
+        monkeypatch.setenv("AKRAMCODE_XAI_BASE_URL", "https://example.x.ai/v1/")
 
         pool = load_pool("xai-oauth")
         pool.add_entry(PooledCredential(
@@ -713,7 +713,7 @@ class TestBuildCodexClient:
             patch("agent.auxiliary_client._select_pool_entry", return_value=(True, entry)),
             patch("agent.auxiliary_client.OpenAI") as mock_openai,
         ):
-            monkeypatch.setenv("HERMES_CODEX_BASE_URL", "http://127.0.0.1:8787/v1")
+            monkeypatch.setenv("AKRAMCODE_CODEX_BASE_URL", "http://127.0.0.1:8787/v1")
             mock_openai.return_value = MagicMock()
             from agent.auxiliary_client import _build_codex_client
 
@@ -730,7 +730,7 @@ class TestBuildCodexClient:
             patch("agent.auxiliary_client._read_codex_singleton_token", return_value="codex-auth-token"),
             patch("agent.auxiliary_client.OpenAI") as mock_openai,
         ):
-            monkeypatch.setenv("HERMES_CODEX_BASE_URL", "http://127.0.0.1:8787/v1")
+            monkeypatch.setenv("AKRAMCODE_CODEX_BASE_URL", "http://127.0.0.1:8787/v1")
             mock_openai.return_value = MagicMock()
             from agent.auxiliary_client import resolve_provider_client
 
@@ -800,7 +800,7 @@ class TestResolveProviderClientUniversalModelFallback:
 
     Aux tasks (title generation, vision, session search, etc.) routinely
     reach this function without an explicit model — the user's main
-    provider was picked via ``hermes model``, no per-task override is
+    provider was picked via ``akramcode model``, no per-task override is
     set, and the expectation is "just use my main model for side tasks
     too."  The resolver fills in ``model`` from a 3-step universal
     fallback before any provider branch runs:
@@ -902,9 +902,9 @@ class TestExpiredCodexFallback:
         payload = base64.urlsafe_b64encode(payload_data).rstrip(b"=").decode()
         expired_jwt = f"{header}.{payload}.fakesig"
 
-        hermes_home = tmp_path / "hermes"
-        hermes_home.mkdir(parents=True, exist_ok=True)
-        (hermes_home / "auth.json").write_text(json.dumps({
+        akramcode_home = tmp_path / "akramcode"
+        akramcode_home.mkdir(parents=True, exist_ok=True)
+        (akramcode_home / "auth.json").write_text(json.dumps({
             "version": 1,
             "providers": {
                 "openai-codex": {
@@ -912,7 +912,7 @@ class TestExpiredCodexFallback:
                 },
             },
         }))
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
         monkeypatch.setenv("OPENROUTER_API_KEY", "or-test-key")
 
         with patch("agent.auxiliary_client.OpenAI") as mock_openai:
@@ -1935,7 +1935,7 @@ class TestAuxiliaryFallbackLayering:
 
 
     def test_fallback_entry_openai_codex_uses_oauth_pool_without_inline_key(self):
-        """Configured Codex fallback resolves through Hermes auth / credential pool."""
+        """Configured Codex fallback resolves through AkramCode auth / credential pool."""
         from agent.auxiliary_client import _resolve_fallback_entry
 
         pool_entry = MagicMock()
@@ -2335,7 +2335,7 @@ class TestTransientTransportRetry:
 
 class TestAuxClientNoSdkRetries:
     """Auxiliary OpenAI clients are constructed with SDK-internal retries
-    disabled so Hermes owns the retry/timeout budget (issue #54465). The SDK
+    disabled so AkramCode owns the retry/timeout budget (issue #54465). The SDK
     default (max_retries=2 → 3 attempts) silently triples the effective wall
     time of every aux call against a slow/hung endpoint.
     """
@@ -2530,7 +2530,7 @@ class TestAuxiliaryTaskExtraBody:
 
     @pytest.mark.parametrize("task", ["session_search", "moa_reference", "moa_aggregator"])
     def test_generic_reasoning_fallback_clamps_ultra_for_auxiliary_and_moa_calls(self, task, monkeypatch):
-        """The OpenAI-compatible fallback must never put Hermes-only ``ultra`` on the wire."""
+        """The OpenAI-compatible fallback must never put AkramCode-only ``ultra`` on the wire."""
         from agent.auxiliary_client import _ProfileProjection, _build_call_kwargs
 
         monkeypatch.setattr(
@@ -2994,9 +2994,9 @@ class TestAuxiliaryPoolRotationRetry:
 
 
 class TestAnthropicAuxiliaryReasoningTranslation:
-    """Native Anthropic aux adapters must receive normalized Hermes reasoning.
+    """Native Anthropic aux adapters must receive normalized AkramCode reasoning.
 
-    MoA slot reasoning is carried through call_llm as a Hermes
+    MoA slot reasoning is carried through call_llm as a AkramCode
     ``reasoning_config``. The native Anthropic Messages path cannot consume the
     generic OpenAI-style ``extra_body.reasoning`` fallback, so assert the final
     ``messages.create`` kwargs contain Anthropic's provider-aware wire shape.
@@ -3952,7 +3952,7 @@ class TestCodexAuxiliaryAdapterCompletedResponse:
 class TestCodexAuxiliaryAdapterReservedToolAliases:
     """The aux adapter emits the same tool schemas as the main Responses transport: shared
     converter (``strict: False``) plus provider-reserved-name aliasing (OpenCode, Perplexity),
-    reversed on the parsed tool_calls before Hermes dispatch (#114260)."""
+    reversed on the parsed tool_calls before AkramCode dispatch (#114260)."""
 
     _TOOLS = [
         {"type": "function", "function": {"name": name, "description": name,
@@ -3979,7 +3979,7 @@ class TestCodexAuxiliaryAdapterReservedToolAliases:
         from agent.codex_responses_adapter import classify_responses_route
         from agent.transports.codex import ResponsesApiTransport
 
-        # Deterministic xAI branch: a non-xAI web backend keeps client dispatch under ``hermes_web_search``.
+        # Deterministic xAI branch: a non-xAI web backend keeps client dispatch under ``akramcode_web_search``.
         monkeypatch.setattr("agent.transports.codex._xai_prefers_native_web_search", lambda: False)
         adapter = _CodexCompletionsAdapter(SimpleNamespace(base_url=base_url), "m")
         resp_kwargs, _, _ = adapter._build_responses_kwargs(
@@ -3993,13 +3993,13 @@ class TestCodexAuxiliaryAdapterReservedToolAliases:
         assert resp_kwargs["tools"] == main_kwargs["tools"]
         assert all(t["strict"] is False for t in resp_kwargs["tools"])
         assert {t["name"] for t in resp_kwargs["tools"]} == {
-            f"hermes_{n}" if n in aliased else n
+            f"akramcode_{n}" if n in aliased else n
             for n in ("web_search", "search_files", "people_search", "read_file", "tool_search")
         }
         # Replayed history names the tool the way this request declares it; the alias map rides on the payload.
         history_names = [i["name"] for i in resp_kwargs["input"] if i.get("type") == "function_call"]
-        assert history_names == ["hermes_search_files" if "search_files" in aliased else "search_files"]
-        assert resp_kwargs.get("_wire_aliases", {}) == {f"hermes_{n}": n for n in aliased}
+        assert history_names == ["akramcode_search_files" if "search_files" in aliased else "search_files"]
+        assert resp_kwargs.get("_wire_aliases", {}) == {f"akramcode_{n}": n for n in aliased}
 
     def test_create_maps_aliases_back_and_never_sends_alias_map(self):
         sent = {}
@@ -4010,7 +4010,7 @@ class TestCodexAuxiliaryAdapterReservedToolAliases:
                 return SimpleNamespace(
                     status="completed", id="resp_1", usage=None,
                     output=[SimpleNamespace(type="function_call", call_id="c9", id="fc_9",
-                                            name="hermes_search_files", arguments='{"pattern": "x"}')],
+                                            name="akramcode_search_files", arguments='{"pattern": "x"}')],
                 )
 
         adapter = _CodexCompletionsAdapter(
@@ -4020,7 +4020,7 @@ class TestCodexAuxiliaryAdapterReservedToolAliases:
 
         wire_tools = sent.get("tools") or sent.get("extra_body", {}).get("tools")  # SDK transform bypass moves bulk fields
         assert "_wire_aliases" not in sent and "_wire_aliases" not in sent.get("extra_body", {})
-        assert "hermes_search_files" in {t["name"] for t in wire_tools}
+        assert "akramcode_search_files" in {t["name"] for t in wire_tools}
         assert [tc.function.name for tc in response.choices[0].message.tool_calls] == ["search_files"]
 
 
@@ -4034,7 +4034,7 @@ class TestAuxiliaryClientPoisonedCacheEviction:
     Otherwise the next auxiliary call (compression retry, memory flush,
     background review) reuses the closed httpx transport and fails with
     ``Connection error`` even though the main provider route is healthy.
-    See https://github.com/NousResearch/hermes-agent/issues/23432.
+    See https://github.com/NousResearch/akramcode-agent/issues/23432.
     """
 
 
@@ -4135,7 +4135,7 @@ class TestBuildCallKwargsToolDedup:
     Providers like Google Vertex, Azure, and Bedrock reject requests with
     duplicate tool names (HTTP 400).  This guard converts a hard failure into
     a warning log so agent turns succeed even if an upstream injection path
-    regresses.  See: https://github.com/NousResearch/hermes-agent/issues/18478
+    regresses.  See: https://github.com/NousResearch/akramcode-agent/issues/18478
     """
 
     def _make_tool(self, name: str) -> dict:
@@ -4189,7 +4189,7 @@ class TestNvidiaBillingHeaders:
         assert model == "nvidia/test-model"
         call_kwargs = mock_openai.call_args[1]
         headers = call_kwargs["default_headers"]
-        assert headers["X-BILLING-INVOKE-ORIGIN"] == "HermesAgent"
+        assert headers["X-BILLING-INVOKE-ORIGIN"] == "AkramCodeAgent"
 
     def test_resolve_provider_client_local_nim_skips_billing_origin_header(self, monkeypatch):
         monkeypatch.setenv("NVIDIA_API_KEY", "nvidia-key")
@@ -4823,12 +4823,12 @@ class TestNoProgressTimeoutTaskConfigGating:
         CodexAuxiliaryClient path (both the first-output and between-output deadlines derive from
         ``guard.no_progress_timeout``); other tasks keep the 60s default; a non-positive value
         is rejected with a warning and falls back to the default."""
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
         from agent import auxiliary_client as aux
 
-        home = tmp_path / ".hermes"
+        home = tmp_path / ".akramcode"
         home.mkdir()
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(home))
 
         def _run(task):
             captured = {}

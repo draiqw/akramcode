@@ -1,4 +1,4 @@
-"""ZIP-download fallback for ``hermes update`` (Windows with broken git): two-phase stage/commit swap, dirty-tree guard.
+"""ZIP-download fallback for ``akramcode update`` (Windows with broken git): two-phase stage/commit swap, dirty-tree guard.
 
 Split out of ``update_cmd.py``; every name is re-imported there so ``akramcode_cli.update_cmd.<name>`` keeps
 resolving/monkeypatching. Origin helpers are imported lazily per function (no cycle; test patches stay effective).
@@ -17,7 +17,7 @@ from typing import Collection, Optional
 # Log-record parity with the origin module.
 logger = logging.getLogger("akramcode_cli.update_cmd")
 
-_ZIP_STAGING_ARTIFACT_SUFFIXES = ".hermes-update-staging", ".hermes-update-old"
+_ZIP_STAGING_ARTIFACT_SUFFIXES = ".akramcode-update-staging", ".akramcode-update-old"
 
 # Single source of truth for entries the ZIP swap preserves — used by the dirty-tree filter and the swap loop.
 _ZIP_PRESERVED_TOP_LEVEL = {"venv", ".venv", "node_modules", ".git", ".env"}
@@ -30,11 +30,11 @@ _ZIP_PRESERVED_NESTED = {
     "apps": ("desktop/release", "desktop/dist", "desktop/node_modules", "desktop/build"),
     "akramcode_cli": ("web_dist",),
     "scripts": ("whatsapp-bridge/node_modules",),
-    "ui-tui": ("dist", "node_modules", "packages/hermes-ink/dist"),
+    "ui-tui": ("dist", "node_modules", "packages/akramcode-ink/dist"),
     "web": ("node_modules",),
 }
 
-_STASH_HINT = "  Stash or commit your changes, then rerun `hermes update`."
+_STASH_HINT = "  Stash or commit your changes, then rerun `akramcode update`."
 
 
 def _remove_path(path: str, *, ignore_errors: bool = False) -> None:
@@ -67,8 +67,8 @@ def _atomic_replace_dir(src: str, dst: str) -> None:
 def _stage_replacement(src: str, dst: str) -> str:
     """Phase 1: copy *src* (dir or file) to a sibling staging path for *dst*; return it.
     Touches nothing live, so a failure here leaves the install untouched."""
-    staging = f"{dst}.hermes-update-staging"
-    backup = f"{dst}.hermes-update-old"
+    staging = f"{dst}.akramcode-update-staging"
+    backup = f"{dst}.akramcode-update-old"
     # A prior run may have died mid-swap leaving the backup as the ONLY copy. Restore it BEFORE
     # clearing leftovers, else deleting it then failing to stage (disk exhaustion) leaves a hole.
     if not os.path.exists(dst) and os.path.exists(backup):
@@ -104,7 +104,7 @@ def _commit_staged_replacements(staged) -> None:
     swapped: list[tuple[str, str]] = []  # (dst, backup) in swap order; "" = absent
     try:
         for staging, dst in staged:
-            backup = f"{dst}.hermes-update-old"
+            backup = f"{dst}.akramcode-update-old"
             if os.path.exists(dst):
                 os.rename(dst, backup)
                 swapped.append((dst, backup))
@@ -133,7 +133,7 @@ def _zip_overlay_block_reason(
 
     The swap replaces every top-level entry (minus a tiny preserve set) and deletes backups, so uncommitted
     edits and untracked files are gone. Fails closed when git status cannot run. ``ignore_staging_artifacts``
-    is for the pre-swap re-check: phase 1 leaves our own ``*.hermes-update-staging`` siblings that git
+    is for the pre-swap re-check: phase 1 leaves our own ``*.akramcode-update-staging`` siblings that git
     reports as untracked; without the filter the re-check always refuses. ``shipped`` is the extracted
     ZIP's top-level entry set once known (the re-check); before the download the tracked root entries stand
     in for it. A gitignored path under a root entry the ZIP does not ship is never touched by the swap.
@@ -182,7 +182,7 @@ def _status_top_level(path: str) -> str:
 def _is_zip_preserved_entry_status_line(line: str, shipped: Optional[Collection[str]] = None) -> bool:
     """True when the swap would not destroy what a porcelain status line names: every path sits under a
     preserved top-level entry; or the line is gitignored (``!!``) and under a root entry the ZIP does not
-    ship (``.bytecode-fingerprint``, ``.hermes-bootstrap-complete``, ``hermes_agent.egg-info/`` — the swap
+    ship (``.bytecode-fingerprint``, ``.akramcode-bootstrap-complete``, ``akramcode_agent.egg-info/`` — the swap
     replaces ``shipped`` entries only); or a ``!!`` build output nested under a shipped dir that the swap
     keeps (`_ZIP_PRESERVED_NESTED`) or regenerates (``__pycache__``, ``node_modules``). Every real install
     has all of these, and blocking on them made the ZIP fallback refuse every install. Tracked edits,
@@ -245,8 +245,8 @@ def _extract_zip_safely(zip_path: str, tmp_dir: str) -> None:
 
 
 def _extracted_root(tmp_dir: str, branch: str) -> str:
-    """GitHub ZIPs extract to ``hermes-agent-<branch>/``; fall back to the first non-``__MACOSX`` dir."""
-    extracted = os.path.join(tmp_dir, f"hermes-agent-{branch}")
+    """GitHub ZIPs extract to ``akramcode-agent-<branch>/``; fall back to the first non-``__MACOSX`` dir."""
+    extracted = os.path.join(tmp_dir, f"akramcode-agent-{branch}")
     if not os.path.isdir(extracted):
         for d in os.listdir(tmp_dir):
             candidate = os.path.join(tmp_dir, d)
@@ -282,7 +282,7 @@ def _require_staging_space(extracted: str, entries: list[str], project_root: str
 
 def _link_or_copy_artifact(source: str, destination: str) -> None:
     """Hardlink where the filesystem allows (apps/desktop/node_modules is hundreds of MB, and a link stays
-    valid after the swap unlinks the old tree; on Windows a link also succeeds on a locked Hermes.exe
+    valid after the swap unlinks the old tree; on Windows a link also succeeds on a locked AkramCode.exe
     where copy2 raises); byte copy otherwise."""
     try:
         os.link(source, destination)
@@ -331,9 +331,9 @@ def _download_and_swap_zip(branch: str, zip_url: str) -> None:
     import tempfile
     from urllib.request import urlretrieve
     print("→ Downloading latest version...")
-    tmp_dir = tempfile.mkdtemp(prefix="hermes-update-")
+    tmp_dir = tempfile.mkdtemp(prefix="akramcode-update-")
     try:
-        zip_path = os.path.join(tmp_dir, f"hermes-agent-{branch}.zip")
+        zip_path = os.path.join(tmp_dir, f"akramcode-agent-{branch}.zip")
         urlretrieve(zip_url, zip_path)
         print("→ Extracting...")
         _extract_zip_safely(zip_path, tmp_dir)
@@ -365,7 +365,7 @@ def _download_and_swap_zip(branch: str, zip_url: str) -> None:
         print(f"✗ ZIP update failed: {e}")
         # Two-phase replace commits all or rolls all back, so no mixed tree here — don't push a needless reinstall.
         print("  Your existing install was left in place.")
-        print("  Re-run `hermes update` to retry; if the agent won't start, reinstall from https://hermes-agent.nousresearch.com")
+        print("  Re-run `akramcode update` to retry; if the agent won't start, reinstall from https://akramcode-agent.nousresearch.com")
         _m().sys.exit(1)
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
@@ -388,8 +388,8 @@ def _update_via_zip(args, *, had_desktop_app_before_update: bool = False,
         print(
             "  This path runs when git file I/O is broken on the system. "
             "Either resolve the git-side breakage (typically an antivirus "
-            "or NTFS filter holding files open) and rerun `hermes update "
-            f"--branch {branch}`, or update against main with `hermes update`."
+            "or NTFS filter holding files open) and rerun `akramcode update "
+            f"--branch {branch}`, or update against main with `akramcode update`."
         )
         _m().sys.exit(1)
     _abort_zip_update_if_dirty_tree()
@@ -400,7 +400,7 @@ def _update_via_zip(args, *, had_desktop_app_before_update: bool = False,
     if target_sha is not None and not re.fullmatch(r"[0-9a-f]{40}", target_sha):
         raise ValueError("ZIP update requires an exact full commit SHA")
     ref = target_sha if target_sha is not None else f"refs/heads/{branch}"
-    repository = target_repository or "NousResearch/hermes-agent"
+    repository = target_repository or "NousResearch/akramcode-agent"
     if (not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository)
             or any(part in (".", "..") for part in repository.split("/"))):
         raise ValueError("ZIP update requires a GitHub owner/repository")

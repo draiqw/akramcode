@@ -77,7 +77,7 @@ class GatewaySessionWatchersMixin:
     def _session_stall_timeout_seconds(self) -> float:
         """Return configured stall timeout (seconds); 0 disables the watchdog."""
         from gateway.run import _float_env
-        return _float_env("HERMES_SESSION_STALL_TIMEOUT", 300)
+        return _float_env("AKRAMCODE_SESSION_STALL_TIMEOUT", 300)
 
     def _session_activity_for_stall(self, session_key: str) -> Optional[dict]:
         """Stall-progress snapshot from ``AIAgent.get_activity_summary()`` only; no other clocks.

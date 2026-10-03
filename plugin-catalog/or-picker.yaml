@@ -1,5 +1,5 @@
 name: or-picker
-repo: https://github.com/PIR8-Software/Hermes-OR-Picker
+repo: https://github.com/PIR8-Software/AkramCode-OR-Picker
 sha: 20e4c817945220d0b2df6ca60b0b4d3b112b3f39
 subdir: src/model-provider
 description: Curated OpenRouter provider — composer list is only the models checked in OpenRouter Picker.
@@ -7,7 +7,7 @@ maintainer: PIR8-Software
 tier: community
 category: models
 version: "1.0.0"
-docs_url: https://github.com/PIR8-Software/Hermes-OR-Picker#readme
+docs_url: https://github.com/PIR8-Software/AkramCode-OR-Picker#readme
 capabilities:
   provides_tools: []
   provides_hooks: []

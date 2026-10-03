@@ -12,7 +12,7 @@ def test_retirement_reserves_admission_until_cancel_or_permanent_commit(monkeypa
     monkeypatch.setattr(web_server, "_SESSION_TOKEN", "retirement-test-token")
     monkeypatch.setitem(server._methods, "test.retirement", lambda rid, params: server._ok(rid, {}))
     client = TestClient(web_server.app)
-    headers = {"X-Hermes-Session-Token": "retirement-test-token"}
+    headers = {"X-AkramCode-Session-Token": "retirement-test-token"}
     rpc = {"id": "test", "method": "test.retirement", "params": {}}
 
     def post(action, token=None, authenticated=True):

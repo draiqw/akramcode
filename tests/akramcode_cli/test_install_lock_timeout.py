@@ -1,7 +1,7 @@
 """A backend binds even while another process holds the install lock.
 
 Regression: ``runtime_lock`` waited forever, and the lock is held across a whole dependency
-rebuild (tens of seconds on a bundle), so the second backend — the ``hermes-setup`` onboarding
+rebuild (tens of seconds on a bundle), so the second backend — the ``akramcode-setup`` onboarding
 profile — never reached its port: the renderer gave up at 40 s and Electron killed it at 90 s
 while the holder ran a uv build it had started for a status probe. Deciding what a lost race
 means is the caller's job now: readers skip, explicit installs still wait.
@@ -31,7 +31,7 @@ def install_tree(tmp_path, monkeypatch):
     """A real committed generation, ready for ``activate_dependencies`` to select."""
     repo = tmp_path / "repo"
     repo.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
     environment = install_state_dir(repo) / "environments" / "gen1" / "venv"
     site = site_packages(environment)
     site.mkdir(parents=True)

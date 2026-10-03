@@ -99,7 +99,7 @@ class BillingUpgradeCapExceeded(BillingTransient):
 
 def resolve_portal_base_url(state: Optional[dict[str, Any]] = None) -> str:
     """Resolve the portal base URL with login-time precedence: env, stored state, default."""
-    env = os.getenv("HERMES_PORTAL_BASE_URL") or os.getenv("NOUS_PORTAL_BASE_URL")
+    env = os.getenv("AKRAMCODE_PORTAL_BASE_URL") or os.getenv("NOUS_PORTAL_BASE_URL")
     for candidate in (env, state.get("portal_base_url") if state else None):
         if isinstance(candidate, str) and candidate.strip():
             return candidate.strip().rstrip("/")
@@ -121,7 +121,7 @@ def _absolutize_portal_url(portal_url: Optional[str]) -> Optional[str]:
 # cross-process file locks + reads two files per call, wasteful for the 2s charge poll loop
 # (~150 calls per purchase). The resolver only returns tokens with >=120s of life (its refresh
 # skew), so a 30s cache can never hand back an about-to-expire token; a 401 still surfaces.
-# Keyed by hermes_home_key() so a multiplex profile never bills through a sibling's token.
+# Keyed by akramcode_home_key() so a multiplex profile never bills through a sibling's token.
 _TOKEN_CACHE_TTL_SECONDS = 30.0
 _token_cache: dict[str, tuple[float, str, str]] = {}  # home key -> (cached_at, token, base)
 
@@ -137,7 +137,7 @@ def invalidate_cached_token() -> None:
 
 def _billing_not_logged_in(exc: Optional[BaseException] = None) -> "BillingAuthError":
     """Build the canonical 'not logged in' BillingAuthError (single source)."""
-    err = BillingAuthError("Not logged into Nous Portal — run `hermes portal` to log in.", status=401, error="invalid_token")
+    err = BillingAuthError("Not logged into Nous Portal — run `akramcode portal` to log in.", status=401, error="invalid_token")
     if exc is not None:
         err.__cause__ = exc
     return err
@@ -145,9 +145,9 @@ def _billing_not_logged_in(exc: Optional[BaseException] = None) -> "BillingAuthE
 
 def _resolve_token_and_base(*, use_cache: bool = True) -> tuple[str, str]:
     """``(access_token, portal_base_url)``, cached for ``_TOKEN_CACHE_TTL_SECONDS`` unless ``use_cache=False``."""
-    from akramcode_constants import hermes_home_key
+    from akramcode_constants import akramcode_home_key
 
-    cache_key = hermes_home_key()
+    cache_key = akramcode_home_key()
     cached = _token_cache.get(cache_key) if use_cache else None
     if cached is not None:
         cached_at, token, base = cached

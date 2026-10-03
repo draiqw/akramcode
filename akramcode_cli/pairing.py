@@ -1,7 +1,7 @@
 """CLI commands for the DM pairing system."""
 
 def pairing_command(args):
-    """Handle hermes pairing subcommands."""
+    """Handle akramcode pairing subcommands."""
     from gateway.pairing import PairingStore
 
     store = PairingStore()
@@ -13,8 +13,8 @@ def pairing_command(args):
     }
     handler = handlers.get(getattr(args, "pairing_action", None))
     if handler is None:
-        print("Usage: hermes pairing {list|approve|revoke|clear-pending}")
-        print("Run 'hermes pairing --help' for details.")
+        print("Usage: akramcode pairing {list|approve|revoke|clear-pending}")
+        print("Run 'akramcode pairing --help' for details.")
     else:
         handler()
 
@@ -36,7 +36,7 @@ def _cmd_list(store):
                 f"  {p['platform']:<12} {(p.get('request_id') or '-'):<18} {p['user_id']:<20} "
                 f"{(p.get('user_name') or ''):<20} {p['age_minutes']}m ago"
             )
-        print("\n  Approve with: hermes pairing approve <platform> <request-id>")
+        print("\n  Approve with: akramcode pairing approve <platform> <request-id>")
         print("  The code the bot DM'd the user also works if they relay it.")
     else:
         print("\n  No pending pairing requests.")
@@ -75,10 +75,10 @@ def _cmd_approve(store, platform: str, code: str):
         mins = max(0, int(lockout_until - _time.time())) // 60
         print(f"\n  Platform '{platform}' is locked out after too many failed approval attempts.")
         print(f"  Lockout clears in ~{mins} minute(s).")
-        print(f"  To reset sooner, delete the '_lockout:{platform}' entry from ~/.hermes/platforms/pairing/_rate_limits.json\n")
+        print(f"  To reset sooner, delete the '_lockout:{platform}' entry from ~/.akramcode/platforms/pairing/_rate_limits.json\n")
     else:
         print(f"\n  Pairing request or code '{code}' not found or expired for platform '{platform}'.")
-        print("  Run 'hermes pairing list' to see pending requests.\n")
+        print("  Run 'akramcode pairing list' to see pending requests.\n")
 
 
 def _cmd_revoke(store, platform: str, user_id: str):

@@ -48,7 +48,7 @@ def test_real_retry_producers_keep_final_failure_and_persistence(tmp_path, monke
     from gateway import run
 
     (tmp_path / "config.yaml").write_text(f"display: {{suppress_warning_notifications: {str(not enabled).lower()}}}")
-    monkeypatch.setattr(run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(run, "_akramcode_home", tmp_path)
     sent = []
     async def send(chat_id, text, **kwargs):
         sent.append(text)
@@ -92,8 +92,8 @@ def test_bad_config_containers_do_not_abort_startup_warning(tmp_path, monkeypatc
     from gateway import run
 
     (tmp_path / "config.yaml").write_text(yaml_text)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.setattr(run, "_hermes_home", tmp_path)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
+    monkeypatch.setattr(run, "_akramcode_home", tmp_path)
     gateway = object.__new__(GatewayRunner)
     gateway._session_db_init_error = "database is locked"
     gateway._session_db_handle_cache = None

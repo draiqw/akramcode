@@ -1,4 +1,4 @@
-"""Interactive picker for ``hermes sessions browse``: curses UI with live search filtering and ``d``
+"""Interactive picker for ``akramcode sessions browse``: curses UI with live search filtering and ``d``
 delete-with-confirmation; numbered-list fallback when curses is unavailable (Windows, etc.)."""
 
 from typing import Optional
@@ -255,8 +255,8 @@ def _session_browse_picker(sessions: list, session_db=None) -> Optional[str]:
 
     def _delete_session(session_id: str) -> bool:
         try:
-            from akramcode_cli.sessions_cmd import get_hermes_home
-            sessions_dir = get_hermes_home() / "sessions"
+            from akramcode_cli.sessions_cmd import get_akramcode_home
+            sessions_dir = get_akramcode_home() / "sessions"
         except Exception:
             sessions_dir = None
         try:

@@ -22,17 +22,17 @@ from unittest.mock import patch
 from gateway.config import GatewayConfig, Platform
 from gateway.session import SessionEntry, SessionStore
 
-def test_session_store_default_db_uses_runtime_hermes_home(tmp_path, monkeypatch):
-    """SessionStore must honor runtime HERMES_HOME when opening the default DB.
+def test_session_store_default_db_uses_runtime_akramcode_home(tmp_path, monkeypatch):
+    """SessionStore must honor runtime AKRAMCODE_HOME when opening the default DB.
 
     Regression for the import-time DEFAULT_DB_PATH freeze: importing
-    akramcode_state before a fixture redirected HERMES_HOME used to pin every
-    default SessionDB() at the developer's real ~/.hermes/state.db.
+    akramcode_state before a fixture redirected AKRAMCODE_HOME used to pin every
+    default SessionDB() at the developer's real ~/.akramcode/state.db.
     """
     config = GatewayConfig()
-    fake_home = tmp_path / "alt_hermes_home"
+    fake_home = tmp_path / "alt_akramcode_home"
     fake_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(fake_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(fake_home))
 
     with patch("gateway.session.SessionStore._ensure_loaded"):
         store = SessionStore(sessions_dir=tmp_path / "sessions", config=config)

@@ -1,4 +1,4 @@
-"""Partial and full clones updated N-1 -> HEAD -> next release through the real ``hermes update``.
+"""Partial and full clones updated N-1 -> HEAD -> next release through the real ``akramcode update``.
 
 Users' checkouts come in several shapes: HEAD's installer makes a ``--filter=tree:0`` clone, its
 throttled fallback a ``--filter=blob:none`` clone, and plenty of users cloned the repository

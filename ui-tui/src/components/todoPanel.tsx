@@ -1,4 +1,4 @@
-import { Box, Text } from '@hermes/ink'
+import { Box, Text } from '@akramcode/ink'
 import { memo, useState } from 'react'
 
 import { useT } from '../i18n/useT.js'

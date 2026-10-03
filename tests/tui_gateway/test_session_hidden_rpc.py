@@ -83,7 +83,7 @@ def test_session_list_include_hidden(db):
 
 @pytest.mark.parametrize("source", ["oneshot", "kanban", "tool"])
 def test_session_list_hides_internal_sources(db, source):
-    """Finite one-shot runs (`hermes -z`, `chat -q`) and other non-conversation rows never reach the
+    """Finite one-shot runs (`akramcode -z`, `chat -q`) and other non-conversation rows never reach the
     human picker; interactive rows stay (#112550)."""
     _seed(db, "plain-chat")
     db.create_session("internal-run", source=source)

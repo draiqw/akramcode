@@ -1,4 +1,4 @@
-"""hermes claw — OpenClaw migration commands."""
+"""akramcode claw — OpenClaw migration commands."""
 
 import contextlib
 import importlib.util
@@ -11,7 +11,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Callable, Optional
 
-from akramcode_cli.config import get_hermes_home, get_config_path, load_config, save_config
+from akramcode_cli.config import get_akramcode_home, get_config_path, load_config, save_config
 from akramcode_constants import get_optional_skills_dir
 from akramcode_cli.setup import (Colors, color, print_header, print_info, print_success, print_error,
                               print_warning, prompt_yes_no)
@@ -20,17 +20,17 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
-_SCRIPT_REL = Path("migration", "openclaw-migration", "scripts", "openclaw_to_hermes.py")
+_SCRIPT_REL = Path("migration", "openclaw-migration", "scripts", "openclaw_to_akramcode.py")
 _OPENCLAW_SCRIPT = get_optional_skills_dir(PROJECT_ROOT / "optional-skills") / _SCRIPT_REL
 # Fallback: user may have installed the skill from the Hub
-_OPENCLAW_SCRIPT_INSTALLED = get_hermes_home() / "skills" / _SCRIPT_REL
+_OPENCLAW_SCRIPT_INSTALLED = get_akramcode_home() / "skills" / _SCRIPT_REL
 
 # Known OpenClaw directory names (current + legacy)
 _OPENCLAW_DIR_NAMES = (".openclaw", ".clawdbot", ".moltbot")
 # pgrep -f ERE anchored on a node interpreter as argv[0] (``node /usr/local/bin/openclaw gateway``).
 _OPENCLAW_NODE_CMDLINE_RE = r"^(\S*/)?node(js)?\s.*(openclaw|clawd)"
 
-# `hermes claw migrate` flags/defaults. Secrets are never included implicitly: --migrate-secrets
+# `akramcode claw migrate` flags/defaults. Secrets are never included implicitly: --migrate-secrets
 # is required even under --preset full (OpenClaw's two-phase posture); no silent API-key import.
 _MIGRATE_ARG_DEFAULTS = (
     ("source", None), ("dry_run", False), ("preset", "full"), ("overwrite", False),
@@ -57,7 +57,7 @@ def _print_banner(title: str) -> None:
     """Print the magenta boxed banner shared by the claw subcommands."""
     print()
     rule = "─" * 57
-    for line in (f"┌{rule}┐", f"│          ☤ Hermes — {title:<35s}│", f"└{rule}┘"):
+    for line in (f"┌{rule}┐", f"│          ☤ AkramCode — {title:<35s}│", f"└{rule}┘"):
         print(color(line, Colors.MAGENTA))
 
 
@@ -158,7 +158,7 @@ def _warn_if_openclaw_running(auto_yes: bool) -> None:
         auto_yes, "OpenClaw appears to be running:", running,
         ("Messaging platforms (Telegram, Discord, Slack) only allow one "
          "active session per bot token. If you continue, both OpenClaw and "
-         "Hermes may try to use the same token, causing disconnects.",
+         "AkramCode may try to use the same token, causing disconnects.",
          "Recommendation: stop OpenClaw before migrating."),
         "Continue anyway?", declined="Migration cancelled. Stop OpenClaw and try again.",
         non_tty=("Non-interactive session — continuing to preview only.",),
@@ -191,24 +191,24 @@ def _warn_if_gateway_running(auto_yes: bool) -> None:
     connected = [name for name, info in platforms.items()
                  if isinstance(info, dict) and info.get("state") == "connected"]
     if connected and _warn_running(
-        auto_yes, "Hermes gateway is running with active connections: " + ", ".join(connected), [],
+        auto_yes, "AkramCode gateway is running with active connections: " + ", ".join(connected), [],
         ("Migrating bot tokens while the gateway is active will cause "
          "conflicts (Telegram, Discord, and Slack only allow one active "
          "session per token).",
-         "Recommendation: stop the host gateway first with 'hermes gateway stop'."),
+         "Recommendation: stop the host gateway first with 'akramcode gateway stop'."),
         "Continue anyway?", declined="Migration cancelled. Stop the gateway and try again.",
     ) is False:
         sys.exit(0)
 
 
 def _find_migration_script() -> Path | None:
-    """Find the openclaw_to_hermes.py script in known locations."""
+    """Find the openclaw_to_akramcode.py script in known locations."""
     return next((c for c in (_OPENCLAW_SCRIPT, _OPENCLAW_SCRIPT_INSTALLED) if c.exists()), None)
 
 
 def _load_migration_module(script_path: Path):
     """Dynamically load the migration script as a module."""
-    spec = importlib.util.spec_from_file_location("openclaw_to_hermes", script_path)
+    spec = importlib.util.spec_from_file_location("openclaw_to_akramcode", script_path)
     if spec is None or spec.loader is None:
         return None
     # Register in sys.modules so @dataclass can resolve the module (Python 3.11+ requires this).
@@ -252,21 +252,21 @@ def _archive_directory(source_dir: Path, dry_run: bool = False) -> Path:
 
 
 def claw_command(args):
-    """Route hermes claw subcommands."""
+    """Route akramcode claw subcommands."""
     action = getattr(args, "claw_action", None)
     if action == "migrate":
         _cmd_migrate(args)
     elif action in {"cleanup", "clean"}:
         _cmd_cleanup(args)
     else:
-        print("Usage: hermes claw <command> [options]\n\nCommands:\n"
-              "  migrate          Migrate settings from OpenClaw to Hermes\n"
+        print("Usage: akramcode claw <command> [options]\n\nCommands:\n"
+              "  migrate          Migrate settings from OpenClaw to AkramCode\n"
               "  cleanup          Archive leftover OpenClaw directories after migration\n\n"
-              "Run 'hermes claw <command> --help' for options.")
+              "Run 'akramcode claw <command> --help' for options.")
 
 
 def _cmd_migrate(args):
-    """Run the OpenClaw → Hermes migration: preflight, preview, confirm, back up, apply."""
+    """Run the OpenClaw → AkramCode migration: preflight, preview, confirm, back up, apply."""
     opts = SimpleNamespace(**{k: getattr(args, k, d) for k, d in _MIGRATE_ARG_DEFAULTS})
     # Explicit --source, else first existing of current + legacy names; default to ~/.openclaw.
     opts.source_dir = (Path(opts.source) if opts.source
@@ -276,17 +276,17 @@ def _cmd_migrate(args):
         return _error_block(
             f"OpenClaw directory not found: {opts.source_dir}",
             "Make sure your OpenClaw installation is at the expected path.",
-            "You can specify a custom path: hermes claw migrate --source /path/to/.openclaw")
+            "You can specify a custom path: akramcode claw migrate --source /path/to/.openclaw")
     script_path = _find_migration_script()
     if not script_path:
         return _error_block(
             "Migration script not found.", "Expected at one of:", f"  {_OPENCLAW_SCRIPT}",
             f"  {_OPENCLAW_SCRIPT_INSTALLED}",
             "Make sure the openclaw-migration skill is installed.")
-    opts.hermes_home = get_hermes_home()
+    opts.akramcode_home = get_akramcode_home()
     print()
     print_header("Migration Settings")
-    _info(f"Source:      {opts.source_dir}", f"Target:      {opts.hermes_home}",
+    _info(f"Source:      {opts.source_dir}", f"Target:      {opts.akramcode_home}",
           f"Preset:      {opts.preset}",
           f"Overwrite:   {'yes' if opts.overwrite else 'no (skip conflicts)'}",
           f"Secrets:     {'yes (allowlisted only)' if opts.migrate_secrets else 'no'}",
@@ -305,9 +305,9 @@ def _cmd_migrate(args):
     print()
     if _confirm(opts.yes, "Proceed with migration?", default=True, declined="Migration cancelled.",
                 non_tty=("Non-interactive session — preview only.",
-                         "To execute, re-run with: hermes claw migrate --yes")):
+                         "To execute, re-run with: akramcode claw migrate --yes")):
         _apply_migration(run_migrator, opts)
-    # Source directory is left untouched — archiving is `hermes claw cleanup`'s job.
+    # Source directory is left untouched — archiving is `akramcode claw cleanup`'s job.
 
 
 def _load_migrator(script_path: Path, opts: SimpleNamespace) -> Optional[Callable[[bool], dict]]:
@@ -322,7 +322,7 @@ def _load_migrator(script_path: Path, opts: SimpleNamespace) -> Optional[Callabl
     selected = mod.resolve_selected_options(None, None, preset=opts.preset)
     ws_target = Path(opts.workspace_target).resolve() if opts.workspace_target else None
     return lambda execute: mod.Migrator(
-        source_root=opts.source_dir.resolve(), target_root=opts.hermes_home.resolve(),
+        source_root=opts.source_dir.resolve(), target_root=opts.akramcode_home.resolve(),
         execute=execute, workspace_target=ws_target, overwrite=opts.overwrite,
         migrate_secrets=opts.migrate_secrets, output_dir=None, selected_options=selected,
         preset_name=opts.preset, skill_conflict_mode=opts.skill_conflict).migrate()
@@ -356,7 +356,7 @@ def _preview_migration(run_migrator: Callable[[bool], dict], opts: SimpleNamespa
     if conflicts > 0 and not opts.overwrite:
         _error_block(
             f"Plan has {conflicts} conflict(s). Refusing to apply.",
-            "Each conflict is an item whose target already exists in ~/.hermes/. "
+            "Each conflict is an item whose target already exists in ~/.akramcode/. "
             "Re-run with --overwrite to replace conflicting targets (item-level "
             "backups are written to the migration report directory).",
             "Or re-run with --dry-run to review the full plan.")
@@ -367,18 +367,18 @@ def _preview_migration(run_migrator: Callable[[bool], dict], opts: SimpleNamespa
 def _apply_migration(run_migrator: Callable[[bool], dict], opts: SimpleNamespace) -> None:
     """Take a pre-migration backup (unless --no-backup), execute, and print the report. The backup
     shares the pre-update backup's implementation (exclusions, SQLite safe-copy, zip) so it is
-    restorable with `hermes import`: one restore point before any mutation, pruned to the last 5."""
+    restorable with `akramcode import`: one restore point before any mutation, pruned to the last 5."""
     backup_archive: Optional[Path] = None
     if not opts.no_backup:
         try:
             from akramcode_cli.backup import create_pre_migration_backup
             from akramcode_cli.sizefmt import format_bytes as _format_size
-            backup_archive = create_pre_migration_backup(hermes_home=opts.hermes_home)
+            backup_archive = create_pre_migration_backup(akramcode_home=opts.akramcode_home)
             if backup_archive:
                 print()
                 print_success(f"Pre-migration backup: {backup_archive} "
                               f"({_format_size(backup_archive.stat().st_size)})")
-                print_info(f"Restore with: hermes import {backup_archive.name}")
+                print_info(f"Restore with: akramcode import {backup_archive.name}")
             else:
                 print()
                 print_warning("Pre-migration backup was not created (nothing to back up, the write "
@@ -387,7 +387,7 @@ def _apply_migration(run_migrator: Callable[[bool], dict], opts: SimpleNamespace
         except Exception as e:
             return _error_block(
                 f"Could not create pre-migration backup: {e}",
-                "Re-run with --no-backup to skip, or free up disk space under the Hermes home.",
+                "Re-run with --no-backup to skip, or free up disk space under the AkramCode home.",
                 debug="Pre-migration backup error")
     try:
         report = run_migrator(True)
@@ -395,7 +395,7 @@ def _apply_migration(run_migrator: Callable[[bool], dict], opts: SimpleNamespace
         _error_block(f"Migration failed: {e}", debug="OpenClaw migration error")
         if backup_archive:
             _info(f"A pre-migration backup is available at: {backup_archive}",
-                  f"Restore with: hermes import {backup_archive.name}")
+                  f"Restore with: akramcode import {backup_archive.name}")
         return
     _print_migration_report(report, dry_run=False)
 
@@ -418,7 +418,7 @@ def _cmd_cleanup(args):
          "immediately recreate an empty skeleton directory, destroying your config.",
          "Stop OpenClaw first: systemctl --user stop openclaw-gateway.service"),
         "Proceed anyway?",
-        declined="Aborted. Stop OpenClaw first, then re-run: hermes claw cleanup",
+        declined="Aborted. Stop OpenClaw first, then re-run: akramcode claw cleanup",
         non_tty=("Non-interactive session — aborting. Stop OpenClaw and re-run.",)):
         return
     total_archived = 0
@@ -429,7 +429,7 @@ def _cmd_cleanup(args):
             print_info(f"Would archive: {source_dir} → {archive_path}")
         elif _confirm(auto_yes, f"Archive {source_dir}?", default=True, declined="Skipped.",
                       non_tty=(f"Non-interactive session — would archive: {source_dir}",
-                               "To execute, re-run with: hermes claw cleanup --yes")):
+                               "To execute, re-run with: akramcode claw cleanup --yes")):
             try:
                 archive_path = _archive_directory(source_dir)
                 print_success(f"Archived: {source_dir} → {archive_path}")
@@ -515,7 +515,7 @@ def _print_migration_report(report: dict, dry_run: bool):
         print_info(f"Full report saved to: {report['output_dir']}")
     if dry_run:
         _info("", "To execute the migration, run without --dry-run:",
-              f"  hermes claw migrate --preset {report.get('preset', 'full')}")
+              f"  akramcode claw migrate --preset {report.get('preset', 'full')}")
     elif migrated:
         print()
         print_success("Migration complete!")
@@ -527,5 +527,5 @@ def _print_migration_report(report: dict, dry_run: bool):
                 "  Your OPENROUTER_API_KEY and other provider keys must be added manually."):
                 print(color(line, Colors.YELLOW))
             _info("", "To migrate API keys, re-run with:",
-                  "  hermes claw migrate --migrate-secrets", "", "Or add your key manually:",
-                  "  hermes config set OPENROUTER_API_KEY sk-or-v1-...")
+                  "  akramcode claw migrate --migrate-secrets", "", "Or add your key manually:",
+                  "  akramcode config set OPENROUTER_API_KEY sk-or-v1-...")

@@ -21,7 +21,7 @@ from gateway.scale_to_zero import (
 )
 
 
-# ── scale_to_zero_enabled (the Labs HERMES_SCALE_TO_ZERO stamp, D11/Q8=A) ────
+# ── scale_to_zero_enabled (the Labs AKRAMCODE_SCALE_TO_ZERO stamp, D11/Q8=A) ────
 
 
 @pytest.mark.parametrize("value", ["1", "true", "TRUE", "yes", "on", " On "])
@@ -71,7 +71,7 @@ def test_scale_to_zero_gate_accounts_for_secondary_profile_direct_adapter(monkey
     from gateway.config import GatewayConfig, Platform, PlatformConfig
     from gateway.run_shutdown import GatewayShutdownMixin
 
-    monkeypatch.setenv("HERMES_SCALE_TO_ZERO", "1")
+    monkeypatch.setenv("AKRAMCODE_SCALE_TO_ZERO", "1")
     monkeypatch.setenv("GATEWAY_RELAY_WAKE_URL", "https://wake.example.test/instance")
     runner = object.__new__(GatewayShutdownMixin)
     runner.config = GatewayConfig(platforms={Platform.RELAY: PlatformConfig(enabled=True)})
@@ -210,7 +210,7 @@ from gateway.scale_to_zero import (  # noqa: E402 - grouped with their section
     suspend_self,
 )
 
-_FLY_ENV = {FLY_APP_NAME_ENV: "hermes-agent-stg-test", FLY_MACHINE_ID_ENV: "d891234f"}
+_FLY_ENV = {FLY_APP_NAME_ENV: "akramcode-agent-stg-test", FLY_MACHINE_ID_ENV: "d891234f"}
 
 # sockaddr_un.sun_path is 104 bytes on macOS/BSD and 108 on Linux (incl. NUL).
 _SUN_PATH_MAX = 100
@@ -280,7 +280,7 @@ def test_suspend_self_posts_suspend_for_this_machine(short_sock_dir):
     # The request must target THIS machine's suspend endpoint, per the Fly
     # Machines API (POST /v1/apps/{app}/machines/{id}/suspend on /.fly/api).
     assert request.startswith(
-        "POST /v1/apps/hermes-agent-stg-test/machines/d891234f/suspend HTTP/1.1\r\n"
+        "POST /v1/apps/akramcode-agent-stg-test/machines/d891234f/suspend HTTP/1.1\r\n"
     )
     assert "Host: flaps\r\n" in request
 

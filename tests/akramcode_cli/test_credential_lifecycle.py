@@ -3,7 +3,7 @@
 A provider API key can live in .env, auth.json's credential_pool, and
 config.yaml mirrors at once. These tests drive the REAL dashboard endpoint
 handlers (PUT/DELETE /api/env) against real on-disk fixtures in a temp
-HERMES_HOME (tests/conftest.py isolation) and assert every store agrees
+AKRAMCODE_HOME (tests/conftest.py isolation) and assert every store agrees
 afterwards.
 
 All fake secrets are constructed at runtime so no key-shaped literal ever
@@ -18,7 +18,7 @@ from fastapi.testclient import TestClient
 from akramcode_cli.web_server import _SESSION_TOKEN, app
 
 client = TestClient(app)
-HEADERS = {"X-Hermes-Session-Token": _SESSION_TOKEN}
+HEADERS = {"X-AkramCode-Session-Token": _SESSION_TOKEN}
 
 # Runtime-constructed fake credentials (never literal key-shaped strings).
 FAKE_ZAI_KEY = "zk-" + "a" * 24
@@ -27,11 +27,11 @@ NEW_KEY = "zk-" + "c" * 24
 
 
 @pytest.fixture
-def hermes_home(monkeypatch, tmp_path):
-    """Fresh HERMES_HOME with .env + auth.json + config.yaml fixtures."""
+def akramcode_home(monkeypatch, tmp_path):
+    """Fresh AKRAMCODE_HOME with .env + auth.json + config.yaml fixtures."""
     home = tmp_path / "cred_home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     from akramcode_cli.config import invalidate_env_cache
 
     invalidate_env_cache()
@@ -89,10 +89,10 @@ def _zai_pool_fixture():
 
 
 
-def test_delete_clears_provider_models_cache(hermes_home):
-    _write_env(hermes_home, ZAI_API_KEY=FAKE_ZAI_KEY)
-    _write_auth(hermes_home, {"zai": [_zai_pool_fixture()["zai"][0]]})
-    cache_path = hermes_home / "provider_models_cache.json"
+def test_delete_clears_provider_models_cache(akramcode_home):
+    _write_env(akramcode_home, ZAI_API_KEY=FAKE_ZAI_KEY)
+    _write_auth(akramcode_home, {"zai": [_zai_pool_fixture()["zai"][0]]})
+    cache_path = akramcode_home / "provider_models_cache.json"
     cache_path.write_text(
         json.dumps({"zai": {"models": ["glm-5"], "ts": 0}}), encoding="utf-8"
     )
@@ -115,12 +115,12 @@ def _write_config(home, text):
     home.joinpath("config.yaml").write_text(text, encoding="utf-8")
 
 
-def test_update_rotates_config_yaml_model_mirror(hermes_home):
+def test_update_rotates_config_yaml_model_mirror(akramcode_home):
     old = "sk-oe-" + "f" * 24
     new = "sk-oe-" + "g" * 24
-    _write_env(hermes_home, OPENAI_API_KEY=old)
+    _write_env(akramcode_home, OPENAI_API_KEY=old)
     _write_config(
-        hermes_home,
+        akramcode_home,
         "model:\n"
         "  provider: custom\n"
         "  default: my-model\n"
@@ -134,7 +134,7 @@ def test_update_rotates_config_yaml_model_mirror(hermes_home):
     assert resp.status_code == 200
     assert "model.api_key" in resp.json().get("config_updates", [])
 
-    cfg_text = hermes_home.joinpath("config.yaml").read_text(encoding="utf-8")
+    cfg_text = akramcode_home.joinpath("config.yaml").read_text(encoding="utf-8")
     assert old not in cfg_text, "stale old key left in config.yaml (#62269)"
     assert new in cfg_text, "config.yaml mirror not rotated to the new key"
 
@@ -148,7 +148,7 @@ def test_update_rotates_config_yaml_model_mirror(hermes_home):
 # ---------------------------------------------------------------------------
 # Desktop PUT /api/env — #96058: credential_pool must be materialized so the
 # live runtime picks up the new key without waiting for its next background
-# load_pool() or a separate `hermes auth add`.
+# load_pool() or a separate `akramcode auth add`.
 # ---------------------------------------------------------------------------
 
 
@@ -158,22 +158,22 @@ def test_update_rotates_config_yaml_model_mirror(hermes_home):
 OPENCODE_KEY_NEW = "ocg-" + "e" * 28
 
 
-def test_put_api_env_materializes_credential_pool_entry(hermes_home):
+def test_put_api_env_materializes_credential_pool_entry(akramcode_home):
     """Desktop Providers → API keys → Save must write a credential_pool entry.
 
     Pre-fix: save_provider_env_credential only mutated .env. The live pool
     kept authenticating with a stale higher-precedence config.yaml mirror or
-    the old cached credential until a separate ``hermes auth add opencode-go``
+    the old cached credential until a separate ``akramcode auth add opencode-go``
     ran. auth.json mtime was unchanged before/after Save (#96058).
 
     Post-fix: the same PUT /api/env call must also materialize an entry under
     ``credential_pool.<provider>`` in auth.json so the next request
-    authenticates immediately, matching ``hermes auth add <provider> --type
+    authenticates immediately, matching ``akramcode auth add <provider> --type
     api-key`` behavior.
     """
     # Start clean: empty auth.json so the only way a pool entry shows up is
     # via the PUT /api/env handler we're testing.
-    _write_auth(hermes_home, {})
+    _write_auth(akramcode_home, {})
 
     resp = client.put(
         "/api/env",
@@ -191,7 +191,7 @@ def test_put_api_env_materializes_credential_pool_entry(hermes_home):
     # fingerprint; the canonical secret lives in .env and gets re-hydrated by
     # load_pool() on each read). The critical observable is: load_pool() on
     # the next call returns an in-memory entry carrying the just-saved token.
-    auth = _read_auth(hermes_home)
+    auth = _read_auth(akramcode_home)
     pool = auth.get("credential_pool", {})
     assert "opencode-go" in pool, (
         "PUT /api/env did not materialize a credential_pool entry for "
@@ -238,12 +238,12 @@ def test_put_api_env_materializes_credential_pool_entry(hermes_home):
 # ---------------------------------------------------------------------------
 
 
-def test_update_rotates_keyed_providers_mirror(hermes_home):
+def test_update_rotates_keyed_providers_mirror(akramcode_home):
     old = "sk-kp-" + "n" * 24
     new = "sk-kp-" + "o" * 24
-    _write_env(hermes_home, OPENAI_API_KEY=old)
+    _write_env(akramcode_home, OPENAI_API_KEY=old)
     _write_config(
-        hermes_home,
+        akramcode_home,
         "providers:\n"
         "  myendpoint:\n"
         "    base_url: https://llm.example.test/v1\n"
@@ -256,16 +256,16 @@ def test_update_rotates_keyed_providers_mirror(hermes_home):
     assert resp.status_code == 200
     assert "providers.myendpoint.api_key" in resp.json().get("config_updates", [])
 
-    cfg_text = hermes_home.joinpath("config.yaml").read_text(encoding="utf-8")
+    cfg_text = akramcode_home.joinpath("config.yaml").read_text(encoding="utf-8")
     assert old not in cfg_text, "stale key in providers.<id> shadows the rotation (#62269)"
     assert new in cfg_text, "keyed providers mirror not rotated to the new key"
 
 
-def test_delete_scrubs_keyed_providers_mirror(hermes_home):
+def test_delete_scrubs_keyed_providers_mirror(akramcode_home):
     old = "sk-kp-" + "p" * 24
-    _write_env(hermes_home, OPENAI_API_KEY=old)
+    _write_env(akramcode_home, OPENAI_API_KEY=old)
     _write_config(
-        hermes_home,
+        akramcode_home,
         "providers:\n"
         "  myendpoint:\n"
         "    base_url: https://llm.example.test/v1\n"
@@ -277,18 +277,18 @@ def test_delete_scrubs_keyed_providers_mirror(hermes_home):
     )
     assert resp.status_code == 200
     assert "providers.myendpoint.api_key" in resp.json()["config_scrubbed"]
-    cfg_text = hermes_home.joinpath("config.yaml").read_text(encoding="utf-8")
+    cfg_text = akramcode_home.joinpath("config.yaml").read_text(encoding="utf-8")
     assert old not in cfg_text, "delete must clear the credential from EVERY store"
 
 
-def test_scrub_never_touches_providers_base_url_alias(hermes_home):
+def test_scrub_never_touches_providers_base_url_alias(akramcode_home):
     """In the keyed ``providers`` schema ``api`` is the base_url alias, NOT a
     credential. Even if the .env value coincided with a base_url, the scrub
     must not rewrite a provider's endpoint URL."""
     old = "https://llm.example.test/v1"  # a URL that also happens to be the key value
-    _write_env(hermes_home, OPENAI_API_KEY=old)
+    _write_env(akramcode_home, OPENAI_API_KEY=old)
     _write_config(
-        hermes_home,
+        akramcode_home,
         "providers:\n"
         "  myendpoint:\n"
         f"    api: {old}\n"          # base_url alias — must be preserved
@@ -299,7 +299,7 @@ def test_scrub_never_touches_providers_base_url_alias(hermes_home):
         "DELETE", "/api/env", json={"key": "OPENAI_API_KEY"}, headers=HEADERS
     )
     assert resp.status_code == 200
-    cfg_text = hermes_home.joinpath("config.yaml").read_text(encoding="utf-8")
+    cfg_text = akramcode_home.joinpath("config.yaml").read_text(encoding="utf-8")
     assert old in cfg_text, "providers.<id>.api is a base_url and must survive"
     assert "providers.myendpoint.api" not in resp.json().get("config_scrubbed", [])
 
@@ -324,7 +324,7 @@ def test_scrub_never_touches_providers_base_url_alias(hermes_home):
 # of alibaba-coding-plan-cn), could be a FOREIGN tier's key.
 
 
-def test_get_api_env_passes_provider_primary_through(hermes_home):
+def test_get_api_env_passes_provider_primary_through(akramcode_home):
     """Every provider card's own index-0 credential must stay its main field."""
     resp = client.get("/api/env", headers=HEADERS)
     assert resp.status_code == 200, resp.text

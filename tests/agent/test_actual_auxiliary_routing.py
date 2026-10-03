@@ -8,7 +8,7 @@ import threading
 import time
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 
 @pytest.fixture
@@ -137,7 +137,7 @@ def test_actual_background_tasks_reach_chat_completions(
     base_url, requests = actual_endpoint
     if hosted:
         base_url = base_url.replace("127.0.0.1", "api.actual.inc")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     if use_api_key:
         monkeypatch.setenv("ACTUAL_API_KEY", "actual-test-key")
         monkeypatch.setenv("ACTUAL_BASE_URL", "http://127.0.0.1:1")
@@ -251,7 +251,7 @@ def test_actual_runtime_transitions_reach_chat_completions(
     if hosted:
         base_url = base_url.replace("127.0.0.1", "api.actual.inc")
     base_url += "/v1"
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     monkeypatch.setenv("ACTUAL_API_KEY", "actual-test-key")
     monkeypatch.setenv("OPENAI_API_KEY", "actual-test-key")
     config = {
@@ -368,7 +368,7 @@ def test_actual_rejects_forced_responses_before_http(
     if hosted:
         base_url = base_url.replace("127.0.0.1", "api.actual.inc")
     base_url += "/v1"
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     config = {
         "model": {"provider": provider, "base_url": base_url, "default": "test-model"},
         "providers": {
@@ -432,7 +432,7 @@ def test_actual_auxiliary_fallback_reaches_chat_completions(
 
     local_url, requests = actual_endpoint
     actual_url = local_url.replace("127.0.0.1", "api.actual.inc") + "/v1"
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     monkeypatch.setenv("ACTUAL_API_KEY", "actual-test-key")
     config = {
         "model": {
@@ -489,7 +489,7 @@ def test_actual_setup_keeps_provider_settings_in_yaml(
     from akramcode_cli.runtime_provider import resolve_runtime_provider
     from providers import get_provider_profile
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     monkeypatch.setenv("ACTUAL_API_KEY", "actual-test-key")
     monkeypatch.setenv("ACTUAL_BASE_URL", "http://127.0.0.1:8089")
     configured_url = "http://127.0.0.1:8080"
@@ -537,7 +537,7 @@ def test_actual_key_reload_keeps_yaml_endpoint(tmp_path, monkeypatch, actual_end
     from run_agent import AIAgent
 
     base_url, requests = actual_endpoint
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     monkeypatch.setenv("ACTUAL_API_KEY", "actual-test-key")
     monkeypatch.setenv("ACTUAL_BASE_URL", "http://127.0.0.1:1")
     (tmp_path / "config.yaml").write_text(

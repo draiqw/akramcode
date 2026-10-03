@@ -52,7 +52,7 @@ def _is_delegated_child_context() -> bool:
 
 
 def _is_dispatcher_owned_worker() -> bool:
-    """False when HERMES_KANBAN_* is present but this execution does not own it
+    """False when AKRAMCODE_KANBAN_* is present but this execution does not own it
     (delegate_task child, or a cron job fired in-process from a worker)."""
     try:
         from agent.delegation_context import is_dispatcher_owned_worker_context
@@ -123,7 +123,7 @@ def _run_async(coro):
                 worker_loop.close()
 
         pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-        # Carry profile + approval/sudo context so get_hermes_home() resolves correctly.
+        # Carry profile + approval/sudo context so get_akramcode_home() resolves correctly.
         from tools.thread_context import propagate_context_to_thread
         future = pool.submit(propagate_context_to_thread(_run_in_worker))
         try:
@@ -274,7 +274,7 @@ def _tool_defs_cache_key(
     return (
         registry.current_scope_key(), frozenset(enabled_toolsets) if enabled_toolsets is not None else None,
         frozenset(disabled_toolsets) if disabled_toolsets else None, registry._generation, cfg_fp,
-        bool(os.environ.get("HERMES_KANBAN_TASK")), bool(skip_tool_search_assembly),
+        bool(os.environ.get("AKRAMCODE_KANBAN_TASK")), bool(skip_tool_search_assembly),
         _is_delegated_child_context(), _is_dispatcher_owned_worker(), profile_scope,
     )
 
@@ -286,11 +286,11 @@ def _apply_toolset_selection(tools: set, names: List[str], quiet_mode: bool, *, 
     for name in names:
         if validate_toolset(name):
             label = f"{verb} toolset"
-            if disable and (name.startswith("hermes-") or (get_toolset(name) or {}).get("posture")):
+            if disable and (name.startswith("akramcode-") or (get_toolset(name) or {}).get("posture")):
                 # Bundles/postures re-list the core tools without owning them;
                 # subtracting the whole set would empty the list — remove only the non-core delta.
                 resolved = sorted(bundle_non_core_tools(name))
-                if not quiet_mode and name.startswith("hermes-") and name not in _WARNED_DISABLED_BUNDLES:
+                if not quiet_mode and name.startswith("akramcode-") and name not in _WARNED_DISABLED_BUNDLES:
                     _WARNED_DISABLED_BUNDLES.add(name)
                     logger.info(
                         "agent.disabled_toolsets contains platform-bundle name '%s'; core tools are "
@@ -319,7 +319,7 @@ def _select_tool_names(enabled_toolsets: Optional[List[str]], disabled_toolsets:
         enabled = list(enabled_toolsets)
         # Dispatcher-spawned kanban workers always get the lifecycle handoff
         # tools, even when the assignee profile restricts its chat toolsets.
-        if (os.environ.get("HERMES_KANBAN_TASK") and not _is_delegated_child_context()
+        if (os.environ.get("AKRAMCODE_KANBAN_TASK") and not _is_delegated_child_context()
                 and _is_dispatcher_owned_worker() and "kanban" not in enabled):
             enabled.append("kanban")
         _apply_toolset_selection(tools, enabled, quiet_mode, disable=False)
@@ -333,8 +333,8 @@ def _select_tool_names(enabled_toolsets: Optional[List[str]], disabled_toolsets:
     for ts_name in profile_role_toolsets()[1]:
         tools.difference_update(resolve_toolset(ts_name))
     # Disabled toolsets are always subtracted LAST, so a tool in a disabled
-    # toolset is stripped even when a composite (hermes-cli) re-enables it.
-    # This ensures that even if a composite toolset (like hermes-cli) is enabled, any tools belonging to a
+    # toolset is stripped even when a composite (akramcode-cli) re-enables it.
+    # This ensures that even if a composite toolset (like akramcode-cli) is enabled, any tools belonging to a
     # disabled toolset are strictly stripped out. See issue #17309.
     if disabled_toolsets:
         _apply_toolset_selection(tools, disabled_toolsets, quiet_mode, disable=True)

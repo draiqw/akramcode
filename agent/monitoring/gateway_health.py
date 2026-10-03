@@ -176,7 +176,7 @@ def build_gateway_health_snapshot(
     base = {
         "service.instance.id": _safe_instance_id(install_id),
         "service.version": _safe_metric_value(version, limit=64),
-        "hermes.supervision_mode": mode if mode in _SUPERVISION_MODES else "unknown",
+        "akramcode.supervision_mode": mode if mode in _SUPERVISION_MODES else "unknown",
     }
 
     def metric(name: str, value: int | float, **extra: str) -> GatewayMetric:
@@ -187,12 +187,12 @@ def build_gateway_health_snapshot(
         return GatewayMetric(name=name, value=value, attributes=attrs)
 
     metrics: list[GatewayMetric] = [
-        metric("hermes.gateway.up", int(bool(gateway_running))),
-        metric("hermes.gateway.active_agents", active_agents),
-        metric("hermes.gateway.busy", int(bool(busy))),
-        metric("hermes.gateway.drainable", int(bool(drainable))),
-        metric("hermes.gateway.restart_requested", int(bool(runtime.get("restart_requested")))),
-        metric("hermes.gateway.state", 1, **{"hermes.gateway.state": gateway_state}),
+        metric("akramcode.gateway.up", int(bool(gateway_running))),
+        metric("akramcode.gateway.active_agents", active_agents),
+        metric("akramcode.gateway.busy", int(bool(busy))),
+        metric("akramcode.gateway.drainable", int(bool(drainable))),
+        metric("akramcode.gateway.restart_requested", int(bool(runtime.get("restart_requested")))),
+        metric("akramcode.gateway.state", 1, **{"akramcode.gateway.state": gateway_state}),
     ]
     fatal_count = 0
     events: list[GatewayHealthEvent | GatewayDiagnosticEvent] = []
@@ -203,9 +203,9 @@ def build_gateway_health_snapshot(
         error_code = classify_gateway_error(pdata.get("error_code") or pdata.get("error_message"))
         is_degraded = state in _FATAL_PLATFORM_STATES
         fatal_count += is_degraded
-        pattrs = {"hermes.platform": str(platform), "hermes.platform.state": state}
-        metrics.append(metric("hermes.platform.up", int(state in _RUNNING_PLATFORM_STATES), **pattrs))
-        metrics.append(metric("hermes.platform.degraded", int(is_degraded), **pattrs, **{"hermes.error_code": error_code}))
+        pattrs = {"akramcode.platform": str(platform), "akramcode.platform.state": state}
+        metrics.append(metric("akramcode.platform.up", int(state in _RUNNING_PLATFORM_STATES), **pattrs))
+        metrics.append(metric("akramcode.platform.degraded", int(is_degraded), **pattrs, **{"akramcode.error_code": error_code}))
         if is_degraded:
             events.append(GatewayDiagnosticEvent(
                 name="platform.fatal", subsystem=f"platform.{platform}", platform=str(platform),

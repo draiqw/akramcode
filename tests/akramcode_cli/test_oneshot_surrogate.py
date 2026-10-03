@@ -10,7 +10,7 @@ from pathlib import Path
 
 
 def test_oneshot_replaces_lone_surrogate_and_exits_zero():
-    """hermes -z must print U+FFFD and exit 0 when the model returns U+D800."""
+    """akramcode -z must print U+FFFD and exit 0 when the model returns U+D800."""
     program = textwrap.dedent(
         """
         import akramcode_cli.oneshot as oneshot

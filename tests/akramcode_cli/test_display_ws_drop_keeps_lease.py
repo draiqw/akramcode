@@ -45,7 +45,7 @@ async def _bridge_once(close_code: int, home: str) -> lease.Lease:
 
     server = await asyncio.start_unix_server(_xvnc, path=sock)
     try:
-        info = {"hermes_home": home, "viewer_id": "desk-1"}
+        info = {"akramcode_home": home, "viewer_id": "desk-1"}
         await display._bridge(_Ws(close_code), info)
     finally:
         server.close()
@@ -106,7 +106,7 @@ def test_a_takeover_made_by_another_process_stops_input_within_the_refresh_inter
         os.makedirs(sock_dir, exist_ok=True)
         server = await asyncio.start_unix_server(lambda r, w: None, path=os.path.join(sock_dir, "rfb.sock"))
         ws = _OpenWs()
-        task = asyncio.create_task(display._bridge(ws, {"hermes_home": home, "viewer_id": "desk-1"}))
+        task = asyncio.create_task(display._bridge(ws, {"akramcode_home": home, "viewer_id": "desk-1"}))
         try:
             while "allow" not in captured:
                 await asyncio.sleep(0.01)
@@ -146,7 +146,7 @@ def test_no_bridge_task_or_socket_outlives_the_bridge():
 
         server = await asyncio.start_unix_server(_xvnc, path=os.path.join(sock_dir, "rfb.sock"))
         try:
-            await display._bridge(_Ws(1000), {"hermes_home": home, "viewer_id": "desk-1"})
+            await display._bridge(_Ws(1000), {"akramcode_home": home, "viewer_id": "desk-1"})
             leftover = {t for t in asyncio.all_tasks()
                         if not t.done() and t.get_coro().__qualname__.startswith("_bridge.")}
             await asyncio.wait_for(xvnc_saw_eof.wait(), 2)

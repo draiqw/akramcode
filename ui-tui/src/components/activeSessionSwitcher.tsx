@@ -1,5 +1,5 @@
-import { Box, Text, useInput, useStdout } from '@hermes/ink'
-import type { SessionListResult, SessionListRow } from '@hermes/shared/gateway-events'
+import { Box, Text, useInput, useStdout } from '@akramcode/ink'
+import type { SessionListResult, SessionListRow } from '@akramcode/shared/gateway-events'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { sessionScopedModelArg } from '../domain/slash.js'

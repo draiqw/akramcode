@@ -1,4 +1,4 @@
-"""Regression test: `hermes backup -o <bad path>` errors cleanly (round-3 SUB-01).
+"""Regression test: `akramcode backup -o <bad path>` errors cleanly (round-3 SUB-01).
 
 Before, an unwritable/nonexistent-parent output path raised a raw
 PermissionError traceback from the unguarded is_dir()/mkdir() calls. It must
@@ -11,10 +11,10 @@ import pytest
 
 
 def _make_home(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
     (home / "config.yaml").write_text("model: {}\n")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     return home
 
 

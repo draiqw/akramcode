@@ -1,6 +1,6 @@
 """Keep-data uninstall must not delete the desktop app's Electron userData dir.
 
-Regression for #122548: ``hermes uninstall`` option 1 (Keep data) wiped
+Regression for #122548: ``akramcode uninstall`` option 1 (Keep data) wiped
 ``desktop_userdata_dir()`` (connections.json, OAuth partitions, renderer state)
 because ``_perform_uninstall`` never forwarded ``remove_userdata``.
 """
@@ -20,13 +20,13 @@ def homes(tmp_path, monkeypatch):
     """Temp home/checkout/userData; every step that reaches outside tmp_path is stubbed.
 
     The full wipe otherwise boots out real launchd jobs, rmtrees real
-    ~/Library/Caches dirs and /Applications/Hermes.app, and (on Windows) edits
+    ~/Library/Caches dirs and /Applications/AkramCode.app, and (on Windows) edits
     the registry — so stub those helpers and refuse any stray rmtree or
     subprocess instead of silently touching the developer's machine. Refusals
     are recorded in ``violations`` because the uninstall steps catch and log
     exceptions, so a raised AssertionError alone would leave the test green.
     """
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "akramcode-home"
     home.mkdir()
     project_root = tmp_path / "checkout"
     project_root.mkdir()
@@ -66,7 +66,7 @@ def test_uninstall_desktop_userdata_kept_unless_full(homes, full_uninstall):
     """Keep-data preserves Electron userData; only the full wipe removes it."""
     home, project_root, userdata, violations = homes
     uninstall._perform_uninstall(
-        project_root=project_root, hermes_home=home, full_uninstall=full_uninstall,
+        project_root=project_root, akramcode_home=home, full_uninstall=full_uninstall,
         remove_profiles=False, named_profiles=[])
     assert violations == []
     assert (userdata / "connections.json").exists() is not full_uninstall

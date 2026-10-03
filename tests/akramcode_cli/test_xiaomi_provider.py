@@ -76,7 +76,7 @@ class TestXiaomiCredentials:
         from akramcode_cli import config as config_module
         from akramcode_cli import env_loader
 
-        home = tmp_path / "hermes"
+        home = tmp_path / "akramcode"
         home.mkdir()
         (home / ".env").write_text("", encoding="utf-8")
         monkeypatch.setattr(config_module, "get_env_path", lambda: home / ".env")

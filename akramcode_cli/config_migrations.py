@@ -26,12 +26,12 @@ SUPPORT_FLOOR_VERSION = 12
 
 def support_floor_message() -> str:
     """Human-facing explanation shown when a config is below the floor."""
-    from akramcode_constants import display_hermes_home
+    from akramcode_constants import display_akramcode_home
 
     return (
         f"This config predates version {SUPPORT_FLOOR_VERSION} (~2 years old) "
         "and can no longer be auto-migrated. Back up "
-        f"{display_hermes_home()}/config.yaml and run `hermes setup` to "
+        f"{display_akramcode_home()}/config.yaml and run `akramcode setup` to "
         f"regenerate, or manually set _config_version: {SUPPORT_FLOOR_VERSION} "
         "after reviewing the changelog.")
 
@@ -280,11 +280,11 @@ def _migrate_to_17(results: Dict[str, Any], quiet: bool) -> None:
 
 
 def _installed_user_plugins(disabled: set) -> List[str]:
-    """Names of plugins under ``$HERMES_HOME/plugins/`` with a manifest, minus *disabled*."""
+    """Names of plugins under ``$AKRAMCODE_HOME/plugins/`` with a manifest, minus *disabled*."""
     _c = _cfg()
     found: List[str] = []
     try:
-        user_plugins_dir = _c.get_hermes_home() / "plugins"
+        user_plugins_dir = _c.get_akramcode_home() / "plugins"
         if user_plugins_dir.is_dir():
             for child in sorted(user_plugins_dir.iterdir()):
                 if not child.is_dir():
@@ -323,7 +323,7 @@ def _migrate_to_21(results: Dict[str, Any], quiet: bool) -> None:
         f"{len(grandfathered)} existing plugin(s) into plugins.enabled"
         if grandfathered else
         "  ✓ Plugins now opt-in: no existing plugins to grandfather. "
-        "Use `hermes plugins enable <name>` to activate.")
+        "Use `akramcode plugins enable <name>` to activate.")
     _commit(
         config, results, quiet,
         f"plugins.enabled (opt-in allow-list, {len(grandfathered)} grandfathered)", message)
@@ -331,13 +331,13 @@ def _migrate_to_21(results: Dict[str, Any], quiet: bool) -> None:
 
 def _migrate_to_23(results: Dict[str, Any], quiet: bool) -> None:
     # 22 → 23: seed curator defaults + create logs/curator/. Older configs never wrote the curator
-    # section; deep-merge made it work but users could not see/edit it and `hermes curator status`
+    # section; deep-merge made it work but users could not see/edit it and `akramcode curator status`
     # had no stable logs dir. Only keys the user hasn't set are written.
     _c = _cfg()
     DEFAULT_CONFIG = _c.DEFAULT_CONFIG
 
     try:
-        curator_dir = _c.get_hermes_home() / "logs" / "curator"
+        curator_dir = _c.get_akramcode_home() / "logs" / "curator"
         curator_dir.mkdir(parents=True, exist_ok=True)
     except Exception as e:
         results["warnings"].append(f"Could not create {curator_dir}: {e}")
@@ -372,7 +372,7 @@ def _migrate_to_23(results: Dict[str, Any], quiet: bool) -> None:
             if not quiet:
                 print(
                     f"  ✓ {'Curator' if label == 'curator' else label} settings now available "
-                    f"({', '.join(added)}) — edit via `hermes config set`")
+                    f"({', '.join(added)}) — edit via `akramcode config set`")
 
 
 def _migrate_to_29(results: Dict[str, Any], quiet: bool) -> None:
@@ -504,7 +504,7 @@ def _migrate_to_38(results: Dict[str, Any], quiet: bool) -> None:
     message = (
         "Removed legacy Relay plugin from plugins.enabled: "
         f"{', '.join(removed)}. Configure a standard user or system Relay plugins.toml, or use "
-        "HERMES_NEMO_RELAY_PLUGINS_TOML for an explicit user-file override.")
+        "AKRAMCODE_NEMO_RELAY_PLUGINS_TOML for an explicit user-file override.")
     results["warnings"].append(message)
     if not quiet:
         print(f"  ⚠ {message}")
@@ -530,7 +530,7 @@ def _migrate_to_39(results: Dict[str, Any], quiet: bool) -> None:
             config, results, quiet,
             "removed retired 'bfl' toolset from saved toolset lists",
             "  ✓ Removed the retired BFL FLUX 3 toolset from saved toolset "
-            "lists — video generation now lives under `hermes tools` → "
+            "lists — video generation now lives under `akramcode tools` → "
             "Video Generation (Nous Subscription or FAL).")
 
 
@@ -538,11 +538,11 @@ def _migrate_to_41(results: Dict[str, Any], quiet: bool) -> None:
     # 40 → 41: drop the plugin-era "## Messaging other agents" append from every SOUL.md. The
     # server injects the live Bot Mode section in Bot Chat sessions; the frozen SOUL copy taxed
     # every other session (~600 tok) and shadowed the live roster in Bot Chat itself.
-    from akramcode_constants import get_hermes_home
-    from tools.bot_mode_probe import _PROTOCOL_HEADING, _hermes_root, _roster, strip_legacy_protocol
+    from akramcode_constants import get_akramcode_home
+    from tools.bot_mode_probe import _PROTOCOL_HEADING, _akramcode_root, _roster, strip_legacy_protocol
 
     cleaned: List[str] = []
-    for name, profile_dir in _roster(_hermes_root(get_hermes_home())):
+    for name, profile_dir in _roster(_akramcode_root(get_akramcode_home())):
         soul = profile_dir / "SOUL.md"
         try:
             text = soul.read_text(encoding="utf-8-sig") if soul.is_file() else ""
@@ -582,7 +582,7 @@ def _migrate_to_45(results: Dict[str, Any], quiet: bool) -> None:
             continue
         if not toolset_allowed_for_platform("connections", platform):
             continue
-        # A composite like [hermes-cli] already inherits every core tool at read time.
+        # A composite like [akramcode-cli] already inherits every core tool at read time.
         if not any(str(ts) in explicit_keys for ts in toolsets):
             continue
         offered = known.get(platform)
@@ -602,14 +602,14 @@ def _migrate_to_45(results: Dict[str, Any], quiet: bool) -> None:
         config, results, quiet,
         f"enabled the connections toolset for {platforms}",
         f"  ✓ Enabled the Connections toolset (Gmail, Linear, Notion, local MCP servers) for {platforms}. "
-        "Uncheck Connections in `hermes tools` to turn it off.")
+        "Uncheck Connections in `akramcode tools` to turn it off.")
 
 
 def _migrate_to_46(results: Dict[str, Any], quiet: bool) -> None:
     # 45 → 46: the profile editor used to switch an MCP server off with `disabled: true`, a key no
     # runtime reader consults, so the server kept running. Carry that choice over to `enabled:
     # false` (the key every reader uses) and drop `disabled`, so the editor and runtime agree.
-    # `disabled: true` wins over an explicit `enabled: true`: `hermes mcp add` writes that, and the
+    # `disabled: true` wins over an explicit `enabled: true`: `akramcode mcp add` writes that, and the
     # old editor only added `disabled`, so letting `enabled` win would skip nearly every server.
     from akramcode_cli.tools_config import _parse_enabled_flag
 
@@ -632,7 +632,7 @@ def _migrate_to_46(results: Dict[str, Any], quiet: bool) -> None:
 
 
 def _migrate_to_48(results: Dict[str, Any], quiet: bool) -> None:
-    # 47 → 48: the container sandbox default gains a display stack (nousresearch/hermes-sandbox:
+    # 47 → 48: the container sandbox default gains a display stack (nousresearch/akramcode-sandbox:
     # desktop) so Bot Screen / computer_use / the browser run inside the sandbox. A saved value
     # still equal to the OLD default is the template copied, not a choice: the key is DROPPED so
     # the file follows the default. It is not rewritten to the new image, because a written image
@@ -794,7 +794,7 @@ MIGRATIONS: Tuple[Tuple[int, Callable[[Dict[str, Any], bool], None]], ...] = (
         added="curator.archive_after_days=30 (was: 90)",
         message=(
             "  ✓ curator.archive_after_days 90→30 — skills unused for a month are archived to "
-            "skills/.archive/ (recoverable with `hermes curator restore`). Set it back to 90 to keep the old window."))),
+            "skills/.archive/ (recoverable with `akramcode curator restore`). Set it back to 90 to keep the old window."))),
     # 44 → 45: saved platform_toolsets lists predate the connections toolset (see _migrate_to_45).
     (45, _migrate_to_45),
     # 45 → 46: legacy editor `disabled: true` on MCP servers becomes `enabled: false` (see _migrate_to_46).
@@ -822,7 +822,7 @@ MIGRATIONS: Tuple[Tuple[int, Callable[[Dict[str, Any], bool], None]], ...] = (
 #: ``_config_version`` is current-schema content that was never stamped (installers seed it from
 #: cli-config.yaml.example; targeted writers never stamp), so it gets only these: every other step
 #: decides by a value or an absence that, in such a file, is the user's own choice. v13 is left
-#: out: it clears OPENAI_MODEL from .env, a generic name Hermes never reads but the user's tools may.
+#: out: it clears OPENAI_MODEL from .env, a generic name AkramCode never reads but the user's tools may.
 #: v41 is left out too: it rewrites profile SOUL.md on a heading match, an artifact whose
 #: provenance the config stamp says nothing about.
 LEGACY_KEY_STEPS = frozenset({12, 14, 16, 17, 29, 33, 38, 39, 42, 43, 46})

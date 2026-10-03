@@ -9,10 +9,10 @@ import { pathToFileURL } from 'node:url'
  */
 export function runPython(args, options = {}) {
   const env = options.env ?? process.env
-  if (!env.HERMES_PYTHON) {
-    throw new Error('Set HERMES_PYTHON to the prepared build interpreter')
+  if (!env.AKRAMCODE_PYTHON) {
+    throw new Error('Set AKRAMCODE_PYTHON to the prepared build interpreter')
   }
-  return execFileSync(env.HERMES_PYTHON, args, { stdio: 'inherit', ...options, env })
+  return execFileSync(env.AKRAMCODE_PYTHON, args, { stdio: 'inherit', ...options, env })
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

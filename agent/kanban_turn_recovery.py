@@ -27,8 +27,8 @@ Retry authority is POSITIVE and TYPED — never inferred from an outcome shape:
   ``outcome="timed_out"`` and released the claim — #87096);
 * before EVERY attempt the worker proves it still owns the exact live run and
   unexpired claim lease (``worker_claim_is_live``). The proof is the carrier the
-  dispatcher pinned at spawn — ``HERMES_KANBAN_DB`` + ``HERMES_KANBAN_RUN_ID`` +
-  ``HERMES_KANBAN_CLAIM_LOCK`` are REQUIRED and compared exactly, and the
+  dispatcher pinned at spawn — ``AKRAMCODE_KANBAN_DB`` + ``AKRAMCODE_KANBAN_RUN_ID`` +
+  ``AKRAMCODE_KANBAN_CLAIM_LOCK`` are REQUIRED and compared exactly, and the
   task/run ``claim_expires`` lease must be unexpired; any missing coordinate or
   expired lease means no proof, no retry (fail closed).
 
@@ -52,7 +52,7 @@ from agent.error_classifier import FailoverReason
 
 logger = logging.getLogger(__name__)
 
-#: Recovery attempts when ``HERMES_KANBAN_TURN_RECOVERY`` is unset.
+#: Recovery attempts when ``AKRAMCODE_KANBAN_TURN_RECOVERY`` is unset.
 DEFAULT_MAX_RECOVERY_ATTEMPTS = 3
 
 #: Backoff before recovery attempt N (1-based). The last entry repeats.
@@ -88,25 +88,25 @@ def kanban_task_id() -> Optional[str]:
     "worker" to one caller and "not a worker" to another (the exit-code guard and
     the recovery gate must agree).
     """
-    task_id = (os.environ.get("HERMES_KANBAN_TASK") or "").strip()
+    task_id = (os.environ.get("AKRAMCODE_KANBAN_TASK") or "").strip()
     return task_id or None
 
 
 def kanban_turn_recovery_enabled() -> bool:
-    """On when ``HERMES_KANBAN_TASK`` is set and the attempt budget is non-zero."""
+    """On when ``AKRAMCODE_KANBAN_TASK`` is set and the attempt budget is non-zero."""
     if kanban_task_id() is None:
         return False
     return max_recovery_attempts() > 0
 
 
 def max_recovery_attempts() -> int:
-    """``HERMES_KANBAN_TURN_RECOVERY`` parsed as an attempt count (0 disables).
+    """``AKRAMCODE_KANBAN_TURN_RECOVERY`` parsed as an attempt count (0 disables).
 
     Unset/blank -> :data:`DEFAULT_MAX_RECOVERY_ATTEMPTS`; explicit 0/false/no/off
     -> 0; anything unparseable -> the default. Clamped to [0, 10] so a bad value
     can never create an unbounded loop.
     """
-    raw = (os.environ.get("HERMES_KANBAN_TURN_RECOVERY") or "").strip()
+    raw = (os.environ.get("AKRAMCODE_KANBAN_TURN_RECOVERY") or "").strip()
     if not raw:
         return DEFAULT_MAX_RECOVERY_ATTEMPTS
     if raw.lower() in _OFF_VALUES:
@@ -163,7 +163,7 @@ def should_recover_turn(result: Any, *, attempt: int) -> bool:
 def _kanban_db_path() -> Optional[str]:
     """The dispatcher-pinned board DB — no ambient resolution, ever.
 
-    The dispatcher pins ``HERMES_KANBAN_DB`` (plus run id + claim lock) at spawn
+    The dispatcher pins ``AKRAMCODE_KANBAN_DB`` (plus run id + claim lock) at spawn
     (``akramcode_cli/kanban_db_dispatch.py``); that pin IS the exact authority
     carrier the retry proof must re-check. If the pin is absent there is no
     exact carrier to re-prove, so this returns ``None`` and the caller fails
@@ -171,7 +171,7 @@ def _kanban_db_path() -> Optional[str]:
     proof onto a different board — precisely the weaker proof this fail-closed
     contract exists to prevent.
     """
-    pinned = (os.environ.get("HERMES_KANBAN_DB") or "").strip()
+    pinned = (os.environ.get("AKRAMCODE_KANBAN_DB") or "").strip()
     return pinned or None
 
 
@@ -184,8 +184,8 @@ def worker_claim_is_live() -> bool:
     """True when THIS process still owns a live, unexpired run/claim lease.
 
     Verified read-only against the dispatcher-pinned board before EVERY retry.
-    All three pinned coordinates are REQUIRED — ``HERMES_KANBAN_DB``,
-    ``HERMES_KANBAN_RUN_ID``, ``HERMES_KANBAN_CLAIM_LOCK`` — and compared with
+    All three pinned coordinates are REQUIRED — ``AKRAMCODE_KANBAN_DB``,
+    ``AKRAMCODE_KANBAN_RUN_ID``, ``AKRAMCODE_KANBAN_CLAIM_LOCK`` — and compared with
     exact equality; a missing pin means there is no exact authority carrier to
     re-prove, never a fallback to ambient board state.
 
@@ -211,8 +211,8 @@ def worker_claim_is_live() -> bool:
     if not db_path or not Path(db_path).exists():
         logger.warning("kanban claim check: pinned board db %r not found — not retrying in place", db_path)
         return False
-    run_id_env = (os.environ.get("HERMES_KANBAN_RUN_ID") or "").strip()
-    lock_env = (os.environ.get("HERMES_KANBAN_CLAIM_LOCK") or "").strip()
+    run_id_env = (os.environ.get("AKRAMCODE_KANBAN_RUN_ID") or "").strip()
+    lock_env = (os.environ.get("AKRAMCODE_KANBAN_CLAIM_LOCK") or "").strip()
     if not run_id_env or not lock_env:
         logger.warning(
             "kanban claim check: missing dispatcher-pinned run-id/claim-lock carrier "

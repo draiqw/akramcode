@@ -11,7 +11,7 @@ import time
 from contextvars import copy_context
 from pathlib import Path
 
-from akramcode_constants import hermes_home_key
+from akramcode_constants import akramcode_home_key
 
 logger = logging.getLogger(__name__)
 _REPO = "sheeki03/tirith"
@@ -137,7 +137,7 @@ _install_attempted: set[str] = set()
 def _claim_install_attempt() -> bool:
     """Share the one-attempt budget between cold scans and startup threads."""
     with _install_lock:
-        home = hermes_home_key()
+        home = akramcode_home_key()
         if home in _install_attempted:
             return False
         _install_attempted.add(home)
@@ -145,7 +145,7 @@ def _claim_install_attempt() -> bool:
 
 
 def _install_in_flight() -> threading.Thread | None:
-    thread = _install_threads.get(hermes_home_key())
+    thread = _install_threads.get(akramcode_home_key())
     return thread if thread is not None and thread.is_alive() else None
 
 
@@ -201,7 +201,7 @@ def _start_background_install(*, log_failures: bool) -> None:
             target=context.run, args=(_background_install,),
             kwargs={"log_failures": log_failures}, daemon=True,
         )
-        _install_threads[hermes_home_key()] = thread
+        _install_threads[akramcode_home_key()] = thread
         thread.start()
 
 

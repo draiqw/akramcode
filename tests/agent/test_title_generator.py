@@ -46,7 +46,7 @@ class TestGenerateTitle:
         """The titler receives the opener AFTER @-reference expansion: the generated ref carries a
         `--- Context Warnings ---` (or `--- Attached Context ---`) footer, which must not turn a
         paste-only opener into "instruction + trailing preview" (live wire finding on #114984)."""
-        ref = "@file:/home/u/.hermes/attachments/pasted_content_2026-09-18_14-09-43-735_d0ee85.txt"
+        ref = "@file:/home/u/.akramcode/attachments/pasted_content_2026-09-18_14-09-43-735_d0ee85.txt"
         preview = "Quarterly incident analysis for the database cluster"
         for footer in (f"\n\n--- Context Warnings ---\n- {ref}: path is outside the allowed workspace",
                        "\n\n--- Attached Context ---\n\n### file: pasted_content.txt\n" + preview):
@@ -61,7 +61,7 @@ class TestGenerateTitle:
         ``@file:``) sends NO Desktop paste preview, so the build_title_input
         ref-only shortcut cannot rescue it. The titler must still refuse to
         name the session after the truncated file path."""
-        msg = "@file:AppData/Local/hermes/profiles/local/attachments/report.pdf"
+        msg = "@file:AppData/Local/akramcode/profiles/local/attachments/report.pdf"
 
         assert is_titleable_user_message(msg) is False
         assert derive_title(msg) is None
@@ -490,7 +490,7 @@ class TestMaybeAutoTitle:
         with kanban_db_connect.connect_closing(board="default") as conn:
             task_id = kanban_db.create_task(conn, title="Fix flaky worker startup", board="default")
             conn.commit()
-        monkeypatch.setenv("HERMES_KANBAN_TASK", task_id)
+        monkeypatch.setenv("AKRAMCODE_KANBAN_TASK", task_id)
         db = SessionDB(tmp_path / "state.db")
         db.create_session(session_id="sess-1", source="kanban")
 
@@ -510,7 +510,7 @@ class TestMaybeAutoTitle:
         with kanban_db_connect.connect_closing(board="default") as conn:
             task_id = kanban_db.create_task(conn, title=card, board="default")
             conn.commit()
-        monkeypatch.setenv("HERMES_KANBAN_TASK", task_id)
+        monkeypatch.setenv("AKRAMCODE_KANBAN_TASK", task_id)
         db = SessionDB(tmp_path / "state.db")
         for sid in ("sess-1", "sess-2"):  # a retried card must still get the ``#N`` suffix within the cap
             db.create_session(session_id=sid, source="kanban")
@@ -523,7 +523,7 @@ class TestMaybeAutoTitle:
         assert len(second) <= SessionDB.MAX_TITLE_LENGTH
 
     def test_kanban_worker_with_unreadable_card_falls_back_to_the_task_id(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_KANBAN_TASK", "t_missing")
+        monkeypatch.setenv("AKRAMCODE_KANBAN_TASK", "t_missing")
         db = SessionDB(tmp_path / "state.db")
         db.create_session(session_id="sess-1", source="kanban")
 
@@ -534,11 +534,11 @@ class TestMaybeAutoTitle:
         mock_auto.assert_not_called()
 
     def test_delegated_child_of_a_worker_is_not_named_after_the_card(self, tmp_path, monkeypatch):
-        """A delegate_task child inherits ``HERMES_KANBAN_TASK`` but is not the card's session;
+        """A delegate_task child inherits ``AKRAMCODE_KANBAN_TASK`` but is not the card's session;
         it takes the ordinary title path instead of the parent's card title (#112817)."""
         from agent.delegation_context import delegated_child_context
 
-        monkeypatch.setenv("HERMES_KANBAN_TASK", "t_parent")
+        monkeypatch.setenv("AKRAMCODE_KANBAN_TASK", "t_parent")
         db = SessionDB(tmp_path / "state.db")
         db.create_session(session_id="child-1", source="kanban")
 
@@ -576,7 +576,7 @@ class TestMaybeAutoTitle:
         thread.assert_not_called()
         call_llm.assert_not_called()
         # The toggle only silences the automatic upgrade: an explicit ``generate_title`` call
-        # (``hermes sessions retitle-skills``) still asks the model.
+        # (``akramcode sessions retitle-skills``) still asks the model.
         resp = MagicMock()
         resp.choices = [MagicMock()]
         resp.choices[0].message.content = '{"title": "Repair startup memory routing"}'

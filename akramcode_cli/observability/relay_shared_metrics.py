@@ -1,4 +1,4 @@
-"""Direct NeMo Relay integration for Hermes shared client metrics."""
+"""Direct NeMo Relay integration for AkramCode shared client metrics."""
 
 from __future__ import annotations
 
@@ -48,7 +48,7 @@ def _session_pair(event: dict[str, Any], key: str) -> tuple[str, str] | None:
 
 
 def _retry_ordinal(event: dict[str, Any]) -> int:
-    """Hermes's provider-local retry ordinal; 0 when absent or malformed."""
+    """AkramCode's provider-local retry ordinal; 0 when absent or malformed."""
     value = event.get("retry_count")
     return value if isinstance(value, int) and not isinstance(value, bool) and value > 0 else 0
 
@@ -155,7 +155,7 @@ class _MetricsSession:
     tasks: dict[str, _TaskRun] = field(default_factory=dict)
     tool_calls: dict[tuple[str, str, str, str], _ToolCall] = field(default_factory=dict)
     retired_turn_ids: deque[str] = field(default_factory=lambda: deque(maxlen=256))
-    # Session-level aggregation, emitted once as hermes.session.count when the session closes.
+    # Session-level aggregation, emitted once as akramcode.session.count when the session closes.
     start_fields: dict[str, str] | None = None
     turns: int = 0
     failed_turns: int = 0
@@ -202,12 +202,12 @@ def _absorb_peak(into: model_.ModelSessionState, segment: model_.ModelSessionSta
 
 
 class _Runtime:
-    """Own shared-metrics state layered on the Hermes core Relay host."""
+    """Own shared-metrics state layered on the AkramCode core Relay host."""
 
     def __init__(self, host: relay_runtime.RelayRuntime | None = None) -> None:
         resolved_host = host or relay_runtime.get_runtime()
         if resolved_host is None:
-            raise RuntimeError("Hermes core Relay runtime is unavailable")
+            raise RuntimeError("AkramCode core Relay runtime is unavailable")
         self.host: relay_runtime.RelayRuntime = resolved_host
         self.relay = self.host.relay
         self._active = True
@@ -220,7 +220,7 @@ class _Runtime:
         self._lineages: dict[str, _PeakLineage] = {}
         self._lineage_of: dict[str, str] = {}
         self._lineage_lock = threading.Lock()
-        # Leaf lock: conversations whose next cold cache read Hermes already announced.
+        # Leaf lock: conversations whose next cold cache read AkramCode already announced.
         self._cold_expected: OrderedDict[str, None] = OrderedDict()
         self._cold_lock = threading.Lock()
         self._task_creation_lock = threading.RLock()
@@ -290,7 +290,7 @@ class _Runtime:
         )
 
     def start_task(self, event: dict[str, Any]) -> _TaskRun | None:
-        """Open one Relay function scope for a Hermes task run."""
+        """Open one Relay function scope for a AkramCode task run."""
         task_key = _session_pair(event, "task_id")
         if task_key is None:
             return None
@@ -341,7 +341,7 @@ class _Runtime:
                 return task
 
     def start_user_turn(self, event: dict[str, Any]) -> None:
-        """pre_llm_call: a user message started this task (Hermes-owned forks never fire it)."""
+        """pre_llm_call: a user message started this task (AkramCode-owned forks never fire it)."""
         task = self.start_task(event)
         if task is not None:
             task.cost.user_turn = True
@@ -378,7 +378,7 @@ class _Runtime:
                 existing.fields = fields
                 if task is not None:
                     # Every repeated start for one logical request is another physical
-                    # attempt. Provider fallback resets Hermes's provider-local retry
+                    # attempt. Provider fallback resets AkramCode's provider-local retry
                     # ordinal, so ordinal deltas are not a reliable task-level counter.
                     task.retry_count += 1
                 return
@@ -387,7 +387,7 @@ class _Runtime:
                 task.selected_route = task.selected_route or fields
                 task.model_call_ids.add(request_id)
                 if _retry_ordinal(event) > 0:
-                    # A real Hermes retry can advance api_request_id while carrying the
+                    # A real AkramCode retry can advance api_request_id while carrying the
                     # retry ordinal. Count that physical attempt.
                     task.retry_count += 1
             handle = self._run_scoped(
@@ -426,7 +426,7 @@ class _Runtime:
                 )
                 if tokens is not None:
                     self._guarded(
-                        "Hermes shared-metrics token mark failed", self._mark,
+                        "AkramCode shared-metrics token mark failed", self._mark,
                         session, session.tasks.get(model_call.task_id), contract.MODEL_TOKENS_MARK, tokens,
                     )
             else:
@@ -554,7 +554,7 @@ class _Runtime:
         if retired:
             self.close_session({"session_id": session.session_id})
         elif finished:
-            self._flush_and_export("Hermes shared-metrics task flush failed")
+            self._flush_and_export("AkramCode shared-metrics task flush failed")
 
     def close_session(self, event: dict[str, Any]) -> None:
         session = self._session(event)
@@ -570,7 +570,7 @@ class _Runtime:
             self.relay.subscribers.flush()
         except Exception as exc:
             logger.warning(
-                "Hermes shared-metrics session %s closed with errors: subscriber flush failed: %s",
+                "AkramCode shared-metrics session %s closed with errors: subscriber flush failed: %s",
                 session.session_id,
                 exc,
             )
@@ -591,7 +591,7 @@ class _Runtime:
             self._safe(self._close_unseen_segment, session_id)
         if not self._registered:
             return
-        self._flush_and_export("Hermes shared-metrics shutdown flush failed")
+        self._flush_and_export("AkramCode shared-metrics shutdown flush failed")
         self._deregister()
         self._release()
 
@@ -800,7 +800,7 @@ class _Runtime:
             fallback_duration_ms=_elapsed_ms(tool_call.started_ns), tool_name=tool_call.tool_name,
         )
         self._guarded(
-            "Hermes shared-metrics tool call close failed",
+            "AkramCode shared-metrics tool call close failed",
             lambda: self._run_in_task(
                 task, self.relay.tools.call_end, tool_call.handle,
                 self.relay.ToolExecutionResult(fields),
@@ -830,7 +830,7 @@ class _Runtime:
             ttft_bucket=model_call.ttft_bucket,
         )
         self._guarded(
-            "Hermes shared-metrics model call close failed",
+            "AkramCode shared-metrics model call close failed",
             self._run_scoped, session, session.tasks.get(model_call.task_id),
             self.relay.llm.call_end, model_call.handle, fields,
             metadata=self._event_metadata(),
@@ -877,7 +877,7 @@ class _Runtime:
             self._observe_model_turn(session, task, fields)
         try:
             popped = self._guarded(
-                "Hermes shared-metrics task close failed",
+                "AkramCode shared-metrics task close failed",
                 self._run_in_task, task, relay_runtime.pop_relay_scope_if_top, self.relay, task.handle,
                 output=fields, metadata=self._event_metadata(),
             )
@@ -912,12 +912,12 @@ class _Runtime:
             self._with_route_run(session.session_id, session.route_run, lambda run: run.observe(task.selected_route))
         if task.model_route is not None and engagement_.engaged_turn(task.start_fields, task.cost.user_turn):
             self._guarded(
-                "Hermes shared-metrics engagement mark failed", self._mark,
+                "AkramCode shared-metrics engagement mark failed", self._mark,
                 session, None, contract.ENGAGEMENT_TURN_MARK, dict(task.model_route),
             )
         if fields["end_reason"] == "user_cancelled" and route is not None and model_.attended(task.start_fields):
             self._guarded(
-                "Hermes shared-metrics friction mark failed", self._mark,
+                "AkramCode shared-metrics friction mark failed", self._mark,
                 session, None, contract.MODEL_FRICTION_MARK, model_.friction_fields("interrupt", route),
             )
         if task.cost.user_turn and model_.attended(task.start_fields):
@@ -930,9 +930,9 @@ class _Runtime:
     def _emit_rows(self, session: _MetricsSession | None, rows: list[tuple[str, dict[str, str]]]) -> None:
         for mark, data in rows:
             if session is None:
-                self._guarded("Hermes shared-metrics efficiency mark failed", self.record_process_mark, mark, data)
+                self._guarded("AkramCode shared-metrics efficiency mark failed", self.record_process_mark, mark, data)
             else:
-                self._guarded("Hermes shared-metrics efficiency mark failed", self._mark, session, None, mark, data)
+                self._guarded("AkramCode shared-metrics efficiency mark failed", self._mark, session, None, mark, data)
 
     def _observe_turn_call(
         self, session: _MetricsSession, task: _TaskRun | None, model_call: _ModelCall, event: dict[str, Any]
@@ -967,7 +967,7 @@ class _Runtime:
             return self._cold_expected.pop(key, False) is None
 
     def record_known_cache_break(self, cause: str, route: dict[str, str], session_id: str) -> None:
-        """Hermes invalidated the prefix itself: count it, and don't recount the cold read it causes.
+        """AkramCode invalidated the prefix itself: count it, and don't recount the cold read it causes.
         Several causes before one cold read are one break (the first cause names it)."""
         if self._announce_cold(self._cold_key(session_id)):
             self._emit_rows(None, [eff.cache_break_row(cause, route)])
@@ -1086,7 +1086,7 @@ class _Runtime:
         self._emit_rows(session, [(mark, data) for mark, data in marks if data is not None])
 
     def _emit_session_summary(self, session: _MetricsSession) -> None:
-        """One hermes.session.count and context-peak row per closed top-level conversation (delegated
+        """One akramcode.session.count and context-peak row per closed top-level conversation (delegated
         children excluded; compression-rotated segments merged), its tool usage, plus a quick-abandon friction."""
         start = session.start_fields
         counted = bool(session.turns) and start is not None and start.get("entrypoint") != "delegated"
@@ -1188,7 +1188,7 @@ class _Runtime:
             if self._send_thread is None or not self._send_thread.is_alive():
                 self._send_thread = threading.Thread(
                     target=self._run_send_pass, args=(resolved.endpoint,),
-                    name="hermes-shared-metrics-send", daemon=True,
+                    name="akramcode-shared-metrics-send", daemon=True,
                 )
                 self._send_thread.start()
 
@@ -1220,7 +1220,7 @@ class _Runtime:
 
     @classmethod
     def _safe(cls, callback: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
-        return cls._guarded("Hermes shared metrics operation failed", callback, *args, **kwargs)
+        return cls._guarded("AkramCode shared metrics operation failed", callback, *args, **kwargs)
 
 
 def _raw_config() -> dict[str, Any]:
@@ -1252,12 +1252,12 @@ def _reconcile_store_consent(store: SharedMetricsStore, send_enabled: bool) -> N
 
 
 def enabled() -> bool:
-    """Return the shared-metrics policy for the active Hermes profile."""
+    """Return the shared-metrics policy for the active AkramCode profile."""
     profile_key = relay_runtime.current_profile_key()
     try:
         config: Any = _raw_config()
     except Exception:
-        logger.debug("Unable to read Hermes shared-metrics policy", exc_info=True)
+        logger.debug("Unable to read AkramCode shared-metrics policy", exc_info=True)
         config = None
     for key in ("telemetry", "shared_metrics"):
         config = config.get(key) if isinstance(config, dict) else None
@@ -1284,7 +1284,7 @@ def _reconcile_send_consent_once() -> None:
 
     Runs BEFORE and INDEPENDENT of the collection gate, so a user with ``enabled: false``
     still gets send-consent windows reconciled. Skipped only when there is no store on disk
-    AND consent is off: nothing to protect, and creating ``~/.hermes/telemetry`` for every
+    AND consent is off: nothing to protect, and creating ``~/.akramcode/telemetry`` for every
     fully-disabled user would be the wrong behaviour change.
     """
     global _consent_reconcile_done
@@ -1294,12 +1294,12 @@ def _reconcile_send_consent_once() -> None:
     try:
         # Lazy: tests patch ``shared_metrics.SharedMetricsStore`` at its origin.
         from akramcode_cli.observability.shared_metrics import SharedMetricsStore
-        from akramcode_constants import get_hermes_home
+        from akramcode_constants import get_akramcode_home
 
         resolved = _resolved_send_config()
         # Probe WITHOUT constructing a store: the constructor creates the directory and
         # schema as a side effect, which would make the skip below dead code.
-        default_path = get_hermes_home() / "telemetry" / "shared_metrics" / "metrics.sqlite3"
+        default_path = get_akramcode_home() / "telemetry" / "shared_metrics" / "metrics.sqlite3"
         if not resolved.send and not default_path.exists():
             return
         _reconcile_store_consent(SharedMetricsStore(), resolved.send)
@@ -1308,7 +1308,7 @@ def _reconcile_send_consent_once() -> None:
 
 
 def observe_lifecycle(hook_name: str, **kwargs: Any) -> None:
-    """Project one Hermes lifecycle event into the core Relay integration."""
+    """Project one AkramCode lifecycle event into the core Relay integration."""
     _reconcile_send_consent_once()
     if not handles_hook(hook_name) or not relay_runtime.relay_instrumentation_enabled():
         return
@@ -1318,11 +1318,11 @@ def observe_lifecycle(hook_name: str, **kwargs: Any) -> None:
     try:
         _HOOK_HANDLERS[hook_name](runtime, kwargs)
     except Exception:
-        logger.warning("Hermes shared metrics hook failed: %s", hook_name, exc_info=True)
+        logger.warning("AkramCode shared metrics hook failed: %s", hook_name, exc_info=True)
 
 
 def _with_runtime_toolset(event: dict[str, Any]) -> dict[str, Any]:
-    """Attach the toolset already declared by Hermes's runtime registry."""
+    """Attach the toolset already declared by AkramCode's runtime registry."""
     tool_name = _text(event, "tool_name")
     if event.get("toolset") or not tool_name:
         return event
@@ -1370,7 +1370,7 @@ def _prepare_core_session(host: relay_runtime.RelayRuntime, context: dict[str, A
 def start_task_run(
     *, session_id: str, task_id: str, platform: str, parent_session_id: str = ""
 ) -> None:
-    """Start task metrics at the outer Hermes execution boundary."""
+    """Start task metrics at the outer AkramCode execution boundary."""
     _run_task_hook(
         "start_task", retry_failed=True, session_id=session_id, task_id=task_id,
         platform=platform, parent_session_id=parent_session_id,
@@ -1444,7 +1444,7 @@ def record_session_tools(session_id: str, agent: Any, tools_for_api: list) -> No
 
 
 def record_known_cache_break(cause: str, route: dict[str, str], session_id: str) -> None:
-    """A prompt-cache break Hermes caused (caller checked enabled())."""
+    """A prompt-cache break AkramCode caused (caller checked enabled())."""
     if not relay_runtime.relay_instrumentation_enabled():
         return
     runtime = _get_runtime(retry_failed=True)
@@ -1513,7 +1513,7 @@ def _get_runtime(
         try:
             _RUNTIMES[profile_key] = runtime = _Runtime(host=host)
         except Exception:
-            logger.warning("Hermes shared metrics initialization failed", exc_info=True)
+            logger.warning("AkramCode shared metrics initialization failed", exc_info=True)
             _RUNTIMES[profile_key] = _RUNTIME_FAILED
             return None
         return runtime

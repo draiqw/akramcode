@@ -72,7 +72,7 @@ def _discovered_catalog_stale(entry: dict, model_ids: list[str]) -> bool:
     """Whether a live probe may overwrite ``entry["models"]``.
 
     A ``models`` mapping or list of dicts is user-curated per-model metadata — never replaced.
-    A mapping Hermes itself discovered (entry flag or legacy in-mapping sentinel) is ours to
+    A mapping AkramCode itself discovered (entry flag or legacy in-mapping sentinel) is ours to
     refresh, but only when stale; a legacy-shape entry is always rewritten so the save migrates
     it to the clean entry-level flag."""
     existing = entry.get("models")
@@ -270,7 +270,7 @@ def _skip(seen: set, excluded: set, *keys: str) -> bool:
 
 
 def _iter_builtin_candidates(models_dev_data: dict, excluded: set, seen: set):
-    """Yield ``(hermes_id, mdev_id, pconfig, env_vars)`` for section-1 rows.
+    """Yield ``(akramcode_id, mdev_id, pconfig, env_vars)`` for section-1 rows.
 
     Skips vendor names that alias through an aggregator (bare "openai" -> "openrouter" would
     silently switch a user onto an endpoint they may have no key for), aliases of another canonical
@@ -280,30 +280,30 @@ def _iter_builtin_candidates(models_dev_data: dict, excluded: set, seen: set):
     from akramcode_cli.auth import PROVIDER_REGISTRY, is_runtime_provider_routable
     from akramcode_cli.models import _AGGREGATOR_PROVIDERS
     from akramcode_cli.providers import ALIASES
-    for hermes_id, mdev_id in PROVIDER_TO_MODELS_DEV.items():
-        alias_target = ALIASES.get(hermes_id)
-        if alias_target and alias_target != hermes_id and alias_target in _AGGREGATOR_PROVIDERS:
+    for akramcode_id, mdev_id in PROVIDER_TO_MODELS_DEV.items():
+        alias_target = ALIASES.get(akramcode_id)
+        if alias_target and alias_target != akramcode_id and alias_target in _AGGREGATOR_PROVIDERS:
             continue
         try:
             from providers import get_provider_profile
-            prof = get_provider_profile(hermes_id)
-            if prof is not None and prof.name != hermes_id:
+            prof = get_provider_profile(akramcode_id)
+            if prof is not None and prof.name != akramcode_id:
                 continue
         except Exception:
             pass
-        if hermes_id.lower() in seen:
+        if akramcode_id.lower() in seen:
             continue
-        if hermes_id.lower() in excluded or mdev_id.lower() in excluded:
+        if akramcode_id.lower() in excluded or mdev_id.lower() in excluded:
             continue
         pdata = models_dev_data.get(mdev_id)
         if not isinstance(pdata, dict):
             continue
-        pconfig = PROVIDER_REGISTRY.get(hermes_id)
-        if (pconfig and pconfig.auth_type != "api_key") or not is_runtime_provider_routable(hermes_id):
+        pconfig = PROVIDER_REGISTRY.get(akramcode_id)
+        if (pconfig and pconfig.auth_type != "api_key") or not is_runtime_provider_routable(akramcode_id):
             continue
         env_vars = list(pconfig.api_key_env_vars) if pconfig and pconfig.api_key_env_vars else pdata.get("env", [])
         if isinstance(env_vars, list):
-            yield hermes_id, mdev_id, pconfig, env_vars
+            yield akramcode_id, mdev_id, pconfig, env_vars
 
 
 def _auth_store_has_provider(*keys: str) -> bool:
@@ -318,13 +318,13 @@ def _auth_store_has_provider(*keys: str) -> bool:
         return False
 
 
-def _raw_pool_usable(hermes_id: str) -> bool:
+def _raw_pool_usable(akramcode_id: str) -> bool:
     """Section-1 pool check: only consult the pool when auth.json lists a raw entry."""
     try:
         from akramcode_cli.auth import _load_auth_store
         store = _load_auth_store()
-        if store and store.get("credential_pool", {}).get(hermes_id):
-            return _credential_pool_is_usable(hermes_id, raw_pool_present=True)
+        if store and store.get("credential_pool", {}).get(akramcode_id):
+            return _credential_pool_is_usable(akramcode_id, raw_pool_present=True)
     except Exception:
         pass
     return False
@@ -338,7 +338,7 @@ def _pool_usable(slug: str) -> bool:
         return False
 
 
-def _overlay_has_env_creds(pid: str, hermes_slug: str, overlay, read_env) -> bool:
+def _overlay_has_env_creds(pid: str, akramcode_slug: str, overlay, read_env) -> bool:
     """Section-2 env/SDK credential check shared by the picker and the prefetch scan.
 
     Vertex authenticates via OAuth2 (service-account JSON / ADC), not an API key, so it gets its
@@ -354,11 +354,11 @@ def _overlay_has_env_creds(pid: str, hermes_slug: str, overlay, read_env) -> boo
     elif overlay.extra_env_vars:
         has_creds = _any_env(overlay.extra_env_vars, read_env)
     if not has_creds and overlay.auth_type == "api_key":
-        for key in (pid, hermes_slug):
+        for key in (pid, akramcode_slug):
             pcfg = PROVIDER_REGISTRY.get(key)
             if pcfg and pcfg.api_key_env_vars and _any_env(pcfg.api_key_env_vars, read_env):
                 return True
-    if not has_creds and hermes_slug == "azure-foundry":
+    if not has_creds and akramcode_slug == "azure-foundry":
         has_creds = _azure_entra_configured(read_env)
     return has_creds
 
@@ -409,7 +409,7 @@ def _is_aws_sdk(pconfig) -> bool:
 
 def _live_or_curated_ids(slug: str, curated: dict, *fallback_keys: str, merge_models_dev: bool = True,
                          non_blocking: bool = False) -> list:
-    """``cached_provider_model_ids`` (the SAME disk-cached list ``hermes model`` builds), falling
+    """``cached_provider_model_ids`` (the SAME disk-cached list ``akramcode model`` builds), falling
     back to the curated list (merged with models.dev for preferred providers) when live is empty.
     ``non_blocking`` (GUI read path) reads the disk cache only — a provider that is slow or down
     contributes its curated list instead of stalling the whole picker (#114215)."""
@@ -578,7 +578,7 @@ def _discover_flag(entry: dict):
 
 
 def _display_prefix(name: str) -> str:
-    """Text before the per-model separator Hermes's own writer uses ("—" / " - ")."""
+    """Text before the per-model separator AkramCode's own writer uses ("—" / " - ")."""
     return next((name.split(sep)[0].strip() for sep in ("—", " - ") if sep in name), name)
 
 
@@ -644,7 +644,7 @@ def _collect_authed_provider_slugs(
     from akramcode_cli.model_switch import _scoped_key_env
     from agent.models_dev import PROVIDER_TO_MODELS_DEV
     from akramcode_cli.auth import PROVIDER_REGISTRY
-    from akramcode_cli.providers import HERMES_OVERLAYS
+    from akramcode_cli.providers import AKRAMCODE_OVERLAYS
     from akramcode_cli.models import CANONICAL_PROVIDERS
     excluded_set = {str(p).strip().lower() for p in excluded if p}
     slugs: list[str] = []
@@ -654,19 +654,19 @@ def _collect_authed_provider_slugs(
         slugs.append(slug)
         seen.update(k.lower() for k in keys)
 
-    for hermes_id, _mdev_id, _pconfig, env_vars in _iter_builtin_candidates(models_dev_data, excluded_set, seen):
-        if _any_env(env_vars, _scoped_key_env) or _raw_pool_usable(hermes_id):
-            _emit(hermes_id, hermes_id)
+    for akramcode_id, _mdev_id, _pconfig, env_vars in _iter_builtin_candidates(models_dev_data, excluded_set, seen):
+        if _any_env(env_vars, _scoped_key_env) or _raw_pool_usable(akramcode_id):
+            _emit(akramcode_id, akramcode_id)
 
-    mdev_to_hermes = {v: k for k, v in PROVIDER_TO_MODELS_DEV.items()}
-    for pid, overlay in HERMES_OVERLAYS.items():
-        hermes_slug = mdev_to_hermes.get(pid, pid)
-        if _skip(seen, excluded_set, pid, hermes_slug) or overlay.auth_type == "aws_sdk":
+    mdev_to_akramcode = {v: k for k, v in PROVIDER_TO_MODELS_DEV.items()}
+    for pid, overlay in AKRAMCODE_OVERLAYS.items():
+        akramcode_slug = mdev_to_akramcode.get(pid, pid)
+        if _skip(seen, excluded_set, pid, akramcode_slug) or overlay.auth_type == "aws_sdk":
             continue
         if (
-            _overlay_has_env_creds(pid, hermes_slug, overlay, _scoped_key_env)
-            or _auth_store_has_provider(pid, hermes_slug) or _pool_usable(hermes_slug)):
-            _emit(hermes_slug, pid, hermes_slug)
+            _overlay_has_env_creds(pid, akramcode_slug, overlay, _scoped_key_env)
+            or _auth_store_has_provider(pid, akramcode_slug) or _pool_usable(akramcode_slug)):
+            _emit(akramcode_slug, pid, akramcode_slug)
 
     for cp in CANONICAL_PROVIDERS:
         if _skip(seen, excluded_set, cp.slug):
@@ -685,7 +685,7 @@ def _collect_authed_provider_slugs(
 @dataclass
 class _PickerBuild:
     """State threaded through the ``list_authenticated_providers`` sections: 1 built-ins mapped to
-    models.dev, 2 Hermes-only overlays, 2b canonical providers missed by 1/2, 3 ``providers:``
+    models.dev, 2 AkramCode-only overlays, 2b canonical providers missed by 1/2, 3 ``providers:``
     entries + 3b the bare active custom endpoint, 4 ``custom_providers:`` entries. Row-builder
     imports of ``akramcode_cli.auth/models`` stay lazy so tests can patch those modules."""
     current_provider: str
@@ -813,38 +813,38 @@ def _lap_lmstudio_row(b: _PickerBuild, user_providers: dict) -> None:
     from akramcode_cli.model_switch import _declared_model_ids
     configured_models = _declared_model_ids(configured.get("models")) if isinstance(configured, dict) else []
     model_ids = list(dict.fromkeys([*configured_models, *b.curated.get("lmstudio", [])]))
-    b.add_builtin_row("lmstudio", get_label("lmstudio"), is_current, model_ids, "hermes")
+    b.add_builtin_row("lmstudio", get_label("lmstudio"), is_current, model_ids, "akramcode")
 
 
 def _lap_builtin_rows(b: _PickerBuild, data: dict, user_providers: dict) -> None:
     """Section 1: models.dev-mapped providers with api_key auth."""
     from akramcode_cli.model_switch import _declared_model_ids, _scoped_key_env
     from agent.models_dev import get_provider_info
-    for hermes_id, mdev_id, pconfig, env_vars in _iter_builtin_candidates(data, b.excluded, b.seen_slugs):
+    for akramcode_id, mdev_id, pconfig, env_vars in _iter_builtin_candidates(data, b.excluded, b.seen_slugs):
         # Per-profile scope, never raw os.environ: a secondary profile's picker otherwise listed the
         # LAUNCH profile's env-keyed providers and hid its own .env-keyed ones.
-        if not (_any_env(env_vars, _scoped_key_env) or _raw_pool_usable(hermes_id)):
+        if not (_any_env(env_vars, _scoped_key_env) or _raw_pool_usable(akramcode_id)):
             continue
-        model_ids = _live_or_curated_ids(hermes_id, b.curated, non_blocking=b.non_blocking_catalogs)
+        model_ids = _live_or_curated_ids(akramcode_id, b.curated, non_blocking=b.non_blocking_catalogs)
         # A providers.<built-in>.models block extends the discovered catalog; section 3 cannot
         # emit it later because this row owns the slug.
-        configured = user_providers.get(hermes_id) if isinstance(user_providers, dict) else None
+        configured = user_providers.get(akramcode_id) if isinstance(user_providers, dict) else None
         configured_models = _declared_model_ids(configured.get("models")) if isinstance(configured, dict) else []
         model_ids = list(dict.fromkeys([*configured_models, *model_ids]))
         pinfo = get_provider_info(mdev_id)
         display_name = pconfig.name if pconfig and pconfig.name else (pinfo.name if pinfo else mdev_id)
         b.add_builtin_row(
-            hermes_id, display_name, b.current_provider in (hermes_id, mdev_id), model_ids, "built-in")
+            akramcode_id, display_name, b.current_provider in (akramcode_id, mdev_id), model_ids, "built-in")
 
 
-def _overlay_has_creds(b: _PickerBuild, pid: str, hermes_slug: str, overlay) -> bool:
+def _overlay_has_creds(b: _PickerBuild, pid: str, akramcode_slug: str, overlay) -> bool:
     """Section-2 credential ladder: env/SDK, external-process executable, auth store, pool,
     anthropic's external credential files."""
     if overlay.auth_type == "aws_sdk":
-        has_creds = _has_aws_sdk_creds_for_listing(hermes_slug, b.current_provider)
+        has_creds = _has_aws_sdk_creds_for_listing(akramcode_slug, b.current_provider)
     else:
         from akramcode_cli.model_switch import _scoped_key_env
-        has_creds = _overlay_has_env_creds(pid, hermes_slug, overlay, _scoped_key_env)
+        has_creds = _overlay_has_env_creds(pid, akramcode_slug, overlay, _scoped_key_env)
     # External-process providers (copilot-acp) hold no key/token/pool entry by design — the
     # spawned ACP subprocess brings its own auth. "Configured" means the executable resolves.
     # "Configured" means the executable resolves, which is exactly what get_auth_status() reports for them;
@@ -853,37 +853,37 @@ def _overlay_has_creds(b: _PickerBuild, pid: str, hermes_slug: str, overlay) -> 
     if not has_creds and overlay.auth_type == "external_process":
         try:
             from akramcode_cli.auth import get_auth_status
-            _ext_status = get_auth_status(hermes_slug) or {}
+            _ext_status = get_auth_status(akramcode_slug) or {}
             has_creds = bool(_ext_status.get("logged_in") or _ext_status.get("configured"))
         except Exception as exc:
             logger.debug("External-process check failed for %s: %s", pid, exc)
     # Auth store / credential pool cover OAuth providers AND api_key providers that also support
     # OAuth (anthropic via Claude Code credential files).
-    has_creds = has_creds or _auth_store_has_provider(pid, hermes_slug)
+    has_creds = has_creds or _auth_store_has_provider(pid, akramcode_slug)
     if not has_creds:
         # Full auto-seeding pool check catches external stores (Codex CLI ~/.codex/auth.json)
         # not yet in auth.json.
         try:
-            if _credential_pool_is_usable(hermes_slug):
+            if _credential_pool_is_usable(akramcode_slug):
                 has_creds = True
             elif b.for_picker:
                 # Show providers whose pool is entirely in cooldown: limits are per-model for
                 # many providers, so another model may work.
                 try:
                     from agent.credential_pool import load_pool
-                    has_creds = load_pool(hermes_slug).has_credentials()
+                    has_creds = load_pool(akramcode_slug).has_credentials()
                 except Exception:
                     pass
         except Exception as exc:
-            logger.debug("Credential pool check failed for %s: %s", hermes_slug, exc)
-    if not has_creds and hermes_slug == "anthropic":
+            logger.debug("Credential pool check failed for %s: %s", akramcode_slug, exc)
+    if not has_creds and akramcode_slug == "anthropic":
         # The pool gates anthropic behind is_provider_explicitly_configured() (aux tasks must not
         # consume Claude Code tokens); the picker is discovery-oriented, so read the files directly.
         try:
-            from agent.anthropic_credentials import read_claude_code_credentials, read_hermes_oauth_credentials
-            hermes_creds = read_hermes_oauth_credentials()
+            from agent.anthropic_credentials import read_claude_code_credentials, read_akramcode_oauth_credentials
+            akramcode_creds = read_akramcode_oauth_credentials()
             cc_creds = read_claude_code_credentials()
-            if (hermes_creds and hermes_creds.get("accessToken")) or (cc_creds and cc_creds.get("accessToken")):
+            if (akramcode_creds and akramcode_creds.get("accessToken")) or (cc_creds and cc_creds.get("accessToken")):
                 has_creds = True
         except Exception as exc:
             logger.debug("Anthropic external creds check failed: %s", exc)
@@ -891,44 +891,44 @@ def _overlay_has_creds(b: _PickerBuild, pid: str, hermes_slug: str, overlay) -> 
 
 
 def _lap_overlay_rows(b: _PickerBuild, data: dict, user_providers: dict) -> None:
-    """Section 2: Hermes-only providers (nous, openai-codex, copilot, opencode-go, ...)."""
+    """Section 2: AkramCode-only providers (nous, openai-codex, copilot, opencode-go, ...)."""
     from agent.models_dev import PROVIDER_TO_MODELS_DEV
     from akramcode_cli.model_switch import _declared_model_ids
-    from akramcode_cli.providers import HERMES_OVERLAYS
+    from akramcode_cli.providers import AKRAMCODE_OVERLAYS
 
-    # HERMES_OVERLAYS keys may be models.dev IDs ("github-copilot") while config.yaml uses
-    # Hermes IDs ("copilot").
-    mdev_to_hermes = {v: k for k, v in PROVIDER_TO_MODELS_DEV.items()}
-    for pid, overlay in HERMES_OVERLAYS.items():
-        hermes_slug = mdev_to_hermes.get(pid, pid)
-        if _skip(b.seen_slugs, b.excluded, pid, hermes_slug):
+    # AKRAMCODE_OVERLAYS keys may be models.dev IDs ("github-copilot") while config.yaml uses
+    # AkramCode IDs ("copilot").
+    mdev_to_akramcode = {v: k for k, v in PROVIDER_TO_MODELS_DEV.items()}
+    for pid, overlay in AKRAMCODE_OVERLAYS.items():
+        akramcode_slug = mdev_to_akramcode.get(pid, pid)
+        if _skip(b.seen_slugs, b.excluded, pid, akramcode_slug):
             continue
-        if not _overlay_has_creds(b, pid, hermes_slug, overlay):
+        if not _overlay_has_creds(b, pid, akramcode_slug, overlay):
             continue
-        if hermes_slug in {"openai-codex", "copilot", "copilot-acp"}:
+        if akramcode_slug in {"openai-codex", "copilot", "copilot-acp"}:
             # Live OAuth-backed discovery so Pro-only Codex slugs not in the static catalog
             # appear; falls back to curated when unreachable (or not yet cached on the read path).
-            model_ids = _live_or_curated_ids(hermes_slug, b.curated, merge_models_dev=False,
+            model_ids = _live_or_curated_ids(akramcode_slug, b.curated, merge_models_dev=False,
                                              non_blocking=b.non_blocking_catalogs)
         elif overlay.auth_type == "aws_sdk":
-            model_ids = _aws_live_or_curated_ids(hermes_slug, b.curated, hermes_slug, pid,
+            model_ids = _aws_live_or_curated_ids(akramcode_slug, b.curated, akramcode_slug, pid,
                                                  non_blocking=b.non_blocking_catalogs)
-        elif hermes_slug == "nous":
+        elif akramcode_slug == "nous":
             # A guest identity never needs the Portal catalog: add_builtin_row pins nous/welcome
             # (or drops the row when nous.guest is off), so only a real account fetches.
-            tier_row = _free_tier_nous_row({"name": get_label(hermes_slug), "models": []})
+            tier_row = _free_tier_nous_row({"name": get_label(akramcode_slug), "models": []})
             real_account = tier_row is not None and not tier_row["models"]
             model_ids = _nous_picker_model_ids(b.curated, b.force_fresh_nous_tier) if real_account else []
         else:
-            model_ids = _live_or_curated_ids(hermes_slug, b.curated, hermes_slug, pid,
+            model_ids = _live_or_curated_ids(akramcode_slug, b.curated, akramcode_slug, pid,
                                              non_blocking=b.non_blocking_catalogs)
         # A providers.<overlay>.models block extends the row exactly as it does for built-in rows
         # (section 1); section 3 never emits it because this row owns the slug (#27989).
-        configured = user_providers.get(hermes_slug) or user_providers.get(pid) if isinstance(user_providers, dict) else None
+        configured = user_providers.get(akramcode_slug) or user_providers.get(pid) if isinstance(user_providers, dict) else None
         if isinstance(configured, dict):
             model_ids = list(dict.fromkeys([*_declared_model_ids(configured.get("models")), *model_ids]))
         b.add_builtin_row(
-            hermes_slug, get_label(hermes_slug), b.current_provider in (hermes_slug, pid), model_ids, "hermes")
+            akramcode_slug, get_label(akramcode_slug), b.current_provider in (akramcode_slug, pid), model_ids, "akramcode")
         b.seen_slugs.add(pid.lower())
 
 
@@ -955,7 +955,7 @@ def _lap_canonical_rows(b: _PickerBuild) -> None:
             _is_aws_sdk(cp_config) and _has_aws_sdk_creds_for_listing(cp.slug, b.current_provider))
         if not has_creds and cp_config is not None and cp_config.auth_type == "external_process":
             # Subprocess-backed providers own their auth; the binary resolving is the credential
-            # evidence for listing (same gate as the copilot-acp overlay row and hermes auth status).
+            # evidence for listing (same gate as the copilot-acp overlay row and akramcode auth status).
             try:
                 from akramcode_cli.auth import get_external_process_provider_status
                 has_creds = bool(get_external_process_provider_status(cp.slug).get("configured"))
@@ -1142,7 +1142,7 @@ def _lap_custom_provider_rows(b: _PickerBuild, custom_providers: list) -> None:
 
 def _build_curated_lists(current_provider: str, current_base_url: str, current_model: str,
                         non_blocking: bool = False) -> dict[str, list[str]]:
-    """Curated model lists keyed by hermes provider id, plus the dynamic ones (nous manifest,
+    """Curated model lists keyed by akramcode provider id, plus the dynamic ones (nous manifest,
     Ollama Cloud, LM Studio live probe). ``non_blocking`` (GUI read path) takes cached Ollama Cloud
     ids and warms them in the background rather than waiting on an 8s probe (#114215)."""
     from akramcode_cli.models import OPENROUTER_MODELS, _PROVIDER_MODELS, get_curated_nous_model_ids
@@ -1194,7 +1194,7 @@ def list_authenticated_providers(
 
     Returns dicts with ``slug`` (the --provider value), ``name``, ``is_current``,
     ``is_user_defined``, ``models`` (up to max_models), ``total_models``, ``source``
-    ("built-in", "hermes", "canonical", "user-config", "model-config").
+    ("built-in", "akramcode", "canonical", "user-config", "model-config").
     ``force_fresh_nous_tier`` bypasses the short Nous tier cache (account-sensitive flows only);
     ``refresh`` busts the model-id disk cache up front (explicit user action only);
     ``probe_custom_providers`` enables live ``/models`` discovery for saved custom endpoints (CLI
@@ -1228,7 +1228,7 @@ def list_authenticated_providers(
     data = fetch_models_dev()
 
     # A single excluded entry like ``copilot`` hides the provider under every key it surfaces
-    # as (hermes_id / mdev_id / canonical slug).
+    # as (akramcode_id / mdev_id / canonical slug).
     b = _PickerBuild(
         current_provider=current_provider, current_base_url=current_base_url, current_model=current_model,
         max_models=max_models, for_picker=for_picker, force_fresh_nous_tier=force_fresh_nous_tier,

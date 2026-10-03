@@ -12,18 +12,18 @@ from contextlib import redirect_stdout
 
 import pytest
 
-import hermes_constants
+import akramcode_constants
 
 
 @pytest.fixture
 def standalone_home(tmp_path, monkeypatch):
-    root = tmp_path / "hermes"
+    root = tmp_path / "akramcode"
     home = root / "profiles" / "coder"
     home.mkdir(parents=True)
     (root / "config.yaml").write_text("model:\n  default: x\n", encoding="utf-8")
     (home / "config.yaml").write_text("gateway:\n  standalone: true\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setattr(hermes_constants, "_default_hermes_root_memo", None)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
+    monkeypatch.setattr(akramcode_constants, "_default_akramcode_root_memo", None)
     from akramcode_cli import gateway as gw
     # The probe seams live on the akramcode_cli.gateway facade, like the other refusal tests.
     monkeypatch.setattr(gw, "_is_service_installed", lambda: False)

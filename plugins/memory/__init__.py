@@ -1,6 +1,6 @@
 """Memory provider plugin discovery: bundled ``plugins/memory/<name>/``, user
-``$HERMES_HOME/plugins/<name>/``, project ``./.hermes/plugins/<name>/`` (opt-in via
-HERMES_ENABLE_PROJECT_PLUGINS), then ``hermes_agent.memory_providers`` entry points.
+``$AKRAMCODE_HOME/plugins/<name>/``, project ``./.akramcode/plugins/<name>/`` (opt-in via
+AKRAMCODE_ENABLE_PROJECT_PLUGINS), then ``akramcode_agent.memory_providers`` entry points.
 Precedence is deliberately the REVERSE of PluginManager's later-source-wins:
 bundled wins, then user, project, entry point — a provider is activated by name
 (``memory.provider``, one at a time), so a directory dropped into the working tree
@@ -27,8 +27,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _MEMORY_PLUGINS_DIR = Path(__file__).parent
-ENTRY_POINTS_GROUP = "hermes_agent.memory_providers"
-# Per Hermes home (plugin managers are per home too): pruning under one multiplexed profile must
+ENTRY_POINTS_GROUP = "akramcode_agent.memory_providers"
+# Per AkramCode home (plugin managers are per home too): pruning under one multiplexed profile must
 # only retract that profile's provider skills, never a sibling profile's.
 _REGISTERED_MEMORY_PROVIDER_SKILLS: dict[str, dict[str, Path]] = {}
 # Native extensions whose first import must not race another thread (#58083 warm-up).
@@ -36,26 +36,26 @@ _NATIVE_WARM_IMPORTS: Tuple[str, ...] = ("numpy",)
 
 
 def _registered_skills_for_active_home() -> dict[str, Path]:
-    from hermes_constants import hermes_home_key
+    from akramcode_constants import akramcode_home_key
 
-    return _REGISTERED_MEMORY_PROVIDER_SKILLS.setdefault(hermes_home_key(), {})
+    return _REGISTERED_MEMORY_PROVIDER_SKILLS.setdefault(akramcode_home_key(), {})
 
 # Synthetic parent package so user-installed providers don't collide with bundled ones.
-_USER_NAMESPACE = "_hermes_user_memory"
+_USER_NAMESPACE = "_akramcode_user_memory"
 
 _register_synthetic_package = _loader.register_synthetic_package
 _get_user_plugins_dir = _loader.user_plugins_dir
 
 
 def _get_project_plugins_dir() -> Optional[Path]:
-    """``./.hermes/plugins/`` or None. Gated on HERMES_ENABLE_PROJECT_PLUGINS like the
+    """``./.akramcode/plugins/`` or None. Gated on AKRAMCODE_ENABLE_PROJECT_PLUGINS like the
     PluginManager scan: a repo you merely ``cd`` into must not offer a memory backend."""
     try:
         from akramcode_cli.plugins import _env_enabled
 
-        if not _env_enabled("HERMES_ENABLE_PROJECT_PLUGINS"):
+        if not _env_enabled("AKRAMCODE_ENABLE_PROJECT_PLUGINS"):
             return None
-        d = Path.cwd() / ".hermes" / "plugins"
+        d = Path.cwd() / ".akramcode" / "plugins"
         return d if d.is_dir() else None
     except Exception:
         return None
@@ -125,7 +125,7 @@ def find_provider_dir(name: str) -> Optional[Path]:
     """Provider name -> directory: bundled, user, project, then a pip entry point's
     package dir. The entry-point case matters because ``config_schema.py`` and
     ``cli.py`` are read from disk, not imported; without a directory a pip-installed
-    provider silently loses its dashboard panel and ``hermes <provider>`` commands."""
+    provider silently loses its dashboard panel and ``akramcode <provider>`` commands."""
     bundled = _MEMORY_PLUGINS_DIR / name
     if bundled.is_dir() and (bundled / "__init__.py").exists():
         return bundled
@@ -203,9 +203,9 @@ def load_memory_provider(name: str, *, register_skills: Optional[bool] = None) -
         logger.debug("Memory provider '%s' not found in bundled, user plugins, or entry points", name)
         return None
     if provider_dir is not None and _explicitly_disabled(name, provider_dir):
-        # The Plugins hub / `hermes plugins disable` park a user-installed provider in
+        # The Plugins hub / `akramcode plugins disable` park a user-installed provider in
         # ``plugins.disabled``; the loader must honour it or "disabled" is a lie in the UI.
-        logger.warning("Memory provider '%s' is disabled via plugins.disabled; run `hermes plugins enable %s` "
+        logger.warning("Memory provider '%s' is disabled via plugins.disabled; run `akramcode plugins enable %s` "
                        "or change memory.provider.", name, name)
         return None
 
@@ -220,7 +220,7 @@ def load_memory_provider(name: str, *, register_skills: Optional[bool] = None) -
 def import_memory_provider_module(name: Optional[str] = None) -> bool:
     """Import the provider's module (default: the configured ``memory.provider``) WITHOUT
     constructing a provider — the later ``load_memory_provider`` then hits ``sys.modules``
-    instead of a fresh native extension load. Exists so ``hermes acp`` can pay the heavy
+    instead of a fresh native extension load. Exists so ``akramcode acp`` can pay the heavy
     import (numpy / ML stack) on the main thread before any other thread starts: on Windows
     a first-time native import racing another thread's import chain deadlocked
     ``session/new`` (#58083). False when no provider is configured, the provider is
@@ -265,7 +265,7 @@ def import_provider_module(name: str, submodule: Optional[str] = None):
 
     Host-side code (dashboard host-block storage, OAuth routes, doctor, profile clone) used to
     ``import plugins.memory.<name>.<submodule>``, which only exists for the bundled copy; a
-    catalog install under ``$HERMES_HOME/plugins/`` loads under the synthetic user namespace,
+    catalog install under ``$AKRAMCODE_HOME/plugins/`` loads under the synthetic user namespace,
     so those surfaces 500'd/404'd the moment the bundled copy left core. Resolving through
     ``find_provider_dir`` makes bundled and user-dir copies behave identically. Raises
     ``ImportError`` when the provider is not installed or lacks the submodule.
@@ -463,7 +463,7 @@ def _explicitly_disabled(name: str, provider_dir: Path) -> bool:
         return False
     names = {name, provider_dir.name}
     try:
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
         with open(provider_dir / "plugin.yaml", encoding="utf-8-sig") as f:
             names.add(str((yaml.safe_load(f) or {}).get("name") or ""))
     except Exception:
@@ -502,7 +502,7 @@ def discover_plugin_cli_commands() -> List[dict]:
         cli_mod = sys.modules.get(module_name)
         if cli_mod is None:
             if not _is_bundled(plugin_dir):
-                # cli.py imports as _hermes_user_memory.<name>.cli, usually before the
+                # cli.py imports as _akramcode_user_memory.<name>.cli, usually before the
                 # provider is loaded: register parent packages so its relative imports
                 # resolve without executing the plugin's __init__.py (the shell has no
                 # __file__, so _load_provider_from_dir() still loads the real module).

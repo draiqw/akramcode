@@ -44,7 +44,7 @@ def test_is_zeroed_never_probes_special_files(tmp_path):
 def test_sessiondb_opens_fresh_after_zeroed_quarantine(tmp_path, monkeypatch):
     import akramcode_state as hs
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     db = tmp_path / "state.db"
     db.write_bytes(bytes(4096))
 
@@ -67,7 +67,7 @@ def test_sessiondb_quarantines_page_zero_clobber_before_open(tmp_path, monkeypat
 
     import akramcode_state as hs
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     db = tmp_path / "state.db"
     clobbered = (b"bg_032237_0e4ce7A" * 256)[:4096]
     db.write_bytes(clobbered)
@@ -100,7 +100,7 @@ def test_is_zeroed_state_db_zero_byte_quarantine(tmp_path, monkeypatch):
     """#97568: a 0-byte file must be detected as zeroed and quarantined."""
     import akramcode_state as hs
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     db = tmp_path / "state.db"
     db.write_bytes(b"")  # 0-byte truncated file
     assert hs.is_zeroed_state_db(db) is True
@@ -268,7 +268,7 @@ def test_concurrent_openers_zero_byte_startup_serialization(tmp_path, monkeypatc
     import akramcode_state as hs
     import threading
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     db = tmp_path / "state.db"
 
     errors = [None, None]
@@ -313,7 +313,7 @@ def test_live_connection_0_byte_not_quarantined_in_process(tmp_path, monkeypatch
     import akramcode_state as hs
     from akramcode_cli.sqlite_safe_read import connect_tracked
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     db = tmp_path / "state.db"
 
     # Create a live tracked 0-byte connection

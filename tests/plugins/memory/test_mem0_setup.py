@@ -179,8 +179,8 @@ class TestPromptApiKey:
 class TestPostSetup:
 
     def test_platform_flag_mode(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("sys.argv", ["hermes", "--mode", "platform", "--api-key", "sk-test"])
-        monkeypatch.setattr("plugins.memory.mem0._setup.get_hermes_home", lambda: tmp_path)
+        monkeypatch.setattr("sys.argv", ["akramcode", "--mode", "platform", "--api-key", "sk-test"])
+        monkeypatch.setattr("plugins.memory.mem0._setup.get_akramcode_home", lambda: tmp_path)
         _inject_fake_akramcode_cli(monkeypatch)
         config = {"memory": {}}
         post_setup(str(tmp_path), config)
@@ -193,10 +193,10 @@ class TestPostSetup:
 
     def test_selfhosted_flag_mode(self, tmp_path, monkeypatch):
         monkeypatch.setattr("sys.argv", [
-            "hermes", "--mode", "selfhosted",
+            "akramcode", "--mode", "selfhosted",
             "--host", "http://localhost:8888/", "--api-key", "admin-key",
         ])
-        monkeypatch.setattr("plugins.memory.mem0._setup.get_hermes_home", lambda: tmp_path)
+        monkeypatch.setattr("plugins.memory.mem0._setup.get_akramcode_home", lambda: tmp_path)
         _inject_fake_akramcode_cli(monkeypatch)
         monkeypatch.setattr("plugins.memory.mem0._setup._check_selfhosted_server", lambda h: None)
         config = {"memory": {}}
@@ -206,7 +206,7 @@ class TestPostSetup:
         assert "MEM0_API_KEY=admin-key" in env_content
         mem0_json = json.loads((tmp_path / "mem0.json").read_text())
         assert mem0_json["host"] == "http://localhost:8888"  # trailing slash stripped
-        assert mem0_json["user_id"] == "hermes-user"
+        assert mem0_json["user_id"] == "akramcode-user"
 
 
 
@@ -221,7 +221,7 @@ class TestConnectivityChecks:
 
 
 def test_discovery_loaded_setup_module_exposes_post_setup(monkeypatch):
-    """`hermes memory setup mem0` reaches the wizard when the package is first imported by plugin
+    """`akramcode memory setup mem0` reaches the wizard when the package is first imported by plugin
     discovery, which execs sibling modules before ``__init__`` (#103078). The invariant is on the
     module the loader actually cached, not on a normal top-level import."""
     from plugins.memory import load_memory_provider

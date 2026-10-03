@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Local A/B harness for `hermes auth add openrouter --type oauth` against a FAKE OpenRouter.
+"""Local A/B harness for `akramcode auth add openrouter --type oauth` against a FAKE OpenRouter.
 
-Runs the REAL entry point (``akramcode_cli.auth_commands.auth_add_command``) with a temp HERMES_HOME.
+Runs the REAL entry point (``akramcode_cli.auth_commands.auth_add_command``) with a temp AKRAMCODE_HOME.
 Only the network authority is replaced: ``webbrowser.open`` is swapped for a scripted "browser"
 that follows the auth URL's ``callback_url`` the way openrouter.ai would (redirecting the loopback
 listener with ``?code=``), and ``OPENROUTER_AUTH_KEYS_URL`` points at a local fake code-exchange
@@ -12,9 +12,9 @@ Scenarios (each prints PASS/FAIL, exit code = number of failures):
   wrong_state    browser redirects to a different callback path (forged nonce) → 404, no exchange
   replayed_code  code already consumed at the fake server → 403 → AuthError, nothing persisted
   malformed      exchange returns JSON without "key" → AuthError, nothing persisted
-  api_key_path   `hermes auth add openrouter --api-key` still works with no --type (regression)
+  api_key_path   `akramcode auth add openrouter --api-key` still works with no --type (regression)
 
-Usage: HERMES_PYTHON=<venv python> python3 evals/openrouter_pkce_ab/harness.py [--json OUT]
+Usage: AKRAMCODE_PYTHON=<venv python> python3 evals/openrouter_pkce_ab/harness.py [--json OUT]
 Run against origin/main to see the BEFORE state (every oauth scenario fails with SystemExit
 "not implemented"), then against the salvage branch for AFTER.
 """
@@ -110,7 +110,7 @@ def scripted_browser(fake: FakeOpenRouter, *, tamper_path=False, pre_consume=Fal
 
 
 def run(scenario: str, fake: FakeOpenRouter, home: str) -> dict:
-    os.environ["HERMES_HOME"] = home
+    os.environ["AKRAMCODE_HOME"] = home
     for k in ("OPENROUTER_API_KEY", "OPENAI_API_KEY", "SSH_CLIENT", "SSH_TTY"):
         os.environ.pop(k, None)
     for m in [m for m in sys.modules if m.startswith(("akramcode_cli", "agent", "akramcode_constants"))]:

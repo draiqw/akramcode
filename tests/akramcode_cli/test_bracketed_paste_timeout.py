@@ -12,16 +12,16 @@ from akramcode_cli.cli_terminal_input import _apply_bracketed_paste_timeout_patc
 
 
 def _reset_and_apply_production_patch():
-    """Reload prompt_toolkit's parser and apply Hermes' production patch."""
+    """Reload prompt_toolkit's parser and apply AkramCode' production patch."""
     import prompt_toolkit.input.vt100_parser as vt100_mod
 
     vt100_mod = importlib.reload(vt100_mod)
     # importlib.reload() preserves module dict entries that the reloaded source
-    # does not redefine, so clear Hermes' sentinel before re-applying.
-    if hasattr(vt100_mod, "_hermes_bp_timeout_patched"):
-        delattr(vt100_mod, "_hermes_bp_timeout_patched")
+    # does not redefine, so clear AkramCode' sentinel before re-applying.
+    if hasattr(vt100_mod, "_akramcode_bp_timeout_patched"):
+        delattr(vt100_mod, "_akramcode_bp_timeout_patched")
     _apply_bracketed_paste_timeout_patch()
-    assert getattr(vt100_mod, "_hermes_bp_timeout_patched", False)
+    assert getattr(vt100_mod, "_akramcode_bp_timeout_patched", False)
     return vt100_mod
 
 
@@ -49,7 +49,7 @@ class TestBracketedPasteTimeout:
         parser.feed("\x1b[200~some pasted text")
         assert parser._in_bracketed_paste
 
-        parser._hermes_bp_start = time.monotonic() - 3.0
+        parser._akramcode_bp_start = time.monotonic() - 3.0
         parser.feed("more data")
 
         assert not parser._in_bracketed_paste
@@ -60,7 +60,7 @@ class TestBracketedPasteTimeout:
         """After timeout recovery, normal key processing should resume."""
         parser, callback = self._make_parser()
         parser.feed("\x1b[200~stuck")
-        parser._hermes_bp_start = time.monotonic() - 3.0
+        parser._akramcode_bp_start = time.monotonic() - 3.0
         parser.feed("")
 
         assert not parser._in_bracketed_paste
@@ -73,7 +73,7 @@ class TestBracketedPasteTimeout:
         """Data arriving after a stuck paste should be processable."""
         parser, callback = self._make_parser()
         parser.feed("\x1b[200~content")
-        parser._hermes_bp_start = time.monotonic() - 5.0
+        parser._akramcode_bp_start = time.monotonic() - 5.0
         parser.feed("x")
 
         assert not parser._in_bracketed_paste
@@ -94,7 +94,7 @@ class TestBracketedPasteTimeout:
         """Bracketed-paste mode should not timeout within the 2s window."""
         parser, callback = self._make_parser()
         parser.feed("\x1b[200~waiting")
-        parser._hermes_bp_start = time.monotonic() - 0.5
+        parser._akramcode_bp_start = time.monotonic() - 0.5
         parser.feed("more waiting")
 
         assert parser._in_bracketed_paste

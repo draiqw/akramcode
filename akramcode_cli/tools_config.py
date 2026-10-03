@@ -1,4 +1,4 @@
-"""Unified tool configuration for Hermes Agent."""
+"""Unified tool configuration for AkramCode Agent."""
 
 import json as _json
 import logging
@@ -106,11 +106,11 @@ def gui_toolset_label(label: str) -> str:
     return text
 
 
-# OFF by default for new installs (still in _HERMES_CORE_TOOLS; the checklist won't pre-select them). x_search
+# OFF by default for new installs (still in _AKRAMCODE_CORE_TOOLS; the checklist won't pre-select them). x_search
 # auto-enables when xAI creds exist (mirrors HASS_TOKEN → homeassistant); its check_fn still gates the schema.
 _DEFAULT_OFF_TOOLSETS = {"homeassistant", "spotify", "discord", "discord_admin", "video", "video_gen", "x_search", "a2a", "kanban"}
 
-# Config-only capabilities: provider setup in `hermes tools` (TOOL_CATEGORIES) but not model toolsets — zero
+# Config-only capabilities: provider setup in `akramcode tools` (TOOL_CATEGORIES) but not model toolsets — zero
 # schemas, own switch (``stt.enabled``), never in ``platform_toolsets`` or the per-platform checklist.
 _CONFIG_ONLY_TOOLSETS = {"stt"}
 
@@ -177,7 +177,7 @@ def _get_plugin_toolset_keys() -> set:
 
 
 def _checklist_toolset_keys(platform: str) -> Set[str]:
-    """Toolset keys the ``hermes tools`` checklist offers for ``platform`` (mirrors ``_prompt_toolset_checklist``);
+    """Toolset keys the ``akramcode tools`` checklist offers for ``platform`` (mirrors ``_prompt_toolset_checklist``);
     read-time-resolved toolsets (recovered composites, MCP names) are NOT here."""
     return {
         ts_key for ts_key, _, _ in _get_effective_configurable_toolsets()
@@ -185,8 +185,8 @@ def _checklist_toolset_keys(platform: str) -> Set[str]:
 
 
 def _platform_default_toolset(platform: str) -> str:
-    """Composite toolset a platform falls back to (plugin platforms derive ``hermes-<platform>``)."""
-    return PLATFORMS[platform]["default_toolset"] if platform in PLATFORMS else f"hermes-{platform}"
+    """Composite toolset a platform falls back to (plugin platforms derive ``akramcode-<platform>``)."""
+    return PLATFORMS[platform]["default_toolset"] if platform in PLATFORMS else f"akramcode-{platform}"
 
 
 def _cfg_section(config: dict, key: str) -> dict:
@@ -231,8 +231,8 @@ _NOUS = {"requires_nous_auth": True}
 _OPENAI_VOICE_KEY = _key("VOICE_TOOLS_OPENAI_KEY", "OpenAI API key", "https://platform.openai.com/api-keys")
 _ELEVENLABS_KEY = _key("ELEVENLABS_API_KEY", "ElevenLabs API key", "https://elevenlabs.io/app/settings/api-keys")
 _DEEPINFRA_KEY = _key("DEEPINFRA_API_KEY", "DeepInfra API key", "https://deepinfra.com/dash/api_keys")
-_LANGFUSE_PUBLIC = ("HERMES_LANGFUSE_PUBLIC_KEY", "Langfuse public key (pk-lf-...)")
-_LANGFUSE_SECRET = ("HERMES_LANGFUSE_SECRET_KEY", "Langfuse secret key (sk-lf-...)")
+_LANGFUSE_PUBLIC = ("AKRAMCODE_LANGFUSE_PUBLIC_KEY", "Langfuse public key (pk-lf-...)")
+_LANGFUSE_SECRET = ("AKRAMCODE_LANGFUSE_SECRET_KEY", "Langfuse secret key (sk-lf-...)")
 
 TOOL_CATEGORIES = {
     "tts": {
@@ -316,7 +316,7 @@ TOOL_CATEGORIES = {
     "x_search": {
         "name": "X (Twitter) Search", "setup_title": "Select xAI Credential Source",
         "setup_note": (
-            "Hermes routes X searches through xAI's built-in x_search Responses tool for read-only public X "
+            "AkramCode routes X searches through xAI's built-in x_search Responses tool for read-only public X "
             "discovery. Use the xurl skill for authenticated X API reads and account actions. Both credential "
             "sources hit the same https://api.x.ai/v1/responses endpoint — pick whichever you already have. "
             "SuperGrok OAuth is preferred when both are set (uses your subscription quota instead of API spend)."
@@ -340,7 +340,7 @@ TOOL_CATEGORIES = {
         "providers": [
             _row("Local Browser", "★ recommended · free", "Headless Chromium, no API key needed", browser_provider="local",
                  browser_engine="auto", post_setup="agent_browser"),
-            _row("Lightpanda", "free · local · no Chromium", "Zig headless browser spawned by Hermes, text-only (no screenshots)",
+            _row("Lightpanda", "free · local · no Chromium", "Zig headless browser spawned by AkramCode, text-only (no screenshots)",
                  browser_provider="local", browser_engine="lightpanda", post_setup="lightpanda"),
             # Cloud hook installs only the agent-browser CLI: Browser Use hosts its own Chromium, so the
             # local-Chromium install and readiness gate must not apply (with "agent_browser" this row read
@@ -371,7 +371,7 @@ TOOL_CATEGORIES = {
         "name": "Computer Use (macOS/Windows/Linux)", "icon": "🖱️",
         # Runtime backends ship for macOS, Windows, Linux (X11; Wayland via XWayland). Gaps surface via `computer-use doctor`.
         "platform_gate": ["darwin", "win32", "linux"],
-        # cua-driver reads HOME/TMPDIR from the process env; HERMES_CUA_DRIVER_CMD selects a specific
+        # cua-driver reads HOME/TMPDIR from the process env; AKRAMCODE_CUA_DRIVER_CMD selects a specific
         # binary (e.g. a local build). There is no version-pin env var.
         "providers": [
             _row("cua-driver (background)", "★ recommended · free · local",
@@ -386,7 +386,7 @@ TOOL_CATEGORIES = {
                  env_vars=[_key(*_LANGFUSE_PUBLIC, "https://cloud.langfuse.com"), _key(*_LANGFUSE_SECRET, "https://cloud.langfuse.com")]),
             _row("Langfuse Self-Hosted", tag="Self-hosted Langfuse instance", post_setup="langfuse",
                  env_vars=[_key(*_LANGFUSE_PUBLIC), _key(*_LANGFUSE_SECRET),
-                           _key("HERMES_LANGFUSE_BASE_URL", "Langfuse server URL (e.g. http://localhost:3000)", default="http://localhost:3000")]),
+                           _key("AKRAMCODE_LANGFUSE_BASE_URL", "Langfuse server URL (e.g. http://localhost:3000)", default="http://localhost:3000")]),
         ],
     },
 }
@@ -446,8 +446,8 @@ def enabled_mcp_server_names(config: dict) -> Set[str]:
 
 
 #: Toolsets young enough that absence from a saved ``platform_toolsets`` list means "never offered", not
-#: "declined": saving ``hermes tools`` freezes a platform's composite into an explicit list nothing adds to, so
-#: a later toolset stays off forever for picker users while ``[hermes-cli]`` users inherit it.
+#: "declined": saving ``akramcode tools`` freezes a platform's composite into an explicit list nothing adds to, so
+#: a later toolset stays off forever for picker users while ``[akramcode-cli]`` users inherit it.
 #: MUST ship in the same release as the toolset and be emptied in the next: once a released build has put the
 #: toolset on a checklist, an unchecking user's config is byte-identical to one saved before it existed and this
 #: rule would turn the opt-out back on (stuck checkbox). ``check_fn``-gated toolsets cost nothing here; never
@@ -469,7 +469,7 @@ def _enable_recently_shipped_toolsets(enabled_toolsets: Set[str], config: dict, 
         if ts_key in enabled_toolsets or ts_key in declined or not _toolset_allowed_for_platform(ts_key, platform):
             continue
         # Only enable where staying on the composite would have enabled it anyway; deliberately narrow
-        # composites (hermes-acp, hermes-webhook) stay narrow.
+        # composites (akramcode-acp, akramcode-webhook) stay narrow.
         ts_tools = set(resolve_toolset(ts_key, include_registry=False))
         if composite_tools is None:
             composite_tools = set(resolve_toolset(default_ts))
@@ -521,7 +521,7 @@ def _explicit_toolsets(
     toolset_names: List[str], explicit_known_keys: Set[str], config: dict, platform: str,
     explicitly_configured: bool) -> Set[str]:
     """Enabled set when the saved list names configurable/plugin keys directly (subset inference over
-    ``hermes-cli`` would re-enable disabled toolsets). A mixed list (``[hermes-cli, spotify]``) still expands the
+    ``akramcode-cli`` would re-enable disabled toolsets). A mixed list (``[akramcode-cli, spotify]``) still expands the
     composite; _DEFAULT_OFF_TOOLSETS applies to that implicit expansion only."""
     from toolsets import resolve_toolset, TOOLSETS
 
@@ -568,7 +568,7 @@ def _context_engine_active(config: dict) -> bool:
 def _coerce_platform_toolsets_value(value, platform: str):
     """Read a list-literal string saved for ``platform_toolsets.<platform>`` as the list it encodes.
 
-    The parser is shared with ``hermes doctor`` and ``hermes plugins`` (``toolset_validation``
+    The parser is shared with ``akramcode doctor`` and ``akramcode plugins`` (``toolset_validation``
     ``parse_platform_toolsets_value``) so every surface agrees on the user's selection (#115866).
     Any other non-list value is warned about once (naming the expected shape) and left as-is, so
     the default fallback below is loud rather than silent.
@@ -583,7 +583,7 @@ def _coerce_platform_toolsets_value(value, platform: str):
         logger.warning(
             "platform_toolsets.%s is %r, expected a YAML list of toolset names "
             "(e.g. [terminal, file, web]) - falling back to the platform default. "
-            "Run `hermes tools` to reconfigure.", platform, value)
+            "Run `akramcode tools` to reconfigure.", platform, value)
     return value
 
 
@@ -591,7 +591,7 @@ def _get_platform_tools(config: dict, platform: str, *, include_default_mcp_serv
     """Resolve which individual toolset names are enabled for a platform."""
     platform_toolsets = config.get("platform_toolsets") or {}
     toolset_names = _coerce_platform_toolsets_value(platform_toolsets.get(platform), platform)
-    # An explicitly saved list (even a composite like ``hermes-discord``) is an opt-in to the platform's
+    # An explicitly saved list (even a composite like ``akramcode-discord``) is an opt-in to the platform's
     # native default-off toolsets — see _default_off_toolsets.
     # Track whether the user explicitly saved a toolset list for this platform (vs. falling back to the
     # platform default). See #35527.
@@ -604,9 +604,9 @@ def _get_platform_tools(config: dict, platform: str, *, include_default_mcp_serv
     configurable_keys = _configurable_keys()
     plugin_ts_keys = _get_plugin_toolset_keys()
     platform_default_keys = _platform_default_keys()
-    # Plugin toolsets are first-class on a saved list: ``[hermes-cli, a2a]`` must survive filtering.
+    # Plugin toolsets are first-class on a saved list: ``[akramcode-cli, a2a]`` must survive filtering.
     # Plugin-provided toolsets are first-class on a platform-toolsets list — explicit config like
-    # ``[hermes-cli, a2a]`` must survive filtering just like a built-in configurable toolset would. See
+    # ``[akramcode-cli, a2a]`` must survive filtering just like a built-in configurable toolset would. See
     # issue #81163.
     explicit_known_keys = configurable_keys | plugin_ts_keys
 
@@ -634,7 +634,7 @@ def _get_platform_tools(config: dict, platform: str, *, include_default_mcp_serv
         enabled_toolsets.add("kanban")
 
     # agent.disabled_toolsets is a global suppression list (#86661) and runs LAST so it overrides everything
-    # above. It may arrive as a JSON-array string ("['memory']") from `hermes config set` or a JSON-mode editor.
+    # above. It may arrive as a JSON-array string ("['memory']") from `akramcode config set` or a JSON-mode editor.
     disabled_toolsets = (config.get("agent") or {}).get("disabled_toolsets")
     if disabled_toolsets:
         from agent.skill_utils import parse_config_string_list
@@ -651,7 +651,7 @@ def _prune_toolsets_stripped_by_disabled(enabled_toolsets: Set[str], disabled_na
 
     The agent subtracts ``agent.disabled_toolsets`` at TOOL granularity (``model_tools._select_tool_names``),
     so disabling a composite like ``debugging`` removes the terminal/web/file tools even though those names
-    never appear in the list. A name-only subtraction here left inspection surfaces (``hermes tools
+    never appear in the list. A name-only subtraction here left inspection surfaces (``akramcode tools
     --summary``, banner, ``/tools``) showing toolsets as enabled that no session could call (#97015).
     Passthrough entries (MCP server names) and toolsets with no static tools (``context_engine``) are kept.
     """
@@ -673,7 +673,7 @@ def _recover_platform_native_toolsets(enabled_toolsets: Set[str], platform: str,
     platform_tool_universe = set(resolve_toolset(_platform_default_toolset(platform)))
     configurable_tool_universe = {t for ts_key, _, _ in CONFIGURABLE_TOOLSETS for t in resolve_toolset(ts_key)}
     claimed = {t for ts_key in enabled_toolsets for t in resolve_toolset(ts_key)}
-    skip = skip | {k for k in TOOLSETS if k.startswith("hermes-")} | (set(_DEFAULT_OFF_TOOLSETS) - {platform})
+    skip = skip | {k for k in TOOLSETS if k.startswith("akramcode-")} | (set(_DEFAULT_OFF_TOOLSETS) - {platform})
     for ts_key, ts_def in TOOLSETS.items():
         # Posture toolsets (``coding``) are session-level selections made by agent/coding_context.py, not
         # per-platform capabilities to recover.
@@ -705,7 +705,7 @@ def _merge_mcp_servers(
 
 
 def _warn_all_invalid_platform_toolsets(platform: str, explicit: list) -> None:
-    """Warn once when an explicit platform list has only invalid names (``hermes`` for ``hermes-cli`` → no
+    """Warn once when an explicit platform list has only invalid names (``akramcode`` for ``akramcode-cli`` → no
     native tools), at session tool resolution rather than only in update/doctor."""
     from toolsets import validate_toolset
 
@@ -714,7 +714,7 @@ def _warn_all_invalid_platform_toolsets(platform: str, explicit: list) -> None:
         _warned_invalid_platform_toolsets.add(platform)
         logger.warning(
             "platform '%s' has no valid toolsets configured (unknown "
-            "name(s): %s) - tools will be unavailable. Run `hermes tools` "
+            "name(s): %s) - tools will be unavailable. Run `akramcode tools` "
             "to reconfigure. See issue #38798.",
             platform, ", ".join(named))
 
@@ -727,7 +727,7 @@ def _save_platform_tools(config: dict, platform: str, enabled_toolset_keys: Set[
     enabled_toolset_keys = {ts for ts in enabled_toolset_keys if _toolset_allowed_for_platform(ts, platform)}
     plugin_keys = _get_plugin_toolset_keys()
     # Preserve only existing entries that are neither configurable nor platform defaults (i.e. MCP server
-    # names): platform defaults (hermes-cli, ...) resolve to ALL tools and would silently override the user's
+    # names): platform defaults (akramcode-cli, ...) resolve to ALL tools and would silently override the user's
     # unchecked selections on the next read. Saving from the picker is consent to clear the "no_mcp" sentinel
     # (no checkbox for it; users who once set it by hand could otherwise never re-enable MCP via the UI).
     drop = _configurable_keys() | plugin_keys | _platform_default_keys() | {"no_mcp"}
@@ -805,9 +805,9 @@ def _estimate_tool_tokens() -> Dict[str, int]:
     """tiktoken (cl100k_base) tokens per tool name from the serialised OpenAI schema; cached per process and
     registry generation, {} if tiktoken/registry unavailable."""
     global _tool_token_cache
-    from akramcode_constants import hermes_home_key
+    from akramcode_constants import akramcode_home_key
 
-    scope = hermes_home_key()
+    scope = akramcode_home_key()
     _tool_token_cache = _tool_token_cache or {}
     try:
         import model_tools  # noqa: F401 — triggers full tool discovery
@@ -961,7 +961,7 @@ def _platform_menu_label(config: dict, pkey: str) -> str:
 
 
 def _print_tools_summary(config: dict, enabled_platforms: List[str]) -> None:
-    """``hermes tools --summary``: enabled toolsets per platform, non-interactive."""
+    """``akramcode tools --summary``: enabled toolsets per platform, non-interactive."""
     total = len(_get_effective_configurable_toolsets())
     print(color("☤ Tool Summary", Colors.CYAN, Colors.BOLD))
     print()
@@ -1060,7 +1060,7 @@ def _configure_platforms(config: dict, platform_keys: List[str], *, all_platform
 
 
 def tools_command(args=None, first_install: bool = False, config: dict = None):
-    """Entry point for `hermes tools` / `hermes setup tools`. ``first_install`` skips the menu (checklist + key
+    """Entry point for `akramcode tools` / `akramcode setup tools`. ``first_install`` skips the menu (checklist + key
     prompts); a wizard-passed ``config`` receives platform_toolsets so its final save_config() keeps them."""
     if config is None:
         config = load_config()
@@ -1070,10 +1070,10 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
     if getattr(args, "summary", False):
         _print_tools_summary(config, enabled_platforms)
         return
-    print(color("☤ Hermes Tool Configuration", Colors.CYAN, Colors.BOLD))
+    print(color("☤ AkramCode Tool Configuration", Colors.CYAN, Colors.BOLD))
     print(color("  Enable or disable tools per platform.", Colors.DIM))
     print(color("  Tools that need API keys will be configured when enabled.", Colors.DIM))
-    print(color("  Guide: https://hermes-agent.nousresearch.com/docs/user-guide/features/tools", Colors.DIM))
+    print(color("  Guide: https://akramcode-agent.nousresearch.com/docs/user-guide/features/tools", Colors.DIM))
     print()
     if first_install:
         _first_install_flow(config, enabled_platforms)
@@ -1116,7 +1116,7 @@ def tools_command(args=None, first_install: bool = False, config: dict = None):
         print()
 
     print()
-    from akramcode_constants import display_hermes_home
-    print(color(f"  Tool configuration saved to {display_hermes_home()}/config.yaml", Colors.DIM))
-    print(color("  Changes take effect on next 'hermes' or gateway restart.", Colors.DIM))
+    from akramcode_constants import display_akramcode_home
+    print(color(f"  Tool configuration saved to {display_akramcode_home()}/config.yaml", Colors.DIM))
+    print(color("  Changes take effect on next 'akramcode' or gateway restart.", Colors.DIM))
     print()

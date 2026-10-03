@@ -1,4 +1,4 @@
-"""Client for uploading ``hermes debug share`` bundles to Nous-internal S3.
+"""Client for uploading ``akramcode debug share`` bundles to Nous-internal S3.
 1. POST {NAS_BASE}/api/diagnostics/upload-url → {uploadUrl, viewUrl, id, ...}; the body carries ``sizeBytes``,
    which NAS signs into the presigned URL's ``ContentLength``, so the PUT must send exactly that many bytes.
 2. PUT <uploadUrl> (gzipped bundle, Content-Type application/gzip). NAS is stateless — no confirm step."""
@@ -8,10 +8,10 @@ import os
 import urllib.request
 
 # Overridable via env so the feature can be pointed at staging / a local dev NAS instance.
-NAS_BASE = os.environ.get("HERMES_DIAGNOSTICS_BASE_URL", "https://portal.nousresearch.com")
+NAS_BASE = os.environ.get("AKRAMCODE_DIAGNOSTICS_BASE_URL", "https://portal.nousresearch.com")
 _REQUEST_TIMEOUT = 30
 _UPLOAD_TIMEOUT = 120  # the PUT carries the gzipped log bundle, so a more generous window
-_USER_AGENT = "hermes-agent/debug-share"
+_USER_AGENT = "akramcode-agent/debug-share"
 
 
 def _urlopen_checked(url: str, data: bytes, method: str, headers: dict, *, timeout: int, what: str):

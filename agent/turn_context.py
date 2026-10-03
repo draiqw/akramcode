@@ -289,7 +289,7 @@ def export_current_turn_boundary(agent: Any, result: Any, user_message: Any) -> 
     """Stamp ``{turn_id, current_turn_user_idx}`` on a result envelope, proven against the
     exact ``result["messages"]`` projection it travels with.
 
-    Hosts that settle their own transcript by index (hermes-webui) must never guess which
+    Hosts that settle their own transcript by index (akramcode-webui) must never guess which
     row is the current user turn after this loop rewrote history (alternation repair,
     compaction, post-turn micro-compaction): a guessed index or a text match can relabel an
     identical historical prompt and claim its old answer as this turn's. So the producer
@@ -1018,7 +1018,7 @@ def build_turn_context(
     if recovered_history is not None:
         conversation_history = recovered_history
 
-    # Tag log records on this thread with the session ID for ``hermes logs``; bind the
+    # Tag log records on this thread with the session ID for ``akramcode logs``; bind the
     # skill write-origin ContextVar; restore the primary runtime after a fallback turn.
     # NOTE: the DB session row is created later, AFTER the system prompt is restored/built (see
     # _ensure_db_session() below the system-prompt block). Creating it here — before _cached_system_prompt

@@ -11,7 +11,7 @@ from akramcode_cli.foreign_sessions_browser import list_foreign_sessions
 @pytest.mark.parametrize("operation", ["resolve", "stat"])
 def test_discovery_skips_inaccessible_log(tmp_path, monkeypatch, operation):
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / ".akramcode"))
     folder = tmp_path / ".codex" / "sessions"
     folder.mkdir(parents=True)
     for name in ("readable", "inaccessible"):

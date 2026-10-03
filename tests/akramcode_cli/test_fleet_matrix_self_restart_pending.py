@@ -21,7 +21,7 @@ HEAD = "b" * 40
 
 def _fleet_homes(monkeypatch, tmp_path, records: dict[str, dict]) -> None:
     """Default home + named profiles, each with a state file the identity resolver verifies as-is."""
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".akramcode"
     (root / "profiles").mkdir(parents=True)
     homes = {"default": root}
     for profile, record in records.items():
@@ -31,7 +31,7 @@ def _fleet_homes(monkeypatch, tmp_path, records: dict[str, dict]) -> None:
         (home / "gateway_state.json").write_text(json.dumps(record), encoding="utf-8")
     by_home = {str(home): rec["pid"] for profile, home in homes.items() for rec in [records[profile]]}
     monkeypatch.setattr("akramcode_cli.version_info.get_code_identity", lambda refresh=False: {"sha": HEAD, "version": "1.0"})
-    monkeypatch.setattr("akramcode_cli.profiles._get_default_hermes_home", lambda: root)
+    monkeypatch.setattr("akramcode_cli.profiles._get_default_akramcode_home", lambda: root)
     monkeypatch.setattr("akramcode_cli.profiles._get_profiles_root", lambda: root / "profiles")
     monkeypatch.setattr("gateway.control_socket.identify_gateway", lambda h, **k: None)
     monkeypatch.setattr("gateway.status.live_gateway_pid_for_home", lambda h: by_home.get(str(h)))
@@ -85,7 +85,7 @@ def test_restart_phase_records_accepted_self_restart_and_verify_exits_clean(monk
     monkeypatch.setattr(fleet_mod, "_clear_fleet_restart_pending_marker", lambda: cleared.append(True))
     monkeypatch.setattr("akramcode_cli.gateway_migrate.maybe_auto_migrate_after_update", lambda: None)
     restart = fleet_mod._GatewayRestartOutcome(
-        incomplete=False, phase_errors=[], pre_restart_gateway_pids=[ancestor], restarted_services=["hermes-gateway"],
+        incomplete=False, phase_errors=[], pre_restart_gateway_pids=[ancestor], restarted_services=["akramcode-gateway"],
         failed_or_stale_units=[], relaunched_profiles=[], externally_supervised_profiles=[], killed_pids=set(),
         self_restart_pending_pids=pending,
     )

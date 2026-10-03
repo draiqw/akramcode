@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check that subprocess calls in TUI-context code specify stdin=.
 
-When Hermes runs in TUI mode, the gateway child process communicates with
+When AkramCode runs in TUI mode, the gateway child process communicates with
 the Node.js parent over a JSON-RPC protocol on stdin. Subprocess calls that
 inherit this fd can cause the gateway to exit with stdin EOF during tool
 execution (issue #14036, PR #39257).
@@ -39,8 +39,8 @@ TUI_CONTEXT_DIRS = [
 ]
 
 # User plugin roots — scanned at runtime if they exist.  Plugins load from
-# ``get_hermes_home() / "plugins"`` (user) and ``./.hermes/plugins/`` (project,
-# gated behind ``HERMES_ENABLE_PROJECT_PLUGINS``) — see
+# ``get_akramcode_home() / "plugins"`` (user) and ``./.akramcode/plugins/`` (project,
+# gated behind ``AKRAMCODE_ENABLE_PROJECT_PLUGINS``) — see
 # ``akramcode_cli/plugins.py:10-12``.  The guard only checked the bundled
 # ``plugins/`` dir, missing user-installed code that spawns subprocesses
 # (gap reported in #67639).
@@ -210,7 +210,7 @@ def main() -> int:
     # Add repo root to sys.path so we can import akramcode_constants (this script
     # runs as a standalone subprocess, not as a module).
     sys.path.insert(0, str(repo_root))
-    from akramcode_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
 
     all_violations = []
 
@@ -237,12 +237,12 @@ def main() -> int:
             all_violations.extend(violations)
 
     # Scan user plugin directories (Gap 1: guard missed user-installed
-    # plugins in get_hermes_home()/plugins/ and project plugins in
-    # ./.hermes/plugins/, where code like ori/hooks.py can spawn
+    # plugins in get_akramcode_home()/plugins/ and project plugins in
+    # ./.akramcode/plugins/, where code like ori/hooks.py can spawn
     # subprocesses with inherited stdin — #67639).
-    plugin_roots: list[Path] = [get_hermes_home() / "plugins"]
-    if os.environ.get("HERMES_ENABLE_PROJECT_PLUGINS"):
-        plugin_roots.append(Path.cwd() / ".hermes" / "plugins")
+    plugin_roots: list[Path] = [get_akramcode_home() / "plugins"]
+    if os.environ.get("AKRAMCODE_ENABLE_PROJECT_PLUGINS"):
+        plugin_roots.append(Path.cwd() / ".akramcode" / "plugins")
     seen_roots: set[Path] = set()
     for plugin_root in plugin_roots:
         resolved = plugin_root.resolve()

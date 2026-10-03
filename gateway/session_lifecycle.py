@@ -48,7 +48,7 @@ _AUTO_CONTINUE_FRESHNESS_SECS_DEFAULT = 60 * 60
 
 def auto_continue_freshness_window() -> float:
     """Resume-scheduler freshness window; stale automation never discards the transcript."""
-    raw = os.environ.get("HERMES_AUTO_CONTINUE_FRESHNESS")
+    raw = os.environ.get("AKRAMCODE_AUTO_CONTINUE_FRESHNESS")
     try:
         return float(raw) if raw else float(_AUTO_CONTINUE_FRESHNESS_SECS_DEFAULT)
     except (TypeError, ValueError):

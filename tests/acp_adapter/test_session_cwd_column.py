@@ -1,6 +1,6 @@
 """ACP sessions must populate the cwd COLUMN, not only model_config.
 
-Hermes Desktop's Projects sidebar, ``hermes sessions list``, and every
+AkramCode Desktop's Projects sidebar, ``akramcode sessions list``, and every
 profile-keyed consumer group sessions off ``sessions.cwd``. The ACP adapter
 recorded the workspace only inside the ``model_config`` JSON blob, so every
 editor-created session (VS Code, Antigravity, Zed, JetBrains, Buzz) rendered

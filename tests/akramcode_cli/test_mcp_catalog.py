@@ -11,7 +11,7 @@ import re
 from pathlib import Path
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 
 # ---------------------------------------------------------------------------
@@ -40,18 +40,18 @@ def catalog_dir(tmp_path, monkeypatch):
     """Provide an isolated optional-mcps/ directory."""
     cat = tmp_path / "optional-mcps"
     cat.mkdir()
-    monkeypatch.setenv("HERMES_OPTIONAL_MCPS", str(cat))
+    monkeypatch.setenv("AKRAMCODE_OPTIONAL_MCPS", str(cat))
     return cat
 
 
 @pytest.fixture(autouse=True)
-def _isolate_hermes_home(tmp_path, monkeypatch):
-    """Redirect all config I/O to a temp HERMES_HOME."""
-    hh = tmp_path / "hermes-home"
+def _isolate_akramcode_home(tmp_path, monkeypatch):
+    """Redirect all config I/O to a temp AKRAMCODE_HOME."""
+    hh = tmp_path / "akramcode-home"
     hh.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hh))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(hh))
     monkeypatch.setattr(
-        "akramcode_cli.config.get_hermes_home", lambda: hh
+        "akramcode_cli.config.get_akramcode_home", lambda: hh
     )
     monkeypatch.setattr(
         "akramcode_cli.config.get_config_path", lambda: hh / "config.yaml"
@@ -59,9 +59,9 @@ def _isolate_hermes_home(tmp_path, monkeypatch):
     monkeypatch.setattr(
         "akramcode_cli.config.get_env_path", lambda: hh / ".env"
     )
-    # mcp_catalog grabs get_hermes_home() lazily through hermes_constants
+    # mcp_catalog grabs get_akramcode_home() lazily through akramcode_constants
     monkeypatch.setattr(
-        "hermes_constants.get_hermes_home", lambda: hh
+        "akramcode_constants.get_akramcode_home", lambda: hh
     )
     return hh
 
@@ -949,9 +949,9 @@ class TestShippedCatalog:
         manifest. Intentionally NOT a snapshot of catalog names (those are
         expected to change as PRs land).
         """
-        # Use the actual repo's optional-mcps directory (no HERMES_OPTIONAL_MCPS
+        # Use the actual repo's optional-mcps directory (no AKRAMCODE_OPTIONAL_MCPS
         # override) so this test catches real manifests.
-        monkeypatch.delenv("HERMES_OPTIONAL_MCPS", raising=False)
+        monkeypatch.delenv("AKRAMCODE_OPTIONAL_MCPS", raising=False)
         from akramcode_cli.mcp_catalog import _catalog_root, _parse_manifest
 
         root = _catalog_root()
@@ -969,7 +969,7 @@ class TestShippedCatalog:
 
     def test_all_shipped_manifests_are_version_locked(self, monkeypatch):
         """Contract: catalog entries follow the same supply-chain rules as
-        pyproject dependencies — everything Hermes fetches/launches is pinned
+        pyproject dependencies — everything AkramCode fetches/launches is pinned
         to an exact version.
 
         - git installs must pin a full 40-char commit SHA (branches and tags
@@ -982,7 +982,7 @@ class TestShippedCatalog:
         pin at the transport layer (the server runs elsewhere / comes from the
         SHA-pinned clone), so they're exempt.
         """
-        monkeypatch.delenv("HERMES_OPTIONAL_MCPS", raising=False)
+        monkeypatch.delenv("AKRAMCODE_OPTIONAL_MCPS", raising=False)
         from akramcode_cli.mcp_catalog import _catalog_root, _parse_manifest
 
         root = _catalog_root()

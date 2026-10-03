@@ -1,6 +1,6 @@
 """Multiplexed-gateway parity for what a TURN sees: a profile served by the default multiplexer
 (``_profile_runtime_scope``) must observe the same tool-side policy its standalone gateway
-(``HERMES_HOME=<profile>``) would — never the launch profile's values frozen into process caches or
+(``AKRAMCODE_HOME=<profile>``) would — never the launch profile's values frozen into process caches or
 read from the process env.
 
 Every test warms the site under launch home A, then reads under routed profile B with different
@@ -12,19 +12,19 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from akramcode_constants import reset_akramcode_home_override, set_akramcode_home_override
 
 
 @pytest.fixture
 def two_homes(tmp_path, monkeypatch):
-    """Launch home A (HERMES_HOME) and routed profile B, differing in every setting under test."""
-    a = tmp_path / ".hermes"
+    """Launch home A (AKRAMCODE_HOME) and routed profile B, differing in every setting under test."""
+    a = tmp_path / ".akramcode"
     b = a / "profiles" / "b"
     b.mkdir(parents=True)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(a))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(a))
     for name, home in (("a", a), ("b", b)):
         (home / f"cred_{name}.txt").write_text("x", encoding="utf-8")
         (home / "config.yaml").write_text(yaml.safe_dump({
@@ -39,18 +39,18 @@ def two_homes(tmp_path, monkeypatch):
 
 
 def _under(home: Path, fn):
-    token = set_hermes_home_override(str(home))
+    token = set_akramcode_home_override(str(home))
     try:
         return fn()
     finally:
-        reset_hermes_home_override(token)
+        reset_akramcode_home_override(token)
 
 
 def test_routed_local_profile_cwd_matches_standalone_gateway(tmp_path, two_homes):
     """A standalone gateway resolves an unset ``terminal.cwd`` on a local backend to ``$HOME`` at
     import; the routed profile's terminal scope must yield the same cwd, not the multiplexer's
     process cwd — otherwise the system prompt, context files and the terminal all start in
-    wherever ``hermes gateway`` happened to be launched from."""
+    wherever ``akramcode gateway`` happened to be launched from."""
     from tools.terminal_scope import build_profile_terminal_scope, install_and_reset_profile_terminal_scope
     from agent.runtime_cwd import resolve_agent_cwd
 
@@ -96,17 +96,17 @@ def test_terminal_backend_consumers_read_the_routed_scope(two_homes):
         return (
             image_source._is_local_terminal_backend(),
             image_generation_tool._agent_cache_base_for_env(None),
-            credential_files.to_agent_visible_cache_path("/host/.hermes/x.png", "/root/.hermes"),
+            credential_files.to_agent_visible_cache_path("/host/.akramcode/x.png", "/root/.akramcode"),
             sorted(Path(m["host_path"]).name for m in credential_files.get_credential_file_mounts()),
         )
 
     with _profile_runtime_scope(a):
-        assert observe() == (True, None, "/host/.hermes/x.png", ["cred_a.txt"])
+        assert observe() == (True, None, "/host/.akramcode/x.png", ["cred_a.txt"])
     with _profile_runtime_scope(b):
         local, cache_base, translated, mounts = observe()
     assert local is False
-    assert cache_base == "/root/.hermes"
-    assert translated != "/host/.hermes/x.png" or mounts == ["cred_b.txt"]
+    assert cache_base == "/root/.akramcode"
+    assert translated != "/host/.akramcode/x.png" or mounts == ["cred_b.txt"]
     assert mounts == ["cred_b.txt"]
 
 

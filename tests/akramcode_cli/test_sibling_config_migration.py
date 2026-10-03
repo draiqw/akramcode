@@ -1,16 +1,16 @@
 """Fleet-wide config migration (#91277 Phase 2 — #20438/#54926/#79048 class).
 
-`hermes update` migrated only the active profile's config.yaml; sibling
+`akramcode update` migrated only the active profile's config.yaml; sibling
 profiles silently drifted config versions until their gateway hit a config
 the new code couldn't read. `_migrate_sibling_profile_configs()` runs the
 same non-interactive safe migration for every sibling home, scoped via the
-context-local HERMES_HOME override.
+context-local AKRAMCODE_HOME override.
 
 These tests use REAL config files on disk and the REAL migration pipeline —
 only the profile-root location is pointed at tmp_path.
 """
 
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 from pathlib import Path
 
 import akramcode_cli.update_cmd as update_cmd
@@ -38,17 +38,17 @@ def _setup(monkeypatch, tmp_path, active_home: Path, *, default_home: Path | Non
 
     monkeypatch.setattr(profiles_mod, "_get_profiles_root", lambda: tmp_path / "profiles")
     # Default lives at the install root, not under profiles/; absent unless a test passes it,
-    # so no test can reach the real ~/.hermes.
+    # so no test can reach the real ~/.akramcode.
     missing = tmp_path / "no-such-default-home"
     monkeypatch.setattr(
         profiles_mod,
-        "_get_default_hermes_home",
+        "_get_default_akramcode_home",
         lambda: default_home if default_home is not None else missing,
     )
-    import hermes_constants
+    import akramcode_constants
 
     monkeypatch.setattr(
-        hermes_constants, "get_process_hermes_home", lambda: active_home
+        akramcode_constants, "get_process_akramcode_home", lambda: active_home
     )
 
 
@@ -119,15 +119,15 @@ def test_one_broken_profile_does_not_block_others(monkeypatch, tmp_path):
 
 def test_override_is_reset_after_run(monkeypatch, tmp_path):
     """The ContextVar override must not leak past the sweep."""
-    from hermes_constants import get_hermes_home_override
+    from akramcode_constants import get_akramcode_home_override
 
     active = _write_profile(tmp_path / "profiles", "active", _latest_version())
     _write_profile(tmp_path / "profiles", "research", 12)
     _setup(monkeypatch, tmp_path, active)
 
-    before = get_hermes_home_override()
+    before = get_akramcode_home_override()
     update_cmd._migrate_sibling_profile_configs()
-    assert get_hermes_home_override() == before
+    assert get_akramcode_home_override() == before
 
 
 def test_named_active_migrates_default_outside_profiles(monkeypatch, tmp_path):

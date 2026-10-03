@@ -15,7 +15,7 @@ from akramcode_state import SessionDB
 
 @pytest.fixture
 def db(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
     return SessionDB(tmp_path / "state.db")
 
 

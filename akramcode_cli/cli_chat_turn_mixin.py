@@ -1,6 +1,6 @@
 """chat() and its per-turn phases: image routing, staging, agent thread, interrupt monitor, rendering.
 
-Mixin bound onto ``HermesCLI`` via the MRO. cli.py-internal symbols are imported LAZILY
+Mixin bound onto ``AkramCodeCLI`` via the MRO. cli.py-internal symbols are imported LAZILY
 inside each method — importing ``cli`` at module load time would be a cycle.
 """
 
@@ -275,7 +275,7 @@ class CLIChatTurnMixin:
             def display_callback(sentence: str):
                 if not turn.box_opened:
                     turn.box_opened = True
-                    label = " ☤ Hermes "
+                    label = " ☤ AkramCode "
                     if self.show_timestamps:
                         label = f"{label}{datetime.now().strftime(self.timestamp_format)} "
                     w = self._scrollback_box_width(getattr(self.console, "width", 80))
@@ -398,7 +398,7 @@ class CLIChatTurnMixin:
 
     def _chat_monitor_agent_thread(self, turn, agent_thread):
         """Poll the interrupt queue while the agent thread runs; returns the interrupting message (or None)."""
-        from cli import _cprint, _hermes_home, logger
+        from cli import _cprint, _akramcode_home, logger
         # Ambient "thinking" blips in voice mode; skipped per-blip while TTS speaks, the mic
         # records or a barge capture is live. voice.thinking_sound gates it (default on).
         if self._voice_mode:
@@ -440,7 +440,7 @@ class CLIChatTurnMixin:
             self._clear_active_overlays_for_interrupt()
             # Debug log to file (stdout may be devnull under redirect_stdout).
             try:
-                with open(_hermes_home / "interrupt_debug.log", "a", encoding="utf-8") as _f:
+                with open(_akramcode_home / "interrupt_debug.log", "a", encoding="utf-8") as _f:
                     _f.write(f"{time.strftime('%H:%M:%S')} interrupt fired: msg={str(interrupt_msg)[:60]!r}, "
                              f"children={len(self.agent._active_children)}, "
                              f"parent._interrupt={self.agent._interrupt_requested}\n")
@@ -671,11 +671,11 @@ class CLIChatTurnMixin:
             try:
                 from akramcode_cli.skin_engine import get_active_skin
                 _skin = get_active_skin()
-                label = _skin.get_branding("response_label", "☤ Hermes")
+                label = _skin.get_branding("response_label", "☤ AkramCode")
                 _resp_color = _maybe_remap_for_light_mode(_skin.get_color("response_border", "#CD7F32"))
                 _resp_text = _maybe_remap_for_light_mode(_skin.get_color("banner_text", "#FFF8DC"))
             except Exception:
-                label = "☤ Hermes"
+                label = "☤ AkramCode"
                 _resp_color = _maybe_remap_for_light_mode("#CD7F32")
                 _resp_text = _maybe_remap_for_light_mode("#FFF8DC")
 

@@ -86,7 +86,7 @@ def _kill(identity):
 def test_owner_exit_kills_router_tree_not_external(tmp_path, stop_mode, nested):
     script = tmp_path / 'disposable server.py'
     script.write_text(_SCRIPT)
-    env = dict(os.environ, HERMES_HOME=str(tmp_path / 'home'),
+    env = dict(os.environ, AKRAMCODE_HOME=str(tmp_path / 'home'),
                PYTHONPATH=str(Path(__file__).resolve().parents[2]))
     launchers = []
     outer_job = None

@@ -12,7 +12,7 @@ import pytest
 import akramcode_cli.gateway as gateway
 
 
-_BREAKAWAY_MARKER = "_HERMES_GATEWAY_BREAKAWAY"
+_BREAKAWAY_MARKER = "_AKRAMCODE_GATEWAY_BREAKAWAY"
 
 
 @pytest.fixture(autouse=True)
@@ -45,7 +45,7 @@ def _run_native_windows_gateway_start_diag(
         import akramcode_cli.gateway as gateway_cli
 
         async def start_gateway(**kwargs):
-            assert "_HERMES_GATEWAY_BREAKAWAY" not in os.environ
+            assert "_AKRAMCODE_GATEWAY_BREAKAWAY" not in os.environ
             return True
 
         fake_run = types.ModuleType("gateway.run")
@@ -61,7 +61,7 @@ def _run_native_windows_gateway_start_diag(
         gateway_cli.supports_systemd_services = lambda: False
         gateway_cli.run_gateway(quiet=True)
 
-        diag_path = pathlib.Path(os.environ["HERMES_HOME"]) / "logs" / "gateway-exit-diag.log"
+        diag_path = pathlib.Path(os.environ["AKRAMCODE_HOME"]) / "logs" / "gateway-exit-diag.log"
         rows = [json.loads(line) for line in diag_path.read_text(encoding="utf-8").splitlines()]
         start = next(row for row in rows if row["tag"] == "gateway.start")
         payload = {
@@ -74,10 +74,10 @@ def _run_native_windows_gateway_start_diag(
     env: dict[str, str] = dict(os.environ)
     env.update(
         {
-            "HERMES_HOME": str(tmp_path),
-            "HERMES_GATEWAY_DETACHED": "1",
-            "HERMES_GATEWAY_EXIT_DIAG": "1",
-            "HERMES_GATEWAY_MAX_STARTS": "0",
+            "AKRAMCODE_HOME": str(tmp_path),
+            "AKRAMCODE_GATEWAY_DETACHED": "1",
+            "AKRAMCODE_GATEWAY_EXIT_DIAG": "1",
+            "AKRAMCODE_GATEWAY_MAX_STARTS": "0",
             "PYTHONIOENCODING": "utf-8",
         }
     )
@@ -157,7 +157,7 @@ def test_gateway_run_subprocess_preserves_daemon_exit_codes(
 
         import akramcode_cli.gateway as gateway_cli
 
-        outcome = os.environ["HERMES_TEST_GATEWAY_OUTCOME"]
+        outcome = os.environ["AKRAMCODE_TEST_GATEWAY_OUTCOME"]
 
         async def start_gateway(**kwargs):
             if outcome == "failure":
@@ -180,9 +180,9 @@ def test_gateway_run_subprocess_preserves_daemon_exit_codes(
     )
     env = {
         **os.environ,
-        "HERMES_HOME": str(tmp_path),
-        "HERMES_GATEWAY_EXIT_DIAG": "0",
-        "HERMES_TEST_GATEWAY_OUTCOME": outcome,
+        "AKRAMCODE_HOME": str(tmp_path),
+        "AKRAMCODE_GATEWAY_EXIT_DIAG": "0",
+        "AKRAMCODE_TEST_GATEWAY_OUTCOME": outcome,
         "INVOCATION_ID": "systemd-test",
     }
 
@@ -237,7 +237,7 @@ def test_s6_runtime_snapshot_reports_supervised_service(monkeypatch, tmp_path):
             return True
 
     monkeypatch.setattr(gateway, "is_linux", lambda: True)
-    monkeypatch.setattr("hermes_constants.is_container", lambda: True)
+    monkeypatch.setattr("akramcode_constants.is_container", lambda: True)
     monkeypatch.setattr("akramcode_cli.service_manager.detect_service_manager", lambda: "s6")
     monkeypatch.setattr("akramcode_cli.service_manager.get_service_manager", lambda: FakeS6Manager())
     monkeypatch.setattr(gateway, "find_gateway_pids", lambda: [123])
@@ -330,7 +330,7 @@ def test_spawn_detached_gateway_timestamps_stderr(monkeypatch, tmp_path):
         calls.append((cmd, kwargs))
         return SimpleNamespace()
 
-    monkeypatch.setattr(gateway, "get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr(gateway, "get_akramcode_home", lambda: tmp_path)
     monkeypatch.setattr(gateway, "get_python_path", lambda: "/usr/bin/python3")
     monkeypatch.setattr(gateway, "_gateway_run_command", lambda: child_cmd)
     monkeypatch.setattr(gateway.subprocess, "Popen", fake_popen)
@@ -350,17 +350,17 @@ def test_spawn_detached_gateway_timestamps_stderr(monkeypatch, tmp_path):
 
 @pytest.mark.platforms("posix")  # systemd user-linger is Linux-only (drives os.getuid())
 def test_systemd_install_checks_linger_status(monkeypatch, tmp_path):
-    unit_path = tmp_path / "systemd" / "user" / "hermes-gateway.service"
+    unit_path = tmp_path / "systemd" / "user" / "akramcode-gateway.service"
 
     monkeypatch.setattr(gateway, "get_systemd_unit_path", lambda system=False: unit_path)
     # Synthetic unit with a non-temp home: the real generator bakes the
-    # hermetic test HERMES_HOME (a tmp dir), which the temp-home write
+    # hermetic test AKRAMCODE_HOME (a tmp dir), which the temp-home write
     # guard correctly refuses.
     monkeypatch.setattr(
         gateway,
         "generate_systemd_unit",
         lambda system=False, run_as_user=None: (
-            '[Service]\nEnvironment="HERMES_HOME=/home/alice/.hermes"\n'
+            '[Service]\nEnvironment="AKRAMCODE_HOME=/home/alice/.akramcode"\n'
         ),
     )
 
@@ -398,7 +398,7 @@ def test_gateway_install_noninteractive_skips_legacy_unit_prompt(monkeypatch, tm
     Covers the second hidden prompt that --start-now/--start-on-login do not
     guard. Originally contributed via PR #42124 (kyssta-exe).
     """
-    monkeypatch.setattr(gateway, "has_legacy_hermes_units", lambda: True)
+    monkeypatch.setattr(gateway, "has_legacy_akramcode_units", lambda: True)
 
     calls = []
     monkeypatch.setattr(
@@ -406,10 +406,10 @@ def test_gateway_install_noninteractive_skips_legacy_unit_prompt(monkeypatch, tm
         "prompt_yes_no",
         lambda question, default=True: calls.append(("prompt", question)) or True,
     )
-    monkeypatch.setattr(gateway, "remove_legacy_hermes_units", lambda interactive=False: calls.append(("remove_legacy",)))
+    monkeypatch.setattr(gateway, "remove_legacy_akramcode_units", lambda interactive=False: calls.append(("remove_legacy",)))
     monkeypatch.setattr(gateway, "print_legacy_unit_warning", lambda: None)
 
-    fake_path = tmp_path / "hermes-gateway.service"
+    fake_path = tmp_path / "akramcode-gateway.service"
     monkeypatch.setattr(gateway, "get_systemd_unit_path", lambda system=False: fake_path)
     monkeypatch.setattr(gateway, "generate_systemd_unit", lambda system=False, run_as_user=None: "[Service]")
     monkeypatch.setattr(gateway, "_run_systemctl", lambda *a, **kw: None)
@@ -516,7 +516,7 @@ class TestWaitForGatewayExit:
 
 
 class TestRestartWaitsForApiServerPort:
-    """Regression for #91547: ``hermes gateway restart`` waited only for the old PID; on macOS the
+    """Regression for #91547: ``akramcode gateway restart`` waited only for the old PID; on macOS the
     replacement then hit EADDRINUSE and ran with no API server."""
 
     def test_port_is_reported_free_once_the_old_listener_closes(self):
@@ -711,7 +711,7 @@ class TestReapUnsupervisedGatewayOrphansMacOS:
 
     Regression guard: without the ``is_macos()`` exclusion of
     ``_get_service_pids()``, the reaper would SIGTERM the launchd-supervised
-    gateway every time Hermes Desktop opens (``hermes serve`` calls
+    gateway every time AkramCode Desktop opens (``akramcode serve`` calls
     ``_reap_unsupervised_gateway_orphans`` during startup).
     """
 
@@ -760,8 +760,8 @@ class TestReapUnsupervisedGatewayOrphansWindows:
 
     Regression guard: without the Windows exemption of the recorded healthy
     gateway PID (and its parent chain), the reaper would SIGTERM/SIGKILL a
-    Scheduled-Task-supervised gateway every time Hermes Desktop opens
-    (``hermes serve`` calls ``_reap_unsupervised_gateway_orphans`` during
+    Scheduled-Task-supervised gateway every time AkramCode Desktop opens
+    (``akramcode serve`` calls ``_reap_unsupervised_gateway_orphans`` during
     startup). The Scheduled-Task bootstrap's argv matches the gateway scan,
     so it is reaped as an "orphan" — and when the bootstrap dies, the
     detached gateway it spawned exits with it (#86098).
@@ -968,15 +968,15 @@ class TestWindowsScheduledTaskSupervisorGuard:
             raise AssertionError("subprocess must not run off Windows")
 
         monkeypatch.setattr(gateway.subprocess, "run", _boom_run)
-        assert gateway._windows_scheduled_task_supervises("HermesGateway") is False
-        assert gateway._windows_scheduled_task_state("HermesGateway") is None
+        assert gateway._windows_scheduled_task_supervises("AkramCodeGateway") is False
+        assert gateway._windows_scheduled_task_state("AkramCodeGateway") is None
 
     def test_supervises_ready_and_queued_but_not_disabled(self, monkeypatch):
         states = {"Running": True, "Ready": True, "Queued": True, "Disabled": False, "MISSING": False}
 
         for state, expected in states.items():
             monkeypatch.setattr(gateway, "_windows_scheduled_task_state", lambda name, s=state: s)
-            assert gateway._windows_scheduled_task_supervises("Hermes_Gateway") is expected, state
+            assert gateway._windows_scheduled_task_supervises("AkramCode_Gateway") is expected, state
 
 
 
@@ -987,11 +987,11 @@ class TestWindowsScheduledTaskSupervisorGuard:
 def test_find_windows_gateway_services_ignores_task_scheduler_ancestor(monkeypatch):
     """gateway <- cmd.exe <- svchost.exe(Schedule) <- services.exe: the Task Scheduler host is not the
     gateway's supervisor, so a task-launched gateway is a plain process (#97208); the same tree under a
-    Hermes-owned service (by binary path) stays SCM-supervised."""
+    AkramCode-owned service (by binary path) stays SCM-supervised."""
     import psutil
     import akramcode_cli.gateway_windows as gateway_windows
 
-    monkeypatch.setattr(gateway_windows, "hermes_service_roots", lambda: (r"C:\hermes\hermes-agent",))
+    monkeypatch.setattr(gateway_windows, "akramcode_service_roots", lambda: (r"C:\akramcode\akramcode-agent",))
     profile = SimpleNamespace(profile="default", pid=18480, create_time=18480.0)
 
     class FakeService:
@@ -1023,11 +1023,11 @@ def test_find_windows_gateway_services_ignores_task_scheduler_ancestor(monkeypat
         )
 
     assert run(FakeService("Schedule", r"C:\Windows\system32\svchost.exe -k netsvcs -p -s Schedule")) == []
-    owned = run(FakeService("gw", r'"C:\hermes\hermes-agent\venv\Scripts\hermes.exe" gateway run'))
+    owned = run(FakeService("gw", r'"C:\akramcode\akramcode-agent\venv\Scripts\akramcode.exe" gateway run'))
     assert [(s.name, s.service_pid, s.gateway_pid) for s in owned] == [("gw", 2360, 18480)]
 
     # QueryServiceConfig unreadable to this user (hardened or malformed third-party service): not
-    # Hermes's, and never a reason to abort; a Hermes-NAMED service is settled without asking binpath.
+    # AkramCode's, and never a reason to abort; a AkramCode-NAMED service is settled without asking binpath.
     class UnreadableConfigService(FakeService):
         def __init__(self, name, error):
             super().__init__(name, "")
@@ -1038,8 +1038,8 @@ def test_find_windows_gateway_services_ignores_task_scheduler_ancestor(monkeypat
 
     assert run(UnreadableConfigService("Hardened", psutil.AccessDenied(2360, "Hardened"))) == []
     assert run(UnreadableConfigService("BrokenMui", OSError(15100, "MUI file missing"))) == []
-    named = run(UnreadableConfigService("HermesGateway", OSError(15100, "MUI file missing")))
-    assert [(s.name, s.service_pid, s.gateway_pid) for s in named] == [("HermesGateway", 2360, 18480)]
+    named = run(UnreadableConfigService("AkramCodeGateway", OSError(15100, "MUI file missing")))
+    assert [(s.name, s.service_pid, s.gateway_pid) for s in named] == [("AkramCodeGateway", 2360, 18480)]
 
 
 

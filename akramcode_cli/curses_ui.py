@@ -35,8 +35,8 @@ class MenuNavigationEvent(str, Enum):
 # Scoped flow controller: ``handler(event, value=None) -> MenuNavigationStart | None``.
 MenuNavigationHandler = Callable[..., "MenuNavigationStart | None"]
 _MENU_NAVIGATION_HANDLER: ContextVar[MenuNavigationHandler | None] = ContextVar(
-    "hermes_menu_navigation_handler", default=None)
-_NUMBERED_BACK_ENABLED: ContextVar[bool] = ContextVar("hermes_numbered_back_enabled", default=False)
+    "akramcode_menu_navigation_handler", default=None)
+_NUMBERED_BACK_ENABLED: ContextVar[bool] = ContextVar("akramcode_numbered_back_enabled", default=False)
 
 
 def set_menu_navigation_handler(handler: MenuNavigationHandler) -> Token:

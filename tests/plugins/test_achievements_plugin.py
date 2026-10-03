@@ -1,4 +1,4 @@
-"""Tests for the bundled hermes-achievements dashboard plugin.
+"""Tests for the bundled akramcode-achievements dashboard plugin.
 
 These target the two behaviors that matter for official integration:
 
@@ -10,9 +10,9 @@ These target the two behaviors that matter for official integration:
   takes minutes.
 
 The upstream repo ships its own unittest suite under
-``plugins/hermes-achievements/tests/`` covering the achievement engine
+``plugins/akramcode-achievements/tests/`` covering the achievement engine
 internals (tier math, secret-state handling, catalog invariants). These
-tests live at the hermes-agent level and focus on the integration
+tests live at the akramcode-agent level and focus on the integration
 contract: the plugin scans ALL of your sessions, not the first 200.
 """
 from __future__ import annotations
@@ -29,7 +29,7 @@ import pytest
 PLUGIN_MODULE_PATH = (
     Path(__file__).resolve().parents[2]
     / "plugins"
-    / "hermes-achievements"
+    / "akramcode-achievements"
     / "dashboard"
     / "plugin_api.py"
 )
@@ -37,7 +37,7 @@ PLUGIN_MODULE_PATH = (
 
 @pytest.fixture
 def plugin_api(tmp_path, monkeypatch):
-    """Load plugin_api with isolated ~/.hermes so state/snapshot files don't collide.
+    """Load plugin_api with isolated ~/.akramcode so state/snapshot files don't collide.
 
     We load the module fresh per test because the plugin keeps module-level
     caches (``_SNAPSHOT_CACHE``, ``_SCAN_STATUS``, background thread handle).
@@ -311,7 +311,7 @@ def test_scan_sessions_never_opens_a_writable_session_db(plugin_api, tmp_path, m
     import akramcode_state
     from akramcode_state import SessionDB
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     monkeypatch.setattr(akramcode_state, "DEFAULT_DB_PATH", tmp_path / "state.db")
     seed = SessionDB(db_path=tmp_path / "state.db")
     seed.create_session("s1", source="cli")

@@ -1,4 +1,4 @@
-"""Bridge for pre-hand-off ``hermes update``: a stale root ``utils`` must not kill restart.
+"""Bridge for pre-hand-off ``akramcode update``: a stale root ``utils`` must not kill restart.
 
 Updaters up to v2026.9.14 finish the post-pull phases in the pre-pull interpreter and
 purge only package prefixes, so root ``utils`` stays cached without ``file_signature``;
@@ -17,7 +17,7 @@ import pytest
 # Mirrors the post-pull purge of a pre-hand-off updater (v2026.9.14
 # akramcode_cli/update_cmd_maint.py): package prefixes only, root-level modules survive.
 _PRE_HANDOFF_PURGE_PREFIXES = ("akramcode_cli", "gateway", "tools", "tui_gateway", "agent")
-_PRE_HANDOFF_PURGE_PROTECTED = {"akramcode_cli", "akramcode_cli.main", "akramcode_cli.hermes_logging"}
+_PRE_HANDOFF_PURGE_PROTECTED = {"akramcode_cli", "akramcode_cli.main", "akramcode_cli.akramcode_logging"}
 
 
 @pytest.fixture

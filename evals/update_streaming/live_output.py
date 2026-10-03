@@ -44,7 +44,7 @@ def probe():
     receipts = []
     for gateway in (False, True):
         with tempfile.TemporaryDirectory(prefix="update-output-") as temp:
-            os.environ["HERMES_HOME"] = temp
+            os.environ["AKRAMCODE_HOME"] = temp
             os.environ["HOME"] = temp
             os.environ["USERPROFILE"] = temp
             screen, original = io.StringIO(), sys.stdout

@@ -1,4 +1,4 @@
-"""``hermes chat -q … --format stream-json`` emits a parseable JSONL event stream and nothing else on stdout."""
+"""``akramcode chat -q … --format stream-json`` emits a parseable JSONL event stream and nothing else on stdout."""
 
 import json
 import signal
@@ -80,7 +80,7 @@ def _run_stream_json_chat(monkeypatch, capsys, run_conversation, credentials_ok=
         def chat(self, _query, images=None):
             print("human output")  # must never reach stdout under stream-json
 
-    monkeypatch.setattr(cli, "HermesCLI", FakeCLI)
+    monkeypatch.setattr(cli, "AkramCodeCLI", FakeCLI)
     monkeypatch.setattr(cli, "_finalize_single_query", lambda _cli: None)
     monkeypatch.setattr(cli, "_emit_interrupted_session_end", lambda *_a, **_k: None)
     monkeypatch.setattr(cli, "_start_worktree_setup", lambda *_a, **_k: None)

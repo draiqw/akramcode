@@ -106,7 +106,7 @@ def test_independent_first_callers_return_the_single_committed_identity(tmp_path
 
     assert returned == [persisted, persisted]
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     monkeypatch.setattr(
         install_identity,
         "_INSTALL_ID_CACHE",

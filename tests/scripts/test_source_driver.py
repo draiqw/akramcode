@@ -18,8 +18,8 @@ ASSETS = Path(__file__).resolve().parents[1] / "install/e2e-assets"
 @pytest.mark.platforms("posix")
 def test_shell_selects_the_installed_command_not_the_phase_or_path(tmp_path):
     root = tmp_path / "installed source"
-    legacy = root / "venv/bin/hermes"
-    published = root / ".hermes/bin/hermes"
+    legacy = root / "venv/bin/akramcode"
+    published = root / ".akramcode/bin/akramcode"
     for command, label in ((legacy, "legacy"), (published, "published")):
         command.parent.mkdir(parents=True)
         command.write_text(f'#!/bin/sh\nprintf "{label}:%s\\n" "$*"\n', encoding="utf-8")
@@ -27,21 +27,21 @@ def test_shell_selects_the_installed_command_not_the_phase_or_path(tmp_path):
     env = dict(os.environ, INSTALL_DIR=str(root), ASSETS=str(ASSETS), HOME=str(tmp_path))
     result = subprocess.run(["bash", "-euc", '''
 source "$ASSETS/source-driver.sh"
-command=$(source_hermes "$INSTALL_DIR")
+command=$(source_akramcode "$INSTALL_DIR")
 "$command" 'literal argument'
-rm "$INSTALL_DIR/venv/bin/hermes"
-test "$(source_hermes "$INSTALL_DIR")" = "$command"
+rm "$INSTALL_DIR/venv/bin/akramcode"
+test "$(source_akramcode "$INSTALL_DIR")" = "$command"
 printf '#!/bin/sh\nexit 23\n' > "$command"
 "$command" || test "$?" = 23
 rm "$command"
-if source_hermes "$INSTALL_DIR"; then exit 91; fi
-printf '#!/bin/sh\nprintf legacy\n' > "$INSTALL_DIR/venv/bin/hermes"
-chmod +x "$INSTALL_DIR/venv/bin/hermes"
-"$(source_hermes "$INSTALL_DIR")"
+if source_akramcode "$INSTALL_DIR"; then exit 91; fi
+printf '#!/bin/sh\nprintf legacy\n' > "$INSTALL_DIR/venv/bin/akramcode"
+chmod +x "$INSTALL_DIR/venv/bin/akramcode"
+"$(source_akramcode "$INSTALL_DIR")"
 # A PM checkout cannot hide missing publication behind its old venv.
 mkdir -p "$INSTALL_DIR/pm"
 printf '{}' > "$INSTALL_DIR/pm/lock.json"
-if source_hermes "$INSTALL_DIR"; then exit 92; fi
+if source_akramcode "$INSTALL_DIR"; then exit 92; fi
 '''], env=env, cwd=tmp_path, capture_output=True, text=True, timeout=30)
     assert result.returncode == 0, result.stdout + result.stderr
     assert result.stdout.splitlines() == ["published:literal argument", "legacy"]
@@ -76,7 +76,7 @@ def test_installer_marker_is_the_only_dirty_state_a_driver_accepts(tmp_path):
 def test_powershell_selects_exact_exe_or_cmd_and_legacy_fallback(tmp_path):
     # These are file-selection rules, not Windows execution emulation. Run
     # them in real PowerShell on any host that supplies it (native CI included).
-    path = os.pathsep.join(p for p in os.get_exec_path() if ".hermes" not in Path(p).parts)
+    path = os.pathsep.join(p for p in os.get_exec_path() if ".akramcode" not in Path(p).parts)
     pwsh = shutil.which("pwsh", path=path) or shutil.which("powershell", path=path)
     if not pwsh:
         if os.name == "nt":
@@ -88,27 +88,27 @@ def test_powershell_selects_exact_exe_or_cmd_and_legacy_fallback(tmp_path):
     harness.write_text('''$ErrorActionPreference = 'Stop'
 . (Join-Path $env:ASSETS 'source-driver.ps1')
 $root = $env:INSTALL_DIR
-$legacy = Join-Path $root 'venv/Scripts/hermes.exe'
-$exe = Join-Path $root '.hermes/bin/hermes.exe'
-$cmd = Join-Path $root '.hermes/bin/hermes.cmd'
+$legacy = Join-Path $root 'venv/Scripts/akramcode.exe'
+$exe = Join-Path $root '.akramcode/bin/akramcode.exe'
+$cmd = Join-Path $root '.akramcode/bin/akramcode.cmd'
 New-Item -ItemType Directory -Path (Split-Path $legacy), (Split-Path $exe) -Force | Out-Null
 Set-Content $legacy 'legacy'
-if ((Get-SourceHermes $root) -ne $legacy) { throw 'legacy fallback' }
+if ((Get-SourceAkramCode $root) -ne $legacy) { throw 'legacy fallback' }
 Set-Content $cmd 'cmd'
-if ((Get-SourceHermes $root) -ne $cmd) { throw 'published cmd' }
+if ((Get-SourceAkramCode $root) -ne $cmd) { throw 'published cmd' }
 Set-Content $exe 'exe'
-if ((Get-SourceHermes $root) -ne $exe) { throw 'exe precedence' }
+if ((Get-SourceAkramCode $root) -ne $exe) { throw 'exe precedence' }
 Remove-Item $legacy
-if ((Get-SourceHermes $root) -ne $exe) { throw 'requires legacy venv' }
+if ((Get-SourceAkramCode $root) -ne $exe) { throw 'requires legacy venv' }
 Remove-Item $exe, $cmd
 $refused = $false
-try { Get-SourceHermes $root } catch { $refused = $true }
+try { Get-SourceAkramCode $root } catch { $refused = $true }
 if (-not $refused) { throw 'missing command accepted' }
 Set-Content $legacy 'stale legacy'
 New-Item -ItemType Directory -Path (Join-Path $root 'pm') | Out-Null
 Set-Content (Join-Path $root 'pm/lock.json') '{}'
 $refused = $false
-try { Get-SourceHermes $root } catch { $refused = $true }
+try { Get-SourceAkramCode $root } catch { $refused = $true }
 if (-not $refused) { throw 'missing PM launcher accepted' }
 Write-Output 'selection verified'
 ''', encoding="utf-8")
@@ -129,12 +129,12 @@ def test_observer_preserves_no_desktop_and_refuses_incomplete_app(tmp_path):
         verify(root, "present")
     release = root / "apps/desktop/release/linux-unpacked"
     release.mkdir(parents=True)
-    (release / "hermes").write_bytes(b"incomplete fixture")
+    (release / "akramcode").write_bytes(b"incomplete fixture")
     with pytest.raises(RuntimeError, match="desktop"):
         verify(root, "absent")
     with pytest.raises(RuntimeError, match="desktop"):
         verify(root, "present")
-    assert (release / "hermes").read_bytes() == b"incomplete fixture"
+    assert (release / "akramcode").read_bytes() == b"incomplete fixture"
 
 
 @pytest.mark.platforms("posix")
@@ -154,15 +154,15 @@ def test_pm_observer_accepts_ready_fixture_and_leaves_failed_fixture_untouched(t
     root = tmp_path / "source"
     for directory in ("pm", "akramcode_cli"):
         shutil.copytree(repo / directory, root / directory, ignore=shutil.ignore_patterns("__pycache__"))
-    shutil.copy2(repo / "hermes_constants.py", root / "hermes_constants.py")
-    (root / "akram_core.hermes_bootstrap.py").write_text("raise RuntimeError('bootstrap must not run')", encoding="utf-8")
+    shutil.copy2(repo / "akramcode_constants.py", root / "akramcode_constants.py")
+    (root / "akram_core.akramcode_bootstrap.py").write_text("raise RuntimeError('bootstrap must not run')", encoding="utf-8")
     (root / "uv.lock").write_text("fixture locked graph", encoding="utf-8")
     home = tmp_path / "home"
     store = tmp_path / "store"
-    env = dict(os.environ, HOME=str(home), HERMES_HOME=str(home), HERMES_RUNTIME_DIR=str(store),
-               PYTHONDONTWRITEBYTECODE="1", HERMES_DISABLE_LAZY_INSTALLS="1")
-    env.pop("HERMES_INSTALL_ROOT", None)
-    path = os.pathsep.join(p for p in os.get_exec_path() if ".hermes" not in Path(p).parts)
+    env = dict(os.environ, HOME=str(home), AKRAMCODE_HOME=str(home), AKRAMCODE_RUNTIME_DIR=str(store),
+               PYTHONDONTWRITEBYTECODE="1", AKRAMCODE_DISABLE_LAZY_INSTALLS="1")
+    env.pop("AKRAMCODE_INSTALL_ROOT", None)
+    path = os.pathsep.join(p for p in os.get_exec_path() if ".akramcode" not in Path(p).parts)
     node = shutil.which("node", path=path)
     assert node
     setup = '''import sys
@@ -188,7 +188,7 @@ site = site_packages(selected)
 site.parent.mkdir(parents=True)
 site.symlink_to(deps, target_is_directory=True)
 Facts(runtime_facts_path(root)).record_state('venv', Venv(root).expected_stamp([]), [], environment=selected)
-ensure_install_launchers(root, root / '.hermes/bin')
+ensure_install_launchers(root, root / '.akramcode/bin')
 '''
     subprocess.run([sys.executable, "-I", "-B", "-c", setup, str(root), str(store), node,
                     sysconfig.get_path("purelib")], env=env, cwd=tmp_path, check=True, timeout=60)
@@ -205,9 +205,9 @@ for (const [product, out] of [['tui', 'ui-tui/dist'], ['web', 'akramcode_cli/web
 }
 '''
     subprocess.run([node, "--input-type=module", "-e", record], cwd=root, env=env, check=True, timeout=30)
-    (root / "apps/desktop/release/linux-unpacked/hermes").write_bytes(b"fixture executable")
+    (root / "apps/desktop/release/linux-unpacked/akramcode").write_bytes(b"fixture executable")
     command = [sys.executable, "-B", str(ASSETS / "source_driver.py"), "--root", str(root),
-               "--launcher", str(root / ".hermes/bin/hermes"), "--desktop", "present"]
+               "--launcher", str(root / ".akramcode/bin/akramcode"), "--desktop", "present"]
     if fault == "no-desktop":
         shutil.rmtree(root / "apps/desktop")
         command[-1] = "absent"
@@ -226,10 +226,10 @@ for (const [product, out] of [['tui', 'ui-tui/dist'], ['web', 'akramcode_cli/web
         foreign = tmp_path / "foreign"
         shutil.copytree(root, foreign)
         from akramcode_cli._launchers import mint_launcher
-        launcher = mint_launcher("hermes", foreign, root / ".hermes/bin", Path(sys.executable), None)
+        launcher = mint_launcher("akramcode", foreign, root / ".akramcode/bin", Path(sys.executable), None)
         assert launcher is not None
     elif fault == "missing-launcher":
-        (root / ".hermes/bin/hermes").unlink()
+        (root / ".akramcode/bin/akramcode").unlink()
     elif fault == "incomplete":
         (root / ".update-incomplete").write_text("incomplete", encoding="utf-8")
     else:

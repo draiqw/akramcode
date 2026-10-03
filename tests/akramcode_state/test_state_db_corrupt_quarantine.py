@@ -260,7 +260,7 @@ class TestVacuumAndMaintenanceRespectQuarantine:
     """vacuum()/optimize_fts() must check the same
     quarantine flags _execute_write does before touching the connection.
 
-    Without this, `hermes sessions vacuum`/`optimize` and the default-on
+    Without this, `akramcode sessions vacuum`/`optimize` and the default-on
     ``maybe_auto_prune_and_vacuum`` auto-maintenance could run VACUUM /
     FTS5 'optimize' / an explicit WAL checkpoint directly over a
     structurally damaged, replaced, or split-WAL-generation file — turning

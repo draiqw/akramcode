@@ -2,7 +2,7 @@
 
 Every MoA turn that runs the reference fan-out (a cache MISS in
 ``MoAChatCompletions.create``) appends one JSON line to
-``<hermes_home>/moa-traces/<session_id>.jsonl``: what every model saw, said, and
+``<akramcode_home>/moa-traces/<session_id>.jsonl``: what every model saw, said, and
 cost. Side-channel only: never enters the ``messages`` table, history or replay
 (references are advisory side-calls whose rows would corrupt role alternation).
 Off by default; when off the only overhead is the config read.
@@ -17,7 +17,7 @@ import time
 from pathlib import Path
 from typing import Any, Optional
 
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ def _traces_enabled_and_dir() -> Optional[Path]:
     override = moa_cfg.get("trace_dir")
     if override:
         return Path(os.path.expandvars(os.path.expanduser(str(override))))
-    return get_hermes_home() / "moa-traces"
+    return get_akramcode_home() / "moa-traces"
 
 
 def _sanitize_session_id(session_id: Optional[str]) -> str:

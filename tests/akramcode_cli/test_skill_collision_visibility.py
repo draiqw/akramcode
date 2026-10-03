@@ -8,13 +8,13 @@ import io
 
 from rich.console import Console
 
-from hermes_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 
 NOTE = "slash command /handoff unavailable — name taken by built-in; use /skill handoff"
 
 
 def _write_skill(name: str) -> None:
-    skill_dir = get_hermes_home() / "skills" / name
+    skill_dir = get_akramcode_home() / "skills" / name
     skill_dir.mkdir(parents=True)
     (skill_dir / "SKILL.md").write_text(f"---\nname: {name}\ndescription: {name} skill.\n---\n# {name}\n", encoding="utf-8")
 

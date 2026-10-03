@@ -29,7 +29,7 @@ def main(context: Path, result: Path) -> int:
                     or type(port) is not int or not 0 < port <= 65535):
                 skipped += 1
                 continue
-            command = [sys.executable, str(root / "hermes")]
+            command = [sys.executable, str(root / "akramcode")]
             profile = entry.get("profile")
             if profile and profile != "default":
                 command += ["--profile", str(profile)]
@@ -37,7 +37,7 @@ def main(context: Path, result: Path) -> int:
             if entry.get("host"):
                 command += ["--host", str(entry["host"])]
             command += ["--port", str(port)]
-            candidates.append((entry.get("pid", 0), command, entry.get("hermes_home") or None))
+            candidates.append((entry.get("pid", 0), command, entry.get("akramcode_home") or None))
         commands = _filter_dashboard_respawn_candidates(candidates, own_home=request.get("home"))
         skipped += len(candidates) - len(commands)
         # An acknowledged attempt is terminal even if spawning failed: replaying

@@ -117,8 +117,8 @@ def test_finite_chat_joins_parallel_children_before_final_response(tmp_path, mod
     env = {key: os.environ[key] for key in (
         "PATH", "SYSTEMROOT", "WINDIR", "COMSPEC", "TEMP", "TMP", "LOCALAPPDATA", "APPDATA",
     ) if key in os.environ}
-    env.update(HOME=str(tmp_path), USERPROFILE=str(tmp_path), HERMES_HOME=str(home),
-               HERMES_MANAGED_DIR=str(tmp_path / "managed"), TERMINAL_CWD=str(tmp_path),
+    env.update(HOME=str(tmp_path), USERPROFILE=str(tmp_path), AKRAMCODE_HOME=str(home),
+               AKRAMCODE_MANAGED_DIR=str(tmp_path / "managed"), TERMINAL_CWD=str(tmp_path),
                OPENAI_BASE_URL=url, OPENAI_API_KEY="local-test-only", PYTHONPATH=str(REPO_ROOT),
                PYTHONDONTWRITEBYTECODE="1", LANG="C.UTF-8")
     mode_flags = {"quiet": ["-Q"], "oneshot": ["--oneshot"], "redirected": []}
@@ -156,8 +156,8 @@ def test_tty_seeded_chat_keeps_background_delegation(monkeypatch, query, image):
     from tests.tools.test_delegate import _make_mock_parent
 
     reset_session_vars()
-    monkeypatch.delenv("HERMES_SINGLE_QUERY_SESSION", raising=False)
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+    monkeypatch.delenv("AKRAMCODE_SINGLE_QUERY_SESSION", raising=False)
+    monkeypatch.delenv("AKRAMCODE_KANBAN_TASK", raising=False)
     monkeypatch.setattr(cli.sys.stdin, "isatty", lambda: True)
     monkeypatch.setattr(cli.sys.stdout, "isatty", lambda: True)
     monkeypatch.setattr(cli, "_collect_query_images", lambda q, i: (q, [i] if i else []))
@@ -184,6 +184,6 @@ def test_tty_seeded_chat_keeps_background_delegation(monkeypatch, query, image):
         payload = json.loads(result)
         assert payload["status"] == "dispatched"
         assert len(dispatched) == 1
-        assert "HERMES_SINGLE_QUERY_SESSION" not in os.environ
+        assert "AKRAMCODE_SINGLE_QUERY_SESSION" not in os.environ
     finally:
         reset_session_vars()

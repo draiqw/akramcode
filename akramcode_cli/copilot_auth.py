@@ -44,7 +44,7 @@ def validate_copilot_token(token: str) -> tuple[bool, str]:
         return False, (
             "Classic Personal Access Tokens (ghp_*) are not supported by the "
             "Copilot API. Use one of:\n"
-            "  → `copilot login` or `hermes model` to authenticate via OAuth\n"
+            "  → `copilot login` or `akramcode model` to authenticate via OAuth\n"
             "  → A fine-grained PAT (github_pat_*) with Copilot Requests permission\n"
             "  → `gh auth login` with the default device code flow (produces gho_* tokens)")
     if not token.startswith(_SUPPORTED_PREFIXES):
@@ -155,7 +155,7 @@ _DEVICE_CODE_TERMINAL_ERRORS = {"expired_token": "  ✗ Device code expired. Ple
 def _post_form(url: str, fields: dict, timeout: float) -> dict:
     req = urllib.request.Request(
         url, data=urllib.parse.urlencode(fields).encode(),
-        headers={"Accept": "application/json", "User-Agent": "HermesAgent/1.0",
+        headers={"Accept": "application/json", "User-Agent": "AkramCodeAgent/1.0",
                  "Content-Type": "application/x-www-form-urlencoded"})
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return json.loads(resp.read().decode())
@@ -278,8 +278,8 @@ def _read_jwt_store(path: Path) -> Optional[dict]:
 def _jwt_disk_path() -> Optional[Path]:
     """Path to the on-disk exchanged-JWT cache (profile-aware), or None."""
     try:
-        from akramcode_constants import get_hermes_home
-        return Path(get_hermes_home()) / _JWT_DISK_FILENAME
+        from akramcode_constants import get_akramcode_home
+        return Path(get_akramcode_home()) / _JWT_DISK_FILENAME
     except Exception:
         return None
 
@@ -502,7 +502,7 @@ def get_copilot_api_token(raw_token: str) -> tuple[str, Optional[str]]:
 def copilot_request_headers(
     *, is_agent_turn: bool = True, is_vision: bool = False) -> dict[str, str]:
     """Build the standard headers for Copilot API requests."""
-    headers: dict[str, str] = {"Editor-Version": _EDITOR_VERSION, "User-Agent": "HermesAgent/1.0",
+    headers: dict[str, str] = {"Editor-Version": _EDITOR_VERSION, "User-Agent": "AkramCodeAgent/1.0",
                                "Copilot-Integration-Id": "vscode-chat",
                                "Openai-Intent": "conversation-edits",
                                "x-initiator": "agent" if is_agent_turn else "user"}

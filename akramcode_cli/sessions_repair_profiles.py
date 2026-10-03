@@ -1,4 +1,4 @@
-"""``hermes sessions repair-profiles`` — settle crossed-profile durable state across every store.
+"""``akramcode sessions repair-profiles`` — settle crossed-profile durable state across every store.
 
 The per-profile store model (#88734) and the identity fences that followed are forward-only: they
 put NEW rows in the right place and refuse to widen existing damage, but nothing walks the stores
@@ -126,8 +126,8 @@ def enumerate_stores() -> List[Store]:
     """Default root plus every live named profile (a live profile claims its namespace whether or not
     it has written a ``state.db`` yet). The root store owns the routing index: the multiplexer's
     ``_routing_home`` is its launch home, the root."""
-    from akramcode_cli.profiles import _get_default_hermes_home, _iter_named_profile_dirs
-    root = _get_default_hermes_home()
+    from akramcode_cli.profiles import _get_default_akramcode_home, _iter_named_profile_dirs
+    root = _get_default_akramcode_home()
     stores = [Store("default", root, routing=True)]
     stores.extend(Store(entry.name, entry) for entry in _iter_named_profile_dirs())
     return stores
@@ -223,7 +223,7 @@ class RepairPlan:
             self._add(Finding(
                 "unclaimed_namespace", store.profile, sid, detail,
                 reason=f"no live profile named {key_profile!r}; create it, then rerun, or "
-                       f"`hermes profile migrate-identity {key_profile} <target>`"))
+                       f"`akramcode profile migrate-identity {key_profile} <target>`"))
             return
         moving.add(sid)
         self._add(Finding(
@@ -482,7 +482,7 @@ def scan_stores(stores: Optional[List[Store]] = None, *, legacy_main: str = "rep
 def default_snapshot(store: Store) -> Optional[str]:
     from akramcode_cli.backup import create_quick_snapshot
     try:
-        return create_quick_snapshot(label="repair-profiles", hermes_home=store.home)
+        return create_quick_snapshot(label="repair-profiles", akramcode_home=store.home)
     except Exception as exc:
         logger.warning("repair-profiles: snapshot of %s failed: %s", store.home, exc)
         return None

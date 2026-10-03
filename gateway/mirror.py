@@ -11,22 +11,22 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from akramcode_cli.config import get_hermes_home
+from akramcode_cli.config import get_akramcode_home
 
 logger = logging.getLogger(__name__)
 
-_SESSIONS_DIR = get_hermes_home() / "sessions"
+_SESSIONS_DIR = get_akramcode_home() / "sessions"
 _SESSIONS_INDEX = _SESSIONS_DIR / "sessions.json"
 _SESSIONS_INDEX_AT_IMPORT = _SESSIONS_INDEX
 
 
 def _resolve_sessions_index() -> Path:
     """Active profile's ``sessions.json`` at call time: the patched ``_SESSIONS_INDEX`` when a test
-    changed it, else live profile-scoped HERMES_HOME — under the multiplexed gateway one process
+    changed it, else live profile-scoped AKRAMCODE_HOME — under the multiplexed gateway one process
     serves every profile, so the import-time constant would resolve every profile's pre-migration
     session lookup against the launch profile's index."""
     return (_SESSIONS_INDEX if _SESSIONS_INDEX != _SESSIONS_INDEX_AT_IMPORT
-            else get_hermes_home() / "sessions" / "sessions.json")
+            else get_akramcode_home() / "sessions" / "sessions.json")
 
 
 def _origin_user_id(entry: dict) -> str:

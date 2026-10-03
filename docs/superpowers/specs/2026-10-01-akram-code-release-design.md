@@ -9,9 +9,9 @@ Make `draiqw/akram-code` installable and self-updating from GitHub, while preser
 - GitHub is the only hosting required: the repository is the update source and GitHub Releases are the published version record.
 - Releases are created from tags matching `v*` (for example `v0.1.0`).
 - The installed checkout updates from `origin/main`; a release tag records the version and CI validates the same tree.
-- The executable remains `hermes` for compatibility with the existing CLI/TUI and ACP integrations.
+- The executable remains `akramcode` for compatibility with the existing CLI/TUI and ACP integrations.
 - User-facing product/repository defaults use `akram-code` and `draiqw/akram-code`.
-- The upstream `NousResearch/hermes-agent` remote is not used by installation or update paths.
+- The upstream `NousResearch/akramcode-agent` remote is not used by installation or update paths.
 - No Desktop, gateway, or ACP removal is part of this change; ACP remains supported.
 
 ## Release flow
@@ -25,5 +25,5 @@ Make `draiqw/akram-code` installable and self-updating from GitHub, while preser
 
 - Static checks prove no installer default points at the upstream repository.
 - Workflow syntax and shell tests pass.
-- A temporary install uses `HERMES_REPO_URL` to clone the local repository mirror, starts the CLI/TUI entrypoint in check mode, and confirms the checkout remote is `akram-code`.
+- A temporary install uses `AKRAMCODE_REPO_URL` to clone the local repository mirror, starts the CLI/TUI entrypoint in check mode, and confirms the checkout remote is `akram-code`.
 - Existing update tests run through `scripts/run_tests.sh`, never bare pytest.

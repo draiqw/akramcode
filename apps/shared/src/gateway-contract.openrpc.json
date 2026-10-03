@@ -1,7 +1,7 @@
 {
   "openrpc": "1.3.2",
   "info": {
-    "title": "Hermes TUI/Desktop gateway",
+    "title": "AkramCode TUI/Desktop gateway",
     "version": "1",
     "description": "Generated from tui_gateway/contracts by scripts/gen_gateway_contracts.py."
   },
@@ -350,7 +350,7 @@
     },
     {
       "name": "cli.exec",
-      "summary": "Run ``hermes <argv>`` non-interactively and capture its output; ``blocked`` explains a refusal.",
+      "summary": "Run ``akramcode <argv>`` non-interactively and capture its output; ``blocked`` explains a refusal.",
       "params": [
         {
           "name": "params",
@@ -674,7 +674,7 @@
     },
     {
       "name": "connectors.operation.wake",
-      "summary": "The browser leg came back (hermes://connections/done): read the accounts now, not at the next tick.",
+      "summary": "The browser leg came back (akramcode://connections/done): read the accounts now, not at the next tick.",
       "params": [
         {
           "name": "params",
@@ -2888,7 +2888,7 @@
     },
     {
       "name": "reload.env",
-      "summary": "Re-read ~/.hermes/.env (CLI /reload parity); built agents keep their pool until /new.",
+      "summary": "Re-read ~/.akramcode/.env (CLI /reload parity); built agents keep their pool until /new.",
       "params": [
         {
           "name": "params",
@@ -3446,7 +3446,7 @@
     },
     {
       "name": "session.save",
-      "summary": "Export the transcript to ~/.hermes/sessions/saved (classic /save).",
+      "summary": "Export the transcript to ~/.akramcode/sessions/saved (classic /save).",
       "params": [
         {
           "name": "params",
@@ -21934,7 +21934,7 @@
         "enum": [
           "connected",
           "app_not_running",
-          "hermes_not_connected",
+          "akramcode_not_connected",
           "endpoint_unavailable",
           "no_interactive_session",
           "version_too_old",
@@ -32751,7 +32751,7 @@
       },
       "SharedMetricsStartupLatencyParams": {
         "additionalProperties": false,
-        "description": "``elapsed_ms`` = the client's own launch (TUI process start / Desktop app start) to ready\n(TUI gateway ready / Desktop backend attached), measured once per launch by the client. The\nclient names its surface because a Desktop may attach to a URL/cloud backend where\n``HERMES_DESKTOP`` is unset; without it the backend falls back to its own client detection.\n``launch_id`` is an opaque per-launch token the backend latches on (never recorded), so a\nreconnect re-sending the same launch counts once while a new launch counts again.",
+        "description": "``elapsed_ms`` = the client's own launch (TUI process start / Desktop app start) to ready\n(TUI gateway ready / Desktop backend attached), measured once per launch by the client. The\nclient names its surface because a Desktop may attach to a URL/cloud backend where\n``AKRAMCODE_DESKTOP`` is unset; without it the backend falls back to its own client detection.\n``launch_id`` is an opaque per-launch token the backend latches on (never recorded), so a\nreconnect re-sending the same launch counts once while a new launch counts again.",
         "properties": {
           "profile": {
             "anyOf": [
@@ -32820,7 +32820,7 @@
       },
       "SharedMetricsUpdateRunParams": {
         "additionalProperties": false,
-        "description": "One Desktop PACKAGED self-update (electron-updater / App Installer / Store). Source-checkout\nhand-offs run ``hermes update`` and are counted from its receipt, never here. Raw words; the\nbackend buckets them: ``outcome`` success|failed|noop|refused, ``failed_stage``\ndownload|verify|apply|restart, ``mechanism`` the updater strategy kind, ``duration_ms`` wall\ntime, ``from_commit_date`` the updated-from build's commit time (epoch seconds) when known.",
+        "description": "One Desktop PACKAGED self-update (electron-updater / App Installer / Store). Source-checkout\nhand-offs run ``akramcode update`` and are counted from its receipt, never here. Raw words; the\nbackend buckets them: ``outcome`` success|failed|noop|refused, ``failed_stage``\ndownload|verify|apply|restart, ``mechanism`` the updater strategy kind, ``duration_ms`` wall\ntime, ``from_commit_date`` the updated-from build's commit time (epoch seconds) when known.",
         "properties": {
           "profile": {
             "anyOf": [
@@ -33494,7 +33494,7 @@
       },
       "SkinPayload": {
         "additionalProperties": true,
-        "description": "``tui_gateway/change_watcher.py::resolve_skin`` \u2014 the resolved active skin (``HermesSkin``).\n``{}`` when the skin engine failed to load. Colour maps are token \u2192 colour string.",
+        "description": "``tui_gateway/change_watcher.py::resolve_skin`` \u2014 the resolved active skin (``AkramCodeSkin``).\n``{}`` when the skin engine failed to load. Colour maps are token \u2192 colour string.",
         "properties": {
           "name": {
             "default": "",
@@ -39446,7 +39446,7 @@
     },
     {
       "name": "display.status",
-      "summary": "This profile's screen started or stopped (also for transitions made outside hermes serve).",
+      "summary": "This profile's screen started or stopped (also for transitions made outside akramcode serve).",
       "params": [
         {
           "name": "payload",

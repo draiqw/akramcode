@@ -1,5 +1,5 @@
 """A config.yaml without ``_config_version`` is current-schema content that was never stamped:
-the installers seed it from cli-config.yaml.example and targeted writers (``hermes config set``,
+the installers seed it from cli-config.yaml.example and targeted writers (``akramcode config set``,
 /personality) never stamp. The one-time migration ladder must not treat it as a v0 install —
 its value- and absence-based steps would overwrite what the user chose."""
 
@@ -7,7 +7,7 @@ import shutil
 from pathlib import Path
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 TEMPLATE = Path(__file__).resolve().parents[2] / "cli-config.yaml.example"
 
@@ -24,11 +24,11 @@ WATCHED = [*USER_CHOICES, "display.personality", "plugins.enabled"]
 
 
 @pytest.fixture
-def hermes_home(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+def akramcode_home(tmp_path, monkeypatch):
+    home = tmp_path / ".akramcode"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)  # sibling-profile scan stays in tmp
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     return home
 
 
@@ -42,41 +42,41 @@ def _at(raw: dict, dotted: str):
     return raw
 
 
-def test_update_keeps_user_values_of_an_unversioned_config_and_migrates_legacy_keys(hermes_home):
+def test_update_keeps_user_values_of_an_unversioned_config_and_migrates_legacy_keys(akramcode_home):
     from akramcode_cli.config import DEFAULT_CONFIG, set_config_value
     from akramcode_cli.personality import persist_personality
     from akramcode_cli.update_cmd import _check_and_apply_config_migration
 
     # Seeded before the template carried a stamp; early-2026 templates shipped this retired key.
-    (hermes_home / "config.yaml").write_text(
+    (akramcode_home / "config.yaml").write_text(
         "compression:\n  summary_model: google/gemini-3-flash-preview\n", encoding="utf-8")
-    # Installed with `hermes plugins install` and never enabled.
-    plugin = hermes_home / "plugins" / "notes-helper"
+    # Installed with `akramcode plugins install` and never enabled.
+    plugin = akramcode_home / "plugins" / "notes-helper"
     plugin.mkdir(parents=True)
     (plugin / "plugin.yaml").write_text("name: notes-helper\nversion: 0.1.0\n", encoding="utf-8")
     # User-authored SOUL.md section that happens to carry the v41 heading.
     soul = "# Me\n\n## Messaging other agents\nmy own notes\n\n## Prefs\nkeep\n"
-    (hermes_home / "SOUL.md").write_text(soul, encoding="utf-8")
+    (akramcode_home / "SOUL.md").write_text(soul, encoding="utf-8")
     assert persist_personality("kawaii")
     for key, value in USER_CHOICES.items():
         set_config_value(key, value)
-    before = _raw(hermes_home)
+    before = _raw(akramcode_home)
 
     _check_and_apply_config_migration()
 
-    after = _raw(hermes_home)
+    after = _raw(akramcode_home)
     assert {k: _at(after, k) for k in WATCHED} == {k: _at(before, k) for k in WATCHED}
     assert "summary_model" not in after["compression"]
     assert _at(after, "auxiliary.compression.model") == _at(before, "compression.summary_model")
     assert after["_config_version"] == DEFAULT_CONFIG["_config_version"]
-    assert (hermes_home / "SOUL.md").read_text(encoding="utf-8") == soul
+    assert (akramcode_home / "SOUL.md").read_text(encoding="utf-8") == soul
 
 
-def test_config_seeded_from_the_template_reads_as_current(hermes_home):
-    """install.sh, install.ps1, docker/stage2-hook.sh and `hermes doctor --fix` copy the template."""
+def test_config_seeded_from_the_template_reads_as_current(akramcode_home):
+    """install.sh, install.ps1, docker/stage2-hook.sh and `akramcode doctor --fix` copy the template."""
     from akramcode_cli.config import check_config_version
 
-    shutil.copy(TEMPLATE, hermes_home / "config.yaml")
+    shutil.copy(TEMPLATE, akramcode_home / "config.yaml")
 
     current, latest = check_config_version(raise_on_parse_error=True)
     assert current == latest

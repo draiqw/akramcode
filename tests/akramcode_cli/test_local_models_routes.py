@@ -1,7 +1,7 @@
 """Contract tests for the local-models dashboard routes (Rollout 4).
 
 Real FastAPI TestClient against the real router; the runtime pieces
-underneath are exercised against temp HERMES_HOME (autouse fixture). Network
+underneath are exercised against temp AKRAMCODE_HOME (autouse fixture). Network
 downloads are stubbed at the urllib boundary — never live."""
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ from tests.pm._range_server import dl_server, url as _srv_url  # noqa: F401
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / ".akramcode"))
     from akramcode_cli import web_server
 
     test_client = TestClient(web_server.app)
@@ -33,7 +33,7 @@ def client(tmp_path, monkeypatch):
 
 
 def test_local_models_routes_require_auth(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / ".akramcode"))
     from akramcode_cli import web_server
 
     unauth = TestClient(web_server.app)

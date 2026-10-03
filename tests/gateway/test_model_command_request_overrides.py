@@ -43,9 +43,9 @@ async def test_handle_model_command_stores_request_overrides_for_named_custom_pr
     import gateway.run as gateway_run
     from akramcode_cli.model_switch import ModelSwitchResult
 
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    akramcode_home = tmp_path / ".akramcode"
+    akramcode_home.mkdir()
+    (akramcode_home / "config.yaml").write_text(
         """
 model:
   default: gpt-5.4
@@ -62,10 +62,10 @@ custom_providers:
         encoding="utf-8",
     )
 
-    monkeypatch.setattr(gateway_run, "_hermes_home", hermes_home)
-    # resolve_persist_behavior() reads the profile config through get_hermes_home(); without this
+    monkeypatch.setattr(gateway_run, "_akramcode_home", akramcode_home)
+    # resolve_persist_behavior() reads the profile config through get_akramcode_home(); without this
     # the sandbox home looks like a fresh install and the --provider switch persists globally.
-    monkeypatch.setattr("akramcode_cli.config.get_hermes_home", lambda: hermes_home)
+    monkeypatch.setattr("akramcode_cli.config.get_akramcode_home", lambda: akramcode_home)
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr(
         "akramcode_cli.model_switch.switch_model",

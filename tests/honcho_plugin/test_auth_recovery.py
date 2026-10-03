@@ -26,7 +26,7 @@ def _host_block(refresh="hch-rt-old", expires_at=100):
         "oauth": {
             "refreshToken": refresh,
             "expiresAt": expires_at,
-            "clientId": "hermes-desktop",
+            "clientId": "akramcode-desktop",
             "tokenEndpoint": "http://localhost:8000/oauth/token",
             "scope": "write",
             "tokenType": "Bearer",
@@ -64,7 +64,7 @@ class TestExchangeRetry:
         """A timed-out exchange retries right away — the server honors the
         replayed refresh token only within its rotation grace window."""
         path = tmp_path / "honcho.json"
-        _write(path, {"hosts": {"hermes": _host_block()}})
+        _write(path, {"hosts": {"akramcode": _host_block()}})
         monkeypatch.setattr(oauth, "_REFRESH_RETRY_DELAY_SECONDS", 0)
 
         calls = []
@@ -76,16 +76,16 @@ class TestExchangeRetry:
             return 200, _rotated_body()
 
         monkeypatch.setattr(oauth, "_http_post_form_status", flaky)
-        token, refreshed = oauth.ensure_fresh_token(path, "hermes", now=1000)
+        token, refreshed = oauth.ensure_fresh_token(path, "akramcode", now=1000)
 
         assert token == "hch-at-new1" and refreshed is True
         assert calls == ["hch-rt-old", "hch-rt-old"]
-        saved = json.loads(path.read_text())["hosts"]["hermes"]
+        saved = json.loads(path.read_text())["hosts"]["akramcode"]
         assert saved["oauth"]["refreshToken"] == "hch-rt-new1"
 
     def test_invalid_grant_stops_retries_and_marks_reauth_required(self, tmp_path, monkeypatch):
         path = tmp_path / "honcho.json"
-        _write(path, {"hosts": {"hermes": _host_block()}})
+        _write(path, {"hosts": {"akramcode": _host_block()}})
         monkeypatch.setattr(oauth, "_REFRESH_RETRY_DELAY_SECONDS", 0)
 
         calls = []
@@ -95,42 +95,42 @@ class TestExchangeRetry:
             return 400, {"error": "invalid_grant", "error_description": "grant revoked"}
 
         monkeypatch.setattr(oauth, "_http_post_form_status", revoked)
-        token, refreshed = oauth.ensure_fresh_token(path, "hermes", now=1000)
+        token, refreshed = oauth.ensure_fresh_token(path, "akramcode", now=1000)
 
         # Fail-open return, but no retry of a permanently rejected grant.
         assert token == "hch-at-old" and refreshed is False
         assert len(calls) == 1
-        assert oauth.reauth_required(path, "hermes") is True
+        assert oauth.reauth_required(path, "akramcode") is True
 
         # Later refresh attempts skip the endpoint entirely.
-        token2, refreshed2 = oauth.ensure_fresh_token(path, "hermes", now=2000)
+        token2, refreshed2 = oauth.ensure_fresh_token(path, "akramcode", now=2000)
         assert token2 == "hch-at-old" and refreshed2 is False
         assert len(calls) == 1
 
         # The forced (post-401) path refuses a dead grant too.
-        assert oauth.force_refresh_token(path, "hermes") is None
+        assert oauth.force_refresh_token(path, "akramcode") is None
         assert len(calls) == 1
 
     def test_relogin_clears_the_dead_grant(self, tmp_path, monkeypatch):
         path = tmp_path / "honcho.json"
-        _write(path, {"hosts": {"hermes": _host_block()}})
+        _write(path, {"hosts": {"akramcode": _host_block()}})
         monkeypatch.setattr(oauth, "_REFRESH_RETRY_DELAY_SECONDS", 0)
         monkeypatch.setattr(
             oauth, "_http_post_form_status",
             lambda *a, **k: (400, {"error": "invalid_grant"}),
         )
-        oauth.ensure_fresh_token(path, "hermes", now=1000)
-        assert oauth.reauth_required(path, "hermes") is True
+        oauth.ensure_fresh_token(path, "akramcode", now=1000)
+        assert oauth.reauth_required(path, "akramcode") is True
 
         oauth.install_grant(
-            path, "hermes",
+            path, "akramcode",
             {"access_token": "hch-at-fresh", "refresh_token": "hch-rt-fresh", "expires_in": 3600},
-            client_id="hermes-desktop",
+            client_id="akramcode-desktop",
             token_endpoint="http://localhost:8000/oauth/token",
             now=2000,
         )
-        assert oauth.reauth_required(path, "hermes") is False
-        token, _ = oauth.ensure_fresh_token(path, "hermes", now=2000)
+        assert oauth.reauth_required(path, "akramcode") is False
+        token, _ = oauth.ensure_fresh_token(path, "akramcode", now=2000)
         assert token == "hch-at-fresh"
 
     def test_honcho_token_prefixes_are_registered_with_the_shared_redactor(self):
@@ -149,30 +149,30 @@ class TestForceRefreshToken:
         """A server-side 401 forces a rotation even when the local clock says
         the token is still live."""
         path = tmp_path / "honcho.json"
-        _write(path, {"hosts": {"hermes": _host_block(expires_at=time.time() + 3600)}})
+        _write(path, {"hosts": {"akramcode": _host_block(expires_at=time.time() + 3600)}})
         monkeypatch.setattr(
             oauth, "_http_post_form_status", lambda *a, **k: (200, _rotated_body())
         )
-        token = oauth.force_refresh_token(path, "hermes")
+        token = oauth.force_refresh_token(path, "akramcode")
         assert token == "hch-at-new1"
-        saved = json.loads(path.read_text())["hosts"]["hermes"]
+        saved = json.loads(path.read_text())["hosts"]["akramcode"]
         assert saved["apiKey"] == "hch-at-new1"
 
     def test_adopts_concurrent_rotation_without_exchange(self, tmp_path, monkeypatch):
         path = tmp_path / "honcho.json"
         far = time.time() + 7200
-        _write(path, {"hosts": {"hermes": _host_block(expires_at=far)}})
+        _write(path, {"hosts": {"akramcode": _host_block(expires_at=far)}})
         # Seed the expiry cache with the old token.
-        oauth.ensure_fresh_token(path, "hermes")
+        oauth.ensure_fresh_token(path, "akramcode")
         # Another process rotated the credential on disk.
         rotated = _host_block(refresh="hch-rt-2", expires_at=far)
         rotated["apiKey"] = "hch-at-2"
-        _write(path, {"hosts": {"hermes": rotated}})
+        _write(path, {"hosts": {"akramcode": rotated}})
         monkeypatch.setattr(
             oauth, "_http_post_form_status",
             lambda *a, **k: pytest.fail("must adopt the on-disk rotation, not exchange"),
         )
-        assert oauth.force_refresh_token(path, "hermes") == "hch-at-2"
+        assert oauth.force_refresh_token(path, "akramcode") == "hch-at-2"
 
     @pytest.mark.parametrize("rotated_by", ["first waiter", "sibling process", "sibling process during our cooldown"])
     def test_401_on_a_bearer_disk_has_moved_off_adopts_without_exchange(self, tmp_path, monkeypatch, rotated_by):
@@ -181,18 +181,18 @@ class TestForceRefreshToken:
         so our own recent failed exchange (the cooldown) does not block it."""
         path = tmp_path / "honcho.json"
         far = time.time() + 7200
-        _write(path, {"hosts": {"hermes": _host_block(expires_at=far)}})
+        _write(path, {"hosts": {"akramcode": _host_block(expires_at=far)}})
         if rotated_by == "first waiter":
             monkeypatch.setattr(oauth, "_http_post_form_status", lambda *a, **k: (200, {**_rotated_body(2), "expires_in": 7200}))
-            assert oauth.force_refresh_token(path, "hermes", failed_access_token="hch-at-old") == "hch-at-new2"
+            assert oauth.force_refresh_token(path, "akramcode", failed_access_token="hch-at-old") == "hch-at-new2"
         else:
-            _write(path, {"hosts": {"hermes": {**_host_block(refresh="hch-rt-new2", expires_at=far), "apiKey": "hch-at-new2"}}})
+            _write(path, {"hosts": {"akramcode": {**_host_block(refresh="hch-rt-new2", expires_at=far), "apiKey": "hch-at-new2"}}})
             oauth._expiry_cache.clear()
             if rotated_by.endswith("cooldown"):
-                oauth._refresh_failure_at[(str(path), "hermes")] = time.monotonic()
+                oauth._refresh_failure_at[(str(path), "akramcode")] = time.monotonic()
         monkeypatch.setattr(oauth, "_http_post_form_status", lambda *a, **k: pytest.fail("must adopt the on-disk grant, not exchange"))
-        assert oauth.force_refresh_token(path, "hermes", failed_access_token="hch-at-old") == "hch-at-new2"
-        assert oauth._expiry_cache[(str(path), "hermes")][1] == "hch-at-new2"
+        assert oauth.force_refresh_token(path, "akramcode", failed_access_token="hch-at-old") == "hch-at-new2"
+        assert oauth._expiry_cache[(str(path), "akramcode")][1] == "hch-at-new2"
 
     @pytest.mark.parametrize("sibling_persists", [True, False], ids=["disk rotated during exchange", "disk unchanged"])
     def test_invalid_grant_adopts_a_rotation_that_landed_during_the_exchange(self, tmp_path, monkeypatch, sibling_persists):
@@ -200,38 +200,38 @@ class TestForceRefreshToken:
         on disk is adopted; only an unchanged disk marks the grant dead."""
         path = tmp_path / "honcho.json"
         far = time.time() + 7200
-        _write(path, {"hosts": {"hermes": _host_block(expires_at=far)}})
+        _write(path, {"hosts": {"akramcode": _host_block(expires_at=far)}})
         monkeypatch.setattr(oauth, "_REFRESH_RETRY_DELAY_SECONDS", 0)
 
         def exchange(url, data, timeout):
             if sibling_persists:
-                _write(path, {"hosts": {"hermes": {**_host_block(refresh="hch-rt-sibling", expires_at=far), "apiKey": "hch-at-sibling"}}})
+                _write(path, {"hosts": {"akramcode": {**_host_block(refresh="hch-rt-sibling", expires_at=far), "apiKey": "hch-at-sibling"}}})
             return 400, {"error": "invalid_grant", "error_description": "reuse detected"}
 
         monkeypatch.setattr(oauth, "_http_post_form_status", exchange)
-        token = oauth.force_refresh_token(path, "hermes", failed_access_token="hch-at-old")
+        token = oauth.force_refresh_token(path, "akramcode", failed_access_token="hch-at-old")
         assert token == ("hch-at-sibling" if sibling_persists else None)
-        assert oauth.reauth_required(path, "hermes") is (not sibling_persists)
+        assert oauth.reauth_required(path, "akramcode") is (not sibling_persists)
         if sibling_persists:
-            assert oauth.ensure_fresh_token(path, "hermes", now=time.time())[0] == "hch-at-sibling"
+            assert oauth.ensure_fresh_token(path, "akramcode", now=time.time())[0] == "hch-at-sibling"
 
     def test_transient_failure_returns_none(self, tmp_path, monkeypatch):
         path = tmp_path / "honcho.json"
-        _write(path, {"hosts": {"hermes": _host_block(expires_at=time.time() + 3600)}})
+        _write(path, {"hosts": {"akramcode": _host_block(expires_at=time.time() + 3600)}})
         monkeypatch.setattr(oauth, "_REFRESH_RETRY_DELAY_SECONDS", 0)
 
         def boom(*a, **k):
             raise ConnectionError("network down")
 
         monkeypatch.setattr(oauth, "_http_post_form_status", boom)
-        assert oauth.force_refresh_token(path, "hermes") is None
+        assert oauth.force_refresh_token(path, "akramcode") is None
         # Not permanent: a later attempt may exchange again.
-        assert oauth.reauth_required(path, "hermes") is False
+        assert oauth.reauth_required(path, "akramcode") is False
 
     def test_static_api_key_is_noop(self, tmp_path):
         path = tmp_path / "honcho.json"
-        _write(path, {"hosts": {"hermes": {"apiKey": "hch-v3-static"}}})
-        assert oauth.force_refresh_token(path, "hermes") is None
+        _write(path, {"hosts": {"akramcode": {"apiKey": "hch-v3-static"}}})
+        assert oauth.force_refresh_token(path, "akramcode") is None
 
 # ---------------------------------------------------------------------------
 # session: auth error detection
@@ -295,7 +295,7 @@ class _FlakyPeer:
         return self.result
 
 def _make_manager(peer, *, reauth_ok=True):
-    cfg = HonchoClientConfig(host="hermes", api_key="hch-at-x", enabled=True)
+    cfg = HonchoClientConfig(host="akramcode", api_key="hch-at-x", enabled=True)
     mgr = HonchoSessionManager(config=cfg)
     session = HonchoSession(
         key="k", user_peer_id="u", assistant_peer_id="a", honcho_session_id="s"
@@ -365,7 +365,7 @@ class TestForceReauth:
 
         monkeypatch.setattr(oauth, "apply_token_to_client", apply)
 
-        mgr = HonchoSessionManager(config=HonchoClientConfig(host="hermes"))
+        mgr = HonchoSessionManager(config=HonchoClientConfig(host="akramcode"))
         assert mgr._force_reauth() is True
         assert applied == {"client": fake_client, "token": "hch-at-new"}
 
@@ -374,7 +374,7 @@ class TestForceReauth:
 
         monkeypatch.setattr(client_mod, "resolve_config_path", lambda: tmp_path / "honcho.json")
         monkeypatch.setattr(oauth, "force_refresh_token", lambda p, h, **kw: None)
-        mgr = HonchoSessionManager(config=HonchoClientConfig(host="hermes"))
+        mgr = HonchoSessionManager(config=HonchoClientConfig(host="akramcode"))
         assert mgr._force_reauth() is False
 
     def test_passes_the_bearer_the_operation_sent_not_the_rotated_one(self, tmp_path, monkeypatch):
@@ -390,7 +390,7 @@ class TestForceReauth:
         seen = {}
         monkeypatch.setattr(oauth, "force_refresh_token", lambda p, h, **kw: seen.update(kw) or "hch-at-new1")
         monkeypatch.setattr(oauth, "apply_token_to_client", lambda c, t: True)
-        mgr = HonchoSessionManager(config=HonchoClientConfig(host="hermes", enabled=True))
+        mgr = HonchoSessionManager(config=HonchoClientConfig(host="akramcode", enabled=True))
 
         def operation():
             if http.api_key == "hch-at-old":
@@ -418,7 +418,7 @@ class _FlakyHonchoSession:
             raise Exception("Invalid or expired access token")
 
 def _make_sync_manager(flaky_session, *, reauth_ok=True):
-    cfg = HonchoClientConfig(host="hermes", api_key="hch-at-x", enabled=True)
+    cfg = HonchoClientConfig(host="akramcode", api_key="hch-at-x", enabled=True)
     mgr = HonchoSessionManager(config=cfg)
     peer = MagicMock()
     peer.message.side_effect = lambda content: content
@@ -475,22 +475,22 @@ def _kill_grant(tmp_path, monkeypatch) -> Path:
     from plugins.memory.honcho import client as client_mod
 
     path = tmp_path / "honcho.json"
-    _write(path, {"hosts": {"hermes": _host_block()}})
+    _write(path, {"hosts": {"akramcode": _host_block()}})
     monkeypatch.setattr(oauth, "_REFRESH_RETRY_DELAY_SECONDS", 0)
     monkeypatch.setattr(
         oauth, "_http_post_form_status",
         lambda *a, **k: (400, {"error": "invalid_grant"}),
     )
-    oauth.ensure_fresh_token(path, "hermes", now=1000)
-    assert oauth.reauth_required(path, "hermes") is True
+    oauth.ensure_fresh_token(path, "akramcode", now=1000)
+    assert oauth.reauth_required(path, "akramcode") is True
     monkeypatch.setattr(client_mod, "resolve_config_path", lambda: path)
     return path
 
 def _relogin(path: Path) -> None:
     oauth.install_grant(
-        path, "hermes",
+        path, "akramcode",
         {"access_token": "hch-at-fresh", "refresh_token": "hch-rt-fresh", "expires_in": 3600},
-        client_id="hermes-desktop",
+        client_id="akramcode-desktop",
         token_endpoint="http://localhost:8000/oauth/token",
     )
 
@@ -570,7 +570,7 @@ class TestAuthNotice:
         provider._base_context_cache = ""
 
         first = provider.prefetch("what did we decide about the schema?")
-        assert "hermes honcho setup" in first
+        assert "akramcode honcho setup" in first
         assert "paused" in first
 
         second = provider.prefetch("and the follow-up question?")
@@ -756,7 +756,7 @@ class TestClientRebuildRetry:
 
         _wire_rebuild(tmp_path, monkeypatch, fresh_client)
 
-        cfg = HonchoClientConfig(host="hermes", api_key="hch-at-x", enabled=True)
+        cfg = HonchoClientConfig(host="akramcode", api_key="hch-at-x", enabled=True)
         mgr = HonchoSessionManager(config=cfg)
         mgr._peers_cache.update({"u": stale_peer, "a": stale_peer})
         mgr._sessions_cache["s"] = stale_session
@@ -786,7 +786,7 @@ class TestClientRebuildRetry:
 
         _wire_rebuild(tmp_path, monkeypatch, fresh_client)
 
-        cfg = HonchoClientConfig(host="hermes", api_key="hch-at-x", enabled=True)
+        cfg = HonchoClientConfig(host="akramcode", api_key="hch-at-x", enabled=True)
         mgr = HonchoSessionManager(config=cfg)
         mgr._peers_cache["u"] = stale_peer
         mgr._cache["k"] = HonchoSession(
@@ -860,14 +860,14 @@ def _wire_init(tmp_path, monkeypatch, client, *, recall_mode="hybrid", dead_refr
     from plugins.memory.honcho import session as session_mod
 
     path = tmp_path / "honcho.json"
-    _write(path, {"hosts": {"hermes": _host_block(expires_at=time.time() + 3600)}})
+    _write(path, {"hosts": {"akramcode": _host_block(expires_at=time.time() + 3600)}})
     monkeypatch.setattr(client_mod, "resolve_config_path", lambda: path)
     monkeypatch.setattr(client_mod, "get_honcho_client", lambda *a, **k: client)
     monkeypatch.setattr(session_mod, "get_honcho_client", lambda *a, **k: client)
     if dead_refresh:
         monkeypatch.setattr(oauth, "force_refresh_token", lambda p, h, **kw: None)
     cfg = HonchoClientConfig(
-        host="hermes", api_key="hch-at-old", enabled=True, recall_mode=recall_mode,
+        host="akramcode", api_key="hch-at-old", enabled=True, recall_mode=recall_mode,
         timeout=0.5, session_strategy="per-session", peer_name="operator",
     )
     monkeypatch.setattr(
@@ -890,7 +890,7 @@ class TestInitAuthFailureNotice:
         _wire_init(tmp_path, monkeypatch, client)
         provider = _initialized_provider()
 
-        assert "hermes honcho setup" in provider.prefetch("first question")
+        assert "akramcode honcho setup" in provider.prefetch("first question")
         # Retries keep failing, but the same episode never re-arms the notice.
         for query in ("second question", "third question"):
             assert provider.prefetch(query) == ""
@@ -901,9 +901,9 @@ class TestInitAuthFailureNotice:
 
         def _session_dies(*a, **k):
             path = env["path"]
-            block = json.loads(path.read_text())["hosts"]["hermes"]
+            block = json.loads(path.read_text())["hosts"]["akramcode"]
             cred = oauth.OAuthCredential.from_host_block(block)
-            oauth._mark_grant_dead((str(path), "hermes"), cred)
+            oauth._mark_grant_dead((str(path), "akramcode"), cred)
             raise Exception("Invalid or expired access token")
 
         client.session.side_effect = _session_dies
@@ -913,14 +913,14 @@ class TestInitAuthFailureNotice:
         assert provider._manager is None
         assert client.peer.called  # failure hit session setup, not peer setup
         notice = provider.prefetch("what happened before the grant died?")
-        assert "hermes honcho setup" in notice
+        assert "akramcode honcho setup" in notice
 
     def test_relogin_resumes_init_and_clears_failure(self, tmp_path, monkeypatch):
         client = _healthy_client()
         client.peer.side_effect = Exception("HTTP 401 Unauthorized")
         path = _wire_init(tmp_path, monkeypatch, client)
         provider = _initialized_provider()
-        assert "hermes honcho setup" in provider.prefetch("first question")
+        assert "akramcode honcho setup" in provider.prefetch("first question")
 
         _relogin(path)
         client.peer.side_effect = None
@@ -978,7 +978,7 @@ class TestExchangeBudget:
         """A first attempt that consumed the whole budget must not start a
         second full-timeout exchange while holding the global refresh locks."""
         path = tmp_path / "honcho.json"
-        _write(path, {"hosts": {"hermes": _host_block()}})
+        _write(path, {"hosts": {"akramcode": _host_block()}})
         monkeypatch.setattr(oauth, "_REFRESH_RETRY_DELAY_SECONDS", 0)
 
         calls = []
@@ -991,14 +991,14 @@ class TestExchangeBudget:
             raise TimeoutError("token exchange timed out")
 
         monkeypatch.setattr(oauth, "_http_post_form_status", slow_timeout)
-        token, refreshed = oauth.ensure_fresh_token(path, "hermes", now=1000)
+        token, refreshed = oauth.ensure_fresh_token(path, "akramcode", now=1000)
 
         assert token == "hch-at-old" and refreshed is False
         assert len(calls) == 1  # no second exchange after the budget is gone
 
     def test_fast_failure_retry_gets_remaining_budget(self, tmp_path, monkeypatch):
         path = tmp_path / "honcho.json"
-        _write(path, {"hosts": {"hermes": _host_block()}})
+        _write(path, {"hosts": {"akramcode": _host_block()}})
         monkeypatch.setattr(oauth, "_REFRESH_RETRY_DELAY_SECONDS", 0)
 
         timeouts = []
@@ -1010,7 +1010,7 @@ class TestExchangeBudget:
             return 200, _rotated_body()
 
         monkeypatch.setattr(oauth, "_http_post_form_status", flaky)
-        token, refreshed = oauth.ensure_fresh_token(path, "hermes", now=1000)
+        token, refreshed = oauth.ensure_fresh_token(path, "akramcode", now=1000)
 
         assert refreshed is True and token == "hch-at-new1"
         assert len(timeouts) == 2
@@ -1022,7 +1022,7 @@ class TestFailureCooldown:
         """After a transient failure, waiting callers fail open instead of
         serializing their own full exchange cycles (dogpile guard)."""
         path = tmp_path / "honcho.json"
-        _write(path, {"hosts": {"hermes": _host_block()}})
+        _write(path, {"hosts": {"akramcode": _host_block()}})
         monkeypatch.setattr(oauth, "_REFRESH_RETRY_DELAY_SECONDS", 0)
 
         calls = []
@@ -1032,49 +1032,49 @@ class TestFailureCooldown:
             raise ConnectionError("network down")
 
         monkeypatch.setattr(oauth, "_http_post_form_status", boom)
-        oauth.ensure_fresh_token(path, "hermes", now=1000)
+        oauth.ensure_fresh_token(path, "akramcode", now=1000)
         assert len(calls) == 2  # first attempt + its one retry
 
         # Subsequent callers inside the cooldown window skip the endpoint.
         for _ in range(3):
-            token, refreshed = oauth.ensure_fresh_token(path, "hermes", now=1000)
+            token, refreshed = oauth.ensure_fresh_token(path, "akramcode", now=1000)
             assert token == "hch-at-old" and refreshed is False
-        assert oauth.force_refresh_token(path, "hermes") is None
+        assert oauth.force_refresh_token(path, "akramcode") is None
         assert len(calls) == 2
 
         # After the cooldown expires the exchange is attempted again.
-        key = (str(path), "hermes")
+        key = (str(path), "akramcode")
         oauth._refresh_failure_at[key] -= oauth._REFRESH_FAILURE_COOLDOWN_SECONDS + 1
-        oauth.ensure_fresh_token(path, "hermes", now=1000)
+        oauth.ensure_fresh_token(path, "akramcode", now=1000)
         assert len(calls) == 4
 
     def test_relogin_clears_the_cooldown(self, tmp_path, monkeypatch):
         path = tmp_path / "honcho.json"
-        _write(path, {"hosts": {"hermes": _host_block()}})
+        _write(path, {"hosts": {"akramcode": _host_block()}})
         monkeypatch.setattr(oauth, "_REFRESH_RETRY_DELAY_SECONDS", 0)
 
         def boom(*a, **k):
             raise ConnectionError("network down")
 
         monkeypatch.setattr(oauth, "_http_post_form_status", boom)
-        oauth.ensure_fresh_token(path, "hermes", now=1000)
-        assert oauth._in_failure_cooldown((str(path), "hermes")) is True
+        oauth.ensure_fresh_token(path, "akramcode", now=1000)
+        assert oauth._in_failure_cooldown((str(path), "akramcode")) is True
 
         _relogin(path)
-        assert oauth._in_failure_cooldown((str(path), "hermes")) is False
+        assert oauth._in_failure_cooldown((str(path), "akramcode")) is False
 
     def test_successful_rotation_clears_the_cooldown(self, tmp_path, monkeypatch):
         path = tmp_path / "honcho.json"
-        _write(path, {"hosts": {"hermes": _host_block()}})
+        _write(path, {"hosts": {"akramcode": _host_block()}})
         monkeypatch.setattr(oauth, "_REFRESH_RETRY_DELAY_SECONDS", 0)
-        key = (str(path), "hermes")
+        key = (str(path), "akramcode")
         oauth._refresh_failure_at[key] = (
             oauth.time.monotonic() - oauth._REFRESH_FAILURE_COOLDOWN_SECONDS - 1
         )
         monkeypatch.setattr(
             oauth, "_http_post_form_status", lambda *a, **k: (200, _rotated_body())
         )
-        token, refreshed = oauth.ensure_fresh_token(path, "hermes", now=1000)
+        token, refreshed = oauth.ensure_fresh_token(path, "akramcode", now=1000)
         assert refreshed is True
         assert key not in oauth._refresh_failure_at
 
@@ -1084,7 +1084,7 @@ class TestClientGenerationGuard:
         object into the cache after _force_reauth rebuilt the client."""
         from plugins.memory.honcho import session as session_mod
 
-        cfg = HonchoClientConfig(host="hermes", api_key="hch-at-x", enabled=True)
+        cfg = HonchoClientConfig(host="akramcode", api_key="hch-at-x", enabled=True)
         mgr = HonchoSessionManager(config=cfg)
 
         stale_session = object()

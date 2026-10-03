@@ -16,7 +16,7 @@ UPGRADE_ALREADY_SIGNED_IN = "Already signed in."
 UPGRADE_DO_NOT_SHARE = "Do not share this code."
 UPGRADE_TIMED_OUT = "That sign-in link has expired. Start again whenever you're ready."
 UPGRADE_NOT_COMPLETED = "Sign-in didn't finish. Try again whenever you're ready."
-UPGRADE_UNAVAILABLE = "The free tier is not available right now; run `hermes auth add nous` to sign in."
+UPGRADE_UNAVAILABLE = "The free tier is not available right now; run `akramcode auth add nous` to sign in."
 UPGRADE_REASON_COPY = {
     "user_declined": "No problem, you're still on the free Nous service. Sign in whenever you're ready.",
     "superseded": "A newer sign-in code replaced this one. Use the newest one, or start again.",
@@ -36,7 +36,7 @@ UPGRADE_SERVICE_BUSY = ("Signing in couldn't finish because the Nous service is 
 UPGRADE_SERVICE_UNREACHABLE = ("The Nous service couldn't be reached to finish signing you in. "
                                "Check your internet connection and try again. Your session is still here.")
 
-UPGRADE_NO_DEFAULT_TERMINAL = "No default model is set yet; run `hermes model` to pick one."
+UPGRADE_NO_DEFAULT_TERMINAL = "No default model is set yet; run `akramcode model` to pick one."
 UPGRADE_NO_DEFAULT_CHAT = "No default model is set yet; run /model to pick one."
 UPGRADE_WAITING = "Waiting for sign-in..."
 UPGRADE_WAITING_UP_TO = "Waiting for sign-in, up to {minutes}."
@@ -44,9 +44,9 @@ UPGRADE_CANCELLED = "\nSign-in cancelled."
 UPGRADE_UNAVAILABLE_CHAT = "The free tier is not available right now. Try /login again in a moment."
 LOGIN_COMMAND = "/login"
 LOGIN_STARTING = "Starting sign-in..."
-LOGIN_DM_ONLY = "Sign in from a direct message with Hermes."
-LOGIN_BUSY_ELSEWHERE = "Another sign-in is already running on this Hermes. Try again in a few minutes."
-LOGIN_NOT_ALLOWED = "Only an operator of this Hermes can sign it in."
+LOGIN_DM_ONLY = "Sign in from a direct message with AkramCode."
+LOGIN_BUSY_ELSEWHERE = "Another sign-in is already running on this AkramCode. Try again in a few minutes."
+LOGIN_NOT_ALLOWED = "Only an operator of this AkramCode can sign it in."
 # The card form (a surface with its own sign-in button) and the chat form (names /login).
 FREE_TIER_RATE_LIMIT_CARD = (
     "You've used up the allowance for chatting without signing in. It refreshes in {reset}. "
@@ -64,7 +64,7 @@ def format_wait_line(expires_in: int) -> str:
 #
 # One sign-in composition (:func:`run_sign_in`) yields these; every surface is a renderer over them.
 # Each state carries its own user copy, so no renderer ever maps a reason to a string: ``.copy`` is
-# the in-chat form (never a raw exception, a URL or a ``hermes`` verb) and ``.copy_terminal`` the
+# the in-chat form (never a raw exception, a URL or a ``akramcode`` verb) and ``.copy_terminal`` the
 # form a top-level terminal command prints.
 
 

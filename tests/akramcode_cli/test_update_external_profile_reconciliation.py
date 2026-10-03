@@ -1,6 +1,6 @@
-"""A symlinked profile that is really another install must not fail `hermes update` (#120240).
+"""A symlinked profile that is really another install must not fail `akramcode update` (#120240).
 
-``~/.hermes/profiles/work -> ~/.hermes-work`` where ``~/.hermes-work`` has its own checkout and
+``~/.akramcode/profiles/work -> ~/.akramcode-work`` where ``~/.akramcode-work`` has its own checkout and
 gateway: the plan inventories that gateway, the restart phase correctly leaves it alone, and the
 fleet matrix already classifies it ``external``. Reconciliation must agree instead of reporting it
 ``unaccounted`` and exiting 1.
@@ -34,7 +34,7 @@ def _checkout(root: Path) -> Path:
 def _gateway_state(home: Path, pid: int, entrypoint: Path, sha: str) -> None:
     home.mkdir(parents=True, exist_ok=True)
     (home / "gateway_state.json").write_text(json.dumps({
-        "gateway_state": "running", "kind": "hermes-gateway", "pid": pid,
+        "gateway_state": "running", "kind": "akramcode-gateway", "pid": pid,
         "argv": [str(entrypoint), "gateway", "run"], "code_sha": sha, "code_version": "1.0",
     }), encoding="utf-8")
 
@@ -50,13 +50,13 @@ def external_profile_host(tmp_path, monkeypatch):
     updater_main = update_receipt._updater_code_root() / "akramcode_cli" / "main.py"
     _gateway_state(root, 1111, updater_main, SHA)
 
-    other_checkout = _checkout(tmp_path / "other_install" / "hermes-agent")
+    other_checkout = _checkout(tmp_path / "other_install" / "akramcode-agent")
     other_home = tmp_path / "other_install" / "home"
     _gateway_state(other_home, 4242, other_checkout / "akramcode_cli" / "main.py", "f" * 40)
     (root / "profiles").mkdir()
     (root / "profiles" / "work").symlink_to(other_home, target_is_directory=True)
 
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(root))
     monkeypatch.setattr(update_receipt, "_code_identity", lambda refresh=False: {"sha": SHA, "version": "1.0"})
     monkeypatch.setattr(update_receipt, "_socket_identity", lambda _home: None)
     live = {root.resolve(): 1111, other_home.resolve(): 4242}
@@ -71,7 +71,7 @@ def external_profile_host(tmp_path, monkeypatch):
 def _restart_outcome() -> "fleet._GatewayRestartOutcome":
     # The root's own LaunchAgent was restarted; the other install's gateway was left alone.
     return fleet._GatewayRestartOutcome(
-        False, [], [1111, 4242], ["ai.hermes.gateway"], [], [], [], set(),
+        False, [], [1111, 4242], ["ai.akramcode.gateway"], [], [], [], set(),
     )
 
 

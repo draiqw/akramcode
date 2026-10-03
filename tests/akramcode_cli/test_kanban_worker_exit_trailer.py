@@ -1,7 +1,7 @@
 """A dead Kanban worker is booked the same way whichever process notices it.
 
 ``_recent_worker_exits`` is filled by ``os.waitpid`` and so only knows children of
-the process running the sweep; a per-tick ``hermes kanban dispatch`` process finds it
+the process running the sweep; a per-tick ``akramcode kanban dispatch`` process finds it
 empty. The worker's own exit trailer in its log is the durable witness the sweep reads
 instead, and a tripped protocol-violation budget must hold the card until an operator
 unblocks it.
@@ -22,11 +22,11 @@ from akramcode_cli.quiet_single_query import KANBAN_WORKER_EXIT_TRAILER, exit_si
 
 @pytest.fixture
 def kanban_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_KANBAN_CRASH_GRACE_SECONDS", "0")
+    monkeypatch.setenv("AKRAMCODE_KANBAN_CRASH_GRACE_SECONDS", "0")
     monkeypatch.setattr(kb, "_pid_alive", lambda _pid: False)
     kbd._recent_worker_exits.clear()
     kb.init_db()
@@ -45,7 +45,7 @@ def _dead_worker_with_log(conn, tid: str, pid: int, rc: int) -> None:
     log = kb.worker_log_path(tid)
     log.parent.mkdir(parents=True, exist_ok=True)
     with open(log, "a", encoding="utf-8") as f:
-        f.write(f"the model said something\n\nResume this session with:\n  hermes --resume x\n\n{KANBAN_WORKER_EXIT_TRAILER}{rc}\n")
+        f.write(f"the model said something\n\nResume this session with:\n  akramcode --resume x\n\n{KANBAN_WORKER_EXIT_TRAILER}{rc}\n")
 
 
 @pytest.mark.parametrize(
@@ -133,13 +133,13 @@ def test_plain_budget_trip_still_auto_recovers(kanban_home):
 
 
 def test_exit_single_query_writes_trailer_only_for_kanban_workers(monkeypatch, capsys):
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+    monkeypatch.delenv("AKRAMCODE_KANBAN_TASK", raising=False)
     with pytest.raises(SystemExit) as exc:
         exit_single_query(1)
     assert exc.value.code == 1
     assert KANBAN_WORKER_EXIT_TRAILER not in capsys.readouterr().err
 
-    monkeypatch.setenv("HERMES_KANBAN_TASK", "t_1")
+    monkeypatch.setenv("AKRAMCODE_KANBAN_TASK", "t_1")
     with pytest.raises(SystemExit) as exc:
         exit_single_query(kb.KANBAN_RATE_LIMIT_EXIT_CODE)
     assert exc.value.code == kb.KANBAN_RATE_LIMIT_EXIT_CODE

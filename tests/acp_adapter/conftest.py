@@ -1,6 +1,6 @@
 """Shared fixtures for tests/acp_adapter.
 
-Keeps the ACP server tests offline: ``HermesACPAgent._build_model_state``
+Keeps the ACP server tests offline: ``AkramCodeACPAgent._build_model_state``
 calls ``akramcode_cli.inventory.build_models_payload``, which (without this
 fixture) performs live network fetches — models.dev registry, GitHub model
 catalog, Copilot token exchange, Anthropic model list — adding ~3s of real

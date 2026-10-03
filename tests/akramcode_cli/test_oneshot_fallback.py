@@ -1,4 +1,4 @@
-"""#81209: ``hermes -z`` must consult the fallback chain at *resolution* time.
+"""#81209: ``akramcode -z`` must consult the fallback chain at *resolution* time.
 
 A quota-exhausted / expired primary raises ``AuthError`` from ``resolve_runtime_provider`` before
 ``AIAgent`` exists, so the mid-session ``fallback_model`` wiring never gets a chance. The shared
@@ -107,8 +107,8 @@ def test_run_agent_falls_back_when_primary_resolution_raises_auth_error(monkeypa
 
 
 def test_run_agent_forwards_resolved_request_overrides(monkeypatch):
-    """#103738: ``hermes -z`` hands the resolver's ``request_overrides`` (a custom entry's ``extra_body``) to
-    AIAgent like ``hermes chat``, or a proxy that requires a body field 400s on one-shot runs."""
+    """#103738: ``akramcode -z`` hands the resolver's ``request_overrides`` (a custom entry's ``extra_body``) to
+    AIAgent like ``akramcode chat``, or a proxy that requires a body field 400s on one-shot runs."""
     import akramcode_cli.oneshot as oneshot_mod
 
     captured = {}

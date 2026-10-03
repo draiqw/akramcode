@@ -9,7 +9,7 @@ Two real surfaces, each timestamped against the fake's own clock (same host):
 
 * the Desktop/TUI event stream (``python -m tui_gateway.entry`` over stdio): ``reasoning.delta`` /
   ``message.delta`` events carrying the agent's text (#120550);
-* ACP composition — Hermes itself served as an ACP agent (``hermes acp``) on top of the copilot-acp
+* ACP composition — AkramCode itself served as an ACP agent (``akramcode acp``) on top of the copilot-acp
   provider: the outer client must get ``session/update`` chunks before the inner turn ends (#101507).
 
 Both are red on main (the ACP client buffers the whole response, then replays it as a stream), so
@@ -55,7 +55,7 @@ KNOWN: dict[str, tuple[str, str]] = {
     "tui_stream": (r"^tui_stream: no agent chunk reached the surface during the [\d.]+s turn",
                    "#120550 copilot-acp buffers the whole turn: no reasoning/message delta reaches the UI in flight"),
     "nested_acp": (r"^nested_acp: no agent chunk reached the surface during the [\d.]+s turn",
-                   "#101507 hermes acp over copilot-acp forwards inner ACP chunks only after the inner turn ends"),
+                   "#101507 akramcode acp over copilot-acp forwards inner ACP chunks only after the inner turn ends"),
 }
 
 

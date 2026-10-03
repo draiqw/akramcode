@@ -1,6 +1,6 @@
-import type { Key } from '@hermes/ink'
-import { Text, useInput } from '@hermes/ink'
-import { mix } from '@hermes/shared/color'
+import type { Key } from '@akramcode/ink'
+import { Text, useInput } from '@akramcode/ink'
+import { mix } from '@akramcode/shared/color'
 import { type ReactNode, useState } from 'react'
 
 import type { UsageModelData } from '../gatewayTypes.js'

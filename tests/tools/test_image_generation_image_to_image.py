@@ -17,7 +17,7 @@ import json
 from typing import Any, Dict
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from agent import image_gen_registry
 from agent.image_gen_provider import ImageGenProvider
@@ -32,7 +32,7 @@ def _reset_registry():
 
 @pytest.fixture
 def cfg_home(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     return tmp_path
 
 

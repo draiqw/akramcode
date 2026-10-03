@@ -8,7 +8,7 @@ forever" gap:
    to the sibling console ``python.exe`` so respawns and regenerated
    launchers use the hidden-console design (#54220/#56747) and don't die
    with ``RuntimeError: sys.stderr is None`` (#71671).
-2. ``cli_main._refresh_windows_gateway_launchers`` — ``hermes
+2. ``cli_main._refresh_windows_gateway_launchers`` — ``akramcode
    update`` regenerates the installed Scheduled Task / Startup launcher
    scripts instead of leaving install-time artifacts stale forever.
 
@@ -65,7 +65,7 @@ def test_restart_spec_normalizes_legacy_pythonw_argv(tmp_path):
     argv = [str(pythonw), "-m", "akramcode_cli.main", "gateway", "run"]
     with mock.patch.object(
         gateway_windows, "_stable_gateway_working_dir", return_value=str(tmp_path)
-    ), mock.patch("akramcode_cli.config.get_hermes_home", return_value=str(tmp_path)):
+    ), mock.patch("akramcode_cli.config.get_akramcode_home", return_value=str(tmp_path)):
         new_argv, cwd, env = gateway_windows.windowless_gateway_restart_spec(list(argv))
 
     assert new_argv[0] == str(python)
@@ -74,5 +74,5 @@ def test_restart_spec_normalizes_legacy_pythonw_argv(tmp_path):
     assert env["VIRTUAL_ENV"] == str(tmp_path / "venv")
 
 # ---------------------------------------------------------------------------
-# _refresh_windows_gateway_launchers: hermes update regenerates launchers
+# _refresh_windows_gateway_launchers: akramcode update regenerates launchers
 # ---------------------------------------------------------------------------

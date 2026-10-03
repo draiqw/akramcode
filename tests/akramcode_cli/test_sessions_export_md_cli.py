@@ -38,7 +38,7 @@ def test_sessions_export_md_writes_single_session(monkeypatch, tmp_path, capsys)
         sys,
         "argv",
         [
-            "hermes",
+            "akramcode",
             "sessions",
             "export",
             "--format",
@@ -93,7 +93,7 @@ def test_sessions_export_redact_scrubs_secrets(monkeypatch, tmp_path):
         sys,
         "argv",
         [
-            "hermes", "sessions", "export", "--format", "md",
+            "akramcode", "sessions", "export", "--format", "md",
             "--session-id", "s1", "--redact", str(tmp_path),
         ],
     )
@@ -142,7 +142,7 @@ def _export_delete(monkeypatch, out_dir, session_id, *extra):
     import akramcode_cli.main as main_mod
 
     monkeypatch.setattr(sys, "argv", [
-        "hermes", "sessions", "export", "--format", "md", "--session-id", session_id,
+        "akramcode", "sessions", "export", "--format", "md", "--session-id", session_id,
         "--delete-after-verified", "--yes", *extra, str(out_dir),
     ])
     main_mod.main()

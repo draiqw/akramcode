@@ -1,8 +1,8 @@
 """Regression tests for Codex refresh_token self-heal (cross-store rotation).
 
-Hermes keeps its OWN copy of the Codex OAuth token (per profile + top-level),
+AkramCode keeps its OWN copy of the Codex OAuth token (per profile + top-level),
 separate from the Codex CLI's ``~/.codex/auth.json``. OAuth refresh_tokens are
-single-use, so when the Codex CLI (or another Hermes process) rotates the shared
+single-use, so when the Codex CLI (or another AkramCode process) rotates the shared
 token, the frozen copy's refresh_token goes stale and ``refresh_codex_oauth_pure``
 fails with a relogin-required error. ``_refresh_codex_auth_tokens`` must then
 recover by re-importing the canonical token from ``~/.codex/auth.json`` instead of
@@ -51,7 +51,7 @@ def test_self_heals_on_stale_refresh_token(monkeypatch):
 
     assert out["access_token"] == "fresh-access"
     assert out["refresh_token"] == "fresh-refresh"
-    # the recovered token was persisted to the Hermes auth store
+    # the recovered token was persisted to the AkramCode auth store
     assert saved["access_token"] == "fresh-access"
 
 
@@ -64,12 +64,12 @@ def test_self_heals_on_stale_refresh_token(monkeypatch):
 
 
 def test_self_heals_missing_singleton_access_token_from_codex_cli(tmp_path, monkeypatch):
-    """Exact cron failure path: Hermes auth has refresh_token but missing access_token."""
-    hermes_home = tmp_path / "hermes"
+    """Exact cron failure path: AkramCode auth has refresh_token but missing access_token."""
+    akramcode_home = tmp_path / "akramcode"
     codex_home = tmp_path / "codex"
-    hermes_home.mkdir()
+    akramcode_home.mkdir()
     codex_home.mkdir()
-    (hermes_home / "auth.json").write_text(json.dumps({
+    (akramcode_home / "auth.json").write_text(json.dumps({
         "version": 1,
         "providers": {
             "openai-codex": {
@@ -85,14 +85,14 @@ def test_self_heals_missing_singleton_access_token_from_codex_cli(tmp_path, monk
             "refresh_token": "fresh-refresh",
         },
     }))
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
     monkeypatch.setenv("CODEX_HOME", str(codex_home))
 
     resolved = resolve_codex_runtime_credentials()
 
     assert resolved["api_key"] == "fresh-access"
-    assert resolved["source"] == "hermes-auth-store"
-    stored = json.loads((hermes_home / "auth.json").read_text())
+    assert resolved["source"] == "akramcode-auth-store"
+    stored = json.loads((akramcode_home / "auth.json").read_text())
     tokens = stored["providers"]["openai-codex"]["tokens"]
     assert tokens["access_token"] == "fresh-access"
     assert tokens["refresh_token"] == "fresh-refresh"
@@ -102,19 +102,19 @@ def test_self_heals_missing_singleton_access_token_from_codex_cli(tmp_path, monk
 
 def test_opt_out_never_adopts_codex_cli_login(tmp_path, monkeypatch):
     """``auth.adopt_external_logins: false`` (#113023): the Codex CLI pair is a single-use refresh-token
-    family the user did not hand to Hermes. Both automatic recovery paths must leave it (and Hermes' own
+    family the user did not hand to AkramCode. Both automatic recovery paths must leave it (and AkramCode' own
     auth.json) untouched and surface the real error instead."""
-    hermes_home = tmp_path / "hermes"
+    akramcode_home = tmp_path / "akramcode"
     codex_home = tmp_path / "codex"
-    hermes_home.mkdir()
+    akramcode_home.mkdir()
     codex_home.mkdir()
-    (hermes_home / "config.yaml").write_text("auth:\n  adopt_external_logins: false\n")
-    hermes_auth = {"version": 1, "providers": {"openai-codex": {
+    (akramcode_home / "config.yaml").write_text("auth:\n  adopt_external_logins: false\n")
+    akramcode_auth = {"version": 1, "providers": {"openai-codex": {
         "tokens": {"refresh_token": "stale-refresh"}, "auth_mode": "chatgpt"}}}
-    (hermes_home / "auth.json").write_text(json.dumps(hermes_auth))
+    (akramcode_home / "auth.json").write_text(json.dumps(akramcode_auth))
     (codex_home / "auth.json").write_text(json.dumps({
         "tokens": {"access_token": "fresh-access", "refresh_token": "fresh-refresh"}}))
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
     monkeypatch.setenv("CODEX_HOME", str(codex_home))
 
     with pytest.raises(AuthError) as info:
@@ -128,7 +128,7 @@ def test_opt_out_never_adopts_codex_cli_login(tmp_path, monkeypatch):
     with pytest.raises(AuthError) as info:
         _refresh_codex_auth_tokens(dict(STALE), 5.0)
     assert info.value.relogin_required  # surfaced, not papered over with the CLI pair
-    assert json.loads((hermes_home / "auth.json").read_text()) == hermes_auth
+    assert json.loads((akramcode_home / "auth.json").read_text()) == akramcode_auth
 
 
 def _codex_jwt(account_id: str, sub: str = "user-1") -> str:
@@ -139,21 +139,21 @@ def _codex_jwt(account_id: str, sub: str = "user-1") -> str:
     return f"{_b64({'alg': 'none'})}.{_b64(claims)}.sig"
 
 
-def _seed_homes(tmp_path, monkeypatch, hermes_tokens, cli_tokens):
-    hermes_home, codex_home = tmp_path / "hermes", tmp_path / "codex"
-    hermes_home.mkdir()
+def _seed_homes(tmp_path, monkeypatch, akramcode_tokens, cli_tokens):
+    akramcode_home, codex_home = tmp_path / "akramcode", tmp_path / "codex"
+    akramcode_home.mkdir()
     codex_home.mkdir()
-    (hermes_home / "auth.json").write_text(json.dumps({"version": 1, "providers": {"openai-codex": {
-        "tokens": hermes_tokens, "auth_mode": "chatgpt"}}}))
+    (akramcode_home / "auth.json").write_text(json.dumps({"version": 1, "providers": {"openai-codex": {
+        "tokens": akramcode_tokens, "auth_mode": "chatgpt"}}}))
     (codex_home / "auth.json").write_text(json.dumps({"tokens": cli_tokens}))
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
     monkeypatch.setenv("CODEX_HOME", str(codex_home))
-    return hermes_home / "auth.json"
+    return akramcode_home / "auth.json"
 
 
 def test_recovery_refuses_codex_cli_login_from_another_workspace(tmp_path, monkeypatch, caplog):
     """#73667: a Codex Desktop/CLI login into ANOTHER ChatGPT workspace must not silently replace the
-    Hermes credential it is supposed to repair — the store stays byte-identical and the log says why."""
+    AkramCode credential it is supposed to repair — the store stays byte-identical and the log says why."""
     personal, team = _codex_jwt("acct-personal"), _codex_jwt("acct-team")
     auth_file = _seed_homes(tmp_path, monkeypatch, {"access_token": personal},
                             {"access_token": team, "refresh_token": "rt-team"})

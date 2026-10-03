@@ -1,6 +1,6 @@
 """expose_cli — the launcher owner repairs PATH conveniences.
 
-The installers write ~/.local/bin/hermes* once, at install time. This
+The installers write ~/.local/bin/akramcode* once, at install time. This
 step rewrites them when they drift (moved checkout, recreated venv,
 deleted by hand) and — just as load-bearing — REFUSES to touch a
 launcher that belongs to a different install sharing the link dir.
@@ -41,17 +41,17 @@ def fake_install(tmp_path, monkeypatch):
     home = tmp_path / "home"
     home.mkdir()
     monkeypatch.setattr(Path, "home", staticmethod(lambda: home))
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
 
     root = tmp_path / "checkout"
     (root / "venv" / "bin").mkdir(parents=True)
     (root / "venv" / "bin" / "python").write_text("#!fake\n", encoding="utf-8")
-    (root / "hermes").write_text("# entrypoint\n", encoding="utf-8")
+    (root / "akramcode").write_text("# entrypoint\n", encoding="utf-8")
     (root / "run_agent.py").write_text("# agent\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_INSTALL_ROOT", str(root))
+    monkeypatch.setenv("AKRAMCODE_INSTALL_ROOT", str(root))
     store = tmp_path / "tools"
     store.mkdir()
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(store))
+    monkeypatch.setenv("AKRAMCODE_RUNTIME_DIR", str(store))
     interpreter = Path(sys._base_executable).resolve()
     (store / "facts.json").write_text(json.dumps({"schema": 1, "packages": {"python": {
         "entry": str(interpreter.parent if os.name == "nt" else interpreter.parents[1]),
@@ -62,12 +62,12 @@ def fake_install(tmp_path, monkeypatch):
 @pytest.mark.platforms("windows")
 @pytest.mark.parametrize("create", [True, False])
 def test_windows_converges_on_the_installer_user_bin(create, monkeypatch, tmp_path):
-    """Windows converges on the installer's convention ($HERMES_HOME\\bin + User PATH); an update
+    """Windows converges on the installer's convention ($AKRAMCODE_HOME\\bin + User PATH); an update
     no longer skips as "installer-owned" and leaves a venv\\Scripts machine behind."""
     calls = []
     monkeypatch.setattr(_launchers, "_expose_windows_user_bin",
                         lambda root, *, create: calls.append(create) or {"ok": True, "written": []})
-    monkeypatch.setenv("HERMES_INSTALL_ROOT", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_INSTALL_ROOT", str(tmp_path))
     assert _launchers.expose_cli(create=create) == {"ok": True, "written": []}
     assert calls == [create]
 
@@ -78,8 +78,8 @@ def test_registered_as_a_home_step():
 
 class TestExposeCli:
     @posix_only
-    @pytest.mark.parametrize("hermes", ["missing", "foreign"])
-    def test_repair_only_preserves_missing_and_foreign_commands(self, fake_install, monkeypatch, hermes):
+    @pytest.mark.parametrize("akramcode", ["missing", "foreign"])
+    def test_repair_only_preserves_missing_and_foreign_commands(self, fake_install, monkeypatch, akramcode):
         home, root = fake_install
         monkeypatch.setattr("akramcode_cli.config.load_config", lambda: pytest.fail("repair read config"))
         wrapper_dir = home / ".local" / "bin"
@@ -87,35 +87,35 @@ class TestExposeCli:
         assert _launchers.expose_cli(create=False) == {"ok": True, "written": []}
         assert not wrapper_dir.exists()
         assert not extra.exists()
-        assert {p.name for p in (root / ".hermes/bin").iterdir()} == set(_launchers.ENTRY_POINTS)
+        assert {p.name for p in (root / ".akramcode/bin").iterdir()} == set(_launchers.ENTRY_POINTS)
 
-        # An owned ACP entry must be repaired even without an owned hermes
+        # An owned ACP entry must be repaired even without an owned akramcode
         # sibling admitting this directory. Its old target is already gone.
         extra.mkdir()
-        dangling = root / "venv/bin/hermes-acp"
-        acp = extra / "hermes-acp"
+        dangling = root / "venv/bin/akramcode-acp"
+        acp = extra / "akramcode-acp"
         acp.symlink_to(dangling)
         assert not acp.exists() and acp.is_symlink()
         foreign = b"#!/bin/sh\n# user-owned caf\xc3\xa9 command\nexit 19\n"
-        if hermes == "foreign":
-            (extra / "hermes").write_bytes(foreign)
+        if akramcode == "foreign":
+            (extra / "akramcode").write_bytes(foreign)
         wrapper_dir.mkdir(parents=True)
-        (wrapper_dir / "hermes").write_bytes(foreign)
-        foreign_link = wrapper_dir / "hermes-acp"
-        foreign_target = home / "other-install/hermes-acp"
+        (wrapper_dir / "akramcode").write_bytes(foreign)
+        foreign_link = wrapper_dir / "akramcode-acp"
+        foreign_target = home / "other-install/akramcode-acp"
         foreign_link.symlink_to(foreign_target)
-        before = {path: path.lstat().st_mtime_ns for path in (wrapper_dir, wrapper_dir / "hermes", foreign_link)}
+        before = {path: path.lstat().st_mtime_ns for path in (wrapper_dir, wrapper_dir / "akramcode", foreign_link)}
 
-        assert _launchers.expose_cli(create=False) == {"ok": True, "written": ["hermes-acp"]}
+        assert _launchers.expose_cli(create=False) == {"ok": True, "written": ["akramcode-acp"]}
         assert acp.is_file() and not acp.is_symlink() and os.access(acp, os.X_OK)
         assert not dangling.exists()
-        assert not (extra / "hermes-agent").exists()
-        assert not (wrapper_dir / "hermes-agent").exists()
-        if hermes == "foreign":
-            assert (extra / "hermes").read_bytes() == foreign
+        assert not (extra / "akramcode-agent").exists()
+        assert not (wrapper_dir / "akramcode-agent").exists()
+        if akramcode == "foreign":
+            assert (extra / "akramcode").read_bytes() == foreign
         else:
-            assert not (extra / "hermes").exists()
-        assert (wrapper_dir / "hermes").read_bytes() == foreign
+            assert not (extra / "akramcode").exists()
+        assert (wrapper_dir / "akramcode").read_bytes() == foreign
         assert foreign_link.is_symlink() and foreign_link.readlink() == foreign_target
         assert before == {path: path.lstat().st_mtime_ns for path in before}
         assert _launchers.expose_cli(create=False) == {"ok": True, "written": []}
@@ -125,12 +125,12 @@ class TestExposeCli:
         home, root = fake_install
         result = _launchers.expose_cli()
         assert result["ok"] is True
-        assert sorted(result["written"]) == ["hermes", "hermes-acp", "hermes-agent"]
-        for name in ("hermes", "hermes-agent", "hermes-acp"):
+        assert sorted(result["written"]) == ["akramcode", "akramcode-acp", "akramcode-agent"]
+        for name in ("akramcode", "akramcode-agent", "akramcode-acp"):
             wrapper = home / ".local" / "bin" / name
             body = wrapper.read_text(encoding="utf-8-sig")
             assert str(root) in body
-            assert str(root / ".hermes" / "bin") in body
+            assert str(root / ".akramcode" / "bin") in body
             assert os.access(wrapper, os.X_OK)
 
 
@@ -141,13 +141,13 @@ class TestExposeCli:
         other = "/somewhere/else/checkout"
         wrapper_dir = home / ".local" / "bin"
         wrapper_dir.mkdir(parents=True)
-        foreign = f'#!/bin/sh\nexec "{other}/venv/bin/python" "{other}/hermes" "$@"\n'
-        (wrapper_dir / "hermes").write_text(foreign, encoding="utf-8")
+        foreign = f'#!/bin/sh\nexec "{other}/venv/bin/python" "{other}/akramcode" "$@"\n'
+        (wrapper_dir / "akramcode").write_text(foreign, encoding="utf-8")
         result = _launchers.expose_cli()
-        assert (wrapper_dir / "hermes").read_text(encoding="utf-8-sig") == foreign
-        assert "hermes" not in result["written"]
+        assert (wrapper_dir / "akramcode").read_text(encoding="utf-8-sig") == foreign
+        assert "akramcode" not in result["written"]
         # The other two had no file at all — those ARE written.
-        assert sorted(result["written"]) == ["hermes-acp", "hermes-agent"]
+        assert sorted(result["written"]) == ["akramcode-acp", "akramcode-agent"]
 
     @posix_only
     def test_config_gate_disables(self, fake_install, monkeypatch):
@@ -163,7 +163,7 @@ class TestExposeCli:
         (tmp_path / "tools" / "facts.json").unlink()
         bare = tmp_path / "sealed"
         bare.mkdir()
-        monkeypatch.setenv("HERMES_INSTALL_ROOT", str(bare))
+        monkeypatch.setenv("AKRAMCODE_INSTALL_ROOT", str(bare))
         result = _launchers.expose_cli()
         assert result == {"ok": True, "skipped": "no-store-python"}
 
@@ -180,9 +180,9 @@ class TestExposeCli:
         (payload / "bin").mkdir(parents=True)
         (payload / "repo").mkdir()
         _write_bundled_stamp(payload / "repo")
-        for name in ("hermes", "hermes-agent", "hermes-acp"):
+        for name in ("akramcode", "akramcode-agent", "akramcode-acp"):
             (payload / "bin" / name).write_text("\x7fELF fake shim\n", encoding="utf-8")
-        monkeypatch.setenv("HERMES_INSTALL_ROOT", str(payload / "repo"))
+        monkeypatch.setenv("AKRAMCODE_INSTALL_ROOT", str(payload / "repo"))
         if not create:
             monkeypatch.setattr("akramcode_cli.config.load_config", lambda: pytest.fail("repair read config"))
         result = _launchers.expose_cli(create=create)
@@ -194,16 +194,16 @@ class TestExposeCli:
         self, fake_install, monkeypatch, tmp_path
     ):
         """The stamp is the shape authority. A venv-less checkout whose
-        PARENT happens to carry a bin/hermes (the installers' launcher
-        dir shares ~/.hermes with the checkout) must skip, not enter the
+        PARENT happens to carry a bin/akramcode (the installers' launcher
+        dir shares ~/.akramcode with the checkout) must skip, not enter the
         sealed branch — on every platform."""
         (tmp_path / "tools" / "facts.json").unlink()
-        parent = tmp_path / "hermes-home"
+        parent = tmp_path / "akramcode-home"
         (parent / "bin").mkdir(parents=True)
-        (parent / "bin" / "hermes").write_text("#!/bin/sh\n# installer launcher\n", encoding="utf-8")
-        checkout = parent / "hermes-agent"
+        (parent / "bin" / "akramcode").write_text("#!/bin/sh\n# installer launcher\n", encoding="utf-8")
+        checkout = parent / "akramcode-agent"
         checkout.mkdir()
-        monkeypatch.setenv("HERMES_INSTALL_ROOT", str(checkout))
+        monkeypatch.setenv("AKRAMCODE_INSTALL_ROOT", str(checkout))
         result = _launchers.expose_cli()
         assert result == {"ok": True, "skipped": "no-store-python"}
         assert _launchers._is_bundled_payload(checkout) is False
@@ -215,15 +215,15 @@ class TestExposeCli:
         home, root = fake_install
         wrapper_dir = home / ".local" / "bin"
         wrapper_dir.mkdir(parents=True)
-        console_script = root / "venv" / "bin" / "hermes"
+        console_script = root / "venv" / "bin" / "akramcode"
         console_script.write_text("# real console script\n", encoding="utf-8")
-        (wrapper_dir / "hermes").symlink_to(console_script)
+        (wrapper_dir / "akramcode").symlink_to(console_script)
         result = _launchers.expose_cli()
-        assert "hermes" in result["written"]
+        assert "akramcode" in result["written"]
         # The venv console script survives untouched…
         assert console_script.read_text(encoding="utf-8-sig") == "# real console script\n"
         # …and the link-dir entry is now a real file, not a symlink.
-        assert not (wrapper_dir / "hermes").is_symlink()
+        assert not (wrapper_dir / "akramcode").is_symlink()
 
 
 @pytest.mark.platforms("macos")
@@ -233,7 +233,7 @@ def test_direct_packaged_cli_exposes_shims_before_electron(tmp_path):
 
     home = tmp_path / "home"
     home.mkdir()
-    payload = tmp_path / "Hermes.app/Contents/Resources/agent-payload"
+    payload = tmp_path / "AkramCode.app/Contents/Resources/agent-payload"
     repo = payload / "repo"
     _write_bundled_stamp(repo)
     (repo / "install-stamp.json").write_text(json.dumps({
@@ -242,19 +242,19 @@ def test_direct_packaged_cli_exposes_shims_before_electron(tmp_path):
     bin_dir = payload / "bin"
     bin_dir.mkdir()
     code = f"import sys; sys.path.insert(0, {str(Path(__file__).resolve().parents[2])!r}); from akramcode_cli.main import main; main()"
-    for name in ("hermes", "hermes-agent", "hermes-acp"):
+    for name in ("akramcode", "akramcode-agent", "akramcode-acp"):
         shim = bin_dir / name
         shim.write_text(f'#!/bin/sh\nexec {shlex.join([sys.executable, "-I", "-c", code])} "$@"\n', encoding="utf-8")
         shim.chmod(0o755)
-    env = dict(os.environ, HOME=str(home), HERMES_HOME=str(home / ".hermes"),
-               HERMES_INSTALL_ROOT=str(repo), HERMES_RUNTIME_DIR=str(tmp_path / "tools"))
+    env = dict(os.environ, HOME=str(home), AKRAMCODE_HOME=str(home / ".akramcode"),
+               AKRAMCODE_INSTALL_ROOT=str(repo), AKRAMCODE_RUNTIME_DIR=str(tmp_path / "tools"))
     # Execute the package CLI directly. No Electron process or linking helper runs.
     # `--help` reaches main()'s boot bootstrap (which owns expose_cli) before argparse
     # exits; `--version` is answered on the pre-import fast path and never gets there.
-    result = subprocess.run([str(bin_dir / "hermes"), "--help"], env=env,
+    result = subprocess.run([str(bin_dir / "akramcode"), "--help"], env=env,
                             capture_output=True, text=True, timeout=30, encoding="utf-8")
     assert result.returncode == 0, result.stderr
-    for name in ("hermes", "hermes-agent", "hermes-acp"):
+    for name in ("akramcode", "akramcode-agent", "akramcode-acp"):
         assert (home / ".local/bin" / name).is_symlink()
         assert (home / ".local/bin" / name).resolve() == bin_dir / name
 
@@ -270,9 +270,9 @@ class TestSymlinkSealedLaunchers:
         home = tmp_path / "home"
         home.mkdir()
         monkeypatch.setattr(Path, "home", staticmethod(lambda: home))
-        payload_bin = tmp_path / "Hermes.app" / "Contents" / "Resources" / "agent-payload" / "bin"
+        payload_bin = tmp_path / "AkramCode.app" / "Contents" / "Resources" / "agent-payload" / "bin"
         payload_bin.mkdir(parents=True)
-        for name in ("hermes", "hermes-agent", "hermes-acp"):
+        for name in ("akramcode", "akramcode-agent", "akramcode-acp"):
             (payload_bin / name).write_text("fake mach-o shim\n", encoding="utf-8")
         return home, payload_bin
 
@@ -280,8 +280,8 @@ class TestSymlinkSealedLaunchers:
         home, payload_bin = payload
         result = _launchers._symlink_sealed_launchers(payload_bin)
         assert result["ok"] is True
-        assert sorted(result["written"]) == ["hermes", "hermes-acp", "hermes-agent"]
-        for name in ("hermes", "hermes-agent", "hermes-acp"):
+        assert sorted(result["written"]) == ["akramcode", "akramcode-acp", "akramcode-agent"]
+        for name in ("akramcode", "akramcode-agent", "akramcode-acp"):
             link = home / ".local" / "bin" / name
             assert link.is_symlink()
             assert os.readlink(link) == str(payload_bin / name)
@@ -299,22 +299,22 @@ class TestSymlinkSealedLaunchers:
         old = payload_bin.parent / "bin-old"
         link_dir = home / ".local" / "bin"
         link_dir.mkdir(parents=True)
-        (link_dir / "hermes").symlink_to(old / "hermes")  # dangling, old payload path
+        (link_dir / "akramcode").symlink_to(old / "akramcode")  # dangling, old payload path
         result = _launchers._symlink_sealed_launchers(payload_bin)
-        assert "hermes" in result["written"]
-        assert os.readlink(link_dir / "hermes") == str(payload_bin / "hermes")
+        assert "akramcode" in result["written"]
+        assert os.readlink(link_dir / "akramcode") == str(payload_bin / "akramcode")
 
     def test_never_touches_a_live_foreign_entry(self, payload, tmp_path):
         home, payload_bin = payload
         link_dir = home / ".local" / "bin"
         link_dir.mkdir(parents=True)
         # A real file (pipx-style launcher)…
-        (link_dir / "hermes").write_text("#!/bin/sh\n# pipx launcher\n", encoding="utf-8")
+        (link_dir / "akramcode").write_text("#!/bin/sh\n# pipx launcher\n", encoding="utf-8")
         # …and a live symlink to a different tool.
         other = tmp_path / "other-tool"
         other.write_text("other\n", encoding="utf-8")
-        (link_dir / "hermes-agent").symlink_to(other)
+        (link_dir / "akramcode-agent").symlink_to(other)
         result = _launchers._symlink_sealed_launchers(payload_bin)
-        assert (link_dir / "hermes").read_text(encoding="utf-8-sig") == "#!/bin/sh\n# pipx launcher\n"
-        assert os.readlink(link_dir / "hermes-agent") == str(other)
-        assert sorted(result["written"]) == ["hermes-acp"]
+        assert (link_dir / "akramcode").read_text(encoding="utf-8-sig") == "#!/bin/sh\n# pipx launcher\n"
+        assert os.readlink(link_dir / "akramcode-agent") == str(other)
+        assert sorted(result["written"]) == ["akramcode-acp"]

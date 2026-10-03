@@ -13,7 +13,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from agent import i18n
-from cli import HermesCLI
+from cli import AkramCodeCLI
 
 
 @pytest.fixture
@@ -39,7 +39,7 @@ def swapped_catalog(tmp_path, monkeypatch):
 
 
 def _cli_with_approval():
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = AkramCodeCLI.__new__(AkramCodeCLI)
     cli._approval_lock = threading.Lock()
     cli._sudo_state = cli._secret_state = cli._slash_confirm_state = cli._connection_state = None
     cli._clarify_state = None

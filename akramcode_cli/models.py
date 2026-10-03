@@ -68,7 +68,7 @@ logger = logging.getLogger(__name__)
 
 # Identify ourselves so endpoints fronted by Cloudflare's Browser Integrity
 # Check (error 1010) don't reject the default ``Python-urllib/*`` signature.
-_HERMES_USER_AGENT = f"hermes-cli/{get_version_info().base_version}"
+_AKRAMCODE_USER_AGENT = f"akramcode-cli/{get_version_info().base_version}"
 
 COPILOT_BASE_URL = "https://api.githubcopilot.com"
 COPILOT_MODELS_URL = f"{COPILOT_BASE_URL}/models"
@@ -109,9 +109,9 @@ def _write_json_cache(path: Path, data: Any, **dump_kwargs: Any) -> None:
     """Atomically persist a cache file (creating parents). Raises on failure — callers decide
     whether a failed cache write is worth logging."""
     from utils import atomic_json_write
-    from akramcode_constants import mkdir_under_hermes_home
+    from akramcode_constants import mkdir_under_akramcode_home
 
-    mkdir_under_hermes_home(path.parent)
+    mkdir_under_akramcode_home(path.parent)
     atomic_json_write(path, data, **dump_kwargs)
 
 
@@ -160,9 +160,9 @@ def _openrouter_catalog_disk_ttl() -> float:
 
 
 def _openrouter_catalog_disk_path() -> Path:
-    from akramcode_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
 
-    return get_hermes_home() / "cache" / "openrouter_curated_catalog.json"
+    return get_akramcode_home() / "cache" / "openrouter_curated_catalog.json"
 
 
 def _read_openrouter_catalog_disk(*, allow_stale: bool = False) -> list[tuple[str, str]] | None:
@@ -286,9 +286,9 @@ _free_tier_cache: dict[str, tuple[bool, float]] = {}  # profile key -> (result, 
 
 def _pricing_profile_key() -> str:
     """Stable profile identity for process-local pricing caches."""
-    from akramcode_constants import hermes_home_key
+    from akramcode_constants import akramcode_home_key
 
-    return hermes_home_key()
+    return akramcode_home_key()
 
 
 def get_cached_nous_free_tier() -> Optional[bool]:
@@ -334,8 +334,8 @@ _nous_recommended_cache: dict[tuple[str, str], tuple[dict[str, Any], float]] = {
 
 
 def _nous_recommended_disk_path() -> "Path":
-    from akramcode_constants import get_hermes_home
-    return get_hermes_home() / "cache" / "nous_recommended_cache.json"
+    from akramcode_constants import get_akramcode_home
+    return get_akramcode_home() / "cache" / "nous_recommended_cache.json"
 
 
 def _read_nous_recommended_disk(base: str) -> tuple[dict[str, Any], float] | None:
@@ -511,7 +511,7 @@ def _openrouter_model_is_free(pricing: Any) -> bool:
 
 
 def _openrouter_model_supports_tools(item: Any) -> bool:
-    """True when ``supported_parameters`` advertises ``tools`` (hermes-agent is tool-calling-first).
+    """True when ``supported_parameters`` advertises ``tools`` (akramcode-agent is tool-calling-first).
     Permissive when the field is absent/malformed: some OpenRouter-compatible gateways (Nous Portal,
     private mirrors) don't populate it, and the picker must not silently empty for them.
 
@@ -626,7 +626,7 @@ def fetch_openrouter_models(
         # Hide models without tool-calling support — selecting one fails at the first tool call.
         if live_item is None or not _openrouter_model_supports_tools(live_item):
             continue
-        # Hide models that don't advertise tool-calling support — hermes-agent requires it and surfacing
+        # Hide models that don't advertise tool-calling support — akramcode-agent requires it and surfacing
         # them leads to immediate runtime failures when the user selects them. Ported from
         # Kilo-Org/kilocode#9068.
         if preferred_id == silent_default:
@@ -753,7 +753,7 @@ def _provider_has_credentials(pid: str) -> bool:
 
 def list_available_providers() -> list[dict[str, str]]:
     """``{id, label, aliases, authenticated}`` for every provider usable with ``provider:model``,
-    derived from :data:`CANONICAL_PROVIDERS` (shared with ``hermes model`` and ``/model``)."""
+    derived from :data:`CANONICAL_PROVIDERS` (shared with ``akramcode model`` and ``/model``)."""
     aliases_for: dict[str, list[str]] = {}
     for alias, canonical in _PROVIDER_ALIASES.items():
         aliases_for.setdefault(canonical, []).append(alias)
@@ -1150,7 +1150,7 @@ def _strip_vendor_prefix(model_id: str) -> str:
 
 
 def model_supports_fast_mode(model_id: Optional[str]) -> bool:
-    """Return whether Hermes should expose the /fast toggle for this model."""
+    """Return whether AkramCode should expose the /fast toggle for this model."""
     from agent.model_metadata import is_grok_46_family
 
     return (
@@ -1398,7 +1398,7 @@ def _nous_catalog(normalized: str, force_refresh: bool) -> Optional[list[str]]:
     except Exception:
         pass
     # Live failed / no creds: the docs-hosted manifest — NOT the in-repo snapshot — so newly added
-    # Portal models still surface without a Hermes release.
+    # Portal models still surface without a AkramCode release.
     return get_curated_nous_model_ids() or None
 
 
@@ -1446,10 +1446,10 @@ def _openai_catalog(normalized: str, force_refresh: bool) -> Optional[list[str]]
     base = _openai_discovery_base_url(normalized)
     # Custom OpenAI-compatible endpoints serve a small curated catalog — use it verbatim. Official
     # OpenAI hosts (canonical and data-residency regional) return 120+ embeddings/whisper/tts/…
-    # entries, so intersect with the curated agentic catalog so ``/model`` matches ``hermes model``.
+    # entries, so intersect with the curated agentic catalog so ``/model`` matches ``akramcode model``.
     # Model not in live /v1/models — check the curated catalog before rejecting. Providers may omit models
     # from their live listing that are still valid (stale cache, partial rollout, gated previews). Use the
-    # pure-catalog helper (no extra live fetch) so we only accept models Hermes actually ships. (#46850)
+    # pure-catalog helper (no extra live fetch) so we only accept models AkramCode actually ships. (#46850)
     # Their /v1/models listing is access-scoped and authoritative — a model absent from it is one this key
     # CANNOT serve, so the curated soft-accept would manufacture a selection that 400s at first use. Custom
     # OpenAI-compatible proxies keep the fallback (incomplete listings are common there).
@@ -1581,7 +1581,7 @@ def _profile_live_catalog(normalized: str) -> Optional[list[str]]:
             logger.debug("external_process catalog fetch failed for %s: %s", normalized, exc)
             live = None
         # Same merge as setup (`_model_flow_plugin_provider`) so /model, the Desktop picker and
-        # `hermes model` offer one list: live ids plus any pinned id the probe omitted.
+        # `akramcode model` offer one list: live ids plus any pinned id the probe omitted.
         return merge_profile_catalog(normalized, profile, list(live) if live else None)
     if not (profile.auth_type == "api_key" and profile.base_url):
         return list(profile.fallback_models) or None
@@ -1763,7 +1763,7 @@ def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) 
 
 # ---------------------------------------------------------------------------
 # Disk cache for provider_model_ids() — keeps /model picker fast (otherwise every open re-fetches
-# every authed provider's /v1/models). One JSON file at $HERMES_HOME/provider_models_cache.json;
+# every authed provider's /v1/models). One JSON file at $AKRAMCODE_HOME/provider_models_cache.json;
 # entries keyed by credential fingerprint (rotate OPENAI_API_KEY → entry invalidates); 1h TTL;
 # only NON-EMPTY results are cached so a transient failure is never pinned; any read/write error
 # degrades silently to a live fetch.
@@ -1816,8 +1816,8 @@ def _spawn_swr_refresh(cache_key: str, refresh_fn=None) -> None:
     # Under a routed profile the inflight key includes the home: the same provider slug names a
     # different disk cache and credential set per profile, so one profile's refresh must not
     # suppress another's. Unscoped keeps the bare key (tests inspect the set by slug).
-    from akramcode_constants import get_hermes_home_override, hermes_home_key
-    inflight_key = cache_key if get_hermes_home_override() is None else (hermes_home_key(), cache_key)
+    from akramcode_constants import get_akramcode_home_override, akramcode_home_key
+    inflight_key = cache_key if get_akramcode_home_override() is None else (akramcode_home_key(), cache_key)
     with _swr_refresh_lock:
         if inflight_key in _swr_refresh_inflight:
             return
@@ -1850,8 +1850,8 @@ def _spawn_swr_refresh(cache_key: str, refresh_fn=None) -> None:
 
 
 def _provider_models_cache_path() -> Path:
-    from akramcode_constants import get_hermes_home
-    return get_hermes_home() / "provider_models_cache.json"
+    from akramcode_constants import get_akramcode_home
+    return get_akramcode_home() / "provider_models_cache.json"
 
 
 def _credential_fingerprint(provider: str) -> str:
@@ -1938,9 +1938,9 @@ def _credential_fingerprint(provider: str) -> str:
         parts.append(f"codex_identity={codex_catalog_credential_identity()}")
     else:
         try:
-            from akramcode_constants import get_hermes_home
+            from akramcode_constants import get_akramcode_home
             for rel in ("auth.json", "credentials.json"):
-                _mtime_part(rel, get_hermes_home() / rel)
+                _mtime_part(rel, get_akramcode_home() / rel)
         except Exception:
             pass
         for rel in ("~/.codex/auth.json", "~/.claude/.credentials.json",
@@ -2074,7 +2074,7 @@ def cached_provider_model_ids(
 
 def clear_provider_models_cache(provider: Optional[str] = None) -> None:
     """Drop one provider's cache entry, or wipe the whole cache (``provider=None``). Used by
-    ``/model --refresh`` and ``hermes model --refresh``."""
+    ``/model --refresh`` and ``akramcode model --refresh``."""
     try:
         # Native Ollama tags are keyed by root URL, not provider slug — a targeted refresh can't
         # identify the root from the name alone, so clear this small in-process cache every time.
@@ -2195,7 +2195,7 @@ def copilot_default_headers(*, is_agent_turn: bool = True) -> dict[str, str]:
     except ImportError:
         return {
             "Editor-Version": COPILOT_EDITOR_VERSION,
-            "User-Agent": "HermesAgent/1.0",
+            "User-Agent": "AkramCodeAgent/1.0",
             "Openai-Intent": "conversation-edits",
             "x-initiator": "agent" if is_agent_turn else "user"}
 
@@ -2590,9 +2590,9 @@ def probe_api_models(
             return _probe_result(
                 None, normalized.rstrip("/") + "/models", normalized,
                 alternate_base if alternate_base != normalized else None)
-    headers: dict[str, str] = {"User-Agent": _HERMES_USER_AGENT}
+    headers: dict[str, str] = {"User-Agent": _AKRAMCODE_USER_AGENT}
     if urllib.parse.urlparse(normalized).hostname == "generativelanguage.googleapis.com":
-        headers["X-Goog-Api-Client"] = f"hermes-agent/{get_version_info().base_version}"
+        headers["X-Goog-Api-Client"] = f"akramcode-agent/{get_version_info().base_version}"
     if api_key and api_mode == "anthropic_messages":
         headers["x-api-key"] = api_key
         headers["anthropic-version"] = "2023-06-01"
@@ -2655,7 +2655,7 @@ _DEEPINFRA_SURFACE_TAGS: frozenset[str] = frozenset({
     "chat", "embed", "image-gen", "tts", "stt", "video-gen"})
 
 _DEEPINFRA_DEFAULT_BASE_URL = "https://api.deepinfra.com/v1/openai"
-_DEEPINFRA_MODELS_QUERY = "filter=true&sort_by=hermes"
+_DEEPINFRA_MODELS_QUERY = "filter=true&sort_by=akramcode"
 
 # Full tagged catalog keyed by base URL; every surface filter reads it so one round-trip serves all.
 _deepinfra_catalog_cache: dict[str, list[dict]] = {}
@@ -2694,7 +2694,7 @@ def _fetch_deepinfra_catalog(
         if last_fail is not None and (time.monotonic() - last_fail) < _DEEPINFRA_CATALOG_NEG_TTL:
             return None
 
-    headers: dict[str, str] = {"User-Agent": _HERMES_USER_AGENT}
+    headers: dict[str, str] = {"User-Agent": _AKRAMCODE_USER_AGENT}
     api_key = _deepinfra_env("DEEPINFRA_API_KEY")
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
@@ -2769,7 +2769,7 @@ def _fetch_ai_gateway_models(timeout: float = 5.0) -> Optional[list[str]]:
         from akramcode_constants import AI_GATEWAY_BASE_URL
         base_url = AI_GATEWAY_BASE_URL
 
-    headers = {"Authorization": f"Bearer {api_key}", "User-Agent": _HERMES_USER_AGENT}
+    headers = {"Authorization": f"Bearer {api_key}", "User-Agent": _AKRAMCODE_USER_AGENT}
     try:
         url = base_url.rstrip("/") + "/models"
         data = _get_json(url, timeout=timeout, headers=headers)

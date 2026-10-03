@@ -18,7 +18,7 @@ JSON-RPC channel every other Settings surface uses. Contracts:
   or logged.
 
 Every handler honours ``params.profile`` (app-global remote mode serves several profiles from one
-backend): the requested profile's HERMES_HOME and secret scope are bound around the body, so the
+backend): the requested profile's AKRAMCODE_HOME and secret scope are bound around the body, so the
 vault file, manager config and manager tokens all resolve to that profile.
 
 Handlers are rebound onto server.py's globals at install time (see
@@ -65,7 +65,7 @@ def _(rid, params: dict) -> dict:
     from agent.vault_backends.base import external_backend_classes, is_installed
 
     enabled = {b.name: b for b in enabled_backends()}
-    rows = [{"name": "local", "display_name": "Hermes vault", "enabled": True, "needs_unlock": False,
+    rows = [{"name": "local", "display_name": "AkramCode vault", "enabled": True, "needs_unlock": False,
              "unlocked": True, "installed": True}]
     for cls in external_backend_classes():
         live = enabled.get(cls.name)

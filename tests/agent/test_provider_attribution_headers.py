@@ -25,9 +25,9 @@ def test_ai_gateway_base_url_applies_attribution_headers(mock_openai):
     agent._apply_client_headers_for_base_url("https://ai-gateway.vercel.sh/v1")
 
     headers = agent._client_kwargs["default_headers"]
-    assert headers["HTTP-Referer"] == "https://hermes-agent.nousresearch.com"
-    assert headers["X-Title"] == "Hermes Agent"
-    assert headers["User-Agent"] == f"HermesAgent/{get_version_info().base_version}"
+    assert headers["HTTP-Referer"] == "https://akramcode-agent.nousresearch.com"
+    assert headers["X-Title"] == "AkramCode Agent"
+    assert headers["User-Agent"] == f"AkramCodeAgent/{get_version_info().base_version}"
 
 
 @patch("agent.process_bootstrap.OpenAI")
@@ -43,19 +43,19 @@ def test_nvidia_cloud_base_url_applies_billing_origin_header(mock_openai):
         skip_memory=True,
     )
 
-    assert agent._client_kwargs["default_headers"]["X-BILLING-INVOKE-ORIGIN"] == "HermesAgent"
+    assert agent._client_kwargs["default_headers"]["X-BILLING-INVOKE-ORIGIN"] == "AkramCodeAgent"
 
     agent._apply_client_headers_for_base_url("https://integrate.api.nvidia.com/v1")
 
     headers = agent._client_kwargs["default_headers"]
-    assert headers["X-BILLING-INVOKE-ORIGIN"] == "HermesAgent"
+    assert headers["X-BILLING-INVOKE-ORIGIN"] == "AkramCodeAgent"
 
 
 @patch("agent.process_bootstrap.OpenAI")
 def test_opencode_go_applies_attribution_via_profile_fallback(mock_openai):
     """OpenCode (Zen/Go) attributes traffic by header like OpenRouter does.
     Without profile.default_headers the relay only sees the OpenAI SDK's
-    generic User-Agent and Hermes Agent traffic shows up unattributed."""
+    generic User-Agent and AkramCode Agent traffic shows up unattributed."""
     mock_openai.return_value = MagicMock()
     agent = AIAgent(
         api_key="test-key",
@@ -70,9 +70,9 @@ def test_opencode_go_applies_attribution_via_profile_fallback(mock_openai):
     agent._apply_client_headers_for_base_url("https://opencode.ai/zen/go/v1")
 
     headers = agent._client_kwargs["default_headers"]
-    assert headers["HTTP-Referer"] == "https://hermes-agent.nousresearch.com"
-    assert headers["X-Title"] == "Hermes Agent"
-    assert headers["User-Agent"] == f"HermesAgent/{get_version_info().base_version}"
+    assert headers["HTTP-Referer"] == "https://akramcode-agent.nousresearch.com"
+    assert headers["X-Title"] == "AkramCode Agent"
+    assert headers["User-Agent"] == f"AkramCodeAgent/{get_version_info().base_version}"
 
 
 @patch("agent.process_bootstrap.OpenAI")
@@ -81,7 +81,7 @@ def test_routed_client_preserves_openai_sdk_custom_headers(mock_openai):
     routed_client = SimpleNamespace(
         api_key="test-key",
         base_url="https://integrate.api.nvidia.com/v1",
-        _custom_headers={"X-BILLING-INVOKE-ORIGIN": "HermesAgent"},
+        _custom_headers={"X-BILLING-INVOKE-ORIGIN": "AkramCodeAgent"},
     )
 
     with patch("agent.auxiliary_client.resolve_provider_client", return_value=(
@@ -97,7 +97,7 @@ def test_routed_client_preserves_openai_sdk_custom_headers(mock_openai):
         )
 
     headers = agent._client_kwargs["default_headers"]
-    assert headers["X-BILLING-INVOKE-ORIGIN"] == "HermesAgent"
+    assert headers["X-BILLING-INVOKE-ORIGIN"] == "AkramCodeAgent"
 
 
 @patch("agent.process_bootstrap.OpenAI")
@@ -121,7 +121,7 @@ def test_openrouter_headers_include_response_cache_when_enabled(mock_openai):
         agent._apply_client_headers_for_base_url("https://openrouter.ai/api/v1")
 
     headers = agent._client_kwargs["default_headers"]
-    assert headers["HTTP-Referer"] == "https://hermes-agent.nousresearch.com"
+    assert headers["HTTP-Referer"] == "https://akramcode-agent.nousresearch.com"
     assert headers["X-OpenRouter-Cache"] == "true"
     assert headers["X-OpenRouter-Cache-TTL"] == "600"
 
@@ -179,6 +179,6 @@ def test_openrouter_headers_no_cache_when_disabled(mock_openai):
         agent._apply_client_headers_for_base_url("https://openrouter.ai/api/v1")
 
     headers = agent._client_kwargs["default_headers"]
-    assert headers["HTTP-Referer"] == "https://hermes-agent.nousresearch.com"
+    assert headers["HTTP-Referer"] == "https://akramcode-agent.nousresearch.com"
     assert "X-OpenRouter-Cache" not in headers
     assert "X-OpenRouter-Cache-TTL" not in headers

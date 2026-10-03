@@ -80,7 +80,7 @@ def _stale_lineage(db: SessionDB, prefix: str) -> tuple[str, str]:
 
 
 def test_bulk_archive_matches_a_lineage_through_its_tip_only(db):
-    """#115489: `hermes sessions archive --older-than` must never hide an OPEN, active continuation
+    """#115489: `akramcode sessions archive --older-than` must never hide an OPEN, active continuation
     because its compression ancestor is old — the lineage is archived through its tip, and an idle
     ended tip still takes its whole chain with it."""
     live_root, live_tip = _stale_lineage(db, "live")

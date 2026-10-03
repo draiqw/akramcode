@@ -8,7 +8,7 @@ reported ``partial`` with "Could not restart the gateway" — on an install
 whose code, deps and builds had all succeeded (observed in an update
 rehearsal on a real macOS host, Sep 2026).
 
-``refresh_launchd_plist_if_needed()`` (the ``hermes gateway start`` /
+``refresh_launchd_plist_if_needed()`` (the ``akramcode gateway start`` /
 ``gateway install`` repair path) already knows how to rewrite a stale plist
 and bootout/bootstrap it; the contract pinned here is that ``launchd_restart``
 runs it BEFORE any kickstart, and that a refresh which could not re-register
@@ -29,10 +29,10 @@ import akramcode_cli.gateway as gateway_cli
 def launchd_seam(monkeypatch, tmp_path):
     """Neutralize process-side effects; record every launchctl invocation."""
     calls = []
-    plist_path = tmp_path / "ai.hermes.gateway.plist"
+    plist_path = tmp_path / "ai.akramcode.gateway.plist"
     plist_path.write_text("<plist>whatever</plist>", encoding="utf-8")
 
-    monkeypatch.setattr(gateway_cli, "get_launchd_label", lambda: "ai.hermes.gateway")
+    monkeypatch.setattr(gateway_cli, "get_launchd_label", lambda: "ai.akramcode.gateway")
     monkeypatch.setattr(gateway_cli, "_launchd_domain", lambda: "gui/501")
     monkeypatch.setattr(gateway_cli, "get_launchd_plist_path", lambda: plist_path)
     monkeypatch.setattr("gateway.status.get_running_pid", lambda *a, **k: None)

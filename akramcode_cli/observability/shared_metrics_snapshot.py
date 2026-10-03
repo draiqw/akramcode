@@ -15,7 +15,7 @@ from itertools import islice
 from pathlib import Path
 from typing import Any
 
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 
 from . import shared_metrics_contract as contract
 
@@ -42,7 +42,7 @@ def _plugin_count(config: dict[str, Any]) -> int:
 def _cron_job_count() -> int:
     try:
         # utf-8-sig: same dialect as cron/jobs.load_jobs (Windows editors may leave a BOM).
-        with open(get_hermes_home() / "cron" / "jobs.json", encoding="utf-8-sig") as handle:
+        with open(get_akramcode_home() / "cron" / "jobs.json", encoding="utf-8-sig") as handle:
             jobs = json.load(handle).get("jobs", [])
     except (OSError, ValueError, AttributeError):
         return 0
@@ -52,7 +52,7 @@ def _cron_job_count() -> int:
 def _skill_count() -> int:
     from agent.skill_utils import iter_skill_index_files
 
-    skills_dir = get_hermes_home() / "skills"
+    skills_dir = get_akramcode_home() / "skills"
     if not skills_dir.is_dir():
         return 0
     return sum(1 for _ in islice(iter_skill_index_files(skills_dir, "SKILL.md"), _COUNT_CAP))
@@ -92,7 +92,7 @@ def _first_session_started_at(home: Path | None = None) -> float | None:
 
     Raises ``sqlite3.Error`` when state.db exists but cannot be read.
     """
-    home = home or get_hermes_home()
+    home = home or get_akramcode_home()
     if str(home) in _first_session_at:
         return _first_session_at[str(home)]
     database = home / "state.db"

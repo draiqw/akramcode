@@ -1,4 +1,4 @@
-"""``hermes sessions repair-profiles``: the backward-looking half of the per-profile store model.
+"""``akramcode sessions repair-profiles``: the backward-looking half of the per-profile store model.
 
 The forward-only fixes (#88734 store routing, the #88381 inheritance fence, #76423 topic labels,
 #75198 voice keys) put NEW state in the right place; nothing settled what earlier releases left
@@ -26,9 +26,9 @@ GHOST_KEY = "agent:ghost:telegram:dm:400"
 @pytest.fixture
 def homes(tmp_path, monkeypatch):
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".akramcode"
     root.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(root))
     from akramcode_cli.profiles import create_profile
     for name in ("acme", "beta"):
         create_profile(name, no_alias=True, no_skills=True)

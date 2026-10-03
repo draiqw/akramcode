@@ -16,14 +16,14 @@ from akramcode_cli import kanban_db_dispatch as kbd
 
 @pytest.fixture
 def worker_setup(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, kb.Task]:
-    root = tmp_path / ".hermes"
+    root = tmp_path / ".akramcode"
     profile = root / "profiles" / "coder"
     profile.mkdir(parents=True)
     root.joinpath("config.yaml").write_text("{}\n", encoding="utf-8")
     profile.joinpath("config.yaml").write_text("{}\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(root))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setattr(kbd, "_resolve_hermes_argv", lambda: ["hermes"])
+    monkeypatch.setattr(kbd, "_resolve_akramcode_argv", lambda: ["akramcode"])
 
     workspace = tmp_path / "candidate-worktree"
     workspace.mkdir()
@@ -80,13 +80,13 @@ def test_managed_gateway_worker_is_spawned_in_restart_safe_scope(
     assert kbd._default_spawn(task, str(workspace)) == 4242
     assert captured_cmd[:4] == ["/usr/bin/systemd-run", "--user", "--scope", "--quiet"]
     unit_index = captured_cmd.index("--unit")
-    assert captured_cmd[unit_index + 1] == "hermes-worker-kanban-t_candidate_restart-run-23"
+    assert captured_cmd[unit_index + 1] == "akramcode-worker-kanban-t_candidate_restart-run-23"
     assert "MemoryMax=536870912" in captured_cmd
     separator = captured_cmd.index("--")
-    assert captured_cmd[separator + 1 : separator + 4] == ["hermes", "-p", "coder"]
+    assert captured_cmd[separator + 1 : separator + 4] == ["akramcode", "-p", "coder"]
     assert captured_cwd == str(workspace)
-    assert captured_env["HERMES_KANBAN_TASK"] == task.id
-    assert captured_env["HERMES_KANBAN_RUN_ID"] == "23"
+    assert captured_env["AKRAMCODE_KANBAN_TASK"] == task.id
+    assert captured_env["AKRAMCODE_KANBAN_RUN_ID"] == "23"
     assert "ANTHROPIC_API_KEY" not in captured_env
 
 
@@ -140,7 +140,7 @@ def test_standalone_dispatcher_keeps_direct_worker_spawn(
     )
 
     assert kbd._default_spawn(task, str(workspace)) == 4243
-    assert captured_cmd[:3] == ["hermes", "-p", "coder"]
+    assert captured_cmd[:3] == ["akramcode", "-p", "coder"]
 
 
 @pytest.mark.platforms("linux")
@@ -149,7 +149,7 @@ def test_oneshot_unit_dispatcher_scope_wraps_or_warns_never_dooms_silently(
 ) -> None:
     """A dispatcher under any systemd unit that is NOT the supervised gateway (a
     ``Type=oneshot`` dispatch timer, #113612) loses its cgroup at unit exit. With a
-    user bus the worker gets its own ``hermes-worker-*`` scope; without one the
+    user bus the worker gets its own ``akramcode-worker-*`` scope; without one the
     spawn still happens (the unit's ``KillMode``/lifetime is unknowable, a
     long-lived sequencer keeps working) but the operator is told exactly why the
     workers may die. A cron caller under the same unit is unchanged."""
@@ -167,23 +167,23 @@ def test_oneshot_unit_dispatcher_scope_wraps_or_warns_never_dooms_silently(
     monkeypatch.setattr(process_registry, "_systemd_run_user_scope_available", lambda: True)
     monkeypatch.setattr(
         process_registry, "_build_systemd_scope_argv",
-        lambda cmd, unit_suffix: ["systemd-run", "--user", "--scope", "--unit", f"hermes-worker-{unit_suffix}", *cmd],
+        lambda cmd, unit_suffix: ["systemd-run", "--user", "--scope", "--unit", f"akramcode-worker-{unit_suffix}", *cmd],
     )
 
     kbd._default_spawn(task, str(workspace))
     assert spawned[-1][:3] == ["systemd-run", "--user", "--scope"]
-    assert f"hermes-worker-kanban-{task.id}-run-{task.current_run_id}" in spawned[-1]
+    assert f"akramcode-worker-kanban-{task.id}-run-{task.current_run_id}" in spawned[-1]
 
     monkeypatch.setattr(process_registry, "_systemd_run_user_scope_available", lambda: False)
     monkeypatch.setattr(process_registry, "_scope_degraded_warned", False)
     with caplog.at_level("WARNING", logger=process_registry.logger.name):
         kbd._default_spawn(task, str(workspace))
-    assert spawned[-1][:3] == ["hermes", "-p", "coder"]
+    assert spawned[-1][:3] == ["akramcode", "-p", "coder"]
     warned = [r.getMessage() for r in caplog.records if "KILLED when the unit exits" in r.getMessage()]
     assert len(warned) == 1 and "KillMode=process" in warned[0]
 
     cron = process_registry.restart_safe_gateway_child_argv(
-        ["hermes", "cron"], unit_suffix="cron-job-1", require_restart_safe_scope=True,
+        ["akramcode", "cron"], unit_suffix="cron-job-1", require_restart_safe_scope=True,
     )
     assert cron.mode == "in_process"
 
@@ -204,11 +204,11 @@ def test_real_user_systemd_scope_preserves_worker_context(
         "p = pathlib.Path(sys.argv[1]); t = p.with_suffix('.tmp'); "
         "t.write_text(json.dumps({"
         "'pid': os.getpid(), 'cwd': os.getcwd(), "
-        "'task': os.environ.get('HERMES_KANBAN_TASK'), "
-        "'run': os.environ.get('HERMES_KANBAN_RUN_ID'), "
+        "'task': os.environ.get('AKRAMCODE_KANBAN_TASK'), "
+        "'run': os.environ.get('AKRAMCODE_KANBAN_RUN_ID'), "
         "'cgroup': pathlib.Path('/proc/self/cgroup').read_text()})); os.replace(t, p); time.sleep(0.5)"
     )
-    monkeypatch.setattr(kbd, "_resolve_hermes_argv", lambda: [sys.executable, "-c", script, str(receipt)])
+    monkeypatch.setattr(kbd, "_resolve_akramcode_argv", lambda: [sys.executable, "-c", script, str(receipt)])
     monkeypatch.setenv("INVOCATION_ID", "managed-gateway-test")
     monkeypatch.setattr(process_registry, "_is_supervised_gateway_process", lambda: True)
 
@@ -224,4 +224,4 @@ def test_real_user_systemd_scope_preserves_worker_context(
     assert payload["task"] == task.id
     assert payload["run"] == "23"
     assert ".scope" in payload["cgroup"]
-    assert "hermes-gateway.service" not in payload["cgroup"]
+    assert "akramcode-gateway.service" not in payload["cgroup"]

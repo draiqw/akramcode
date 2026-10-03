@@ -265,7 +265,7 @@ def test_fire_endpoint_multiplex_reads_port_from_default_listener(tmp_path, monk
         encoding="utf-8",
     )
     (worker_home / ".env").write_text("API_SERVER_PORT=8701\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(default_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(default_home))
     monkeypatch.delenv("API_SERVER_PORT", raising=False)
     monkeypatch.delenv("GATEWAY_MULTIPLEX_PROFILES", raising=False)
     monkeypatch.setattr(_web_server_cron, "_cron_default_profile", lambda: "default")

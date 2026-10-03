@@ -11,7 +11,7 @@ before rotating (flush-then-rotate, #47202), so nothing lands on the wrong row.
 
 import pytest
 
-from cli import HermesCLI
+from cli import AkramCodeCLI
 from akramcode_cli import cli_commands_mixin
 
 
@@ -29,11 +29,11 @@ class _Agent:
 
 @pytest.fixture
 def cli(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     from akramcode_state import SessionDB
 
     db = SessionDB(db_path=tmp_path / "state.db")
-    obj = object.__new__(HermesCLI)
+    obj = object.__new__(AkramCodeCLI)
     obj._session_db, obj.session_id, obj.model, obj.max_turns = db, "parent", "m", 5
     obj.reasoning_config, obj._pending_title, obj._resumed, obj._pending_resume_sessions = {}, None, False, None
     obj.agent = _Agent("parent")

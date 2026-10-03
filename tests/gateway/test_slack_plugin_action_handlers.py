@@ -210,7 +210,7 @@ class TestSlackAdapterPluginActionWiring:
         assert result is True
         # Built-ins still wired
         action_ids = [aid for aid, _cb in registered]
-        assert "hermes_approve_once" in action_ids
+        assert "akramcode_approve_once" in action_ids
 
 
     def test_plugin_loader_failure_does_not_break_connect(self):
@@ -262,4 +262,4 @@ class TestSlackAdapterPluginActionWiring:
         assert result is True
         # Built-ins still wired even when plugin loader failed.
         action_ids = [aid for aid, _cb in registered_actions]
-        assert "hermes_approve_once" in action_ids
+        assert "akramcode_approve_once" in action_ids

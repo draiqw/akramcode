@@ -94,10 +94,10 @@ class R2ChannelStore:
 
 def preview_identity(name: str, token: str) -> dict:
     validate_name(name)
-    pascal = f"HermesChannel{token}"
-    return {"token": token, "displayName": f"Hermes {name}",
-            "appId": f"ai.hermes.channel.h{token}", "appNamePascal": pascal,
-            "artifactNamePascal": pascal, "cliName": f"hermes-{name}",
+    pascal = f"AkramCodeChannel{token}"
+    return {"token": token, "displayName": f"AkramCode {name}",
+            "appId": f"ai.akramcode.channel.h{token}", "appNamePascal": pascal,
+            "artifactNamePascal": pascal, "cliName": f"akramcode-{name}",
             "windowsExecutableName": pascal, "msixAppIdWithOrg": f"NousResearch.{pascal}"}
 
 

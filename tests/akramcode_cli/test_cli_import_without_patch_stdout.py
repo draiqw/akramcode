@@ -52,7 +52,7 @@ def test_cli_patch_stdout_falls_back_to_nullcontext():
     code = _BLOCKER + (
         "import cli, contextlib\n"
         "assert cli.patch_stdout is contextlib.nullcontext, cli.patch_stdout\n"
-        "assert callable(cli.HermesCLI)\n"
+        "assert callable(cli.AkramCodeCLI)\n"
     )
     proc = subprocess.run(
         [sys.executable, "-c", code],

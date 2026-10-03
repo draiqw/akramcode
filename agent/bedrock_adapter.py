@@ -41,15 +41,15 @@ _AWS_SCOPED_CREDENTIAL_VARS: Tuple[Tuple[str, str], ...] = (
 def scoped_aws_session_kwargs() -> Dict[str, str]:
     """``boto3.session.Session`` kwargs from the routed profile's secret scope, ``{}`` when unscoped.
 
-    Under a HERMES_HOME override the process env holds the LAUNCH profile's ``AWS_*`` (or nothing), so
+    Under a AKRAMCODE_HOME override the process env holds the LAUNCH profile's ``AWS_*`` (or nothing), so
     every Bedrock client for a served profile must be built from that profile's own ``.env`` values.
     Under multiplexing a profile that sets none of its own must NOT get ``{}`` — ``boto3.Session()``
     would then resolve the ambient default chain (process env, ~/.aws, instance metadata), i.e. the
     launch context's identity, exactly the borrow the Entra adapter refuses. ``AWS_PROFILE`` counts as
     an explicit per-profile choice (it names an entry in the shared AWS config, like the Entra
     ``AZURE_CLIENT_ID``-only managed-identity opt-in)."""
-    from akramcode_constants import get_hermes_home_override
-    if get_hermes_home_override() is None:
+    from akramcode_constants import get_akramcode_home_override
+    if get_akramcode_home_override() is None:
         return {}
     from agent.secret_scope import current_secret_scope, is_multiplex_active
     scope = current_secret_scope() or {}
@@ -110,7 +110,7 @@ def _require_boto3():
     if version < _MIN_BOTO3_VERSION:
         raise RuntimeError(
             f"boto3 {boto3.__version__} does not support converse_stream "
-            f"(minimum 1.34.59 required). Run: hermes pm repair"
+            f"(minimum 1.34.59 required). Run: akramcode pm repair"
         )
     return boto3
 
@@ -119,12 +119,12 @@ def _cached_client(cache: Dict[str, Any], service: str, region: str):
     """Get or create a per-region boto3 client. Unscoped: the default credential chain, one client per
     region. Routed profile: one client per (home, service, region), built from that profile's scoped
     ``AWS_*`` (falling back to the default chain only for what the profile does not set)."""
-    from akramcode_constants import get_hermes_home_override, hermes_home_key
-    if get_hermes_home_override() is None:
+    from akramcode_constants import get_akramcode_home_override, akramcode_home_key
+    if get_akramcode_home_override() is None:
         if region not in cache:
             cache[region] = _require_boto3().client(service, region_name=region)
         return cache[region]
-    key = (hermes_home_key(), service, region)
+    key = (akramcode_home_key(), service, region)
     client = _bedrock_clients_by_home.get(key)
     if client is None:
         # Scope check first: a cred-less multiplex profile must hit the ambient-chain
@@ -153,9 +153,9 @@ def reset_client_cache():
 
 def invalidate_runtime_client(region: str) -> bool:
     """Evict one region's cached ``bedrock-runtime`` client (stale HTTP pool); True if evicted."""
-    from akramcode_constants import get_hermes_home_override, hermes_home_key
-    if get_hermes_home_override() is not None:
-        return _bedrock_clients_by_home.pop((hermes_home_key(), "bedrock-runtime", region), None) is not None
+    from akramcode_constants import get_akramcode_home_override, akramcode_home_key
+    if get_akramcode_home_override() is not None:
+        return _bedrock_clients_by_home.pop((akramcode_home_key(), "bedrock-runtime", region), None) is not None
     return _bedrock_runtime_client_cache.pop(region, None) is not None
 
 
@@ -201,12 +201,12 @@ def is_bedrock_openai_base_url(base_url: str) -> bool:
 def resolve_bedrock_bearer_token(env: Optional[Dict[str, str]] = None) -> str:
     """Return AWS_BEARER_TOKEN_BEDROCK when Bedrock API-key auth is configured.
 
-    Under a HERMES_HOME override the read goes through the profile secret scope so a
+    Under a AKRAMCODE_HOME override the read goes through the profile secret scope so a
     served profile never inherits the launch profile's bearer from the process env."""
     if env is not None:
         return (env.get("AWS_BEARER_TOKEN_BEDROCK", "") or "").strip()
-    from akramcode_constants import get_hermes_home_override
-    if get_hermes_home_override() is not None:
+    from akramcode_constants import get_akramcode_home_override
+    if get_akramcode_home_override() is not None:
         from agent.secret_scope import get_secret
         return (get_secret("AWS_BEARER_TOKEN_BEDROCK", "") or "").strip()
     return (os.environ.get("AWS_BEARER_TOKEN_BEDROCK", "") or "").strip()
@@ -1129,10 +1129,10 @@ def discover_bedrock_models(region: str, provider_filter: Optional[List[str]] = 
     by name; [] when the client cannot be built."""
     # The list is account-scoped (whichever credentials the control client signs with), so a routed
     # profile gets its own entry; unscoped keeps the region:filter key byte-for-byte.
-    from akramcode_constants import get_hermes_home_override, hermes_home_key
+    from akramcode_constants import get_akramcode_home_override, akramcode_home_key
     cache_key = f"{region}:{','.join(sorted(provider_filter or []))}"
-    if get_hermes_home_override() is not None:
-        cache_key = f"{hermes_home_key()}|{cache_key}"
+    if get_akramcode_home_override() is not None:
+        cache_key = f"{akramcode_home_key()}|{cache_key}"
     cached = _discovery_cache.get(cache_key)
     if cached and (time.time() - cached["timestamp"]) < _DISCOVERY_CACHE_TTL_SECONDS:
         return cached["models"]

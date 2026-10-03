@@ -1,6 +1,6 @@
 """Exit watchdog: arm on shutdown *intent* (signal), never at chat startup.
 
-Regression coverage for the #65998 class: a ``hermes --tui`` process whose
+Regression coverage for the #65998 class: a ``akramcode --tui`` process whose
 main thread wedges before ``app.run()`` returns never executes the ``finally``
 that calls ``_run_cleanup`` — the only place the exit watchdog used to be
 armed — so a "dead" CLI lingered indefinitely (observed ~47 min at 4% CPU).
@@ -38,7 +38,7 @@ class TestSignalArmLogic:
 
 
     def test_never_raises_even_if_arm_explodes(self, monkeypatch):
-        monkeypatch.setenv("HERMES_EXIT_WATCHDOG_S", "7")
+        monkeypatch.setenv("AKRAMCODE_EXIT_WATCHDOG_S", "7")
         with patch.object(cli, "_arm_exit_watchdog", side_effect=RuntimeError("boom")):
             cli._arm_exit_watchdog_on_shutdown_signal()  # must not raise
 
@@ -95,8 +95,8 @@ while True:
 @pytest.mark.platforms("posix")  # POSIX signals
 def test_sigterm_on_wedged_process_forces_exit_within_leash():
     """E2E: a wedged process armed via the signal path self-exits at ~2×
-    HERMES_EXIT_WATCHDOG_S; without the signal it would live forever."""
-    env = dict(os.environ, HERMES_EXIT_WATCHDOG_S="1", PYTHONPATH=_REPO_ROOT)
+    AKRAMCODE_EXIT_WATCHDOG_S; without the signal it would live forever."""
+    env = dict(os.environ, AKRAMCODE_EXIT_WATCHDOG_S="1", PYTHONPATH=_REPO_ROOT)
     # _arm_exit_watchdog refuses to arm under pytest (it would kill the test
     # worker); the subprocess must look like a real CLI.
     env.pop("PYTEST_CURRENT_TEST", None)
@@ -131,7 +131,7 @@ def test_sigterm_on_wedged_process_forces_exit_within_leash():
 def test_signal_watchdog_is_skipped_once_cleanup_starts():
     """If cleanup starts after signal intent, the cleanup-owned watchdog should
     govern shutdown and the signal watchdog should not hard-kill midway."""
-    env = dict(os.environ, HERMES_EXIT_WATCHDOG_S="1", PYTHONPATH=_REPO_ROOT)
+    env = dict(os.environ, AKRAMCODE_EXIT_WATCHDOG_S="1", PYTHONPATH=_REPO_ROOT)
     env.pop("PYTEST_CURRENT_TEST", None)
     src = _CLEANUP_OVERLAP_SRC.format(repo=_REPO_ROOT)
     p = subprocess.Popen(

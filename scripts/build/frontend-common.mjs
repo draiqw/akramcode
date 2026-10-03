@@ -29,8 +29,8 @@ function contains(parent, child) {
   return relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative))
 }
 
-const productMarker = '.hermes-product'
-const productOwner = 'hermes-frontend-product-v1\n'
+const productMarker = '.akramcode-product'
+const productOwner = 'akramcode-frontend-product-v1\n'
 const developerOutputs = ['ui-tui/dist', 'akramcode_cli/web_dist']
 
 function developerOutput(source, out) {

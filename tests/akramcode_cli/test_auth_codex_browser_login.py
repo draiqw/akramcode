@@ -1,4 +1,4 @@
-"""``hermes auth add openai-codex --browser``: opt-in loopback authorization-code + PKCE (#95743).
+"""``akramcode auth add openai-codex --browser``: opt-in loopback authorization-code + PKCE (#95743).
 
 Exercises the real loopback listener and a real token endpoint (both stdlib servers on ephemeral
 ports); only the system browser is replaced by an HTTP client following the authorize redirect.
@@ -82,9 +82,9 @@ def fake_openai():
 
 
 def test_browser_flag_runs_loopback_pkce_and_stores_loopback_source(tmp_path, monkeypatch, fake_openai):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
-    (tmp_path / "hermes").mkdir()
-    (tmp_path / "hermes" / "auth.json").write_text(json.dumps({"version": 1, "providers": {}}))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode"))
+    (tmp_path / "akramcode").mkdir()
+    (tmp_path / "akramcode" / "auth.json").write_text(json.dumps({"version": 1, "providers": {}}))
     from akramcode_cli import auth_codex_browser as browser_mod
     from akramcode_cli.auth_commands import auth_add_command
 
@@ -103,7 +103,7 @@ def test_browser_flag_runs_loopback_pkce_and_stores_loopback_source(tmp_path, mo
 
     auth_add_command(_args(browser=True, no_browser=False))
 
-    payload = json.loads((tmp_path / "hermes" / "auth.json").read_text())
+    payload = json.loads((tmp_path / "akramcode" / "auth.json").read_text())
     [entry] = payload["credential_pool"]["openai-codex"]
     assert entry["source"] == "manual:loopback_pkce"
     assert entry["access_token"] == _jwt("pkce@example.com") and entry["refresh_token"] == "rt-pkce"
@@ -115,9 +115,9 @@ def test_browser_flag_runs_loopback_pkce_and_stores_loopback_source(tmp_path, mo
 
 
 def test_default_is_device_code_and_busy_callback_port_falls_back(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
-    (tmp_path / "hermes").mkdir()
-    (tmp_path / "hermes" / "auth.json").write_text(json.dumps({"version": 1, "providers": {}}))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode"))
+    (tmp_path / "akramcode").mkdir()
+    (tmp_path / "akramcode" / "auth.json").write_text(json.dumps({"version": 1, "providers": {}}))
     from akramcode_cli import auth_codex_browser as browser_mod
     from akramcode_cli.auth_commands import auth_add_command
 
@@ -145,5 +145,5 @@ def test_default_is_device_code_and_busy_callback_port_falls_back(tmp_path, monk
         monkeypatch.setattr(browser_mod, "CODEX_BROWSER_CALLBACK_PORT", occupant.getsockname()[1])
         auth_add_command(_args(browser=True, label="second"))
     assert device_logins == [1, 1] and bind_attempts == [1]
-    sources = [e["source"] for e in json.loads((tmp_path / "hermes" / "auth.json").read_text())["credential_pool"]["openai-codex"]]
+    sources = [e["source"] for e in json.loads((tmp_path / "akramcode" / "auth.json").read_text())["credential_pool"]["openai-codex"]]
     assert sources == ["manual:device_code", "manual:device_code"]

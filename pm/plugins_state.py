@@ -94,7 +94,7 @@ def dependency_homes() -> list[Path]:
     """Every home whose selection feeds the shared venv: the default home plus each LIVE profile.
     Enumerates the complete union or refuses; a partial scan cannot remove members.
 
-    Live means what ``hermes profile`` lists (akramcode_constants): a valid id carrying an identity
+    Live means what ``akramcode profile`` lists (akramcode_constants): a valid id carrying an identity
     marker and no tombstone. Staging dirs (``.work.staging-*``), deleted profiles and stray
     marker-less dirs must not put plugins into the shared environment.
     """

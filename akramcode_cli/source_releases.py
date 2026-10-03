@@ -13,8 +13,8 @@ import urllib.request
 from akramcode_cli.update_channel import STABLE_TAG_RE, is_canary_tag
 
 logger = logging.getLogger(__name__)
-_PUBLIC_BASE = "https://hermes-assets.nousresearch.com"
-OFFICIAL_REPOSITORY = "NousResearch/hermes-agent"
+_PUBLIC_BASE = "https://akramcode-assets.nousresearch.com"
+OFFICIAL_REPOSITORY = "NousResearch/akramcode-agent"
 _GITHUB_ORIGIN = re.compile(
     r"^(?:https://github\.com/|git@github\.com:|ssh://git@github\.com/)"
     r"([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+?)(?:\.git)?/?$", re.IGNORECASE,
@@ -156,7 +156,7 @@ def _refuse_retirement_downgrade(request: dict, terminal: dict, git_cmd, cwd) ->
 
 def _read(url: str, *, missing_ok: bool = False) -> str | None:
     request = urllib.request.Request(url, headers={
-        "User-Agent": "hermes-update", "Cache-Control": "no-cache",
+        "User-Agent": "akramcode-update", "Cache-Control": "no-cache",
         "Accept": "application/json, text/html",
     })
     try:
@@ -175,7 +175,7 @@ class _BuildMetadata(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         fields = dict(attrs)
-        if tag == "meta" and fields.get("name") == "hermes-build":
+        if tag == "meta" and fields.get("name") == "akramcode-build":
             self.tags.append(fields.get("content"))
 
 

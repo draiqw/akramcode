@@ -15,9 +15,9 @@ from pathlib import Path
 import pytest
 
 import agent.secret_scope as ss
-from hermes_constants import (
-    reset_hermes_home_override,
-    set_hermes_home_override,
+from akramcode_constants import (
+    reset_akramcode_home_override,
+    set_akramcode_home_override,
 )
 
 
@@ -43,7 +43,7 @@ def test_auto_resolution_sees_profile_scoped_key(tmp_path):
     home = _install_profile(tmp_path, "auto", "DEEPSEEK_API_KEY=sk-scoped\n")
 
     ss.set_multiplex_active(True)
-    home_token = set_hermes_home_override(str(home))
+    home_token = set_akramcode_home_override(str(home))
     try:
         scope_token = ss.set_secret_scope(ss.build_profile_secret_scope(home))
         try:
@@ -51,7 +51,7 @@ def test_auto_resolution_sees_profile_scoped_key(tmp_path):
         finally:
             ss.reset_secret_scope(scope_token)
     finally:
-        reset_hermes_home_override(home_token)
+        reset_akramcode_home_override(home_token)
         ss.set_multiplex_active(False)
 
 
@@ -70,7 +70,7 @@ def test_auto_resolution_honors_explicit_config_provider(tmp_path):
     home = _install_profile(tmp_path, "opencode-go", "OPENCODE_GO_API_KEY=sk\n")
 
     ss.set_multiplex_active(True)
-    home_token = set_hermes_home_override(str(home))
+    home_token = set_akramcode_home_override(str(home))
     try:
         scope_token = ss.set_secret_scope(ss.build_profile_secret_scope(home))
         try:
@@ -78,5 +78,5 @@ def test_auto_resolution_honors_explicit_config_provider(tmp_path):
         finally:
             ss.reset_secret_scope(scope_token)
     finally:
-        reset_hermes_home_override(home_token)
+        reset_akramcode_home_override(home_token)
         ss.set_multiplex_active(False)

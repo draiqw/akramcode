@@ -31,7 +31,7 @@ def _state(token: str) -> dict[str, Any]:
     return {
         "access_token": token,
         "portal_base_url": "https://portal.example.test",
-        "client_id": "hermes-cli",
+        "client_id": "akramcode-cli",
     }
 
 

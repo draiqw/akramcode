@@ -5,7 +5,7 @@ from akramcode_cli import update_receipt as receipts
 
 
 def test_command_scope_retains_outer_receipt(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     monkeypatch.setattr(receipts, "_code_identity", lambda **kw: {})
     receipts.begin_update_receipt()
     outer = receipts.current_correlation_id()
@@ -21,7 +21,7 @@ def test_command_scope_retains_outer_receipt(tmp_path, monkeypatch):
 
 
 def test_copied_context_finalize_does_not_mutate_parent(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     monkeypatch.setattr(receipts, "_code_identity", lambda **kw: {})
     receipts.begin_update_receipt()
     try:

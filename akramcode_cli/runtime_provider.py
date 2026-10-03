@@ -292,7 +292,7 @@ def _maybe_apply_codex_app_server_runtime(*, provider: str, api_mode: str, model
 # ── base_url / credential helpers ──────────────────────────────────────────────────────────
 
 _ANTHROPIC_DEFAULT_BASE_URL = "https://api.anthropic.com"
-_NO_ANTHROPIC_CREDENTIALS_MSG = ("No Anthropic credentials found. Run 'hermes auth add anthropic' to sign in, "
+_NO_ANTHROPIC_CREDENTIALS_MSG = ("No Anthropic credentials found. Run 'akramcode auth add anthropic' to sign in, "
                                  "or set ANTHROPIC_TOKEN / ANTHROPIC_API_KEY.")
 
 
@@ -356,7 +356,7 @@ def _anthropic_token_or_raise(*, model: str | None = None) -> str:
         # user to re-authenticate would send them chasing a cooldown that lifts on its own.
         if model and resolve_anthropic_token():
             raise AuthError(f"Anthropic credentials are rate-limited for {model}; "
-                            "other Claude models remain available (see `hermes auth list`).")
+                            "other Claude models remain available (see `akramcode auth list`).")
         raise AuthError(_NO_ANTHROPIC_CREDENTIALS_MSG)
     return token
 
@@ -407,11 +407,11 @@ def _nous_entry_key_usable(entry: Any, min_ttl: int) -> bool:
 
 
 def _nous_min_key_ttl() -> int:
-    return max(60, env_int("HERMES_NOUS_MIN_KEY_TTL_SECONDS", 1800))
+    return max(60, env_int("AKRAMCODE_NOUS_MIN_KEY_TTL_SECONDS", 1800))
 
 
 def _resolve_nous_creds() -> Dict[str, Any]:
-    return resolve_nous_runtime_credentials(timeout_seconds=float(get_secret_str("HERMES_NOUS_TIMEOUT_SECONDS", "15")))
+    return resolve_nous_runtime_credentials(timeout_seconds=float(get_secret_str("AKRAMCODE_NOUS_TIMEOUT_SECONDS", "15")))
 
 
 def _finalize_base_url(provider: str, api_mode: str, base_url: str) -> str:
@@ -476,7 +476,7 @@ def _get_model_config() -> Dict[str, Any]:
 
 
 def resolve_requested_provider(requested: Optional[str] = None) -> str:
-    """Provider request from explicit arg, then config, then ``HERMES_INFERENCE_PROVIDER``, else
+    """Provider request from explicit arg, then config, then ``AKRAMCODE_INFERENCE_PROVIDER``, else
     "auto". Config beats the env so chat uses the endpoint the user last saved, not a stale
     shell/.env override."""
     if requested and requested.strip():
@@ -484,7 +484,7 @@ def resolve_requested_provider(requested: Optional[str] = None) -> str:
     cfg_provider = _get_model_config().get("provider")
     if isinstance(cfg_provider, str) and cfg_provider.strip():
         return cfg_provider.strip().lower()
-    return get_secret_str("HERMES_INFERENCE_PROVIDER", "").strip().lower() or "auto"
+    return get_secret_str("AKRAMCODE_INFERENCE_PROVIDER", "").strip().lower() or "auto"
 
 
 # ── extracted collaborators (re-exported; see module docstring) ────────────────────────────
@@ -525,9 +525,9 @@ def _pool_entry_mode_and_url(provider, entry, model_cfg, effective_model, base_u
         api_mode, default_url = _POOL_ENTRY_SIMPLE_MODES[provider]
         if provider == "openai-codex":
             # Pool entries retain the canonical ChatGPT URL, but the profile-wide
-            # HERMES_CODEX_BASE_URL override must apply consistently to every
+            # AKRAMCODE_CODEX_BASE_URL override must apply consistently to every
             # credential source, including pooled OAuth credentials.
-            override_url = get_secret_str("HERMES_CODEX_BASE_URL", "").strip().rstrip("/")
+            override_url = get_secret_str("AKRAMCODE_CODEX_BASE_URL", "").strip().rstrip("/")
             if override_url:
                 return api_mode, override_url
             # model.base_url is the secondary proxy override (same rule as the generic tail below:
@@ -580,7 +580,7 @@ def _openrouter_should_use_pool(requested_provider, model_cfg, explicit_api_key,
     cfg_base_url = str(model_cfg.get("base_url") or "").strip()
     env_base_urls = get_secret_str("OPENAI_BASE_URL", "").strip() or get_secret_str("OPENROUTER_BASE_URL", "").strip()
     # A config base_url under provider: openrouter is a mirror only when it is NOT the canonical
-    # OpenRouter host — `hermes setup` persists https://openrouter.ai/api/v1 for plain installs,
+    # OpenRouter host — `akramcode setup` persists https://openrouter.ai/api/v1 for plain installs,
     # and treating that as custom would drop the auth.json pool (empty key).
     cfg_is_mirror = bool(cfg_base_url) and (
         _cfg_provider(model_cfg) in {"auto", "custom"}
@@ -592,7 +592,7 @@ def _openrouter_should_use_pool(requested_provider, model_cfg, explicit_api_key,
 
 def _refresh_nous_pool_entry(pool: CredentialPool, entry: Any, pool_api_key: str):
     """Nous pool entries carry the agent_key (an invoke JWT) which the pool does not refresh on
-    selection (avoids network calls in `hermes auth list`); refresh here before falling back to
+    selection (avoids network calls in `akramcode auth list`); refresh here before falling back to
     singleton auth resolution. Returns (entry, pool_api_key) — key "" when still unusable."""
     min_ttl = _nous_min_key_ttl()
     if _nous_entry_key_usable(entry, min_ttl):
@@ -775,9 +775,9 @@ class _OAuthRuntimeSpec:
 _OAUTH_RUNTIME_PROVIDERS: Dict[str, _OAuthRuntimeSpec] = {
     "nous": _OAuthRuntimeSpec(_resolve_nous_creds, nous_api_mode, "portal", "expires_at",
                               "Auto-detected Nous provider but credentials failed"),
-    "openai-codex": _OAuthRuntimeSpec(lambda: resolve_codex_runtime_credentials(), "codex_responses", "hermes-auth-store",
+    "openai-codex": _OAuthRuntimeSpec(lambda: resolve_codex_runtime_credentials(), "codex_responses", "akramcode-auth-store",
                                       "last_refresh", "Auto-detected Codex provider but credentials failed"),
-    "xai-oauth": _OAuthRuntimeSpec(lambda: resolve_xai_oauth_runtime_credentials(), "codex_responses", "hermes-auth-store",
+    "xai-oauth": _OAuthRuntimeSpec(lambda: resolve_xai_oauth_runtime_credentials(), "codex_responses", "akramcode-auth-store",
                                    "last_refresh", "Auto-detected xAI OAuth provider but credentials failed", DEFAULT_XAI_OAUTH_BASE_URL),
     "qwen-oauth": _OAuthRuntimeSpec(lambda: resolve_qwen_runtime_credentials(), "chat_completions", "qwen-cli",
                                     "expires_at_ms", "Qwen OAuth credentials failed"),
@@ -913,9 +913,9 @@ def _resolve_vertex_runtime(requested_provider: str) -> Dict[str, Any]:
     token, base_url = get_vertex_config()
     if not token or not base_url:
         raise AuthError("Vertex AI credentials could not be resolved. Vertex uses OAuth2 (not a static API key): provide a "
-                        "service-account JSON via GOOGLE_APPLICATION_CREDENTIALS (or VERTEX_CREDENTIALS_PATH) in ~/.hermes/.env, "
+                        "service-account JSON via GOOGLE_APPLICATION_CREDENTIALS (or VERTEX_CREDENTIALS_PATH) in ~/.akramcode/.env, "
                         "or run 'gcloud auth application-default login' for ADC. Set the GCP project/region under vertex: in "
-                        "config.yaml if they aren't embedded in the credentials. Run `hermes setup` to install Vertex support.")
+                        "config.yaml if they aren't embedded in the credentials. Run `akramcode setup` to install Vertex support.")
     return _runtime("vertex", "chat_completions", base_url.rstrip("/"), token, source="vertex-oauth", requested_provider=requested_provider)
 
 

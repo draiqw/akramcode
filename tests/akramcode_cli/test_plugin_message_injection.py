@@ -4,11 +4,11 @@ from queue import SimpleQueue
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 import akramcode_cli.plugins as plugins_mod
 from agent import secret_scope
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from akramcode_constants import reset_akramcode_home_override, set_akramcode_home_override
 from akramcode_cli.plugins import PluginContext, PluginManager, PluginManifest
 
 
@@ -19,12 +19,12 @@ def _context(name: str = "notify-plugin") -> tuple[PluginContext, PluginManager]
 
 
 def _write_plugin_config(tmp_path, monkeypatch, entry: dict) -> None:
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    akramcode_home = tmp_path / "akramcode"
+    akramcode_home.mkdir()
+    (akramcode_home / "config.yaml").write_text(
         yaml.safe_dump({"plugins": {"entries": {"notify-plugin": entry}}})
     )
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
 
 def test_cli_idle_injection_keeps_existing_queue_behaviour():
@@ -195,18 +195,18 @@ def test_published_gateway_host_reaches_existing_and_future_profile_managers(tmp
                 "plugins": {"entries": {"notify-plugin": {"allow_gateway_injection": True}}}
             })
         )
-    monkeypatch.setenv("HERMES_HOME", str(homes[0]))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(homes[0]))
     plugins_mod._reset_plugin_managers_for_tests()
     # Multiplex gateway: launch home + secondary profiles served by one process.
     was_active = secret_scope.is_multiplex_active()
     secret_scope.set_multiplex_active(True)
 
     def manager_for(home):
-        token = set_hermes_home_override(str(home))
+        token = set_akramcode_home_override(str(home))
         try:
             return plugins_mod.get_plugin_manager()
         finally:
-            reset_hermes_home_override(token)
+            reset_akramcode_home_override(token)
 
     owner = object()
     injector = MagicMock(return_value=True)
@@ -226,7 +226,7 @@ def test_published_gateway_host_reaches_existing_and_future_profile_managers(tmp
         assert manager_for(homes[0]) is launch_manager
         assert launch_manager.has_gateway_message_injector is True
 
-        token = set_hermes_home_override(str(homes[1]))
+        token = set_akramcode_home_override(str(homes[1]))
         try:
             context = PluginContext(
                 PluginManifest(name="notify-plugin", key="notify-plugin", source="user"),
@@ -236,7 +236,7 @@ def test_published_gateway_host_reaches_existing_and_future_profile_managers(tmp
                 "continue", session_key="agent:secondary:telegram:dm:42"
             ) is True
         finally:
-            reset_hermes_home_override(token)
+            reset_akramcode_home_override(token)
 
         injector.assert_called_once_with(
             session_key="agent:secondary:telegram:dm:42",

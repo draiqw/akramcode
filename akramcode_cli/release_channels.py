@@ -262,7 +262,7 @@ _RETRY_READS: ContextVar[bool] = ContextVar("release_channel_read_retries", defa
 def retrying_reads():
     """Let channel reads inside the block wait out a CDN blip with PM's bounded retries.
 
-    Only an explicit ``hermes update`` opts in. Passive checks (``hermes --version``, the
+    Only an explicit ``akramcode update`` opts in. Passive checks (``akramcode --version``, the
     banner, the Desktop/dashboard update check) make one attempt: offline also reads as
     transient (DNS EAI_AGAIN, ENETUNREACH), so retrying there adds backoff to a synchronous
     status line, stretches a hung CDN from 30 s to ~2 min and logs a WARNING per retry.

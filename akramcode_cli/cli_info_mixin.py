@@ -1,7 +1,7 @@
 """Informational views and reload flows for the interactive CLI: banner, help, tools, usage,
 insights, MCP/skills reload, bang shell.
 
-Mixin split out of ``cli.py``; bound onto ``HermesCLI`` via the MRO. cli.py-internal symbols are
+Mixin split out of ``cli.py``; bound onto ``AkramCodeCLI`` via the MRO. cli.py-internal symbols are
 imported LAZILY inside each method — the mixin never imports ``cli`` at module load time (cycle).
 """
 
@@ -169,7 +169,7 @@ class CLIInfoMixin:
         # Tool discovery is deferred on the Termux bare prompt path (warnings show once tools
         # init). On the snapshot fast path the check walks every check_fn (~180ms) — run it in
         # the background and let its output land above the prompt (patch_stdout-safe).
-        if os.environ.get("HERMES_DEFER_AGENT_STARTUP") != "1":
+        if os.environ.get("AKRAMCODE_DEFER_AGENT_STARTUP") != "1":
             if getattr(self, "_defer_tool_warnings", False):
                 threading.Thread(
                     target=self._show_tool_availability_warnings,
@@ -201,15 +201,15 @@ class CLIInfoMixin:
                 fix = t("cli.banner.fix_config")
             self._console_print(f"[dim]   {fix}[/]")
 
-        from akramcode_cli.model_switch import is_nous_hermes_non_agentic
-        if is_nous_hermes_non_agentic(getattr(self, "model", "") or ""):
+        from akramcode_cli.model_switch import is_nous_akramcode_non_agentic
+        if is_nous_akramcode_non_agentic(getattr(self, "model", "") or ""):
             self._console_print()
-            self._console_print(f"[bold yellow]{t('cli.banner.hermes_models_not_agentic')}[/]")
-            self._console_print(f"[dim]   {t('cli.banner.hermes_models_lack_tools')}[/]")
-            self._console_print(f"[dim]   {t('cli.banner.hermes_models_switch_hint')}[/]")
+            self._console_print(f"[bold yellow]{t('cli.banner.akramcode_models_not_agentic')}[/]")
+            self._console_print(f"[dim]   {t('cli.banner.akramcode_models_lack_tools')}[/]")
+            self._console_print(f"[dim]   {t('cli.banner.akramcode_models_switch_hint')}[/]")
 
         # Project-local skills one-liner: trusted → count; untrusted-with-skills → point at
-        # `hermes skills trust`. Never raises.
+        # `akramcode skills trust`. Never raises.
         try:
             from agent.skill_utils import (
                 get_project_skills_dirs, get_untrusted_project_skills_root, iter_skill_index_files)
@@ -525,7 +525,7 @@ class CLIInfoMixin:
 
     def _show_gateway_status(self):
         """Show status of the gateway and connected messaging platforms."""
-        from akramcode_constants import display_hermes_home
+        from akramcode_constants import display_akramcode_home
         from gateway.config import load_gateway_config, Platform
 
         print()
@@ -556,7 +556,7 @@ class CLIInfoMixin:
             print(f"  {t('cli.gateway_status.to_start')}")
             print("    python cli.py --gateway")
             print()
-            print(f"  {t('cli.gateway_status.config_file', path=f'{display_hermes_home()}/config.yaml')}")
+            print(f"  {t('cli.gateway_status.config_file', path=f'{display_akramcode_home()}/config.yaml')}")
             print()
         except Exception as e:
             print(f"  {t('cli.gateway_status.load_error', error=str(e))}")
@@ -565,7 +565,7 @@ class CLIInfoMixin:
             print(f"    {t('cli.gateway_status.step_env_vars')}")
             print("       TELEGRAM_BOT_TOKEN=your_token")
             print("       DISCORD_BOT_TOKEN=your_token")
-            print(f"    {t('cli.gateway_status.step_config', path=f'{display_hermes_home()}/config.yaml')}")
+            print(f"    {t('cli.gateway_status.step_config', path=f'{display_akramcode_home()}/config.yaml')}")
             print()
 
     def _print_random_tip(self) -> None:
@@ -1000,7 +1000,7 @@ class CLIInfoMixin:
             print(f"  {t('gateway.reload_mcp.failed', error=str(e))}")
 
     def _reload_skills(self) -> None:
-        """Reload skills: rescan ~/.hermes/skills/ and queue a note for the next user turn.
+        """Reload skills: rescan ~/.akramcode/skills/ and queue a note for the next user turn.
 
         Skills are invoked at runtime (``/skill-name``, ``skills_list``, ``skill_view``), not from
         the system prompt, so this does NOT clear the prompt cache. If anything was added/removed

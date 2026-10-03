@@ -11,15 +11,15 @@ import pytest
 
 @pytest.fixture
 def multiplex_root(tmp_path, monkeypatch):
-    root = tmp_path / "hermes"
+    root = tmp_path / "akramcode"
     (root / "profiles" / "coder").mkdir(parents=True)
     (root / "config.yaml").write_text("model: {default: x}\n")
     (root / "profiles" / "coder" / "config.yaml").write_text("model: {default: x}\n")
     (root / "profiles" / "coder" / ".env").write_text("API_SERVER_KEY=abcdefghijklmnopqrstuvwxyz123456\n")
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(root))
     monkeypatch.delenv("API_SERVER_KEY", raising=False)
-    import hermes_constants
-    monkeypatch.setattr(hermes_constants, "_default_hermes_root_memo", None)
+    import akramcode_constants
+    monkeypatch.setattr(akramcode_constants, "_default_akramcode_root_memo", None)
     from agent import secret_scope
     monkeypatch.setattr(secret_scope, "_MULTIPLEX_ACTIVE", True)
     return root
@@ -71,7 +71,7 @@ def test_named_gateway_is_never_the_default_profile_process(tmp_path, cmdline, m
     import akramcode_cli.gateway as gw
     from gateway.status import _command_line_belongs_to_profile
     assert _command_line_belongs_to_profile(cmdline, tmp_path) is False
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     monkeypatch.setattr(gw, "_iter_proc_cmdlines", lambda exclude: iter([(424242, cmdline)]))
     monkeypatch.setattr(gw, "_get_ancestor_pids", set)
     monkeypatch.setattr(gw, "is_windows", lambda: False)
@@ -82,19 +82,19 @@ def test_named_gateway_is_never_the_default_profile_process(tmp_path, cmdline, m
 @pytest.mark.parametrize(
     ("cmdline", "expected"),
     [
-        ("HERMES_HOME={home}2 hermes gateway run", []),        # longer sibling home
-        ("HERMES_HOME={home}/ hermes gateway run", [424242]),  # trailing-separator spelling
-        ("HERMES_HOME={home} hermes gateway run", [424242]),   # exact home
+        ("AKRAMCODE_HOME={home}2 akramcode gateway run", []),        # longer sibling home
+        ("AKRAMCODE_HOME={home}/ akramcode gateway run", [424242]),  # trailing-separator spelling
+        ("AKRAMCODE_HOME={home} akramcode gateway run", [424242]),   # exact home
     ],
 )
 def test_scan_gateway_pids_claims_own_home_spellings_not_the_sibling(
     tmp_path, cmdline, expected, monkeypatch
 ):
-    """``_scan_gateway_pids`` drives the mirrored HERMES_HOME predicate: the process-table
+    """``_scan_gateway_pids`` drives the mirrored AKRAMCODE_HOME predicate: the process-table
     fallback must not sweep a longer sibling home's live gateway, while the supervisor
-    trailing-separator spelling (``HERMES_HOME=/root/.hermes/``) is still its own home."""
+    trailing-separator spelling (``AKRAMCODE_HOME=/root/.akramcode/``) is still its own home."""
     import akramcode_cli.gateway as gw
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     rendered = cmdline.format(home=tmp_path)
     monkeypatch.setattr(gw, "_iter_proc_cmdlines", lambda exclude: iter([(424242, rendered)]))
     monkeypatch.setattr(gw, "_get_ancestor_pids", set)

@@ -1,15 +1,15 @@
-"""ACP auth helpers — detect and advertise Hermes authentication methods."""
+"""ACP auth helpers — detect and advertise AkramCode authentication methods."""
 
 from __future__ import annotations
 
 from typing import Any, Optional
 
 
-TERMINAL_SETUP_AUTH_METHOD_ID = "hermes-setup"
+TERMINAL_SETUP_AUTH_METHOD_ID = "akramcode-setup"
 
 
 def detect_provider() -> Optional[str]:
-    """Resolve the active Hermes runtime provider, or None if unavailable.
+    """Resolve the active AkramCode runtime provider, or None if unavailable.
 
     A callable ``api_key`` (Azure Foundry Entra ID bearer-token provider, see
     :mod:`agent.azure_identity_adapter`) counts as a valid credential; otherwise
@@ -28,10 +28,10 @@ def detect_provider() -> Optional[str]:
 
 
 def build_auth_methods() -> list[Any]:
-    """Return registry-compatible ACP auth methods for Hermes.
+    """Return registry-compatible ACP auth methods for AkramCode.
 
     The ACP registry requires at least one usable auth method in the initial
-    handshake. A fresh Zed install may have no Hermes credentials yet, so the
+    handshake. A fresh Zed install may have no AkramCode credentials yet, so the
     terminal setup method is always advertised; when credentials resolve, the
     provider is also advertised as the default agent-managed runtime method."""
     from acp.schema import AuthMethodAgent, TerminalAuthMethod
@@ -41,16 +41,16 @@ def build_auth_methods() -> list[Any]:
     if provider:
         methods.append(AuthMethodAgent(
             id=provider, name=f"{provider} runtime credentials",
-            description=f"Authenticate Hermes using the currently configured {provider} runtime credentials.",
+            description=f"Authenticate AkramCode using the currently configured {provider} runtime credentials.",
         ))
     methods.append(TerminalAuthMethod(
         id=TERMINAL_SETUP_AUTH_METHOD_ID,
-        name="Configure Hermes provider",
+        name="Configure AkramCode provider",
         type="terminal",
         args=["--setup"],
         description=(
-            "Open Hermes' interactive model/provider setup in a terminal. "
-            "Use this when Hermes has not been configured on this machine yet."
+            "Open AkramCode' interactive model/provider setup in a terminal. "
+            "Use this when AkramCode has not been configured on this machine yet."
         ),
     ))
     return methods

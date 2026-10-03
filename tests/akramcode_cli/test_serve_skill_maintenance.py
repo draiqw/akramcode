@@ -16,7 +16,7 @@ async def test_removed_sessions_keep_profile_idle_watermark(tmp_path, monkeypatc
     from agent.curator import load_state, save_state
     from akramcode_cli.web_server_sessions import _auto_archive_ticker_loop, _skill_maintenance_idle_for
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     (tmp_path / "skills").mkdir()
     (tmp_path / "config.yaml").write_text(
@@ -56,7 +56,7 @@ async def test_removed_sessions_keep_profile_idle_watermark(tmp_path, monkeypatc
 
 @pytest.mark.asyncio
 async def test_serve_timer_runs_due_curator_once_and_honors_pause(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     (tmp_path / "skills").mkdir()
     (tmp_path / "config.yaml").write_text(
         "curator:\n  enabled: true\n  consolidate: false\n  interval_hours: 168\n"

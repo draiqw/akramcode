@@ -6,19 +6,19 @@ import os
 from pathlib import Path
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 from fastapi.testclient import TestClient
 
 from akramcode_cli.web_server import _SESSION_TOKEN, app
 
 
-HEADERS = {"X-Hermes-Session-Token": _SESSION_TOKEN}
+HEADERS = {"X-AkramCode-Session-Token": _SESSION_TOKEN}
 
 
 @pytest.fixture
-def catalog_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, _isolate_hermes_home):
+def catalog_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, _isolate_akramcode_home):
     """Install one synthetic API-key catalog entry in the isolated test home."""
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
     from akramcode_cli.config import invalidate_env_cache
 
     catalog = tmp_path / "optional-mcps"
@@ -49,9 +49,9 @@ def catalog_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, _isolate_hermes
         ),
         encoding="utf-8",
     )
-    monkeypatch.setenv("HERMES_OPTIONAL_MCPS", str(catalog))
+    monkeypatch.setenv("AKRAMCODE_OPTIONAL_MCPS", str(catalog))
     invalidate_env_cache()
-    return get_hermes_home()
+    return get_akramcode_home()
 
 
 @pytest.fixture
@@ -103,12 +103,12 @@ def test_catalog_cannot_declare_reserved_control_key(
 ):
     import akramcode_cli.mcp_catalog as mcp_catalog
 
-    catalog_root = Path(os.environ["HERMES_OPTIONAL_MCPS"])
+    catalog_root = Path(os.environ["AKRAMCODE_OPTIONAL_MCPS"])
     manifest_path = catalog_root / "demo" / "manifest.yaml"
     manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
     manifest["auth"]["env"].append(
         {
-            "name": "HERMES_YOLO_MODE",
+            "name": "AKRAMCODE_YOLO_MODE",
             "prompt": "Unsafe control",
             "secret": False,
         }
@@ -125,14 +125,14 @@ def test_catalog_cannot_declare_reserved_control_key(
     response = client.post(
         "/api/mcp/catalog/install",
         headers=HEADERS,
-        json={"name": "demo", "env": {"HERMES_YOLO_MODE": "1"}},
+        json={"name": "demo", "env": {"AKRAMCODE_YOLO_MODE": "1"}},
     )
 
     assert response.status_code == 400
     assert "denylist" in response.json()["detail"]
     assert installs == []
     env_path = catalog_env / ".env"
-    assert not env_path.exists() or "HERMES_YOLO_MODE" not in env_path.read_text(
+    assert not env_path.exists() or "AKRAMCODE_YOLO_MODE" not in env_path.read_text(
         encoding="utf-8"
     )
 
@@ -177,7 +177,7 @@ def test_catalog_non_secret_env_never_lands_in_env_file(
     install_entry inlines them into the server config instead."""
     import akramcode_cli.mcp_catalog as mcp_catalog
 
-    catalog_root = Path(os.environ["HERMES_OPTIONAL_MCPS"])
+    catalog_root = Path(os.environ["AKRAMCODE_OPTIONAL_MCPS"])
     manifest_path = catalog_root / "demo" / "manifest.yaml"
     manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
     manifest["auth"]["env"].append(
@@ -235,10 +235,10 @@ def test_catalog_non_secret_env_never_lands_in_env_file(
 @pytest.mark.parametrize(
     "protected_key",
     [
-        "HERMES_YOLO_MODE",
-        "HERMES_OPTIONAL_MCPS",
-        "HERMES_COPILOT_ACP_COMMAND",
-        "HERMES_COPILOT_ACP_ARGS",
+        "AKRAMCODE_YOLO_MODE",
+        "AKRAMCODE_OPTIONAL_MCPS",
+        "AKRAMCODE_COPILOT_ACP_COMMAND",
+        "AKRAMCODE_COPILOT_ACP_ARGS",
     ],
 )
 def test_generic_env_endpoint_rejects_protected_key(
@@ -272,14 +272,14 @@ def test_rejected_copilot_controls_do_not_change_live_resolvers(
 ):
     from agent.copilot_acp_client import _resolve_args, _resolve_command
 
-    monkeypatch.setenv("HERMES_COPILOT_ACP_COMMAND", "/opt/trusted/copilot")
-    monkeypatch.setenv("HERMES_COPILOT_ACP_ARGS", "--acp --stdio")
+    monkeypatch.setenv("AKRAMCODE_COPILOT_ACP_COMMAND", "/opt/trusted/copilot")
+    monkeypatch.setenv("AKRAMCODE_COPILOT_ACP_ARGS", "--acp --stdio")
     expected_command = _resolve_command()
     expected_args = _resolve_args()
 
     attempts = {
-        "HERMES_COPILOT_ACP_COMMAND": "/tmp/attacker-command",
-        "HERMES_COPILOT_ACP_ARGS": "--malicious-transport",
+        "AKRAMCODE_COPILOT_ACP_COMMAND": "/tmp/attacker-command",
+        "AKRAMCODE_COPILOT_ACP_ARGS": "--malicious-transport",
     }
     for key, value in attempts.items():
         response = client.put(
@@ -303,18 +303,18 @@ def test_preexisting_copilot_controls_remain_usable(
     monkeypatch: pytest.MonkeyPatch,
 ):
     from agent.copilot_acp_client import _resolve_args, _resolve_command
-    from akramcode_cli.env_loader import load_hermes_dotenv
+    from akramcode_cli.env_loader import load_akramcode_dotenv
 
-    monkeypatch.setenv("HERMES_COPILOT_ACP_COMMAND", "parent-placeholder")
-    monkeypatch.setenv("HERMES_COPILOT_ACP_ARGS", "--parent-placeholder")
+    monkeypatch.setenv("AKRAMCODE_COPILOT_ACP_COMMAND", "parent-placeholder")
+    monkeypatch.setenv("AKRAMCODE_COPILOT_ACP_ARGS", "--parent-placeholder")
     (catalog_env / ".env").write_text(
-        "HERMES_COPILOT_ACP_COMMAND=/opt/operator/copilot\n"
-        "HERMES_COPILOT_ACP_ARGS=--acp --stdio --operator-mode\n",
+        "AKRAMCODE_COPILOT_ACP_COMMAND=/opt/operator/copilot\n"
+        "AKRAMCODE_COPILOT_ACP_ARGS=--acp --stdio --operator-mode\n",
         encoding="utf-8",
     )
 
-    load_hermes_dotenv(
-        hermes_home=catalog_env,
+    load_akramcode_dotenv(
+        akramcode_home=catalog_env,
         load_external_secrets=False,
     )
 
@@ -332,7 +332,7 @@ def test_connection_card_install_keeps_env_file_secrets_only(
     import akramcode_cli.mcp_config as mcp_config
     from tools.connectors.mcp import _CatalogBackend
 
-    catalog_root = Path(os.environ["HERMES_OPTIONAL_MCPS"])
+    catalog_root = Path(os.environ["AKRAMCODE_OPTIONAL_MCPS"])
     manifest_path = catalog_root / "demo" / "manifest.yaml"
     manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
     manifest["transport"]["env"] = {"DEMO_BASE_URL": "${DEMO_BASE_URL}"}

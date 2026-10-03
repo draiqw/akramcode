@@ -41,7 +41,7 @@ def _expected_windows_pe_machines() -> NoReturn:
     stop_for_relaunch()
 
 
-def _hermes_exe_shims(scripts_dir: Path) -> NoReturn:
+def _akramcode_exe_shims(scripts_dir: Path) -> NoReturn:
     # Shim to stop the old updater doing work until relaunch, not select files to rename.
     stop_for_relaunch()
 
@@ -66,7 +66,7 @@ def _parse_pe_machine(path: Path) -> NoReturn:
     stop_for_relaunch()
 
 
-def _quarantine_running_hermes_exe(
+def _quarantine_running_akramcode_exe(
     scripts_dir: Path, *, max_attempts: int = 4, failed_out: list[str] | None = None,
 ) -> NoReturn:
     # Shim to stop the old updater doing work until relaunch, not rename live executables.

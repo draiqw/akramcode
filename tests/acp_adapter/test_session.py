@@ -133,14 +133,14 @@ class TestCreateSession:
 
         manager._make_agent(session_id="fresh", cwd=".")
         manager._make_agent(
-            session_id="rebuilt", cwd=".", enabled_toolsets=["hermes-acp", "mcp-acp-server"], disabled_toolsets=["browser"],
+            session_id="rebuilt", cwd=".", enabled_toolsets=["akramcode-acp", "mcp-acp-server"], disabled_toolsets=["browser"],
         )
 
         assert "mcp-cfg-server" in seen[0]["enabled_toolsets"] and seen[0]["disabled_toolsets"] is None
-        assert (seen[1]["enabled_toolsets"], seen[1]["disabled_toolsets"]) == (["hermes-acp", "mcp-acp-server"], ["browser"])
+        assert (seen[1]["enabled_toolsets"], seen[1]["disabled_toolsets"]) == (["akramcode-acp", "mcp-acp-server"], ["browser"])
 
     @pytest.mark.parametrize("config, offered, withheld", [
-        # agent.disabled_toolsets, in the JSON-string shape `hermes config set` stores (#74582).
+        # agent.disabled_toolsets, in the JSON-string shape `akramcode config set` stores (#74582).
         ({"agent": {"disabled_toolsets": "['code_execution']"}}, "file", "code_execution"),
         # platform_toolsets.acp narrows the surface like every other platform (#79516).
         ({"platform_toolsets": {"acp": ["file"]}}, "file", "code_execution"),
@@ -169,15 +169,15 @@ class TestCreateSession:
             return {t["function"]["name"] for t in get_tool_definitions(
                 enabled_toolsets=enabled, disabled_toolsets=disabled, quiet_mode=True)}
 
-        assert set(resolve_toolset(withheld)) <= surface(["hermes-acp"])  # non-vacuous: offered by default
+        assert set(resolve_toolset(withheld)) <= surface(["akramcode-acp"])  # non-vacuous: offered by default
         names = surface(seen[0]["enabled_toolsets"], seen[0]["disabled_toolsets"])
         assert set(resolve_toolset(offered)) <= names
         assert not names & set(resolve_toolset(withheld))
 
     @pytest.mark.parametrize("acp_toolsets, expected_mcp", [
         (None, {"mcp-alpha", "mcp-beta"}),              # default: every enabled config server
-        (["hermes-acp", "alpha"], {"mcp-alpha"}),       # listed server names are an allowlist
-        (["hermes-acp", "no_mcp"], set()),              # the no_mcp sentinel drops them all
+        (["akramcode-acp", "alpha"], {"mcp-alpha"}),       # listed server names are an allowlist
+        (["akramcode-acp", "no_mcp"], set()),              # the no_mcp sentinel drops them all
     ])
     def test_fresh_agent_mcp_servers_follow_platform_toolsets(self, monkeypatch, acp_toolsets, expected_mcp):
         """Config MCP servers reach a fresh ACP agent by the gateway's rules for ``platform_toolsets.<platform>``,
@@ -209,11 +209,11 @@ class TestCreateSession:
         first-run "No LLM provider configured" text; the operator must get the swallowed cause
         instead. The fallback still stands when the bare build succeeds."""
         def _no_creds(**_kw):
-            raise RuntimeError("No Codex credentials stored. Run `hermes auth add openai-codex`")
+            raise RuntimeError("No Codex credentials stored. Run `akramcode auth add openai-codex`")
 
         class BareFails:
             def __init__(self, **kwargs):
-                raise RuntimeError("No LLM provider configured. Run `hermes setup`")
+                raise RuntimeError("No LLM provider configured. Run `akramcode setup`")
 
         class BareWorks:
             def __init__(self, **kwargs):
@@ -334,8 +334,8 @@ class TestSymlinkAliasNormalization:
         # that don't exist on this host (e.g. WSL-translated drives) behave
         # exactly as the old normpath comparison did.
         assert acp_session._normalize_cwd_for_compare(
-            "/nonexistent-hermes-test/x/../y"
-        ) == acp_session._normalize_cwd_for_compare("/nonexistent-hermes-test/y")
+            "/nonexistent-akramcode-test/x/../y"
+        ) == acp_session._normalize_cwd_for_compare("/nonexistent-akramcode-test/y")
 
     @pytest.mark.require_symlinks
     def test_list_sessions_matches_symlink_alias_cwd(self, manager, tmp_path):

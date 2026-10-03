@@ -2,7 +2,7 @@
 
 This module is the single owner of the "same backend?" question — tests
 live HERE, against the predicate, not against each call site (see
-references/never-patch-predicates.md in hermes-agent-dev). Each test names
+references/never-patch-predicates.md in akramcode-agent-dev). Each test names
 the incident whose semantics it pins.
 """
 

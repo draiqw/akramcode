@@ -27,7 +27,7 @@ def multiplexing_host(tmp_path, monkeypatch):
     launch = tmp_path / "launch"
     launch.mkdir()
     (launch / ".env").write_text(f"{POISON}=launch-dotenv\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(launch))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(launch))
     monkeypatch.setattr(secret_scope, "_MULTIPLEX_ACTIVE", False)
     monkeypatch.setattr(launch_profile_policy, "_snapshot", None)
     launch_profile_policy.activate_multi_profile_hosting()

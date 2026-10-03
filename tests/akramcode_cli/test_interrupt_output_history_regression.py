@@ -23,7 +23,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 import cli as cli_mod
-from cli import HermesCLI, _suspend_output_history
+from cli import AkramCodeCLI, _suspend_output_history
 
 
 @pytest.fixture(autouse=True)
@@ -51,7 +51,7 @@ class TestRecoverTerminalPreservesHistory:
         cli_mod._configure_output_history(True, 10)
         cli_mod._record_output_history("normal response text")
 
-        cli = object.__new__(HermesCLI)
+        cli = object.__new__(AkramCodeCLI)
         cli._force_full_redraw = MagicMock()
 
         with patch("akramcode_cli.curses_ui.flush_stdin"):
@@ -68,7 +68,7 @@ class TestRecoverTerminalPreservesHistory:
         for i in range(5):
             cli_mod._record_output_history(f"visible line {i}")
 
-        cli = object.__new__(HermesCLI)
+        cli = object.__new__(AkramCodeCLI)
         cli._force_full_redraw = MagicMock()
 
         with patch("akramcode_cli.curses_ui.flush_stdin"):

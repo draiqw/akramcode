@@ -277,10 +277,10 @@ class TestEmailConnectClassification:
 
 
 def _set_attention_after(value) -> None:
-    """Write ``agent.reconnect_attention_after`` into the test's isolated HERMES_HOME config."""
-    import akram_core.hermes_yaml as yaml
-    from hermes_constants import get_hermes_home
-    (get_hermes_home() / "config.yaml").write_text(
+    """Write ``agent.reconnect_attention_after`` into the test's isolated AKRAMCODE_HOME config."""
+    import akram_core.akramcode_yaml as yaml
+    from akramcode_constants import get_akramcode_home
+    (get_akramcode_home() / "config.yaml").write_text(
         yaml.safe_dump({"agent": {"reconnect_attention_after": value}}), encoding="utf-8")
 
 
@@ -422,7 +422,7 @@ class TestWatcherAttentionEscalation:
 
 class TestRuntimeStatusAttentionFields:
     def test_needs_attention_and_retrying_since_persisted(self, tmp_path, monkeypatch):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
         from gateway import status as status_module
 
         status_module.write_runtime_status(

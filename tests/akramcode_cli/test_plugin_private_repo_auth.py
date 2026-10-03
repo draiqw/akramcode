@@ -91,7 +91,7 @@ def test_public_clone_attempts_anonymously_when_credential_resolves(tmp_path, mo
 
     clone_calls: list[list[str]] = []
     real_run = subprocess.run
-    target_url = "https://github.com/robbyczgw-cla/hermes-web-search-plus.git"
+    target_url = "https://github.com/robbyczgw-cla/akramcode-web-search-plus.git"
     origin = "https://github.com"
 
     def spy_run(argv, *a, **kw):
@@ -122,7 +122,7 @@ def test_public_clone_attempts_anonymously_when_credential_resolves(tmp_path, mo
 @pytest.mark.parametrize("outcome", ["ok", "refused", "not_found"])
 def test_ref_fetch_and_update_pull_attach_credential_only_after_anonymous_refusal(
         tmp_path, monkeypatch, verb, outcome):
-    """The pinned-ref fetch (``--ref`` install) and ``hermes plugins update``'s pull are the
+    """The pinned-ref fetch (``--ref`` install) and ``akramcode plugins update``'s pull are the
     clone's siblings: with a stored GitHub credential resolvable they still run anonymously
     against a public remote, attach the credential only after the remote refuses, and surface a
     failure that is not about credentials (missing repo, bad commit, network) as-is — the stored
@@ -203,7 +203,7 @@ def test_anonymous_attempt_fails_fast_under_inherited_askpass(tmp_path, monkeypa
         # Plain-http local remote: stand in for the https credential lookup so the fallback's
         # second attempt is observable without a TLS fixture.
         monkeypatch.setattr(git_credentials, "with_git_auth",
-                            lambda env, u: {**env, "HERMES_TEST_AUTH_ATTACHED": "1"})
+                            lambda env, u: {**env, "AKRAMCODE_TEST_AUTH_ATTACHED": "1"})
         attempts: list[dict] = []
         real_run = subprocess.run
         monkeypatch.setattr(git_credentials.subprocess, "run",

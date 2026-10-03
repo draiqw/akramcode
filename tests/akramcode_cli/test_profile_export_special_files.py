@@ -69,7 +69,7 @@ def test_named_profile_export_survives_unix_socket(tmp_path, monkeypatch):
 
 def test_default_profile_export_survives_unix_socket(tmp_path, monkeypatch):
     """The default-profile export skips suffixless sockets in allowed dirs."""
-    profile_dir = tmp_path / "hermes_home"
+    profile_dir = tmp_path / "akramcode_home"
     sessions_dir = profile_dir / "sessions"
     sessions_dir.mkdir(parents=True)
 

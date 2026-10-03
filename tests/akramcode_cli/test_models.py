@@ -35,7 +35,7 @@ class TestFetchOpenRouterModels:
     def test_filters_out_models_without_tool_support(self, monkeypatch):
         """Models whose supported_parameters omits 'tools' must not appear in the picker.
 
-        hermes-agent is tool-calling-first — surfacing a non-tool model leads to
+        akramcode-agent is tool-calling-first — surfacing a non-tool model leads to
         immediate runtime failures when the user selects it. Ported from
         Kilo-Org/kilocode#9068.
         """
@@ -289,14 +289,14 @@ class TestCheckNousFreeTierCache:
 
     @patch("akramcode_cli.nous_account.get_nous_portal_account_info")
     def test_entitlement_cache_is_profile_scoped(self, mock_account, tmp_path):
-        from hermes_constants import (
-            hermes_home_key,
-            reset_hermes_home_override,
-            set_hermes_home_override,
+        from akramcode_constants import (
+            akramcode_home_key,
+            reset_akramcode_home_override,
+            set_akramcode_home_override,
         )
 
         def account_for_active_profile(*, force_fresh=False):
-            is_free = hermes_home_key() == hermes_home_key(tmp_path / "free")
+            is_free = akramcode_home_key() == akramcode_home_key(tmp_path / "free")
             return NousPortalAccountInfo(
                 logged_in=True,
                 source="jwt",
@@ -307,11 +307,11 @@ class TestCheckNousFreeTierCache:
         mock_account.side_effect = account_for_active_profile
 
         def check_in(home):
-            token = set_hermes_home_override(str(home))
+            token = set_akramcode_home_override(str(home))
             try:
                 return check_nous_free_tier()
             finally:
-                reset_hermes_home_override(token)
+                reset_akramcode_home_override(token)
 
         assert check_in(tmp_path / "free") is True
         assert check_in(tmp_path / "paid") is False

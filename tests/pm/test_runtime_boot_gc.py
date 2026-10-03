@@ -11,7 +11,7 @@ def test_bootstrap_lease_survives_selection_change(tmp_path, monkeypatch):
 
     repo = tmp_path / "repo"
     repo.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
     state = install_state_dir(repo)
     for name in ("first", "second", "unused"):
         venv = state / "environments" / name / "venv"

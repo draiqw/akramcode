@@ -1,4 +1,4 @@
-"""On-demand supply-chain audit for Hermes Agent installs.
+"""On-demand supply-chain audit for AkramCode Agent installs.
 
 Vulnerabilities are looked up against OSV.dev (``api.osv.dev/v1/querybatch`` + ``/v1/vulns/{id}``).
 Single-shot, on-demand, never daily — see ``references/security-disclosure-triage.md``.
@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, Optional
 
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 
 OSV_BATCH_URL = "https://api.osv.dev/v1/querybatch"
 OSV_VULN_URL = "https://api.osv.dev/v1/vulns/{vid}"
@@ -102,11 +102,11 @@ _PLUGIN_PIN_FILES = (("requirements.txt", _parse_requirements), ("requirements-d
                      ("pyproject.toml", _parse_pyproject_pins))
 
 
-def _discover_plugins(hermes_home: Path) -> list[Component]:
-    """Python deps declared by plugins under ``~/.hermes/plugins``. Plugins typically don't install
+def _discover_plugins(akramcode_home: Path) -> list[Component]:
+    """Python deps declared by plugins under ``~/.akramcode/plugins``. Plugins typically don't install
     into the venv, so their stated requirements are audit surface the venv scan misses.
     """
-    plugins_dir = hermes_home / "plugins"
+    plugins_dir = akramcode_home / "plugins"
     if not plugins_dir.is_dir():
         return []
     out: list[Component] = []
@@ -225,10 +225,10 @@ def _osv_fetch_details(vuln_ids: Iterable[str]) -> dict[str, Vulnerability]:
 
 
 def _discover_components(
-    *, skip_venv: bool = False, skip_plugins: bool = False, skip_mcp: bool = False, hermes_home: Optional[Path] = None
+    *, skip_venv: bool = False, skip_plugins: bool = False, skip_mcp: bool = False, akramcode_home: Optional[Path] = None
 ) -> list[Component]:
     """Discover all scannable components across the enabled sources."""
-    home = hermes_home or Path(get_hermes_home())
+    home = akramcode_home or Path(get_akramcode_home())
     sources = ((skip_venv, _discover_venv), (skip_plugins, lambda: _discover_plugins(home)), (skip_mcp, _discover_mcp))
     return [c for skip, discover in sources if not skip for c in discover()]
 
@@ -284,8 +284,8 @@ def _render_json(findings: list[Finding], total_components: int) -> str:
 
 
 def cmd_security_audit(args: argparse.Namespace) -> int:
-    """Implementation of `hermes security audit`."""
-    home = Path(get_hermes_home())
+    """Implementation of `akramcode security audit`."""
+    home = Path(get_akramcode_home())
     output_json = bool(getattr(args, "json", False))
     fail_on = (getattr(args, "fail_on", None) or "critical").upper()
     if fail_on not in SEVERITY_ORDER:
@@ -293,7 +293,7 @@ def cmd_security_audit(args: argparse.Namespace) -> int:
         return 2
 
     skips = {k: bool(getattr(args, k, False)) for k in ("skip_venv", "skip_plugins", "skip_mcp")}
-    components = _discover_components(hermes_home=home, **skips)
+    components = _discover_components(akramcode_home=home, **skips)
     total = len(components)
     if total == 0:
         print(json.dumps({"total_components_scanned": 0, "finding_count": 0, "findings": []}) if output_json
@@ -301,7 +301,7 @@ def cmd_security_audit(args: argparse.Namespace) -> int:
         return 0
 
     try:
-        findings = run_audit(hermes_home=home, components=components)
+        findings = run_audit(akramcode_home=home, components=components)
     except RuntimeError as exc:
         print(f"audit failed: {exc}", file=sys.stderr)
         return 2

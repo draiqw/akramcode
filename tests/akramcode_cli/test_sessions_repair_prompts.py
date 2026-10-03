@@ -1,4 +1,4 @@
-"""Behavior contracts for hermes sessions repair-prompts (#122822)."""
+"""Behavior contracts for akramcode sessions repair-prompts (#122822)."""
 
 from __future__ import annotations
 
@@ -13,11 +13,11 @@ from akramcode_cli.sessions_cmd import _cmd_repair_prompts
 from akramcode_state import SessionDB
 
 HEALTHY = (
-    "You are Hermes.\n"
+    "You are AkramCode.\n"
     "<available_skills>\n  dogfood: exploratory QA of web apps\n</available_skills>\n"
     f"{SKILL_SAFETY_HEADING}\nReload [SKILL_PRUNED] placeholders with skill_view.\n"
 )
-DEGRADED = "You are Hermes.\n(reduced maintenance build without the skills index)\n"
+DEGRADED = "You are AkramCode.\n(reduced maintenance build without the skills index)\n"
 
 
 def _tool(name: str) -> dict:
@@ -79,7 +79,7 @@ def test_scan_leaves_reduced_memory_only_zero_skills_rows_and_session_id_overrid
     memory = db.create_session("memory-only-1", "telegram", system_prompt=DEGRADED)
     db.update_session_tool_names(memory, _pin("memory"))
     # Zero skills installed + no skill_manage: the real builder emits neither skills marker.
-    zero_skills = "You are Hermes.\nNo skills are installed.\n"
+    zero_skills = "You are AkramCode.\nNo skills are installed.\n"
     readonly = db.create_session("zero-skills-readonly", "telegram", system_prompt=zero_skills)
     db.update_session_tool_names(readonly, _pin("terminal", "skills_list", "skill_view"))
 

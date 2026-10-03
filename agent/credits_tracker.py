@@ -284,7 +284,7 @@ def parse_credits_headers(headers: Mapping[str, str], provider: str = "") -> Opt
         if version_val != 1:
             if version_val > 1 and not _version_warning_emitted:
                 _version_warning_emitted = True
-                logger.warning("credits header version %d unsupported, ignoring — update Hermes", version_val)
+                logger.warning("credits header version %d unsupported, ignoring — update AkramCode", version_val)
             return None
         fields: dict[str, Any] = {
             name: _parse_field(kind, lowered.get(_header_name(name)), *default) for name, kind, *default in _HEADER_FIELDS
@@ -305,7 +305,7 @@ def parse_credits_headers(headers: Mapping[str, str], provider: str = "") -> Opt
         return None
 
 
-# ── Dev fixtures (HERMES_DEV_CREDITS_FIXTURE): throwaway scaffolding to trigger any notice state
+# ── Dev fixtures (AKRAMCODE_DEV_CREDITS_FIXTURE): throwaway scaffolding to trigger any notice state
 # without real spend. Value is a state NAME or a FILE PATH whose contents are a name (re-read every
 # turn → `echo depleted > /tmp/cf` flips live). Drives per-turn notices, the cold-start seed, and /usage.
 def _fixture(remaining: str, subscription: str, limit: Optional[str] = None, purchased: Optional[str] = None,
@@ -336,10 +336,10 @@ _DEV_FIXTURES: dict[str, dict] = {
 
 
 def dev_fixture_credits_state() -> Optional[CreditsState]:
-    """Fixture CreditsState for HERMES_DEV_CREDITS_FIXTURE, or None (unknown name / unset). Prod-leak guard:
-    applies ONLY when HERMES_DEV_CREDITS is also on, so a stray fixture env var never surfaces fabricated balances."""
-    name = os.environ.get("HERMES_DEV_CREDITS_FIXTURE", "").strip()
-    if not name or not is_truthy_value(os.environ.get("HERMES_DEV_CREDITS")):
+    """Fixture CreditsState for AKRAMCODE_DEV_CREDITS_FIXTURE, or None (unknown name / unset). Prod-leak guard:
+    applies ONLY when AKRAMCODE_DEV_CREDITS is also on, so a stray fixture env var never surfaces fabricated balances."""
+    name = os.environ.get("AKRAMCODE_DEV_CREDITS_FIXTURE", "").strip()
+    if not name or not is_truthy_value(os.environ.get("AKRAMCODE_DEV_CREDITS")):
         return None
     if os.path.sep in name or "/" in name:  # looks like a path → read the name from the file
         try:

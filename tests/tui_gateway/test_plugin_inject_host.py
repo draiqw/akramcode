@@ -10,19 +10,19 @@ import time
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from akramcode_cli.plugins import PluginContext, PluginManager, PluginManifest
 from tui_gateway import server
 
 
 def _write_plugin_config(tmp_path, monkeypatch, entry: dict) -> None:
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    akramcode_home = tmp_path / "akramcode"
+    akramcode_home.mkdir()
+    (akramcode_home / "config.yaml").write_text(
         yaml.safe_dump({"plugins": {"entries": {"notify-plugin": entry}}})
     )
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
 
 def _context() -> tuple[PluginContext, PluginManager]:

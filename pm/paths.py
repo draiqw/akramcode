@@ -11,10 +11,10 @@ def repo_root() -> Path:
 
 
 def install_root() -> Path:
-    """The tree this process runs from. ``HERMES_INSTALL_ROOT`` when a steward
+    """The tree this process runs from. ``AKRAMCODE_INSTALL_ROOT`` when a steward
     wrapper sets it (Nix points it at the sealed tree whose install stamp lives
     outside the package dir), else the executing checkout."""
-    env = os.environ.get("HERMES_INSTALL_ROOT")
+    env = os.environ.get("AKRAMCODE_INSTALL_ROOT")
     return Path(env) if env else repo_root()
 
 
@@ -23,7 +23,7 @@ def install_stamp_path(project_root: Path) -> Path:
 
     Beside the code in checkouts, Docker and desktop payloads. A Nix package
     bakes the stamp outside the store's package dir and its wrapper carries
-    ``HERMES_INSTALL_ROOT`` for the executing tree only — so the executing
+    ``AKRAMCODE_INSTALL_ROOT`` for the executing tree only — so the executing
     tree resolves through install_root, any other tree is taken literally.
     PM reads it in sealed stages (the Docker runtime base) before akramcode_cli
     ships, so it lives here rather than beside the stewards.
@@ -47,16 +47,16 @@ def store_root() -> Path:
 def partials_root() -> Path:
     """The downloader's managed partials area: machine-scoped and shared
     (keyed by sha256(url), so two callers or two profiles reuse one
-    partial), but anchored to the DEFAULT hermes root — NOT the byte
+    partial), but anchored to the DEFAULT akramcode root — NOT the byte
     store. The store can live inside a read-only sealed payload
     (WindowsApps/agent-payload), and partials are mutable state the
     downloader writes continuously, so they must land somewhere writable
-    on every install kind: ``%LOCALAPPDATA%\\hermes\\cache\\partials`` on
-    Windows, ``~/.hermes/cache/partials`` on POSIX.
+    on every install kind: ``%LOCALAPPDATA%\\akramcode\\cache\\partials`` on
+    Windows, ``~/.akramcode/cache/partials`` on POSIX.
     """
-    from akramcode_constants import get_default_hermes_root
+    from akramcode_constants import get_default_akramcode_root
 
-    return get_default_hermes_root() / "cache" / "partials"
+    return get_default_akramcode_root() / "cache" / "partials"
 
 
 def facts_path() -> Path:
@@ -66,9 +66,9 @@ def facts_path() -> Path:
 def writable_store_root() -> Path:
     if not (store_root().parent / "manifest.json").is_file():
         return store_root()
-    from akramcode_constants import get_default_hermes_root
+    from akramcode_constants import get_default_akramcode_root
 
-    return get_default_hermes_root() / "tools"
+    return get_default_akramcode_root() / "tools"
 
 
 def runtime_facts_path() -> Path:

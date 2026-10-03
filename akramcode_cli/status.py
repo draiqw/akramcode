@@ -1,4 +1,4 @@
-"""Status command for hermes CLI."""
+"""Status command for akramcode CLI."""
 
 import json
 import os
@@ -12,7 +12,7 @@ PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
 from akramcode_cli.auth import AuthError, resolve_provider
 from akramcode_cli.colors import Colors, color
-from akramcode_cli.config import get_env_path, get_env_value, get_hermes_home, load_config
+from akramcode_cli.config import get_env_path, get_env_value, get_akramcode_home, load_config
 from akramcode_cli.config_defaults import DEFAULT_SANDBOX_IMAGE, DEFAULT_VERCEL_IMAGE
 from akramcode_cli.models import provider_label
 from akramcode_cli.runtime_provider import resolve_requested_provider
@@ -91,7 +91,7 @@ def _effective_provider_label() -> str:
 
 
 def _estop_status_line():
-    """One-line pause banner for `hermes status`, or None when not paused."""
+    """One-line pause banner for `akramcode status`, or None when not paused."""
     try:
         from agent.estop import get_state
     except ImportError:
@@ -100,7 +100,7 @@ def _estop_status_line():
     if state is None:
         return None
     reason = state.get("reason")
-    return f"⏸️  PAUSED (global emergency stop{f' — reason: {reason}' if reason else ''}; `hermes resume` to lift)"
+    return f"⏸️  PAUSED (global emergency stop{f' — reason: {reason}' if reason else ''}; `akramcode resume` to lift)"
 
 
 # --- Data tables driving the per-section renderers -------------------------
@@ -137,7 +137,7 @@ def _banner(lines, *styles) -> None:
 
 def _render_header(ctx):
     _banner(("┌─────────────────────────────────────────────────────────┐",
-             "│                 ☤ Hermes Agent Status                  │",
+             "│                 ☤ AkramCode Agent Status                  │",
              "└─────────────────────────────────────────────────────────┘"), Colors.CYAN)
     paused = _estop_status_line()
     if paused:
@@ -174,7 +174,7 @@ def _render_terminal(ctx):
         _kv("Image:", os.getenv('TERMINAL_VERCEL_RUNTIME') or terminal_cfg.get('vercel_runtime')
             or os.getenv('TERMINAL_VERCEL_IMAGE') or terminal_cfg.get('vercel_image') or DEFAULT_VERCEL_IMAGE)
         _kv_flag("SDK:", importlib.util.find_spec("vercel") is not None, "installed",
-                 "missing (run hermes setup terminal and select Vercel Sandbox, then restart Hermes)")
+                 "missing (run akramcode setup terminal and select Vercel Sandbox, then restart AkramCode)")
         _kv("Auth:", f"{check_mark(auth_status.ok)} {auth_status.label}")
         for line in auth_status.detail_lines:
             _kv("Auth detail:", line)
@@ -182,7 +182,7 @@ def _render_terminal(ctx):
         _kv("Processes:", "live processes do not survive cleanup, snapshots, or sandbox recreation")
     else:
         # Plugin-registered terminal backends: show availability via the provider's doctor rows
-        # (fail-soft — never break `hermes status`).
+        # (fail-soft — never break `akramcode status`).
         try:
             from akramcode_cli.plugins import discover_plugins
             discover_plugins()
@@ -227,7 +227,7 @@ def _render_gateway(ctx):
         # A satellite profile has no gateway.pid of its own; the default multiplexer is its live process.
         if not snapshot.running and named_profile_served_by_running_multiplexer():
             _kv_flag("Status:", True, "running (via the default-profile multiplexer)", "stopped")
-            _kv("Manage with:", "hermes gateway status   # from the default profile")
+            _kv("Manage with:", "akramcode gateway status   # from the default profile")
             return
         _kv_flag("Status:", snapshot.running, "running", "stopped")
         _kv("Manager:", snapshot.manager)
@@ -257,7 +257,7 @@ def _load_json(path: Path, encoding: str = "utf-8"):
 
 def _render_cron(ctx):
     _section("Scheduled Jobs")
-    jobs_file = get_hermes_home() / "cron" / "jobs.json"
+    jobs_file = get_akramcode_home() / "cron" / "jobs.json"
     if not jobs_file.exists():
         _kv("Jobs:", 0)
         return
@@ -290,7 +290,7 @@ def _render_sessions(ctx):
         if freshest > 0:
             from akramcode_cli.timefmt import relative_time
             print(f"  Last activity:{relative_time(freshest):>13}")
-    elif not (sessions_file := get_hermes_home() / "sessions" / "sessions.json").exists():
+    elif not (sessions_file := get_akramcode_home() / "sessions" / "sessions.json").exists():
         _kv("Active:", 0)
     else:
         try:
@@ -346,12 +346,12 @@ def _render_deep(ctx):
 
 
 def _render_footer(ctx):
-    _banner(("─" * 60, "  Run 'hermes doctor' for detailed diagnostics", "  Run 'hermes setup' to configure"),
+    _banner(("─" * 60, "  Run 'akramcode doctor' for detailed diagnostics", "  Run 'akramcode setup' to configure"),
             Colors.DIM)
     print()
 
 
-# Print order of `hermes status`; each renderer takes the shared _StatusContext.
+# Print order of `akramcode status`; each renderer takes the shared _StatusContext.
 _SECTIONS = (
     _render_header, _render_environment, _render_api_keys, _render_auth_providers, _render_nous_gateway,
     _render_apikey_providers, _render_terminal, _render_platforms, _render_gateway, _render_cron,
@@ -359,7 +359,7 @@ _SECTIONS = (
 
 
 def show_status(args):
-    """Show status of all Hermes Agent components."""
+    """Show status of all AkramCode Agent components."""
     # Shared by section renderers: config, --deep, and the Nous login facts Auth Providers derives
     # for the later Nous Tool Gateway section.
     ctx = SimpleNamespace(deep=getattr(args, 'deep', False), config={}, nous_logged_in=False,

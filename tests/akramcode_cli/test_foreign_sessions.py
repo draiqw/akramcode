@@ -1,7 +1,7 @@
 """Tests for akramcode_cli.foreign_sessions — Claude Code / Codex CLI import.
 
 Fixture JSONL is synthesized inline (tmp_path); the SessionDB is opened
-against a temp path so nothing touches the real HERMES_HOME store.
+against a temp path so nothing touches the real AKRAMCODE_HOME store.
 """
 
 import json

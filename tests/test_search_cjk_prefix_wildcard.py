@@ -8,7 +8,7 @@ Left in place, every CJK search typed into the desktop/web search box becomes
 a search for a term ending in a literal asterisk and returns nothing, while
 the identical query without the star returns rows.
 
-Runs against a real SessionDB in a temp HERMES_HOME, on the trigram and LIKE
+Runs against a real SessionDB in a temp AKRAMCODE_HOME, on the trigram and LIKE
 routes only — no ``cjk_unicode61`` tokenizer toolchain is required.
 """
 

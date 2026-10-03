@@ -8,7 +8,7 @@ def test_recovery_refuses_to_replace_newer_config(tmp_path, monkeypatch):
     import pm.paths as paths
     from pm.environments import install_state_dir
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     repo = tmp_path / "repo"
     repo.mkdir()
     monkeypatch.setattr(paths, "repo_root", lambda: repo)

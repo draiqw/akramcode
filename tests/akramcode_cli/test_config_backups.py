@@ -1,4 +1,4 @@
-"""config.yaml backups: one dir, deduped, bounded — never a pile of siblings in HERMES_HOME."""
+"""config.yaml backups: one dir, deduped, bounded — never a pile of siblings in AKRAMCODE_HOME."""
 from pathlib import Path
 
 from akramcode_cli.config_backups import backup_config, list_config_backups
@@ -12,7 +12,7 @@ def test_repeat_backups_dedupe_and_rotate(tmp_path: Path, monkeypatch):
 
     first = backup_config(cfg, "pre-setup", keep=2)
     assert first is not None and first.parent == tmp_path / "backups" / "config"
-    # Same bytes again → no new file (the hermes-setup-three-times case).
+    # Same bytes again → no new file (the akramcode-setup-three-times case).
     assert backup_config(cfg, "pre-setup", keep=2) is None
     for i in range(3):
         cfg.write_text(f"model: {i}\n")

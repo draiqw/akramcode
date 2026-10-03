@@ -10,7 +10,7 @@ import tempfile
 
 root = Path(sys.argv[1]).resolve()
 sys.path.insert(0, str(root))
-os.environ.pop('HERMES_DELEGATED_CHILD_CONTEXT', None)
+os.environ.pop('AKRAMCODE_DELEGATED_CHILD_CONTEXT', None)
 import pytest
 from akramcode_cli import kanban_db as kb
 from akramcode_cli.kanban_db_connect import connect
@@ -31,7 +31,7 @@ spec = importlib.util.spec_from_file_location('http_fixture', fixture_root / 'te
 fixture = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(fixture)
 patch = pytest.MonkeyPatch()
-with tempfile.TemporaryDirectory(prefix='hermes-pr-live-') as home:
+with tempfile.TemporaryDirectory(prefix='akramcode-pr-live-') as home:
     setup = fixture.github.__wrapped__(Path(home), patch)
     state = next(setup)
     reports = []

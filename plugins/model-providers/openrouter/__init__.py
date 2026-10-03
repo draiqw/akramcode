@@ -172,12 +172,12 @@ class OpenRouterProfile(ProviderProfile):
             # pointless and actively harmful: - any enabled form, on a tool-continuation turn whose prior
             # assistant tool_call carries no thinking block (chat_completions never replays signed thinking
             # blocks), ALSO makes OpenRouter emit ``thinking: {type: "disabled"}`` → the same 400 on every
-            # turn after the first tool call. See hermes-agent#42991 (disable case) and the tool-replay
+            # turn after the first tool call. See akramcode-agent#42991 (disable case) and the tool-replay
             # follow-up. ``reasoning.effort`` being ignored does NOT mean these models have no effort lever
             # — OpenRouter honors the requested effort on the top-level ``verbosity`` field instead (it maps
             # to Anthropic's ``output_config.effort``; ``reasoning.effort`` is accepted but ignored —
             # confirmed by OpenRouter's Claude migration docs and a live token-spend probe in
-            # hermes-agent#43432). Route the existing ``reasoning_config["effort"]`` (sourced from
+            # akramcode-agent#43432). Route the existing ``reasoning_config["effort"]`` (sourced from
             # ``agent.reasoning_effort``) onto ``verbosity`` so the knob the user already sets keeps working
             # for these models.
             if _anthropic_reasoning_is_mandatory(model):

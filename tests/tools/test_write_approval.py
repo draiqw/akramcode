@@ -15,11 +15,11 @@ import shutil
 import pytest
 
 @pytest.fixture
-def hermes_home(monkeypatch):
-    d = tempfile.mkdtemp(prefix="hermes_wa_test_")
-    home = os.path.join(d, ".hermes")
+def akramcode_home(monkeypatch):
+    d = tempfile.mkdtemp(prefix="akramcode_wa_test_")
+    home = os.path.join(d, ".akramcode")
     os.makedirs(home)
-    monkeypatch.setenv("HERMES_HOME", home)
+    monkeypatch.setenv("AKRAMCODE_HOME", home)
     yield home
     shutil.rmtree(d, ignore_errors=True)
 
@@ -33,7 +33,7 @@ def _set_approval(subsystem, enabled):
 # Config resolution
 # ---------------------------------------------------------------------------
 
-def test_list_pending_skips_non_dict_record(hermes_home):
+def test_list_pending_skips_non_dict_record(akramcode_home):
     """A parseable-but-non-object pending file must be skipped, not crash the sort."""
     from tools import write_approval as wa
     wa.stage_write("memory", {"action": "add", "target": "user", "content": "ok"},
@@ -62,7 +62,7 @@ def test_normalize_enabled_coerces_values():
 # Memory gate
 # ---------------------------------------------------------------------------
 
-def test_memory_gate_off_allows_write(hermes_home):
+def test_memory_gate_off_allows_write(akramcode_home):
     # Default (gate off) → write straight through, no staging.
     from tools.memory_tool import memory_tool, MemoryStore
     from tools import write_approval as wa
@@ -72,7 +72,7 @@ def test_memory_gate_off_allows_write(hermes_home):
     assert r["entry_count"] == 1
     assert wa.pending_count("memory") == 0
 
-def test_cli_memory_approve_without_live_agent_uses_fresh_store(hermes_home, capsys):
+def test_cli_memory_approve_without_live_agent_uses_fresh_store(akramcode_home, capsys):
     """#46783: ``/memory approve`` from a context with no live agent (e.g. the
     Desktop GUI) passed ``memory_store=None`` into the shared handler, which
     returned "memory store unavailable" and applied nothing. The CLI handler must
@@ -101,7 +101,7 @@ def test_cli_memory_approve_without_live_agent_uses_fresh_store(hermes_home, cap
     reloaded = MemoryStore(); reloaded.load_from_disk()
     assert any("remember the launch date" in e for e in reloaded.memory_entries)
 
-def test_load_on_disk_store_honors_configured_limits_and_permissions(hermes_home, monkeypatch):
+def test_load_on_disk_store_honors_configured_limits_and_permissions(akramcode_home, monkeypatch):
     """Fresh approval stores must match the live agent's limits and target gates."""
     from tools.memory_tool import MemoryStore, load_on_disk_store
 
@@ -139,7 +139,7 @@ def test_load_on_disk_store_honors_configured_limits_and_permissions(hermes_home
 # Shared command handler
 # ---------------------------------------------------------------------------
 
-def test_handle_approve_all(hermes_home):
+def test_handle_approve_all(akramcode_home):
     from akramcode_cli.write_approval_commands import handle_pending_subcommand
     from tools.memory_tool import MemoryStore
     from tools import write_approval as wa
@@ -153,7 +153,7 @@ def test_handle_approve_all(hermes_home):
     assert wa.pending_count("memory") == 0
     assert len(store.user_entries) == 2
 
-def test_handle_approve_surfaces_overwritten_entry(hermes_home):
+def test_handle_approve_surfaces_overwritten_entry(akramcode_home):
     """#117952: on the /memory approve surface a partial-entry replace must show the
     approver the FULL entry it overwrote — the store's replaced_entries field used to be
     dropped by _apply_one, so the incident path stayed silent."""
@@ -197,7 +197,7 @@ def _review_stages_remove(shape):
 
 
 @pytest.mark.parametrize("shape", ["single", "batch"])
-def test_approve_refuses_staged_remove_whose_entry_changed(hermes_home, shape):
+def test_approve_refuses_staged_remove_whose_entry_changed(akramcode_home, shape):
     """Approval re-ran the staged old_text search against the file as it is THEN, so it
     deleted the newer entry the live agent had written in place, which the approver never saw."""
     from akramcode_cli.write_approval_commands import handle_pending_subcommand
@@ -217,7 +217,7 @@ def test_approve_refuses_staged_remove_whose_entry_changed(hermes_home, shape):
 
 
 @pytest.mark.parametrize("shape", ["single", "batch"])
-def test_approve_names_the_entry_a_remove_deleted(hermes_home, shape):
+def test_approve_names_the_entry_a_remove_deleted(akramcode_home, shape):
     """Approve listed what a replace overwrote but was silent about what a remove deleted."""
     from akramcode_cli.write_approval_commands import handle_pending_subcommand
     from tools.memory_tool import load_on_disk_store
@@ -228,7 +228,7 @@ def test_approve_names_the_entry_a_remove_deleted(hermes_home, shape):
     assert _REVIEWED in out
 
 
-def test_approve_refuses_unpinned_legacy_remove(hermes_home):
+def test_approve_refuses_unpinned_legacy_remove(akramcode_home):
     """A record staged before removes were pinned to their full entry has no verifiable target,
     so approve refuses it (keeping the record) instead of replaying its old_text search."""
     from akramcode_cli.write_approval_commands import handle_pending_subcommand
@@ -247,7 +247,7 @@ def test_approve_refuses_unpinned_legacy_remove(hermes_home):
     assert _REVIEWED in load_on_disk_store().memory_entries
     assert wa.get_pending(wa.MEMORY, pid) is not None
 
-def test_handle_approval_on(hermes_home):
+def test_handle_approval_on(akramcode_home):
     from akramcode_cli.write_approval_commands import handle_pending_subcommand
     from tools import write_approval as wa
     captured = {}
@@ -258,7 +258,7 @@ def test_handle_approval_on(hermes_home):
     assert captured["enabled"] is True
     assert "on" in out
 
-def test_handle_approval_off(hermes_home):
+def test_handle_approval_off(akramcode_home):
     from akramcode_cli.write_approval_commands import handle_pending_subcommand
     from tools import write_approval as wa
     captured = {}
@@ -281,7 +281,7 @@ def approval_callback_cleanup():
     from tools.terminal_tool import set_approval_callback
     set_approval_callback(None)
 
-def test_memory_inline_approve_writes(hermes_home, approval_callback_cleanup):
+def test_memory_inline_approve_writes(akramcode_home, approval_callback_cleanup):
     from tools.memory_tool import memory_tool, MemoryStore
     from tools.terminal_tool import set_approval_callback
     from tools import write_approval as wa
@@ -303,7 +303,7 @@ def test_memory_inline_approve_writes(hermes_home, approval_callback_cleanup):
     assert len(calls) == 1
     assert "approved fact" in calls[0][0]
 
-def test_memory_inline_deny_blocks(hermes_home, approval_callback_cleanup):
+def test_memory_inline_deny_blocks(akramcode_home, approval_callback_cleanup):
     from tools.memory_tool import memory_tool, MemoryStore
     from tools.terminal_tool import set_approval_callback
     from tools import write_approval as wa
@@ -317,7 +317,7 @@ def test_memory_inline_deny_blocks(hermes_home, approval_callback_cleanup):
     assert store.memory_entries == []
     assert wa.pending_count("memory") == 0  # denied, not staged
 
-def test_memory_invalid_params_rejected_before_staging(hermes_home):
+def test_memory_invalid_params_rejected_before_staging(akramcode_home):
     # Param validation must run BEFORE the gate so a broken write is rejected
     # immediately instead of staged and failing at approve time.
     from tools.memory_tool import memory_tool, MemoryStore
@@ -341,7 +341,7 @@ def _stage_one_memory_write():
     return r
 
 
-def test_staged_hint_names_the_review_command_on_slash_surfaces(hermes_home):
+def test_staged_hint_names_the_review_command_on_slash_surfaces(akramcode_home):
     from tools import write_approval as wa
     _set_approval("memory", True)
     r = _stage_one_memory_write()
@@ -350,31 +350,31 @@ def test_staged_hint_names_the_review_command_on_slash_surfaces(hermes_home):
     assert wa.pending_count("memory") == 1
 
 
-def test_staged_hint_names_the_pending_dir_on_headless_surfaces(hermes_home, monkeypatch):
+def test_staged_hint_names_the_pending_dir_on_headless_surfaces(akramcode_home, monkeypatch):
     from tools import write_approval as wa
     _set_approval("memory", True)
-    monkeypatch.setenv("HERMES_CRON_SESSION", "1")
+    monkeypatch.setenv("AKRAMCODE_CRON_SESSION", "1")
     r = _stage_one_memory_write()
     assert "review with /memory pending" not in r["message"], r["message"]
     assert "pending records live in" in r["message"]
     assert str(wa._pending_path(wa.MEMORY, "").parent) in r["message"]
-    monkeypatch.delenv("HERMES_CRON_SESSION")
+    monkeypatch.delenv("AKRAMCODE_CRON_SESSION")
 
-    monkeypatch.setenv("HERMES_KANBAN_TASK", "task-7")
+    monkeypatch.setenv("AKRAMCODE_KANBAN_TASK", "task-7")
     r = _stage_one_memory_write()
     assert "review with /memory pending" not in r["message"], r["message"]
-    monkeypatch.delenv("HERMES_KANBAN_TASK")
+    monkeypatch.delenv("AKRAMCODE_KANBAN_TASK")
 
-    monkeypatch.setenv("HERMES_SESSION_PLATFORM", "api_server")
+    monkeypatch.setenv("AKRAMCODE_SESSION_PLATFORM", "api_server")
     r = _stage_one_memory_write()
     assert "review with /memory pending" not in r["message"], r["message"]
     assert "pending records live in" in r["message"]
-    monkeypatch.delenv("HERMES_SESSION_PLATFORM")
+    monkeypatch.delenv("AKRAMCODE_SESSION_PLATFORM")
     assert wa.pending_count("memory") == 3
 
 
-def test_staged_hint_keeps_command_for_chat_gateway_platform(hermes_home, monkeypatch):
+def test_staged_hint_keeps_command_for_chat_gateway_platform(akramcode_home, monkeypatch):
     _set_approval("memory", True)
-    monkeypatch.setenv("HERMES_SESSION_PLATFORM", "telegram")
+    monkeypatch.setenv("AKRAMCODE_SESSION_PLATFORM", "telegram")
     r = _stage_one_memory_write()
     assert "/memory pending" in r["message"], r["message"]

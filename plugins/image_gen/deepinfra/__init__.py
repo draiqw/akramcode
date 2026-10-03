@@ -99,8 +99,8 @@ class DeepInfraImageGenProvider(StaticImageGenProvider):
         api_key = (get_secret("DEEPINFRA_API_KEY", "") or "").strip()
         if not api_key:
             return fail(
-                "DEEPINFRA_API_KEY not set. Run `hermes tools` → Image "
-                "Generation → DeepInfra to configure, or `hermes setup` "
+                "DEEPINFRA_API_KEY not set. Run `akramcode tools` → Image "
+                "Generation → DeepInfra to configure, or `akramcode setup` "
                 "to add the key.",
                 "auth_required")
         di_cfg = load_image_gen_config("deepinfra")

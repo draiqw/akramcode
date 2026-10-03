@@ -171,10 +171,10 @@ def _resolve_budget_fallback(
     # A kanban worker must record a terminal outcome whether or not a fallback path
     # was eligible, so the dispatcher learns the worker could not complete. Only the
     # dispatcher-owned worker owns the task: an in-process delegate_task child or cron run
-    # inherits ``HERMES_KANBAN_TASK`` via os.environ but exhausting ITS budget must not
+    # inherits ``AKRAMCODE_KANBAN_TASK`` via os.environ but exhausting ITS budget must not
     # close the parent's run and release its claim (#112817).
     _kanban_task = (
-        os.environ.get("HERMES_KANBAN_TASK")
+        os.environ.get("AKRAMCODE_KANBAN_TASK")
         if budget_exhausted and is_dispatcher_owned_worker_context() else None
     )
     # If running as a kanban worker, signal the dispatcher that the worker could not complete (rather than
@@ -682,7 +682,7 @@ def finalize_turn(
         "pre_transform_response": _pre_transform_response,
         "response_previewed": getattr(agent, "_response_was_previewed", False),
         "model": agent.model,
-        # requested_model / served_model: proxy-reported deployment or Hermes' own fallback route.
+        # requested_model / served_model: proxy-reported deployment or AkramCode' own fallback route.
         **result_model_fields(agent),
         "provider": agent.provider,
         "base_url": agent.base_url,
@@ -694,7 +694,7 @@ def finalize_turn(
             else getattr(agent.context_compressor, "last_prompt_tokens", 0)
         ) or 0,
         **{key: getattr(agent, f"session_{key}") for key in _SESSION_COST_KEYS},
-        # Requested service tier, for billing audits (`hermes -z --usage-file`).
+        # Requested service tier, for billing audits (`akramcode -z --usage-file`).
         "service_tier": (
             (getattr(agent, "request_overrides", {}) or {}).get("extra_body") or {}
         ).get("service_tier"),
@@ -712,7 +712,7 @@ def finalize_turn(
         # below must still see an empty response on a persistence-failed turn.
         result["error"] = final_response or (
             "session storage could not be written — check the state database "
-            f"health (`hermes {profile_cli_selector()}doctor`), then send your message again"
+            f"health (`akramcode {profile_cli_selector()}doctor`), then send your message again"
         )
         _cause = getattr(agent, "_last_persistence_error_cause", None)
         result["failure_reason"] = "session_persistence_failed:" + (_cause or "unknown")

@@ -12,10 +12,10 @@ from akramcode_cli.cli_agent_setup_mixin import CLIAgentSetupMixin
 @pytest.mark.parametrize("worker", [False, True])
 @pytest.mark.parametrize("kind,worker_exit", [("revoked", 78), ("quota", 75), ("unknown", 1)])
 def test_credential_resolution_exit(monkeypatch, quiet, worker, kind, worker_exit):
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
-    monkeypatch.delenv("HERMES_KANBAN_GOAL_MODE", raising=False)
+    monkeypatch.delenv("AKRAMCODE_KANBAN_TASK", raising=False)
+    monkeypatch.delenv("AKRAMCODE_KANBAN_GOAL_MODE", raising=False)
     if worker:
-        monkeypatch.setenv("HERMES_KANBAN_TASK", "t_fixture")
+        monkeypatch.setenv("AKRAMCODE_KANBAN_TASK", "t_fixture")
     errors = {
         "revoked": AuthError("fixture revoked", provider="openai-codex", code="invalid_grant", relogin_required=True),
         "quota": AuthError("fixture quota", provider="openai-codex", code=CODEX_RATE_LIMITED_CODE),
@@ -54,6 +54,6 @@ def test_credential_resolution_exit(monkeypatch, quiet, worker, kind, worker_exi
     ({"failed": True, "failure_reason": "unknown"}, 1),
 ])
 def test_turn_result_takes_precedence_over_startup_flags(monkeypatch, result, expected):
-    monkeypatch.setenv("HERMES_KANBAN_TASK", "t_fixture")
+    monkeypatch.setenv("AKRAMCODE_KANBAN_TASK", "t_fixture")
     assert cli._single_query_exit_code(
         result, credentials_terminal=True, credentials_rate_limited=True) == expected

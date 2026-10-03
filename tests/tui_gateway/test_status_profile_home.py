@@ -25,7 +25,7 @@ def test_session_status_path_uses_owning_profile_home(monkeypatch, tmp_path):
     profile_home = tmp_path / "profiles" / "ember"
     launch_home.mkdir(parents=True)
     profile_home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(launch_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(launch_home))
 
     class LaunchDB:
         def get_session(self, _key):
@@ -58,7 +58,7 @@ def test_session_status_path_uses_owning_profile_home(monkeypatch, tmp_path):
 def test_session_status_path_without_profile_home_keeps_launch_home(monkeypatch, tmp_path):
     launch_home = tmp_path / "launch"
     launch_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(launch_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(launch_home))
 
     class LaunchDB:
         def get_session(self, key):

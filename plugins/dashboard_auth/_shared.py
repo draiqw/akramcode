@@ -104,7 +104,7 @@ def validate_redirect_uri(redirect_uri: str) -> None:
 def pkce_login_start(authorize_url: str, *, client_id: str, scope: str, redirect_uri: str) -> LoginStart:
     """Build the authorization-code + PKCE (S256) redirect and cookie payload. Callers
     validate ``redirect_uri`` first. The auth-route layer expects
-    ``cookie_payload["hermes_session_pkce"]`` as a flat ``state=…;verifier=…`` string
+    ``cookie_payload["akramcode_session_pkce"]`` as a flat ``state=…;verifier=…`` string
     (it prepends ``provider=``)."""
     code_verifier = b64url_no_pad(secrets.token_bytes(64))  # ~86 chars
     state = b64url_no_pad(secrets.token_bytes(32))
@@ -114,7 +114,7 @@ def pkce_login_start(authorize_url: str, *, client_id: str, scope: str, redirect
         "code_challenge_method": "S256"}
     return LoginStart(
         redirect_url=f"{authorize_url}?{urllib.parse.urlencode(params)}",
-        cookie_payload={"hermes_session_pkce": f"state={state};verifier={code_verifier}"})
+        cookie_payload={"akramcode_session_pkce": f"state={state};verifier={code_verifier}"})
 
 
 def parse_json_body(response: httpx.Response) -> Dict[str, Any]:
@@ -186,7 +186,7 @@ def make_jwks_client(jwks_url: str) -> Any:
 
     return PyJWKClient(
         jwks_url, cache_keys=True, lifespan=JWKS_CACHE_SECONDS,
-        headers={"Accept": "application/json", "User-Agent": "HermesAgent/1.0"})
+        headers={"Accept": "application/json", "User-Agent": "AkramCodeAgent/1.0"})
 
 
 def verify_jwt(

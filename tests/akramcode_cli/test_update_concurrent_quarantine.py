@@ -31,9 +31,9 @@ def test_restore_windows_gateway_service_waits_out_stop_pending(monkeypatch):
         lambda name: restarted.append(name),
     )
 
-    update_cmd._restore_windows_gateway_service("HermesGateway")
+    update_cmd._restore_windows_gateway_service("AkramCodeGateway")
 
-    assert restarted == ["HermesGateway"]
+    assert restarted == ["AkramCodeGateway"]
 
 
 def test_stop_windows_gateway_service_waits_for_original_descendants(
@@ -55,7 +55,7 @@ def test_stop_windows_gateway_service_waits_for_original_descendants(
     )
     with pytest.raises(RuntimeError, match="process tree"):
         update_cmd._stop_windows_gateway_service(
-            "HermesGateway",
+            "AkramCodeGateway",
             expected_processes=((123, 12.5),),
             timeout=0,
         )
@@ -105,9 +105,9 @@ def test_pause_stops_launcher_after_worker_drain(
     import akramcode_cli.gateway as gateway_mod
     import gateway.status as status_mod
 
-    # The install venv is whatever hermes_constants.project_venv_dir resolves for the checkout (a
+    # The install venv is whatever akramcode_constants.project_venv_dir resolves for the checkout (a
     # CI checkout has no venv/ and the test interpreter lives elsewhere); pin it to the fixture layout.
-    monkeypatch.setattr("hermes_constants.project_venv_dir", lambda root: cli_main.PROJECT_ROOT / "venv")
+    monkeypatch.setattr("akramcode_constants.project_venv_dir", lambda root: cli_main.PROJECT_ROOT / "venv")
     venv_exe = str(cli_main.PROJECT_ROOT / "venv" / "Scripts" / "python.exe")
     worker_exe = r"C:\Users\x\AppData\Roaming\uv\python\cpython-3.11\python.exe"
 
@@ -176,7 +176,7 @@ def test_stop_service_refuses_pid_reuse_before_sc_stop(monkeypatch):
 
     with pytest.raises(RuntimeError, match="identity changed"):
         update_cmd._stop_windows_gateway_service(
-            "HermesGateway", expected_service_identity=(11, 11.0)
+            "AkramCodeGateway", expected_service_identity=(11, 11.0)
         )
 
     assert calls == []

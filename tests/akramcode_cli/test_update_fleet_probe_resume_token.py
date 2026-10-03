@@ -14,7 +14,7 @@ so ``collect_fleet_versions()`` can legitimately return zero rows for a
 perfectly healthy Windows update. With the token counted as an expected
 runtime, ``_fleet_rows_expected`` is True, the verification loop silently
 waits out its polling window (~14 min wall clock on an end-user report with
-the retry loop), prints "Fleet version check returned no rows", and ``hermes
+the retry loop), prints "Fleet version check returned no rows", and ``akramcode
 update`` exits 1 — for an update that succeeded.
 
 The invariant this file pins: ``_fleet_probe_expected_runtimes`` may only
@@ -88,14 +88,14 @@ class TestRowCapableSignalsStillCount:
     (None, [], {'profiles': {'default': 4321}}, [], set(), False),
     (None, [], {'unmapped': [{'pid': 99}]}, [], set(), False),
     ([], [], {'profiles': {'work': 777}}, [], set(), False),
-    (None, [], {'services': ['HermesGateway']}, [], set(), False),
+    (None, [], {'services': ['AkramCodeGateway']}, [], set(), False),
     (None, [], {}, [], set(), False), (None, [], None, [], set(), False),
     ([], [], None, [], set(), False), (None, None, None, [], set(), True),
     (None, [4321], {'profiles': {'default': 4321}}, [], set(), True),
     (['gateway'], [], {'unmapped': [{'pid': 99}]}, [], set(), True),
     (['serve', 'dashboard'], [], None, [], set(), False),
     (['serve', 'gateway'], [], None, [], set(), True),
-    (None, [], None, ['hermes-gateway'], set(), True),
+    (None, [], None, ['akramcode-gateway'], set(), True),
     (None, [], None, [], {4321}, True),
 ])
 def test_expected_rows(plan, pids, token, services, killed, expected):

@@ -34,7 +34,7 @@ def test_rate_and_eta_report_only_an_honest_number():
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
     from akramcode_cli.web_routers import local_models as lm
 
     monkeypatch.setattr(lm, "_JOBS", {})

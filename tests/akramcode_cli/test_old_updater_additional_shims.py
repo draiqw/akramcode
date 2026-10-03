@@ -16,7 +16,7 @@ from tests.compat.old_updater_support import (
 
 
 @pytest.mark.parametrize("command,profile", [
-    ("", None), ("hermes -p ops gateway run", "ops"), ("hermes --profile=ops gateway run", "ops"),
+    ("", None), ("akramcode -p ops gateway run", "ops"), ("akramcode --profile=ops gateway run", "ops"),
 ])
 def test_live_profile_parser_does_no_external_work(command, profile, no_external_work):
     from gateway.status import profile_flag_value
@@ -38,19 +38,19 @@ def test_retired_code_identity_is_unknown(refresh, no_external_work, monkeypatch
 
 
 def test_retired_constants_reload_handoffs_old_gateway_recovery(fresh_child, monkeypatch):
-    import hermes_constants
+    import akramcode_constants
 
     # Shipped get_python_path uses this fallback when its constants module is stale.
-    monkeypatch.delattr(hermes_constants, "venv_python_path")
-    before = dict(vars(hermes_constants))
+    monkeypatch.delattr(akramcode_constants, "venv_python_path")
+    before = dict(vars(akramcode_constants))
     with fresh_child.exits():
         try:
-            from hermes_constants import venv_python_path
+            from akramcode_constants import venv_python_path
         except ImportError:
-            from akramcode_cli.managed_uv import _reload_hermes_constants
-            venv_python_path = _reload_hermes_constants().venv_python_path
+            from akramcode_cli.managed_uv import _reload_akramcode_constants
+            venv_python_path = _reload_akramcode_constants().venv_python_path
         pytest.fail(f"old recovery continued with {venv_python_path}")
-    assert vars(hermes_constants) == before
+    assert vars(akramcode_constants) == before
 
 
 @pytest.mark.parametrize("prompt", [True, False])
@@ -100,7 +100,7 @@ def test_historical_payload_survives_bridge_and_cleanup_requires_ack(handled, fr
     receipt = SimpleNamespace(data={"update_id": "original-id", "steps": [{"name": "pull", "ok": True}]})
     slot = ContextVar("test_historical_receipt", default=receipt)
     monkeypatch.setattr(update_receipt, "_current", slot)
-    argv = ["hermes", "--profile", "ops team", "update", "--gateway", "--yes"]
+    argv = ["akramcode", "--profile", "ops team", "update", "--gateway", "--yes"]
     monkeypatch.setattr(sys, "argv", argv)
     expected = deepcopy({
         "desktop": had_desktop_app_before_update,

@@ -14,7 +14,7 @@ from urllib.parse import urlsplit
 from agent.skill_utils import yaml_load
 from akramcode_platform.declaration import Declaration, parse_declaration
 
-_HERMES_EXTENSION = "com.nousresearch.hermes"
+_AKRAMCODE_EXTENSION = "com.nousresearch.akramcode"
 _LIVENESS: Dict[str, dict] = {}
 
 
@@ -92,10 +92,10 @@ class AgentPluginPackage:
 def _server_declarations(
     manifest: Mapping[str, Any], mcp_servers: Mapping[str, Dict[str, Any]]
 ) -> Dict[str, AgentPluginServerDeclaration]:
-    namespace = manifest.get("extensions", {}).get(_HERMES_EXTENSION, {})
+    namespace = manifest.get("extensions", {}).get(_AKRAMCODE_EXTENSION, {})
     raw_servers = namespace.get("servers", {})
     if not isinstance(raw_servers, dict):
-        raise AgentPluginError(f"extension '{_HERMES_EXTENSION}'.servers must be an object")
+        raise AgentPluginError(f"extension '{_AKRAMCODE_EXTENSION}'.servers must be an object")
     declarations: Dict[str, AgentPluginServerDeclaration] = {}
     for name, raw in raw_servers.items():
         if name not in mcp_servers:

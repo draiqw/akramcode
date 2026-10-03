@@ -47,7 +47,7 @@ def _flush_agent(db, session_id):
 def test_flush_diverts_batch_to_jsonl_when_handle_is_quarantined(
     tmp_path: Path, monkeypatch
 ) -> None:
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     db = SessionDB(db_path=tmp_path / "state.db")
     try:
         db.create_session("live", source="cli")

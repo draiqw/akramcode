@@ -6,7 +6,7 @@ author: Nous Research
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
+  akramcode:
     tags: [pdf, documents, forms, ocr, text-extraction, reportlab, pypdf, pdfplumber, pymupdf, marker]
     category: productivity
     related_skills: [docx, xlsx, powerpoint]

@@ -1,4 +1,4 @@
-"""Cross-process mutual exclusion for in-flight Hermes updates.
+"""Cross-process mutual exclusion for in-flight AkramCode updates.
 
 The marker file the Tauri updater writes (``UpdateMarkerGuard`` in
 ``apps/bootstrap-installer/src-tauri/src/update.rs``) and the Electron desktop reads
@@ -24,13 +24,13 @@ logger = logging.getLogger(__name__)
 # A full update (git pull + uv sync + desktop rebuild) is minutes.
 UPDATE_MARKER_MAX_AGE_SECONDS = 20 * 60
 
-MARKER_NAME = ".hermes-update-in-progress"
+MARKER_NAME = ".akramcode-update-in-progress"
 
-# Set by an orchestrating updater (Tauri `hermes-setup --update`) to its own pid before
-# spawning `hermes update` as a child stage; the parent holds the marker for its whole run,
+# Set by an orchestrating updater (Tauri `akramcode-setup --update`) to its own pid before
+# spawning `akramcode update` as a child stage; the parent holds the marker for its whole run,
 # so without this the child would refuse its own parent's lock. Keep in sync with
 # update_child_env in apps/bootstrap-installer/src-tauri/src/update.rs.
-HANDOFF_PID_ENV = "HERMES_UPDATE_HANDOFF_PID"
+HANDOFF_PID_ENV = "AKRAMCODE_UPDATE_HANDOFF_PID"
 
 # Bound on the parent chain walked by _is_ancestor_pid. Real ancestries are a
 # handful of links (init -> desktop -> staged updater -> shim -> us); the cap
@@ -39,19 +39,19 @@ _MAX_ANCESTRY_DEPTH = 128
 
 # Exit code meaning "another updater/instance owns this install right now" — the same
 # contract as the Windows shim / venv-holder guards in _cmd_update_impl, matched by the
-# Tauri updater (UPDATE_EXIT_CONCURRENT in update.rs) to show "Hermes is still running".
+# Tauri updater (UPDATE_EXIT_CONCURRENT in update.rs) to show "AkramCode is still running".
 UPDATE_EXIT_CONCURRENT = 2
 
 
 def update_marker_path() -> Path:
     """Path of the shared update marker.
 
-    Uses the *process* Hermes home (never the context-local profile override): the Rust
-    updater resolves ``$HERMES_HOME`` or the platform default and the desktop pins that same
+    Uses the *process* AkramCode home (never the context-local profile override): the Rust
+    updater resolves ``$AKRAMCODE_HOME`` or the platform default and the desktop pins that same
     value into the updater's env, so a profile-scoped path would be one the other owners never look at.
     """
-    from akramcode_constants import get_process_hermes_home
-    return get_process_hermes_home() / MARKER_NAME
+    from akramcode_constants import get_process_akramcode_home
+    return get_process_akramcode_home() / MARKER_NAME
 
 
 def _pid_alive(pid: int) -> bool:
@@ -180,10 +180,10 @@ def _stdlib_parent_pid(pid: int) -> int | None:
 def _is_ancestor_pid(pid: int) -> bool:
     """True when ``pid`` is a live ancestor of this process.
 
-    The orchestrating updater spawns ``hermes update`` as a (grand)child, so a live marker
+    The orchestrating updater spawns ``akramcode update`` as a (grand)child, so a live marker
     owned by one of our ancestors can only be the claim we are already running under — an
     unrelated concurrent updater is never in our parent chain. This heals the fleet of staged
-    ``hermes-setup`` binaries that predate the HANDOFF_PID_ENV export and can never send it.
+    ``akramcode-setup`` binaries that predate the HANDOFF_PID_ENV export and can never send it.
 
     The chain is walked one link at a time and each ancestor is tested as it is
     discovered. ``psutil.Process.parents()`` cannot be used here: it builds the
@@ -288,11 +288,11 @@ def describe_holder(holder: UpdateHolder | None) -> str:
     elapsed = f"{minutes}m {seconds}s" if minutes else f"{seconds}s"
     who = f", process {holder.pid}" if holder else ""
     return (
-        f"✗ Another Hermes update is already running (started {elapsed} ago{who}).\n"
+        f"✗ Another AkramCode update is already running (started {elapsed} ago{who}).\n"
         "\n"
         "  Running two at once would corrupt the install. Wait for it to finish\n"
-        "  (watch `hermes logs`), or close the Desktop/dashboard window that\n"
-        "  started it, then run `hermes update` again."
+        "  (watch `akramcode logs`), or close the Desktop/dashboard window that\n"
+        "  started it, then run `akramcode update` again."
     )
 
 
@@ -320,7 +320,7 @@ class UpdateLock:
         existing = read_live_update(path=self.path)
         # A live claim naming our own pid is a killed update's marker whose pid this retry
         # inherited (containers restart pid numbering): no other live process has our pid, and
-        # nothing pre-writes a marker for `hermes update` (it always runs under a parent's claim).
+        # nothing pre-writes a marker for `akramcode update` (it always runs under a parent's claim).
         # It is a new attempt, so it is claimed fresh like a dead holder's. Keeping the old
         # started_at would let the ceiling expire mid-run and admit a second updater.
         if existing is not None and existing.pid != os.getpid():

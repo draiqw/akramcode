@@ -15,7 +15,7 @@ GIT_SHA = re.compile(r"[a-f0-9]{40}")
 from akramcode_cli.update_channel import STABLE_TAG_RE
 from scripts.releases.versioning import parse_attempt_ref
 ARCHES = ("amd64", "arm64")
-IMAGE = "nousresearch/hermes-agent"
+IMAGE = "nousresearch/akramcode-agent"
 
 class DockerReleaseError(ValueError):
     """Raised when a phase/manifest violates the staged-release contract."""

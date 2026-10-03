@@ -346,7 +346,7 @@ def test_xai_stream_preserves_profile_and_delivers_before_completion(monkeypatch
     from urllib.parse import parse_qs, urlsplit
 
     from agent.secret_scope import build_profile_secret_scope, reset_secret_scope, set_secret_scope
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from akramcode_constants import reset_akramcode_home_override, set_akramcode_home_override
 
     home = tmp_path / profile
     home.mkdir()
@@ -368,7 +368,7 @@ def test_xai_stream_preserves_profile_and_delivers_before_completion(monkeypatch
         ws.send(json.dumps({"type": "audio.done"}))
 
     url, server = _fake_xai_server(handler)
-    home_token = set_hermes_home_override(home)
+    home_token = set_akramcode_home_override(home)
     secret_token = set_secret_scope(build_profile_secret_scope(home))
     try:
         section = {"streaming_url": url, "voice_id": "test-voice", "language": "test-language"}
@@ -389,7 +389,7 @@ def test_xai_stream_preserves_profile_and_delivers_before_completion(monkeypatch
     finally:
         first_delivered.set()
         reset_secret_scope(secret_token)
-        reset_hermes_home_override(home_token)
+        reset_akramcode_home_override(home_token)
         server.shutdown()
 
 

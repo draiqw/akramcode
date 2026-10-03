@@ -43,7 +43,7 @@ def test_corrupt_state_db_diverts_pending_without_fts_rebuild(tmp_path, monkeypa
     import akramcode_state
 
     live = tmp_path / "state.db"
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     monkeypatch.setattr(akramcode_state, "DEFAULT_DB_PATH", live)
 
     store = SessionStore(sessions_dir=tmp_path, config=GatewayConfig())

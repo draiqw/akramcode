@@ -19,7 +19,7 @@ import types
 from typing import Any, Dict, List
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 
 @pytest.fixture(autouse=True)
@@ -32,8 +32,8 @@ def _reset_registry():
 
 @pytest.fixture
 def matrix_env(tmp_path, monkeypatch):
-    """Set up HERMES_HOME, stub fal_client + httpx, force plugin discovery."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    """Set up AKRAMCODE_HOME, stub fal_client + httpx, force plugin discovery."""
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     monkeypatch.setenv("FAL_KEY", "test-key")
     monkeypatch.setenv("XAI_API_KEY", "test-key")
 

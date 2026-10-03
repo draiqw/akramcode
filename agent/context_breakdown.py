@@ -212,7 +212,7 @@ def compute_session_context_breakdown(agent: Any, messages: Optional[List[dict]]
 def compute_context_details(agent: Any) -> Dict[str, Any]:
     """Expanded per-skill / per-toolset cost listing for ``/context all``.
 
-    Reuses the ``hermes prompt-size`` attribution (index-line bytes from the
+    Reuses the ``akramcode prompt-size`` attribution (index-line bytes from the
     live skills block; schema bytes via the registry's tool→toolset map).
     """
     from akramcode_cli.prompt_size import _compute_skills_breakdown, _compute_toolsets_breakdown

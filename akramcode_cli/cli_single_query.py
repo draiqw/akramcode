@@ -22,7 +22,7 @@ from typing import Any
 logger = logging.getLogger("cli")
 
 if TYPE_CHECKING:
-    from cli import HermesCLI
+    from cli import AkramCodeCLI
 
 
 def _int_or(value, default: int) -> int:
@@ -34,7 +34,7 @@ def _int_or(value, default: int) -> int:
 
 
 def _interrupt_agent_for_signal(agent, signum) -> None:
-    """Hard-interrupt ``agent`` for a shutdown signal, then sleep ``HERMES_SIGTERM_GRACE`` (1.5 s).
+    """Hard-interrupt ``agent`` for a shutdown signal, then sleep ``AKRAMCODE_SIGTERM_GRACE`` (1.5 s).
 
     The grace lets the agent thread kill the tool's setsid subprocess group before the
     main thread unwinds (else an orphan child). Never raises.
@@ -43,14 +43,14 @@ def _interrupt_agent_for_signal(agent, signum) -> None:
     try:
         if agent is not None:
             request_hard_interrupt(agent, f"received signal {signum}")
-            _grace = _float_env("HERMES_SIGTERM_GRACE", 1.5)
+            _grace = _float_env("AKRAMCODE_SIGTERM_GRACE", 1.5)
             if _grace > 0:
                 time.sleep(_grace)
     except Exception:
         pass  # never block signal handling
 
 
-def _run_kanban_goal_loop_q(cli: "HermesCLI", first_response: str, run_turn=None, log=None) -> None:
+def _run_kanban_goal_loop_q(cli: "AkramCodeCLI", first_response: str, run_turn=None, log=None) -> None:
     """Drive a kanban goal_mode worker through ``goals.run_kanban_goal_loop`` after its first turn.
 
     ``run_turn`` defaults to the bare ``-Q`` turn (final answer only). The ``-q`` worker path
@@ -58,13 +58,13 @@ def _run_kanban_goal_loop_q(cli: "HermesCLI", first_response: str, run_turn=None
     worker log is made of. The caller swallows all errors: a broken loop must never wedge a worker.
     """
     from cli import _int_or, _sync_cli_session_id_from_agent
-    task_id = (os.environ.get("HERMES_KANBAN_TASK") or "").strip()
+    task_id = (os.environ.get("AKRAMCODE_KANBAN_TASK") or "").strip()
     if not task_id:
         return
-    raw_run_id = (os.environ.get("HERMES_KANBAN_RUN_ID") or "").strip()
+    raw_run_id = (os.environ.get("AKRAMCODE_KANBAN_RUN_ID") or "").strip()
     worker_run_id = _int_or(raw_run_id, None) if raw_run_id else None
     if raw_run_id and worker_run_id is None:
-        logger.warning("invalid HERMES_KANBAN_RUN_ID=%r", raw_run_id)
+        logger.warning("invalid AKRAMCODE_KANBAN_RUN_ID=%r", raw_run_id)
 
     from akramcode_cli import kanban_db as _kb
     from akramcode_cli import kanban_db_connect as _kbc
@@ -104,7 +104,7 @@ def _run_kanban_goal_loop_q(cli: "HermesCLI", first_response: str, run_turn=None
     )
 
 
-def _run_kanban_goal_loop_chat(cli: "HermesCLI", first_response: str) -> None:
+def _run_kanban_goal_loop_chat(cli: "AkramCodeCLI", first_response: str) -> None:
     """``-q`` worker variant: follow-up turns go through ``cli.chat`` (tool feed stays on stdout,
     which is the Kanban worker log) and judge verdicts are printed there too, so a goal_mode card's
     log reads like any other worker's instead of staying blank until the final answer."""
@@ -149,7 +149,7 @@ def _single_query_exit_code(result, *, credentials_rate_limited: bool = False,
 
     0 only when the turn completed; 130 when it was interrupted; 1 when it failed, stopped
     partway (`partial`, `completed: False`) or never ran at all (credentials / agent init
-    failed, so ``result`` is not a dict). A Kanban worker (``HERMES_KANBAN_TASK`` set) that
+    failed, so ``result`` is not a dict). A Kanban worker (``AKRAMCODE_KANBAN_TASK`` set) that
     failed purely on a provider rate-limit / billing wall exits ``KANBAN_RATE_LIMIT_EXIT_CODE``
     (EX_TEMPFAIL): the dispatcher books that run ``rate_limited`` and requeues the task
     WITHOUT counting a failure, so a quota window or a provider outage cannot trip the breaker.
@@ -193,7 +193,7 @@ def _single_query_exit_code(result, *, credentials_rate_limited: bool = False,
 def _run_quiet_single_query(cli, effective_query, emitter=None):
     """Quiet (-Q) one-shot turn: run, print the response (stderr for errors/session_id), then sys.exit with the automation exit code.
     With a ``StreamJsonEmitter`` the final answer and the exit line become the terminal ``result`` JSONL record instead.
-    HERMES_TURN_AUTHOR (set only by a bot-to-bot dispatcher) is consumed here so tool subprocesses do not inherit it.
+    AKRAMCODE_TURN_AUTHOR (set only by a bot-to-bot dispatcher) is consumed here so tool subprocesses do not inherit it.
     Nested Bot Mode notifies bind this session's key (not the dispatcher's) and resume in-process
     before stdout is printed, so a teammate reply is the quiet run's final answer rather than a
     stranded receipt."""
@@ -325,7 +325,7 @@ def _run_quiet_single_query(cli, effective_query, emitter=None):
     # not the claim lock or either expiry, so an unreaped expired-lease row still
     # reports "running" and a continue verdict would re-enter the model under an
     # authority this process can no longer prove (round-3 finding).
-    if os.environ.get("HERMES_KANBAN_GOAL_MODE") == "1" and _exit_code == 0:
+    if os.environ.get("AKRAMCODE_KANBAN_GOAL_MODE") == "1" and _exit_code == 0:
         try:
             _run_kanban_goal_loop_q(cli, response)
         except Exception as _goal_exc:
@@ -386,7 +386,7 @@ def _route_single_query_images(cli, query, effective_query, single_query_images,
 def _collect_kanban_task_images(single_query_images):
     """Kanban workers: image paths/URLs in the task body join the first turn's attachments."""
     single_query_image_urls: list[str] = []
-    _kanban_task_id = os.environ.get("HERMES_KANBAN_TASK", "").strip()
+    _kanban_task_id = os.environ.get("AKRAMCODE_KANBAN_TASK", "").strip()
     if not _kanban_task_id:
         return single_query_image_urls
     try:
@@ -444,7 +444,7 @@ def _install_single_query_signal_handlers(cli):
         # + stdout/stderr first so the final debug trace isn't lost; SIGALRM deadman guards the flush
         # against any rare blocking-I/O case (the reporter measured flush in <1ms; the alarm is a failsafe,
         # not the common path).
-        if os.environ.get("HERMES_KANBAN_TASK"):
+        if os.environ.get("AKRAMCODE_KANBAN_TASK"):
             with suppress(Exception):
                 if hasattr(_signal, "SIGALRM"):
                     _signal.signal(_signal.SIGALRM, _kill_foreground_and_exit)
@@ -500,14 +500,14 @@ def _run_single_query_mode(cli, query, image, quiet, oneshot, stream_json: bool 
     # No user can answer approval prompts: the approval gate takes the deterministic path.
     # One-shot mode: no between-turns MCP late-binding refresh, so the agent must wait the full MCP
     # cold-start bound before its first (and only) tool snapshot. See #51316.
-    # Mark single-query for the approval gate. cli.py sets HERMES_INTERACTIVE earlier for interactive sudo
+    # Mark single-query for the approval gate. cli.py sets AKRAMCODE_INTERACTIVE earlier for interactive sudo
     # prompts, but a -q run has NO user waiting to answer approval prompts. The gate reads this marker (via
     # gateway.session_context.get_session_env, which falls back to os.environ when the session-context layer
     # isn't engaged) and takes the deterministic approvals.single_query_mode path instead of waiting the
     # full timeout. See #86878.
-    os.environ["HERMES_SINGLE_QUERY_SESSION"] = "1"
+    os.environ["AKRAMCODE_SINGLE_QUERY_SESSION"] = "1"
     from akramcode_cli.quiet_single_query import exit_single_query
-    if os.environ.get("HERMES_KANBAN_TASK"):
+    if os.environ.get("AKRAMCODE_KANBAN_TASK"):
         from tools.kanban_tools import register_current_worker_from_env
         if not register_current_worker_from_env():
             # No exit trailer: the task log now belongs to the run that replaced this one.
@@ -585,7 +585,7 @@ def _run_single_query_mode(cli, query, image, quiet, oneshot, stream_json: bool 
         # interrupt, terminal settlement) — must reach the shared exit path below with zero
         # further model entry, because goal_run_status() checks run identity only and would
         # otherwise continue under an authority this process can no longer prove.
-        if os.environ.get("HERMES_KANBAN_GOAL_MODE") == "1" and _single_query_exit_code(cli._last_turn_result) == 0:
+        if os.environ.get("AKRAMCODE_KANBAN_GOAL_MODE") == "1" and _single_query_exit_code(cli._last_turn_result) == 0:
             try:
                 _run_kanban_goal_loop_chat(cli, response or "")
             except Exception as _goal_exc:

@@ -4,12 +4,12 @@ failure class 5; #123340).
 Every dependency rebuild publishes a NEW generation under ``installs/<key>/environments/`` (about
 half a gigabyte with ``[all]``). The previous generation must stay while a running process may
 still read it (leases) and for a day after it was built, and must be collected after that, by the
-command that superseded it, not only by a manual ``hermes pm gc``.
+command that superseded it, not only by a manual ``akramcode pm gc``.
 
 The seeded state is the one a daily-updating user has: before each rebuild the existing
 generations' ``.lease-managed`` stamps are aged two days (as if they were built on earlier days),
-then the user runs ``hermes update`` / ``hermes pm repair``. After each rebuild the aged,
-unselected generations must be gone, the selected one kept and working (a real ``hermes -z`` turn
+then the user runs ``akramcode update`` / ``akramcode pm repair``. After each rebuild the aged,
+unselected generations must be gone, the selected one kept and working (a real ``akramcode -z`` turn
 through the loopback provider). Two updates: the first one's leftover is the generation the updater
 itself ran from (leased, legitimately kept); the second shows whether anything reclaims it.
 Restarts are covered in ``test_restart_generations.py``. The generation the rebuilding process
@@ -98,18 +98,18 @@ def test_repeated_updates_collect_superseded_generations(home, provider):
     results = []
     for n in (1, 2):
         target = P.publish_dependency_release(home["origin"], home["root"], n)
-        results.append(_rebuild_collects(sb, provider, f"`hermes update` #{n}",
+        results.append(_rebuild_collects(sb, provider, f"`akramcode update` #{n}",
                                          lambda: P.update(sb, env=P.lazy_env(sb))))
         assert I.git("rev-parse", "HEAD", cwd=sb.checkout) == target
     for n, result in enumerate(results, 1):
-        _assert_collected(sb, f"`hermes update` #{n}", result)
+        _assert_collected(sb, f"`akramcode update` #{n}", result)
 
 
 def test_repeated_repairs_collect_superseded_generations(home, provider):
     sb = home["sb"]
-    results = [_rebuild_collects(sb, provider, f"`hermes pm repair` #{n}",
-                                 lambda: P.run_env(sb, [sb.hermes, "pm", "repair"], P.lazy_env(sb),
+    results = [_rebuild_collects(sb, provider, f"`akramcode pm repair` #{n}",
+                                 lambda: P.run_env(sb, [sb.akramcode, "pm", "repair"], P.lazy_env(sb),
                                                    timeout=P.UPDATE_TIMEOUT))
                for n in (1, 2)]
     for n, result in enumerate(results, 1):
-        _assert_collected(sb, f"`hermes pm repair` #{n}", result)
+        _assert_collected(sb, f"`akramcode pm repair` #{n}", result)

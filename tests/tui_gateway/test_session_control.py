@@ -14,12 +14,12 @@ import pytest
 
 
 @pytest.fixture()
-def hermes_home(tmp_path, monkeypatch):
+def akramcode_home(tmp_path, monkeypatch):
     """Give the persisted control managers an isolated database for every test."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
     monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     from akramcode_cli import goals
 
     goals._DB_CACHE.clear()
@@ -28,7 +28,7 @@ def hermes_home(tmp_path, monkeypatch):
 
 
 @pytest.fixture()
-def server(hermes_home, monkeypatch):
+def server(akramcode_home, monkeypatch):
     with patch.dict(
         "sys.modules",
         {
@@ -37,7 +37,7 @@ def server(hermes_home, monkeypatch):
         },
     ):
         mod = importlib.import_module("tui_gateway.server")
-    monkeypatch.setattr(mod, "_hermes_home", hermes_home)
+    monkeypatch.setattr(mod, "_akramcode_home", akramcode_home)
     monkeypatch.setattr(mod, "_cfg_cache", None)
     monkeypatch.setattr(mod, "_cfg_sig", None)
     monkeypatch.setattr(mod, "_cfg_path", None)
@@ -439,7 +439,7 @@ class TestUpdatePublication:
             "_wire_callbacks": lambda sid_: None, "_sync_agent_model_with_config": lambda sid_, s: None,
             "_session_cwd": lambda s: str(tmp_path), "_register_session_cwd": lambda s: None,
             "_tts_stream_begin": lambda: None, "_sync_session_key_after_compress": lambda *a, **k: None,
-            "_get_usage": lambda agent: {}, "_hermes_home": tmp_path,
+            "_get_usage": lambda agent: {}, "_akramcode_home": tmp_path,
         }.items():
             monkeypatch.setattr(server, name, value)
         monkeypatch.setattr(server.threading, "Thread", _InlineThread)

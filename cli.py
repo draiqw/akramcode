@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Hermes Agent CLI — interactive terminal interface (``python cli.py --help`` for usage)."""
+"""AkramCode Agent CLI — interactive terminal interface (``python cli.py --help`` for usage)."""
 
-# Must be the very first import (UTF-8 stdio on Windows). Missing only mid-``hermes update``.
+# Must be the very first import (UTF-8 stdio on Windows). Missing only mid-``akramcode update``.
 try:
     import akram_core.akramcode_bootstrap  # noqa: F401
 except ModuleNotFoundError as exc:
@@ -26,7 +26,7 @@ from typing import List, Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
-os.environ["HERMES_QUIET"] = "1"  # suppress our modules' startup chatter
+os.environ["AKRAMCODE_QUIET"] = "1"  # suppress our modules' startup chatter
 
 
 from akramcode_cli.cli_agent_setup_mixin import CLIAgentSetupMixin
@@ -177,7 +177,7 @@ from akramcode_cli.cli_terminal_input import (  # noqa: F401,E402
     _estimate_tui_input_height,
     _file_drop_result,
     _format_image_attachment_badges,
-    _hermes_call_output_screen_diff,
+    _akramcode_call_output_screen_diff,
     _is_backslash_line_continuation,
     _is_ghostty_terminal,
     _preserve_ctrl_enter_newline,
@@ -328,14 +328,14 @@ realign_markdown_tables = _lazy_shim("agent.markdown_tables", "realign_markdown_
 _COMMAND_SPINNER_FRAMES = ("⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏")
 
 
-# ~/.hermes/.env first, project .env as dev fallback; user env files override stale shell exports.
-from akramcode_constants import get_hermes_home
-from akramcode_cli.env_loader import load_hermes_dotenv
+# ~/.akramcode/.env first, project .env as dev fallback; user env files override stale shell exports.
+from akramcode_constants import get_akramcode_home
+from akramcode_cli.env_loader import load_akramcode_dotenv
 from agent.i18n import t as _t  # noqa: E402
 
-_hermes_home = get_hermes_home()
+_akramcode_home = get_akramcode_home()
 _project_env = Path(__file__).parent / '.env'
-load_hermes_dotenv(hermes_home=_hermes_home, project_env=_project_env)
+load_akramcode_dotenv(akramcode_home=_akramcode_home, project_env=_project_env)
 
 
 CLI_CONFIG = load_cli_config()
@@ -442,10 +442,10 @@ def _prepare_deferred_agent_startup() -> None:
     global _deferred_agent_startup_done
     if _deferred_agent_startup_done:
         return
-    if os.environ.get("HERMES_DEFER_AGENT_STARTUP") != "1":
+    if os.environ.get("AKRAMCODE_DEFER_AGENT_STARTUP") != "1":
         return
     _deferred_agent_startup_done = True
-    _accept_hooks = os.environ.get("HERMES_ACCEPT_HOOKS", "").lower() in {"1", "true", "yes", "on"}
+    _accept_hooks = os.environ.get("AKRAMCODE_ACCEPT_HOOKS", "").lower() in {"1", "true", "yes", "on"}
     try:
         from akramcode_cli.plugins import discover_plugins
 
@@ -486,7 +486,7 @@ def _arm_exit_watchdog_on_shutdown_signal() -> None:
     several wedge points BEFORE ``_run_cleanup`` arms the normal watchdog: a main thread parked in a syscall
     that never observes the unwind, a prompt_toolkit teardown that never returns, or an agent worker
     blocking the ``finally``. When that happens the process has NO backstop and a "dead" CLI lingers
-    (observed: ``hermes --tui`` alive ~47 min at 4% CPU after terminal close — the #65998 class).
+    (observed: ``akramcode --tui`` alive ~47 min at 4% CPU after terminal close — the #65998 class).
     """
     global _signal_watchdog_armed
     if _signal_watchdog_armed:
@@ -609,7 +609,7 @@ def _cleanup_worktree(info: Dict[str, str] = None) -> None:
 
 
 # Light/dark terminal detection (mirrors ui-tui/src/theme.ts detectLightMode()). Priority:
-# HERMES_LIGHT/HERMES_TUI_LIGHT env, HERMES_TUI_THEME, HERMES_TUI_BACKGROUND, COLORFGBG
+# AKRAMCODE_LIGHT/AKRAMCODE_TUI_LIGHT env, AKRAMCODE_TUI_THEME, AKRAMCODE_TUI_BACKGROUND, COLORFGBG
 # (bg slot 7/15 = light), OSC 11 query, default dark. Cached so the terminal is queried once.
 _LIGHT_MODE_CACHE: bool | None = None
 
@@ -779,15 +779,15 @@ def _parse_skills_argument(skills: str | list[str] | tuple[str, ...] | None) -> 
 
 
 def save_config_value(key_path: str, value: any) -> bool:
-    """Persist dot-separated ``key_path`` = value into HERMES_HOME/config.yaml; True on success.
+    """Persist dot-separated ``key_path`` = value into AKRAMCODE_HOME/config.yaml; True on success.
 
     Never the repo's cli-config.yaml: no config reader loads it, so the value would vanish.
     """
-    config_path = get_hermes_home() / 'config.yaml'
+    config_path = get_akramcode_home() / 'config.yaml'
 
     try:
-        from akramcode_constants import mkdir_under_hermes_home
-        mkdir_under_hermes_home(config_path.parent)
+        from akramcode_constants import mkdir_under_akramcode_home
+        mkdir_under_akramcode_home(config_path.parent)
         from utils import atomic_roundtrip_yaml_update
         atomic_roundtrip_yaml_update(config_path, key_path, value)
         try:  # owner-only: config files contain API keys
@@ -804,7 +804,7 @@ def _normalize_moa_model(model: Optional[str]) -> tuple[Optional[str], Optional[
     """``moa:<preset>`` -> ``("moa", preset)`` (same routing as ``/moa``); anything else -> ``(None, model)``.
 
     Returns ``("moa", "<preset>")`` when *model* selects the MoA virtual provider, otherwise ``(None,
-    model)`` unchanged. This gives non-interactive ``hermes chat -Q -m moa:<preset>`` the same routing the
+    model)`` unchanged. This gives non-interactive ``akramcode chat -Q -m moa:<preset>`` the same routing the
     interactive ``/moa`` command and the model picker already use: ``resolve_runtime_provider`` handles
     ``requested_provider == "moa"`` and ``agent_init`` builds the MoAClient off ``provider == "moa"``.
     Without this the raw ``moa:<preset>`` string is sent to the real provider and rejected with a 401/400
@@ -884,8 +884,8 @@ from akramcode_cli.cli_chat_turn_mixin import CLIChatTurnMixin
 _PASTE_REF_RE = re.compile(r'\[Pasted text #\d+: \d+ lines \u2192 (.+?)\]')
 
 
-class HermesCLI(CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNotificationsMixin, CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin, CLITuiMixin, CLIStatusBarMixin, CLIVoiceMixin, CLIModelSwitchMixin, CLISessionMixin, CLIStreamMixin, CLIModalMixin, CLITerminalMixin, CLIInfoMixin, CLILoopsMixin, CLIChatTurnMixin):
-    """Interactive REPL for the Hermes Agent."""
+class AkramCodeCLI(CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNotificationsMixin, CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin, CLITuiMixin, CLIStatusBarMixin, CLIVoiceMixin, CLIModelSwitchMixin, CLISessionMixin, CLIStreamMixin, CLIModalMixin, CLITerminalMixin, CLIInfoMixin, CLILoopsMixin, CLIChatTurnMixin):
+    """Interactive REPL for the AkramCode Agent."""
 
     # Seeded -q first message (see _should_seed_interactive); run() re-creates
     # _pending_input, so it is enqueued only after the fresh queue exists.
@@ -1046,7 +1046,7 @@ class HermesCLI(CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNotificationsMixin, 
                 logger.warning(
                     "Unknown skill(s) requested, skipping: %s. "
                     "Continuing with: %s. "
-                    "List available skills with `hermes skills list`.",
+                    "List available skills with `akramcode skills list`.",
                     missing_display,
                     ", ".join(loaded_skills),
                 )
@@ -1071,7 +1071,7 @@ class HermesCLI(CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNotificationsMixin, 
 
             _, unavailable = check_tool_availability()
             # Only toolsets this CLI session actually has. The selection is usually a composite bundle
-            # (``hermes-cli``), so expand it to tool names before matching — a raw name comparison
+            # (``akramcode-cli``), so expand it to tool names before matching — a raw name comparison
             # matched nothing on a default install and silently dropped the terminal notice.
             unavailable = filter_to_enabled_toolsets(unavailable, self.enabled_toolsets or [], resolve_toolset)
             lines = tool_availability_warning_lines(
@@ -1090,7 +1090,7 @@ class HermesCLI(CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNotificationsMixin, 
         terminal_cwd = os.getenv("TERMINAL_CWD", os.getcwd())
         terminal_timeout = os.getenv("TERMINAL_TIMEOUT", "60")
 
-        config_path = _hermes_home / 'config.yaml'
+        config_path = _akramcode_home / 'config.yaml'
         if not config_path.exists():
             config_path = Path(__file__).parent / 'cli-config.yaml'
         config_status = _t("cli.config.loaded") if config_path.exists() else _t("cli.config.not_found")
@@ -1447,11 +1447,11 @@ class HermesCLI(CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNotificationsMixin, 
             import prompt_toolkit.renderer as _pt_renderer
             from prompt_toolkit.renderer import _output_screen_diff as _orig_osd
 
-            if not getattr(_pt_renderer, "_hermes_osd_patched", False):
+            if not getattr(_pt_renderer, "_akramcode_osd_patched", False):
                 _pt_renderer._output_screen_diff = functools.partial(
-                    _hermes_call_output_screen_diff, _orig_osd
+                    _akramcode_call_output_screen_diff, _orig_osd
                 )
-                _pt_renderer._hermes_osd_patched = True
+                _pt_renderer._akramcode_osd_patched = True
         except Exception:
             pass
 
@@ -1524,7 +1524,7 @@ class HermesCLI(CLIInitMixin, CLITuiRuntimeMixin, CLIProcessNotificationsMixin, 
 
 
 def _build_cli_from_args(model, toolsets, provider, reasoning, api_key, base_url, max_turns, run_budget, verbose, compact, resume, checkpoints, pass_session_id, ignore_rules, skills):
-    """Resolve the toolset list (explicit / coding posture / platform default), construct HermesCLI, and start the background skills preload."""
+    """Resolve the toolset list (explicit / coding posture / platform default), construct AkramCodeCLI, and start the background skills preload."""
     toolsets_list = None
     if isinstance(toolsets, str) and toolsets:
         toolsets_list = [t.strip() for t in toolsets.split(",")]
@@ -1547,7 +1547,7 @@ def _build_cli_from_args(model, toolsets, provider, reasoning, api_key, base_url
     parsed_skills = _parse_skills_argument(skills)
 
     try:
-        cli = HermesCLI(
+        cli = AkramCodeCLI(
             model=model,
             toolsets=toolsets_list,
             provider=provider,
@@ -1573,7 +1573,7 @@ def _build_cli_from_args(model, toolsets, provider, reasoning, api_key, base_url
 
     # skills.auto_load rides the same background preload as -s; --ignore-rules skips it with
     # the rest of the auto-injected context. Resolved here (not lazily in the agent) so the
-    # session id is real for ${HERMES_SESSION_ID} and -s can dedupe against it.
+    # session id is real for ${AKRAMCODE_SESSION_ID} and -s can dedupe against it.
     from agent.skill_commands import build_auto_load_prompt, resolve_auto_load_skills
     auto_load_names = [] if getattr(cli, "ignore_rules", ignore_rules) else resolve_auto_load_skills(CLI_CONFIG)
     if not auto_load_names:
@@ -1619,7 +1619,7 @@ def _start_worktree_setup(list_tools, list_toolsets, worktree, w):
     if list_tools or list_toolsets or not (worktree or w or CLI_CONFIG.get("worktree", False)):
         return None
     # Overlap tool discovery with the I/O-bound worktree setup so show_banner() hits a warm
-    # cache (~0.4s). Only on the -w path: plain `hermes` has no I/O wait to hide.
+    # cache (~0.4s). Only on the -w path: plain `akramcode` has no I/O wait to hide.
     def _prewarm_tools() -> None:
         try:
             import model_tools as _mt
@@ -1695,8 +1695,8 @@ def main(
     ignore_rules: bool = False,
 ):
     """
-    Hermes Agent CLI - Interactive AI Assistant
-    
+    AkramCode Agent CLI - Interactive AI Assistant
+
     Args:
         query: Query to run. On a real TTY this seeds an interactive session
             (submitted literally as the first turn); with --oneshot/-Q or a
@@ -1720,11 +1720,11 @@ def main(
         resume: Resume a previous session by its ID (e.g., 20260225_143052_a1b2c3)
         worktree: Run in an isolated git worktree (for parallel agents). Alias: -w
         w: Shorthand for --worktree
-    
+
     Examples:
         python cli.py                            # Start interactive mode
         python cli.py --toolsets web,terminal    # Use specific toolsets
-        python cli.py --skills hermes-agent-dev,github-auth
+        python cli.py --skills akramcode-agent-dev,github-auth
         python cli.py -q "What is Python?"       # Single query mode
         python cli.py -q "Describe this" --image ~/storage/shared/Pictures/cat.png
         python cli.py --list-tools               # List tools and exit
@@ -1737,7 +1737,7 @@ def main(
         from akramcode_cli.stdio import configure_windows_stdio
         configure_windows_stdio()
 
-    os.environ["HERMES_INTERACTIVE"] = "1"  # terminal_tool: interactive sudo prompts with timeout
+    os.environ["AKRAMCODE_INTERACTIVE"] = "1"  # terminal_tool: interactive sudo prompts with timeout
 
     if gateway:
         _run_legacy_gateway()
@@ -1754,7 +1754,7 @@ def main(
 
     _join_worktree = _start_worktree_setup(list_tools, list_toolsets, worktree, w)
     query = query or q
-    # ``hermes chat`` already validated this; the direct Fire entry point gets the same contract.
+    # ``akramcode chat`` already validated this; the direct Fire entry point gets the same contract.
     if output_format == "stream-json":
         if not query:
             raise ValueError("--format stream-json requires -q/--query")

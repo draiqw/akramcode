@@ -1,4 +1,4 @@
-"""``hermes plugins update`` plus the provenance verbs around it: ``adopt``, ``trust-update-url`` and the
+"""``akramcode plugins update`` plus the provenance verbs around it: ``adopt``, ``trust-update-url`` and the
 read-only ``check-updates``; the dashboard update path shares the same pull/re-clone core.
 
 Sibling of :mod:`akramcode_cli.plugins_cmd` (the facade re-exports the names other modules use and is
@@ -82,7 +82,7 @@ def cmd_update(name: str, *, interactive: bool = True) -> None:
             target,
             lambda rec: (
                 f"Plugin '{name}' is pinned to {rec.get('revision')}. To move it, run "
-                f"`hermes plugins install {escape(str(rec.get('source', '<source>')))} --force "
+                f"`akramcode plugins install {escape(str(rec.get('source', '<source>')))} --force "
                 "--ref <40-character commit SHA>`."),
             lambda: f"Plugin '{name}' was not installed from git (no .git directory). Cannot update.",
             before_pull=lambda: console.print(f"[dim]Updating {name}...[/dim]"),
@@ -105,7 +105,7 @@ def cmd_update(name: str, *, interactive: bool = True) -> None:
             if interactive:
                 _pc()._run_capability_consent(console, plugin_id, declared_caps, context="update")
             else:
-                console.print(f"[yellow]Plugin {plugin_id} has new capabilities; review them with `hermes plugins capabilities {plugin_id}`.[/yellow]")
+                console.print(f"[yellow]Plugin {plugin_id} has new capabilities; review them with `akramcode plugins capabilities {plugin_id}`.[/yellow]")
 
     out = output.strip()
     if "Already up to date" in out:
@@ -269,11 +269,11 @@ def cmd_check_updates(args: Any | None = None) -> None:
     console.print()
     console.print(table)
     console.print()
-    console.print("[dim]Check-only. Apply with: hermes plugins update <name>[/dim]")
+    console.print("[dim]Check-only. Apply with: akramcode plugins update <name>[/dim]")
 
 
 def dashboard_update_user_plugin(name: str, *, accept_capabilities: bool = False) -> dict[str, Any]:
-    """``git pull`` inside ``~/.hermes/plugins/<name>``; catalog installs re-pin instead. A re-pin that
+    """``git pull`` inside ``~/.akramcode/plugins/<name>``; catalog installs re-pin instead. A re-pin that
     widens the plugin returns ``{"ok": False, "consent_required": True, "delta": {...}}`` with nothing
     changed — the surface shows the delta and retries with *accept_capabilities*."""
     from akramcode_cli import plugins_cmd_catalog as catalog
@@ -296,7 +296,7 @@ def dashboard_update_user_plugin(name: str, *, accept_capabilities: bool = False
             target,
             lambda rec: (
                 f"Plugin '{name}' is pinned to {rec.get('revision')}; "
-                f"run `hermes plugins install {rec.get('source', '<source>')} --force "
+                f"run `akramcode plugins install {rec.get('source', '<source>')} --force "
                 "--ref <40-character commit SHA>` to move it."),
             lambda: f"Plugin '{name}' is not a git checkout; cannot pull updates.")
     except catalog.RepinConsentRequired as exc:

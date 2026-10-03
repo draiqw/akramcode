@@ -3,7 +3,7 @@
 Hook ``{"context": ...}`` output rides EVERY subsequent API call, so a large blob
 inflates every turn and breaks the prompt-cache prefix. Above
 ``hooks.output_spill.max_chars`` (default 10000) the text is written under
-``hooks.output_spill.directory`` (default ``<HERMES_HOME>/hook_outputs/<session>``)
+``hooks.output_spill.directory`` (default ``<AKRAMCODE_HOME>/hook_outputs/<session>``)
 and the payload becomes a ``preview_head``/``preview_tail`` excerpt plus the path.
 ``enabled: false`` disables. Never raises: an I/O failure still returns a preview.
 """
@@ -55,8 +55,8 @@ def _resolve_spill_dir(directory_override: Optional[str], session_id: Optional[s
     if directory_override:
         base = Path(os.path.expanduser(directory_override))
     else:
-        from akramcode_constants import get_hermes_home
-        base = Path(get_hermes_home()) / "hook_outputs"
+        from akramcode_constants import get_akramcode_home
+        base = Path(get_akramcode_home()) / "hook_outputs"
     session_segment = (session_id or "no-session").replace("/", "_").replace("\\", "_").replace("..", "_")
     return base / session_segment
 

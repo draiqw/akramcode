@@ -1,7 +1,7 @@
 /**
- * Canonical Hermes skin — the theme SDK's cross-surface contract.
+ * Canonical AkramCode skin — the theme SDK's cross-surface contract.
  *
- * A skin is authored once as YAML in `$HERMES_HOME/skins/<name>.yaml` (or a
+ * A skin is authored once as YAML in `$AKRAMCODE_HOME/skins/<name>.yaml` (or a
  * built-in), resolved by the Python skin engine (`akramcode_cli/skin_engine.py`),
  * and pushed to every surface over JSON-RPC (`gateway.ready`, `skin.changed`,
  * `config.get skin`). This is the ONE shape every TypeScript surface consumes;
@@ -92,7 +92,7 @@ export type SkinColors = Partial<Record<SkinColorToken, string>> & { [key: strin
 export type SkinBranding = Partial<Record<SkinBrandingToken, string>> & { [key: string]: string | undefined }
 
 /** The resolved skin payload (matches Python's `resolve_skin()`). */
-export interface HermesSkin {
+export interface AkramCodeSkin {
   name?: string
   description?: string
   colors?: SkinColors
@@ -108,7 +108,7 @@ export interface HermesSkin {
   tool_prefix?: string
   help_header?: string
   /** Raw CSS injected as a scoped <style> tag on theme apply.
-   *  Persists across updates because it lives in ~/.hermes/skins/,
+   *  Persists across updates because it lives in ~/.akramcode/skins/,
    *  not inside app.asar.  Clipped to 32 KiB by the Python normaliser. */
   customCSS?: string
 }

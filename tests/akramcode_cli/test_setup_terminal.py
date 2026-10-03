@@ -10,7 +10,7 @@ from akramcode_cli import setup_terminal
 @pytest.fixture
 def ssh_wizard(tmp_path, monkeypatch):
     """Drive ``_setup_backend_ssh`` with scripted answers, SSH test declined."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     monkeypatch.delenv("TERMINAL_SSH_PORT", raising=False)
 
     def run(answers):

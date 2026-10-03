@@ -105,12 +105,12 @@ def test_migrate_config_restores_backup_when_version_does_not_advance(
 
 
 def test_state_db_guard_skips_missing_db(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     assert step_state_db_guard() == {"ok": True, "skipped": "no-state-db"}
 
 
 def test_state_db_guard_flags_corrupt_db(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     (tmp_path / "state.db").write_text("this is not sqlite", encoding="utf-8")
     result = step_state_db_guard()
     assert result["ok"] is False
@@ -120,7 +120,7 @@ def test_state_db_guard_flags_corrupt_db(tmp_path, monkeypatch):
 def test_state_db_guard_passes_valid_db(tmp_path, monkeypatch):
     import sqlite3
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     conn = sqlite3.connect(tmp_path / "state.db")
     conn.execute("CREATE TABLE t (x)")
     conn.commit()
@@ -132,8 +132,8 @@ def test_state_db_guard_passes_valid_db(tmp_path, monkeypatch):
 
 
 def test_boot_drops_the_live_plugin_catalog_cache(tmp_path, monkeypatch):
-    """Bundled-app updates skip `hermes update`'s tail; the boot step covers them (#119340)."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    """Bundled-app updates skip `akramcode update`'s tail; the boot step covers them (#119340)."""
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     cache = tmp_path / "cache" / "plugin-catalog.json"
     cache.parent.mkdir()
     cache.write_text("{}", encoding="utf-8")
@@ -171,7 +171,7 @@ def test_provisioning_does_not_use_human_diagnostics(tmp_path, monkeypatch):
     (runtime / "facts.json").write_text(json.dumps({"schema": 1, "packages": {}}))
     lock = tmp_path / "lock.json"
     lock.write_text(json.dumps({"schema": 1, "packages": {"node": {"version": "test"}}}))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(runtime))
+    monkeypatch.setenv("AKRAMCODE_RUNTIME_DIR", str(runtime))
     monkeypatch.setattr(paths, "lockfile_path", lambda: lock)
     monkeypatch.setattr(engine, "sealed", lambda: False)
     monkeypatch.setattr(engine, "lazy_installs_allowed", lambda: True)

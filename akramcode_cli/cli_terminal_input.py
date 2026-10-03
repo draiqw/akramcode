@@ -209,7 +209,7 @@ def _should_auto_attach_clipboard_image_on_paste(pasted_text: str) -> bool:
     return not pasted_text.strip()
 
 
-def _hermes_call_output_screen_diff(
+def _akramcode_call_output_screen_diff(
     orig_osd, app, output, screen, current_pos, color_depth, previous_screen, last_style, is_done, full_screen,
     attrs_for_style_string, style_string_has_style, size, previous_width,
 ):
@@ -249,7 +249,7 @@ def _apply_bracketed_paste_timeout_patch() -> None:
         from prompt_toolkit.keys import Keys as _PtKeys
         from prompt_toolkit.key_binding.key_processor import KeyPress as _PtKeyPress
 
-        if getattr(_vt100_mod, "_hermes_bp_timeout_patched", False):
+        if getattr(_vt100_mod, "_akramcode_bp_timeout_patched", False):
             return
 
         _BP_TIMEOUT_S = 2.0
@@ -266,19 +266,19 @@ def _apply_bracketed_paste_timeout_patch() -> None:
                     self_parser._in_bracketed_paste = False
                     remaining = self_parser._paste_buffer[end_index + len(end_mark):]
                     self_parser._paste_buffer = ""
-                    self_parser._hermes_bp_start = None
+                    self_parser._akramcode_bp_start = None
                     if remaining:
                         _patched_vt100_feed(self_parser, remaining)
                 else:
-                    bp_start = getattr(self_parser, "_hermes_bp_start", None)
+                    bp_start = getattr(self_parser, "_akramcode_bp_start", None)
                     now = time.monotonic()
                     if bp_start is None:
-                        self_parser._hermes_bp_start = now
+                        self_parser._akramcode_bp_start = now
                     elif now - bp_start > _BP_TIMEOUT_S:
                         paste_content = self_parser._paste_buffer
                         self_parser._in_bracketed_paste = False
                         self_parser._paste_buffer = ""
-                        self_parser._hermes_bp_start = None
+                        self_parser._akramcode_bp_start = None
                         if paste_content:
                             self_parser.feed_key_callback(_PtKeyPress(_PtKeys.BracketedPaste, paste_content))
                             logger.warning(
@@ -296,7 +296,7 @@ def _apply_bracketed_paste_timeout_patch() -> None:
                     self_parser._input_parser.send(c)
 
         _vt100_mod.Vt100Parser.feed = _patched_vt100_feed
-        _vt100_mod._hermes_bp_timeout_patched = True
+        _vt100_mod._akramcode_bp_timeout_patched = True
         logger.debug("Applied Vt100Parser bracketed-paste timeout patch (#16263)")
     except Exception as exc:  # noqa: BLE001 — defensive: never break startup
         logger.debug("Bracketed-paste timeout patch skipped: %s", exc)

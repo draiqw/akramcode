@@ -77,13 +77,13 @@ VERCEL_AI_GATEWAY_MODELS: list[tuple[str, str]] = [("moonshotai/kimi-k2.6", "rec
 
 def _codex_curated_models() -> list[str]:
     """openai-codex curated list from codex_models.py (DEFAULT_CODEX_MODELS + forward-compat
-    synthesis) so the gateway /model picker and the CLI ``hermes model`` flow share one source."""
+    synthesis) so the gateway /model picker and the CLI ``akramcode model`` flow share one source."""
     from akramcode_cli.codex_models import DEFAULT_CODEX_MODELS, _finalize_codex_models
     return _finalize_codex_models(list(DEFAULT_CODEX_MODELS))
 
 
 # Static xAI fallback when the models.dev disk cache is empty (fresh install, offline first run).
-# Mirrors the xAI-direct IDs from $HERMES_HOME/models_dev_cache.json; the cache overrides it on the
+# Mirrors the xAI-direct IDs from $AKRAMCODE_HOME/models_dev_cache.json; the cache overrides it on the
 # next refresh. Models xAI retired on 2026-05-15 (grok-4*, grok-4-fast*, grok-4-1-fast*,
 # grok-code-fast-1) are excluded — see docs.x.ai/developers/migration/may-15-retirement.
 _XAI_STATIC_FALLBACK: list[str] = [
@@ -106,7 +106,7 @@ def _xai_promote_top(ids: list[str]) -> list[str]:
 
 
 def _xai_merge_curated_extras(ids: list[str]) -> list[str]:
-    """Append Hermes-curated xAI models missing from models.dev, right after the pinned headline."""
+    """Append AkramCode-curated xAI models missing from models.dev, right after the pinned headline."""
     out = list(ids)
     for extra in _XAI_CURATED_EXTRAS:
         if extra not in out:
@@ -119,7 +119,7 @@ def _xai_finalize_catalog(ids: list[str]) -> list[str]:
 
 
 def _xai_curated_models() -> list[str]:
-    """Offline curated floor for xAI / xAI OAuth pickers: $HERMES_HOME/models_dev_cache.json
+    """Offline curated floor for xAI / xAI OAuth pickers: $AKRAMCODE_HOME/models_dev_cache.json
     (no network), else ``_XAI_STATIC_FALLBACK``. Any failure falls through to the static list."""
     try:
         from agent.models_dev import _load_disk_cache
@@ -304,9 +304,9 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
 
 # ---------------------------------------------------------------------------
 # Canonical provider list — single source of truth for provider identity. Every code path that
-# lists, displays, or iterates providers (hermes model, /model, list_authenticated_providers)
+# lists, displays, or iterates providers (akramcode model, /model, list_authenticated_providers)
 # derives from it. slug = internal ID (config.yaml, --provider); label = short display name;
-# tui_desc = longer description for the `hermes model` picker.
+# tui_desc = longer description for the `akramcode model` picker.
 # ---------------------------------------------------------------------------
 
 class ProviderEntry(NamedTuple):
@@ -379,7 +379,7 @@ def sync_plugin_provider_catalog() -> int:
     Runs at import and again from ``providers._sync_auth_registry`` whenever a profile is registered
     after this module was imported. The import-time pass alone observes a *partial* registry: a
     plugin whose own imports pull ``akramcode_cli.models`` in mid-``_discover_providers()``, or a
-    profile registered later at runtime, would otherwise never reach the picker, ``hermes model``,
+    profile registered later at runtime, would otherwise never reach the picker, ``akramcode model``,
     ``/model`` or the Desktop ``model.options`` list until restart — the catalog twin of the auth
     registry window (#102123). Idempotent by slug; built-in rows are never rewritten.
     """
@@ -407,7 +407,7 @@ sync_plugin_provider_catalog()
 
 # ---------------------------------------------------------------------------
 # Provider groups — DISPLAY ONLY. Vendors with several slugs (global API, China API, OAuth plan,
-# ...) fold under one top-level row in the INTERACTIVE PICKERS (``hermes model``, setup wizard,
+# ...) fold under one top-level row in the INTERACTIVE PICKERS (``akramcode model``, setup wizard,
 # Telegram ``/model``). They do NOT change CANONICAL_PROVIDERS, slug identity, ``--provider``,
 # ``/model <provider:model>`` or any typed path — every member slug stays individually addressable.
 # ``group_providers()`` is the single fold used by all three surfaces.
@@ -512,7 +512,7 @@ _PROVIDER_ALIASES = dict((
 ))
 
 
-# Offline/fresh-install fallback for the model Hermes silently lands on when the user never picked
+# Offline/fresh-install fallback for the model AkramCode silently lands on when the user never picked
 # one (GUI onboarding confirm card, empty ``model.default``, provider-set-but-model-missing). The
 # AUTHORITATIVE source is the remote catalog manifest, which labels exactly one entry per provider
 # ``"default": true`` (get_default_model_from_cache) so the default rotates without a release; this
@@ -527,7 +527,7 @@ PREFERRED_SILENT_DEFAULT_MODEL = "z-ai/glm-5.2"
 # best-first, so [0] is the priciest flagship; a profile that sets a provider with no model would
 # otherwise silently bill the most expensive model (863 Opus requests before one user noticed).
 # Network-free (cache-only) on purpose — this is the hot resolution path. The *interactive* default
-# (GUI onboarding / ``hermes model``) uses the tier-aware ``get_recommended_default_model`` in
+# (GUI onboarding / ``akramcode model``) uses the tier-aware ``get_recommended_default_model`` in
 # akramcode_cli/web_server.py + ``partition_nous_models_by_tier``, which may hit the Portal.
 _SILENT_DEFAULT_PROVIDERS: frozenset[str] = frozenset({"nous", "openrouter"})
 
@@ -563,7 +563,7 @@ _LIVE_FIRST_PICKER_PROVIDERS: frozenset[str] = frozenset({"opencode-zen", "openc
 _OPENAI_FAST_MODE_PREFIXES: tuple[str, ...] = ("gpt-", "o1", "o3", "o4")
 # OpenAI Ultrafast (service_tier="ultrafast", 6x Standard): broadly available for GPT-6 Astra only
 # (developers.openai.com/api/docs/guides/ultrafast-mode, 2026-09-29); GPT-6.1 Sol "coming soon".
-# Exact wire slugs, matched after stripping the vendor prefix and the Hermes-side ``-900k`` alias.
+# Exact wire slugs, matched after stripping the vendor prefix and the AkramCode-side ``-900k`` alias.
 _OPENAI_ULTRAFAST_MODELS: frozenset[str] = frozenset({"gpt-6-astra"})
 
 
@@ -579,7 +579,7 @@ _MODELS_DEV_PREFERRED: frozenset[str] = frozenset({
 })
 
 
-# OpenRouter-style ids -> Copilot ids. Dash-notation Claude ids are accepted too: Hermes' default
+# OpenRouter-style ids -> Copilot ids. Dash-notation Claude ids are accepted too: AkramCode' default
 # Claude IDs use hyphens (Anthropic native) but Copilot's API only accepts dot-notation, so a
 # copilot + hyphenated default would otherwise hit HTTP 400 "model_not_supported".
 _COPILOT_MODEL_ALIASES = dict((

@@ -780,12 +780,12 @@ class LineAdapter(BasePlatformAdapter):
 
     async def _handle_media(self, request) -> Any:
         """Serve a registered local file for LINE's media URLs. Defence-in-depth: the resolved
-        path is rechecked against allowed roots (tempdir, ``/tmp``→``/private/tmp`` on macOS, HERMES_HOME).
+        path is rechecked against allowed roots (tempdir, ``/tmp``→``/private/tmp`` on macOS, AKRAMCODE_HOME).
 
         Defence-in-depth: even though ``_register_media`` is only called from trusted internal code, we
         recheck the resolved path against an allowed-roots set before serving. Sources allowed:
         ``tempfile.gettempdir()``, ``/tmp`` (which resolves to ``/private/tmp`` on macOS), and
-        ``HERMES_HOME``. PR #8398.
+        ``AKRAMCODE_HOME``. PR #8398.
         """
         from aiohttp import web
         token = request.match_info["token"]
@@ -799,12 +799,12 @@ class LineAdapter(BasePlatformAdapter):
         if not path.is_file():
             return web.Response(status=404, text="not found")
         try:
-            from hermes_constants import get_hermes_home
-            hermes_home = Path(get_hermes_home()).resolve()
+            from akramcode_constants import get_akramcode_home
+            akramcode_home = Path(get_akramcode_home()).resolve()
         except Exception:
-            hermes_home = Path.home().joinpath(".hermes").resolve()
+            akramcode_home = Path.home().joinpath(".akramcode").resolve()
         resolved = path.resolve()
-        if not any(resolved.is_relative_to(r) for r in (Path(tempfile.gettempdir()).resolve(), Path("/tmp").resolve(), hermes_home)):  # no-tmp: ok — macOS /private/tmp alias in the allowed-roots check, not a write target
+        if not any(resolved.is_relative_to(r) for r in (Path(tempfile.gettempdir()).resolve(), Path("/tmp").resolve(), akramcode_home)):  # no-tmp: ok — macOS /private/tmp alias in the allowed-roots check, not a write target
             logger.warning("LINE: refusing to serve outside allowed roots: %s", resolved)
             return web.Response(status=403, text="forbidden")
         content_type = mimetypes.guess_type(str(path))[0] or "application/octet-stream"
@@ -913,12 +913,12 @@ def validate_config(config) -> bool:
 
 
 def is_connected(config) -> bool:
-    """Surface in ``hermes status`` even before the adapter is instantiated."""
+    """Surface in ``akramcode status`` even before the adapter is instantiated."""
     return validate_config(config)
 
 
 def _env_enablement() -> Optional[Dict[str, Any]]:
-    """``env_enablement_fn``: seed ``PlatformConfig.extra`` from env-only setups so ``hermes status`` sees them."""
+    """``env_enablement_fn``: seed ``PlatformConfig.extra`` from env-only setups so ``akramcode status`` sees them."""
     if not _env_credentials_present():
         return None
     return _seed_extra_from_env(_ENV_SEED_KEYS, home_env="LINE_HOME_CHANNEL")
@@ -955,7 +955,7 @@ _SETUP_PROMPTS = (  # (env var, prompt, masked)
 
 
 def interactive_setup() -> None:
-    """``hermes setup line`` wizard (writes ``~/.hermes/.env``); CLI helpers are lazy-imported."""
+    """``akramcode setup line`` wizard (writes ``~/.akramcode/.env``); CLI helpers are lazy-imported."""
     from akramcode_cli.config import get_env_value, save_env_value
     from akramcode_cli.cli_output import print_header, print_info, prompt
     from akramcode_cli.setup_platforms import declines_reconfigure

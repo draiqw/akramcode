@@ -1,7 +1,7 @@
-"""``hermes chat -Q`` as a dispatcher's re-run of a failed bot delivery (#111721).
+"""``akramcode chat -Q`` as a dispatcher's re-run of a failed bot delivery (#111721).
 
 A failed delivery turn persists its user row before the provider call; the policy-gated re-run
-replays the same session and payload in a fresh process. Told so via HERMES_RESUME_UNANSWERED_TURN,
+replays the same session and payload in a fresh process. Told so via AKRAMCODE_RESUME_UNANSWERED_TURN,
 the re-run resumes that row instead of appending a second copy of the DM.
 """
 
@@ -16,8 +16,8 @@ from tools.bot_relay import RESUME_UNANSWERED_TURN_ENV
 
 
 def _quiet_turn(monkeypatch, history, marker):
-    monkeypatch.delenv("HERMES_KANBAN_GOAL_MODE", raising=False)
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+    monkeypatch.delenv("AKRAMCODE_KANBAN_GOAL_MODE", raising=False)
+    monkeypatch.delenv("AKRAMCODE_KANBAN_TASK", raising=False)
     if marker is None:
         monkeypatch.delenv(RESUME_UNANSWERED_TURN_ENV, raising=False)
     else:
@@ -80,12 +80,12 @@ def test_rerun_adopts_the_dm_behind_the_failed_attempts_tool_scaffolding(monkeyp
 
 def test_turn_report_is_written_before_the_exit_linger_and_the_path_is_not_inherited(monkeypatch, tmp_path):
     """A spawner that bounds only the turn (cron Bot Chat lane, #113608) reads the outcome from
-    HERMES_QUIET_TURN_REPORT_FILE: written the moment the turn ends — before the one-shot exit
+    AKRAMCODE_QUIET_TURN_REPORT_FILE: written the moment the turn ends — before the one-shot exit
     linger — stamped with this pid, and the variable is popped before the turn spawns anything."""
     from akramcode_cli import quiet_single_query as qsq
 
-    monkeypatch.delenv("HERMES_KANBAN_GOAL_MODE", raising=False)
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+    monkeypatch.delenv("AKRAMCODE_KANBAN_GOAL_MODE", raising=False)
+    monkeypatch.delenv("AKRAMCODE_KANBAN_TASK", raising=False)
     report = tmp_path / "turn.json"
     monkeypatch.setenv(qsq.TURN_REPORT_FILE_ENV, str(report))
     seen = {}
@@ -117,8 +117,8 @@ def test_a_follow_up_turn_rewrites_the_report_with_the_answer_it_displaces(monke
     report is rewritten with it, so a relay booking the child at its cap relays that answer (#114980)."""
     from akramcode_cli import quiet_single_query as qsq
 
-    monkeypatch.delenv("HERMES_KANBAN_GOAL_MODE", raising=False)
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
+    monkeypatch.delenv("AKRAMCODE_KANBAN_GOAL_MODE", raising=False)
+    monkeypatch.delenv("AKRAMCODE_KANBAN_TASK", raising=False)
     report = tmp_path / "turn.json"
     monkeypatch.setenv(qsq.TURN_REPORT_FILE_ENV, str(report))
     answers = iter(["asking the teammate", "teammate says: done"])

@@ -12,8 +12,8 @@ def test_foreign_rpc_preview_import_and_profile_isolation(tmp_path, monkeypatch)
     from tui_gateway import server
 
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
-    monkeypatch.delenv("HERMES_DESKTOP", raising=False)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / ".akramcode"))
+    monkeypatch.delenv("AKRAMCODE_DESKTOP", raising=False)
     folder = tmp_path / ".claude" / "projects" / "project"
     folder.mkdir(parents=True)
     log = folder / "session.jsonl"
@@ -23,7 +23,7 @@ def test_foreign_rpc_preview_import_and_profile_isolation(tmp_path, monkeypatch)
                                    ("assistant", "And its test."), ("user", "Continue")]]
     log.write_text("\n".join(map(json.dumps, lines)), encoding="utf-8")
     original = log.read_bytes()
-    db = SessionDB(tmp_path / ".hermes" / "state.db")
+    db = SessionDB(tmp_path / ".akramcode" / "state.db")
     monkeypatch.setattr(server, "_get_db", lambda: db)
     monkeypatch.setattr(server, "_profile_home", lambda profile: None)
 
@@ -64,7 +64,7 @@ def test_foreign_pages_confine_handles_and_failed_import_rolls_back(tmp_path, mo
     from akramcode_state import SessionDB
 
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / ".akramcode"))
     folder = tmp_path / ".codex" / "sessions"
     folder.mkdir(parents=True)
     for index in range(3):
@@ -83,7 +83,7 @@ def test_foreign_pages_confine_handles_and_failed_import_rolls_back(tmp_path, mo
     # A fabricated well-shaped handle cannot become a file-read request.
     with pytest.raises(ValueError):
         browser.resolve_foreign_session("0" * 64)
-    db = SessionDB(tmp_path / ".hermes" / "state.db")
+    db = SessionDB(tmp_path / ".akramcode" / "state.db")
     insert = db._insert_message_rows
     def failing_insert(*args, **kwargs):
         insert(*args, **kwargs)

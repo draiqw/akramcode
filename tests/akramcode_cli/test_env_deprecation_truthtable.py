@@ -8,7 +8,7 @@ session restoration / cron / the gateway):
 
     warn_deprecated_cwd_env_vars() emits the warning IFF the deprecated key
     (TERMINAL_CWD or MESSAGING_CWD) has a genuinely non-empty value inside
-    the user's ~/.hermes/.env FILE.
+    the user's ~/.akramcode/.env FILE.
 
     * Process environment is IRRELEVANT — runtime bridges legitimately set
       TERMINAL_CWD in os.environ (fix commit 31561e37e).
@@ -16,10 +16,10 @@ session restoration / cron / the gateway):
       suppresses the warning (fix commit a93f1b2be removed suppression).
     * Commented-out or empty-valued .env entries do NOT warn.
     * There is NO quiet/non-interactive gating in the scanner itself; the
-      gateway calls it before setting HERMES_QUIET (gateway/run.py), so the
-      warning fires regardless of HERMES_QUIET.
+      gateway calls it before setting AKRAMCODE_QUIET (gateway/run.py), so the
+      warning fires regardless of AKRAMCODE_QUIET.
 
-Exercises the real scanner against a real temp HERMES_HOME .env file.
+Exercises the real scanner against a real temp AKRAMCODE_HOME .env file.
 """
 
 import pytest
@@ -91,12 +91,12 @@ TRUTH_TABLE = [
         id="dotenv-export-prefix-warns",
     ),
     pytest.param(
-        "TERMINAL_CWD=.\n", {"HERMES_QUIET": "1"}, None, ("TERMINAL_CWD",),
+        "TERMINAL_CWD=.\n", {"AKRAMCODE_QUIET": "1"}, None, ("TERMINAL_CWD",),
         id="quiet-mode-no-gating-dotenv-warns",
     ),
     pytest.param(
         "API_KEY=x\n",
-        {"HERMES_QUIET": "1", "TERMINAL_CWD": "."},
+        {"AKRAMCODE_QUIET": "1", "TERMINAL_CWD": "."},
         None,
         (),
         id="quiet-mode-procenv-only-silent",
@@ -126,17 +126,17 @@ def test_deprecated_env_warning_truth_table(
     """Warning fires only for genuine .env-file entries — never for
     inherited process environment or config.yaml (#88829 #89016 #89389 #90299).
     """
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    akramcode_home = tmp_path / ".akramcode"
+    akramcode_home.mkdir()
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
     if env_file is not None:
-        (hermes_home / ".env").write_bytes(env_file.encode("utf-8"))
+        (akramcode_home / ".env").write_bytes(env_file.encode("utf-8"))
     if config_yaml is not None:
-        (hermes_home / "config.yaml").write_text(config_yaml, encoding="utf-8")
+        (akramcode_home / "config.yaml").write_text(config_yaml, encoding="utf-8")
 
     # Baseline: deprecated keys absent from process env unless the row says so.
-    for key in ("TERMINAL_CWD", "MESSAGING_CWD", "HERMES_QUIET"):
+    for key in ("TERMINAL_CWD", "MESSAGING_CWD", "AKRAMCODE_QUIET"):
         monkeypatch.delenv(key, raising=False)
     for key, value in proc_env.items():
         monkeypatch.setenv(key, value)

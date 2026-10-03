@@ -71,7 +71,7 @@ def test_repair_then_prune_leaves_repo_walkable(tmp_path):
     """The production updater sequence: repair runs, then the prune immediately after.
 
     Without the prune's ``--reflog`` fail-safe walk, the prune dropped the boundary
-    repair had just restored, re-breaking the repo on every ``hermes update`` run.
+    repair had just restored, re-breaking the repo on every ``akramcode update`` run.
     """
     clone = fixture(tmp_path)
     corrupt_fixture(clone)

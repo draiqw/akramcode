@@ -1,6 +1,6 @@
 """Keyed ``providers.<key>`` entries must use the durable pool slug.
 
-``hermes auth add b-ai`` stores keys under ``credential_pool.b-ai``. Runtime
+``akramcode auth add b-ai`` stores keys under ``credential_pool.b-ai``. Runtime
 used to look up ``custom:<display-name>`` (e.g. ``custom:b.ai`` from
 ``name: B.AI``), miss the pool, and send the ``no-key-required`` placeholder
 to an auth-required endpoint (HTTP 401 Invalid api_key format).
@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 
 POOL_KEY = "sk-real-b-ai-pool-key-12345"
@@ -19,9 +19,9 @@ ENDPOINT = "https://api.b.ai/v1"
 
 
 def _write_keyed_provider_home(tmp_path, monkeypatch, *, pool_id="b-ai", extra_config=None):
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    akramcode_home = tmp_path / ".akramcode"
+    akramcode_home.mkdir()
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
     config = {
         "model": {"default": "b-ai-model", "provider": "b-ai"},
         "providers": {
@@ -33,8 +33,8 @@ def _write_keyed_provider_home(tmp_path, monkeypatch, *, pool_id="b-ai", extra_c
     }
     if extra_config:
         config["providers"]["b-ai"].update(extra_config)
-    (hermes_home / "config.yaml").write_text(yaml.safe_dump(config), encoding="utf-8")
-    (hermes_home / "auth.json").write_text(
+    (akramcode_home / "config.yaml").write_text(yaml.safe_dump(config), encoding="utf-8")
+    (akramcode_home / "auth.json").write_text(
         json.dumps(
             {
                 "version": 1,
@@ -55,7 +55,7 @@ def _write_keyed_provider_home(tmp_path, monkeypatch, *, pool_id="b-ai", extra_c
         ),
         encoding="utf-8",
     )
-    return hermes_home
+    return akramcode_home
 
 
 def test_get_named_custom_provider_exposes_provider_key_and_key_env(
@@ -137,11 +137,11 @@ def test_prune_keeps_active_legacy_pool_for_keyed_provider(tmp_path, monkeypatch
         # an unrelated stale pool that SHOULD be pruned
         "custom:old-endpoint": [_model_config_entry("mc2", "sk-stale-key")],
     }
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir(exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    (hermes_home / "config.yaml").write_text(yaml.safe_dump(config), encoding="utf-8")
-    (hermes_home / "auth.json").write_text(
+    akramcode_home = tmp_path / ".akramcode"
+    akramcode_home.mkdir(exist_ok=True)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
+    (akramcode_home / "config.yaml").write_text(yaml.safe_dump(config), encoding="utf-8")
+    (akramcode_home / "auth.json").write_text(
         json.dumps(
             {
                 "version": 1,
@@ -161,7 +161,7 @@ def test_prune_keeps_active_legacy_pool_for_keyed_provider(tmp_path, monkeypatch
     )
 
     after = json.loads(
-        (tmp_path / ".hermes" / "auth.json").read_text(encoding="utf-8")
+        (tmp_path / ".akramcode" / "auth.json").read_text(encoding="utf-8")
     )
     kept = (after.get("credential_pool") or {}).get("custom:b.ai")
     pruned = (after.get("credential_pool") or {}).get("custom:old-endpoint")
@@ -192,11 +192,11 @@ def test_seed_custom_pool_matches_legacy_named_pool(tmp_path, monkeypatch):
             }
         },
     }
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir(exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    (hermes_home / "config.yaml").write_text(yaml.safe_dump(config), encoding="utf-8")
-    (hermes_home / "auth.json").write_text(
+    akramcode_home = tmp_path / ".akramcode"
+    akramcode_home.mkdir(exist_ok=True)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
+    (akramcode_home / "config.yaml").write_text(yaml.safe_dump(config), encoding="utf-8")
+    (akramcode_home / "auth.json").write_text(
         json.dumps(
             {
                 "version": 1,

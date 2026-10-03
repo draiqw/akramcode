@@ -676,7 +676,7 @@ export interface SharedMetricsSlashCommandParams {
 export interface SharedMetricsSlashCommandResult {
   ok: boolean
 }
-/** ``elapsed_ms`` = the client's own launch (TUI process start / Desktop app start) to ready (TUI gateway ready / Desktop backend attached), measured once per launch by the client. The client names its surface because a Desktop may attach to a URL/cloud backend where ``HERMES_DESKTOP`` is unset; without it the backend falls back to its own client detection. ``launch_id`` is an opaque per-launch token the backend latches on (never recorded), so a reconnect re-sending the same launch counts once while a new launch counts again. */
+/** ``elapsed_ms`` = the client's own launch (TUI process start / Desktop app start) to ready (TUI gateway ready / Desktop backend attached), measured once per launch by the client. The client names its surface because a Desktop may attach to a URL/cloud backend where ``AKRAMCODE_DESKTOP`` is unset; without it the backend falls back to its own client detection. ``launch_id`` is an opaque per-launch token the backend latches on (never recorded), so a reconnect re-sending the same launch counts once while a new launch counts again. */
 export interface SharedMetricsStartupLatencyParams {
   profile?: string | null
   elapsed_ms: number
@@ -686,7 +686,7 @@ export interface SharedMetricsStartupLatencyParams {
 export interface SharedMetricsStartupLatencyResult {
   ok: boolean
 }
-/** One Desktop PACKAGED self-update (electron-updater / App Installer / Store). Source-checkout hand-offs run ``hermes update`` and are counted from its receipt, never here. Raw words; the backend buckets them: ``outcome`` success|failed|noop|refused, ``failed_stage`` download|verify|apply|restart, ``mechanism`` the updater strategy kind, ``duration_ms`` wall time, ``from_commit_date`` the updated-from build's commit time (epoch seconds) when known. */
+/** One Desktop PACKAGED self-update (electron-updater / App Installer / Store). Source-checkout hand-offs run ``akramcode update`` and are counted from its receipt, never here. Raw words; the backend buckets them: ``outcome`` success|failed|noop|refused, ``failed_stage`` download|verify|apply|restart, ``mechanism`` the updater strategy kind, ``duration_ms`` wall time, ``from_commit_date`` the updated-from build's commit time (epoch seconds) when known. */
 export interface SharedMetricsUpdateRunParams {
   profile?: string | null
   outcome: string
@@ -4275,7 +4275,7 @@ export interface PluginServerRow {
   state: PluginServerState
   sentence: string
 }
-export type PluginServerState = 'connected' | 'app_not_running' | 'hermes_not_connected' | 'endpoint_unavailable' | 'no_interactive_session' | 'version_too_old' | 'missing_app' | 'unknown'
+export type PluginServerState = 'connected' | 'app_not_running' | 'akramcode_not_connected' | 'endpoint_unavailable' | 'no_interactive_session' | 'version_too_old' | 'missing_app' | 'unknown'
 /** One ``config_schema`` key of a plugin manifest, rendered by the Plugins hub (``akramcode_cli.plugins_settings.plugin_settings_fields``). ``secret`` fields carry no value: ``env`` names the ``.env`` variable and ``has_value`` whether it is set. */
 export interface PluginSettingField {
   key: string
@@ -4497,7 +4497,7 @@ export interface GatewayReadyPayload {
   replay_epoch: string
   heartbeat?: boolean | null
 }
-/** ``tui_gateway/change_watcher.py::resolve_skin`` — the resolved active skin (``HermesSkin``). ``{}`` when the skin engine failed to load. Colour maps are token → colour string. */
+/** ``tui_gateway/change_watcher.py::resolve_skin`` — the resolved active skin (``AkramCodeSkin``). ``{}`` when the skin engine failed to load. Colour maps are token → colour string. */
 export interface SkinPayload {
   name?: string
   description?: string
@@ -4909,7 +4909,7 @@ export interface RpcMethods {
   'browser.manage': { params: BrowserManageParams; result: BrowserManageResult }
   /** Lock one answer of a batch clarify request (editable until every question is locked). */
   'clarify.lock': { params: ClarifyLockParams; result: ClarifyLockResult }
-  /** Run ``hermes <argv>`` non-interactively and capture its output; ``blocked`` explains a refusal. */
+  /** Run ``akramcode <argv>`` non-interactively and capture its output; ``blocked`` explains a refusal. */
   'cli.exec': { params: CliExecParams; result: CliExecResult }
   /** What the calling client handles, sent once per connection (after gateway.ready); returns the server→client request methods this backend may send. */
   'client.capabilities': { params: ClientCapabilitiesParams; result: ClientCapabilitiesResult }
@@ -4945,7 +4945,7 @@ export interface RpcMethods {
   'connectors.list': { params: ConnectorsListParams; result: ConnectorsListResult }
   /** The current snapshot of one open session or account operation. */
   'connectors.operation.status': { params: ConnectionOperationParams; result: ConnectionOperationStatus }
-  /** The browser leg came back (hermes://connections/done): read the accounts now, not at the next tick. */
+  /** The browser leg came back (akramcode://connections/done): read the accounts now, not at the next tick. */
   'connectors.operation.wake': { params: ConnectionOperationParams; result: ConnectionWakeResult }
   /** Policy layers for the scoped member, from organization to member scope. */
   'connectors.policy.get': { params: ProfileParams; result: ConnectorPolicyGetResult }
@@ -5191,7 +5191,7 @@ export interface RpcMethods {
   'prompt.btw': { params: SideAgentParams; result: TaskIdResult }
   /** Send a user turn to a live session; busy sessions queue / steer / redirect instead of refusing. */
   'prompt.submit': { params: PromptSubmitParams; result: PromptSubmitResult }
-  /** Re-read ~/.hermes/.env (CLI /reload parity); built agents keep their pool until /new. */
+  /** Re-read ~/.akramcode/.env (CLI /reload parity); built agents keep their pool until /new. */
   'reload.env': { params: ReloadEnvParams; result: ReloadEnvResult }
   /** Tear down and rediscover MCP servers for every live session (prompt cache is invalidated). */
   'reload.mcp': { params: ReloadMcpParams; result: ReloadMcpResult }
@@ -5253,7 +5253,7 @@ export interface RpcMethods {
   'session.redirect': { params: SessionCorrectionParams; result: SessionCorrectionResult }
   /** Attach to a stored session: reuse it if live here, else lazy / deferred / cold / eager rebuild. */
   'session.resume': { params: SessionResumeParams; result: SessionResumeResult }
-  /** Export the transcript to ~/.hermes/sessions/saved (classic /save). */
+  /** Export the transcript to ~/.akramcode/sessions/saved (classic /save). */
   'session.save': { params: SessionSaveParams; result: SessionSaveResult }
   /** Set/clear hidden (out of the default list, still resumable by its owner) on a session + lineage. */
   'session.set_hidden': { params: SessionSetHiddenParams; result: SessionSetHiddenResult }
@@ -5707,7 +5707,7 @@ export interface BackendGatewayEventMap {
   'display.install.log': DisplayInstallLogPayload
   /** The takeover lease changed hands; every client repaints. */
   'display.lease': DisplayLeasePayload
-  /** This profile's screen started or stopped (also for transitions made outside hermes serve). */
+  /** This profile's screen started or stopped (also for transitions made outside akramcode serve). */
   'display.status': DisplayStatusPayload
   /** A session-level failure outside a turn (agent init, model switch, compression, resume). */
   error: ErrorPayload

@@ -10,7 +10,7 @@ threads) — which showed up as the post-banner freeze before the first prompt.
 from types import SimpleNamespace
 
 import akramcode_cli.goals as goals
-from cli import HermesCLI
+from cli import AkramCodeCLI
 
 
 def test_cli_session_store_is_the_registry_handle_goals_reuse(monkeypatch):
@@ -28,7 +28,7 @@ def test_cli_session_store_is_the_registry_handle_goals_reuse(monkeypatch):
 
     cli = SimpleNamespace()
     try:
-        HermesCLI._init_session_store(cli)
+        AkramCodeCLI._init_session_store(cli)
         assert cli._session_db is not None and not cli._session_db_unavailable
         # goals/loops/heartbeat go through the registry: same object, no second open.
         assert goals._get_session_db() is cli._session_db

@@ -65,11 +65,11 @@ export const contentEn = {
     },
     setup: {
       title: 'Setup Required',
-      intro: 'Hermes needs a model provider before the TUI can start a session.',
+      intro: 'AkramCode needs a model provider before the TUI can start a session.',
       actions: 'Actions',
       setupRow: 'run the first-time setup wizard in-place (adds a provider)',
       modelRow: 'pick a model (needs a session — add a provider first)',
-      exitRow: 'exit and run `hermes setup` manually',
+      exitRow: 'exit and run `akramcode setup` manually',
       footer: 'In the dashboard the Models page sets the profile default; on Desktop it is Settings -> Models.'
     }
   }

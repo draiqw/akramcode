@@ -1,4 +1,4 @@
-"""Hermes Agent Uninstaller."""
+"""AkramCode Agent Uninstaller."""
 
 import os
 import shutil
@@ -6,7 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 
 from akramcode_cli.colors import Colors, color
 
@@ -70,11 +70,11 @@ def get_project_root() -> Path:
 def code_removal_refusal() -> "str | None":
     """Why the uninstaller must not remove this tree's code, or ``None``.
 
-    A git checkout (the install.sh / install.ps1 / `hermes desktop` layout)
+    A git checkout (the install.sh / install.ps1 / `akramcode desktop` layout)
     is ours to remove. A sealed tree (no ``.git``) belongs to a steward —
     the Nix store, the bundled desktop app, a Docker image — and only the
     steward removes it. Returns the user-facing refusal text for sealed
-    trees; the text always points at ``hermes uninstall --data`` for the
+    trees; the text always points at ``akramcode uninstall --data`` for the
     user-data cleanup that IS allowed everywhere.
     """
     from akramcode_cli.steward import sealed_steward, steward_uninstall_message
@@ -100,7 +100,7 @@ def find_shell_configs() -> list:
     """Find shell configuration files that might have PATH entries."""
     home = Path.home()
     configs = []
-    
+
     candidates = [
         home / ".bashrc",
         home / ".bash_profile",
@@ -108,48 +108,48 @@ def find_shell_configs() -> list:
         home / ".zshrc",
         home / ".zprofile",
     ]
-    
+
     for config in candidates:
         if config.exists():
             configs.append(config)
-    
+
     return configs
 
 
 def remove_path_from_shell_configs():
-    """Remove Hermes PATH entries from shell configuration files."""
+    """Remove AkramCode PATH entries from shell configuration files."""
     removed_from = []
     for config_path in find_shell_configs():
         try:
             content = config_path.read_text(encoding="utf-8-sig")
             original_content = content
-            
-            # Remove lines containing hermes-agent or hermes PATH entries
+
+            # Remove lines containing akramcode-agent or akramcode PATH entries
             new_lines = []
             skip_next = False
-            
+
             for line in content.split('\n'):
-                # Skip the "# Hermes Agent" comment and following line
-                if '# Hermes Agent' in line or '# hermes-agent' in line:
+                # Skip the "# AkramCode Agent" comment and following line
+                if '# AkramCode Agent' in line or '# akramcode-agent' in line:
                     skip_next = True
                     continue
-                if skip_next and ('hermes' in line.lower() and 'PATH' in line):
+                if skip_next and ('akramcode' in line.lower() and 'PATH' in line):
                     skip_next = False
                     continue
                 skip_next = False
-                
-                # Remove any PATH line containing hermes
-                if 'hermes' in line.lower() and ('PATH=' in line or 'path=' in line.lower()):
+
+                # Remove any PATH line containing akramcode
+                if 'akramcode' in line.lower() and ('PATH=' in line or 'path=' in line.lower()):
                     continue
-                    
+
                 new_lines.append(line)
-            
+
             new_content = '\n'.join(new_lines)
-            
+
             # Clean up multiple blank lines
             while '\n\n\n' in new_content:
                 new_content = new_content.replace('\n\n\n', '\n\n')
-            
+
             if new_content != original_content:
                 from utils import atomic_write_text
                 # The user's own rc, never backed up: a bare write_text() truncates before the new
@@ -163,28 +163,28 @@ def remove_path_from_shell_configs():
 
 
 def remove_wrapper_script():
-    """Remove the hermes wrapper script if it exists."""
+    """Remove the akramcode wrapper script if it exists."""
     wrapper_paths = [
-        Path.home() / ".local" / "bin" / "hermes",
-        Path.home() / ".local" / "bin" / "hermes-acp",
-        Path.home() / ".local" / "bin" / "hermes-agent",
-        Path("/usr/local/bin/hermes"),
-        Path("/usr/local/bin/hermes-acp"),
-        Path("/usr/local/bin/hermes-agent"),
+        Path.home() / ".local" / "bin" / "akramcode",
+        Path.home() / ".local" / "bin" / "akramcode-acp",
+        Path.home() / ".local" / "bin" / "akramcode-agent",
+        Path("/usr/local/bin/akramcode"),
+        Path("/usr/local/bin/akramcode-acp"),
+        Path("/usr/local/bin/akramcode-agent"),
     ]
-    
+
     removed = []
     for wrapper in wrapper_paths:
         if wrapper.exists():
             try:
                 # Check if it's our wrapper (contains akramcode_cli reference)
                 content = wrapper.read_text(encoding="utf-8-sig")
-                if 'akramcode_cli' in content or 'hermes-agent' in content:
+                if 'akramcode_cli' in content or 'akramcode-agent' in content:
                     wrapper.unlink()
                     removed.append(wrapper)
             except Exception as e:
                 log_warn(f"Could not remove {wrapper}: {e}")
-    
+
     return removed
 
 
@@ -196,12 +196,12 @@ def _node_symlink_candidate_dirs() -> "list[Path]":
     return dirs
 
 
-def remove_node_symlinks(hermes_home: Path) -> list:
+def remove_node_symlinks(akramcode_home: Path) -> list:
     """Remove the node/npm/npx symlinks the installer placed on PATH.
 
     Historical POSIX installs (``scripts/install.sh`` before pm owned the
     Node runtime) symlinked node/npm/npx into the same directory as the
-    ``hermes`` command:
+    ``akramcode`` command:
 
     - ``/usr/local/bin/`` on root FHS installs (Linux, uid 0)
     - ``~/.local/bin/`` otherwise (the common non-root case)
@@ -209,11 +209,11 @@ def remove_node_symlinks(hermes_home: Path) -> list:
     We check all candidate directories so that uninstall works regardless of
     how the install was done (e.g. a root FHS install that placed links in
     ``/usr/local/bin``, or an older install that used ``~/.local/bin`` before
-    the FHS fix).  Only symlinks that resolve into this Hermes home's ``node``
+    the FHS fix).  Only symlinks that resolve into this AkramCode home's ``node``
     directory are removed — links the user has repointed elsewhere (nvm, fnm,
     etc.) are left untouched.
     """
-    node_dir = (hermes_home / "node").resolve()
+    node_dir = (akramcode_home / "node").resolve()
 
     def _unlink_ours(link: Path) -> bool:
         # Only act on symlinks — never delete a real binary the user put here.
@@ -238,7 +238,7 @@ def uninstall_gateway_service():
     - Linux: user + system systemd services (with proper DBUS env setup)
     - macOS: launchd plists
     - Windows: Scheduled Task + Startup-folder fallback, via ``gateway_windows``
-    - All platforms: standalone ``hermes gateway run`` processes
+    - All platforms: standalone ``akramcode gateway run`` processes
     """
     import platform
     stopped_something = False
@@ -294,13 +294,13 @@ def _remove_systemd_gateway() -> bool:
     return removed_any
 
 
-# Both gateway LaunchAgent naming schemes: the current ``ai.hermes.gateway*``
-# label and the ``io.nousresearch.hermes-agent.gateway*`` label older builds
+# Both gateway LaunchAgent naming schemes: the current ``ai.akramcode.gateway*``
+# label and the ``io.nousresearch.akramcode-agent.gateway*`` label older builds
 # installed. An uninstall must sweep BOTH — a stale agent keeps respawning the
 # gateway after the code tree is gone (#62209).
 _LAUNCHD_GATEWAY_PLIST_PATTERNS = (
-    "ai.hermes.gateway*.plist",
-    "io.nousresearch.hermes-agent.gateway*.plist",
+    "ai.akramcode.gateway*.plist",
+    "io.nousresearch.akramcode-agent.gateway*.plist",
 )
 
 
@@ -360,24 +360,24 @@ _GATEWAY_SERVICE_REMOVERS = {
     "Windows": (_remove_windows_gateway, "Could not check Windows gateway service")}
 
 # Windows helpers. install.ps1 leaves four things no rc file covers: User-scope env vars
-# HERMES_HOME / HERMES_GIT_BASH_PATH (HKCU\Environment), User-scope PATH entries
-# (%LOCALAPPDATA%\hermes\git\{cmd,bin,usr\bin}, ...\hermes\node), PortableGit + Node copies
+# AKRAMCODE_HOME / AKRAMCODE_GIT_BASH_PATH (HKCU\Environment), User-scope PATH entries
+# (%LOCALAPPDATA%\akramcode\git\{cmd,bin,usr\bin}, ...\akramcode\node), PortableGit + Node copies
 # (~200MB) and the gateway-service dir. Direct winreg writes (not PowerShell): no subprocess, and
 # they work under Constrained Language Mode; new shells see them without WM_SETTINGCHANGE.
 
 
-def _hermes_path_markers(hermes_home: Path, *, include_managed_bin: bool = False) -> list[str]:
-    """Prefixes identifying Hermes-owned User-PATH entries (prefix match sweeps git\cmd, git\bin,
+def _akramcode_path_markers(akramcode_home: Path, *, include_managed_bin: bool = False) -> list[str]:
+    """Prefixes identifying AkramCode-owned User-PATH entries (prefix match sweeps git\cmd, git\bin,
     node...). ``include_managed_bin`` adds ``<root>\bin`` (launchers + managed uv) — only when that
     dir is about to be deleted, so a keep-data uninstall keeps the working uv resolvable."""
-    root = str(hermes_home).rstrip("\\/")
-    subs = ("hermes-agent", "git", "node", "venv") + (("bin",) if include_managed_bin else ())
+    root = str(akramcode_home).rstrip("\\/")
+    subs = ("akramcode-agent", "git", "node", "venv") + (("bin",) if include_managed_bin else ())
     return [f"{root}\\{sub}" for sub in subs]
 
 
-def remove_path_from_windows_registry(hermes_home: Path, *, include_managed_bin: bool = False) -> list[str]:
-    """Strip Hermes-owned entries from User-scope PATH in the registry (see ``_hermes_path_markers``)."""
-    markers = tuple(m.lower() for m in _hermes_path_markers(hermes_home, include_managed_bin=include_managed_bin))
+def remove_path_from_windows_registry(akramcode_home: Path, *, include_managed_bin: bool = False) -> list[str]:
+    """Strip AkramCode-owned entries from User-scope PATH in the registry (see ``_akramcode_path_markers``)."""
+    markers = tuple(m.lower() for m in _akramcode_path_markers(akramcode_home, include_managed_bin=include_managed_bin))
 
     def edit(winreg, key, removed):
         try:
@@ -395,10 +395,10 @@ def remove_path_from_windows_registry(hermes_home: Path, *, include_managed_bin:
     return _edit_user_environment(edit, warn_label="Could not edit User PATH in registry")
 
 
-def remove_hermes_env_vars_windows() -> list[str]:
-    """Delete HERMES_HOME and HERMES_GIT_BASH_PATH from User-scope env vars."""
+def remove_akramcode_env_vars_windows() -> list[str]:
+    """Delete AKRAMCODE_HOME and AKRAMCODE_GIT_BASH_PATH from User-scope env vars."""
     def edit(winreg, key, removed):
-        for name in ("HERMES_HOME", "HERMES_GIT_BASH_PATH"):
+        for name in ("AKRAMCODE_HOME", "AKRAMCODE_GIT_BASH_PATH"):
             try:
                 winreg.QueryValueEx(key, name)
             except FileNotFoundError:
@@ -430,23 +430,23 @@ def _edit_user_environment(edit, *, warn_label: str) -> list[str]:
     return removed
 
 
-def remove_portable_tooling_windows(hermes_home: Path) -> list[Path]:
+def remove_portable_tooling_windows(akramcode_home: Path) -> list[Path]:
     """Delete the PortableGit / Node / gateway-service dirs the Windows installer created under
-    ``hermes_home`` (isolated from any system Git / Node, so nothing else breaks)."""
-    targets = (hermes_home / sub for sub in ("git", "node", "gateway-service"))
+    ``akramcode_home`` (isolated from any system Git / Node, so nothing else breaks)."""
+    targets = (akramcode_home / sub for sub in ("git", "node", "gateway-service"))
     return _remove_each((t for t in targets if t.exists()), lambda t: shutil.rmtree(t) or True)
 
 
 def _xdg_leftover_paths(full_uninstall: bool) -> "tuple[list[Path], list[Path]]":
-    """The XDG cache/data dirs an install scatters outside HERMES_HOME.
+    """The XDG cache/data dirs an install scatters outside AKRAMCODE_HOME.
 
     Returns (removable, data_preserved): the cache dir is always removable;
     the XDG data dir is user data, so it is only removed on a full uninstall
     and otherwise reported as intentionally preserved.
     """
     home = Path.home()
-    cache = home / ".cache" / "hermes"
-    data = home / ".local" / "share" / "hermes"
+    cache = home / ".cache" / "akramcode"
+    data = home / ".local" / "share" / "akramcode"
     removable = [cache] if cache.exists() else []
     if data.exists() and full_uninstall:
         removable.append(data)
@@ -455,13 +455,13 @@ def _xdg_leftover_paths(full_uninstall: bool) -> "tuple[list[Path], list[Path]]"
 
 
 def remove_desktop_app_leftovers(*, full_uninstall: bool) -> list[Path]:
-    """Remove per-user app leftovers that live outside HERMES_HOME and the
+    """Remove per-user app leftovers that live outside AKRAMCODE_HOME and the
     checkout, which earlier uninstallers left behind (#62209): the macOS
     Library caches/logs/browser-store/state entries the packaged app and
     Electron scatter, and the XDG cache dir on every platform. On a full
-    uninstall the XDG data dir (``~/.local/share/hermes``) goes too.
+    uninstall the XDG data dir (``~/.local/share/akramcode``) goes too.
 
-    Only well-known Hermes-named entries are touched — never a glob of the
+    Only well-known AkramCode-named entries are touched — never a glob of the
     whole Library.
     """
     import sys as _sys
@@ -478,7 +478,7 @@ def remove_desktop_app_leftovers(*, full_uninstall: bool) -> list[Path]:
                 entries = list(parent_dir.iterdir())
             except OSError:
                 continue
-            targets.extend(e for e in entries if "hermes" in e.name.lower())
+            targets.extend(e for e in entries if "akramcode" in e.name.lower())
     removable, _ = _xdg_leftover_paths(full_uninstall=full_uninstall)
     targets.extend(removable)
     return _remove_each((t for t in targets if t.exists()), _remove_path_or_tree)
@@ -495,13 +495,13 @@ def _remove_path_or_tree(path: Path) -> bool:
         return False
 
 
-def remove_legacy_runtime_trees(hermes_home: Path) -> list[Path]:
-    """Delete managed-runtime trees a PRE-SPLIT install left in HERMES_HOME.
+def remove_legacy_runtime_trees(akramcode_home: Path) -> list[Path]:
+    """Delete managed-runtime trees a PRE-SPLIT install left in AKRAMCODE_HOME.
 
     Runtime artifacts are install-scoped now, so the current locations go
     away with ``rmtree(project_root)``. But a checkout OUTSIDE the home
-    (the common case: ``~/src/hermes-agent``) used to put its node/uv
-    under ``$HERMES_HOME`` — that tree survives removing the checkout and
+    (the common case: ``~/src/akramcode-agent``) used to put its node/uv
+    under ``$AKRAMCODE_HOME`` — that tree survives removing the checkout and
     survives "keep my data" uninstalls, because it is not data.
 
     Only the exact managed layout is removed: ``node/`` (a tree the
@@ -511,7 +511,7 @@ def remove_legacy_runtime_trees(hermes_home: Path) -> list[Path]:
     """
     removed: list[Path] = []
 
-    node_tree = hermes_home / "node"
+    node_tree = akramcode_home / "node"
     if node_tree.is_dir():
         try:
             shutil.rmtree(node_tree, ignore_errors=False)
@@ -520,7 +520,7 @@ def remove_legacy_runtime_trees(hermes_home: Path) -> list[Path]:
             log_warn(f"Could not remove {node_tree}: {e}")
 
     for uv_name in ("uv", "uv.exe"):
-        uv_binary = hermes_home / "bin" / uv_name
+        uv_binary = akramcode_home / "bin" / uv_name
         if uv_binary.is_file():
             try:
                 uv_binary.unlink()
@@ -532,13 +532,13 @@ def remove_legacy_runtime_trees(hermes_home: Path) -> list[Path]:
 
 
 def remove_windows_bin_launchers(*, windows: bool | None = None) -> list[Path]:
-    """Delete the managed binary dir (the default Hermes root's ``bin``).
+    """Delete the managed binary dir (the default AkramCode root's ``bin``).
 
-    The dir holds only hermes-owned launcher copies (the relocatable venv's
+    The dir holds only akramcode-owned launcher copies (the relocatable venv's
     console scripts, staged onto PATH by first-run repair) — pm keeps uv in
     its own store entry, so nothing shared lives here and the whole dir goes.
     Every uninstall mode deletes the code checkout, so a surviving launcher
-    would dangle: ``hermes`` in a new terminal resolves and then errors on
+    would dangle: ``akramcode`` in a new terminal resolves and then errors on
     its missing venv target, which reads worse than command-not-found.
 
     A launcher that IS this process's own trampoline is mandatory-locked
@@ -553,8 +553,8 @@ def remove_windows_bin_launchers(*, windows: bool | None = None) -> list[Path]:
     if not windows:
         return []
     try:
-        from akramcode_constants import get_default_hermes_root
-        bin_dir = get_default_hermes_root() / "bin"
+        from akramcode_constants import get_default_akramcode_root
+        bin_dir = get_default_akramcode_root() / "bin"
     except Exception as e:
         log_warn(f"Could not locate the managed binary dir: {e}")
         return []
@@ -586,11 +586,11 @@ def _is_windows() -> bool:
     return sys.platform == "win32"
 
 
-def _is_default_hermes_home(hermes_home: Path) -> bool:
-    """Return True when ``hermes_home`` points at the default (non-profile) root."""
+def _is_default_akramcode_home(akramcode_home: Path) -> bool:
+    """Return True when ``akramcode_home`` points at the default (non-profile) root."""
     try:
-        from akramcode_constants import get_default_hermes_root
-        return hermes_home.resolve() == get_default_hermes_root().resolve()
+        from akramcode_constants import get_default_akramcode_root
+        return akramcode_home.resolve() == get_default_akramcode_root().resolve()
     except Exception:
         return False
 
@@ -610,17 +610,17 @@ def _discover_named_profiles():
 
 def _uninstall_profile(profile) -> None:
     """Fully uninstall a named profile: stop its gateway, remove its alias, wipe its home. Shells
-    out to ``hermes -p <name> gateway stop|uninstall`` because service names / unit paths derive
-    from the current HERMES_HOME and can't be switched in-process."""
+    out to ``akramcode -p <name> gateway stop|uninstall`` because service names / unit paths derive
+    from the current AKRAMCODE_HOME and can't be switched in-process."""
     name = profile.name
     log_info(f"Uninstalling profile '{name}'...")
 
-    # 1. Gateway service, via `python -m akramcode_cli.main` (the `hermes` wrapper may be half-gone).
-    hermes_invocation = [sys.executable, "-m", "akramcode_cli.main", "--profile", name]
+    # 1. Gateway service, via `python -m akramcode_cli.main` (the `akramcode` wrapper may be half-gone).
+    akramcode_invocation = [sys.executable, "-m", "akramcode_cli.main", "--profile", name]
     for subcmd in ("stop", "uninstall"):
         try:
             subprocess.run(
-                hermes_invocation + ["gateway", subcmd], capture_output=True, text=True,
+                akramcode_invocation + ["gateway", subcmd], capture_output=True, text=True,
                 encoding='utf-8', errors='replace', timeout=60, check=False)
         except subprocess.TimeoutExpired:
             log_warn(f"  Gateway {subcmd} timed out for '{name}'")
@@ -635,7 +635,7 @@ def _uninstall_profile(profile) -> None:
             log_success(f"  Removed alias {alias_path}")
         except Exception as e:
             log_warn(f"  Could not remove alias {alias_path}: {e}")
-    # 3. Wipe the profile's HERMES_HOME directory.
+    # 3. Wipe the profile's AKRAMCODE_HOME directory.
     _rmtree_step(profile.path, indent="  ", fully=False)
 
 
@@ -644,7 +644,7 @@ def run_data_uninstall(args):
     from akramcode_cli.data_cleanup import plan_data_removal, remove_data
     from akramcode_cli.gui_uninstall import desktop_userdata_dir
 
-    home = get_hermes_home()
+    home = get_akramcode_home()
     try:
         userdata = getattr(args, "desktop_userdata", None)
         plan = plan_data_removal(home, get_project_root(), Path(userdata) if userdata else desktop_userdata_dir())
@@ -652,7 +652,7 @@ def run_data_uninstall(args):
         log_warn(str(exc))
         raise SystemExit(1) from exc
     if not plan.remove:
-        print(f"No Hermes user data found in {home}.")
+        print(f"No AkramCode user data found in {home}.")
         return
     print("Data-only removal: installed code and other profiles stay intact.")
     print("Will remove:")
@@ -678,19 +678,19 @@ def run_data_uninstall(args):
     for path in removed:
         log_success(f"Removed {path}")
     if failed:
-        print("Hermes data was only partially removed. Surviving targets:")
+        print("AkramCode data was only partially removed. Surviving targets:")
         for path, reason in failed:
             log_warn(f"{path}: {reason}")
         raise SystemExit(1)
-    log_success("Hermes data removed.")
+    log_success("AkramCode data removed.")
 
 
 def run_gui_uninstall(args):
     """GUI-only uninstall: remove the Chat GUI, leave the agent + data intact.
 
-    Mirrors ``hermes uninstall --gui``. Removes the desktop app's built
+    Mirrors ``akramcode uninstall --gui``. Removes the desktop app's built
     artifacts, the packaged app bundle (best-effort), and the Electron
-    userData dir — nothing under ``$HERMES_HOME`` config/sessions/.env, and
+    userData dir — nothing under ``$AKRAMCODE_HOME`` config/sessions/.env, and
     never the Python agent or its venv.
     """
     from akramcode_cli.gui_uninstall import (
@@ -701,20 +701,20 @@ def run_gui_uninstall(args):
 
     _refuse_if_steward_owned()
 
-    hermes_home = get_hermes_home()
-    summary = gui_install_summary(hermes_home)
+    akramcode_home = get_akramcode_home()
+    summary = gui_install_summary(akramcode_home)
     skip_confirm = bool(getattr(args, "yes", False))
 
     print()
-    _print_box("│         ☤ Hermes Chat GUI Uninstaller                  │", Colors.MAGENTA)
+    _print_box("│         ☤ AkramCode Chat GUI Uninstaller                  │", Colors.MAGENTA)
     print()
 
     if not summary["gui_installed"]:
-        print("No Hermes Chat GUI installation was found.")
-        print(f"  Checked: {hermes_home}, and the standard app locations for this OS.")
+        print("No AkramCode Chat GUI installation was found.")
+        print(f"  Checked: {akramcode_home}, and the standard app locations for this OS.")
         return
 
-    print(color("This removes the Chat GUI only. The Hermes agent stays installed.", Colors.CYAN))
+    print(color("This removes the Chat GUI only. The AkramCode agent stays installed.", Colors.CYAN))
     print()
     print(color("Will remove:", Colors.YELLOW, Colors.BOLD))
     for p in (*summary["source_built_artifacts"], *summary["packaged_app_paths"]):
@@ -722,10 +722,10 @@ def run_gui_uninstall(args):
     if summary["userdata_exists"]:
         print(f"  • {summary['userdata_dir']}  (desktop app data)")
     print()
-    if agent_is_installed(hermes_home):
+    if agent_is_installed(akramcode_home):
         print(color("Kept intact:", Colors.GREEN, Colors.BOLD))
-        print(f"  • The Hermes agent at {hermes_home / 'hermes-agent'}")
-        print(f"  • Your config, sessions, and secrets under {hermes_home}")
+        print(f"  • The AkramCode agent at {akramcode_home / 'akramcode-agent'}")
+        print(f"  • Your config, sessions, and secrets under {akramcode_home}")
         print()
 
     if not skip_confirm and not _confirm_yes("to remove the Chat GUI"):
@@ -734,58 +734,58 @@ def run_gui_uninstall(args):
     print()
     print(color("Uninstalling Chat GUI...", Colors.CYAN, Colors.BOLD))
     print()
-    uninstall_gui(hermes_home)
+    uninstall_gui(akramcode_home)
 
     print()
     _print_box("│            ✓ Chat GUI Uninstalled!                      │", Colors.GREEN)
     print()
-    print("The Hermes agent is still installed. Run 'hermes' to use the CLI,")
-    print("or 'hermes uninstall' to remove the agent too.")
+    print("The AkramCode agent is still installed. Run 'akramcode' to use the CLI,")
+    print("or 'akramcode uninstall' to remove the agent too.")
     print()
 
 
 def run_uninstall(args):
     """
     Run the uninstall process.
-    
+
     Options:
-    - Full uninstall: removes code + ~/.hermes/ (configs, data, logs)
-    - Keep data: removes code but keeps ~/.hermes/ for future reinstall
+    - Full uninstall: removes code + ~/.akramcode/ (configs, data, logs)
+    - Keep data: removes code but keeps ~/.akramcode/ for future reinstall
     """
     _refuse_if_steward_owned()
 
     project_root = get_project_root()
-    hermes_home = get_hermes_home()
+    akramcode_home = get_akramcode_home()
 
     full_flag = bool(getattr(args, "full", False))
     if bool(getattr(args, "dry_run", False)):
         _print_uninstall_dry_run(
-            project_root=project_root, hermes_home=hermes_home, full_uninstall=full_flag)
+            project_root=project_root, akramcode_home=akramcode_home, full_uninstall=full_flag)
         return
 
     # Named profiles (only when uninstalling from the default root) are offered for cleanup too,
-    # instead of leaving zombie HERMES_HOMEs and systemd units behind.
-    is_default_profile = _is_default_hermes_home(hermes_home)
+    # instead of leaving zombie AKRAMCODE_HOMEs and systemd units behind.
+    is_default_profile = _is_default_akramcode_home(akramcode_home)
     named_profiles = _discover_named_profiles() if is_default_profile else []
 
     # ``--yes`` (the desktop app's detached cleanup script): no prompts; ``--full`` = full wipe.
     # Named profiles are NOT auto-removed here — too destructive a default for an unattended run.
     if bool(getattr(args, "yes", False)):
         _perform_uninstall(
-            project_root=project_root, hermes_home=hermes_home, full_uninstall=full_flag,
+            project_root=project_root, akramcode_home=akramcode_home, full_uninstall=full_flag,
             remove_profiles=False, named_profiles=named_profiles)
         return
 
     print()
-    _print_box("│            ☤ Hermes Agent Uninstaller                  │", Colors.MAGENTA)
+    _print_box("│            ☤ AkramCode Agent Uninstaller                  │", Colors.MAGENTA)
     print()
 
     # Show what will be affected
     print(color("Current Installation:", Colors.CYAN, Colors.BOLD))
     print(f"  Code:    {project_root}")
-    print(f"  Config:  {hermes_home / 'config.yaml'}")
-    print(f"  Secrets: {hermes_home / '.env'}")
-    print(f"  Data:    {hermes_home / 'cron/'}, {hermes_home / 'sessions/'}, {hermes_home / 'logs/'}")
+    print(f"  Config:  {akramcode_home / 'config.yaml'}")
+    print(f"  Secrets: {akramcode_home / '.env'}")
+    print(f"  Data:    {akramcode_home / 'cron/'}, {akramcode_home / 'sessions/'}, {akramcode_home / 'logs/'}")
     from akramcode_cli.gui_uninstall import desktop_userdata_dir
     if (desktop_userdata := desktop_userdata_dir()).exists():
         print(f"  Desktop: {desktop_userdata}  (app data - kept by 'Keep data', removed by 'Full uninstall')")
@@ -820,7 +820,7 @@ def run_uninstall(args):
     full_uninstall = (choice == "2")
 
     # Full uninstall from the default profile: offer to remove named profiles too (gateway
-    # services, alias wrappers, HERMES_HOME dirs) — otherwise they leave zombie services behind.
+    # services, alias wrappers, AKRAMCODE_HOME dirs) — otherwise they leave zombie services behind.
     remove_profiles = False
     n_profiles = len(named_profiles)
     profile_names = ", ".join(p.name for p in named_profiles)
@@ -837,46 +837,46 @@ def run_uninstall(args):
     # Final confirmation
     print()
     if full_uninstall:
-        print(color("⚠️  WARNING: This will permanently delete ALL Hermes data!", Colors.RED, Colors.BOLD))
+        print(color("⚠️  WARNING: This will permanently delete ALL AkramCode data!", Colors.RED, Colors.BOLD))
         print(color("   Including: configs, API keys, sessions, scheduled jobs, logs", Colors.RED))
         if remove_profiles:
             print(color(f"   Plus {n_profiles} profile(s): {profile_names}", Colors.RED))
     else:
-        print("This will remove the Hermes code but keep your configuration and data.")
+        print("This will remove the AkramCode code but keep your configuration and data.")
 
     print()
     if not _confirm_yes("to confirm"):
         return
 
     _perform_uninstall(
-        project_root=project_root, hermes_home=hermes_home, full_uninstall=full_uninstall,
+        project_root=project_root, akramcode_home=akramcode_home, full_uninstall=full_uninstall,
         remove_profiles=remove_profiles, named_profiles=named_profiles)
 
 
-def _print_uninstall_dry_run(*, project_root: Path, hermes_home: Path, full_uninstall: bool) -> None:
+def _print_uninstall_dry_run(*, project_root: Path, akramcode_home: Path, full_uninstall: bool) -> None:
     """Print the uninstall plan without stopping services or deleting files."""
     print()
     print(color("Dry run: no files, services, or environment entries will be changed.", Colors.CYAN, Colors.BOLD))
     print()
     print(color("Would inspect/remove:", Colors.YELLOW, Colors.BOLD))
     print("  • Gateway services and standalone gateway processes")
-    print("  • Hermes PATH entries from shell configs / Windows User PATH")
-    print("  • Hermes wrapper scripts and Hermes-managed node/npm/npx symlinks")
+    print("  • AkramCode PATH entries from shell configs / Windows User PATH")
+    print("  • AkramCode wrapper scripts and AkramCode-managed node/npm/npx symlinks")
     print("  • Desktop Chat GUI artifacts")
     print(f"  • Code checkout: {project_root}")
     from akramcode_cli.gui_uninstall import desktop_userdata_dir
     userdata = desktop_userdata_dir()
     if not full_uninstall:
-        print(f"  • Keep Hermes config/data: {hermes_home}")
+        print(f"  • Keep AkramCode config/data: {akramcode_home}")
         if userdata.exists():
             print(f"  • Keep desktop app data: {userdata}")
     else:
-        print(f"  • Hermes config/data: {hermes_home}")
+        print(f"  • AkramCode config/data: {akramcode_home}")
         if sys.platform == "darwin":
             print("  • macOS: dashboard/serve launchd jobs, Electron + setup caches")
         if userdata.exists():
             print(f"  • Desktop app data: {userdata}")
-        profiles = _discover_named_profiles() if _is_default_hermes_home(hermes_home) else []
+        profiles = _discover_named_profiles() if _is_default_akramcode_home(akramcode_home) else []
         if profiles:
             print("  • Named profiles (interactive uninstall asks before removing):")
             for prof in profiles:
@@ -907,17 +907,17 @@ def _rmtree_step(path: Path, *, indent: str = "", fully: bool = True) -> None:
 
 
 def _macos_cache_leftover_dirs() -> "list[Path]":
-    """Cache dirs Electron/Chromium and the setup binary write OUTSIDE HERMES_HOME on
+    """Cache dirs Electron/Chromium and the setup binary write OUTSIDE AKRAMCODE_HOME on
     macOS. Chromium splits the desktop app's HTTP/script caches under ``~/Library/Caches``
     keyed by both the product name and the app id, and the Tauri setup binary does the
     same under its own pair of identifiers. ``gui_uninstall`` removes the userData dir
-    (``Application Support/Hermes``) but never these (#62209)."""
+    (``Application Support/AkramCode``) but never these (#62209)."""
     caches = Path.home() / "Library" / "Caches"
     return [
-        caches / "Hermes",
-        caches / "com.nousresearch.hermes",
-        caches / "hermes-setup",
-        caches / "com.nousresearch.hermes.setup",
+        caches / "AkramCode",
+        caches / "com.nousresearch.akramcode",
+        caches / "akramcode-setup",
+        caches / "com.nousresearch.akramcode.setup",
     ]
 
 
@@ -931,7 +931,7 @@ def _rmtree_if_exists(path: Path) -> bool:
 
 def remove_dashboard_launchd_jobs() -> "list[Path]":
     """macOS: boot out and delete every launchd job whose ``ProgramArguments`` runs a
-    ``hermes dashboard`` / ``hermes serve`` backend, returning the removed plist paths.
+    ``akramcode dashboard`` / ``akramcode serve`` backend, returning the removed plist paths.
 
     The gateway uninstall only reaches the gateway label, so a dashboard/serve
     LaunchAgent survives a full uninstall and launchd keeps respawning its backend.
@@ -939,7 +939,7 @@ def remove_dashboard_launchd_jobs() -> "list[Path]":
     (``_launchd_plist_dirs`` + ``_parse_dashboard_runtime``): read each plist, match the
     arguments, ``launchctl bootout`` the job's domains (launchd takes the process down;
     booting out an already-unloaded job is fine and never checked), then delete the
-    plist — a stale, not-loaded plist is still Hermes-created and still goes. A missing,
+    plist — a stale, not-loaded plist is still AkramCode-created and still goes. A missing,
     unreadable, or malformed plist is skipped, never fatal. macOS only (empty list
     elsewhere)."""
     if sys.platform != "darwin":
@@ -993,13 +993,13 @@ def remove_dashboard_launchd_jobs() -> "list[Path]":
 def _perform_uninstall(
     *,
     project_root: Path,
-    hermes_home: Path,
+    akramcode_home: Path,
     full_uninstall: bool,
     remove_profiles: bool,
     named_profiles: list) -> None:
     """The uninstall steps shared by the interactive and ``--yes`` paths: stop gateway -> strip PATH
     (rc files + Windows registry) -> wrapper/launchers/node symlinks -> Chat GUI artifacts -> delete
-    the checkout -> (Windows) PortableGit/Node -> optionally ``$HERMES_HOME`` and named profiles."""
+    the checkout -> (Windows) PortableGit/Node -> optionally ``$AKRAMCODE_HOME`` and named profiles."""
     print()
     print(color("Uninstalling...", Colors.CYAN, Colors.BOLD))
     print()
@@ -1008,46 +1008,46 @@ def _perform_uninstall(
     if not uninstall_gateway_service():
         log_info("No gateway service or processes found")
 
-    # 2-3b. PATH entries, wrapper, Windows launchers, node symlinks. Windows: hermes_home is
-    #    %VAR%-expanded because install.ps1 writes literal C:\Users\<u>\...; hermes\bin (launchers +
+    # 2-3b. PATH entries, wrapper, Windows launchers, node symlinks. Windows: akramcode_home is
+    #    %VAR%-expanded because install.ps1 writes literal C:\Users\<u>\...; akramcode\bin (launchers +
     #    managed uv) leaves the PATH only when the full wipe below deletes it (keep-data keeps uv
     #    resolvable), while the launchers themselves always go. Symlinks go only when they still
     #    point into this home's node dir (never clobber nvm / user-managed Node).
     windows = _is_windows()
-    sweep_managed_bin = windows and full_uninstall and _is_default_hermes_home(hermes_home)
+    sweep_managed_bin = windows and full_uninstall and _is_default_akramcode_home(akramcode_home)
     for on_this_platform, label, remove, success_fmt, none_msg in (
         (True, "Removing PATH entries from shell configs...",
          remove_path_from_shell_configs, "Updated {}", "No PATH entries found to remove in shell rc files"),
         (windows, "Removing PATH entries from Windows User environment...",
          lambda: remove_path_from_windows_registry(
-             Path(os.path.expandvars(str(hermes_home))), include_managed_bin=sweep_managed_bin),
-         "Removed from User PATH: {}", "No Hermes-owned PATH entries in User environment"),
-        (windows, "Removing HERMES_HOME / HERMES_GIT_BASH_PATH User env vars...",
-         remove_hermes_env_vars_windows, "Removed User env var: {}", "No Hermes-set User env vars to remove"),
-        (True, "Removing hermes command...", remove_wrapper_script, "Removed {}", "No wrapper script found"),
-        (windows, "Removing Windows hermes launchers...",
-         remove_windows_bin_launchers, "Removed {}", "No Windows hermes launchers found"),
-        (True, "Removing Hermes-managed node/npm/npx symlinks...",
-         lambda: remove_node_symlinks(hermes_home), "Removed {}", "No Hermes-managed node/npm/npx symlinks found"),
+             Path(os.path.expandvars(str(akramcode_home))), include_managed_bin=sweep_managed_bin),
+         "Removed from User PATH: {}", "No AkramCode-owned PATH entries in User environment"),
+        (windows, "Removing AKRAMCODE_HOME / AKRAMCODE_GIT_BASH_PATH User env vars...",
+         remove_akramcode_env_vars_windows, "Removed User env var: {}", "No AkramCode-set User env vars to remove"),
+        (True, "Removing akramcode command...", remove_wrapper_script, "Removed {}", "No wrapper script found"),
+        (windows, "Removing Windows akramcode launchers...",
+         remove_windows_bin_launchers, "Removed {}", "No Windows akramcode launchers found"),
+        (True, "Removing AkramCode-managed node/npm/npx symlinks...",
+         lambda: remove_node_symlinks(akramcode_home), "Removed {}", "No AkramCode-managed node/npm/npx symlinks found"),
     ):
         if on_this_platform:
             _remove_step(label, remove, success_fmt, none_msg)
 
     # 3c. Chat GUI artifacts go with the agent code. uninstall_gui() never touches config/sessions/
-    #     .env (safe in keep-data mode); the packaged app + Electron userData live OUTSIDE HERMES_HOME.
+    #     .env (safe in keep-data mode); the packaged app + Electron userData live OUTSIDE AKRAMCODE_HOME.
     #     The userData dir is user configuration (connections.json, OAuth partitions, renderer
     #     state), so keep-data preserves it — only the full wipe removes it.
     log_info("Removing desktop Chat GUI artifacts...")
     try:
         from akramcode_cli.gui_uninstall import uninstall_gui
-        if not uninstall_gui(hermes_home, remove_userdata=full_uninstall):
+        if not uninstall_gui(akramcode_home, remove_userdata=full_uninstall):
             log_info("No desktop GUI artifacts found")
     except Exception as e:
         log_warn(f"Could not remove desktop GUI artifacts: {e}")
 
-    # 3d. Per-user app leftovers outside HERMES_HOME: macOS Library caches/logs/
+    # 3d. Per-user app leftovers outside AKRAMCODE_HOME: macOS Library caches/logs/
     #     browser-store/state entries, the XDG cache dir, and (full mode) the XDG
-    #     data dir. Only Hermes-named entries are touched (#62209).
+    #     data dir. Only AkramCode-named entries are touched (#62209).
     log_info("Removing app caches and leftovers outside the install...")
     removed_leftovers = remove_desktop_app_leftovers(full_uninstall=full_uninstall)
     if removed_leftovers:
@@ -1064,25 +1064,25 @@ def _perform_uninstall(
     if windows:
         _remove_step(
             "Removing Windows installer artifacts (PortableGit, Node, gateway-service)...",
-            lambda: remove_portable_tooling_windows(hermes_home), "Removed {}",
+            lambda: remove_portable_tooling_windows(akramcode_home), "Removed {}",
             "No Windows installer artifacts to remove")
 
     # 4c. Remove managed-runtime trees a PRE-SPLIT install left in
-    #     HERMES_HOME. Current installs keep these inside the checkout, so
+    #     AKRAMCODE_HOME. Current installs keep these inside the checkout, so
     #     step 4 already removed them — but a checkout outside the home
-    #     (~/src/hermes-agent) used to leave its node/uv behind, surviving
+    #     (~/src/akramcode-agent) used to leave its node/uv behind, surviving
     #     both the checkout removal and a "keep my data" uninstall. They
     #     are install tooling, not data, so removing them is correct in
     #     either mode.
     log_info("Removing managed runtime trees...")
-    removed_runtimes = remove_legacy_runtime_trees(hermes_home)
+    removed_runtimes = remove_legacy_runtime_trees(akramcode_home)
     if removed_runtimes:
         for path in removed_runtimes:
             log_success(f"Removed {path}")
     else:
         log_info("No legacy runtime trees to remove")
 
-    # 5. Optionally remove ~/.hermes/ data directory (and named profiles)
+    # 5. Optionally remove ~/.akramcode/ data directory (and named profiles)
     if full_uninstall:
         # 5a. Named profiles' homes live under <default>/profiles/ (swept by the rmtree below),
         #     but their services + alias scripts live OUTSIDE the default root.
@@ -1096,7 +1096,7 @@ def _perform_uninstall(
                 "Removing dashboard/serve launchd jobs...",
                 remove_dashboard_launchd_jobs, "Removed {}",
                 "No dashboard/serve launchd jobs found")
-        # 5c. macOS: Electron/Chromium and setup cache dirs written OUTSIDE HERMES_HOME
+        # 5c. macOS: Electron/Chromium and setup cache dirs written OUTSIDE AKRAMCODE_HOME
         #     survive both the checkout removal and the home rmtree below (#62209).
         if sys.platform == "darwin":
             _remove_step(
@@ -1104,9 +1104,9 @@ def _perform_uninstall(
                 lambda: _remove_each(_macos_cache_leftover_dirs(), _rmtree_if_exists), "Removed {}",
                 "No Electron or setup caches found")
         log_info("Removing configuration and data...")
-        _rmtree_step(hermes_home)
+        _rmtree_step(akramcode_home)
     else:
-        log_info(f"Keeping configuration and data in {hermes_home}")
+        log_info(f"Keeping configuration and data in {akramcode_home}")
 
     print()
     _print_box("│              ✓ Uninstall Complete!                      │", Colors.GREEN)
@@ -1114,7 +1114,7 @@ def _perform_uninstall(
 
     if not full_uninstall:
         print(color("Your configuration and data have been preserved:", Colors.CYAN))
-        print(f"  {hermes_home}/")
+        print(f"  {akramcode_home}/")
         from akramcode_cli.gui_uninstall import desktop_userdata_dir
         if (desktop_userdata := desktop_userdata_dir()).exists():
             print(f"  {desktop_userdata}  (desktop app data)")
@@ -1129,13 +1129,13 @@ def _perform_uninstall(
     for line, col in _RELOAD_HINT[windows]:
         print(color(line, col) if col else line)
     print()
-    print("Thank you for using Hermes Agent! ☤")
+    print("Thank you for using AkramCode Agent! ☤")
     print()
 
 
 _REINSTALL_HINT = {
-    True: "  iex (irm https://hermes-agent.nousresearch.com/install.ps1)",
-    False: "  curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash"}
+    True: "  iex (irm https://akramcode-agent.nousresearch.com/install.ps1)",
+    False: "  curl -fsSL https://akramcode-agent.nousresearch.com/install.sh | bash"}
 # windows -> [(line, color or None)]
 _RELOAD_HINT = {
     True: [("Open a new terminal (PowerShell / Windows Terminal) to pick up", Colors.YELLOW),

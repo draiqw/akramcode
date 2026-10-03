@@ -17,12 +17,12 @@ from pathlib import Path
 from typing import Iterable, List, Optional
 
 from akramcode_cli.sqlite_util import add_column_if_missing as _add_column_if_missing, open_db, write_txn
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 
 
 def projects_db_path() -> Path:
-    """The per-profile projects DB path (``$HERMES_HOME/projects.db``)."""
-    return get_hermes_home() / "projects.db"
+    """The per-profile projects DB path (``$AKRAMCODE_HOME/projects.db``)."""
+    return get_akramcode_home() / "projects.db"
 
 
 SCHEMA_SQL = """

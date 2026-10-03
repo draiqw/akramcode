@@ -107,7 +107,7 @@ class ReloadEnvResult(Result):
 
 
 method("reload.env", params=ReloadEnvParams, result=ReloadEnvResult,
-       doc="Re-read ~/.hermes/.env (CLI /reload parity); built agents keep their pool until /new.")
+       doc="Re-read ~/.akramcode/.env (CLI /reload parity); built agents keep their pool until /new.")
 
 
 class ReloadMcpParams(Params):
@@ -639,7 +639,7 @@ class PluginSettingField(Result):
 class PluginServerState(WireEnum):
     connected = "connected"
     app_not_running = "app_not_running"
-    hermes_not_connected = "hermes_not_connected"
+    akramcode_not_connected = "akramcode_not_connected"
     endpoint_unavailable = "endpoint_unavailable"
     no_interactive_session = "no_interactive_session"
     version_too_old = "version_too_old"

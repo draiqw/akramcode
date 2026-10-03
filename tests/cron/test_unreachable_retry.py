@@ -16,9 +16,9 @@ from cron.jobs import create_job, get_due_jobs, get_job, load_jobs, mark_job_run
 
 @pytest.fixture
 def tmp_cron_home(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     return home
 
 
@@ -56,13 +56,13 @@ def test_unreachable_failure_pulls_next_run_earlier_then_ladder_exhausts(
     assert datetime.fromisoformat(j["next_run_at"]) - now > timedelta(hours=1)
 
     pinned = datetime(2026, 9, 18, 12, 1, tzinfo=timezone.utc)
-    monkeypatch.setattr("cron.jobs._hermes_now", lambda: pinned)
-    monkeypatch.setattr(ur, "_hermes_now", lambda: pinned)
+    monkeypatch.setattr("cron.jobs._akramcode_now", lambda: pinned)
+    monkeypatch.setattr(ur, "_akramcode_now", lambda: pinned)
     weekly = create_job("weekly digest", "0 12 * * 5")
     assert mark_job_run(weekly["id"], False, "ConnectError: dns", model_unreachable=True)
     retry_at = datetime.fromisoformat(get_job(weekly["id"])["next_run_at"])
     assert retry_at == pinned + timedelta(seconds=ur.RETRY_DELAYS_SECONDS[0])
-    monkeypatch.setattr("cron.jobs._hermes_now", lambda: retry_at + timedelta(seconds=1))
+    monkeypatch.setattr("cron.jobs._akramcode_now", lambda: retry_at + timedelta(seconds=1))
     assert weekly["id"] in {due["id"] for due in get_due_jobs()}
 
     # A direct jobs.json expression edit while a retry is parked re-anchors without firing.
@@ -71,7 +71,7 @@ def test_unreachable_failure_pulls_next_run_earlier_then_ladder_exhausts(
     jobs = load_jobs()
     next(j for j in jobs if j["id"] == weekly["id"])["schedule"]["expr"] = "0 9 * * 1"
     save_jobs(jobs)
-    monkeypatch.setattr("cron.jobs._hermes_now", lambda: retry_at + timedelta(seconds=1))
+    monkeypatch.setattr("cron.jobs._akramcode_now", lambda: retry_at + timedelta(seconds=1))
     assert weekly["id"] not in {due["id"] for due in get_due_jobs()}
 
 

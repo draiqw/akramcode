@@ -2,7 +2,7 @@
 
 The "database is locked for over Ns" failure names the victim but not the holder, and the
 open-descriptor scan (``akramcode_state.holders``) cannot tell a reader from the one writer: every
-Hermes process has the DB open. SQLite's unix VFS takes ``fcntl`` byte-range locks whose offsets
+AkramCode process has the DB open. SQLite's unix VFS takes ``fcntl`` byte-range locks whose offsets
 encode the lock kind, and the kernel exports them with the owning pid, so the holder can be named
 at the moment the deadline passes.
 """

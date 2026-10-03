@@ -15,10 +15,10 @@ def cua_home(tmp_path, monkeypatch):
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("USERPROFILE", str(tmp_path))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(tmp_path / "tools"))
-    monkeypatch.delenv("HERMES_CUA_DRIVER_CMD", raising=False)
-    monkeypatch.setenv("HERMES_DISABLE_LAZY_INSTALLS", "1")
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode"))
+    monkeypatch.setenv("AKRAMCODE_RUNTIME_DIR", str(tmp_path / "tools"))
+    monkeypatch.delenv("AKRAMCODE_CUA_DRIVER_CMD", raising=False)
+    monkeypatch.setenv("AKRAMCODE_DISABLE_LAZY_INSTALLS", "1")
     monkeypatch.setattr(paths, "lockfile_path", lambda: tmp_path / "lock.json")
     return tmp_path
 

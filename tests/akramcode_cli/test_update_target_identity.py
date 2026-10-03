@@ -28,8 +28,8 @@ def update_tree(tmp_path, monkeypatch):
     monkeypatch.setenv('GIT_CONFIG_GLOBAL', str(tmp_path / 'git-config'))
     monkeypatch.setenv('GIT_CONFIG_NOSYSTEM', '1')
     monkeypatch.setenv('GIT_ALLOW_PROTOCOL', 'file')
-    monkeypatch.delenv('HERMES_UPDATE_HANDOFF_PID', raising=False)
-    monkeypatch.delenv('HERMES_UPDATE_REEXEC', raising=False)
+    monkeypatch.delenv('AKRAMCODE_UPDATE_HANDOFF_PID', raising=False)
+    monkeypatch.delenv('AKRAMCODE_UPDATE_REEXEC', raising=False)
     origin = tmp_path / 'origin'
     origin.mkdir()
     git(origin, 'init', '-q', '-b', 'main')
@@ -200,11 +200,11 @@ def test_stable_git_uses_remote_identity_without_moving_local_tags(update_tree, 
     t = update_tree
     # The stable channel is an R2 record whose published build pins t.wanted
     # (the documented reader seam; see test_source_channel_integration).
-    record = {"schema": 1, "name": "stable", "repository": "NousResearch/hermes-agent",
+    record = {"schema": 1, "name": "stable", "repository": "NousResearch/akramcode-agent",
               "policy": "stable-release", "state": "active", "identity": {}, "nextSequence": 2,
               "head": {"buildId": "build-fixture", "sequence": 1}}
     manifest = {"schema": 1, "request": {"buildId": "build-fixture", "channel": "stable", "sequence": 1,
-                "repository": "NousResearch/hermes-agent", "commit": t.wanted, "sourceVersion": "1.1.0",
+                "repository": "NousResearch/akramcode-agent", "commit": t.wanted, "sourceVersion": "1.1.0",
                 "version": "0.0.1", "identity": {}, "bundleEnv": {}}, "packages": []}
     monkeypatch.setattr(source_releases, '_resolve_channel',
                         lambda name, repository: ChannelResolution(record, record, manifest))
@@ -275,18 +275,18 @@ def test_stable_zip_consumes_the_same_commit_through_the_real_swap(update_tree, 
     monkeypatch.setattr(cli_main, '_pause_windows_gateways_for_update',
                         lambda: {"resume_needed": True})
     archive = tmp_path / 'source.zip'
-    git(t.origin, 'archive', '--format=zip', '--prefix=hermes-agent-source/', f'--output={archive}', t.wanted)
+    git(t.origin, 'archive', '--format=zip', '--prefix=akramcode-agent-source/', f'--output={archive}', t.wanted)
     archive_bytes = archive.read_bytes()
-    record = {"schema": 1, "name": "stable", "repository": "NousResearch/hermes-agent",
+    record = {"schema": 1, "name": "stable", "repository": "NousResearch/akramcode-agent",
               "policy": "stable-release", "state": "active", "identity": {}, "nextSequence": 2,
               "head": {"buildId": "build-fixture", "sequence": 1}}
     manifest = {"schema": 1, "request": {"buildId": "build-fixture", "channel": "stable", "sequence": 1,
-                "repository": "NousResearch/hermes-agent", "commit": t.wanted, "sourceVersion": "1.1.0",
+                "repository": "NousResearch/akramcode-agent", "commit": t.wanted, "sourceVersion": "1.1.0",
                 "version": "0.0.1", "identity": {}, "bundleEnv": {}}, "packages": []}
     monkeypatch.setattr(source_releases, '_resolve_channel',
                         lambda name, repository: ChannelResolution(record, record, manifest))
     routes = {
-        f'/NousResearch/hermes-agent/archive/{t.wanted}.zip': archive_bytes,
+        f'/NousResearch/akramcode-agent/archive/{t.wanted}.zip': archive_bytes,
     }
 
     class Handler(BaseHTTPRequestHandler):
@@ -314,7 +314,7 @@ def test_stable_zip_consumes_the_same_commit_through_the_real_swap(update_tree, 
     def local_open(request, *args, **kwargs):
         url = request.full_url if isinstance(request, urllib.request.Request) else request
         parsed = urlsplit(url)
-        assert parsed.scheme == 'https' and parsed.netloc in {'api.github.com', 'github.com', 'hermes-assets.nousresearch.com'}, url
+        assert parsed.scheme == 'https' and parsed.netloc in {'api.github.com', 'github.com', 'akramcode-assets.nousresearch.com'}, url
         urls.append(url)
         local = f'http://127.0.0.1:{server.server_port}{parsed.path}'
         if parsed.query:
@@ -365,7 +365,7 @@ def test_stable_zip_consumes_the_same_commit_through_the_real_swap(update_tree, 
             assert request['snapshot_id'] == 'release-snapshot'
             assert (t.clone / 'content.txt').read_text(encoding='utf-8-sig') == 'release\n'
             assert [url for url in urls if '/archive/' in url] == [
-                f'https://github.com/NousResearch/hermes-agent/archive/{t.wanted}.zip']
+                f'https://github.com/NousResearch/akramcode-agent/archive/{t.wanted}.zip']
         assert t.resumed
         if transport in {'git-error', 'dirty'}:
             assert failed and fetched

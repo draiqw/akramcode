@@ -1,14 +1,14 @@
 """Definitive F0 test: capture consecutive wire payloads on a real Fable 5.1 tool loop and diff the
-message prefix between call N and N+1. If Hermes strips prior-turn thinking, call N+1's messages[:k]
+message prefix between call N and N+1. If AkramCode strips prior-turn thinking, call N+1's messages[:k]
 will NOT equal call N's messages (prefix divergence) even though the conversation only grew.
 Also reports cache hit per call. Cost: a handful of calls."""
 import os, sys, re, tempfile, time, json, copy, subprocess
 # LIVE: makes ~6 real calls to the configured provider (a few cents). Usage:
-#   python cache_prefix_wire.py <repo_root> <A|B> [--hermes-home DIR]   (default HERMES_HOME: the real one, for credentials)
+#   python cache_prefix_wire.py <repo_root> <A|B> [--akramcode-home DIR]   (default AKRAMCODE_HOME: the real one, for credentials)
 sys.path.insert(0, sys.argv[1])
-os.environ.setdefault("HERMES_HOME", os.path.expanduser("~/.hermes"))
-if "--hermes-home" in sys.argv:
-    os.environ["HERMES_HOME"] = sys.argv[sys.argv.index("--hermes-home") + 1]
+os.environ.setdefault("AKRAMCODE_HOME", os.path.expanduser("~/.akramcode"))
+if "--akramcode-home" in sys.argv:
+    os.environ["AKRAMCODE_HOME"] = sys.argv[sys.argv.index("--akramcode-home") + 1]
 arm = sys.argv[2] if len(sys.argv) > 2 else "A"
 import agent.anthropic_message_convert as amc
 if arm == "B":
@@ -57,7 +57,7 @@ task = (f"Work in {work} (create it). Before EACH tool call, think carefully for
         "5) read it back; then reply DONE.")
 ag.run_conversation(task)
 time.sleep(1)
-log = subprocess.run(f"grep -h '\\[{sid}\\]' ~/.hermes/logs/agent.log | grep 'API call #'", shell=True, capture_output=True).stdout.decode("utf-8", "replace")
+log = subprocess.run(f"grep -h '\\[{sid}\\]' ~/.akramcode/logs/agent.log | grep 'API call #'", shell=True, capture_output=True).stdout.decode("utf-8", "replace")
 rows = re.findall(r"API call #(\d+): .*in=(\d+) out=(\d+) .*cache=(\d+)/(\d+) \((\d+)%\)", log)
 for r in rows: print(f"  call {r[0]:>2} in={int(r[1]):>6} out={int(r[2]):>5} cached={int(r[3]):>6} ({r[5]}%) uncached={int(r[1])-int(r[3])}")
 print(f"ARM {arm}: captured {len(captured)} payloads")

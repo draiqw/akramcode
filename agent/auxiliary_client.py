@@ -118,7 +118,7 @@ def aux_probe_mode():
 
 from agent.credential_pool import load_pool
 from agent.model_metadata import MINIMUM_CONTEXT_LENGTH, get_model_context_length
-from akramcode_cli.config import get_hermes_home
+from akramcode_cli.config import get_akramcode_home
 from akramcode_cli.config_providers import _canonical_api_mode
 from agent.auxiliary_health import (
     _custom_health_base_url, _unhealthy_cache_key, fallback_candidate_quarantine_ttl,
@@ -127,7 +127,7 @@ from agent.auxiliary_health import (
 from agent.auxiliary_unavailable import (
     AuxiliaryClientUnavailable, clear_nous_credential_failure, missing_provider_credentials_message,
     nous_credential_failure_detail, record_nous_credential_failure)
-from akramcode_constants import OPENROUTER_BASE_URL, hermes_home_key
+from akramcode_constants import OPENROUTER_BASE_URL, akramcode_home_key
 from utils import base_url_host_matches, base_url_hostname, base_url_origin, env_float, is_truthy_value, model_forces_max_completion_tokens, normalize_proxy_env_vars
 
 logger = logging.getLogger(__name__)
@@ -172,7 +172,7 @@ def _openai_http_client_kwargs(base_url: Optional[str], *, async_mode: bool = Fa
             logger.warning(
                 "agent.process_bootstrap.build_keepalive_http_client is "
                 "unavailable — mixed/stale install detected (#64333). Falling "
-                "back to the SDK default HTTP client. Run `hermes update` (or "
+                "back to the SDK default HTTP client. Run `akramcode update` (or "
                 "reinstall the Desktop app) to resync the runtime.")
         client = None
     return {"http_client": client} if client is not None else {}
@@ -184,13 +184,13 @@ def _create_openai_client(*, api_key: str, base_url: str, **kwargs: Any) -> Any:
         return _AuxProbeClientStub(api_key=api_key, base_url=base_url)
     kwargs = {**_openai_http_client_kwargs(base_url), **kwargs}
     _apply_required_codex_headers(kwargs, access_token=api_key, base_url=base_url)
-    # Hermes owns aux retry/fallback policy; the SDK default (max_retries=2) would triple
-    # wall time on a hung endpoint before Hermes sees one failure.
-    # Hermes owns auxiliary retry + provider/model fallback policy (the same-provider transient retry in
+    # AkramCode owns aux retry/fallback policy; the SDK default (max_retries=2) would triple
+    # wall time on a hung endpoint before AkramCode sees one failure.
+    # AkramCode owns auxiliary retry + provider/model fallback policy (the same-provider transient retry in
     # call_llm plus the except-chain fallback). The OpenAI SDK's own default (max_retries=2 → up to 3
     # attempts) silently multiplies the effective wall time of every aux call by 3× on a slow/hung endpoint,
-    # so a 120s timeout can stall ~360s before Hermes sees a single failure (issue #54465). Disable
-    # SDK-internal retries by default and let Hermes control the budget; explicit callers can still override
+    # so a 120s timeout can stall ~360s before AkramCode sees a single failure (issue #54465). Disable
+    # SDK-internal retries by default and let AkramCode control the budget; explicit callers can still override
     # via kwargs.
     kwargs.setdefault("max_retries", 0)
     return OpenAI(api_key=api_key, base_url=base_url, **kwargs)
@@ -482,7 +482,7 @@ def _run_protected_sync_provider_call(callback: Callable[[dict[str, Any]], Any],
             done.set()
 
     threading.Thread(
-        target=provider_context.run, args=(_provider_worker,), name="hermes-protected-aux-provider",
+        target=provider_context.run, args=(_provider_worker,), name="akramcode-protected-aux-provider",
         daemon=True).start()
     while True:
         # Check cancel before AND after each wait so it wins when result publication and the
@@ -501,7 +501,7 @@ def _run_protected_sync_provider_call(callback: Callable[[dict[str, Any]], Any],
 
 def _client_declares(client_obj: Any, flag: str) -> bool:
     """Whether ``client_obj`` (or its class) sets ``flag`` truthy; absent → False. Capability declaration,
-    not isinstance, so out-of-tree clients can opt out of wrappers unimported (cf. SUPPORTS_HERMES_TOOL_CALLS)."""
+    not isinstance, so out-of-tree clients can opt out of wrappers unimported (cf. SUPPORTS_AKRAMCODE_TOOL_CALLS)."""
     try:
         return bool(getattr(client_obj, flag, False))
     except Exception:
@@ -867,8 +867,8 @@ _PROVIDERS_WITHOUT_VISION: frozenset = frozenset({"kimi-coding", "kimi-coding-cn
 
 # OpenRouter app attribution (always sent). `X-Title` is what the dashboard reads.
 _OR_HEADERS_BASE = {
-    "HTTP-Referer": "https://hermes-agent.nousresearch.com",
-    "X-Title": "Hermes Agent",
+    "HTTP-Referer": "https://akramcode-agent.nousresearch.com",
+    "X-Title": "AkramCode Agent",
     "X-OpenRouter-Categories": "productivity,cli-agent",
 }
 
@@ -896,8 +896,8 @@ def _apply_user_default_headers(headers: dict | None) -> dict | None:
 def build_or_headers(or_config: dict | None = None) -> dict:
     """OpenRouter headers, plus response-cache headers when enabled.
 
-    Precedence env > config > default: ``HERMES_OPENROUTER_CACHE`` overrides
-    ``openrouter.response_cache``; ``HERMES_OPENROUTER_CACHE_TTL`` (1-86400 s) overrides
+    Precedence env > config > default: ``AKRAMCODE_OPENROUTER_CACHE`` overrides
+    ``openrouter.response_cache``; ``AKRAMCODE_OPENROUTER_CACHE_TTL`` (1-86400 s) overrides
     ``openrouter.response_cache_ttl``. ``or_config=None`` reads from disk.
     """
     headers = dict(_OR_HEADERS_BASE)
@@ -907,11 +907,11 @@ def build_or_headers(or_config: dict | None = None) -> dict:
             or_config = load_config_readonly().get("openrouter", {})
         except Exception:
             or_config = {}
-    env_cache = os.environ.get("HERMES_OPENROUTER_CACHE", "").strip().lower()
+    env_cache = os.environ.get("AKRAMCODE_OPENROUTER_CACHE", "").strip().lower()
     if not (env_cache in {"1", "true", "yes", "on"} if env_cache else or_config.get("response_cache", False)):
         return headers
     headers["X-OpenRouter-Cache"] = "true"
-    env_ttl = os.environ.get("HERMES_OPENROUTER_CACHE_TTL", "").strip()
+    env_ttl = os.environ.get("AKRAMCODE_OPENROUTER_CACHE_TTL", "").strip()
     if env_ttl:
         if env_ttl.isdigit() and 1 <= int(env_ttl) <= 86400:
             headers["X-OpenRouter-Cache-TTL"] = str(int(env_ttl))
@@ -923,7 +923,7 @@ def build_or_headers(or_config: dict | None = None) -> dict:
 
 
 # NVIDIA NIM cloud billing attribution; host-gated because NVIDIA_BASE_URL may be a local NIM.
-_NVIDIA_NIM_CLOUD_HEADERS = {"X-BILLING-INVOKE-ORIGIN": "HermesAgent"}
+_NVIDIA_NIM_CLOUD_HEADERS = {"X-BILLING-INVOKE-ORIGIN": "AkramCodeAgent"}
 
 
 def build_nvidia_nim_headers(base_url: str | None) -> dict:
@@ -935,9 +935,9 @@ def build_nvidia_nim_headers(base_url: str | None) -> dict:
 from akramcode_cli.version_info import get_version_info
 
 _AI_GATEWAY_HEADERS = {
-    "HTTP-Referer": "https://hermes-agent.nousresearch.com",
-    "X-Title": "Hermes Agent",
-    "User-Agent": f"HermesAgent/{get_version_info().base_version}",
+    "HTTP-Referer": "https://akramcode-agent.nousresearch.com",
+    "X-Title": "AkramCode Agent",
+    "User-Agent": f"AkramCodeAgent/{get_version_info().base_version}",
 }
 
 # Nous Portal attribution extra_body. Tags come from agent.portal_tags so the client= marker
@@ -960,7 +960,7 @@ _OPENROUTER_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free"
 _NOUS_MODEL = "google/gemini-3.6-flash"
 _NOUS_DEFAULT_BASE_URL = "https://inference-api.nousresearch.com/v1"
 _ANTHROPIC_DEFAULT_BASE_URL = "https://api.anthropic.com"
-_AUTH_JSON_PATH = get_hermes_home() / "auth.json"
+_AUTH_JSON_PATH = get_akramcode_home() / "auth.json"
 _AUTH_JSON_PATH_AT_IMPORT = _AUTH_JSON_PATH
 
 
@@ -1106,7 +1106,7 @@ def _is_anthropic_compatible_host(url: str) -> bool:
 
 def _nous_min_key_ttl_seconds() -> int:
     try:
-        return max(60, int(os.getenv("HERMES_NOUS_MIN_KEY_TTL_SECONDS", "1800")))
+        return max(60, int(os.getenv("AKRAMCODE_NOUS_MIN_KEY_TTL_SECONDS", "1800")))
     except (TypeError, ValueError):
         return 1800
 
@@ -1452,7 +1452,7 @@ class _CodexCompletionsAdapter:
         # (``_wire_aliases``, popped in ``create()``), never on the instance — aux adapters are shared.
         wire_tools, wire_aliases = _alias_wire_tools(
             _responses_tools(tools),
-            {"provider": getattr(self._client, "_hermes_aux_effective_provider", "") or None, "base_url": host},
+            {"provider": getattr(self._client, "_akramcode_aux_effective_provider", "") or None, "base_url": host},
             is_xai,
         )
         renamed = {original: alias for alias, original in wire_aliases.items()}
@@ -1487,7 +1487,7 @@ class _CodexCompletionsAdapter:
             current_issuer_model=wire_model, native_compaction_eligible=False,
         )
         resp_kwargs: Dict[str, Any] = {
-            # Codex only knows the base slug; strip the Hermes ``-900k`` picker suffix.
+            # Codex only knows the base slug; strip the AkramCode ``-900k`` picker suffix.
             "model": wire_model, "instructions": instructions,
             "input": input_items or [{"role": "user", "content": ""}], "store": False,
         }
@@ -1559,7 +1559,7 @@ class _CodexCompletionsAdapter:
         from akramcode_cli.providers import is_actual_route
 
         if is_actual_route(
-            getattr(self._client, "_hermes_aux_effective_provider", ""),
+            getattr(self._client, "_akramcode_aux_effective_provider", ""),
             str(getattr(self._client, "base_url", "") or ""),
         ):
             raise ValueError(
@@ -1598,7 +1598,7 @@ class _CodexCompletionsAdapter:
             if final is None:
                 raise RuntimeError("Codex auxiliary Responses stream did not return a final response")
             text_parts, tool_calls_raw, usage = _parse_codex_final_response(final)
-            # Undo only the aliases THIS request emitted, before the call reaches Hermes dispatch.
+            # Undo only the aliases THIS request emitted, before the call reaches AkramCode dispatch.
             for tc in tool_calls_raw or ():
                 if tc.function.name in wire_aliases:
                     tc.function.name = wire_aliases[tc.function.name]
@@ -1770,7 +1770,7 @@ class _AnthropicCompletionsAdapter:
             }
         # response_format: top-level gets the same translation as the extra_body form; when both
         # are present the extra_body form wins. Passthrough excludes ``reasoning``/``response_format``
-        # (already TRANSLATED to native fields — raw would 400 on strict gateways) and ``_`` Hermes plumbing.
+        # (already TRANSLATED to native fields — raw would 400 on strict gateways) and ``_`` AkramCode plumbing.
         # The adapter builds the Messages body from a fixed allow-list of kwargs, so before this an
         # unrecognized top-level kwarg was dropped on the floor: the request succeeded but the schema
         # contract silently became prompt compliance (#85626 review, point 2).
@@ -1917,13 +1917,13 @@ def _maybe_wrap_anthropic(
     ``client_obj`` unchanged for probe stubs/specialized adapters, OpenAI-wire, explicit non-Anthropic
     ``api_mode``, or missing ``anthropic`` SDK.
     """
-    # Anthropic/Bedrock/Codex wrappers, plus any client declaring HERMES_SKIP_TRANSPORT_WRAP
+    # Anthropic/Bedrock/Codex wrappers, plus any client declaring AKRAMCODE_SKIP_TRANSPORT_WRAP
     # (native/ACP shims, in-tree or plugin), must never be re-dispatched through a wire adapter —
     # a class-attribute declaration rather than isinstance so this hot path never imports them.
     if (
         isinstance(client_obj, _AuxProbeClientStub)
         or _safe_isinstance(client_obj, (AnthropicAuxiliaryClient, BedrockAuxiliaryClient, CodexAuxiliaryClient))
-        or _client_declares(client_obj, "HERMES_SKIP_TRANSPORT_WRAP")
+        or _client_declares(client_obj, "AKRAMCODE_SKIP_TRANSPORT_WRAP")
     ):
         return client_obj
     # Explicit non-anthropic api_mode wins over URL heuristics.
@@ -1955,7 +1955,7 @@ def _maybe_wrap_anthropic(
 
 
 def _read_nous_auth() -> Optional[dict]:
-    """Nous provider state dict from the credential pool or ~/.hermes/auth.json; None when not active with tokens."""
+    """Nous provider state dict from the credential pool or ~/.akramcode/auth.json; None when not active with tokens."""
     pool_present, entry = _select_pool_entry("nous")
     if pool_present:
         if entry is None:
@@ -2050,7 +2050,7 @@ def _resolve_nous_runtime_api(
     try:
         from akramcode_cli.auth import resolve_nous_runtime_credentials
         creds = resolve_nous_runtime_credentials(
-            timeout_seconds=env_float("HERMES_NOUS_TIMEOUT_SECONDS", 15),
+            timeout_seconds=env_float("AKRAMCODE_NOUS_TIMEOUT_SECONDS", 15),
             force_refresh=force_refresh,
             stale_access_token=stale_access_token or None,
         )
@@ -2088,7 +2088,7 @@ def _resolve_xai_oauth_for_aux() -> Optional[Tuple[str, str]]:
                 ).strip()
                 _url = lambda v: str(v or "").strip().rstrip("/")  # noqa: E731
                 base_url = _xai_validate_inference_base_url(
-                    _url(_scoped_key_env("HERMES_XAI_BASE_URL"))
+                    _url(_scoped_key_env("AKRAMCODE_XAI_BASE_URL"))
                     or _url(_scoped_key_env("XAI_BASE_URL"))
                     or _url(getattr(entry, "runtime_base_url", None))
                     or _url(getattr(entry, "base_url", None)),
@@ -2109,7 +2109,7 @@ def _resolve_xai_oauth_for_aux() -> Optional[Tuple[str, str]]:
 
 def _resolve_codex_credential_and_base() -> Tuple[Optional[str], str]:
     """``(token, base_url)`` taken from ONE authority, so a Codex key is only ever sent to the host
-    it belongs to (#121486): the profile-scoped ``HERMES_CODEX_BASE_URL`` wins; otherwise a pooled
+    it belongs to (#121486): the profile-scoped ``AKRAMCODE_CODEX_BASE_URL`` wins; otherwise a pooled
     key goes where that pool entry routes (row URL / ``model.base_url``) and the auth.json OAuth
     token goes to the ChatGPT default. ``(None, <base>)`` without a usable token."""
     override = _codex_base_url_override()
@@ -2243,8 +2243,8 @@ def _endpoint_default_headers(
     elif base_url_host_matches(base_url, "integrate.api.nvidia.com"):
         headers = dict(build_nvidia_nim_headers(base_url))
     elif xai and base_url_host_matches(base_url, "x.ai"):
-        from tools.xai_http import hermes_xai_default_headers
-        headers = dict(hermes_xai_default_headers())
+        from tools.xai_http import akramcode_xai_default_headers
+        headers = dict(akramcode_xai_default_headers())
     else:
         headers = _profile_default_headers(provider) or {}
     return _apply_user_default_headers(headers or None) or None
@@ -2363,7 +2363,7 @@ def _try_nous(vision: bool = False) -> Tuple[Optional[OpenAI], Optional[str]]:
     nous = _read_nous_auth()
     runtime = _resolve_nous_runtime_api(force_refresh=False)
     if runtime is None and not nous:
-        logger.warning("Auxiliary Nous client unavailable: no Nous authentication found (run: hermes auth).")
+        logger.warning("Auxiliary Nous client unavailable: no Nous authentication found (run: akramcode auth).")
         _mark_provider_unhealthy("nous", ttl=60, reason="no Nous authentication found", level=logging.DEBUG)
         return None, None
     if runtime is None and nous:
@@ -2375,7 +2375,7 @@ def _try_nous(vision: bool = False) -> Tuple[Optional[OpenAI], Optional[str]]:
         if not api_key:
             logger.warning(
                 "Auxiliary Nous client unavailable: no usable inference JWT found "
-                "(run: hermes auth add nous)."
+                "(run: akramcode auth add nous)."
             )
             _mark_provider_unhealthy("nous", ttl=60, reason="no usable Nous inference JWT", level=logging.DEBUG)
             return None, None
@@ -2867,7 +2867,7 @@ def _validate_base_url(base_url: str) -> None:
     except ValueError as exc:
         raise RuntimeError(
             f"Malformed custom endpoint URL: {candidate!r}. "
-            "Run `hermes setup` or `hermes model` and enter a valid http(s) base URL."
+            "Run `akramcode setup` or `akramcode model` and enter a valid http(s) base URL."
         ) from exc
 
 
@@ -2925,17 +2925,17 @@ def _build_xai_oauth_aux_client(model: str) -> Tuple[Optional[Any], Optional[str
         return None, None
     api_key, base_url = resolved
     logger.debug("Auxiliary client: xAI OAuth (%s via Responses API)", model)
-    from tools.xai_http import hermes_xai_default_headers
+    from tools.xai_http import akramcode_xai_default_headers
     real_client = _create_openai_client(
-        api_key=api_key, base_url=base_url, default_headers=hermes_xai_default_headers()
+        api_key=api_key, base_url=base_url, default_headers=akramcode_xai_default_headers()
     )
     return CodexAuxiliaryClient(real_client, model), model
 
 
 def _codex_base_url_override() -> str:
-    """Profile-scoped ``HERMES_CODEX_BASE_URL`` (same read as the API-key env vars: under a
+    """Profile-scoped ``AKRAMCODE_CODEX_BASE_URL`` (same read as the API-key env vars: under a
     multiplexer the routed profile's .env decides the endpoint, never a sibling's process env)."""
-    return _scoped_key_env("HERMES_CODEX_BASE_URL").rstrip("/")
+    return _scoped_key_env("AKRAMCODE_CODEX_BASE_URL").rstrip("/")
 
 
 def _build_codex_client(model: str) -> Tuple[Optional[Any], Optional[str]]:
@@ -3542,7 +3542,7 @@ def _should_skip_same_provider_retry(task: Optional[str], exc: Exception) -> boo
 def _evict_cached_clients(provider: str) -> None:
     """Drop this profile's cached auxiliary clients for a provider so fresh creds are used.
 
-    Scoped to the calling profile (``hermes_home_key()`` is the first key slot): a rotation in
+    Scoped to the calling profile (``akramcode_home_key()`` is the first key slot): a rotation in
     one profile must not drop another profile's client for the same provider in a multiplexing
     gateway, since that profile's credentials did not change. Entries are popped, not closed:
     a concurrent caller may be mid-request on the shared client (closing it raises ReadError /
@@ -3550,7 +3550,7 @@ def _evict_cached_clients(provider: str) -> None:
     overflow path in ``_get_cached_client``.
     """
     normalized = _normalize_aux_provider(provider)
-    home = hermes_home_key()
+    home = akramcode_home_key()
     with _client_cache_lock:
         for key in [key for key in _client_cache
                     if key[0] == home and _normalize_aux_provider(str(key[1])) == normalized]:
@@ -3824,7 +3824,7 @@ def _refresh_codex_credentials() -> bool:
 def _refresh_nous_credentials() -> bool:
     from akramcode_cli.auth import resolve_nous_runtime_credentials
     return _creds_have_api_key(resolve_nous_runtime_credentials(
-        timeout_seconds=env_float("HERMES_NOUS_TIMEOUT_SECONDS", 15), force_refresh=True
+        timeout_seconds=env_float("AKRAMCODE_NOUS_TIMEOUT_SECONDS", 15), force_refresh=True
     ))
 
 
@@ -3982,7 +3982,7 @@ def _fallback_destination(
     task: Optional[str], fb_client: Any, fb_model: Optional[str], fb_label: str
 ) -> _FallbackDestination:
     """Route identity of a fallback request: attached destination, else configured entry, else label."""
-    attached = getattr(fb_client, "_hermes_fallback_destination", None)
+    attached = getattr(fb_client, "_akramcode_fallback_destination", None)
     if isinstance(attached, _FallbackDestination):
         return attached
     entry = _fallback_chain_entry(task, fb_label)
@@ -4454,7 +4454,7 @@ def _resolve_fallback_entry(entry: Dict[str, Any]) -> Tuple[Optional[Any], Optio
     )
     if client is not None:
         with contextlib.suppress(Exception):
-            client._hermes_fallback_destination = _fallback_destination_from_entry(entry, client, resolved_model)
+            client._akramcode_fallback_destination = _fallback_destination_from_entry(entry, client, resolved_model)
     return client, resolved_model
 
 
@@ -4518,7 +4518,7 @@ def _try_main_fallback_chain(
 
 def _warn_stale_openai_base_url(runtime_provider: str) -> None:
     """Warn once when OPENAI_BASE_URL is set but config.yaml names a non-custom provider (a stale
-    ~/.hermes/.env value after `hermes model` poisons routing)."""
+    ~/.akramcode/.env value after `akramcode model` poisons routing)."""
     global _stale_base_url_warned
     if _stale_base_url_warned:
         return
@@ -4528,8 +4528,8 @@ def _warn_stale_openai_base_url(runtime_provider: str) -> None:
         logger.warning(
             "OPENAI_BASE_URL is set (%s) but model.provider is '%s'. "
             "Auxiliary clients may route to the wrong endpoint. "
-            "Run: hermes model to reconfigure, or remove "
-            "OPENAI_BASE_URL from ~/.hermes/.env",
+            "Run: akramcode model to reconfigure, or remove "
+            "OPENAI_BASE_URL from ~/.akramcode/.env",
             _env_base, _cfg_provider,
         )
         _stale_base_url_warned = True
@@ -4619,7 +4619,7 @@ def _discovery_chain_allowed(main_provider: str, task: Optional[str] = None) -> 
         return True
     logger.warning(
         "Auxiliary %s: main provider %s is unavailable and no fallback_chain / fallback_providers is "
-        "configured — refusing to guess another logged-in provider. Re-authenticate (`hermes model`) "
+        "configured — refusing to guess another logged-in provider. Re-authenticate (`akramcode model`) "
         "or declare a fallback.", task or "call", main_provider)
     return False
 
@@ -4680,7 +4680,7 @@ def _resolve_auto_route(
 
 def _effective_provider_for_client(client: Any, fallback: str) -> str:
     """Return the concrete provider selected for an auto-routed client."""
-    effective_provider = getattr(client, "_hermes_aux_effective_provider", "")
+    effective_provider = getattr(client, "_akramcode_aux_effective_provider", "")
     if isinstance(effective_provider, str) and effective_provider:
         return effective_provider
     return str(fallback or "")
@@ -4706,7 +4706,7 @@ def _to_async_client(sync_client, model: str, is_vision: bool = False):
         if isinstance(sync_client, GeminiNativeClient):
             return AsyncGeminiNativeClient(sync_client), model
     # ACP shims (subprocess, not an HTTP pool) are already async-safe and opt out of the wrapper.
-    if _client_declares(sync_client, "HERMES_SKIP_ASYNC_WRAP"):
+    if _client_declares(sync_client, "AKRAMCODE_SKIP_ASYNC_WRAP"):
         return sync_client, model
     sync_base_url = str(sync_client.base_url)
     # A key_cmd/Entra client keeps its credential in the SDK's per-request provider slot, not in
@@ -4732,7 +4732,7 @@ def _to_async_client(sync_client, model: str, is_vision: bool = False):
         async_kwargs["default_headers"] = headers
     _apply_required_codex_headers(async_kwargs, access_token=sync_client.api_key, base_url=sync_base_url)
     async_kwargs = {**_openai_http_client_kwargs(sync_base_url, async_mode=True), **async_kwargs}
-    # Hermes owns the auxiliary retry/timeout budget; disable SDK-internal retries.
+    # AkramCode owns the auxiliary retry/timeout budget; disable SDK-internal retries.
     # See #54465.
     async_kwargs.setdefault("max_retries", 0)
     return AsyncOpenAI(**async_kwargs), model
@@ -4917,7 +4917,7 @@ def _wrap_transport(req: _ResolveRequest, client_obj: Any, final_model_str: str,
             if isinstance(client_obj, CodexAuxiliaryClient)
             else client_obj
         )
-        client._hermes_aux_effective_provider = "actual"
+        client._akramcode_aux_effective_provider = "actual"
         return client
     # OpenCode relay targets pick the wire per model; a task/provider-level api_mode is stale for
     # every other model (#98799), so it is re-derived here like the main runtime does.
@@ -4983,7 +4983,7 @@ def _resolve_auto_branch(req: _ResolveRequest) -> _ResolveResult:
     routed_client, routed_model = _route_client(req, client, model or resolved)
     if routed_client is not None and effective_provider:
         try:
-            setattr(routed_client, "_hermes_aux_effective_provider", effective_provider)
+            setattr(routed_client, "_akramcode_aux_effective_provider", effective_provider)
         except (AttributeError, TypeError):
             logger.debug("Auxiliary client %s cannot retain effective provider %s",
                          type(routed_client).__name__, effective_provider)
@@ -5008,7 +5008,7 @@ def _resolve_nous_branch(req: _ResolveRequest) -> _ResolveResult:
     client, default = _try_nous(vision=(req.is_vision or model in _PROVIDER_VISION_MODELS.values()
                                         or (model or "").strip().lower() == "mimo-v2-omni"))
     if client is None:
-        logger.warning("resolve_provider_client: nous requested but Nous Portal not configured (run: hermes auth)")
+        logger.warning("resolve_provider_client: nous requested but Nous Portal not configured (run: akramcode auth)")
         return None, None
     final_model = _normalize_resolved_model(model or default, req.provider)
     # Dual-wire: anthropic/* → /v1/messages, else /chat/completions. Derive from the catalog id
@@ -5029,7 +5029,7 @@ def _resolve_openai_codex_branch(req: _ResolveRequest) -> _ResolveResult:
                        "model; pass model explicitly (e.g. model.model in config.yaml "
                        "or auxiliary.<task>.model for per-task aux routing).")
         return None, None
-    no_token_msg = "resolve_provider_client: openai-codex requested but no Codex OAuth token found (run: hermes model)"
+    no_token_msg = "resolve_provider_client: openai-codex requested but no Codex OAuth token found (run: akramcode model)"
     if req.raw_codex:
         # Raw OpenAI client for callers needing responses.stream() (main agent loop).
         codex_token, base_url = _resolve_codex_credential_and_base()
@@ -5049,7 +5049,7 @@ def _resolve_xai_oauth_branch(req: _ResolveRequest) -> _ResolveResult:
     client, default = _build_xai_oauth_aux_client(req.model)
     return _route_or_warn(req, client, default,
                           "resolve_provider_client: xai-oauth requested but no xAI "
-                          "OAuth token found (run: hermes model -> xAI Grok OAuth — SuperGrok / Premium+)")
+                          "OAuth token found (run: akramcode model -> xAI Grok OAuth — SuperGrok / Premium+)")
 
 
 def _resolve_custom_branch(req: _ResolveRequest) -> _ResolveResult:
@@ -5224,7 +5224,7 @@ def _resolve_azure_foundry_branch(req: _ResolveRequest) -> _ResolveResult:
                                                explicit_base_url=req.explicit_base_url, api_mode=req.api_mode)
     return _route_or_warn(req, client, default_model,
                           "resolve_provider_client: azure-foundry requested but "
-                          "runtime resolution failed (run: hermes doctor for diagnostics)")
+                          "runtime resolution failed (run: akramcode doctor for diagnostics)")
 
 
 def _api_key_profile_supplied_client(provider: str, **client_kwargs: Any) -> Any | None:
@@ -5783,7 +5783,7 @@ def _client_cache_key(
     api_key_key = _runtime_cache_discriminator("api_key", api_key or "")
     # Profile home leads the key: callers that omit api_key (pool / Nous auth.json paths) would
     # otherwise share one client across multiplex profiles holding different credentials.
-    return (hermes_home_key(), provider, async_mode, base_url or "", api_key_key, api_mode or "", runtime_key, is_vision, task_key, pool_hint, model_key)
+    return (akramcode_home_key(), provider, async_mode, base_url or "", api_key_key, api_mode or "", runtime_key, is_vision, task_key, pool_hint, model_key)
 
 
 def _current_event_loop() -> Any:
@@ -6392,8 +6392,8 @@ def _acquire_sync_aux_semaphore(task: Optional[str]) -> Optional[threading.Bound
     limit = _get_task_max_concurrency(task)
     if limit is None:
         return None
-    from akramcode_constants import hermes_home_key
-    return _cached_semaphore(_aux_sync_semaphores, (hermes_home_key(), task), limit, threading.BoundedSemaphore)
+    from akramcode_constants import akramcode_home_key
+    return _cached_semaphore(_aux_sync_semaphores, (akramcode_home_key(), task), limit, threading.BoundedSemaphore)
 
 
 def _acquire_async_aux_semaphore(task: Optional[str]):
@@ -6406,8 +6406,8 @@ def _acquire_async_aux_semaphore(task: Optional[str]):
         loop = asyncio.get_running_loop()
     except RuntimeError:
         return None
-    from akramcode_constants import hermes_home_key
-    return _cached_semaphore(_aux_async_semaphores, (hermes_home_key(), task, id(loop)), limit, asyncio.Semaphore)
+    from akramcode_constants import akramcode_home_key
+    return _cached_semaphore(_aux_async_semaphores, (akramcode_home_key(), task, id(loop)), limit, asyncio.Semaphore)
 
 
 def _reset_aux_semaphores() -> None:
@@ -6637,7 +6637,7 @@ def _merge_aux_extra_body(
             # ``reasoning_config`` is already clamped to the OpenAI-compat wire by _build_call_kwargs.
             merged_extra["reasoning"] = {"enabled": True, "effort": reasoning_config.get("effort") or "medium"}
     # Caller/task ``extra_body.reasoning`` (``auxiliary.<task>.reasoning_effort`` folds in here via
-    # _get_task_extra_body) takes the same wire clamp: Hermes-only ``ultra`` never reaches the
+    # _get_task_extra_body) takes the same wire clamp: AkramCode-only ``ultra`` never reaches the
     # OpenAI-compat wire from any aux task (#112010).
     if isinstance(merged_extra.get("reasoning"), dict):
         from agent.reasoning_effort import clamp_reasoning_config
@@ -6693,7 +6693,7 @@ def _build_call_kwargs(
         kwargs["tools"] = _dedupe_tool_names(tools, provider, model)
     # Provider profiles are the source of truth for reasoning wire shapes (top-level, nested body,
     # or extra_body.reasoning); providers without a reasoning-aware profile keep the generic
-    # ``extra_body.reasoning`` fallback. Clamp Hermes-internal levels (``ultra``) to the
+    # ``extra_body.reasoning`` fallback. Clamp AkramCode-internal levels (``ultra``) to the
     # OpenAI-compat wire ONCE here, before either path sees the config — the same entry clamp the
     # main transport applies (#89503); MoA aggregator/reference and aux calls 400'd without it (#112010).
     from agent.reasoning_effort import clamp_reasoning_config
@@ -6889,7 +6889,7 @@ def _managed_local_netloc() -> str:
 
 
 def _is_managed_local_endpoint(base_url: Optional[str]) -> bool:
-    """True when *base_url* targets the llama-server this Hermes manages."""
+    """True when *base_url* targets the llama-server this AkramCode manages."""
     if not base_url:
         return False
     managed = _managed_local_netloc()
@@ -7323,7 +7323,7 @@ def _resolve_call_client(
                 effective_provider = _effective_provider_for_client(client, "auto")
     if client is None:
         raise AuxiliaryClientUnavailable(f"No LLM provider configured for task={task} "
-                                         f"provider={resolved_provider}. Run: hermes setup")
+                                         f"provider={resolved_provider}. Run: akramcode setup")
     return _ResolvedAuxRoute(client, final_model, resolved_provider, effective_provider)
 
 

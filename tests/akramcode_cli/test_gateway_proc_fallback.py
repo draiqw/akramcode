@@ -3,7 +3,7 @@
 Verifies that _scan_gateway_pids() uses /proc/*/cmdline when available
 (Docker without procps) and falls back to ps only when /proc is absent.
 
-See: NousResearch/hermes-agent#7622
+See: NousResearch/akramcode-agent#7622
 """
 
 import os
@@ -159,7 +159,7 @@ class TestGetServicePidsAllProfiles:
             patch("akramcode_cli.gateway.supports_systemd_services", return_value=False),
             patch(
                 "akramcode_cli.gateway.get_launchd_label",
-                return_value="ai.hermes.gateway.myprofile",
+                return_value="ai.akramcode.gateway.myprofile",
             ),
             patch(
                 "akramcode_cli.gateway._locate_launchd_gateway_service",
@@ -172,7 +172,7 @@ class TestGetServicePidsAllProfiles:
         assert pids == {123}
         # Default scope: exactly the current profile's label, no fleet
         # enumeration and no bare `launchctl list` scan.
-        assert located == ["ai.hermes.gateway.myprofile"]
+        assert located == ["ai.akramcode.gateway.myprofile"]
         launchctl_calls = [
             c[0][0]
             for c in mock_run.call_args_list
@@ -184,12 +184,12 @@ class TestGetServicePidsAllProfiles:
     def test_all_profiles_enumerates_all_gateway_labels(self):
         """With all_profiles=True, every install-derived gateway label is
         located (#73627), and the bare ``launchctl list`` prefix scan still
-        widens the EXCLUDE set with unmapped ai.hermes.gateway* agents
+        widens the EXCLUDE set with unmapped ai.akramcode.gateway* agents
         (#74075 belt-and-suspenders)."""
         located = []
         label_pids = {
-            "ai.hermes.gateway": 123,
-            "ai.hermes.gateway-profile-b": 456,
+            "ai.akramcode.gateway": 123,
+            "ai.akramcode.gateway-profile-b": 456,
         }
 
         def _fake_locate(label):
@@ -201,11 +201,11 @@ class TestGetServicePidsAllProfiles:
             patch("akramcode_cli.gateway.supports_systemd_services", return_value=False),
             patch(
                 "akramcode_cli.gateway.get_launchd_label",
-                return_value="ai.hermes.gateway",
+                return_value="ai.akramcode.gateway",
             ),
             patch(
                 "akramcode_cli.gateway.launchd_gateway_labels_for_install",
-                return_value=["ai.hermes.gateway", "ai.hermes.gateway-profile-b"],
+                return_value=["ai.akramcode.gateway", "ai.akramcode.gateway-profile-b"],
             ),
             patch(
                 "akramcode_cli.gateway._locate_launchd_gateway_service",
@@ -216,7 +216,7 @@ class TestGetServicePidsAllProfiles:
             mock_run.return_value = MagicMock(
                 returncode=0,
                 stdout=(
-                    "999\t0\tai.hermes.gateway-unmapped\n"
+                    "999\t0\tai.akramcode.gateway-unmapped\n"
                     "789\t0\tcom.apple.some.other.agent\n"
                 ),
                 stderr="",
@@ -227,8 +227,8 @@ class TestGetServicePidsAllProfiles:
         assert pids == {123, 456, 999}
         assert 789 not in pids
         assert sorted(located) == [
-            "ai.hermes.gateway",
-            "ai.hermes.gateway-profile-b",
+            "ai.akramcode.gateway",
+            "ai.akramcode.gateway-profile-b",
         ]
         launchctl_calls = [
             c[0][0]
@@ -240,7 +240,7 @@ class TestGetServicePidsAllProfiles:
     @pytest.mark.platforms("linux")
     def test_all_profiles_preserves_systemd_behavior(self):
         """systemd scope is unaffected by the all_profiles switch — it already
-        lists every hermes-gateway* unit unconditionally."""
+        lists every akramcode-gateway* unit unconditionally."""
         with (
             patch("akramcode_cli.gateway.supports_systemd_services", return_value=True),
             patch("subprocess.run") as mock_run,
@@ -251,7 +251,7 @@ class TestGetServicePidsAllProfiles:
                 if "list-units" in cmd_str:
                     return MagicMock(
                         returncode=0,
-                        stdout="hermes-gateway-jarvis.service loaded active running\n",
+                        stdout="akramcode-gateway-jarvis.service loaded active running\n",
                         stderr="",
                     )
                 if "show" in cmd_str and "MainPID" in cmd_str:

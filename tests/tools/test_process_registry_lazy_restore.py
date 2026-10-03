@@ -9,9 +9,9 @@ REPO = Path(__file__).resolve().parents[2]
 
 
 def test_model_tools_import_creates_no_state_db(tmp_path):
-    typo_home = tmp_path / "profiles" / "typo"  # a missing named profile: a typo'd HERMES_HOME
-    env = {**os.environ, "HERMES_HOME": str(typo_home), "PYTHONPATH": str(REPO)}
-    env.pop("HERMES_DELEGATED_CHILD_CONTEXT", None)
+    typo_home = tmp_path / "profiles" / "typo"  # a missing named profile: a typo'd AKRAMCODE_HOME
+    env = {**os.environ, "AKRAMCODE_HOME": str(typo_home), "PYTHONPATH": str(REPO)}
+    env.pop("AKRAMCODE_DELEGATED_CHILD_CONTEXT", None)
     proc = subprocess.run([sys.executable, "-c", "import model_tools"], cwd=REPO, env=env,
                           text=True, capture_output=True, timeout=120)
     assert proc.returncode == 0, proc.stderr[-2000:]
@@ -31,20 +31,20 @@ def test_restore_runs_once_on_first_drain(monkeypatch):
 
 
 def test_first_drain_under_secondary_scope_replays_the_launch_ledger(monkeypatch, tmp_path):
-    """Under multi-profile ``hermes serve`` the first consumer is a session bound to a secondary
+    """Under multi-profile ``akramcode serve`` the first consumer is a session bound to a secondary
     profile (TUI poller / prompt_turn drain); the once-per-process replay must still read the LAUNCH
     ledger, or it is never replayed for the life of the process."""
-    from hermes_constants import get_hermes_home, reset_hermes_home_override, set_hermes_home_override
+    from akramcode_constants import get_akramcode_home, reset_akramcode_home_override, set_akramcode_home_override
     from tools import async_delegation, process_registry as pr_mod
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "launch"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "launch"))
     ledgers = []
     monkeypatch.setattr(async_delegation, "restore_undelivered_completions",
                         lambda q: ledgers.append(async_delegation._db_path()) or 0)
     registry = pr_mod.ProcessRegistry()
-    token = set_hermes_home_override(tmp_path / "launch" / "profiles" / "b")
+    token = set_akramcode_home_override(tmp_path / "launch" / "profiles" / "b")
     try:
         registry.drain_notifications("sess")
-        assert get_hermes_home() == tmp_path / "launch" / "profiles" / "b"  # caller scope untouched
+        assert get_akramcode_home() == tmp_path / "launch" / "profiles" / "b"  # caller scope untouched
     finally:
-        reset_hermes_home_override(token)
+        reset_akramcode_home_override(token)
     assert ledgers == [tmp_path / "launch" / "state.db"]

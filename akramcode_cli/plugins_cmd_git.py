@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Callable, Optional
 
 from akramcode_cli._subprocess_compat import noninteractive_git_env
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 from utils import atomic_write_text
 
 
@@ -31,7 +31,7 @@ _EXACT_COMMIT_RE = re.compile(r"^[0-9a-fA-F]{40}$")
 
 
 def _install_metadata_path() -> Path:
-    return get_hermes_home() / "plugins" / ".install-metadata.json"
+    return get_akramcode_home() / "plugins" / ".install-metadata.json"
 
 
 def _read_install_metadata() -> dict[str, dict[str, object]]:
@@ -303,7 +303,7 @@ def _autostash_dirty_tree(git_exe: str, target: Path) -> tuple[str, str]:
         _pc()._run_plugin_git(git_exe, target, "add", "--", *intent_to_add)
     pre_stash = _stash_ref(git_exe, target)
     push = _pc()._run_plugin_git(
-        git_exe, target, "stash", "push", "--include-untracked", "-m", "hermes-plugin-update-autostash")
+        git_exe, target, "stash", "push", "--include-untracked", "-m", "akramcode-plugin-update-autostash")
     post_stash = _stash_ref(git_exe, target)
     if not post_stash or post_stash == pre_stash:
         err = _safe_git_error(push)
@@ -325,7 +325,7 @@ def _git_pull_plugin_dir(target: Path) -> tuple[bool, str]:
     Users tweak installed plugins in place (config constants, small patches), and a plain ``pull --ff-only``
     then aborts with "Your local changes ... would be overwritten by merge" — making the plugin permanently
     un-updatable until they hand-run git. Same UX class Factory Droid fixed in v0.188 ("Updating a plugin
-    marketplace now succeeds when its checkout has local changes"), and the same autostash approach ``hermes
+    marketplace now succeeds when its checkout has local changes"), and the same autostash approach ``akramcode
     update`` already uses for the main checkout (PR #70161).
     """
     git_exe = _pc()._resolve_git_executable()

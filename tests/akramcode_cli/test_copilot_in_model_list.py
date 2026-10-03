@@ -44,7 +44,7 @@ def _no_other_copilot_creds(monkeypatch):
     # COPILOT_ACP_BASE_URL is not a credential, but an `acp+tcp://` value marks
     # the provider configured with no executable at all (akramcode_cli/auth.py), so
     # a host that sets it would decide the outcome instead of the test.
-    for var in ("GH_TOKEN", "GITHUB_TOKEN", "HERMES_COPILOT_ACP_COMMAND",
+    for var in ("GH_TOKEN", "GITHUB_TOKEN", "AKRAMCODE_COPILOT_ACP_COMMAND",
                 "COPILOT_CLI_PATH", "COPILOT_ACP_BASE_URL"):
         monkeypatch.delenv(var, raising=False)
     import akramcode_cli.auth as auth
@@ -58,7 +58,7 @@ def test_copilot_acp_listed_when_executable_resolves(tmp_path, monkeypatch, _no_
     fake = tmp_path / ("copilot.exe" if os.name == "nt" else "copilot")
     fake.write_text("", encoding="utf-8")
     fake.chmod(0o755)
-    monkeypatch.setenv("HERMES_COPILOT_ACP_COMMAND", str(fake))
+    monkeypatch.setenv("AKRAMCODE_COPILOT_ACP_COMMAND", str(fake))
 
     with patch("agent.models_dev.fetch_models_dev", return_value={}), \
          patch("akramcode_cli.models._resolve_copilot_catalog_api_key", return_value=None), \

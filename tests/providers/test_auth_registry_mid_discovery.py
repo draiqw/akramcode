@@ -52,10 +52,10 @@ def _write_plugin(root: Path, name: str, body: str) -> None:
     )
 
 
-def _run_probe(hermes_home: Path, code: str) -> subprocess.CompletedProcess:
+def _run_probe(akramcode_home: Path, code: str) -> subprocess.CompletedProcess:
     env = os.environ.copy()
-    env["HERMES_HOME"] = str(hermes_home)
-    env.pop("HERMES_PROFILE", None)
+    env["AKRAMCODE_HOME"] = str(akramcode_home)
+    env.pop("AKRAMCODE_PROFILE", None)
     env["PYTHONPATH"] = os.pathsep.join(
         [str(REPO_ROOT), env.get("PYTHONPATH", "")]
     ).rstrip(os.pathsep)
@@ -71,11 +71,11 @@ def _run_probe(hermes_home: Path, code: str) -> subprocess.CompletedProcess:
 
 
 def test_plugins_discovered_after_auth_import_resolve(tmp_path):
-    hermes_home = tmp_path / ".hermes"
+    akramcode_home = tmp_path / ".akramcode"
     # Sorted first: a plugin whose imports drag akramcode_cli.auth in mid-discovery
     # (any plugin importing agent.credential_pool or similar does this).
     _write_plugin(
-        hermes_home,
+        akramcode_home,
         "aaa-early-probe",
         "import akramcode_cli.auth  # noqa: F401 — simulate a core-importing plugin\n"
         + _PLAIN_PROFILE.format(
@@ -84,7 +84,7 @@ def test_plugins_discovered_after_auth_import_resolve(tmp_path):
     )
     # Sorted last: an ordinary plugin discovered after that import.
     _write_plugin(
-        hermes_home,
+        akramcode_home,
         "zzz-late-probe",
         _PLAIN_PROFILE.format(
             name="zzz-late-probe", alias="zzz-alias", env="ZZZ_LATE_PROBE_KEY"
@@ -92,7 +92,7 @@ def test_plugins_discovered_after_auth_import_resolve(tmp_path):
     )
 
     probe = _run_probe(
-        hermes_home,
+        akramcode_home,
         "import providers\n"
         "names = {p.name for p in providers.list_providers()}\n"
         "assert {'aaa-early-probe', 'zzz-late-probe'} <= names, names\n"
@@ -176,7 +176,7 @@ def test_post_discovery_registration_is_mirrored(_isolated_registries, monkeypat
 
 
 def test_user_plugin_alias_repoints_and_display_name_follows(_isolated_registries, monkeypatch, tmp_path):
-    """A $HERMES_HOME plugin owns the aliases it declares and the display name of a same-name row.
+    """A $AKRAMCODE_HOME plugin owns the aliases it declares and the display name of a same-name row.
 
     Ownership split (#116668): ``providers.get_provider_profile`` already followed the user's
     profile for the alias, while the auth registry kept the alias on whichever row got there first

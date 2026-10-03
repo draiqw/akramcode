@@ -28,7 +28,7 @@ def _cli_save(db, fmt, out):
 
     stub = SimpleNamespace(_session_db=db, session_id="s1", conversation_history=[], model="m",
                            session_start=datetime(2026, 1, 1))
-    cli.HermesCLI.save_conversation(stub, f"/save {fmt} {out}")
+    cli.AkramCodeCLI.save_conversation(stub, f"/save {fmt} {out}")
     return out.read_text(encoding="utf-8")
 
 
@@ -58,7 +58,7 @@ def _gateway_save(db, fmt, out):
 
 @pytest.mark.parametrize("save", [_cli_save, _gateway_save], ids=["cli", "gateway"])
 def test_save_transcript_holds_display_history(tmp_path, monkeypatch, save):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     db = _compacted_store(tmp_path / "state.db")
     try:
         text = save(db, "md", tmp_path / "saved.md")

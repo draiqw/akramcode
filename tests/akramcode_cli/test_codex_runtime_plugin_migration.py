@@ -7,7 +7,7 @@ from __future__ import annotations
 from akramcode_cli.codex_runtime_plugin_migration import (
     MIGRATION_MARKER,
     MIGRATION_END_MARKER,
-    _build_hermes_tools_mcp_entry,
+    _build_akramcode_tools_mcp_entry,
     _strip_existing_managed_block,
     _strip_unmanaged_plugin_tables,
     _translate_one_server,
@@ -60,7 +60,7 @@ class TestTomlValueFormatter:
         migrate({"mcp_servers": {"x": {"command": "y"}}},
                 codex_home=tmp_path,
                 discover_plugins=False,
-                expose_hermes_tools=False,
+                expose_akramcode_tools=False,
                 default_permission_profile=None)
         # config.toml should exist
         assert (tmp_path / "config.toml").exists()
@@ -83,7 +83,7 @@ class TestTomlValueFormatter:
             {"mcp_servers": {"x": {"command": "y"}}},
             codex_home=tmp_path,
             discover_plugins=False,
-            expose_hermes_tools=False,
+            expose_akramcode_tools=False,
             default_permission_profile=None,
         )
         # Error surfaced
@@ -148,7 +148,7 @@ class TestStripExistingManagedBlock:
         assert "mcp_servers.fs" not in out
 
 
-# ---- end-to-end migrate(, expose_hermes_tools=False) ----
+# ---- end-to-end migrate(, expose_akramcode_tools=False) ----
 
 class TestMigrate:
 
@@ -192,7 +192,7 @@ class TestMigrate:
         monkeypatch.setattr(crpm, "_query_codex_plugins", fake_query_fails)
 
         report = migrate({"mcp_servers": {"x": {"command": "y"}}},
-                         codex_home=tmp_path, discover_plugins=True, expose_hermes_tools=False)
+                         codex_home=tmp_path, discover_plugins=True, expose_akramcode_tools=False)
         assert report.written
         assert report.migrated == ["x"]
         assert report.plugin_query_error == "codex CLI not available"
@@ -205,7 +205,7 @@ class TestMigrate:
 
 
     def test_full_migration_round_trip(self, tmp_path):
-        hermes_cfg = {
+        akramcode_cfg = {
             "mcp_servers": {
                 "filesystem": {
                     "command": "npx",
@@ -217,7 +217,7 @@ class TestMigrate:
                 },
             }
         }
-        report = migrate(hermes_cfg, codex_home=tmp_path, expose_hermes_tools=False)
+        report = migrate(akramcode_cfg, codex_home=tmp_path, expose_akramcode_tools=False)
         assert report.written
         text = (tmp_path / "config.toml").read_text()
         assert "[mcp_servers.filesystem]" in text
@@ -230,7 +230,7 @@ class TestMigrate:
 
     def test_preserves_user_mcp_server_outside_managed_block(self, tmp_path):
         """Quirk #6: when a user adds their own MCP server entry directly
-        to ~/.codex/config.toml outside Hermes' managed block, re-running
+        to ~/.codex/config.toml outside AkramCode' managed block, re-running
         migration must preserve it. Tested both above and below the
         managed block."""
         target = tmp_path / "config.toml"
@@ -240,9 +240,9 @@ class TestMigrate:
             'args = ["--above"]\n'
         )
         # First migrate — adds managed block below user content
-        migrate({"mcp_servers": {"hermes-mcp": {"command": "npx"}}},
+        migrate({"mcp_servers": {"akramcode-mcp": {"command": "npx"}}},
                 codex_home=tmp_path, discover_plugins=False,
-                expose_hermes_tools=False)
+                expose_akramcode_tools=False)
         text = target.read_text()
         assert "user-above" in text, "user MCP server above managed block got nuked"
         assert 'command = "/usr/bin/above-server"' in text
@@ -252,14 +252,14 @@ class TestMigrate:
             text + "\n[mcp_servers.user-below]\ncommand = \"below-server\"\n"
         )
         # Re-migrate — both should survive
-        migrate({"mcp_servers": {"hermes-mcp": {"command": "npx"}}},
+        migrate({"mcp_servers": {"akramcode-mcp": {"command": "npx"}}},
                 codex_home=tmp_path, discover_plugins=False,
-                expose_hermes_tools=False)
+                expose_akramcode_tools=False)
         final = target.read_text()
         assert "user-above" in final
         assert "user-below" in final
         # And our managed block is still there with the new content
-        assert "[mcp_servers.hermes-mcp]" in final
+        assert "[mcp_servers.akramcode-mcp]" in final
 
 
 
@@ -273,7 +273,7 @@ class TestStripUnmanagedPluginTables:
 
     When codex itself writes ``[plugins."<name>@<marketplace>"]`` tables
     (via the user running ``codex plugins enable`` directly), re-running
-    ``hermes codex-runtime migrate`` would re-emit them inside the managed
+    ``akramcode codex-runtime migrate`` would re-emit them inside the managed
     block and the resulting duplicate-table-header would crash codex.
     """
 
@@ -352,7 +352,7 @@ class TestStripUnmanagedPluginTables:
             "akramcode_cli.codex_runtime_plugin_migration._query_codex_plugins",
             fake_query,
         )
-        migrate({}, codex_home=tmp_path, discover_plugins=True, expose_hermes_tools=False)
+        migrate({}, codex_home=tmp_path, discover_plugins=True, expose_akramcode_tools=False)
         new_text = target.read_text()
         # Only ONE [plugins."tasks@openai-curated"] header should remain — inside
         # the managed block — not the original outside-the-block copy.
@@ -367,46 +367,46 @@ class TestStripUnmanagedPluginTables:
         tomllib.loads(new_text)
 
 
-# ---- Bug C: HERMES_HOME tempdir leak into ~/.codex/config.toml ----
+# ---- Bug C: AKRAMCODE_HOME tempdir leak into ~/.codex/config.toml ----
 
 
-class TestHermesHomeLeakGuard:
+class TestAkramCodeHomeLeakGuard:
     """Regression tests for issue #26250 Bug C.
 
-    Previously ``_build_hermes_tools_mcp_entry()`` read ``HERMES_HOME``
+    Previously ``_build_akramcode_tools_mcp_entry()`` read ``AKRAMCODE_HOME``
     directly from ``os.environ``, so a pytest ``monkeypatch.setenv`` would
     leak a transient tempdir path into the user's real ``~/.codex/config.toml``
-    once codex spawned the hermes-tools MCP subprocess.
+    once codex spawned the akramcode-tools MCP subprocess.
     """
 
 
 
 
-    def test_real_hermes_home_propagates(self, monkeypatch, tmp_path):
-        """A legitimate HERMES_HOME (not a tempdir path) DOES propagate so the
+    def test_real_akramcode_home_propagates(self, monkeypatch, tmp_path):
+        """A legitimate AKRAMCODE_HOME (not a tempdir path) DOES propagate so the
         MCP subprocess sees the same config as the parent CLI."""
         # Use a path that looks real — under /Users or /home, not /var/folders.
         # We can't easily create one in the test, so just use a stable path
         # outside any tempdir-detector needle. The detector checks for tempdir
         # markers, not for path existence.
-        real_path = "/Users/alice/.hermes"
-        monkeypatch.setenv("HERMES_HOME", real_path)
-        entry = _build_hermes_tools_mcp_entry()
+        real_path = "/Users/alice/.akramcode"
+        monkeypatch.setenv("AKRAMCODE_HOME", real_path)
+        entry = _build_akramcode_tools_mcp_entry()
         env = entry.get("env", {})
-        assert env.get("HERMES_HOME") == real_path
+        assert env.get("AKRAMCODE_HOME") == real_path
 
-    def test_unset_hermes_home_omits_env_key(self, monkeypatch):
-        """When HERMES_HOME is unset in the environment, the MCP entry MUST
+    def test_unset_akramcode_home_omits_env_key(self, monkeypatch):
+        """When AKRAMCODE_HOME is unset in the environment, the MCP entry MUST
         NOT bake in a resolved-default path. The codex subprocess should
-        inherit whatever HERMES_HOME its launcher (systemd, gateway, shell)
+        inherit whatever AKRAMCODE_HOME its launcher (systemd, gateway, shell)
         sets at runtime, rather than being pinned to migrate-time defaults.
         Regression guard for issue #26250 follow-up review."""
-        monkeypatch.delenv("HERMES_HOME", raising=False)
-        entry = _build_hermes_tools_mcp_entry()
+        monkeypatch.delenv("AKRAMCODE_HOME", raising=False)
+        entry = _build_akramcode_tools_mcp_entry()
         env = entry.get("env", {})
-        assert "HERMES_HOME" not in env, (
-            f"HERMES_HOME should not be set when env var is unset, got: "
-            f"{env.get('HERMES_HOME')!r}"
+        assert "AKRAMCODE_HOME" not in env, (
+            f"AKRAMCODE_HOME should not be set when env var is unset, got: "
+            f"{env.get('AKRAMCODE_HOME')!r}"
         )
 
 
@@ -414,7 +414,7 @@ class TestHermesHomeLeakGuard:
 
 
 class TestSameNameUserMcpTable:
-    """Issue #79023: a Hermes server whose name the user already declares outside the managed
+    """Issue #79023: a AkramCode server whose name the user already declares outside the managed
     block must not be emitted twice (duplicate table header = TOML codex refuses to load)."""
 
     def test_user_table_wins_and_output_stays_valid_toml(self, tmp_path):
@@ -424,7 +424,7 @@ class TestSameNameUserMcpTable:
         target.write_text('[mcp_servers.gbrain]\ncommand = "existing-gbrain"\n', encoding="utf-8")
         report = migrate(
             {"mcp_servers": {"gbrain": {"command": "projected-gbrain"}, "other": {"command": "o"}}},
-            codex_home=tmp_path, discover_plugins=False, expose_hermes_tools=False,
+            codex_home=tmp_path, discover_plugins=False, expose_akramcode_tools=False,
             default_permission_profile=None)
         text = target.read_text(encoding="utf-8")
         parsed = tomllib.loads(text)  # would raise "Cannot declare ... twice" before the fix
@@ -444,7 +444,7 @@ class TestSameNameUserMcpTable:
         target.write_text('[mcp_servers]\ngbrain = { command = "existing-gbrain" }\n', encoding="utf-8")
         report = migrate(
             {"mcp_servers": {"gbrain": {"command": "projected-gbrain"}, "other": {"command": "o"}}},
-            codex_home=tmp_path, discover_plugins=False, expose_hermes_tools=False,
+            codex_home=tmp_path, discover_plugins=False, expose_akramcode_tools=False,
             default_permission_profile=None)
         parsed = tomllib.loads(target.read_text(encoding="utf-8"))
         assert report.written and report.errors == []
@@ -454,8 +454,8 @@ class TestSameNameUserMcpTable:
 
 
     def test_cli_migrate_dry_run_json_reports_without_writing(self, tmp_path, monkeypatch, capsys):
-        """`hermes codex-runtime migrate --dry-run --json` is the supported automation seam:
-        drive it through the real ``hermes`` argparse tree so the subcommand registration in
+        """`akramcode codex-runtime migrate --dry-run --json` is the supported automation seam:
+        drive it through the real ``akramcode`` argparse tree so the subcommand registration in
         akramcode_cli/main.py stays pinned, and honour ``CODEX_HOME`` like every codex sibling."""
         import json
 

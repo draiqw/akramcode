@@ -143,8 +143,8 @@ class TestGoalMigratesOnRotation:
         agent = _build_agent_with_db(db, parent)
 
         # Set a persistent goal on the parent via the real persistence path.
-        with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path / ".hermes")}):
-            (tmp_path / ".hermes").mkdir(exist_ok=True)
+        with patch.dict(os.environ, {"AKRAMCODE_HOME": str(tmp_path / ".akramcode")}):
+            (tmp_path / ".akramcode").mkdir(exist_ok=True)
             import akramcode_cli.goals as goals
             goals._DB_CACHE.clear()
             # Point the goal DB at the same state.db the agent uses.

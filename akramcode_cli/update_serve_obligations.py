@@ -8,7 +8,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ def defer_manual_serve(runtime: dict, *, require_alive: bool = False) -> bool:
             return False
         if alive is False:
             return True
-        directory = get_hermes_home() / "serve_restart_pending"
+        directory = get_akramcode_home() / "serve_restart_pending"
         directory.mkdir(parents=True, exist_ok=True)
         row = {"kind": runtime["kind"], "profile": runtime.get("profile", "unknown"), "pid": pid, "create_time": created}
         target = directory / f"{pid}-{float(created).hex()}.json"
@@ -84,11 +84,11 @@ def warn_pending_manual_serves(*, startup: bool = False, pending_manual: list[di
         print(f"  ⚠ {row['kind']} [{row.get('profile', 'unknown')}] pid {row.get('pid', 'unknown')}: manual restart reminder could not be saved; restart remains pending in the update receipt.", file=stream)
         detail = row.get("detail") if isinstance(row.get("detail"), dict) else {}
         if type(detail.get("create_time")) in (int, float):
-            print("    Ask its owner to relaunch `hermes serve` / `hermes dashboard`; check reminder storage permissions and free space.", file=stream)
+            print("    Ask its owner to relaunch `akramcode serve` / `akramcode dashboard`; check reminder storage permissions and free space.", file=stream)
         else:
             # No usable creation time means identity, not storage, blocked the durable reminder.
-            print("    This host could not read the process creation time, so no durable reminder could be filed; ask its owner to relaunch `hermes serve` / `hermes dashboard`, and the warning clears once the pid is confirmed gone.", file=stream)
-    directory = get_hermes_home() / "serve_restart_pending"
+            print("    This host could not read the process creation time, so no durable reminder could be filed; ask its owner to relaunch `akramcode serve` / `akramcode dashboard`, and the warning clears once the pid is confirmed gone.", file=stream)
+    directory = get_akramcode_home() / "serve_restart_pending"
     for path in sorted(directory.glob("*.json")):
         try:
             row = json.loads(path.read_text(encoding="utf-8-sig"))
@@ -96,7 +96,7 @@ def warn_pending_manual_serves(*, startup: bool = False, pending_manual: list[di
                 path.unlink(missing_ok=True)
                 continue
             print(f"  ⚠ {row['kind']} [{row['profile']}] pid {row['pid']}: manual restart still pending; this process may still serve pre-update code.", file=stream)
-            print("    Ask its owner to relaunch `hermes serve` / `hermes dashboard` (reconnect Desktop for an SSH backend).", file=stream)
+            print("    Ask its owner to relaunch `akramcode serve` / `akramcode dashboard` (reconnect Desktop for an SSH backend).", file=stream)
         except (OSError, ValueError, KeyError, TypeError) as exc:
             logger.debug("Could not reconcile manual serve obligation %s: %s", path, exc)
             print(f"  ⚠ Manual serve restart reminder could not be verified: {path.name}", file=stream)

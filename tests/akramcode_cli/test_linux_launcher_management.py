@@ -11,7 +11,7 @@ def test_launcher_optout_preserves_custom_entry_but_creates_missing(tmp_path, mo
     home = tmp_path / "home"
     home.mkdir()
     monkeypatch.setenv("HOME", str(home))
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path / "xdg"))
     monkeypatch.setenv("PATH", "/usr/bin:/bin")
     monkeypatch.setattr(Path, "home", lambda: home)
@@ -21,7 +21,7 @@ def test_launcher_optout_preserves_custom_entry_but_creates_missing(tmp_path, mo
     root.mkdir()
     entry = tmp_path / "xdg" / "applications" / DESKTOP_ENTRY_NAME
     entry.parent.mkdir(parents=True)
-    custom = b"[Desktop Entry]\nType=Application\nName=Custom Hermes\nExec=/opt/custom-hermes desktop\n"
+    custom = b"[Desktop Entry]\nType=Application\nName=Custom AkramCode\nExec=/opt/custom-akramcode desktop\n"
     for setting in ("false", '"false"'):
         config.write_text(f"desktop:\n  manage_launcher_entry: {setting}\n", encoding="utf-8")
         entry.write_bytes(custom)
@@ -29,7 +29,7 @@ def test_launcher_optout_preserves_custom_entry_but_creates_missing(tmp_path, mo
         assert entry.read_bytes() == custom
     entry.unlink()
     assert install_desktop_entry(root) == entry
-    assert b"Name=Hermes\n" in entry.read_bytes()
+    assert b"Name=AkramCode\n" in entry.read_bytes()
     config.write_text("desktop: {}\n", encoding="utf-8")
     entry.write_bytes(custom)
     assert install_desktop_entry(root) == entry

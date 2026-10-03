@@ -109,7 +109,7 @@ class TestProviderModelsSWR:
             return f"{segment({'alg': 'none'})}.{segment(claims)}.sig"
 
         auth_path = tmp_path / "auth.json"
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
         monkeypatch.setenv("HOME", str(tmp_path))
 
         def write_auth(token, request_count, mtime_ns):
@@ -223,7 +223,7 @@ class TestCatalogSWR:
     def test_stale_disk_catalog_served_with_background_refresh(self, tmp_path, monkeypatch):
         import akramcode_cli.model_catalog as mc
 
-        manifest = {"version": 1, "providers": {"nous": {"models": [{"id": "hermes-4"}]}}}
+        manifest = {"version": 1, "providers": {"nous": {"models": [{"id": "akramcode-4"}]}}}
         monkeypatch.setattr(mc, "_catalog_cache", None)
         monkeypatch.setattr(mc, "_catalog_cache_source_mtime", 0.0)
         with patch.object(mc, "_load_catalog_config", return_value={

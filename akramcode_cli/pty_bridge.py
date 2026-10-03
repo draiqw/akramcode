@@ -1,4 +1,4 @@
-"""PTY bridge for `hermes dashboard` chat tab.
+"""PTY bridge for `akramcode dashboard` chat tab.
 
 Wraps a child process behind a pseudo-terminal so its ANSI output can be streamed to xterm.js and
 keystrokes fed back in; the only caller is the ``/api/pty`` WebSocket endpoint in
@@ -31,8 +31,8 @@ except ImportError:  # pragma: no cover - dev env without ptyprocess
 __all__ = ["PTY_HOST_DASHBOARD", "PTY_HOST_ENV", "PtyBridge", "PtyUnavailableError"]
 
 # Set on the spawned TUI so Ink knows which emulator is hosting it. Mirrored in
-# ui-tui/packages/hermes-ink/src/ink/termio/host.ts — keep the two in sync.
-PTY_HOST_ENV = "HERMES_PTY_HOST"
+# ui-tui/packages/akramcode-ink/src/ink/termio/host.ts — keep the two in sync.
+PTY_HOST_ENV = "AKRAMCODE_PTY_HOST"
 PTY_HOST_DASHBOARD = "dashboard"
 
 
@@ -87,9 +87,9 @@ class PtyBridge:
         if not _PTY_AVAILABLE:
             if sys.platform.startswith("win"):
                 raise PtyUnavailableError("Pseudo-terminals are unavailable on this platform. "
-                                          "Hermes Agent supports Windows only via WSL.")
+                                          "AkramCode Agent supports Windows only via WSL.")
             raise PtyUnavailableError("The `ptyprocess` package is missing. "  # only other way _PTY_AVAILABLE is False
-                                      "Run hermes pm repair, then restart Hermes.")
+                                      "Run akramcode pm repair, then restart AkramCode.")
         # env=None: callers own env policy (process_registry already sanitizes), so inherit via the
         # factory with exact preservation. Backfill TERM when missing/blank — CI often lacks it and
         # probes like `tput cols` then fail before winsize reads; explicit overrides are kept.

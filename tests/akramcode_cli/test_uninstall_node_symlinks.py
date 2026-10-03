@@ -1,9 +1,9 @@
 """Tests for akramcode_cli.uninstall.remove_node_symlinks.
 
 Regression for #34536: the POSIX installer drops node/npm/npx symlinks in
-~/.local/bin pointing into $HERMES_HOME/node and prepends ~/.local/bin to
+~/.local/bin pointing into $AKRAMCODE_HOME/node and prepends ~/.local/bin to
 PATH, shadowing an existing nvm. Uninstall must remove those symlinks, but
-only when they still resolve into the Hermes-managed node dir.
+only when they still resolve into the AkramCode-managed node dir.
 """
 
 from pathlib import Path
@@ -20,14 +20,14 @@ def fake_home(tmp_path, monkeypatch):
     home = tmp_path / "home"
     home.mkdir()
     monkeypatch.setattr(Path, "home", classmethod(lambda cls: home))
-    monkeypatch.setenv("HERMES_HOME", str(home / ".hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home / ".akramcode"))
     (home / ".local" / "bin").mkdir(parents=True)
     return home
 
 
-def _make_hermes_node(hermes_home: Path) -> Path:
-    """Create a fake $HERMES_HOME/node/bin/{node,npm,npx} tree."""
-    node_bin = hermes_home / "node" / "bin"
+def _make_akramcode_node(akramcode_home: Path) -> Path:
+    """Create a fake $AKRAMCODE_HOME/node/bin/{node,npm,npx} tree."""
+    node_bin = akramcode_home / "node" / "bin"
     node_bin.mkdir(parents=True)
     for name in ("node", "npm", "npx"):
         (node_bin / name).write_text("#!/bin/sh\n", encoding="utf-8")
@@ -39,7 +39,7 @@ def _make_hermes_node(hermes_home: Path) -> Path:
 
 @pytest.mark.parametrize("owned", [False, True])
 def test_node_link_cleanup_respects_resolved_owner(fake_home, monkeypatch, owned):
-    home = fake_home / ".hermes"
+    home = fake_home / ".akramcode"
     link = fake_home / ".local" / "bin" / "node"
     target = home / "node" / "bin" / "node" if owned else fake_home / "other" / "node"
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -58,8 +58,8 @@ def test_node_link_cleanup_respects_resolved_owner(fake_home, monkeypatch, owned
 @pytest.mark.require_symlinks
 def test_leaves_unrelated_symlinks_untouched(fake_home):
     """A node symlink the user repointed at nvm must survive uninstall."""
-    hermes_home = fake_home / ".hermes"
-    _make_hermes_node(hermes_home)
+    akramcode_home = fake_home / ".akramcode"
+    _make_akramcode_node(akramcode_home)
     local_bin = fake_home / ".local" / "bin"
 
     # Simulate nvm's node living elsewhere; user's ~/.local/bin/node -> nvm.
@@ -68,7 +68,7 @@ def test_leaves_unrelated_symlinks_untouched(fake_home):
     (nvm_bin / "node").write_text("#!/bin/sh\n")
     (local_bin / "node").symlink_to(nvm_bin / "node")
 
-    removed = uninstall.remove_node_symlinks(hermes_home)
+    removed = uninstall.remove_node_symlinks(akramcode_home)
 
     assert removed == []
     assert (local_bin / "node").is_symlink()
@@ -90,8 +90,8 @@ def test_removes_fhs_symlinks_in_usr_local_bin(fake_home, tmp_path, monkeypatch)
     We monkeypatch _node_symlink_candidate_dirs to return a temp dir standing
     in for /usr/local/bin so the test doesn't need real root privileges.
     """
-    hermes_home = fake_home / ".hermes"
-    node_bin = _make_hermes_node(hermes_home)
+    akramcode_home = fake_home / ".akramcode"
+    node_bin = _make_akramcode_node(akramcode_home)
 
     # Fake /usr/local/bin as a temp dir with our symlinks.
     fhs_bin = tmp_path / "usr_local_bin"
@@ -111,7 +111,7 @@ def test_removes_fhs_symlinks_in_usr_local_bin(fake_home, tmp_path, monkeypatch)
         uninstall, "_node_symlink_candidate_dirs", lambda: [fhs_bin]
     )
 
-    removed = uninstall.remove_node_symlinks(hermes_home)
+    removed = uninstall.remove_node_symlinks(akramcode_home)
 
     assert sorted(p.name for p in removed) == ["node", "npm", "npx"]
     for name in ("node", "npm", "npx"):

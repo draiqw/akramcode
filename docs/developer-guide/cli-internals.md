@@ -39,7 +39,7 @@ classifying a process by `"serve" in cmdline` or similar. `kanban --preserve-cac
 subcommand. Rules:
 
 - Use the canonical matchers: `gateway.status.looks_like_gateway_command_line` (gateway run),
-  `akramcode_cli.update_cmd._hermes_holder_subcommand` (top-level subcommand of any Hermes argv). Never
+  `akramcode_cli.update_cmd._akramcode_holder_subcommand` (top-level subcommand of any AkramCode argv). Never
   hand-roll token scans.
 - Flag sets must be DERIVED from the parser (`_holder_value_flags()` introspects
   `build_top_level_parser()`), never hand-written lists — they drift.
@@ -64,22 +64,22 @@ subcommand. Rules:
 Built-in skins (`_BUILTIN_SKINS` in `akramcode_cli/skin_engine.py`): `default` (classic gold/kawaii),
 `ares` (crimson/bronze with custom spinner wings), `mono` (grayscale), `slate` (cool blue). Add a
 built-in as a dict entry `{"name", "description", "colors", "spinner", "branding", "tool_prefix"}`.
-User skins are `~/.hermes/skins/<name>.yaml` with the same keys, activated with `/skin <name>` or
+User skins are `~/.akramcode/skins/<name>.yaml` with the same keys, activated with `/skin <name>` or
 `display.skin: <name>`; the full YAML template is in the
 [Skins & Themes](../user-guide/features/skins.md) user guide.
 
 ## Profiles: multi-instance support
 
-Hermes supports profiles — fully isolated instances, each with its own `HERMES_HOME` (config, API
-keys, memory, sessions, skills, gateway). For single-profile commands (`hermes -p x <cmd>`),
-`_apply_profile_override()` in `akramcode_cli/main.py` sets `HERMES_HOME` before any module imports, so
-every `get_hermes_home()` reference scopes to the active profile. The multiplex gateway and the
+AkramCode supports profiles — fully isolated instances, each with its own `AKRAMCODE_HOME` (config, API
+keys, memory, sessions, skills, gateway). For single-profile commands (`akramcode -p x <cmd>`),
+`_apply_profile_override()` in `akramcode_cli/main.py` sets `AKRAMCODE_HOME` before any module imports, so
+every `get_akramcode_home()` reference scopes to the active profile. The multiplex gateway and the
 Desktop/dashboard `serve` backend serve several profiles from one process instead: the active
-profile is a contextvar override bound per activity, `os.environ["HERMES_HOME"]` stays the launch
+profile is a contextvar override bound per activity, `os.environ["AKRAMCODE_HOME"]` stays the launch
 profile's, and a module-level constant derived from the home freezes to that launch profile (see
 [Gateway Internals § Multiplexed profiles](./gateway-internals.md#multiplexed-profiles)). Profile
 operations are HOME-anchored (`_get_profiles_root()` returns
-`Path.home() / ".hermes" / "profiles"`, not `get_hermes_home() / "profiles"`) so
-`hermes -p coder profile list` sees all profiles regardless of which one is active — intentional.
+`Path.home() / ".akramcode" / "profiles"`, not `get_akramcode_home() / "profiles"`) so
+`akramcode -p coder profile list` sees all profiles regardless of which one is active — intentional.
 Profile-safe coding rules are in the root `AGENTS.md`; multiplex secret-scope rules in
 `gateway/AGENTS.md`.

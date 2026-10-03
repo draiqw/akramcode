@@ -11,7 +11,7 @@ import pytest
 
 @pytest.fixture
 def external_home(tmp_path, monkeypatch):
-    """HERMES_HOME with one external dir configured and one external skill in it.
+    """AKRAMCODE_HOME with one external dir configured and one external skill in it.
 
     The external skill is ALSO reachable from the profile skills tree via a symlinked
     SKILL.md — the common mounting style — because that is the shape the journey graph
@@ -19,7 +19,7 @@ def external_home(tmp_path, monkeypatch):
     traverse dir symlinks but does yield symlinked files, and is_external_skill_path
     resolves the link to tag it 'external').
     """
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     (home / "skills").mkdir(parents=True)
     ext_dir = tmp_path / "vault"
     (ext_dir / "ext-skill").mkdir(parents=True)
@@ -28,7 +28,7 @@ def external_home(tmp_path, monkeypatch):
     (home / "skills" / "ext-linked").mkdir()
     (home / "skills" / "ext-linked" / "SKILL.md").symlink_to(ext_dir / "ext-skill" / "SKILL.md")
     (home / "config.yaml").write_text(f"skills:\n  external_dirs:\n    - {ext_dir}\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
 
     from agent import skill_utils
     skill_utils._external_dirs_cache_clear()
@@ -132,10 +132,10 @@ class TestWebRouterProvenanceTwin:
             pytest.skip("fastapi/starlette not installed")
 
         import akramcode_state
-        from hermes_constants import get_hermes_home
+        from akramcode_constants import get_akramcode_home
         from akramcode_cli.web_server import app, _SESSION_HEADER_NAME, _SESSION_TOKEN
 
-        monkeypatch.setattr(akramcode_state, "DEFAULT_DB_PATH", get_hermes_home() / "state.db")
+        monkeypatch.setattr(akramcode_state, "DEFAULT_DB_PATH", get_akramcode_home() / "state.db")
         c = TestClient(app)
         c.headers[_SESSION_HEADER_NAME] = _SESSION_TOKEN
         return c

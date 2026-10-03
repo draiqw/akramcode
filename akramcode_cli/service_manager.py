@@ -58,14 +58,14 @@ def detect_service_manager() -> ServiceManagerKind:
     This function does NOT replace ``supports_systemd_services()`` —
     host call sites continue to use that. It exists for new backend-
     agnostic code (profile create/delete hooks, the s6 dispatch path
-    in ``hermes gateway start/stop/restart``).
+    in ``akramcode gateway start/stop/restart``).
     """
     # Deferred so importing this module (Protocol type, validate_profile_name) doesn't drag in
     # the whole gateway dependency graph.
     from akramcode_cli.gateway import is_macos, is_windows, supports_systemd_services
     # Gate on _s6_running() alone, NOT is_container(): the latter only detects Docker/Podman/lxc
     # and is False on Fly's Firecracker microVMs even though s6-overlay is PID 1 there — that
-    # made the s6 dispatch inert on Fly, so `hermes gateway start` spawned a foreground gateway
+    # made the s6 dispatch inert on Fly, so `akramcode gateway start` spawned a foreground gateway
     # competing with the supervised one.
     if _s6_running():
         return "s6"
@@ -81,15 +81,15 @@ def detect_service_manager() -> ServiceManagerKind:
 def _s6_running() -> bool:
     """True when s6-svscan is PID 1 in this container.
 
-    Must work for the unprivileged hermes user too: ``/proc/1/exe`` is unreadable for other UIDs
+    Must work for the unprivileged akramcode user too: ``/proc/1/exe`` is unreadable for other UIDs
     (``resolve()`` silently yields the literal ``exe``), which made runtime registration inert in
     production. Probe the world-readable ``/proc/1/comm`` AND ``/run/s6/basedir`` — either alone
     can false-positive.
 
     The obvious probe — ``Path('/proc/1/exe').resolve()`` — only works as root: for any other UID, the
     symlink at ``/proc/1/exe`` is unreadable and ``resolve()`` silently returns the path unchanged, so the
-    resolved name is the literal ``"exe"`` and detection always fails. Since every Hermes runtime call
-    inside the container drops to hermes via ``s6-setuidgid``, that silent failure made the entire
+    resolved name is the literal ``"exe"`` and detection always fails. Since every AkramCode runtime call
+    inside the container drops to akramcode via ``s6-setuidgid``, that silent failure made the entire
     service-manager runtime-registration path inert in production (PR #30136 review).
     """
     try:
@@ -102,7 +102,7 @@ def _s6_running() -> bool:
 # ---------------------------------------------------------------------------
 # Host backends: thin facades over ``akramcode_cli.gateway`` (systemd/launchd) and
 # ``akramcode_cli.gateway_windows``. The protocol's ``name`` parameter is unused here — host backends
-# operate on the currently active profile (``hermes -p <profile>``); the shape exists for s6 where
+# operate on the currently active profile (``akramcode -p <profile>``); the shape exists for s6 where
 # each profile maps to a distinct service directory.
 # ---------------------------------------------------------------------------
 
@@ -218,7 +218,7 @@ def get_service_manager() -> ServiceManager:
 
 # ---------------------------------------------------------------------------
 # S6ServiceManager (container-only). Per-profile gateways are registered dynamically by
-# `hermes profile create` inside the container. Static services (main-hermes, dashboard) live in
+# `akramcode profile create` inside the container. Static services (main-akramcode, dashboard) live in
 # /etc/s6-overlay/s6-rc.d/ as part of the image and are NOT managed here.
 # ---------------------------------------------------------------------------
 
@@ -237,13 +237,13 @@ def _profile_dir_for_gateway_service(name: str) -> Path:
     """Resolve ``gateway-<profile>`` to its persistent profile directory.
 
     s6 lifecycle commands may run from any active profile (``gateway stop --all``), so never write
-    the caller's HERMES_HOME blindly: derive the shared profile root and map the suffix to the root
+    the caller's AKRAMCODE_HOME blindly: derive the shared profile root and map the suffix to the root
     default profile or ``<root>/profiles/<profile>``.
     """
     profile = _profile_from_service(name)
     validate_profile_name(profile)
-    hermes_home = Path(os.environ.get("HERMES_HOME", "/opt/data"))
-    root = hermes_home.parent.parent if hermes_home.parent.name == "profiles" else hermes_home
+    akramcode_home = Path(os.environ.get("AKRAMCODE_HOME", "/opt/data"))
+    root = akramcode_home.parent.parent if akramcode_home.parent.name == "profiles" else akramcode_home
     return root if profile == "default" else root / "profiles" / profile
 
 
@@ -275,7 +275,7 @@ def _write_gateway_desired_state(name: str, desired_state: str) -> None:
 def register_unregistered_profile_gateway(mgr: ServiceManager, profile: str) -> bool:
     """Register a ``down`` s6 slot for a profile whose directory exists but was never registered.
 
-    `hermes profile create` can only register a slot when it runs inside the container; created
+    `akramcode profile create` can only register a slot when it runs inside the container; created
     from the host against a bind-mounted home, the directory lands where the container reads it
     but no ``/run/service/gateway-<name>`` exists, and the boot reconciler only notices on the
     next container restart. Returns False without touching anything unless the directory carries
@@ -306,33 +306,33 @@ def _s6_run(cmd: str, *args: str, timeout: float = 5, check: bool = False):
     )
 
 
-# UID/GID of the in-image ``hermes`` user; hardcoded to match what ``stage2-hook.sh`` enforces
+# UID/GID of the in-image ``akramcode`` user; hardcoded to match what ``stage2-hook.sh`` enforces
 # (tests/docker/test_uid_remap.py). s6-supervise starts as root and drops via ``s6-setuidgid``.
-_HERMES_UID = 10000
-_HERMES_GID = 10000
+_AKRAMCODE_UID = 10000
+_AKRAMCODE_GID = 10000
 
 
-def _chown_hermes(path: Path) -> None:
+def _chown_akramcode(path: Path) -> None:
     try:
-        os.chown(path, _HERMES_UID, _HERMES_GID)
+        os.chown(path, _AKRAMCODE_UID, _AKRAMCODE_GID)
     except PermissionError:
-        # Already running as hermes → the dir is hermes-owned by default; swallowing keeps root
+        # Already running as akramcode → the dir is akramcode-owned by default; swallowing keeps root
         # and unprivileged callers on one code path.
         pass
 
 
 def _seed_supervise_skeleton(svc_dir: Path) -> None:
-    """Pre-create hermes-owned ``supervise/`` and top-level ``event/`` inside a service directory.
+    """Pre-create akramcode-owned ``supervise/`` and top-level ``event/`` inside a service directory.
 
     s6-supervise (root) creates ``event/``/``supervise/`` 0700 and the control FIFO 0600, so the
-    hermes user gets EACCES on every ``s6-svc``/``s6-svstat``. s6 treats EEXIST as success and skips
+    akramcode user gets EACCES on every ``s6-svc``/``s6-svstat``. s6 treats EEXIST as success and skips
     its chown/chmod fix-up, so seeding before ``s6-svscanctl -a`` makes s6-supervise inherit our
     ownership. ``log/`` gets the same skeleton (its own supervise instance) or unregister teardown
     EACCESes on the logger. Idempotent: existing entries (possibly live FIFOs) are left untouched.
 
     The PR #30136 review surfaced this as a real product gap: the entire S6ServiceManager lifecycle
     (``register/start/stop/unregister _profile_gateway``) was inert in production because every operation is
-    dispatched as the hermes user.
+    dispatched as the akramcode user.
     Reference --------- Discussed at length on the skarnet `skaware` mailing list in 2020
     (`<http://skarnet.org/lists/skaware/1424.html>`_); see also just-containers/s6-overlay#130. The
     pre-creation pattern was historically called out as forward-compatibility-fragile, but the EEXIST
@@ -345,7 +345,7 @@ def _seed_supervise_skeleton(svc_dir: Path) -> None:
             return
         path.mkdir(parents=False, exist_ok=False)
         path.chmod(mode)
-        _chown_hermes(path)
+        _chown_akramcode(path)
 
     def _seed(root: Path) -> None:
         # Service-root event/ is the s6-svlisten1 subscription dir, distinct from supervise/event/.
@@ -360,7 +360,7 @@ def _seed_supervise_skeleton(svc_dir: Path) -> None:
         if not control.exists():
             os.mkfifo(control, 0o660)
             control.chmod(0o660)
-            _chown_hermes(control)
+            _chown_akramcode(control)
 
     _seed(svc_dir)
     log_dir = svc_dir / "log"
@@ -385,7 +385,7 @@ class GatewayNotRegisteredError(S6Error):
         self.profile = profile
         super().__init__(
             f"no such gateway {profile!r}: register it with "
-            f"`hermes profile create {profile}` first, or pass "
+            f"`akramcode profile create {profile}` first, or pass "
             "an existing profile name via `-p <name>`",
             service=f"gateway-{profile}",
         )
@@ -422,9 +422,9 @@ class S6ServiceManager:
     def _render_run_script(profile: str, extra_env: dict[str, str]) -> str:
         """Run script for a profile-gateway s6 service.
 
-        Sources HERMES_HOME via with-contenv (run time, not baked in), resets ``HOME`` before the
-        privilege drop so root's HOME does not leak, activates the venv, drops to hermes.
-        ``profile == "default"`` emits NO ``-p`` flag: it is the sentinel for the root HERMES_HOME
+        Sources AKRAMCODE_HOME via with-contenv (run time, not baked in), resets ``HOME`` before the
+        privilege drop so root's HOME does not leak, activates the venv, drops to akramcode.
+        ``profile == "default"`` emits NO ``-p`` flag: it is the sentinel for the root AKRAMCODE_HOME
         profile and ``-p default`` would look up ``profiles/default/``. Port comes from the
         profile's own env (``API_SERVER_PORT``, default 8642); two profiles that both leave it
         unset collide.
@@ -432,7 +432,7 @@ class S6ServiceManager:
         Port selection: the gateway binds the port resolved by ``gateway/config.py`` from the profile's own
         environment — ``API_SERVER_PORT`` (or ``platforms.api_server.extra.port`` in that profile's
         ``config.yaml``), defaulting to 8642. There is no ``[gateway] port`` key and no Python-side
-        allocator: because each supervised profile gateway loads its own ``HERMES_HOME``, two profiles that
+        allocator: because each supervised profile gateway loads its own ``AKRAMCODE_HOME``, two profiles that
         both leave the port unset will both try to bind 8642 — give each profile a distinct
         ``API_SERVER_PORT`` in its ``.env``. Previously this method took a ``port`` parameter that was
         passed in but never substituted into the rendered script (carried for "API parity" with a
@@ -452,12 +452,12 @@ class S6ServiceManager:
         # Supervised-child sentinel: without it the supervised gateway re-entering
         # `_gateway_command_inner` with subcmd == "run" would dispatch `gateway start` → re-exec
         # `gateway run --replace` → `gateway start` … (see the matching guard there).
-        lines.append("export HERMES_S6_SUPERVISED_CHILD=1")
+        lines.append("export AKRAMCODE_S6_SUPERVISED_CHILD=1")
         # Generalized supervisor marker — same meaning for the profile-redirect guard in
         # akramcode_cli.main._apply_profile_override; kept alongside the s6 one for back-compat.
-        lines.append("export HERMES_SUPERVISED_CHILD=1")
-        # ``--replace`` makes the supervised gateway authoritative for its HERMES_HOME. Without it
-        # a gateway started OUTSIDE s6 (stray ``hermes gateway run``, an agent action, the Open
+        lines.append("export AKRAMCODE_SUPERVISED_CHILD=1")
+        # ``--replace`` makes the supervised gateway authoritative for its AKRAMCODE_HOME. Without it
+        # a gateway started OUTSIDE s6 (stray ``akramcode gateway run``, an agent action, the Open
         # WebUI helper) grabs the PID lock first; the slot then hits "Another gateway instance is
         # already running", exits non-zero, and s6 restarts it forever — a log-flooding loop that
         # never binds. ``--replace`` reaps the stale holder (marker + SIGTERM→SIGKILL-with-
@@ -465,12 +465,12 @@ class S6ServiceManager:
         # above prevents the run→start→run recursion. s6 guarantees one supervised instance per
         # slot, so there is no legitimate sibling for ``--replace`` to clobber.
         if profile == "default":
-            gateway_cmd = "hermes gateway run --replace"
+            gateway_cmd = "akramcode gateway run --replace"
         else:
-            gateway_cmd = f"hermes -p {shlex.quote(profile)} gateway run --replace"
+            gateway_cmd = f"akramcode -p {shlex.quote(profile)} gateway run --replace"
         # Skip the drop when already non-root (setgroups() lacks CAP_SETGID → s6 boot-loop).
         lines.append(f'[ "$(id -u)" = 0 ] || exec {gateway_cmd}')
-        lines.append(f"exec s6-setuidgid hermes {gateway_cmd}")
+        lines.append(f"exec s6-setuidgid akramcode {gateway_cmd}")
         return "\n".join(lines) + "\n"
 
     @staticmethod
@@ -511,23 +511,23 @@ class S6ServiceManager:
         return (
             f"#!/command/with-contenv sh\n"
             f"# shellcheck shell=sh\n"
-            f': "${{HERMES_HOME:=/opt/data}}"\n'
-            f'log_dir="$HERMES_HOME/logs/gateways/{prof}"\n'
-            # Create the leaf and clear a stale s6-log lock AS HERMES when starting as root. Never
-            # chown/unlink hermes-writable volume paths from this restartable root-context script:
+            f': "${{AKRAMCODE_HOME:=/opt/data}}"\n'
+            f'log_dir="$AKRAMCODE_HOME/logs/gateways/{prof}"\n'
+            # Create the leaf and clear a stale s6-log lock AS AKRAMCODE when starting as root. Never
+            # chown/unlink akramcode-writable volume paths from this restartable root-context script:
             # an unprivileged user can race a pathname op through a symlink swap (CWE-59/CWE-367).
-            # Parent logs/gateways is seeded hermes-owned at stage2 boot (test_log_dir_seed.py).
+            # Parent logs/gateways is seeded akramcode-owned at stage2 boot (test_log_dir_seed.py).
             # See #45258.
             f'if [ "$(id -u)" = 0 ]; then\n'
-            f'  s6-setuidgid hermes mkdir -p "$log_dir"\n'
-            f'  s6-setuidgid hermes rm -f "$log_dir/lock"\n'
+            f'  s6-setuidgid akramcode mkdir -p "$log_dir"\n'
+            f'  s6-setuidgid akramcode rm -f "$log_dir/lock"\n'
             f'else\n'
             f'  mkdir -p "$log_dir"\n'
             f'  rm -f "$log_dir/lock"\n'
             f'fi\n'
             # Skip the drop when already non-root (CAP_SETGID).
             f'[ "$(id -u)" = 0 ] || exec s6-log 1 n10 s1000000 T "$log_dir"\n'
-            f'exec s6-setuidgid hermes s6-log 1 n10 s1000000 T "$log_dir"\n'
+            f'exec s6-setuidgid akramcode s6-log 1 n10 s1000000 T "$log_dir"\n'
         )
 
     # -- lifecycle ---------------------------------------------------------
@@ -621,7 +621,7 @@ class S6ServiceManager:
             _write_script(tmp_dir / "finish", self._render_finish_script())
             (tmp_dir / "log").mkdir()
             _write_script(tmp_dir / "log" / "run", self._render_log_run(profile))
-            # Seed hermes-owned supervise/ BEFORE publishing so the hermes-user s6-svc/s6-svstat/
+            # Seed akramcode-owned supervise/ BEFORE publishing so the akramcode-user s6-svc/s6-svstat/
             # s6-svwait calls never hit root-owned 0700 dirs (see _seed_supervise_skeleton).
             _seed_supervise_skeleton(tmp_dir)
             # Mirrors container_boot._register_gateway_slot when start=False.
@@ -643,7 +643,7 @@ class S6ServiceManager:
 
         ``s6-svscanctl -an`` fires BEFORE ``rmtree`` so s6-svscan reaps the supervise child and
         releases its handles on ``supervise/lock``/``status``/``death_tally``; those files are
-        root-owned but the parent ``supervise/`` is hermes-owned (see ``_seed_supervise_skeleton``)
+        root-owned but the parent ``supervise/`` is akramcode-owned (see ``_seed_supervise_skeleton``)
         and POSIX only needs write+execute on the parent to remove them.
         """
         svc_dir = self._service_dir(profile)

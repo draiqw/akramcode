@@ -17,11 +17,11 @@ from akramcode_state import SessionDB
 
 
 @pytest.fixture
-def hermes_root(tmp_path, monkeypatch):
-    root = tmp_path / "hermes"
+def akramcode_root(tmp_path, monkeypatch):
+    root = tmp_path / "akramcode"
     (root / "profiles" / "workprof").mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(root))
-    # get_default_hermes_root memoizes on (native_home, env) — the env change
+    monkeypatch.setenv("AKRAMCODE_HOME", str(root))
+    # get_default_akramcode_root memoizes on (native_home, env) — the env change
     # invalidates the memo by itself, but re-point DEFAULT_DB_PATH so any
     # default-constructed SessionDB in the module under test stays sandboxed.
     monkeypatch.setattr(akramcode_state, "DEFAULT_DB_PATH", root / "state.db")
@@ -39,17 +39,17 @@ def _profile_of(db_path, session_id):
         conn.close()
 
 
-def test_default_store_stamps_default(hermes_root):
-    db = SessionDB(db_path=hermes_root / "state.db")
+def test_default_store_stamps_default(akramcode_root):
+    db = SessionDB(db_path=akramcode_root / "state.db")
     try:
         db.create_session("s_default", source="cli")
     finally:
         db.close()
-    assert _profile_of(hermes_root / "state.db", "s_default") == "default"
+    assert _profile_of(akramcode_root / "state.db", "s_default") == "default"
 
 
-def test_named_profile_store_stamps_own_name(hermes_root):
-    db_path = hermes_root / "profiles" / "workprof" / "state.db"
+def test_named_profile_store_stamps_own_name(akramcode_root):
+    db_path = akramcode_root / "profiles" / "workprof" / "state.db"
     db = SessionDB(db_path=db_path)
     try:
         db.create_session("s_prof", source="desktop")
@@ -58,16 +58,16 @@ def test_named_profile_store_stamps_own_name(hermes_root):
     assert _profile_of(db_path, "s_prof") == "workprof"
 
 
-def test_explicit_profile_name_wins(hermes_root):
-    db = SessionDB(db_path=hermes_root / "state.db")
+def test_explicit_profile_name_wins(akramcode_root):
+    db = SessionDB(db_path=akramcode_root / "state.db")
     try:
         db.create_session("s_explicit", source="cli", profile_name="llm-wiki")
     finally:
         db.close()
-    assert _profile_of(hermes_root / "state.db", "s_explicit") == "llm-wiki"
+    assert _profile_of(akramcode_root / "state.db", "s_explicit") == "llm-wiki"
 
 
-def test_store_outside_profile_tree_never_guesses(hermes_root, tmp_path):
+def test_store_outside_profile_tree_never_guesses(akramcode_root, tmp_path):
     db_path = tmp_path / "elsewhere" / "state.db"
     db_path.parent.mkdir()
     db = SessionDB(db_path=db_path)
@@ -78,8 +78,8 @@ def test_store_outside_profile_tree_never_guesses(hermes_root, tmp_path):
     assert _profile_of(db_path, "s_outside") is None
 
 
-def test_compression_child_of_null_parent_is_stamped(hermes_root):
-    db_path = hermes_root / "state.db"
+def test_compression_child_of_null_parent_is_stamped(akramcode_root):
+    db_path = akramcode_root / "state.db"
     db = SessionDB(db_path=db_path)
     try:
         db.create_session("s_parent", source="cli")
@@ -102,8 +102,8 @@ def test_compression_child_of_null_parent_is_stamped(hermes_root):
     assert _profile_of(db_path, "s_child") == "default"
 
 
-def test_peer_self_heal_insert_is_stamped(hermes_root):
-    db_path = hermes_root / "state.db"
+def test_peer_self_heal_insert_is_stamped(akramcode_root):
+    db_path = akramcode_root / "state.db"
     db = SessionDB(db_path=db_path)
     try:
         # No prior row: the #82616 self-heal INSERT creates it.
@@ -119,10 +119,10 @@ def test_peer_self_heal_insert_is_stamped(hermes_root):
     assert _profile_of(db_path, "s_selfheal") == "default"
 
 
-def test_legacy_backfill_still_targets_only_null(hermes_root):
+def test_legacy_backfill_still_targets_only_null(akramcode_root):
     """The one-shot #94724 backfill contract is unchanged: explicit owners are
     never overwritten, and new rows no longer regenerate its input."""
-    db_path = hermes_root / "state.db"
+    db_path = akramcode_root / "state.db"
     db = SessionDB(db_path=db_path)
     try:
         db.create_session("s_new", source="cli")

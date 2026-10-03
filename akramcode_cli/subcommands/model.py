@@ -1,4 +1,4 @@
-"""``hermes model`` subcommand parser."""
+"""``akramcode model`` subcommand parser."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ def build_model_parser(subparsers, *, cmd_model: Callable) -> None:
         help="Inference API base URL for Nous login (default: production inference API)")
     model_parser.add_argument(
         "--client-id", default=None,
-        help="OAuth client id to use for Nous login (default: hermes-cli)")
+        help="OAuth client id to use for Nous login (default: akramcode-cli)")
     model_parser.add_argument("--scope", default=None, help="OAuth scope to request for Nous login")
     model_parser.add_argument(
         "--no-browser", action="store_true",

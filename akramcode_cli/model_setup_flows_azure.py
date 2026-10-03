@@ -56,9 +56,9 @@ def _azure_entra_preflight(current_entra: dict):
     if not has_azure_identity_installed():
         _say("◐ The 'azure-identity' package is not installed yet.",
              "  The preflight requests it through PM if lazy installs are enabled.",
-             "  To install explicitly, run from the Hermes environment:",
+             "  To install explicitly, run from the AkramCode environment:",
              f"    {install_hint('azure-identity')}",
-             "  Then restart Hermes.")
+             "  Then restart AkramCode.")
 
     # Only the optional scope override is persisted; identity selection (tenant,
     # user-assigned MI, workload identity, SP) stays in AZURE_* SDK env vars.
@@ -160,7 +160,7 @@ def _model_flow_azure_foundry(config, current_model=""):
     cur = _azure_current(config)
     _say("", "Azure Foundry Configuration", "=" * 50, "",
          "Azure Foundry can host models with either OpenAI-style or",
-         "Anthropic-style API endpoints.  Hermes will probe your",
+         "Anthropic-style API endpoints.  AkramCode will probe your",
          "endpoint to auto-detect the transport and the deployed",
          "models when possible.", "")
     if cur.base_url:

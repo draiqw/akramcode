@@ -1,7 +1,7 @@
 """Characterization tests for the cron trigger before/after the provider refactor.
 
 These lock the CURRENT in-process-ticker contract (Phase 0 of the pluggable
-CronScheduler plan, .hermes/plans/cron-scheduler-provider-interface.md). They
+CronScheduler plan, .akramcode/plans/cron-scheduler-provider-interface.md). They
 must pass unchanged on `main` now, and after every subsequent phase of the
 refactor — they are the regression harness that proves the built-in firing
 behavior is byte-for-byte preserved when the ticker is moved behind the
@@ -739,7 +739,7 @@ def test_multiplex_ticker_isolates_profile_failures(tmp_path):
     cycle, nor darken their status (#74878)."""
     from cron.jobs import get_ticker_last_error, record_ticker_error, use_cron_store
     from cron.scheduler_provider import InProcessCronScheduler
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
 
     failing_home = tmp_path / "failing"
     healthy_home = tmp_path / "healthy"
@@ -752,7 +752,7 @@ def test_multiplex_ticker_isolates_profile_failures(tmp_path):
     tick_homes: list[str] = []
 
     def _tick(*args, **kwargs):
-        home = str(get_hermes_home())
+        home = str(get_akramcode_home())
         tick_homes.append(home)
         if home == str(failing_home):
             raise RuntimeError("profile-local failure")
@@ -791,7 +791,7 @@ def test_multiplex_recovery_isolates_profile_failures(tmp_path):
     import sqlite3
 
     from cron.scheduler_provider import InProcessCronScheduler
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
 
     failing_home = tmp_path / "failing"
     healthy_home = tmp_path / "healthy"
@@ -803,14 +803,14 @@ def test_multiplex_recovery_isolates_profile_failures(tmp_path):
     tick_homes: list[str] = []
 
     def _recover():
-        home = str(get_hermes_home())
+        home = str(get_akramcode_home())
         recovery_homes.append(home)
         if home == str(failing_home):
             raise sqlite3.OperationalError("unable to open database file")
         return 0
 
     def _tick(*args, **kwargs):
-        tick_homes.append(str(get_hermes_home()))
+        tick_homes.append(str(get_akramcode_home()))
         if len(tick_homes) >= 2:
             stop.set()
         return 0
@@ -846,7 +846,7 @@ def test_multiplex_ticker_reenumerates_profiles_each_cycle(tmp_path):
     import threading
     from unittest.mock import patch
     from cron.scheduler_provider import InProcessCronScheduler
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
 
     alpha = tmp_path / "alpha"
     gamma = tmp_path / "gamma"
@@ -856,8 +856,8 @@ def test_multiplex_ticker_reenumerates_profiles_each_cycle(tmp_path):
     ticked: list[str] = []
 
     def _tick(*args, **kwargs):
-        ticked.append(str(get_hermes_home()))
-        if len(ticked) == 1:  # "hermes profile create gamma" happens between two cycles
+        ticked.append(str(get_akramcode_home()))
+        if len(ticked) == 1:  # "akramcode profile create gamma" happens between two cycles
             (gamma / "cron").mkdir(parents=True)
             homes.append(("gamma", gamma))
         if len(ticked) >= 4:

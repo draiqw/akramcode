@@ -36,10 +36,10 @@ from akramcode_cli import kanban_ops
 
 @pytest.fixture
 def kanban_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Isolated HERMES_HOME with an empty kanban DB."""
-    home = tmp_path / ".hermes"
+    """Isolated AKRAMCODE_HOME with an empty kanban DB."""
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     kb.init_db()
     return home
@@ -320,7 +320,7 @@ def test_complete_task_closes_review_to_done(kanban_home: Path) -> None:
         )
         assert kb.get_task(conn, tid).status == "review"
         # The review lane has no active run — the exact state that used to
-        # make `hermes kanban complete` a no-op (#54823).
+        # make `akramcode kanban complete` a no-op (#54823).
         assert kb.get_task(conn, tid).current_run_id is None
 
         ok = kb.complete_task(conn, tid, summary="LGTM — merged", result="approved")

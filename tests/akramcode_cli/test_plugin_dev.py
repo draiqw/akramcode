@@ -81,7 +81,7 @@ def test_doctor_restores_global_tool_policy_and_module_state(tmp_path: Path) -> 
     before_modules = {
         name
         for name in sys.modules
-        if name == "hermes_plugins" or name.startswith("hermes_plugins.")
+        if name == "akramcode_plugins" or name.startswith("akramcode_plugins.")
     }
 
     report = doctor_plugin(target)
@@ -93,7 +93,7 @@ def test_doctor_restores_global_tool_policy_and_module_state(tmp_path: Path) -> 
     after_modules = {
         name
         for name in sys.modules
-        if name == "hermes_plugins" or name.startswith("hermes_plugins.")
+        if name == "akramcode_plugins" or name.startswith("akramcode_plugins.")
     }
     assert after_modules == before_modules
 
@@ -119,10 +119,10 @@ def test_doctor_blocks_live_network(tmp_path: Path) -> None:
 def test_doctor_default_target_does_not_copy_cwd(
     tmp_path: Path, monkeypatch
 ) -> None:
-    """``hermes plugins doctor`` with no argument defaults to ``.``.
+    """``akramcode plugins doctor`` with no argument defaults to ``.``.
 
     Before the manifest guard, that copied the whole working directory into
-    a temporary HERMES_HOME — running it from ``$HOME`` copied the home
+    a temporary AKRAMCODE_HOME — running it from ``$HOME`` copied the home
     directory, cloud-storage placeholders included.
     """
     import os
@@ -168,15 +168,15 @@ def test_resolve_prefers_installed_id_over_unrelated_local_dir(
     """A same-named local directory must not shadow the installed plugin."""
     from akramcode_cli import plugin_dev
 
-    hermes_home = tmp_path / "hermes-home"
-    installed = hermes_home / "plugins" / "sample"
+    akramcode_home = tmp_path / "akramcode-home"
+    installed = akramcode_home / "plugins" / "sample"
     installed.mkdir(parents=True)
     (installed / "plugin.yaml").write_text("name: sample\n", encoding="utf-8")
 
     workdir = tmp_path / "workdir"
     (workdir / "sample").mkdir(parents=True)
     monkeypatch.chdir(workdir)
-    monkeypatch.setattr(plugin_dev, "get_hermes_home", lambda: hermes_home)
+    monkeypatch.setattr(plugin_dev, "get_akramcode_home", lambda: akramcode_home)
 
     assert plugin_dev.resolve_plugin_path("sample") == installed.resolve()
 
@@ -184,7 +184,7 @@ def test_resolve_prefers_installed_id_over_unrelated_local_dir(
 def test_doctor_removes_temp_home_when_staging_copy_fails(
     tmp_path: Path, monkeypatch
 ) -> None:
-    """A copy failure (e.g. ENOSPC) must not strand a hermes-plugin-doctor-* dir."""
+    """A copy failure (e.g. ENOSPC) must not strand a akramcode-plugin-doctor-* dir."""
     import errno
     import shutil
     import tempfile
@@ -219,8 +219,8 @@ def test_doctor_removes_temp_home_when_staging_copy_fails(
     # Check for leftovers WHILE the exception (and its traceback frames) is
     # still referenced: the old code relied on TemporaryDirectory's GC
     # finalizer, which cannot run while the traceback pins the frame — the
-    # exact window where a stranded hermes-plugin-doctor-* dir was observed.
-    leftovers = list(scratch.glob("hermes-plugin-doctor-*"))
+    # exact window where a stranded akramcode-plugin-doctor-* dir was observed.
+    leftovers = list(scratch.glob("akramcode-plugin-doctor-*"))
     assert leftovers == [], f"stranded doctor temp dirs: {leftovers}"
 
 

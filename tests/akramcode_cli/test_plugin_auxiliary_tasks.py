@@ -72,9 +72,9 @@ def test_reset_aux_to_auto_resets_plugin_tasks(tmp_path, monkeypatch, patched_ma
     from akramcode_cli.config import load_config, save_config
     from akramcode_cli.main_provider_setup import _reset_aux_to_auto
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / ".akramcode"))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    (tmp_path / ".hermes").mkdir(exist_ok=True)
+    (tmp_path / ".akramcode").mkdir(exist_ok=True)
 
     manifest = PluginManifest(name="plug")
     ctx = PluginContext(manifest, patched_manager)

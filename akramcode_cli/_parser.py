@@ -1,4 +1,4 @@
-"""Top-level argparse construction for the hermes CLI.
+"""Top-level argparse construction for the akramcode CLI.
 
 Only the top-level parser and the ``chat`` subparser live here. Every other subparser (model,
 gateway, sessions, …) is built by ``akramcode_cli/subcommands/<group>.py`` and wired in
@@ -11,7 +11,7 @@ import re
 from functools import lru_cache
 
 # `--profile` / `-p` is consumed by ``main._apply_profile_override`` before argparse runs
-# (it sets ``HERMES_HOME`` and strips itself from ``sys.argv``), so it isn't on the parser.
+# (it sets ``AKRAMCODE_HOME`` and strips itself from ``sys.argv``), so it isn't on the parser.
 # Listed here so all "carry over on relaunch" metadata lives in one file.
 PRE_ARGPARSE_INHERITED_FLAGS: list[tuple[str, bool]] = [("--profile", True), ("-p", True)]
 
@@ -27,16 +27,16 @@ _OPTIONAL_VALUE_FLAGS_FALLBACK: frozenset[str] = frozenset({"-c", "--continue"})
 
 
 def _cfg_path() -> str:
-    """``~/.hermes/config.yaml`` spelled for the active profile, for help text.
+    """``~/.akramcode/config.yaml`` spelled for the active profile, for help text.
 
     ``main._apply_profile_override`` builds this parser (via ``top_level_value_flag_sets``) BEFORE
-    it re-homes the process to the sticky ``active_profile``; ``get_hermes_home()`` would emit the
-    "[HERMES_HOME fallback] ... wrong profile" warning on every ``hermes`` command for that
+    it re-homes the process to the sticky ``active_profile``; ``get_akramcode_home()`` would emit the
+    "[AKRAMCODE_HOME fallback] ... wrong profile" warning on every ``akramcode`` command for that
     throwaway help string. Read the process home directly: after the override it IS the profile home.
     """
-    from akramcode_constants import display_hermes_home, get_process_hermes_home
+    from akramcode_constants import display_akramcode_home, get_process_akramcode_home
 
-    return f"{display_hermes_home(get_process_hermes_home())}/config.yaml"
+    return f"{display_akramcode_home(get_process_akramcode_home())}/config.yaml"
 
 
 @lru_cache(maxsize=1)
@@ -45,7 +45,7 @@ def top_level_value_flag_sets() -> tuple[frozenset[str], frozenset[str]]:
 
     Introspects ``build_top_level_parser()`` (every option with nargs != 0) so the argv scanners in
     ``main.py`` (``_first_positional_argv``, ``_apply_profile_override``) can never drift from the
-    argparse surface — the drift that made ``hermes --reasoning high chat …`` misread ``high`` as
+    argparse surface — the drift that made ``akramcode --reasoning high chat …`` misread ``high`` as
     the subcommand and forced eager plugin discovery.
 
     Mirrors the ``update_cmd._holder_value_flags`` precedent, including the handwritten-snapshot fallback
@@ -89,55 +89,55 @@ def _inherited_flag(parser, *args, **kwargs):
 
 _EPILOGUE = """
 Examples:
-    hermes                        Start interactive chat
-    hermes chat -q "Hello"        Single query mode
-    hermes --tui                  Launch the modern TUI (or set display.interface: tui)
-    hermes --cli                  Force the classic REPL (overrides display.interface: tui)
-    hermes -c                     Resume the most recent session
-    hermes -c "my project"        Resume a session by name (latest in lineage)
-    hermes --resume <session_id>  Resume a specific session by ID
-    hermes --resume latest        Resume the most recent session (same as -c)
-    hermes --tui --resume latest --in ./dir   Resume ./dir's latest session in the TUI
-    hermes setup                  Run setup wizard
-    hermes logout                 Clear stored authentication
-    hermes auth add <provider>    Add a pooled credential
-    hermes auth list              List pooled credentials
-    hermes auth remove <p> <t>    Remove pooled credential by index, id, or label
-    hermes auth reset <p> [t]     Clear exhaustion status for a provider, or one credential
-    hermes auth priority <p> <t> <n>  Move a pooled credential to priority n (0 = tried first)
-    hermes auth refresh <p> [t]   Refresh a pooled OAuth credential and clear its cooldown
-    hermes model                  Select default model
-    hermes fallback [list]        Show fallback provider chain
-    hermes fallback add           Add a fallback provider (same picker as `hermes model`)
-    hermes fallback remove        Remove a fallback provider from the chain
-    hermes config                 View configuration
-    hermes config edit            Edit config in $EDITOR
-    hermes config set model gpt-4 Set a config value
-    hermes gateway                Run messaging gateway
-    hermes gateway install        Install gateway background service
-    hermes gateway start          Start the installed gateway service
-    hermes gateway stop           Stop the gateway service
-    hermes gateway status         Show gateway status
-    hermes -p <profile> <cmd>     Run any command against a named profile's
-                                  home (also --profile) — e.g. hermes -p coder gateway stop
-    hermes -s hermes-agent-dev,github-auth
-    hermes -w                     Start in isolated git worktree
-    hermes sessions list          List past sessions
-    hermes sessions browse        Interactive session picker
-    hermes sessions rename ID T   Rename/title a session
-    hermes logs                   View agent.log (last 50 lines)
-    hermes logs -f                Follow agent.log in real time
-    hermes logs errors            View errors.log
-    hermes logs --since 1h        Lines from the last hour
-    hermes debug share             Upload debug report for support
-    hermes console                Open the safe Hermes command console
-    hermes update                 Update to latest version
-    hermes dashboard              Start web UI dashboard (port 9119)
-    hermes dashboard --stop       Stop running dashboard processes
-    hermes dashboard --status     List running dashboard processes
+    akramcode                        Start interactive chat
+    akramcode chat -q "Hello"        Single query mode
+    akramcode --tui                  Launch the modern TUI (or set display.interface: tui)
+    akramcode --cli                  Force the classic REPL (overrides display.interface: tui)
+    akramcode -c                     Resume the most recent session
+    akramcode -c "my project"        Resume a session by name (latest in lineage)
+    akramcode --resume <session_id>  Resume a specific session by ID
+    akramcode --resume latest        Resume the most recent session (same as -c)
+    akramcode --tui --resume latest --in ./dir   Resume ./dir's latest session in the TUI
+    akramcode setup                  Run setup wizard
+    akramcode logout                 Clear stored authentication
+    akramcode auth add <provider>    Add a pooled credential
+    akramcode auth list              List pooled credentials
+    akramcode auth remove <p> <t>    Remove pooled credential by index, id, or label
+    akramcode auth reset <p> [t]     Clear exhaustion status for a provider, or one credential
+    akramcode auth priority <p> <t> <n>  Move a pooled credential to priority n (0 = tried first)
+    akramcode auth refresh <p> [t]   Refresh a pooled OAuth credential and clear its cooldown
+    akramcode model                  Select default model
+    akramcode fallback [list]        Show fallback provider chain
+    akramcode fallback add           Add a fallback provider (same picker as `akramcode model`)
+    akramcode fallback remove        Remove a fallback provider from the chain
+    akramcode config                 View configuration
+    akramcode config edit            Edit config in $EDITOR
+    akramcode config set model gpt-4 Set a config value
+    akramcode gateway                Run messaging gateway
+    akramcode gateway install        Install gateway background service
+    akramcode gateway start          Start the installed gateway service
+    akramcode gateway stop           Stop the gateway service
+    akramcode gateway status         Show gateway status
+    akramcode -p <profile> <cmd>     Run any command against a named profile's
+                                  home (also --profile) — e.g. akramcode -p coder gateway stop
+    akramcode -s akramcode-agent-dev,github-auth
+    akramcode -w                     Start in isolated git worktree
+    akramcode sessions list          List past sessions
+    akramcode sessions browse        Interactive session picker
+    akramcode sessions rename ID T   Rename/title a session
+    akramcode logs                   View agent.log (last 50 lines)
+    akramcode logs -f                Follow agent.log in real time
+    akramcode logs errors            View errors.log
+    akramcode logs --since 1h        Lines from the last hour
+    akramcode debug share             Upload debug report for support
+    akramcode console                Open the safe AkramCode command console
+    akramcode update                 Update to latest version
+    akramcode dashboard              Start web UI dashboard (port 9119)
+    akramcode dashboard --stop       Stop running dashboard processes
+    akramcode dashboard --status     List running dashboard processes
 
 For more help on a command:
-    hermes <command> --help
+    akramcode <command> --help
 """
 
 
@@ -160,11 +160,11 @@ def _add_top_level_flags(parser: argparse.ArgumentParser) -> None:
     # `chat` subcommand; if neither -z nor a subcommand consumes them, they fall through as None.
     inherited(parser, "-m", "--model", default=None, help=(
         "Model override for this invocation (e.g. anthropic/claude-sonnet-4.6). "
-        "Applies to -z/--oneshot and --tui. Also settable via HERMES_INFERENCE_MODEL env var."))
+        "Applies to -z/--oneshot and --tui. Also settable via AKRAMCODE_INFERENCE_MODEL env var."))
     inherited(parser, "--provider", default=None, help=(
         "Provider override for this invocation (e.g. openrouter, anthropic). "
         "Applies to -z/--oneshot and --tui. The persistent provider lives in config.yaml "
-        "under model.provider — use `hermes setup` or edit the file to change it."))
+        "under model.provider — use `akramcode setup` or edit the file to change it."))
     inherited(parser, "--reasoning", default=None, metavar="LEVEL", help=(
         "Reasoning effort for this invocation: none, minimal, low, medium, "
         "high, xhigh, max, or ultra. Overrides agent.reasoning_effort in "
@@ -188,7 +188,7 @@ def _add_top_level_flags(parser: argparse.ArgumentParser) -> None:
         help="Run in an isolated git worktree (for parallel agents)")
     inherited(parser, "--accept-hooks", action="store_true", default=False, help=(
         "Auto-approve any unseen shell hooks declared in config.yaml "
-        "without a TTY prompt.  Equivalent to HERMES_ACCEPT_HOOKS=1 or "
+        "without a TTY prompt.  Equivalent to AKRAMCODE_ACCEPT_HOOKS=1 or "
         "hooks_auto_accept: true in config.yaml.  Use on CI / headless "
         "runs that can't prompt."))
     inherited(parser, "--skills", "-s", action="append", default=None,
@@ -222,7 +222,7 @@ def _build_chat_parser(subparsers) -> argparse.ArgumentParser:
     """The ``chat`` subparser (also the implicit default command).
 
     Flags ALSO declared on the top-level parser use ``default=argparse.SUPPRESS``: for
-    ``hermes -m foo chat`` argparse first sets ``args.model`` from the top-level parser, then
+    ``akramcode -m foo chat`` argparse first sets ``args.model`` from the top-level parser, then
     dispatches to the chat subparser, which shares the namespace and ``dest`` — a plain ``None``
     default would silently clobber the top-level value. SUPPRESS keeps the subparser action a no-op
     unless the flag is actually passed after the subcommand (tests/akramcode_cli/
@@ -230,7 +230,7 @@ def _build_chat_parser(subparsers) -> argparse.ArgumentParser:
     """
     chat_parser = subparsers.add_parser(
         "chat", help="Interactive chat with the agent",
-        description="Start an interactive chat session with Hermes Agent")
+        description="Start an interactive chat session with AkramCode Agent")
     add, inherited, SUPPRESS = chat_parser.add_argument, _inherited_flag, argparse.SUPPRESS
     backend_group = chat_parser.add_mutually_exclusive_group()
     inherited(backend_group, "--local", dest="terminal_backend", action="store_const", const="local",
@@ -293,7 +293,7 @@ def _build_chat_parser(subparsers) -> argparse.ArgumentParser:
         help="Run in an isolated git worktree (for parallel agents on the same repo)")
     inherited(chat_parser, "--accept-hooks", action="store_true", default=SUPPRESS, help=(
         "Auto-approve any unseen shell hooks declared in config.yaml "
-        "without a TTY prompt (see also HERMES_ACCEPT_HOOKS env var and "
+        "without a TTY prompt (see also AKRAMCODE_ACCEPT_HOOKS env var and "
         "hooks_auto_accept: in config.yaml)."))
     add("--checkpoints", action="store_true", default=False,
         help="Enable filesystem checkpoints before destructive file operations (use /rollback to restore)")
@@ -315,7 +315,7 @@ def _build_chat_parser(subparsers) -> argparse.ArgumentParser:
     inherited(chat_parser, "--ignore-rules", action="store_true", default=SUPPRESS,
               help="Skip auto-injection of AGENTS.md, SOUL.md, .cursorrules, memory, and preloaded skills. Combine with --ignore-user-config for a fully isolated run.")
     inherited(chat_parser, "--safe-mode", action="store_true", default=SUPPRESS,
-              help="Troubleshooting mode: disable ALL customizations — user config, AGENTS.md/memory injection, plugins, and MCP servers (implies --ignore-user-config and --ignore-rules). Use to isolate whether a problem comes from your setup or from Hermes itself.")
+              help="Troubleshooting mode: disable ALL customizations — user config, AGENTS.md/memory injection, plugins, and MCP servers (implies --ignore-user-config and --ignore-rules). Use to isolate whether a problem comes from your setup or from AkramCode itself.")
     add("--source", default=None,
         help="Session source tag for filtering (default: cli). Use 'tool' for third-party integrations that should not appear in user session lists.")
     inherited(chat_parser, "--tui", action="store_true", default=SUPPRESS,
@@ -329,7 +329,7 @@ def _build_chat_parser(subparsers) -> argparse.ArgumentParser:
     return chat_parser
 
 
-class HermesArgumentParser(argparse.ArgumentParser):
+class AkramCodeArgumentParser(argparse.ArgumentParser):
     """argparse parser whose unknown-subcommand error is three short lines, not a 70-name dump.
 
     Stock argparse prints the full usage block plus ``(choose from 'chat', 'model', …)`` when
@@ -340,7 +340,7 @@ class HermesArgumentParser(argparse.ArgumentParser):
 
     def _check_value(self, action, value):
         if isinstance(action, argparse._SubParsersAction) and value not in action.choices:
-            # ``self.prog`` is "hermes" at the top level and "hermes gateway" for a nested group
+            # ``self.prog`` is "akramcode" at the top level and "akramcode gateway" for a nested group
             # (argparse hands add_parser() the parent's class), so the copy stays correct for both.
             lines = [f"{self.prog}: '{value}' is not a `{self.prog}` command."]
             close = difflib.get_close_matches(str(value), list(action.choices), n=3, cutoff=0.6)
@@ -358,11 +358,11 @@ def build_top_level_parser():
     ``chat_parser.set_defaults(func= cmd_chat)`` and registers further subparsers via
     ``subparsers.add_parser(...)``.
     """
-    parser = HermesArgumentParser(
-        prog="hermes", description="Hermes Agent - AI assistant with tool-calling capabilities",
+    parser = AkramCodeArgumentParser(
+        prog="akramcode", description="AkramCode Agent - AI assistant with tool-calling capabilities",
         formatter_class=argparse.RawDescriptionHelpFormatter, epilog=_EPILOGUE)
     _add_top_level_flags(parser)
-    # metavar keeps the usage line to ``hermes [...] <command>`` instead of the brace list of
-    # every subcommand name; ``hermes --help`` still lists each command with its help row.
+    # metavar keeps the usage line to ``akramcode [...] <command>`` instead of the brace list of
+    # every subcommand name; ``akramcode --help`` still lists each command with its help row.
     subparsers = parser.add_subparsers(dest="command", help="Command to run", metavar="<command>")
     return parser, subparsers, _build_chat_parser(subparsers)

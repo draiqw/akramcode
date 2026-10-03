@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 MAX_SKILLS_FOR_PROMPT = 60
 
 
-_SYSTEM_PROMPT = """You are a profile-describer for the Hermes Agent kanban board.
+_SYSTEM_PROMPT = """You are a profile-describer for the AkramCode Agent kanban board.
 
 A user runs multiple "profiles" — distinct agent identities, each with their
 own skills, model, and configuration. The kanban board's orchestrator routes
@@ -48,7 +48,7 @@ Rules:
                          refactors functions, opens GitHub PRs."
   - 1-2 sentences, <= 280 characters total.
   - Never invent capabilities the skills don't suggest.
-  - Never write "Hermes Agent profile" or other meta-narration.
+  - Never write "AkramCode Agent profile" or other meta-narration.
   - No code fences, no preamble, no closing remarks. Output only JSON.
 """
 
@@ -120,8 +120,8 @@ def describe_profile(profile_name: str, *, overwrite: bool = False, timeout: Opt
         return DescribeOutcome(canon, False, "profile not found")
     try:
         if canon == "default":
-            from akramcode_constants import get_hermes_home  # type: ignore
-            profile_dir = Path(get_hermes_home())
+            from akramcode_constants import get_akramcode_home  # type: ignore
+            profile_dir = Path(get_akramcode_home())
         else:
             profile_dir = profiles_mod.get_profile_dir(canon)
     except Exception as exc:

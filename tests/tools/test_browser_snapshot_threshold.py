@@ -15,7 +15,7 @@ from tools import browser_tool_session as bt_session
 @pytest.fixture(autouse=True)
 def isolated_snapshot_threshold(tmp_path, monkeypatch):
     """Use a real, isolated config file and reset module-level caches."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
 
     original_cached = browser_tool._cached_snapshot_threshold
     original_resolved = browser_tool._snapshot_threshold_resolved
@@ -26,8 +26,8 @@ def isolated_snapshot_threshold(tmp_path, monkeypatch):
     browser_tool._snapshot_threshold_resolved = original_resolved
 
 
-def _write_threshold(hermes_home, value):
-    (hermes_home / "config.yaml").write_text(
+def _write_threshold(akramcode_home, value):
+    (akramcode_home / "config.yaml").write_text(
         f"browser:\n  snapshot_threshold: {value}\n",
         encoding="utf-8",
     )

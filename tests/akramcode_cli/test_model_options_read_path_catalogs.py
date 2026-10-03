@@ -22,7 +22,7 @@ def _picker_env(monkeypatch, tmp_path, *, hung=None):
     ``hung`` is a slug whose probe blocks on the returned event — a stand-in for a degraded
     provider. Returns ``(live_calls, release_event)``; ``live_calls`` records every live probe.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     monkeypatch.setenv("DEEPSEEK_API_KEY", "test-key")
     release = threading.Event()
     live_calls: list[str] = []
@@ -39,12 +39,12 @@ def _picker_env(monkeypatch, tmp_path, *, hung=None):
         lambda *a, **k: {_DEAD_PROVIDER: {"env": ["DEEPSEEK_API_KEY"], "name": "DeepSeek"}},
     )
     monkeypatch.setattr("agent.models_dev.PROVIDER_TO_MODELS_DEV", {_DEAD_PROVIDER: _DEAD_PROVIDER})
-    monkeypatch.setattr("akramcode_cli.providers.HERMES_OVERLAYS", {})
+    monkeypatch.setattr("akramcode_cli.providers.AKRAMCODE_OVERLAYS", {})
     return live_calls, release
 
 
 def _drain_background_warms(timeout=10.0) -> None:
-    """Let spawned catalog warms finish so a tmp HERMES_HOME can be torn down with no writers left."""
+    """Let spawned catalog warms finish so a tmp AKRAMCODE_HOME can be torn down with no writers left."""
     deadline = time.time() + timeout
     while time.time() < deadline and models_mod._swr_refresh_inflight:
         time.sleep(0.02)

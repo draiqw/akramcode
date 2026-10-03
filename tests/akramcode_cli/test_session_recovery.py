@@ -521,7 +521,7 @@ def test_cli_allow_partial_salvages_rows_across_a_corrupt_leaf(
     assert not rejected_output.exists()
 
     env = os.environ.copy()
-    env["HERMES_HOME"] = str(tmp_path / "isolated-hermes-home")
+    env["AKRAMCODE_HOME"] = str(tmp_path / "isolated-akramcode-home")
     result = subprocess.run(
         [
             sys.executable,
@@ -938,7 +938,7 @@ def test_salvage_bounds_damaged_low_edge_from_the_aggregate_not_the_int64_domain
 
 
 def test_recover_carries_message_identity_columns(tmp_path):
-    """``hermes sessions recover`` copies the compatible columns of ``messages`` into a current-schema
+    """``akramcode sessions recover`` copies the compatible columns of ``messages`` into a current-schema
     database: the durable ids (``message_uid``, the merge witness, the tool-call uids) survive with the rows."""
     source = tmp_path / "source.db"
     db = SessionDB(db_path=source)

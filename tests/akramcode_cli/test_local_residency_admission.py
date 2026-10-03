@@ -57,7 +57,7 @@ NO_DEVICE = HardwareBudget(usable_vram_bytes=0, total_device_bytes=0, ram_availa
     ({"tiny": 2 * GIB, "huge": 200 * GIB}, ROOMY, 4, 4),
 ])
 def test_residency_cap_is_priced_against_the_card(tmp_path, monkeypatch, weights, budget, configured, expected):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / ".akramcode"))
     mdir = _staged(tmp_path, monkeypatch, weights)
     assert presets.admitted_residency_count(mdir, budget, configured) == expected
 
@@ -74,7 +74,7 @@ def _boom(**_kw):
 ])
 def test_boot_hands_the_router_the_derived_cap(tmp_path, monkeypatch, configured, probe, expected):
     """The wiring, not just the math: what ``ensure_local_runtime`` passes as ``--models-max``."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / ".hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / ".akramcode"))
     import akramcode_cli.local_runtime.bootstrap as bs
     from akramcode_cli.local_runtime import binaries, hardware, supervisor
     from akramcode_cli.local_runtime import endpoint

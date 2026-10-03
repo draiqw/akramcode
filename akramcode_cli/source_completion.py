@@ -47,18 +47,18 @@ def complete_source_checkout(
     root = Path(root)
     # This tail is the last mutating step of an install or update, and its product
     # builds run for minutes. A gateway restarted while it runs (launchd KeepAlive,
-    # a service manager, a second `hermes` launch) reaches the same tail through
-    # venv_sync, and `hermes update` runs its own: two completions then build the
+    # a service manager, a second `akramcode` launch) reaches the same tail through
+    # venv_sync, and `akramcode update` runs its own: two completions then build the
     # same output directories concurrently and race on install-stamp.json (#123376).
     # Claim the shared update lock so stacked completions serialize. A tail whose
     # orchestrator already holds the lock (venv_sync's interrupted-update finish,
     # the updater's completion child) runs under its parent's claim, exactly as
-    # `hermes update` does under the desktop handoff pid.
+    # `akramcode update` does under the desktop handoff pid.
     lock = UpdateLock()
     if not lock.acquire():
         raise RuntimeError(
             f"an update is still running ({describe_holder(lock.holder)}); "
-            "wait for it to exit, then relaunch Hermes"
+            "wait for it to exit, then relaunch AkramCode"
         )
     try:
         return _complete_locked(
@@ -141,7 +141,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args([argument for argument in argv if argument != _PREPARED])
     root = args.source.resolve()
     if not (root / "akramcode_cli/source_completion.py").is_file():
-        print(f"✗ {root} is not a Hermes source checkout", file=sys.stderr)
+        print(f"✗ {root} is not a AkramCode source checkout", file=sys.stderr)
         return 1
 
     if prepared:
@@ -152,7 +152,7 @@ def main(argv: list[str] | None = None) -> int:
         activate_dependencies(root)
         if args.finish_update:
             # A source update that never reached its own completion -- a
-            # pre-handoff release cannot flip during `hermes update`, so its
+            # pre-handoff release cannot flip during `akramcode update`, so its
             # update ends with the tree at HEAD and nothing built -- lands here
             # on the next ordinary startup. Same tail as an install, so the two
             # states cannot drift apart.

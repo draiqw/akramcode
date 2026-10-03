@@ -104,13 +104,13 @@ class TestPressureSignalScope:
         import gateway.agent_cache_pressure as acp
         import gateway.cgroup_cleanup as cleanup
 
-        monkeypatch.setattr(cleanup, "_own_cgroup_path", lambda: "/hermes.service")
+        monkeypatch.setattr(cleanup, "_own_cgroup_path", lambda: "/akramcode.service")
         real_read_text = acp.Path.read_text
 
         def read_text(self, *args, **kwargs):
-            if str(self) == "/sys/fs/cgroup/hermes.service/memory.high":
+            if str(self) == "/sys/fs/cgroup/akramcode.service/memory.high":
                 return "6979321856\n"
-            if str(self) == "/sys/fs/cgroup/hermes.service/memory.stat":
+            if str(self) == "/sys/fs/cgroup/akramcode.service/memory.stat":
                 if stat_text is None:
                     raise OSError("restricted /sys mount")
                 return stat_text

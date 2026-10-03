@@ -18,7 +18,7 @@ from akramcode_cli._scan_venv_blockers import _is_pausable_gateway
     "cmdline",
     [
         # venv-side launcher, exactly as the scheduled task spawns it
-        r"C:\Users\u\AppData\Local\hermes\hermes-agent\venv\Scripts\python.exe"
+        r"C:\Users\u\AppData\Local\akramcode\akramcode-agent\venv\Scripts\python.exe"
         " -m akramcode_cli.main gateway run --replace",
         # uv-side worker re-running the same argv (quoted exe, double space)
         r'"C:\Users\u\AppData\Roaming\uv\python\cpython-3.11-windows-x86_64-none\python.exe"'
@@ -73,7 +73,7 @@ def _run_legacy_cli(tmp_path, *args):
     return subprocess.run(
         [sys.executable, "-S", "-m", "akramcode_cli._scan_venv_blockers", *args],
         cwd=Path(__file__).resolve().parents[2],
-        env={**os.environ, "HERMES_HOME": str(tmp_path), "PYTHONPATH": ""},
+        env={**os.environ, "AKRAMCODE_HOME": str(tmp_path), "PYTHONPATH": ""},
         capture_output=True,
         text=True,
         timeout=15,

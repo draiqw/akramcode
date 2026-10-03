@@ -108,7 +108,7 @@ async def _run_heartbeat_until_payload(tmp_path, timeout_s=10.0):
 
 @pytest.fixture()
 def short_home():
-    """Short HERMES_HOME for tests that bind a real AF_UNIX socket.
+    """Short AKRAMCODE_HOME for tests that bind a real AF_UNIX socket.
 
     pytest's tmp_path nests deep enough on CI runners / macOS that
     ``state/gateway.loop-tick.<pid>.sock`` exceeds the sockaddr_un limit and

@@ -1,7 +1,7 @@
 """Tests for the Phase 4 s6 dispatch helper in akramcode_cli.gateway.
 
 `_dispatch_via_service_manager_if_s6` decides whether a
-`hermes gateway start/stop/restart` invocation should be routed to
+`akramcode gateway start/stop/restart` invocation should be routed to
 the in-container S6ServiceManager instead of falling through to the
 host systemd/launchd/windows code path.
 """
@@ -139,8 +139,8 @@ def test_redirect_falls_back_when_sleep_missing(
         "akramcode_cli.gateway._block_until_terminated",
         lambda: block_calls.append(True),
     )
-    monkeypatch.delenv("HERMES_S6_SUPERVISED_CHILD", raising=False)
-    monkeypatch.delenv("HERMES_GATEWAY_NO_SUPERVISE", raising=False)
+    monkeypatch.delenv("AKRAMCODE_S6_SUPERVISED_CHILD", raising=False)
+    monkeypatch.delenv("AKRAMCODE_GATEWAY_NO_SUPERVISE", raising=False)
 
     # Must not raise FileNotFoundError — that was the #36208 crash.
     result = gw._maybe_redirect_run_to_s6_supervision(_Args())
@@ -156,11 +156,11 @@ def test_redirect_falls_back_when_sleep_missing(
 def _armed_watchdog(monkeypatch: pytest.MonkeyPatch):
     """Arm the real watchdog as akramcode_cli.main's argv fast-path does; the long timeout keeps the
     deadline out of the test, only the handle state at handoff is under test."""
-    import akram_core.hermes_startup_watchdog as sw
+    import akram_core.akramcode_startup_watchdog as sw
 
     monkeypatch.delenv(sw.ENV_STARTUP_WATCHDOG, raising=False)
-    monkeypatch.delenv("HERMES_S6_SUPERVISED_CHILD", raising=False)
-    monkeypatch.delenv("HERMES_GATEWAY_NO_SUPERVISE", raising=False)
+    monkeypatch.delenv("AKRAMCODE_S6_SUPERVISED_CHILD", raising=False)
+    monkeypatch.delenv("AKRAMCODE_GATEWAY_NO_SUPERVISE", raising=False)
     monkeypatch.setattr("akramcode_cli.gateway._profile_suffix", lambda: "")
     sw._reset_for_tests()
     handle = sw.arm_startup_watchdog(timeout_s=3600)
@@ -240,13 +240,13 @@ class _UnregisteredRecorder(_CallRecorder):
 
 
 def _arrange(monkeypatch, tmp_path, mgr, *, profile: str, seed_soul: bool):
-    """Force the s6 branch and make ``tmp_path`` the shared HERMES_HOME the slot maps back to."""
+    """Force the s6 branch and make ``tmp_path`` the shared AKRAMCODE_HOME the slot maps back to."""
     from akramcode_cli import gateway as gw
     from akramcode_cli import service_manager as sm
 
     monkeypatch.setattr(sm, "detect_service_manager", lambda: "s6")
     monkeypatch.setattr(sm, "get_service_manager", lambda: mgr)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     profile_dir = tmp_path / "profiles" / profile
     profile_dir.mkdir(parents=True)
     if seed_soul:

@@ -3,7 +3,7 @@
 A guest identity carrying inference shows one row, "Nous · free tier", with the single model
 ``nous/welcome``; the same guest with ``nous.guest: false`` shows no Nous row at all. The rule lives
 in one helper (``_free_tier_nous_row``) and this file exercises it through the real row builders
-against a temp ``HERMES_HOME`` with the network catalog fetch stubbed.
+against a temp ``AKRAMCODE_HOME`` with the network catalog fetch stubbed.
 """
 
 from __future__ import annotations
@@ -28,8 +28,8 @@ GUEST_STATE = {
 @pytest.fixture
 def guest_home(monkeypatch, tmp_path):
     """Seed a guest identity as the only Nous state and keep every row builder offline."""
-    monkeypatch.setenv("HERMES_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
-    monkeypatch.setenv("HERMES_GUEST_ONBOARDING", "1")
+    monkeypatch.setenv("AKRAMCODE_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
+    monkeypatch.setenv("AKRAMCODE_GUEST_ONBOARDING", "1")
     for var in ("OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "NOUS_API_KEY", "LM_API_KEY", "LM_BASE_URL"):
         monkeypatch.delenv(var, raising=False)
     _save_auth_store({"active_provider": "nous", "providers": {"nous": dict(GUEST_STATE)}})
@@ -42,7 +42,7 @@ def guest_home(monkeypatch, tmp_path):
     monkeypatch.setattr(models_mod, "get_curated_nous_model_ids", lambda *a, **k: ["anthropic/claude-x", "openai/gpt-y"])
     monkeypatch.setattr(models_mod, "fetch_ollama_cloud_models", lambda *a, **k: [])
     monkeypatch.setattr(msp, "_nous_picker_model_ids", lambda *a, **k: pytest.fail("guest must not fetch the Portal catalog"))
-    return Path(os.environ["HERMES_HOME"])
+    return Path(os.environ["AKRAMCODE_HOME"])
 
 
 def _write_config(monkeypatch, home: Path, text: str) -> None:
@@ -74,7 +74,7 @@ def test_guest_identity_shows_free_tier_row_with_only_welcome_model(guest_home, 
     rendered = repr(row).lower()
     assert "guest" not in rendered and "anonymous" not in rendered
 
-    # The `hermes model` provider picker applies the same rule from the same helper.
+    # The `akramcode model` provider picker applies the same rule from the same helper.
     cli_rows = _cli_nous_rows({})
     assert len(cli_rows) == 1
     assert "free tier" in cli_rows[0][1]

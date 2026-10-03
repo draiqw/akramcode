@@ -13,7 +13,7 @@ from unittest.mock import patch
 import pytest
 
 from acp_adapter.model_catalog import _named_custom_provider_catalogs
-from acp_adapter.server import HermesACPAgent
+from acp_adapter.server import AkramCodeACPAgent
 from acp_adapter.session import SessionManager
 from acp.schema import SessionModelState
 
@@ -182,7 +182,7 @@ class TestModelStateIncludesNamedProviders:
                 model="saved:model", provider="ollama"
             )
         )
-        acp_agent = HermesACPAgent(session_manager=manager)
+        acp_agent = AkramCodeACPAgent(session_manager=manager)
 
         with patch(
             "acp_adapter.model_catalog._named_custom_provider_catalogs",
@@ -204,7 +204,7 @@ class TestModelStateIncludesNamedProviders:
                 model="gpt-5.4", provider="openai-codex"
             )
         )
-        acp_agent = HermesACPAgent(session_manager=manager)
+        acp_agent = AkramCodeACPAgent(session_manager=manager)
 
         with patch(
             "acp_adapter.model_catalog._named_custom_provider_catalogs",
@@ -238,7 +238,7 @@ class TestModelStateIncludesNamedProviders:
         manager = SessionManager(
             agent_factory=lambda: SimpleNamespace(model="model-a", provider="relay")
         )
-        acp_agent = HermesACPAgent(session_manager=manager)
+        acp_agent = AkramCodeACPAgent(session_manager=manager)
         cfg = {
             "providers": {
                 "relay": {
@@ -311,7 +311,7 @@ class TestModelStateIncludesNamedProviders:
             agent_factory=lambda: SimpleNamespace(
                 model="model-c", provider="openrouter", base_url="https://openrouter.ai/api/v1")
         )
-        acp_agent = HermesACPAgent(session_manager=manager)
+        acp_agent = AkramCodeACPAgent(session_manager=manager)
         inventory = {"providers": [
             {"slug": "openrouter", "name": "OpenRouter", "is_user_defined": False, "models": ["model-c"]},
             {"slug": "custom:openrouter", "name": "openrouter", "is_user_defined": True,

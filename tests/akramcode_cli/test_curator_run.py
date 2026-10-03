@@ -1,4 +1,4 @@
-"""Tests for `hermes curator run` CLI behavior."""
+"""Tests for `akramcode curator run` CLI behavior."""
 
 from __future__ import annotations
 

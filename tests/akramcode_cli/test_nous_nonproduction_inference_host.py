@@ -3,7 +3,7 @@
 Portal-returned inference URLs go through a host allowlist before the user's bearer is sent
 there. Two authority boundaries hold:
 
-* Profile authority — ``NOUS_INFERENCE_BASE_URL`` / ``HERMES_PORTAL_BASE_URL`` are per-profile
+* Profile authority — ``NOUS_INFERENCE_BASE_URL`` / ``AKRAMCODE_PORTAL_BASE_URL`` are per-profile
   ``.env`` values read through the profile secret scope. A multi-profile call that has lost its
   scope gets *no* override, never the launch profile's ambient value.
 * Service authority — a network-provided inference host outside the production set is accepted
@@ -24,7 +24,7 @@ NONPROD_PORTAL = "https://portal.example-env.nousresearch.com"
 
 @pytest.mark.parametrize("helper, var", [
     (auth_nous._nous_inference_env_override, "NOUS_INFERENCE_BASE_URL"),
-    (auth_nous._nous_portal_env_override, "HERMES_PORTAL_BASE_URL"),
+    (auth_nous._nous_portal_env_override, "AKRAMCODE_PORTAL_BASE_URL"),
 ])
 def test_routing_overrides_follow_the_profile_scope_and_fail_closed_without_one(monkeypatch, helper, var):
     """Unscoped single-profile: environ. Multi-profile: the scope's value wins, a scoped miss is a
@@ -78,7 +78,7 @@ def test_portal_override_alone_grants_nothing(monkeypatch):
     """A non-production Portal override, with or without a matching stored Portal, does not make
     the Portal's returned host a bearer recipient; the healed value stays production. Only the
     inference override does, and scheme checks still apply to it."""
-    monkeypatch.setenv("HERMES_PORTAL_BASE_URL", NONPROD_PORTAL)
+    monkeypatch.setenv("AKRAMCODE_PORTAL_BASE_URL", NONPROD_PORTAL)
     monkeypatch.delenv("NOUS_INFERENCE_BASE_URL", raising=False)
     state = {"portal_base_url": NONPROD_PORTAL, "inference_base_url": ENV_INFERENCE, "client_id": "cid"}
     portal, stored_inference, _effective, _ = auth_nous._nous_effective_routing(state)

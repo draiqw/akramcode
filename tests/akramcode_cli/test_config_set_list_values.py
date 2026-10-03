@@ -1,6 +1,6 @@
-"""``hermes config set`` must parse list/mapping literals, not store them as strings.
+"""``akramcode config set`` must parse list/mapping literals, not store them as strings.
 
-Before this fix, ``hermes config set platform_toolsets.discord '["file","web"]'``
+Before this fix, ``akramcode config set platform_toolsets.discord '["file","web"]'``
 stored the value as a raw STRING. Every reader that gates on
 ``isinstance(..., list)`` — ``_get_platform_tools``, ``_get_enabled_set``,
 ``_get_disabled_set`` — then silently ignored it and fell back to its default,
@@ -14,8 +14,8 @@ import pytest
 def user_home(tmp_path, monkeypatch):
     home = tmp_path / "home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.delenv("HERMES_MANAGED_DIR", raising=False)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
+    monkeypatch.delenv("AKRAMCODE_MANAGED_DIR", raising=False)
     import akramcode_cli.config as cfg
     from akramcode_cli import managed_scope
 

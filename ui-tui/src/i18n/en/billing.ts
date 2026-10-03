@@ -25,7 +25,7 @@ export const billingEn = {
       needsBillingPermissions:
         'Billing actions need someone with billing permissions (owner, admin, or finance admin).',
       remoteSpendingOff:
-        "Remote spending is off for this org — a billing admin can turn it on from the portal's Hermes Agent page.",
+        "Remote spending is off for this org — a billing admin can turn it on from the portal's AkramCode Agent page.",
       addFunds: 'Add funds',
       autoReload: 'Auto-reload',
       monthlyLimit: 'Monthly limit',

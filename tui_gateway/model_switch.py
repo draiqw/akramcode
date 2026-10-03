@@ -52,7 +52,7 @@ def _restore_agent_model_runtime(agent, snapshot: dict | None) -> None:
 
 
 def _profile_runtime_scope_tokens(profile_home, *, hydrate_secrets: bool = True) -> "_TurnScopes":
-    """Bind HERMES_HOME + secret + terminal scope for ``profile_home`` (None = launch profile) and
+    """Bind AKRAMCODE_HOME + secret + terminal scope for ``profile_home`` (None = launch profile) and
     return the reset tokens. The launch profile's SECRET scope is always bound — its ``.env`` over
     the launch env (live while single-profile, frozen at activation afterwards; never live
     ``os.environ`` once a secondary context may have written to it, #107422) — so the credential
@@ -77,9 +77,9 @@ def _profile_runtime_scope_tokens(profile_home, *, hydrate_secrets: bool = True)
                 hydrate_profile_secret_sources(home)
             secrets = build_profile_secret_scope(home)
             overlay = None
-            scopes.home = set_hermes_home_override(str(home))
+            scopes.home = set_akramcode_home_override(str(home))
         else:
-            # The launch home IS get_hermes_home() (``_profile_home`` answers None for "already the
+            # The launch home IS get_akramcode_home() (``_profile_home`` answers None for "already the
             # launch profile"); single-profile, only its secrets need binding. Once multiplexing is
             # active the override is bound too: an unset override is the "unbound context" signal
             # plugin runtime bindings and per-home slots fail closed on (#118538).
@@ -93,7 +93,7 @@ def _profile_runtime_scope_tokens(profile_home, *, hydrate_secrets: bool = True)
             scopes.secret = set_secret_scope(secrets)
             if not is_multiplex_active():
                 return scopes
-            scopes.home = set_hermes_home_override(str(home))
+            scopes.home = set_akramcode_home_override(str(home))
             overlay = launch_terminal_env()
         if scopes.secret is None:
             scopes.secret = set_secret_scope(secrets, profile_home=str(home) if profile_home else None)
@@ -111,7 +111,7 @@ def _profile_runtime_scope_tokens(profile_home, *, hydrate_secrets: bool = True)
 
 def _release_profile_runtime_scope_tokens(scopes: "_TurnScopes | None") -> None:
     """Release terminal → secret → home. Each reset is independent: a failing terminal reset must
-    not leave the previous profile's secrets / HERMES_HOME installed for the next body in this
+    not leave the previous profile's secrets / AKRAMCODE_HOME installed for the next body in this
     context (a fail-open scope leak on the teardown path). The first failure is re-raised after
     every scope has been released."""
     if scopes is None:
@@ -119,7 +119,7 @@ def _release_profile_runtime_scope_tokens(scopes: "_TurnScopes | None") -> None:
     from tools.terminal_scope import reset_terminal_scope
     first_error: BaseException | None = None
     for token, reset in ((scopes.terminal, reset_terminal_scope), (scopes.secret, reset_secret_scope),
-                         (scopes.home, reset_hermes_home_override)):
+                         (scopes.home, reset_akramcode_home_override)):
         if token is None:
             continue
         try:
@@ -223,7 +223,7 @@ def _switch_away_provider(agent, explicit_provider: str, current_provider: str) 
     ``custom``."""
     if agent or not explicit_provider:
         return current_provider
-    if env_provider := os.environ.get("HERMES_TUI_PROVIDER", "").strip():
+    if env_provider := os.environ.get("AKRAMCODE_TUI_PROVIDER", "").strip():
         return env_provider
     if _env_model_seed():
         return None
@@ -349,7 +349,7 @@ def _apply_model_switch(
                 session.pop("composer_override_profile", None)
         raise
     # PER-SESSION override so a rebuild of THIS session (/new, resume) re-derives the model.
-    # Deliberately NOT written to process-global env (HERMES_MODEL & co.): the desktop hosts
+    # Deliberately NOT written to process-global env (AKRAMCODE_MODEL & co.): the desktop hosts
     # every same-profile session in one process, so os.environ would leak the switch to all.
     if pin_session_override and isinstance(session, dict) and not one_turn:
         session["model_override"] = {
@@ -471,7 +471,7 @@ def _sync_agent_model_with_config(sid: str, session: dict) -> None:
     raw = f"{model} --provider {provider}" if provider else model
     try:
         # This sync ADOPTS a config.yaml change; it must never write config back (that is
-        # how `hermes --tui -m` once leaked into config.yaml).
+        # how `akramcode --tui -m` once leaked into config.yaml).
         _apply_model_switch(
             sid, session, raw, confirm_expensive_model=True, pin_session_override=False,
             persist_override=False, count_switch=False)

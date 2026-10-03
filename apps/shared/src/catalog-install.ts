@@ -27,9 +27,9 @@ export function skillCatalogInstallIdentifier(skill: SkillCatalogTarget): string
 export function skillCatalogInstallUrl(skill: SkillCatalogTarget): string | null {
   const identifier = skillCatalogInstallIdentifier(skill)
 
-  return identifier ? `hermes://skill/install?${new URLSearchParams({ identifier })}` : null
+  return identifier ? `akramcode://skill/install?${new URLSearchParams({ identifier })}` : null
 }
 
 export function pluginCatalogInstallUrl(plugin: { name: string }): string {
-  return `hermes://plugin/install?${new URLSearchParams({ catalog: plugin.name })}`
+  return `akramcode://plugin/install?${new URLSearchParams({ catalog: plugin.name })}`
 }

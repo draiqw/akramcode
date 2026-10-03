@@ -15,9 +15,9 @@ from types import SimpleNamespace
 repo = Path(sys.argv[1]).resolve()
 home = Path(tempfile.mkdtemp(prefix="idle-controls-"))
 for key in list(os.environ):
-    if key.startswith("HERMES_") or key.endswith(("_API_KEY", "_TOKEN")):
+    if key.startswith("AKRAMCODE_") or key.endswith(("_API_KEY", "_TOKEN")):
         os.environ.pop(key, None)
-os.environ.update(HOME=str(home), HERMES_HOME=str(home / ".hermes"), SESSION_IDLE_MINUTES="1", SESSION_RESET_HOUR="0")
+os.environ.update(HOME=str(home), AKRAMCODE_HOME=str(home / ".akramcode"), SESSION_IDLE_MINUTES="1", SESSION_RESET_HOUR="0")
 sys.path.insert(0, str(repo))
 import akram_core.akramcode_yaml as yaml
 from gateway.config import load_gateway_config, GatewayConfig, Platform
@@ -25,8 +25,8 @@ from gateway.session import SessionStore, SessionSource
 from gateway.run import GatewayRunner
 from gateway.agent_cache_pressure import AgentCacheBounds
 
-Path(os.environ["HERMES_HOME"]).mkdir(exist_ok=True)
-Path(os.environ["HERMES_HOME"], "config.yaml").write_text(yaml.safe_dump({"session_reset": {"mode": "both", "idle_minutes": 1}, "gateway": {"session_reset": {"mode": "daily", "at_hour": 0}}}), encoding="utf-8")
+Path(os.environ["AKRAMCODE_HOME"]).mkdir(exist_ok=True)
+Path(os.environ["AKRAMCODE_HOME"], "config.yaml").write_text(yaml.safe_dump({"session_reset": {"mode": "both", "idle_minutes": 1}, "gateway": {"session_reset": {"mode": "daily", "at_hour": 0}}}), encoding="utf-8")
 config = load_gateway_config()
 assert "default_reset_policy" not in config.to_dict()
 source = SessionSource(platform=Platform.TELEGRAM, chat_id="cache", user_id="control")
@@ -98,7 +98,7 @@ assert fenced.session_id != suspended.session_id
 results["historical_expiry_fence_preserved"] = True
 store._db.close()
 
-spec = importlib.util.spec_from_file_location("migration_probe", repo / "optional-skills/migration/openclaw-migration/scripts/openclaw_to_hermes.py")
+spec = importlib.util.spec_from_file_location("migration_probe", repo / "optional-skills/migration/openclaw-migration/scripts/openclaw_to_akramcode.py")
 module = importlib.util.module_from_spec(spec)
 sys.modules[spec.name] = module
 spec.loader.exec_module(module)

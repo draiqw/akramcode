@@ -170,9 +170,9 @@ def _spill_summary_to_file(task_index: int, summary: str) -> Optional[str]:
     ``credential_files._CACHE_DIRS``, so the parent's terminal/``read_file`` can page it on any backend). Absolute
     path, or None on failure — the trimmed head+tail is still returned regardless."""
     try:
-        from akramcode_constants import get_hermes_dir
+        from akramcode_constants import get_akramcode_dir
         import datetime as _dt
-        cache_dir = get_hermes_dir("cache/delegation", "delegation_cache")
+        cache_dir = get_akramcode_dir("cache/delegation", "delegation_cache")
         cache_dir.mkdir(parents=True, exist_ok=True)
         path = cache_dir / f"subagent-summary-{task_index}-{_dt.datetime.now().strftime('%Y%m%d_%H%M%S_%f')}.txt"
         from tools.spill_safety import write_text_exclusive

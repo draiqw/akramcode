@@ -12,11 +12,11 @@ import pytest
 
 
 def test_code_scoped_stamp_wins_over_home_stamp(tmp_path):
-    """The stamp next to the running code is authoritative over $HERMES_HOME.
+    """The stamp next to the running code is authoritative over $AKRAMCODE_HOME.
 
-    Models a host git install whose $HERMES_HOME is shared with (and stamped
+    Models a host git install whose $AKRAMCODE_HOME is shared with (and stamped
     'docker' by) a co-located container. The code-scoped stamp must win so the
-    host install is correctly identified as 'git' and 'hermes update' works.
+    host install is correctly identified as 'git' and 'akramcode update' works.
     """
     code = tmp_path / "code"
     home = tmp_path / "home"
@@ -25,7 +25,7 @@ def test_code_scoped_stamp_wins_over_home_stamp(tmp_path):
     (code / ".install_method").write_text("git\n")
     (home / ".install_method").write_text("docker\n")  # container contamination
     with patch("akramcode_cli.config.get_managed_system", return_value=None), \
-         patch("akramcode_cli.config.get_hermes_home", return_value=home):
+         patch("akramcode_cli.config.get_akramcode_home", return_value=home):
         from akramcode_cli.config import detect_install_method
         assert detect_install_method(project_root=code) == "git"
 
@@ -38,13 +38,13 @@ def test_container_without_stamp_is_not_docker(tmp_path):
     ``test_stamp_file_takes_precedence``; the published image -> ``docker``),
     so neither hits this path. An unsupported manual install dropped into a
     container has no stamp and was wrongly classified as the published Docker
-    image, so ``hermes update`` refused to run. With a ``.git`` checkout it
+    image, so ``akramcode update`` refused to run. With a ``.git`` checkout it
     must resolve to ``git``.
     """
     (tmp_path / ".git").mkdir()
     with patch("akramcode_cli.config.get_managed_system", return_value=None), \
-         patch("akramcode_cli.config.get_hermes_home", return_value=tmp_path), \
-         patch("hermes_constants.is_container", return_value=True):
+         patch("akramcode_cli.config.get_akramcode_home", return_value=tmp_path), \
+         patch("akramcode_constants.is_container", return_value=True):
         from akramcode_cli.config import detect_install_method
         assert detect_install_method(project_root=tmp_path) == "git"
 

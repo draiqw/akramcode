@@ -1,6 +1,6 @@
-"""``hermes gateway restart`` must hand an externally-supervised gateway back to its supervisor.
+"""``akramcode gateway restart`` must hand an externally-supervised gateway back to its supervisor.
 
-A custom launchd agent (a plist/label outside the canonical ``ai.hermes.gateway`` path, so
+A custom launchd agent (a plist/label outside the canonical ``ai.akramcode.gateway`` path, so
 ``_installed_service_kind_for`` returns None) fell through to the manual stop + foreground
 ``run_gateway`` fallback. The foreground run stamps the restart CLI's own PID into gateway.pid,
 and every KeepAlive respawn of ``gateway run --external-supervisor`` then refuses with

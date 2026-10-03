@@ -1,7 +1,7 @@
 """The gateway-restart flow refuses BEFORE it stops anything (#125394, #77276).
 
 The Desktop backend's ``_spawn_gateway_restart`` used to reap "orphan" gateways
-before spawning ``hermes gateway restart``; when that child then refused (a
+before spawning ``akramcode gateway restart``; when that child then refused (a
 named profile under the host multiplexer) the profile had already lost its
 gateway. The reap belongs to the child, after its refusal guard.
 """
@@ -26,7 +26,7 @@ def reset_restart_cooldown():
 
 
 @patch("akramcode_cli.web_server_gateway._gateway_subcommand", return_value=["gateway", "restart"])
-@patch("akramcode_cli.web_server_gateway._spawn_hermes_action")
+@patch("akramcode_cli.web_server_gateway._spawn_akramcode_action")
 @patch("akramcode_cli.web_server_gateway._ACTION_PROCS", {})
 def test_backend_spawns_restart_without_stopping_anything(mock_spawn, mock_subcmd):
     mock_proc = MagicMock(spec=subprocess.Popen)

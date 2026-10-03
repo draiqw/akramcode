@@ -1,6 +1,6 @@
 """Gateway ``plugins.manage`` — manifest ``config_schema`` rendered as settings fields (#46600, #87934).
 
-Drives the real discovery + config writer against a temp HERMES_HOME: ``list`` carries each user
+Drives the real discovery + config writer against a temp AKRAMCODE_HOME: ``list`` carries each user
 plugin's schema with the current values, and ``settings`` writes through the same
 ``plugins.entries.<id>.settings`` namespace ``ctx.get_config`` reads — never a secret into config.yaml.
 """
@@ -23,12 +23,12 @@ config_schema:
 
 @pytest.fixture
 def plugins_home(tmp_path, monkeypatch):
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "akramcode-home"
     (home / "plugins" / "demo-plugin").mkdir(parents=True)
     (home / "plugins" / "demo-plugin" / "plugin.yaml").write_text(MANIFEST, encoding="utf-8")
     (home / "config.yaml").write_text(
         "plugins:\n  entries:\n    demo-plugin:\n      settings:\n        retries: 7\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     return home
 
 

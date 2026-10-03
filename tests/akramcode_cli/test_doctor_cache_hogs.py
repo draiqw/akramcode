@@ -1,4 +1,4 @@
-"""``hermes doctor`` names cache-root dirs that no pruner covers once they are big enough."""
+"""``akramcode doctor`` names cache-root dirs that no pruner covers once they are big enough."""
 
 from akramcode_cli.doctor_state import unpruned_cache_hogs
 

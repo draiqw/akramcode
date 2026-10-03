@@ -6,14 +6,14 @@ description: Remotely-hosted manifest driving curated model picker lists for Ope
 
 # Model Catalog
 
-Hermes fetches curated model lists for **OpenRouter** and **Nous Portal** from a JSON manifest hosted alongside the docs site. This lets maintainers update picker lists without shipping a new `hermes-agent` release.
+AkramCode fetches curated model lists for **OpenRouter** and **Nous Portal** from a JSON manifest hosted alongside the docs site. This lets maintainers update picker lists without shipping a new `akramcode-agent` release.
 
-When the manifest is unreachable (offline, network blocked, hosting failure), Hermes silently falls back to the in-repo snapshot that ships with the CLI. The manifest never breaks the picker — worst case you see whatever list was bundled with your installed version.
+When the manifest is unreachable (offline, network blocked, hosting failure), AkramCode silently falls back to the in-repo snapshot that ships with the CLI. The manifest never breaks the picker — worst case you see whatever list was bundled with your installed version.
 
 ## Live manifest URL
 
 ```
-https://hermes-agent.nousresearch.com/docs/api/model-catalog.json
+https://akramcode-agent.nousresearch.com/docs/api/model-catalog.json
 ```
 
 Published on every merge to `main` via the existing `deploy-site.yml` GitHub Pages pipeline. The source of truth lives in the repo at `website/static/api/model-catalog.json`.
@@ -48,35 +48,35 @@ Published on every merge to `main` via the existing `deploy-site.yml` GitHub Pag
 
 Field notes:
 
-- **`version`** — integer schema version. Future schemas bump this; Hermes refuses manifests with versions it doesn't understand and falls back to the hardcoded snapshot.
-- **`metadata`** — free-form dict at the manifest, provider, and model level. Any keys. Hermes ignores unknown fields, so you can annotate entries (`"tier": "paid"`, `"tags": [...]`, etc.) without coordinating a schema change.
+- **`version`** — integer schema version. Future schemas bump this; AkramCode refuses manifests with versions it doesn't understand and falls back to the hardcoded snapshot.
+- **`metadata`** — free-form dict at the manifest, provider, and model level. Any keys. AkramCode ignores unknown fields, so you can annotate entries (`"tier": "paid"`, `"tags": [...]`, etc.) without coordinating a schema change.
 - **`description`** — OpenRouter-only. Drives picker badge text (`"recommended"`, `"free"`, `"default"`, or empty). Nous Portal doesn't use this.
-- **`default`** — exactly one entry per provider may carry `"default": true`. That model is the **silent default**: what Hermes lands on when the user never selected a model (GUI onboarding confirm card, `provider` configured with no `model`, empty `model.default`). Read cache-only at runtime (`get_default_model_from_cache`) so hot resolution paths never hit the network; when no cached manifest exists, Hermes falls back to the in-repo `PREFERRED_SILENT_DEFAULT_MODEL` constant, which must match the labeled entry. This lets maintainers rotate the silent default without shipping a release. It is deliberately a capable low-cost model, never the priciest flagship.
+- **`default`** — exactly one entry per provider may carry `"default": true`. That model is the **silent default**: what AkramCode lands on when the user never selected a model (GUI onboarding confirm card, `provider` configured with no `model`, empty `model.default`). Read cache-only at runtime (`get_default_model_from_cache`) so hot resolution paths never hit the network; when no cached manifest exists, AkramCode falls back to the in-repo `PREFERRED_SILENT_DEFAULT_MODEL` constant, which must match the labeled entry. This lets maintainers rotate the silent default without shipping a release. It is deliberately a capable low-cost model, never the priciest flagship.
 - **Pricing and context length** are NOT in the manifest. Those come from live provider APIs (`/v1/models` endpoints, models.dev) at fetch time.
 
 ## Fetch behavior
 
 | When | What happens |
 |---|---|
-| `/model` or `hermes model` | Fetches if disk cache is stale, else uses cache |
+| `/model` or `akramcode model` | Fetches if disk cache is stale, else uses cache |
 | Gateway running | Background refresh every `ttl_minutes` (default 20), so the picker never lags the published manifest by more than one window |
 | Disk cache fresh (< TTL) | No network hit |
 | Network failure with cache | Silent fallback to cache, one log line |
 | Network failure, no cache | Silent fallback to in-repo snapshot |
 | Manifest fails schema validation | Treated as unreachable |
 
-Cache location: `~/.hermes/cache/model_catalog.json`.
+Cache location: `~/.akramcode/cache/model_catalog.json`.
 
 ### Per-provider model lists in the GUI picker
 
-The Desktop, TUI and dashboard pickers (`model.options`) build each provider's row from the disk-cached live catalog (`~/.hermes/provider_models_cache.json`) or, when nothing is cached yet, the curated list. Opening the picker never waits on a provider's `/v1/models` probe or on an auth probe: stale or missing catalogs are refreshed in a background thread and land on the next open, so one slow, rate-limited or unreachable provider cannot hold the whole picker on its loading state. **Refresh models** (or `/model --refresh`) is the explicit action that busts the cache and probes every provider live.
+The Desktop, TUI and dashboard pickers (`model.options`) build each provider's row from the disk-cached live catalog (`~/.akramcode/provider_models_cache.json`) or, when nothing is cached yet, the curated list. Opening the picker never waits on a provider's `/v1/models` probe or on an auth probe: stale or missing catalogs are refreshed in a background thread and land on the next open, so one slow, rate-limited or unreachable provider cannot hold the whole picker on its loading state. **Refresh models** (or `/model --refresh`) is the explicit action that busts the cache and probes every provider live.
 
 ## Config
 
 ```yaml
 model_catalog:
   enabled: true
-  url: https://hermes-agent.nousresearch.com/docs/api/model-catalog.json
+  url: https://akramcode-agent.nousresearch.com/docs/api/model-catalog.json
   ttl_minutes: 20
   providers: {}
 ```
@@ -108,7 +108,7 @@ model_catalog:
     - openai
 ```
 
-The exclusion is matched case-insensitively against every key a provider can surface under — the Hermes id and models.dev id (built-in mapped providers), the overlay pid and resolved Hermes slug (overlay providers), and the canonical slug (canonical providers) — so a single entry like `copilot` hides the provider regardless of which section emits it. It is honored by every `/model` picker surface: the gateway interactive/text pickers, the TUI picker, and the interactive `hermes model` CLI picker. An empty list (or omitting the key) has no effect.
+The exclusion is matched case-insensitively against every key a provider can surface under — the AkramCode id and models.dev id (built-in mapped providers), the overlay pid and resolved AkramCode slug (overlay providers), and the canonical slug (canonical providers) — so a single entry like `copilot` hides the provider regardless of which section emits it. It is honored by every `/model` picker surface: the gateway interactive/text pickers, the TUI picker, and the interactive `akramcode model` CLI picker. An empty list (or omitting the key) has no effect.
 
 ## Updating the manifest
 

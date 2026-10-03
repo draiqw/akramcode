@@ -1,6 +1,6 @@
 """Automatic state.db maintenance never VACUUMs under a foreign writer (#110054).
 
-``maybe_auto_prune_and_vacuum`` runs the SAME store rewrite as ``hermes sessions optimize``
+``maybe_auto_prune_and_vacuum`` runs the SAME store rewrite as ``akramcode sessions optimize``
 (VACUUM + TRUNCATE checkpoint) from CLI and gateway startup. The manual command refuses while a
 sibling writer holds the store; the automatic producer must skip for the same reason — a rewritten
 generation under a live holder is what leaves every agent refusing turns. It only ever skips.

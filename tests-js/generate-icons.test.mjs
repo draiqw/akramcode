@@ -6,9 +6,9 @@ import { expect, test, vi } from 'vitest'
 import { generateIcons } from '../scripts/generate-icons.mjs'
 
 test('the real wrapper builds and checks native icon artifacts in an independent output', () => {
-  const out = fs.mkdtempSync(path.join(os.tmpdir(), 'hermes-icons-'))
-  const env = { ...process.env, HERMES_HOME: path.join(out, 'home'),
-    HERMES_RUNTIME_DIR: path.join(out, 'tools'), HERMES_PAYLOAD_TAG: 'v1.2.3', HERMES_BUILD_COMMIT: '',
+  const out = fs.mkdtempSync(path.join(os.tmpdir(), 'akramcode-icons-'))
+  const env = { ...process.env, AKRAMCODE_HOME: path.join(out, 'home'),
+    AKRAMCODE_RUNTIME_DIR: path.join(out, 'tools'), AKRAMCODE_PAYLOAD_TAG: 'v1.2.3', AKRAMCODE_BUILD_COMMIT: '',
     PYTHONPATH: path.join(out, 'foreign-site'), PYTHONHOME: path.join(out, 'foreign-python') }
   try {
     const args = ['--source', fileURLToPath(new URL('..', import.meta.url)), '--out', out]

@@ -178,7 +178,7 @@ def watchdog_config(monkeypatch):
     """Arm the watchdog fast through config.yaml — the only supported surface.
 
     `agent.turn_liveness` is the config authority the watchdog resolves
-    (AGENTS.md rejects new non-secret HERMES_* env knobs); the resolver in
+    (AGENTS.md rejects new non-secret AKRAMCODE_* env knobs); the resolver in
     agent/turn_liveness.py validates the values and the env is never read.
     """
     import akramcode_cli.config as config_module

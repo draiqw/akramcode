@@ -1,4 +1,4 @@
-"""Tests for ``hermes gui`` desktop launcher wiring."""
+"""Tests for ``akramcode gui`` desktop launcher wiring."""
 
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ def _isolate_xdg_data_home(tmp_path, monkeypatch):
     resolves it under ``XDG_DATA_HOME`` (falling back to ``~/.local/share``).
     While these tests faked the host as darwin the Linux-only registration
     never ran, so nothing escaped. Running them on their real host makes that
-    call live, and on a Linux dev box it wrote a ``hermes.desktop`` pointing
+    call live, and on a Linux dev box it wrote a ``akramcode.desktop`` pointing
     ``Exec=`` at the test's throwaway npm stub into the user's actual
     applications menu.
 
@@ -55,7 +55,7 @@ def _stable_keychain_detection(monkeypatch):
     """
     monkeypatch.delenv("KDE_SESSION_VERSION", raising=False)
     monkeypatch.delenv("KDE_FULL_SESSION", raising=False)
-    monkeypatch.delenv("HERMES_DESKTOP_PASSWORD_STORE", raising=False)
+    monkeypatch.delenv("AKRAMCODE_DESKTOP_PASSWORD_STORE", raising=False)
     monkeypatch.setenv("GNOME_KEYRING_CONTROL", "/run/user/1000/keyring")
 
 
@@ -67,7 +67,7 @@ def _ns(**kw):
         source=False,
         fake_boot=False,
         ignore_existing=False,
-        hermes_root=None,
+        akramcode_root=None,
         cwd=None,
         setup_tcc_identity=False,
         identity=None,
@@ -78,7 +78,7 @@ def _ns(**kw):
 
 
 def _make_desktop_tree(tmp_path: Path) -> Path:
-    root = tmp_path / "hermes-agent"
+    root = tmp_path / "akramcode-agent"
     desktop_dir = root / "apps" / "desktop"
     desktop_dir.mkdir(parents=True)
     (desktop_dir / "package.json").write_text("{}", encoding="utf-8")
@@ -100,11 +100,11 @@ def _make_packaged_executable(root: Path, monkeypatch) -> Path:
     """
     desktop_dir = root / "apps" / "desktop"
     if sys.platform == "darwin":
-        exe = desktop_dir / "release" / "mac-arm64" / "Hermes.app" / "Contents" / "MacOS" / "Hermes"
+        exe = desktop_dir / "release" / "mac-arm64" / "AkramCode.app" / "Contents" / "MacOS" / "AkramCode"
     elif sys.platform == "win32":
-        exe = desktop_dir / "release" / "win-unpacked" / "Hermes.exe"
+        exe = desktop_dir / "release" / "win-unpacked" / "AkramCode.exe"
     else:
-        exe = desktop_dir / "release" / "linux-unpacked" / "hermes"
+        exe = desktop_dir / "release" / "linux-unpacked" / "akramcode"
     exe.parent.mkdir(parents=True, exist_ok=True)
     exe.write_text("", encoding="utf-8")
     if sys.platform not in ("darwin", "win32"):
@@ -124,10 +124,10 @@ def _staging_dir_from(cmd) -> Path:
 def _packaged_exe_rel() -> Path:
     """Packaged-exe path relative to electron-builder's output dir on THIS host."""
     if sys.platform == "darwin":
-        return Path("mac-arm64") / "Hermes.app" / "Contents" / "MacOS" / "Hermes"
+        return Path("mac-arm64") / "AkramCode.app" / "Contents" / "MacOS" / "AkramCode"
     if sys.platform == "win32":
-        return Path("win-unpacked") / "Hermes.exe"
-    return Path("linux-unpacked") / "hermes"
+        return Path("win-unpacked") / "AkramCode.exe"
+    return Path("linux-unpacked") / "akramcode"
 
 
 def _pack_into_staging(root: Path, content: str = "", returncode: int = 0):
@@ -179,7 +179,7 @@ def test_source_launch_reads_bom_electron_path_without_provisioning(tmp_path, mo
 
 def _stamped_macos_bundle(app: Path, asar: bytes) -> Path:
     (app / "Contents" / "MacOS").mkdir(parents=True)
-    (app / "Contents" / "MacOS" / "Hermes").write_bytes(b"\xcf\xfa\xed\xfe")
+    (app / "Contents" / "MacOS" / "AkramCode").write_bytes(b"\xcf\xfa\xed\xfe")
     (app / "Contents" / "Resources").mkdir()
     (app / "Contents" / "Resources" / "app.asar").write_bytes(asar)
     (app / "Contents" / "Resources" / "install-stamp.json").write_text('{"updateMechanism": "self"}')
@@ -188,15 +188,15 @@ def _stamped_macos_bundle(app: Path, asar: bytes) -> Path:
 
 @pytest.mark.platforms("macos")
 def test_packaged_launch_opens_the_refreshed_installed_app(tmp_path, monkeypatch):
-    """#52339: Finder and the Dock open the installed Hermes.app, so ``hermes desktop`` must launch
+    """#52339: Finder and the Dock open the installed AkramCode.app, so ``akramcode desktop`` must launch
     that copy (brought up to the checkout build) instead of a second bundle under release/."""
     import shutil
 
     root = _make_desktop_tree(tmp_path)
-    _stamped_macos_bundle(root / "apps" / "desktop" / "release" / "mac-arm64" / "Hermes.app", b"checkout build")
-    installed = _stamped_macos_bundle(tmp_path / "Applications" / "Hermes.app", b"stale build")
+    _stamped_macos_bundle(root / "apps" / "desktop" / "release" / "mac-arm64" / "AkramCode.app", b"checkout build")
+    installed = _stamped_macos_bundle(tmp_path / "Applications" / "AkramCode.app", b"stale build")
     monkeypatch.setattr("akramcode_cli.gui_uninstall.packaged_gui_app_paths", lambda: [installed])
-    monkeypatch.setattr("hermes_constants.get_default_hermes_root", lambda **kw: tmp_path)  # root is its hermes-agent
+    monkeypatch.setattr("akramcode_constants.get_default_akramcode_root", lambda **kw: tmp_path)  # root is its akramcode-agent
     monkeypatch.setattr(main_desktop, "_stage_macos_bundle_copy", lambda src, dst: shutil.copytree(src, dst, symlinks=True))
     monkeypatch.setattr(main_desktop, "_running_macos_app_bundles", lambda: set())
     # This pins the LAUNCH contract; the real codesign signature probe is out of scope here.
@@ -211,7 +211,7 @@ def test_packaged_launch_opens_the_refreshed_installed_app(tmp_path, monkeypatch
         main_desktop.cmd_gui(_ns(skip_build=True))
 
     assert exit_info.value.code == 0
-    assert calls == [[str(installed / "Contents" / "MacOS" / "Hermes")]]
+    assert calls == [[str(installed / "Contents" / "MacOS" / "AkramCode")]]
     assert (installed / "Contents" / "Resources" / "app.asar").read_bytes() == b"checkout build"
 
 
@@ -249,24 +249,24 @@ def test_packaged_renderer_bom_does_not_bypass_entry_validation(tmp_path):
 
 
 # --- package-manager (Homebrew/pip) installs: no desktop source tree -------
-# (#61056: `hermes desktop` under Homebrew looked for apps/desktop inside the
+# (#61056: `akramcode desktop` under Homebrew looked for apps/desktop inside the
 # Cellar site-packages, which the formula does not ship.)
 
 
 def test_site_packages_install_kind_detects_brew_and_pip():
-    brew_root = Path("/opt/homebrew/Cellar/hermes-agent/2026.7.7.2/libexec/site-packages")
+    brew_root = Path("/opt/homebrew/Cellar/akramcode-agent/2026.7.7.2/libexec/site-packages")
     pip_root = Path("/usr/lib/python3/dist-packages")
     venv_root = Path("/home/u/proj/venv/lib/python3.12/site-packages")
     assert main_desktop._site_packages_install_kind(brew_root) == "homebrew"
     assert main_desktop._site_packages_install_kind(pip_root) == "pip"
     assert main_desktop._site_packages_install_kind(venv_root) == "pip"
-    assert main_desktop._site_packages_install_kind(Path("/home/u/hermes-agent")) is None
+    assert main_desktop._site_packages_install_kind(Path("/home/u/akramcode-agent")) is None
 
 
 def test_gui_brew_install_prints_brew_guidance_not_venv_hint(tmp_path, monkeypatch, capsys):
     """A Homebrew install has no apps/desktop tree and can never build one — the
     error must say so instead of implying a broken checkout."""
-    root = tmp_path / "Cellar" / "hermes-agent" / "2026.7.7.2" / "libexec" / "site-packages"
+    root = tmp_path / "Cellar" / "akramcode-agent" / "2026.7.7.2" / "libexec" / "site-packages"
     root.mkdir(parents=True)
     monkeypatch.setattr(cli_main, "PROJECT_ROOT", root)
     monkeypatch.setattr(main_desktop, "_launch_installed_macos_desktop_app", lambda: False)
@@ -281,8 +281,8 @@ def test_gui_brew_install_prints_brew_guidance_not_venv_hint(tmp_path, monkeypat
 
 
 def test_gui_brew_install_launches_installed_app_when_present(tmp_path, monkeypatch):
-    """Prefer the separately installed /Applications/Hermes.app over failing."""
-    root = tmp_path / "Cellar" / "hermes-agent" / "2026.7.7.2" / "libexec" / "site-packages"
+    """Prefer the separately installed /Applications/AkramCode.app over failing."""
+    root = tmp_path / "Cellar" / "akramcode-agent" / "2026.7.7.2" / "libexec" / "site-packages"
     root.mkdir(parents=True)
     monkeypatch.setattr(cli_main, "PROJECT_ROOT", root)
     launched = []
@@ -296,7 +296,7 @@ def test_gui_brew_install_launches_installed_app_when_present(tmp_path, monkeypa
 
 
 def test_gui_close_preview_flag_forwards_to_packaged_exe(tmp_path, monkeypatch):
-    """`hermes desktop --close-preview` must reach the Electron binary so the
+    """`akramcode desktop --close-preview` must reach the Electron binary so the
     running instance's single-instance handler can close a fullscreened
     preview pane the user cannot otherwise escape (#97213)."""
     root = _make_desktop_tree(tmp_path)
@@ -333,7 +333,7 @@ def test_gui_close_preview_flag_forwards_to_packaged_exe(tmp_path, monkeypatch):
 @pytest.mark.parametrize("exists,platform", [(True, "darwin"), (False, "darwin"), (True, "linux")])
 def test_launch_installed_macos_desktop_app_gates_on_bundle_and_platform(tmp_path, monkeypatch, exists, platform):
     monkeypatch.setattr(main_desktop.sys, "platform", platform)
-    exe = Path("/Applications/Hermes.app/Contents/MacOS/Hermes")
+    exe = Path("/Applications/AkramCode.app/Contents/MacOS/AkramCode")
     monkeypatch.setattr(main_desktop.Path, "is_file", lambda self: exists if self == exe else Path.is_file(self))
     calls = []
     if exists and platform == "darwin":
@@ -369,19 +369,19 @@ def _write_info_plist(bundle: Path, identifier: str) -> None:
 
 
 def _make_signable_app(desktop_dir: Path) -> Path:
-    """Build a fake packaged Hermes.app with the pieces the signer must find."""
+    """Build a fake packaged AkramCode.app with the pieces the signer must find."""
     ent_dir = desktop_dir / "electron"
     ent_dir.mkdir(parents=True, exist_ok=True)
     (ent_dir / "entitlements.mac.plist").write_text("<plist/>", encoding="utf-8")
     (ent_dir / "entitlements.mac.inherit.plist").write_text("<plist/>", encoding="utf-8")
 
-    app = desktop_dir / "release" / "mac-arm64" / "Hermes.app"
-    _write_info_plist(app, "com.nousresearch.hermes")
+    app = desktop_dir / "release" / "mac-arm64" / "AkramCode.app"
+    _write_info_plist(app, "com.nousresearch.akramcode")
     (app / "Contents" / "MacOS").mkdir(parents=True)
-    (app / "Contents" / "MacOS" / "Hermes").write_text("", encoding="utf-8")
+    (app / "Contents" / "MacOS" / "AkramCode").write_text("", encoding="utf-8")
 
-    helper = app / "Contents" / "Frameworks" / "Hermes Helper.app"
-    _write_info_plist(helper, "com.nousresearch.hermes.helper")
+    helper = app / "Contents" / "Frameworks" / "AkramCode Helper.app"
+    _write_info_plist(helper, "com.nousresearch.akramcode.helper")
 
     framework = app / "Contents" / "Frameworks" / "Electron Framework.framework"
     _write_info_plist(framework, "com.github.Electron.framework")
@@ -411,7 +411,7 @@ def test_desktop_macos_local_codesign_signs_native_binaries(tmp_path, monkeypatc
     """The standalone Mach-O pass must actually find files inside the bundle.
 
     Regression: an absolute-path parts check always matches the outer
-    Hermes.app component, silently skipping every .node/.dylib/crashpad
+    AkramCode.app component, silently skipping every .node/.dylib/crashpad
     binary — codesign then rejects the outer signature (nested code unsigned).
     """
     desktop_dir = tmp_path / "apps" / "desktop"
@@ -461,7 +461,7 @@ def test_setup_tcc_identity_creates_cert_imports_trusts_and_configures(tmp_path,
     )
     monkeypatch.setattr(cli_main.Path, "home", classmethod(lambda cls: tmp_path))
 
-    identity = "Hermes Local Signing"
+    identity = "AkramCode Local Signing"
     calls = []
     state = {"trusted": False}
 
@@ -496,7 +496,7 @@ def test_setup_tcc_identity_creates_cert_imports_trusts_and_configures(tmp_path,
     trust_call = next(c for c in calls if c[1:2] == ["add-trusted-cert"])
     assert "codeSign" in trust_call and "trustRoot" in trust_call
     # Temp files cleaned up.
-    assert not list(tmp_path.glob("hermes-tcc-*"))
+    assert not list(tmp_path.glob("akramcode-tcc-*"))
 
 
 @pytest.mark.platforms("macos")
@@ -510,7 +510,7 @@ def test_setup_tcc_identity_retries_pkcs12_with_legacy_on_mac_verification_failu
     )
     monkeypatch.setattr(cli_main.Path, "home", classmethod(lambda cls: tmp_path))
 
-    identity = "Hermes Local Signing"
+    identity = "AkramCode Local Signing"
     calls = []
     state = {"legacy_exported": False, "trusted": False}
 
@@ -569,7 +569,7 @@ def test_setup_tcc_identity_fails_when_trust_step_fails(tmp_path, monkeypatch, c
 
     monkeypatch.setattr(cli_main.subprocess, "run", fake_run)
 
-    assert main_desktop._desktop_macos_setup_tcc_identity("Hermes Local Signing") is False
+    assert main_desktop._desktop_macos_setup_tcc_identity("AkramCode Local Signing") is False
 
 
 @pytest.mark.platforms("macos")
@@ -591,7 +591,7 @@ def test_setup_tcc_identity_fails_when_identity_never_becomes_valid(tmp_path, mo
 
     monkeypatch.setattr(cli_main.subprocess, "run", fake_run)
 
-    assert main_desktop._desktop_macos_setup_tcc_identity("Hermes Local Signing") is False
+    assert main_desktop._desktop_macos_setup_tcc_identity("AkramCode Local Signing") is False
 
 
 @pytest.mark.platforms("macos")
@@ -609,7 +609,7 @@ def test_setup_tcc_identity_skips_generation_when_already_valid(tmp_path, monkey
     def fake_run(cmd, **kwargs):
         calls.append(list(cmd))
         if cmd[:4] == ["/usr/bin/security", "find-identity", "-v", "-p"]:
-            return _fake_proc(cmd, stdout='  1) ABCD "Hermes Local Signing"\n     1 valid identities found')
+            return _fake_proc(cmd, stdout='  1) ABCD "AkramCode Local Signing"\n     1 valid identities found')
         return _fake_proc(cmd)
 
     monkeypatch.setattr(cli_main.subprocess, "run", fake_run)
@@ -617,7 +617,7 @@ def test_setup_tcc_identity_skips_generation_when_already_valid(tmp_path, monkey
     monkeypatch.setattr(main_desktop, "_desktop_macos_relaunchable_fixup", lambda d: True)
     monkeypatch.setattr("akramcode_cli.config.set_config_value", lambda key, value: None)
 
-    assert main_desktop._desktop_macos_setup_tcc_identity("Hermes Local Signing") is True
+    assert main_desktop._desktop_macos_setup_tcc_identity("AkramCode Local Signing") is True
 
     # No openssl generation, no security import — only find-identity + config.
     assert not any(c[0] == "/usr/bin/openssl" for c in calls)
@@ -645,7 +645,7 @@ def test_setup_tcc_identity_untrusted_existing_cert_is_repaired(tmp_path, monkey
             # -v never lists the untrusted cert; it only appears once the
             # repair path has run add-trusted-cert.
             if state["trusted"]:
-                return _fake_proc(cmd, stdout='  1) ABCD "Hermes Local Signing"\n     1 valid identities found')
+                return _fake_proc(cmd, stdout='  1) ABCD "AkramCode Local Signing"\n     1 valid identities found')
             return _fake_proc(cmd, stdout="     0 valid identities found")
         if cmd[0] == "/usr/bin/security" and cmd[1] == "add-trusted-cert":
             state["trusted"] = True
@@ -657,14 +657,14 @@ def test_setup_tcc_identity_untrusted_existing_cert_is_repaired(tmp_path, monkey
     monkeypatch.setattr(main_desktop, "_desktop_macos_relaunchable_fixup", lambda d: True)
     monkeypatch.setattr("akramcode_cli.config.set_config_value", lambda key, value: None)
 
-    assert main_desktop._desktop_macos_setup_tcc_identity("Hermes Local Signing") is True
+    assert main_desktop._desktop_macos_setup_tcc_identity("AkramCode Local Signing") is True
     assert any(c[0] == "/usr/bin/security" and c[1] == "add-trusted-cert" for c in calls)
 
 
 
 
 def test_cmd_gui_setup_tcc_identity_exits_before_build(tmp_path, monkeypatch):
-    """`hermes desktop --setup-tcc-identity` calls the setup and exits 0/1
+    """`akramcode desktop --setup-tcc-identity` calls the setup and exits 0/1
     without building or launching the app."""
     root = _make_desktop_tree(tmp_path)
     monkeypatch.setattr(cli_main, "PROJECT_ROOT", root)
@@ -673,10 +673,10 @@ def test_cmd_gui_setup_tcc_identity_exits_before_build(tmp_path, monkeypatch):
     with patch("akramcode_cli.main_desktop._desktop_macos_setup_tcc_identity", return_value=True) as mock_setup, \
          patch("akramcode_cli.source_build.prepare_source_dependencies") as mock_install, \
          pytest.raises(SystemExit) as exc:
-        cli_main.cmd_gui(_ns(setup_tcc_identity=True, identity="Hermes Local Signing"))
+        cli_main.cmd_gui(_ns(setup_tcc_identity=True, identity="AkramCode Local Signing"))
 
     assert exc.value.code == 0
-    mock_setup.assert_called_once_with("Hermes Local Signing")
+    mock_setup.assert_called_once_with("AkramCode Local Signing")
     mock_install.assert_not_called()
 
 
@@ -749,12 +749,12 @@ def test_relaunchable_fixup_configured_identity_failure_never_falls_back_to_adho
     )
     monkeypatch.setattr(cli_main.subprocess, "run", fake_run)
     monkeypatch.setattr(main_desktop, "_desktop_macos_has_valid_real_signature", lambda a: False)
-    monkeypatch.setattr(main_desktop, "_desktop_macos_local_signing_identity", lambda: "Hermes Local Signing")
+    monkeypatch.setattr(main_desktop, "_desktop_macos_local_signing_identity", lambda: "AkramCode Local Signing")
     # The bundle being re-signed in place is publisher-signed (Team ID): a degraded
     # replacement would orphan its keychain ACLs and TCC grants.
     monkeypatch.setattr(
         main_desktop, "_macos_signature_summary",
-        lambda codesign, app: {"team": "TEAMID123", "identifier": "com.nousresearch.hermes",
+        lambda codesign, app: {"team": "TEAMID123", "identifier": "com.nousresearch.akramcode",
                                "verified": True},
     )
 
@@ -783,7 +783,7 @@ def test_relaunchable_fixup_configured_identity_success_still_signs(tmp_path, mo
 
     calls: list[list[str]] = []
     monkeypatch.setattr(main_desktop, "_desktop_macos_has_valid_real_signature", lambda a: False)
-    monkeypatch.setattr(main_desktop, "_desktop_macos_local_signing_identity", lambda: "Hermes Local Signing")
+    monkeypatch.setattr(main_desktop, "_desktop_macos_local_signing_identity", lambda: "AkramCode Local Signing")
 
     def fake_local_codesign(app, *, desktop_dir, identity):
         calls.append(["local-codesign", identity])
@@ -796,7 +796,7 @@ def test_relaunchable_fixup_configured_identity_success_still_signs(tmp_path, mo
     )
 
     assert cli_main._desktop_macos_relaunchable_fixup(desktop_dir) is True
-    assert ["local-codesign", "Hermes Local Signing"] in calls
+    assert ["local-codesign", "AkramCode Local Signing"] in calls
     assert not any("--deep" in c for c in calls)
     assert not any("delete-generic-password" in c for c in calls)
 
@@ -945,7 +945,7 @@ def test_relaunchable_fixup_failed_identity_uses_pinned_adhoc_before_legacy(tmp_
     """
     root = _make_desktop_tree(tmp_path)
     desktop_dir = root / "apps" / "desktop"
-    exe = desktop_dir / "release" / "mac-arm64" / "Hermes.app" / "Contents" / "MacOS" / "Hermes"
+    exe = desktop_dir / "release" / "mac-arm64" / "AkramCode.app" / "Contents" / "MacOS" / "AkramCode"
     exe.parent.mkdir(parents=True)
     exe.write_text("", encoding="utf-8")
 
@@ -954,7 +954,7 @@ def test_relaunchable_fixup_failed_identity_uses_pinned_adhoc_before_legacy(tmp_
     monkeypatch.delenv("APPLE_SIGNING_IDENTITY", raising=False)
     monkeypatch.setattr(main_desktop, "_desktop_macos_has_valid_real_signature", lambda _app: False)
     monkeypatch.setattr(
-        main_desktop, "_desktop_macos_local_signing_identity", lambda: "Hermes Local Signing",
+        main_desktop, "_desktop_macos_local_signing_identity", lambda: "AkramCode Local Signing",
     )
 
     seen: list[str] = []
@@ -979,7 +979,7 @@ def test_relaunchable_fixup_failed_identity_uses_pinned_adhoc_before_legacy(tmp_
     monkeypatch.setattr(main_desktop.subprocess, "run", fake_run)
 
     assert main_desktop._desktop_macos_relaunchable_fixup(desktop_dir) is True
-    assert seen == ["Hermes Local Signing", "-"]
+    assert seen == ["AkramCode Local Signing", "-"]
     assert not any(cmd[:5] == ["/usr/bin/codesign", "--force", "--deep", "--sign", "-"] for cmd in calls)
 
 
@@ -987,7 +987,7 @@ def test_relaunchable_fixup_legacy_when_pinned_adhoc_also_fails(tmp_path, monkey
     """Legacy deep ad-hoc still runs when identifier-pinned signing fails too."""
     root = _make_desktop_tree(tmp_path)
     desktop_dir = root / "apps" / "desktop"
-    exe = desktop_dir / "release" / "mac-arm64" / "Hermes.app" / "Contents" / "MacOS" / "Hermes"
+    exe = desktop_dir / "release" / "mac-arm64" / "AkramCode.app" / "Contents" / "MacOS" / "AkramCode"
     exe.parent.mkdir(parents=True)
     exe.write_text("", encoding="utf-8")
     app = exe.parents[2]
@@ -997,7 +997,7 @@ def test_relaunchable_fixup_legacy_when_pinned_adhoc_also_fails(tmp_path, monkey
     monkeypatch.delenv("APPLE_SIGNING_IDENTITY", raising=False)
     monkeypatch.setattr(main_desktop, "_desktop_macos_has_valid_real_signature", lambda _app: False)
     monkeypatch.setattr(
-        main_desktop, "_desktop_macos_local_signing_identity", lambda: "Hermes Local Signing",
+        main_desktop, "_desktop_macos_local_signing_identity", lambda: "AkramCode Local Signing",
     )
 
     seen: list[str] = []
@@ -1020,7 +1020,7 @@ def test_relaunchable_fixup_legacy_when_pinned_adhoc_also_fails(tmp_path, monkey
     monkeypatch.setattr(main_desktop.subprocess, "run", fake_run)
 
     assert main_desktop._desktop_macos_relaunchable_fixup(desktop_dir) is True
-    assert seen == ["Hermes Local Signing", "-"]
+    assert seen == ["AkramCode Local Signing", "-"]
     assert ["/usr/bin/codesign", "--force", "--deep", "--sign", "-", str(app)] in calls
 
 
@@ -1042,7 +1042,7 @@ def test_gui_registers_linux_desktop_entry_before_launch(tmp_path, monkeypatch):
     monkeypatch.setattr("akramcode_cli.linux_desktop_entry.is_supported", lambda: True)
     monkeypatch.setattr(
         "akramcode_cli.linux_desktop_entry.install_desktop_entry",
-        lambda project_root: registered.append(project_root) or (tmp_path / "hermes.desktop"),
+        lambda project_root: registered.append(project_root) or (tmp_path / "akramcode.desktop"),
     )
 
     launch_ok = subprocess.CompletedProcess([str(packaged_exe)], 0)
@@ -1060,10 +1060,10 @@ def test_gui_registers_linux_desktop_entry_before_launch(tmp_path, monkeypatch):
 def test_gui_shell_launch_defers_desktop_entry_until_window_reveal(tmp_path, monkeypatch):
     """An app-grid launch (DESKTOP_STARTUP_ID set) writes the entry only after Electron reports
     its window on screen — never before the spawn, while gnome-shell has the app in STARTING
-    (#111906). Electron gets the pipe's write end via HERMES_DESKTOP_READY_FD."""
+    (#111906). Electron gets the pipe's write end via AKRAMCODE_DESKTOP_READY_FD."""
     root = _make_desktop_tree(tmp_path)
     monkeypatch.setattr(cli_main, "PROJECT_ROOT", root)
-    monkeypatch.setenv("DESKTOP_STARTUP_ID", "gnome-shell/Hermes/1-0_TIME1")
+    monkeypatch.setenv("DESKTOP_STARTUP_ID", "gnome-shell/AkramCode/1-0_TIME1")
     monkeypatch.setattr("akramcode_cli.linux_desktop_entry.time.sleep", lambda _s: None)
     packaged_exe = _make_packaged_executable(root, monkeypatch)
 
@@ -1071,12 +1071,12 @@ def test_gui_shell_launch_defers_desktop_entry_until_window_reveal(tmp_path, mon
     monkeypatch.setattr("akramcode_cli.linux_desktop_entry.is_supported", lambda: True)
     monkeypatch.setattr(
         "akramcode_cli.linux_desktop_entry.install_desktop_entry",
-        lambda project_root: events.append(f"install:{project_root}") or (tmp_path / "hermes.desktop"),
+        lambda project_root: events.append(f"install:{project_root}") or (tmp_path / "akramcode.desktop"),
     )
 
     def fake_electron(cmd, **kwargs):
         events.append("spawn")
-        fd = int(kwargs["env"]["HERMES_DESKTOP_READY_FD"])
+        fd = int(kwargs["env"]["AKRAMCODE_DESKTOP_READY_FD"])
         assert fd in kwargs["pass_fds"]
         os.write(fd, b"r")  # main window revealed
         deadline = time.monotonic() + 10
@@ -1204,23 +1204,23 @@ def test_desktop_launch_options_normalizes_renderer_accessibility(raw, expected)
 
 def test_desktop_environment_bridges_only_the_accessibility_opt_out(monkeypatch):
     """ON (the default) sets nothing; the opt-out bridges to
-    HERMES_DESKTOP_RENDERER_ACCESSIBILITY=0, and an explicit env var wins."""
-    monkeypatch.delenv("HERMES_DESKTOP_RENDERER_ACCESSIBILITY", raising=False)
+    AKRAMCODE_DESKTOP_RENDERER_ACCESSIBILITY=0, and an explicit env var wins."""
+    monkeypatch.delenv("AKRAMCODE_DESKTOP_RENDERER_ACCESSIBILITY", raising=False)
     monkeypatch.setattr("akramcode_cli.config.load_config", lambda: {"desktop": {}})
 
     env, _ = main_desktop._desktop_launch_env(_ns())
-    assert "HERMES_DESKTOP_RENDERER_ACCESSIBILITY" not in env
+    assert "AKRAMCODE_DESKTOP_RENDERER_ACCESSIBILITY" not in env
 
     monkeypatch.setattr(
         "akramcode_cli.config.load_config",
         lambda: {"desktop": {"renderer_accessibility": False}})
     env, _ = main_desktop._desktop_launch_env(_ns())
-    assert env["HERMES_DESKTOP_RENDERER_ACCESSIBILITY"] == "0"
+    assert env["AKRAMCODE_DESKTOP_RENDERER_ACCESSIBILITY"] == "0"
 
-    monkeypatch.setenv("HERMES_DESKTOP_RENDERER_ACCESSIBILITY", "0")
+    monkeypatch.setenv("AKRAMCODE_DESKTOP_RENDERER_ACCESSIBILITY", "0")
     monkeypatch.setattr("akramcode_cli.config.load_config", lambda: {"desktop": {}})
     env, _ = main_desktop._desktop_launch_env(_ns())
-    assert env["HERMES_DESKTOP_RENDERER_ACCESSIBILITY"] == "0"
+    assert env["AKRAMCODE_DESKTOP_RENDERER_ACCESSIBILITY"] == "0"
 
 
 
@@ -1233,7 +1233,7 @@ def _clear_keychain_env(monkeypatch):
         "KDE_SESSION_VERSION",
         "KDE_FULL_SESSION",
         "GNOME_KEYRING_CONTROL",
-        "HERMES_DESKTOP_PASSWORD_STORE",
+        "AKRAMCODE_DESKTOP_PASSWORD_STORE",
     ):
         monkeypatch.delenv(var, raising=False)
 
@@ -1303,7 +1303,7 @@ def test_gui_linux_packaged_launch_bridges_detected_password_store(tmp_path, mon
         cli_main.cmd_gui(_ns())
 
     launch_env = mock_run.call_args_list[-1].kwargs["env"]
-    assert launch_env["HERMES_DESKTOP_PASSWORD_STORE"] == "gnome-libsecret"
+    assert launch_env["AKRAMCODE_DESKTOP_PASSWORD_STORE"] == "gnome-libsecret"
 
 
 @pytest.mark.platforms("linux")
@@ -1322,9 +1322,9 @@ def test_desktop_environment_precedence(monkeypatch, explicit, configured, detec
         return detected
     monkeypatch.setattr(main_desktop, '_detect_linux_password_store', detect)
     if explicit:
-        monkeypatch.setenv('HERMES_DESKTOP_PASSWORD_STORE', explicit)
+        monkeypatch.setenv('AKRAMCODE_DESKTOP_PASSWORD_STORE', explicit)
     env, _ = main_desktop._desktop_launch_env(_ns())
-    assert env['HERMES_DESKTOP_PASSWORD_STORE'] == expected
+    assert env['AKRAMCODE_DESKTOP_PASSWORD_STORE'] == expected
     assert env['ELECTRON_OZONE_PLATFORM_HINT'] == 'x11'
     monkeypatch.setenv('ELECTRON_OZONE_PLATFORM_HINT', 'wayland')
     assert main_desktop._desktop_launch_env(_ns())[0]['ELECTRON_OZONE_PLATFORM_HINT'] == 'wayland'
@@ -1355,7 +1355,7 @@ def test_gui_linux_source_launch_bridges_detected_password_store(tmp_path, monke
 
     assert mock_run.call_args_list[-1].args[0] == [str(electron / "dist/electron"), "."]
     launch_env = mock_run.call_args_list[-1].kwargs["env"]
-    assert launch_env["HERMES_DESKTOP_PASSWORD_STORE"] == "kwallet6"
+    assert launch_env["AKRAMCODE_DESKTOP_PASSWORD_STORE"] == "kwallet6"
 
 
 @pytest.mark.platforms("macos")
@@ -1380,7 +1380,7 @@ def test_gui_password_store_bridge_is_linux_only(tmp_path, monkeypatch):
 
     mock_detect.assert_not_called()
     launch_env = mock_run.call_args_list[-1].kwargs["env"]
-    assert "HERMES_DESKTOP_PASSWORD_STORE" not in launch_env
+    assert "AKRAMCODE_DESKTOP_PASSWORD_STORE" not in launch_env
 
 
 # ---------------------------------------------------------------------------
@@ -1669,7 +1669,7 @@ def test_stop_desktop_processes_locking_build_posix_swap_bypasses_early_return(t
 
 def _stop_spares_the_desktop_driving_this_update(tmp_path, monkeypatch, *, also_posix):
     """A Desktop's own process tree runs this update (a historical Desktop's piped
-    `hermes update` child, or the launch-time tail its backend runs). Stopping that
+    `akramcode update` child, or the launch-time tail its backend runs). Stopping that
     Desktop kills the update with it. Its renderer/GPU/zygote helpers run the same
     exe but are not our ancestors; stopping them leaves a main process that can
     neither draw nor quit. Only an unrelated Desktop from the same release tree is
@@ -1724,7 +1724,7 @@ def _stop_spares_the_desktop_driving_this_update(tmp_path, monkeypatch, *, also_
 
 @pytest.mark.platforms("posix")
 def test_posix_swap_spares_the_desktop_driving_this_update(tmp_path, monkeypatch):
-    """A historical Desktop runs `hermes update` as a piped child and relaunches
+    """A historical Desktop runs `akramcode update` as a piped child and relaunches
     itself afterwards; stopping it breaks the update's stdout (EPIPE)."""
     _stop_spares_the_desktop_driving_this_update(tmp_path, monkeypatch, also_posix=True)
 

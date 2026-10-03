@@ -10,14 +10,14 @@ import pytest
 
 
 @pytest.fixture
-def hermes_home(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+def akramcode_home(tmp_path, monkeypatch):
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     return home
 
 
-def test_overrides_roundtrip_and_clear(hermes_home):
+def test_overrides_roundtrip_and_clear(akramcode_home):
     from akramcode_cli.local_runtime.growth import (
         clear_window_override,
         load_window_overrides,
@@ -34,7 +34,7 @@ def test_overrides_roundtrip_and_clear(hermes_home):
     clear_window_override("never-existed")
 
 
-def test_corrupt_overrides_read_as_empty(hermes_home):
+def test_corrupt_overrides_read_as_empty(akramcode_home):
     from akramcode_cli.local_runtime.growth import (
         load_window_overrides,
         window_overrides_path,
@@ -46,7 +46,7 @@ def test_corrupt_overrides_read_as_empty(hermes_home):
     assert load_window_overrides() == {}
 
 
-def test_growth_declines_foreign_endpoints(hermes_home):
+def test_growth_declines_foreign_endpoints(akramcode_home):
     """Only the server THIS process supervises grows — a detected external
     server or another process's endpoint returns None untouched."""
     from akramcode_cli.local_runtime.growth import maybe_grow_window
@@ -77,7 +77,7 @@ def test_occupancy_confirmed_skips_gate_one():
                             total_device_bytes=32 * gib,
                             ram_available_bytes=64 * gib)
 
-    # Hermes' threshold (e.g. 80% of window) can sit BELOW the ladder's 85%
+    # AkramCode' threshold (e.g. 80% of window) can sit BELOW the ladder's 85%
     # occupancy gate: 78K of a 96K window is 81%.
     kwargs = dict(current_window=98304, session_tokens=78_000,
                   measured_decode_tok_s=None, server_idle=True)
@@ -114,7 +114,7 @@ def _tiny_profile(model_id: str):
         layers=[(LayerKind.FULL, 512)] * 4)
 
 
-def test_preset_generation_for_catalog_model_with_mmproj(hermes_home, tmp_path, monkeypatch):
+def test_preset_generation_for_catalog_model_with_mmproj(akramcode_home, tmp_path, monkeypatch):
     """generate_presets must survive a model that IS in the catalog and
     carries a vision projector — this executes the find_entry_for_model +
     mmproj overhead branch that synthetic test models skip. Regression:
@@ -145,7 +145,7 @@ def test_preset_generation_for_catalog_model_with_mmproj(hermes_home, tmp_path, 
     assert entries[0].window > 0
 
 
-def test_preset_restores_grown_window_capped_at_native(hermes_home, tmp_path, monkeypatch):
+def test_preset_restores_grown_window_capped_at_native(akramcode_home, tmp_path, monkeypatch):
     """A persisted override lifts the preset window; an absurd override is
     capped at native. GGUF parsing is stubbed — the contract under test is
     the override plumbing, not the reader."""
@@ -175,7 +175,7 @@ def test_preset_restores_grown_window_capped_at_native(hermes_home, tmp_path, mo
     assert capped.window == 131072
 
 
-def test_preset_ignores_override_below_launch_window(hermes_home, tmp_path, monkeypatch):
+def test_preset_ignores_override_below_launch_window(akramcode_home, tmp_path, monkeypatch):
     """Overrides only ever RAISE the window (growth is monotone); a stale
     smaller override never shrinks a launch decision."""
     import akramcode_cli.local_runtime.presets as presets_mod
@@ -198,7 +198,7 @@ def test_preset_ignores_override_below_launch_window(hermes_home, tmp_path, monk
     assert entry.window == 131072
 
 
-def test_preset_restores_grown_window_midladder(hermes_home, tmp_path, monkeypatch):
+def test_preset_restores_grown_window_midladder(akramcode_home, tmp_path, monkeypatch):
     """The real growth shape: launch at a lower rung, override to a middle
     rung -> the preset window follows the override."""
     import akramcode_cli.local_runtime.presets as presets_mod
@@ -230,7 +230,7 @@ def test_preset_restores_grown_window_midladder(hermes_home, tmp_path, monkeypat
     assert restored.window >= grown, "override must lift the launch window"
 
 
-def test_mtp_plan_matches_cost_at_initial_and_restored_windows(hermes_home, tmp_path, monkeypatch):
+def test_mtp_plan_matches_cost_at_initial_and_restored_windows(akramcode_home, tmp_path, monkeypatch):
     from dataclasses import replace
     from types import SimpleNamespace
 
@@ -290,7 +290,7 @@ def test_mtp_plan_matches_cost_at_initial_and_restored_windows(hermes_home, tmp_
     assert profile.weights_bytes + ctx_bytes(priced, control.window) + stacked <= device
 
 
-def test_growth_requires_an_admissible_materialized_preset(hermes_home, tmp_path, monkeypatch):
+def test_growth_requires_an_admissible_materialized_preset(akramcode_home, tmp_path, monkeypatch):
     from dataclasses import replace
     from types import SimpleNamespace
 
@@ -345,7 +345,7 @@ def test_growth_requires_an_admissible_materialized_preset(hermes_home, tmp_path
     assert growth.maybe_grow_window(model_id, **{**args, "current_window": next_window}) is None
 
 
-def test_sampling_ladder_file_beats_catalog_beats_nothing(hermes_home, tmp_path, monkeypatch):
+def test_sampling_ladder_file_beats_catalog_beats_nothing(akramcode_home, tmp_path, monkeypatch):
     """The sampling deference ladder: the GGUF's own general.sampling.*
     wins per key, catalog fills only what the file left silent, and a
     model with neither gets no sampling keys at all (llama.cpp defaults).

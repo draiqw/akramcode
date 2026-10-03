@@ -1,4 +1,4 @@
-"""Shared helpers for attaching Hermes to a local Chromium-family CDP port.
+"""Shared helpers for attaching AkramCode to a local Chromium-family CDP port.
 
 Resolves the default Chromium browser + real profile dir, snapshots that profile for the
 ``browser.use_real_profile`` consent path, and discovers/launches a debug browser on a
@@ -27,7 +27,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from agent.proxy_bypass import is_loopback_host
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 
 logger = logging.getLogger(__name__)
 
@@ -314,7 +314,7 @@ def detect_default_chromium(system: str | None = None) -> str | None:
 # --- Real-profile SNAPSHOT launch -------------------------------------------------------
 # Never drive the live default user-data-dir: Chromium ≥136 (Google builds) refuses remote
 # debugging on it, and the user's running browser holds it (SingletonLock). Instead snapshot
-# the real profile into ``~/.hermes/browser-profile/`` and launch the user's real binary on
+# the real profile into ``~/.akramcode/browser-profile/`` and launch the user's real binary on
 # the copy — with NO mock-keychain/basic-store switches, so OS-keyring-encrypted cookies
 # decrypt exactly as in the user's own browser.
 
@@ -349,8 +349,8 @@ _AUTH_REFRESH_PROFILE_FILES = (
 
 
 def real_profile_copy_dir(browser: str) -> str:
-    """Return the hermes-owned snapshot dir for ``browser``'s real profile."""
-    return str(get_hermes_home() / "browser-profile" / browser)
+    """Return the akramcode-owned snapshot dir for ``browser``'s real profile."""
+    return str(get_akramcode_home() / "browser-profile" / browser)
 
 
 def _last_used_profile(src: str) -> str:
@@ -368,10 +368,10 @@ def _last_used_profile(src: str) -> str:
 def _secure_snapshot(path: str, *, contents: bool = False) -> None:
     """Lock down a snapshot dir (or, with ``contents``, everything INSIDE it) as a secret store.
     It holds the user's Cookies / Login Data, so it gets the same owner-only perms (managed-mode /
-    NixOS group-share carve-out, HERMES_UID/GID) as every Hermes secret dir — via ``_secure_dir``/
+    NixOS group-share carve-out, AKRAMCODE_UID/GID) as every AkramCode secret dir — via ``_secure_dir``/
     ``_secure_file``, not a bespoke chmod. Contents matter too (#96729): ``copy2`` keeps Chrome's
     0644 and sqlite backups land umask-wide, so cookies were world-readable under the
-    ``HERMES_HOME_MODE`` hatch. Best-effort; never blocks a launch."""
+    ``AKRAMCODE_HOME_MODE`` hatch. Best-effort; never blocks a launch."""
     try:
         from akramcode_cli.config import _secure_dir, _secure_file
         if not contents:
@@ -458,7 +458,7 @@ def _unavailable_auth_dbs_error(browser: str, failed: dict[str, str]) -> str:
     names = ", ".join(failed)
     if all(reason == _AUTH_DB_LOCKED for reason in failed.values()):
         return (f"{browser} is running and holds the profile's {names} with a write lock, so their "
-                "SQLite backup made no progress within five seconds. Hermes does not fall back to a "
+                "SQLite backup made no progress within five seconds. AkramCode does not fall back to a "
                 "raw file copy (it could lose committed logins). Fully quit "
                 f"{browser} (including any background instance) and retry, or turn "
                 "browser.use_real_profile off.")
@@ -467,7 +467,7 @@ def _unavailable_auth_dbs_error(browser: str, failed: dict[str, str]) -> str:
             f"Close {browser} and retry, or turn browser.use_real_profile off.")
 
 
-_SNAPSHOT_DONE_MARKER = ".hermes-snapshot-complete"
+_SNAPSHOT_DONE_MARKER = ".akramcode-snapshot-complete"
 # Prefix stamped on the "profile is locked" error so the calling layer can recognize the
 # needs-the-browser-closed condition and surface the close-with-approval flow.
 _PROFILE_LOCKED_PREFIX = "[profile-locked] "
@@ -630,14 +630,14 @@ def _locked_profile_error(browser: str) -> str:
     if _real_profile_autoclose():
         msg = (
             f"{browser} is running and has its profile locked, so its login data can't be copied "
-            "yet. Hermes can close it for you (this quits the browser — you'll lose unsaved "
+            "yet. AkramCode can close it for you (this quits the browser — you'll lose unsaved "
             "tabs). Ask the user to confirm, then close it and retry; if it's still locked after "
             "that, they must fully quit it (including any background/tray instance).")
     else:
         msg = (
             f"{browser} is running and has its profile locked, so its login data can't be copied. "
             "Fully quit the browser (including any background/tray instance) and retry, or turn "
-            "browser.use_real_profile off. (Enable browser.real_profile_autoclose to let Hermes "
+            "browser.use_real_profile off. (Enable browser.real_profile_autoclose to let AkramCode "
             "offer to close it for you.)")
     return _PROFILE_LOCKED_PREFIX + msg
 
@@ -664,7 +664,7 @@ def _copy_profile_tree(src: str, dst: str, source_profile: str) -> None:
 
 
 def snapshot_real_profile(browser: str, src: str | None = None) -> tuple[str | None, str | None]:
-    """Snapshot ``browser``'s real ACTIVE profile into the hermes copy dir; returns ``(dst, err)``.
+    """Snapshot ``browser``'s real ACTIVE profile into the akramcode copy dir; returns ``(dst, err)``.
     Copies ``Local State`` plus the active profile's auth files into the copy's ``Default``. The
     completion marker is written only after full success, so a torn first copy (disk full, Ctrl+C)
     never looks "already populated" — it is redone from scratch."""
@@ -718,7 +718,7 @@ def snapshot_real_profile(browser: str, src: str | None = None) -> tuple[str | N
 
 def cleanup_real_profile_snapshots() -> None:
     """Delete the whole real-profile snapshot store when consent is OFF (idempotent)."""
-    root = str(get_hermes_home() / "browser-profile")
+    root = str(get_akramcode_home() / "browser-profile")
     if os.path.isdir(root):
         shutil.rmtree(root, ignore_errors=True)
         logger.info("real-profile: removed snapshot store %s (consent off)", root)
@@ -758,7 +758,7 @@ def get_chrome_debug_candidates(system: str) -> list[str]:
 
 
 def chrome_debug_data_dir() -> str:
-    return str(get_hermes_home() / "chrome-debug")
+    return str(get_akramcode_home() / "chrome-debug")
 
 
 def _managed_install() -> bool:
@@ -783,8 +783,8 @@ def _ensure_chrome_debug_data_dir(data_dir: str) -> None:
     ``chrome-debug`` is a real Chromium profile: Cookies, Login Data, and
     Local Storage live here. Created with a bare ``os.makedirs`` it inherits
     the umask and lands 0755, so every other local account could list and
-    read those stores. ``HERMES_HOME`` is 0700 by default, which contains the
-    damage — but the documented ``HERMES_HOME_MODE=0701`` hatch (so nginx can
+    read those stores. ``AKRAMCODE_HOME`` is 0700 by default, which contains the
+    damage — but the documented ``AKRAMCODE_HOME_MODE=0701`` hatch (so nginx can
     traverse to a served subdirectory) makes a 0755 child genuinely
     world-readable.
 
@@ -792,7 +792,7 @@ def _ensure_chrome_debug_data_dir(data_dir: str) -> None:
     window where the profile sits world-readable before a follow-up chmod.
     Policy is then reconciled by ``akramcode_cli.config._secure_dir``, the house
     helper, rather than a hand-rolled chmod: it skips managed/NixOS installs,
-    honours ``HERMES_HOME_MODE``, and applies ``HERMES_UID``/``HERMES_GID``
+    honours ``AKRAMCODE_HOME_MODE``, and applies ``AKRAMCODE_UID``/``AKRAMCODE_GID``
     ownership so a root-created dir does not lock out uid-mapped Docker
     workers (#34107).
 
@@ -803,12 +803,12 @@ def _ensure_chrome_debug_data_dir(data_dir: str) -> None:
     rules pre-create — it is made lazily at runtime, so a hardcoded 0700 here
     would be the only thing setting its mode and would silently override that
     design. On such a host the gateway and a hostUsers CLI share one
-    ``$HERMES_HOME`` through the hermes group, so a 0700 profile created by
+    ``$AKRAMCODE_HOME`` through the akramcode group, so a 0700 profile created by
     whichever ran first locks the other out of the browser entirely.
     Omitting the explicit mode there lets the inherited setgid + umask decide,
-    matching ``ensure_hermes_home``'s managed branch.
+    matching ``ensure_akramcode_home``'s managed branch.
 
-    Reconciling unconditionally also heals a profile an older Hermes left at
+    Reconciling unconditionally also heals a profile an older AkramCode left at
     0755, which is the whole point — the exposure is on disk already. It is
     safe against a *running* browser: only group/other bits are dropped, the
     owner keeps ``rwx``, and POSIX checks the mode at ``open()`` rather than
@@ -835,7 +835,7 @@ def _open_launch_stderr_log(path: str):
 
     Opened with a plain ``open(path, "wb")`` this lands 0644 under a default
     umask — a fixed, guessable name inside the profile dir hardened just
-    above. Under ``HERMES_HOME_MODE=0701`` the directory is traversable but
+    above. Under ``AKRAMCODE_HOME_MODE=0701`` the directory is traversable but
     unlistable, so a predictable filename is exactly the case that stays
     reachable; the uuid-named files elsewhere in the profile do not.
 
@@ -846,7 +846,7 @@ def _open_launch_stderr_log(path: str):
       per-candidate overwrite semantics.
     * **On an already-existing log** ``O_CREAT`` applies ``mode`` only to a
       file it actually creates, so the inode keeps whatever it had. An older
-      Hermes left this file at 0644 on disk, so creation-time hardening alone
+      AkramCode left this file at 0644 on disk, so creation-time hardening alone
       would leave every *upgrading* install exposed at the one path in this
       change with a guessable name. ``akramcode_cli.config._secure_file``
       reconciles it, for the same reason ``_ensure_chrome_debug_data_dir``
@@ -859,8 +859,8 @@ def _open_launch_stderr_log(path: str):
     The managed/NixOS carve-out applies at creation here too — the same defect
     the profile directory had. This log is created lazily at runtime and is
     not covered by the module's ``systemd.tmpfiles`` rules; the gateway and an
-    interactive ``hostUsers`` CLI share one ``$HERMES_HOME`` at two uids
-    through the hermes group, and a 0600 log created by whichever ran first
+    interactive ``hostUsers`` CLI share one ``$AKRAMCODE_HOME`` at two uids
+    through the akramcode group, and a 0600 log created by whichever ran first
     makes the other's truncating open fail with ``EACCES`` — and because every
     candidate binary reuses this one path, that fails *the whole launch*.
     There the inherited ``UMask = "0007"`` decides, like the merge base's

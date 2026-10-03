@@ -8,7 +8,7 @@ import threading
 
 def test_side_workers_hold_admission_through_cleanup_and_preserve_profile_scope(tmp_path, monkeypatch):
     from akramcode_cli import backend_retirement
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
     from agent.secret_scope import get_secret, set_multiplex_active
     from tui_gateway import server
 
@@ -31,7 +31,7 @@ def test_side_workers_hold_admission_through_cleanup_and_preserve_profile_scope(
             observed = []
 
             def body():
-                observed.append((get_hermes_home(), get_secret("RETIREMENT_SCOPE"), marker.get()))
+                observed.append((get_akramcode_home(), get_secret("RETIREMENT_SCOPE"), marker.get()))
                 entered.set()
                 assert release.wait(10)
                 return "finished"

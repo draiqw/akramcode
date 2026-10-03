@@ -8,21 +8,21 @@ import time
 from unittest.mock import patch
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 
 def _write_auth_store(tmp_path, payload: dict) -> None:
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    (hermes_home / "auth.json").write_text(json.dumps(payload, indent=2))
+    akramcode_home = tmp_path / "akramcode"
+    akramcode_home.mkdir(parents=True, exist_ok=True)
+    (akramcode_home / "auth.json").write_text(json.dumps(payload, indent=2))
 
 
 def _write_groq_provider_config(
     tmp_path, *, provider_key="groq", name="Groq", base_url=None
 ) -> None:
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    (hermes_home / "config.yaml").write_text(
+    akramcode_home = tmp_path / "akramcode"
+    akramcode_home.mkdir(parents=True, exist_ok=True)
+    (akramcode_home / "config.yaml").write_text(
         yaml.safe_dump(
             {
                 "providers": {
@@ -91,7 +91,7 @@ def _clear_provider_env(monkeypatch):
 
 
 def test_auth_add_api_key_persists_manual_entry(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode"))
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
@@ -106,7 +106,7 @@ def test_auth_add_api_key_persists_manual_entry(tmp_path, monkeypatch):
 
     auth_add_command(_Args())
 
-    payload = json.loads((tmp_path / "hermes" / "auth.json").read_text())
+    payload = json.loads((tmp_path / "akramcode" / "auth.json").read_text())
     entries = payload["credential_pool"]["openrouter"]
     entry = next(item for item in entries if item["source"] == "manual")
     assert entry["label"] == "personal"
@@ -118,8 +118,8 @@ def test_auth_add_api_key_persists_manual_entry(tmp_path, monkeypatch):
 def test_auth_add_migrates_legacy_prefixed_key_for_configured_provider(
     tmp_path, monkeypatch
 ):
-    hermes_home = tmp_path / "hermes"
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    akramcode_home = tmp_path / "akramcode"
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
     monkeypatch.delenv("GROQ_API_KEY", raising=False)
     _write_auth_store(
         tmp_path,
@@ -152,7 +152,7 @@ def test_auth_add_migrates_legacy_prefixed_key_for_configured_provider(
 
     auth_add_command(_Args())
 
-    payload = json.loads((hermes_home / "auth.json").read_text(encoding="utf-8"))
+    payload = json.loads((akramcode_home / "auth.json").read_text(encoding="utf-8"))
     assert "custom:groq" not in payload["credential_pool"]
     assert {
         entry["access_token"] for entry in payload["credential_pool"]["groq"]
@@ -162,8 +162,8 @@ def test_auth_add_migrates_legacy_prefixed_key_for_configured_provider(
 def test_auth_add_migrates_display_name_derived_legacy_pool_key(
     tmp_path, monkeypatch
 ):
-    hermes_home = tmp_path / "hermes"
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    akramcode_home = tmp_path / "akramcode"
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
     monkeypatch.delenv("GROQ_API_KEY", raising=False)
     _write_auth_store(
         tmp_path,
@@ -197,7 +197,7 @@ def test_auth_add_migrates_display_name_derived_legacy_pool_key(
     with patch("akramcode_cli.models.clear_provider_models_cache"):
         auth_add_command(_Args())
 
-    payload = json.loads((hermes_home / "auth.json").read_text(encoding="utf-8"))
+    payload = json.loads((akramcode_home / "auth.json").read_text(encoding="utf-8"))
     assert "custom:groq" not in payload["credential_pool"]
     assert {
         entry["access_token"]
@@ -208,8 +208,8 @@ def test_auth_add_migrates_display_name_derived_legacy_pool_key(
 def test_auth_add_non_registry_configured_provider_preserves_endpoint(
     tmp_path, monkeypatch
 ):
-    hermes_home = tmp_path / "hermes"
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    akramcode_home = tmp_path / "akramcode"
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
     _write_groq_provider_config(
         tmp_path,
@@ -232,7 +232,7 @@ def test_auth_add_non_registry_configured_provider_preserves_endpoint(
         )()
     )
 
-    payload = json.loads((hermes_home / "auth.json").read_text(encoding="utf-8"))
+    payload = json.loads((akramcode_home / "auth.json").read_text(encoding="utf-8"))
     entry = payload["credential_pool"]["private-groq"][0]
     assert entry["base_url"] == "https://private.example/v1"
 
@@ -240,7 +240,7 @@ def test_auth_add_non_registry_configured_provider_preserves_endpoint(
 def test_auth_list_includes_non_registry_configured_provider(
     tmp_path, monkeypatch, capsys
 ):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode"))
     _write_groq_provider_config(tmp_path, provider_key="private-groq")
     _write_auth_store(
         tmp_path,
@@ -272,8 +272,8 @@ def test_auth_list_includes_non_registry_configured_provider(
 def test_interactive_auth_add_normalizes_display_name_to_provider_key(
     tmp_path, monkeypatch
 ):
-    hermes_home = tmp_path / "hermes"
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    akramcode_home = tmp_path / "akramcode"
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
     _write_groq_provider_config(
         tmp_path, provider_key="groq-cloud", name="Groq Enterprise"
@@ -287,7 +287,7 @@ def test_interactive_auth_add_normalizes_display_name_to_provider_key(
 
     auth_commands._interactive_add()
 
-    payload = json.loads((hermes_home / "auth.json").read_text(encoding="utf-8"))
+    payload = json.loads((akramcode_home / "auth.json").read_text(encoding="utf-8"))
     assert "custom:groq-enterprise" not in payload["credential_pool"]
     assert payload["credential_pool"]["groq-cloud"][0]["access_token"] == "gsk-test"
 
@@ -295,8 +295,8 @@ def test_interactive_auth_add_normalizes_display_name_to_provider_key(
 def test_auth_add_explicit_custom_provider_keeps_prefixed_pool_key(
     tmp_path, monkeypatch
 ):
-    hermes_home = tmp_path / "hermes"
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    akramcode_home = tmp_path / "akramcode"
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
     _write_groq_provider_config(
         tmp_path,
@@ -314,13 +314,13 @@ def test_auth_add_explicit_custom_provider_keeps_prefixed_pool_key(
 
     auth_add_command(_Args())
 
-    payload = json.loads((hermes_home / "auth.json").read_text(encoding="utf-8"))
+    payload = json.loads((akramcode_home / "auth.json").read_text(encoding="utf-8"))
     assert "custom:groq" in payload["credential_pool"]
     assert "groq" not in payload["credential_pool"]
 
 
 def test_auth_add_nous_oauth_persists_pool_entry(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode"))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
     token = _jwt_with_email("nous@example.com")
     monkeypatch.setattr(
@@ -328,7 +328,7 @@ def test_auth_add_nous_oauth_persists_pool_entry(tmp_path, monkeypatch):
         lambda **kwargs: {
             "portal_base_url": "https://portal.example.com",
             "inference_base_url": "https://inference.example.com/v1",
-            "client_id": "hermes-cli",
+            "client_id": "akramcode-cli",
             "scope": "inference:invoke",
             "token_type": "Bearer",
             "access_token": token,
@@ -364,7 +364,7 @@ def test_auth_add_nous_oauth_persists_pool_entry(tmp_path, monkeypatch):
 
     auth_add_command(_Args())
 
-    payload = json.loads((tmp_path / "hermes" / "auth.json").read_text())
+    payload = json.loads((tmp_path / "akramcode" / "auth.json").read_text())
 
     # Pool has exactly one canonical `device_code` entry — not a duplicate
     # pair of `manual:device_code` + `device_code` (the latter would be
@@ -380,10 +380,10 @@ def test_auth_add_nous_oauth_persists_pool_entry(tmp_path, monkeypatch):
     assert entry["agent_key"] == token
     assert entry["portal_base_url"] == "https://portal.example.com"
 
-    # `hermes auth add nous` must also populate providers.nous so the
+    # `akramcode auth add nous` must also populate providers.nous so the
     # 401-recovery path (resolve_nous_runtime_credentials) can refresh an
     # invoke JWT when the token expires. If this mirror is missing, recovery
-    # raises "Hermes is not logged into Nous Portal" and the agent dies.
+    # raises "AkramCode is not logged into Nous Portal" and the agent dies.
     singleton = payload["providers"]["nous"]
     assert singleton["access_token"] == token
     assert singleton["refresh_token"] == "refresh-token"
@@ -393,11 +393,11 @@ def test_auth_add_nous_oauth_persists_pool_entry(tmp_path, monkeypatch):
 
 
 def test_auth_add_nous_oauth_honors_custom_label(tmp_path, monkeypatch):
-    """`hermes auth add nous --type oauth --label <name>` must preserve the
+    """`akramcode auth add nous --type oauth --label <name>` must preserve the
     custom label end-to-end — it was silently dropped in the first cut of the
     persist_nous_credentials helper because `--label` wasn't threaded through.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode"))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
     token = _jwt_with_email("nous@example.com")
     monkeypatch.setattr(
@@ -405,7 +405,7 @@ def test_auth_add_nous_oauth_honors_custom_label(tmp_path, monkeypatch):
         lambda **kwargs: {
             "portal_base_url": "https://portal.example.com",
             "inference_base_url": "https://inference.example.com/v1",
-            "client_id": "hermes-cli",
+            "client_id": "akramcode-cli",
             "scope": "inference:invoke",
             "token_type": "Bearer",
             "access_token": token,
@@ -441,7 +441,7 @@ def test_auth_add_nous_oauth_honors_custom_label(tmp_path, monkeypatch):
 
     auth_add_command(_Args())
 
-    payload = json.loads((tmp_path / "hermes" / "auth.json").read_text())
+    payload = json.loads((tmp_path / "akramcode" / "auth.json").read_text())
 
     # Custom label reaches the pool entry …
     pool_entry = payload["credential_pool"]["nous"][0]
@@ -454,16 +454,16 @@ def test_auth_add_nous_oauth_honors_custom_label(tmp_path, monkeypatch):
 
 
 def test_auth_add_codex_oauth_keeps_distinct_pool_accounts(tmp_path, monkeypatch):
-    """Two ``hermes auth add openai-codex`` runs for different ChatGPT
+    """Two ``akramcode auth add openai-codex`` runs for different ChatGPT
     accounts must produce two independent pool entries with distinct tokens.
 
     Regression for #39236: the add path used to route through the singleton
     ``_save_codex_tokens`` save, so the second login overwrote the first
     account's singleton-mirrored ``device_code`` entry instead of adding a
-    second independent one. ``hermes auth list`` showed two labels sharing
+    second independent one. ``akramcode auth list`` showed two labels sharing
     one token pair, and rotation silently always used the latest account.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode"))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
     first_token = _jwt_with_email("first-codex@example.com")
     second_token = _jwt_with_email("second-codex@example.com")
@@ -518,7 +518,7 @@ def test_auth_add_codex_oauth_keeps_distinct_pool_accounts(tmp_path, monkeypatch
         "second-refresh-token",
     ]
 
-    payload = json.loads((tmp_path / "hermes" / "auth.json").read_text())
+    payload = json.loads((tmp_path / "akramcode" / "auth.json").read_text())
     # No singleton block — the add path is now pool-only.
     assert "openai-codex" not in payload.get("providers", {})
     # First add activated the provider; second add left it as-is.
@@ -533,7 +533,7 @@ def _codex_jwt(email: str, account_id: str, subject: str) -> str:
 
 
 def _add_codex_twice(tmp_path, monkeypatch, capsys, second_token: str) -> str:
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode"))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
     codex_login = {"base_url": "https://chatgpt.com/backend-api/codex", "last_refresh": "2026-09-01T00:00:00Z"}
     logins = iter([
@@ -556,7 +556,7 @@ def _add_codex_twice(tmp_path, monkeypatch, capsys, second_token: str) -> str:
 
 
 def test_auth_add_codex_warns_when_login_is_same_account_as_pooled_entry(tmp_path, monkeypatch, capsys):
-    """A second ``hermes auth add openai-codex`` for the SAME OpenAI account must tell the user
+    """A second ``akramcode auth add openai-codex`` for the SAME OpenAI account must tell the user
     which existing credential it duplicates (#47096): the two logins share one token family and
     the provider revokes the older one, so the extra entry buys no quota. Different accounts
     get no warning — they rotate independently.
@@ -570,7 +570,7 @@ def test_auth_add_codex_warns_when_login_is_same_account_as_pooled_entry(tmp_pat
 
 
 def test_codex_auth_status_reports_pool_only_credential(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode"))
     _write_auth_store(tmp_path, _codex_pool_only_store())
 
     from akramcode_cli.auth import get_codex_auth_status
@@ -582,7 +582,7 @@ def test_codex_auth_status_reports_pool_only_credential(tmp_path, monkeypatch):
 
 
 def test_codex_runtime_pool_only_rate_limit_is_not_missing_auth(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode"))
     _write_auth_store(tmp_path, _codex_pool_only_store(exhausted=True))
 
     from akramcode_cli.auth import AuthError, CODEX_RATE_LIMITED_CODE, resolve_codex_runtime_credentials
@@ -595,14 +595,14 @@ def test_codex_runtime_pool_only_rate_limit_is_not_missing_auth(tmp_path, monkey
 
 
 def test_auth_add_xai_oauth_keeps_distinct_pool_accounts(tmp_path, monkeypatch):
-    """Two ``hermes auth add xai-oauth`` runs must produce independent pool entries.
+    """Two ``akramcode auth add xai-oauth`` runs must produce independent pool entries.
 
     Regression for the same collapse class as #39236 / #42316 for Codex: the
     add path used to route through the singleton ``_save_xai_oauth_tokens``
     save, so the second login overwrote the first account's singleton-mirrored
     ``device_code`` entry instead of adding a second independent one.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode"))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
     first_token = "xai-access-token-account-a"
     second_token = "xai-access-token-account-b"
@@ -676,7 +676,7 @@ def test_auth_add_xai_oauth_keeps_distinct_pool_accounts(tmp_path, monkeypatch):
         "second-xai-refresh",
     ]
 
-    payload = json.loads((tmp_path / "hermes" / "auth.json").read_text())
+    payload = json.loads((tmp_path / "akramcode" / "auth.json").read_text())
     # No singleton block — the add path is now pool-only.
     assert "xai-oauth" not in payload.get("providers", {})
     # First add activated the provider; second add left it as-is.
@@ -684,7 +684,7 @@ def test_auth_add_xai_oauth_keeps_distinct_pool_accounts(tmp_path, monkeypatch):
 
 
 def test_auth_remove_reindexes_priorities(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode"))
     # Prevent pool auto-seeding from host env vars and file-backed sources
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_TOKEN", raising=False)
@@ -728,7 +728,7 @@ def test_auth_remove_reindexes_priorities(tmp_path, monkeypatch):
 
     auth_remove_command(_Args())
 
-    payload = json.loads((tmp_path / "hermes" / "auth.json").read_text())
+    payload = json.loads((tmp_path / "akramcode" / "auth.json").read_text())
     entries = payload["credential_pool"]["anthropic"]
     assert len(entries) == 1
     assert entries[0]["label"] == "secondary"
@@ -737,7 +737,7 @@ def test_auth_remove_reindexes_priorities(tmp_path, monkeypatch):
 
 def test_auth_remove_codex_migrates_legacy_dict_suppression(tmp_path, monkeypatch):
     """Removing a Codex credential must tolerate legacy dict suppression data."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode"))
     store = _codex_pool_only_store()
     primary = store["credential_pool"]["openai-codex"][0]
     primary.update({"id": "codex-qb", "label": "qb"})
@@ -752,7 +752,7 @@ def test_auth_remove_codex_migrates_legacy_dict_suppression(tmp_path, monkeypatc
 
     auth_remove_command(_Args())
 
-    payload = json.loads((tmp_path / "hermes" / "auth.json").read_text(encoding="utf-8"))
+    payload = json.loads((tmp_path / "akramcode" / "auth.json").read_text(encoding="utf-8"))
     assert payload.get("credential_pool", {}).get("openai-codex", []) == []
     assert payload["suppressed_sources"]["openai-codex"] == [
         "legacy",
@@ -766,7 +766,7 @@ def test_auth_remove_codex_migrates_legacy_dict_suppression(tmp_path, monkeypatc
 
 
 def test_clear_provider_auth_removes_provider_pool_entries(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode"))
     _write_auth_store(
         tmp_path,
         {
@@ -782,7 +782,7 @@ def test_clear_provider_auth_removes_provider_pool_entries(tmp_path, monkeypatch
                         "label": "primary",
                         "auth_type": "oauth",
                         "priority": 0,
-                        "source": "manual:hermes_pkce",
+                        "source": "manual:akramcode_pkce",
                         "access_token": "pool-token",
                     }
                 ],
@@ -804,7 +804,7 @@ def test_clear_provider_auth_removes_provider_pool_entries(tmp_path, monkeypatch
 
     assert clear_provider_auth("anthropic") is True
 
-    payload = json.loads((tmp_path / "hermes" / "auth.json").read_text())
+    payload = json.loads((tmp_path / "akramcode" / "auth.json").read_text())
     assert payload["active_provider"] is None
     assert "anthropic" not in payload.get("providers", {})
     assert "anthropic" not in payload.get("credential_pool", {})
@@ -812,16 +812,16 @@ def test_clear_provider_auth_removes_provider_pool_entries(tmp_path, monkeypatch
 
 
 def test_logout_resets_codex_config_when_auth_state_already_cleared(tmp_path, monkeypatch, capsys):
-    """`hermes logout --provider openai-codex` must still clear model.provider.
+    """`akramcode logout --provider openai-codex` must still clear model.provider.
 
     Users can end up with auth.json already cleared but config.yaml still set to
     openai-codex.  Previously logout reported no auth state and left the agent
     pinned to the Codex provider.
     """
-    hermes_home = tmp_path / "hermes"
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    akramcode_home = tmp_path / "akramcode"
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
     _write_auth_store(tmp_path, {"version": 1, "providers": {}, "credential_pool": {}})
-    (hermes_home / "config.yaml").write_text(
+    (akramcode_home / "config.yaml").write_text(
         "model:\n"
         "  default: gpt-5.3-codex\n"
         "  provider: openai-codex\n"
@@ -833,14 +833,14 @@ def test_logout_resets_codex_config_when_auth_state_already_cleared(tmp_path, mo
 
     logout_command(SimpleNamespace(provider="openai-codex"))
 
-    config_text = (hermes_home / "config.yaml").read_text()
+    config_text = (akramcode_home / "config.yaml").read_text()
     assert "provider: auto" in config_text
     assert "base_url: https://openrouter.ai/api/v1" in config_text
 
 
 def test_unsuppress_credential_source_clears_marker(tmp_path, monkeypatch):
     """unsuppress_credential_source() removes a previously-set marker."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode"))
     _write_auth_store(tmp_path, {"version": 1})
 
     from akramcode_cli.auth import suppress_credential_source, unsuppress_credential_source, is_source_suppressed
@@ -852,14 +852,14 @@ def test_unsuppress_credential_source_clears_marker(tmp_path, monkeypatch):
     assert cleared is True
     assert is_source_suppressed("openai-codex", "device_code") is False
 
-    payload = json.loads((tmp_path / "hermes" / "auth.json").read_text())
+    payload = json.loads((tmp_path / "akramcode" / "auth.json").read_text())
     # Empty suppressed_sources dict should be cleaned up entirely
     assert "suppressed_sources" not in payload
 
 
 def test_unsuppress_credential_source_preserves_other_markers(tmp_path, monkeypatch):
     """Clearing one marker must not affect unrelated markers."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode"))
     _write_auth_store(tmp_path, {"version": 1})
 
     from akramcode_cli.auth import (
@@ -876,30 +876,30 @@ def test_unsuppress_credential_source_preserves_other_markers(tmp_path, monkeypa
 
 
 # =============================================================================
-# Unified credential-source stickiness — every source Hermes reads from has a
+# Unified credential-source stickiness — every source AkramCode reads from has a
 # registered RemovalStep in agent.credential_sources, and every seeding path
 # gates on is_source_suppressed.  Below: one test per source proving remove
 # sticks across a fresh load_pool() call.
 # =============================================================================
 
 
-def test_seed_from_singletons_respects_hermes_pkce_suppression(tmp_path, monkeypatch):
-    """anthropic hermes_pkce must not re-seed from ~/.hermes/.anthropic_oauth.json when suppressed."""
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+def test_seed_from_singletons_respects_akramcode_pkce_suppression(tmp_path, monkeypatch):
+    """anthropic akramcode_pkce must not re-seed from ~/.akramcode/.anthropic_oauth.json when suppressed."""
+    akramcode_home = tmp_path / "akramcode"
+    akramcode_home.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
-    import akram_core.hermes_yaml as yaml
-    (hermes_home / "config.yaml").write_text(yaml.safe_dump({"model": {"provider": "anthropic", "model": "claude"}}))
-    (hermes_home / "auth.json").write_text(json.dumps({
+    import akram_core.akramcode_yaml as yaml
+    (akramcode_home / "config.yaml").write_text(yaml.safe_dump({"model": {"provider": "anthropic", "model": "claude"}}))
+    (akramcode_home / "auth.json").write_text(json.dumps({
         "version": 1,
         "providers": {},
-        "suppressed_sources": {"anthropic": ["hermes_pkce"]},
+        "suppressed_sources": {"anthropic": ["akramcode_pkce"]},
     }))
 
-    # Stub the readers so only hermes_pkce is "available"; claude_code returns None
+    # Stub the readers so only akramcode_pkce is "available"; claude_code returns None
     import agent.anthropic_credentials as aa
-    monkeypatch.setattr(aa, "read_hermes_oauth_credentials", lambda: {
+    monkeypatch.setattr(aa, "read_akramcode_oauth_credentials", lambda: {
         "accessToken": "tok", "refreshToken": "r", "expiresAt": 9999999999000,
     })
     monkeypatch.setattr(aa, "read_claude_code_credentials", lambda: None)
@@ -907,18 +907,18 @@ def test_seed_from_singletons_respects_hermes_pkce_suppression(tmp_path, monkeyp
     from agent.credential_pool import _seed_from_singletons
     entries = []
     changed, active = _seed_from_singletons("anthropic", entries)
-    # hermes_pkce suppressed, claude_code returns None → nothing should be seeded
+    # akramcode_pkce suppressed, claude_code returns None → nothing should be seeded
     assert entries == []
-    assert "hermes_pkce" not in active
+    assert "akramcode_pkce" not in active
 
 
 def test_auth_remove_copilot_suppresses_all_variants(tmp_path, monkeypatch):
     """Removing any copilot source must suppress gh_cli + all env:* variants
     so the duplicate-seed paths don't resurrect the credential.
     """
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    akramcode_home = tmp_path / "akramcode"
+    akramcode_home.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
     # The copilot pool entry is no longer persisted directly in auth.json —
     # `(copilot, gh_cli)` is borrowed and stripped by
@@ -958,13 +958,13 @@ def test_auth_remove_env_seeded_dotenv_with_bom_no_shell_hint(tmp_path, monkeypa
     warn about a phantom shell export). Regression for the reader that
     dropped encoding='utf-8-sig' and misread the BOM'd first line.
     """
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+    akramcode_home = tmp_path / "akramcode"
+    akramcode_home.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
     # BOM prefix (utf-8-sig) + the target var as the FIRST line.
-    (hermes_home / ".env").write_bytes(
+    (akramcode_home / ".env").write_bytes(
         b"\xef\xbb\xbfDEEPSEEK_API_KEY=sk-ds-only\n"
     )
     monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-ds-only")
@@ -991,15 +991,15 @@ def test_auth_remove_env_seeded_dotenv_with_bom_no_shell_hint(tmp_path, monkeypa
     auth_remove_command(SimpleNamespace(provider="deepseek", target="1"))
 
     out = capsys.readouterr().out
-    assert "DEEPSEEK_API_KEY" not in (hermes_home / ".env").read_text(encoding="utf-8-sig")
+    assert "DEEPSEEK_API_KEY" not in (akramcode_home / ".env").read_text(encoding="utf-8-sig")
     assert "still set in your shell environment" not in out
 
 
 def test_auth_add_openrouter_oauth_persists_pkce_key_without_touching_api_key_default(tmp_path, monkeypatch):
-    """`hermes auth add openrouter --type oauth` stores the PKCE-minted key as an ``api_key`` pool row
+    """`akramcode auth add openrouter --type oauth` stores the PKCE-minted key as an ``api_key`` pool row
     (OpenRouter returns a plain key, no refresh pair) that ``resolve_provider("auto")`` picks up with no
     env var — same as a pasted key; the bare `--api-key` path keeps its API-key default."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "akramcode"))
     monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     _write_auth_store(tmp_path, {"version": 1, "providers": {}})
@@ -1027,7 +1027,7 @@ def test_auth_add_openrouter_oauth_persists_pkce_key_without_touching_api_key_de
     assert resolve_provider("auto") == "openrouter"
     auth_add_command(_Plain())
 
-    payload = json.loads((tmp_path / "hermes" / "auth.json").read_text())
+    payload = json.loads((tmp_path / "akramcode" / "auth.json").read_text())
     by_source = {e["source"]: e for e in payload["credential_pool"]["openrouter"]}
     assert by_source["manual:openrouter_pkce"]["auth_type"] == "api_key"
     assert by_source["manual:openrouter_pkce"]["access_token"] == "sk-or-v1-from-pkce"

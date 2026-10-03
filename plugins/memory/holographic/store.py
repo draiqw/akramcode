@@ -1,4 +1,4 @@
-"""SQLite-backed fact store with entity resolution and trust scoring (single-user Hermes memory plugin)."""
+"""SQLite-backed fact store with entity resolution and trust scoring (single-user AkramCode memory plugin)."""
 
 import os
 import re
@@ -99,8 +99,8 @@ class MemoryStore:
 
     def __init__(self, db_path: "str | Path | None" = None, default_trust: float = 0.5, hrr_dim: int = 1024) -> None:
         if db_path is None:
-            from hermes_constants import get_hermes_home
-            db_path = str(get_hermes_home() / "memory_store.db")
+            from akramcode_constants import get_akramcode_home
+            db_path = str(get_akramcode_home() / "memory_store.db")
         self.db_path = Path(db_path).expanduser()
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self.default_trust, self.hrr_dim, self._hrr_available = _clamp_trust(default_trust), hrr_dim, hrr._HAS_NUMPY

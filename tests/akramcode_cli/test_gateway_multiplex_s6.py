@@ -1,5 +1,5 @@
 """s6 container: the unset multiplex default resolves ON when the boot has parked every named
-slot, ``hermes gateway migrate --multiplex`` folds an UP slot in-process, a guard refusal on a
+slot, ``akramcode gateway migrate --multiplex`` folds an UP slot in-process, a guard refusal on a
 multi-profile host is loud, and the resolved default is written back to config.yaml."""
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-import hermes_constants
+import akramcode_constants
 from akramcode_cli import gateway as gw
 from akramcode_cli import gateway_migrate as gm
 from akramcode_cli import gateway_multiplex_mode as mode
@@ -47,10 +47,10 @@ def s6_host(tmp_path, monkeypatch):
     (root / ".env").write_text("TELEGRAM_BOT_TOKEN=111111:default-token\n", encoding="utf-8")
     (root / "profiles/alpha/.env").write_text("TELEGRAM_BOT_TOKEN=222222:alpha-token\n", encoding="utf-8")
     (root / "profiles/beta/.env").write_text("DISCORD_BOT_TOKEN=beta-discord-333333\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(root))
     for name in ("GATEWAY_MULTIPLEX_PROFILES", "TELEGRAM_BOT_TOKEN", "DISCORD_BOT_TOKEN", "API_SERVER_KEY"):
         monkeypatch.delenv(name, raising=False)
-    monkeypatch.setattr(hermes_constants, "_default_hermes_root_memo", None)
+    monkeypatch.setattr(akramcode_constants, "_default_akramcode_root_memo", None)
     scandir = tmp_path / "run-service"
     fake = _FakeS6(scandir, up=set())
     monkeypatch.setattr(gw, "_running_under_s6", lambda: True)
@@ -91,7 +91,7 @@ def test_migrate_folds_an_up_named_slot_in_process_and_boot_shares_the_rule(s6_h
     assert fold == s6.FoldDecision(folded=("alpha",), root_should_start=True)
     (root / "profiles/alpha/gateway_state.json").write_text('{"desired_state": "running"}', encoding="utf-8")
     actions = {a.profile: a for a in reconcile_profile_gateways(
-        hermes_home=root, scandir=tmp_path / "boot-svc", dry_run=True, container_argv=())}
+        akramcode_home=root, scandir=tmp_path / "boot-svc", dry_run=True, container_argv=())}
     assert actions["default"].action == "started" and actions["alpha"].folded_into_root
 
 
@@ -115,7 +115,7 @@ def test_resolved_default_is_written_once_and_never_on_a_guard(s6_host):
     assert "# my config" in text and "multiplex_profiles: true" in text  # comment-preserving writer
     assert mode.persist_resolved_default(on, root) is False  # already explicit: once
     # A retired ``false`` is rewritten in place, never silently: the one-time notice reaches the
-    # gateway start (log_multiplex_decision prints it) and the next ``hermes update`` summary.
+    # gateway start (log_multiplex_decision prints it) and the next ``akramcode update`` summary.
     (root / "config.yaml").write_text("# my config\ngateway:\n  multiplex_profiles: false\n", encoding="utf-8")
     from gateway.config import GatewayConfig
     decision = mode.resolve_multiplex_mode(GatewayConfig.from_dict({"gateway": {"multiplex_profiles": False}}))

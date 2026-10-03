@@ -24,7 +24,7 @@ _NO_SOCKETS_SUFFIX = " — no sockets found; in-flight request may keep running 
 def _routermint_headers() -> dict:
     """User-Agent RouterMint needs to avoid Cloudflare 1010 blocks."""
     from akramcode_cli.version_info import get_version_info
-    return {"User-Agent": f"HermesAgent/{get_version_info().base_version}"}
+    return {"User-Agent": f"AkramCodeAgent/{get_version_info().base_version}"}
 
 
 def _qwen_portal_headers() -> dict:
@@ -49,7 +49,7 @@ _ROUTE_DEFAULT_HEADERS = (
     ("chatgpt.com", lambda self, url: _lazy_attr("agent.codex_headers", "codex_cloudflare_headers")(
         self._client_kwargs.get("api_key", ""), base_url=url)),
     # Covers provider=xai and provider=xai-oauth (api.x.ai).
-    ("x.ai", lambda self, url: _lazy_attr("tools.xai_http", "hermes_xai_default_headers")()),
+    ("x.ai", lambda self, url: _lazy_attr("tools.xai_http", "akramcode_xai_default_headers")()),
 )
 
 
@@ -610,7 +610,7 @@ class ClientLifecycleMixin:
             return False
         try:
             from akramcode_cli.auth import resolve_nous_runtime_credentials
-            timeout = env_float("HERMES_NOUS_TIMEOUT_SECONDS", 15)
+            timeout = env_float("AKRAMCODE_NOUS_TIMEOUT_SECONDS", 15)
             # Pass the bearer that just 401'd so a refresh already done by a sibling process is
             # adopted instead of rotating the grant again.
             creds = resolve_nous_runtime_credentials(
@@ -745,7 +745,7 @@ class ClientLifecycleMixin:
         return (base_url, api_key) != prev and current_base in {default_base, prev[0]} and not unchanged
 
     def _try_refresh_env_client_credentials(self) -> bool:
-        """Adopt ``~/.hermes/.env`` credential/base-url edits at the turn boundary (a Settings save updates ``.env``
+        """Adopt ``~/.akramcode/.env`` credential/base-url edits at the turn boundary (a Settings save updates ``.env``
         but a live worker keeps init-time values). Adoption rule: ``_should_adopt_env_credentials``.
 
         Covers api-key registry providers and named custom providers with a ``key_env`` (#67935) — the

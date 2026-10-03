@@ -35,7 +35,7 @@ class TestLoginNous:
         import akramcode_cli.nous_subscription as ns
 
         seen: dict = {}
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
         monkeypatch.setattr(
             auth_mod,
             "_nous_device_code_login",

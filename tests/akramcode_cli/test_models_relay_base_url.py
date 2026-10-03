@@ -22,11 +22,11 @@ class _RecordingProfile:
 @pytest.mark.parametrize("provider", ["openai-codex", "copilot", "nous", "opencode-zen", "openrouter"])
 def test_canonical_url_preserves_native_catalog_but_other_paths_stay_relays(monkeypatch, provider):
     from akramcode_cli.config import atomic_config_write
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
     from providers import get_provider_profile
 
     canonical = get_provider_profile(provider).base_url
-    config_path = get_hermes_home() / "config.yaml"
+    config_path = get_akramcode_home() / "config.yaml"
     calls = []
 
     def native_catalog(slug, force_refresh):

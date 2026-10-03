@@ -1,4 +1,4 @@
-"""``hermes worktree`` subcommand parser."""
+"""``akramcode worktree`` subcommand parser."""
 
 from __future__ import annotations
 
@@ -7,11 +7,11 @@ def build_worktree_parser(subparsers) -> None:
     """Attach the ``worktree`` subcommand to ``subparsers``."""
     worktree_parser = subparsers.add_parser(
         "worktree", help="Audit and reclaim accumulated git worktrees and merged branches",
-        description="Attended reclaim for the .worktrees/ directory hermes -w sessions "
+        description="Attended reclaim for the .worktrees/ directory akramcode -w sessions "
             "accumulate. Never deletes uncommitted tracked changes, unique "
             "unpushed commits, or in-use trees; untracked-only scratch is "
-            "archived to ~/.hermes/archive/worktree-prune/ before removal. See: "
-            "https://hermes-agent.nousresearch.com/docs/user-guide/cli#worktree-cleanup")
+            "archived to ~/.akramcode/archive/worktree-prune/ before removal. See: "
+            "https://akramcode-agent.nousresearch.com/docs/user-guide/cli#worktree-cleanup")
     worktree_subparsers = worktree_parser.add_subparsers(dest="worktree_action")
     worktree_list = worktree_subparsers.add_parser(
         "list", aliases=["ls", "audit"],

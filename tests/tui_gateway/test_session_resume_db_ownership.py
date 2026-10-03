@@ -96,7 +96,7 @@ def profile_dbs(monkeypatch, tmp_path):
     )
     monkeypatch.setattr(server, "_profile_configured_cwd", lambda _home: str(tmp_path))
     # The handler builds nothing on the paths under test; keep it hermetic and
-    # off the real agent/secret/HERMES_HOME machinery.
+    # off the real agent/secret/AKRAMCODE_HOME machinery.
     monkeypatch.setattr(server, "_enable_gateway_prompts", lambda: None)
     monkeypatch.setattr(server, "_find_live_session_by_key", lambda _key, *_a: None)
     monkeypatch.setattr(server, "_schedule_agent_build", lambda *a, **k: None)

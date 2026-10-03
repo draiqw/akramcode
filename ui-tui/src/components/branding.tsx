@@ -1,5 +1,5 @@
-import { Box, Text, useStdout } from '@hermes/ink'
-import { mix } from '@hermes/shared/color'
+import { Box, Text, useStdout } from '@akramcode/ink'
+import { mix } from '@akramcode/shared/color'
 import { useEffect, useState } from 'react'
 import unicodeSpinners from 'unicode-animations'
 
@@ -494,7 +494,7 @@ export function SessionPanel({ info, maxWidth, sid, t }: SessionPanelProps) {
             {T.runPrefix}
           </Text>
           <Text bold color={t.color.warn}>
-            {info.update_command || 'hermes update'}
+            {info.update_command || 'akramcode update'}
           </Text>
           <Text bold={false} color={t.color.warn} dimColor>
             {T.toUpdate}

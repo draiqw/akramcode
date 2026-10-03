@@ -1,4 +1,4 @@
-"""Profile distributions — shareable, packaged Hermes profiles via git.
+"""Profile distributions — shareable, packaged AkramCode profiles via git.
 
 Sources: a git URL (``github.com/user/repo``, ``https://...``, ``git@...``, ``ssh://``,
 ``git://``) or a local directory that already contains ``distribution.yaml`` (profile
@@ -50,7 +50,7 @@ def _is_distribution_runtime_path(parts: Tuple[str, ...]) -> bool:
         return False
     if parts[0] == "cron":
         return parts[:2] != _CRON_STORE_REL
-    # Root-level dot entries under skills are Hermes bookkeeping (.hub,
+    # Root-level dot entries under skills are AkramCode bookkeeping (.hub,
     # .usage.json, curator state, bundled manifest, locks, archives, ...).
     return parts[0] == "skills" and len(parts) == 2 and parts[1].startswith(".")
 
@@ -99,7 +99,7 @@ class DistributionManifest:
     name: str
     version: str = "0.1.0"
     description: str = ""
-    hermes_requires: str = ""
+    akramcode_requires: str = ""
     author: str = ""
     license: str = ""
     env_requires: List[EnvRequirement] = field(default_factory=list)
@@ -124,7 +124,7 @@ class DistributionManifest:
             raise DistributionError("distribution_owned must be a list")
         return cls(
             name=name, version=_str(data, "version", "0.1.0"), description=_str(data, "description"),
-            hermes_requires=_str(data, "hermes_requires"), author=_str(data, "author"),
+            akramcode_requires=_str(data, "akramcode_requires"), author=_str(data, "author"),
             license=_str(data, "license"), env_requires=[EnvRequirement.from_dict(e) for e in env_raw],
             distribution_owned=[str(p).strip().strip("/") for p in dist_owned_raw if str(p).strip()],
             source=_str(data, "source"), installed_at=_str(data, "installed_at"),
@@ -134,7 +134,7 @@ class DistributionManifest:
         out: Dict[str, Any] = {"name": self.name, "version": self.version}
         # Key order is the on-disk YAML order (write_manifest uses sort_keys=False).
         optional = (
-            ("description", self.description), ("hermes_requires", self.hermes_requires),
+            ("description", self.description), ("akramcode_requires", self.akramcode_requires),
             ("author", self.author), ("license", self.license),
             ("env_requires", [e.to_dict() for e in self.env_requires]),
             ("distribution_owned", self.distribution_owned), ("source", self.source),
@@ -187,20 +187,20 @@ def _parse_semver(v: str) -> Tuple[int, int, int]:
         raise DistributionError(f"Unparseable version: {v!r}") from exc
 
 
-def check_hermes_requires(spec: str, current_version: str) -> None:
+def check_akramcode_requires(spec: str, current_version: str) -> None:
     """Raise DistributionError if ``current_version`` does not satisfy ``spec`` (bare version = ``>=``)."""
     if not spec or not spec.strip():
         return
     m = _VERSION_OP_RE.match(spec)
     op, target = m.groups() if m else (">=", spec.strip())
     if not _VERSION_OPS[op](_parse_semver(current_version), _parse_semver(target)):
-        raise DistributionError(f"This distribution requires Hermes {op}{target}, but you have {current_version}.")
+        raise DistributionError(f"This distribution requires AkramCode {op}{target}, but you have {current_version}.")
 
 
 def _env_template_from_manifest(manifest: DistributionManifest) -> str:
     """Generate a ``.env.template`` body from env_requires."""
     lines = [
-        "# Environment variables required by this Hermes distribution.",
+        "# Environment variables required by this AkramCode distribution.",
         "# Copy to `.env` and fill in your own values before running.", "",
     ]
     for req in manifest.env_requires:
@@ -256,7 +256,7 @@ def _stage_source(source: str, workdir: Path) -> Tuple[Path, str]:
         rmtree_readonly(staged / ".git")
         missing = (
             f"No {MANIFEST_FILENAME} at the root of {src_str!r}. "
-            "This repository is not a Hermes profile distribution."
+            "This repository is not a AkramCode profile distribution."
         )
     elif (path_guess := Path(src_str).expanduser()).is_dir():
         staged = path_guess.resolve()
@@ -314,14 +314,14 @@ def plan_install(source: str, workdir: Path, override_name: Optional[str] = None
     manifest = read_manifest(staged)
     if manifest is None:
         raise DistributionError(
-            f"No {MANIFEST_FILENAME} found at the distribution root — this source is not a Hermes distribution."
+            f"No {MANIFEST_FILENAME} found at the distribution root — this source is not a AkramCode distribution."
         )
-    check_hermes_requires(manifest.hermes_requires, get_version_info().base_version)  # fail fast
+    check_akramcode_requires(manifest.akramcode_requires, get_version_info().base_version)  # fail fast
     canon = _canon_valid(override_name or manifest.name)
     if canon == "default":
         raise DistributionError(
             "Cannot install a distribution as 'default' — that is the built-in "
-            "root profile (~/.hermes).  Pass --name <name> to install under a new profile."
+            "root profile (~/.akramcode).  Pass --name <name> to install under a new profile."
         )
     manifest.name = canon
     manifest.source = provenance
@@ -398,7 +398,7 @@ def _merge_cron_store(src: Path, home: Path) -> None:
 
     dest = home.joinpath(*_CRON_STORE_REL)
     try:
-        with tempfile.TemporaryDirectory(prefix="hermes_dist_cron_") as tmp:
+        with tempfile.TemporaryDirectory(prefix="akramcode_dist_cron_") as tmp:
             staged_store = Path(tmp) / "cron"
             staged_store.mkdir()
             shutil.copy2(src, staged_store / "jobs.json")
@@ -482,7 +482,7 @@ def _refuse_symlinked_containers(src: Path, dest: Path, rel: Tuple[str, ...]) ->
 def _merges_per_root(src: Path, rel_parts: Tuple[str, ...]) -> bool:
     """An owned top-level dir, or an owned container (``skills/research/``, see
     ``_is_container``), is merged per authored root instead of replaced whole, so skills the installer
-    added to it (``hermes skills install`` and agent-created skills land in
+    added to it (``akramcode skills install`` and agent-created skills land in
     ``skills/<category>/``) survive. The pre-write symlink guard and the copy loop both
     use this, so the guard covers exactly what the copy merges."""
     return src.is_dir() and (len(rel_parts) == 1 or _is_container(src, rel_parts))
@@ -566,12 +566,12 @@ def install_distribution(
     """Install a distribution from *source* into a new profile; returns the resolved plan.
     Use :func:`plan_install` first to preview + prompt."""
     from akramcode_cli.profiles import check_alias_collision, create_wrapper_script
-    with tempfile.TemporaryDirectory(prefix="hermes_dist_install_") as tmp:
+    with tempfile.TemporaryDirectory(prefix="akramcode_dist_install_") as tmp:
         plan = plan_install(source, Path(tmp), override_name=name)
         if plan.existing and not force:
             raise DistributionError(
                 f"Profile '{plan.manifest.name}' already exists at {plan.target_dir}. "
-                "Use `hermes profile update` to upgrade in place, or pass --force to overwrite."
+                "Use `akramcode profile update` to upgrade in place, or pass --force to overwrite."
             )
 
         # Fresh install (or --force): config.yaml comes from the distribution. Roots the
@@ -601,14 +601,14 @@ def update_distribution(profile_name: str, force_config: bool = False) -> Instal
     if existing_manifest is None:
         raise DistributionError(
             f"Profile '{canon}' is not a distribution (no {MANIFEST_FILENAME}). "
-            "Only profiles installed via `hermes profile install` can be updated."
+            "Only profiles installed via `akramcode profile install` can be updated."
         )
     if not existing_manifest.source:
         raise DistributionError(
             f"Profile '{canon}' has no recorded source.  Re-install with "
-            "`hermes profile install <source> --name {canon} --force`."
+            "`akramcode profile install <source> --name {canon} --force`."
         )
-    with tempfile.TemporaryDirectory(prefix="hermes_dist_update_") as tmp:
+    with tempfile.TemporaryDirectory(prefix="akramcode_dist_update_") as tmp:
         plan = plan_install(existing_manifest.source, Path(tmp), override_name=canon)
         plan.preserves_config = not force_config
         _copy_dist_payload(plan.staged_dir, plan.target_dir, plan.manifest, preserve_config=plan.preserves_config)

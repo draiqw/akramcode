@@ -164,7 +164,7 @@ def test_model_command_prompts_to_reuse_or_reauthenticate_codex_session(monkeypa
     monkeypatch.setattr("builtins.input", lambda prompt="": next(choices))
     monkeypatch.setattr(
         "akramcode_cli.auth.get_codex_auth_status",
-        lambda: {"logged_in": True, "source": "hermes-auth-store"},
+        lambda: {"logged_in": True, "source": "akramcode-auth-store"},
     )
     monkeypatch.setattr(
         "akramcode_cli.auth.resolve_codex_runtime_credentials",
@@ -195,9 +195,9 @@ def test_model_command_prompts_to_reuse_or_reauthenticate_codex_session(monkeypa
 
 
 def _make_cli(model="anthropic/claude-opus-4.6", **kwargs):
-    """Create a HermesCLI with minimal mocking."""
+    """Create a AkramCodeCLI with minimal mocking."""
     import cli as _cli_mod
-    from cli import HermesCLI
+    from cli import AkramCodeCLI
 
     _clean_config = {
         "model": {
@@ -209,13 +209,13 @@ def _make_cli(model="anthropic/claude-opus-4.6", **kwargs):
         "agent": {},
         "terminal": {"env_type": "local"},
     }
-    clean_env = {"LLM_MODEL": "", "HERMES_MAX_ITERATIONS": ""}
+    clean_env = {"LLM_MODEL": "", "AKRAMCODE_MAX_ITERATIONS": ""}
     with (
         patch("cli.get_tool_definitions", return_value=[]),
         patch.dict("os.environ", clean_env, clear=False),
         patch.dict(_cli_mod.__dict__, {"CLI_CONFIG": _clean_config}),
     ):
-        cli = HermesCLI(model=model, **kwargs)
+        cli = AkramCodeCLI(model=model, **kwargs)
     return cli
 
 
@@ -259,11 +259,11 @@ class TestNormalizeModelForProvider:
         # Don't pass model= so _model_is_default is True
         with (
             patch("cli.get_tool_definitions", return_value=[]),
-            patch.dict("os.environ", {"LLM_MODEL": "", "HERMES_MAX_ITERATIONS": ""}, clear=False),
+            patch.dict("os.environ", {"LLM_MODEL": "", "AKRAMCODE_MAX_ITERATIONS": ""}, clear=False),
             patch.dict(_cli_mod.__dict__, {"CLI_CONFIG": _clean_config}),
         ):
-            from cli import HermesCLI
-            cli = HermesCLI()
+            from cli import AkramCodeCLI
+            cli = AkramCodeCLI()
 
         assert cli._model_is_default is True
         with patch(
@@ -327,7 +327,7 @@ def test_catalog_requests_ask_as_the_newest_client(monkeypatch):
 
 
 def test_gateway_key_is_never_sent_to_the_direct_catalog(monkeypatch):
-    """A ``HERMES_CODEX_BASE_URL`` gateway's key is not a ChatGPT token; the picker must not
+    """A ``AKRAMCODE_CODEX_BASE_URL`` gateway's key is not a ChatGPT token; the picker must not
     send it to chatgpt.com (a service it does not belong to, #121486). Discovery declines
     and falls back to the offline sources instead of firing a doomed request."""
     import sys
@@ -345,7 +345,7 @@ def test_gateway_key_is_never_sent_to_the_direct_catalog(monkeypatch):
 
 
 def test_picker_catalog_honours_the_custom_codex_base(monkeypatch):
-    """With ``HERMES_CODEX_BASE_URL`` set, the picker's live discovery probes the gateway's
+    """With ``AKRAMCODE_CODEX_BASE_URL`` set, the picker's live discovery probes the gateway's
     own ``/models``, not the hard-coded chatgpt.com host (#121486)."""
     import sys
     from urllib.parse import urlparse
@@ -355,7 +355,7 @@ def test_picker_catalog_honours_the_custom_codex_base(monkeypatch):
     seen_urls = []
     get = _gated_codex_catalog(seen_urls)
     monkeypatch.setitem(sys.modules, "httpx", type("_FakeHttpx", (), {"get": staticmethod(get)}))
-    monkeypatch.setenv("HERMES_CODEX_BASE_URL", "https://codex-gw.example/backend-api/codex")
+    monkeypatch.setenv("AKRAMCODE_CODEX_BASE_URL", "https://codex-gw.example/backend-api/codex")
 
     assert "gpt-6-sol" in codex_models._fetch_models_from_api(access_token=_codex_jwt("acct"))
     assert seen_urls, "discovery must still run for a JWT credential"

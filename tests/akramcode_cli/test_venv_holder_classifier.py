@@ -3,7 +3,7 @@
 import pytest
 
 from akramcode_cli.update_cmd import (
-    _hermes_holder_subcommand,
+    _akramcode_holder_subcommand,
 )
 
 class TestHolderSubcommand:
@@ -27,16 +27,16 @@ class TestHolderSubcommand:
             # -c consumes ONE value token; later bare tokens are (harmless,
             # unhinted) subcommand candidates — pin that shape honestly
             (r"python -m akramcode_cli.main -c mysession serve", "serve"),
-            (r"C:\bin\hermes.exe dashboard", "dashboard"),
-            (r"/usr/local/bin/hermes serve", "serve"),
-            # no hermes entry at all
+            (r"C:\bin\akramcode.exe dashboard", "dashboard"),
+            (r"/usr/local/bin/akramcode serve", "serve"),
+            # no akramcode entry at all
             (r"python -c import time; time.sleep(3)", None),
             # entry but no subcommand
             (r"python -m akramcode_cli.main", None),
         ],
     )
     def test_parses_subcommand(self, cmdline, expected):
-        assert _hermes_holder_subcommand(cmdline) == expected
+        assert _akramcode_holder_subcommand(cmdline) == expected
 
     def test_shlex_joined_store_launcher_bootstrap_is_inventoried(self):
         """launchd ProgramArguments arrive ``shlex.join``ed (single-quoted source); the dashboard
@@ -46,5 +46,5 @@ class TestHolderSubcommand:
 
         from akramcode_cli._launchers import runtime_command
 
-        cmdline = shlex.join(runtime_command(Path("/opt/hermes-agent"), ["dashboard"], python="/opt/store/python"))
-        assert _hermes_holder_subcommand(cmdline) == "dashboard"
+        cmdline = shlex.join(runtime_command(Path("/opt/akramcode-agent"), ["dashboard"], python="/opt/store/python"))
+        assert _akramcode_holder_subcommand(cmdline) == "dashboard"

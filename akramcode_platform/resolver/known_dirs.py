@@ -1,6 +1,6 @@
 """Directories where tools install outside PATH, grouped by the ecosystem that owns them.
 
-Every table in Hermes lives here. A directory literal outside this module fails the ratchet in
+Every table in AkramCode lives here. A directory literal outside this module fails the ratchet in
 `tests/test_managed_runtime_resolution.py`. Each table is empty on an OS where the ecosystem
 does not install there, so callers compose tables without OS branches.
 """
@@ -29,8 +29,8 @@ def node_tool_dirs() -> tuple[str, ...]:
     return ("~/.npm-global/bin", "~/.bun/bin", "~/.volta/bin") if _POSIX else ("%APPDATA%/npm", "%USERPROFILE%/.bun/bin", "%LOCALAPPDATA%/Volta/bin")
 
 
-def hermes_vendored_dirs() -> tuple[str, ...]:
-    return ("~/.hermes/bin",) if _POSIX else ("%USERPROFILE%/.hermes/bin",)
+def akramcode_vendored_dirs() -> tuple[str, ...]:
+    return ("~/.akramcode/bin",) if _POSIX else ("%USERPROFILE%/.akramcode/bin",)
 
 
 def windows_user_program_dirs() -> tuple[str, ...]:

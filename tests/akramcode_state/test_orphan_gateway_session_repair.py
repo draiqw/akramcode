@@ -326,9 +326,9 @@ def test_donor_must_share_the_orphans_profile(tmp_path, monkeypatch):
     from a stale report. A legacy NULL-stamped row still reads as this store's own."""
     import akramcode_state
 
-    root = tmp_path / "hermes"
+    root = tmp_path / "akramcode"
     root.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(root))
     monkeypatch.setattr(akramcode_state, "DEFAULT_DB_PATH", akramcode_state._IMPORT_DEFAULT_DB_PATH)
     store = SessionDB(db_path=root / "state.db")  # owner: default
     try:

@@ -51,7 +51,7 @@ class CheckResult:
     latest: Optional[str] = None
     update_available: Optional[bool] = None   # None = unknown/uncheckable
     needs_fixing: Optional[str] = None        # mismatch reason when set
-    min_hermes: Optional[str] = None          # feed's version floor, if any
+    min_akramcode: Optional[str] = None          # feed's version floor, if any
     reason: str = ""
 
     def to_json(self) -> dict:
@@ -62,7 +62,7 @@ class CheckResult:
             "latest": self.latest,
             "update_available": self.update_available,
             "needs_fixing": self.needs_fixing,
-            "min_hermes": self.min_hermes,
+            "min_akramcode": self.min_akramcode,
             "reason": self.reason,
         }
 
@@ -99,7 +99,7 @@ def check_local_provenance(prov: Provenance) -> CheckResult:
         )
         return result
     if prov.klass is ProvenanceClass.SELF_CLONED:
-        result.reason = "self-cloned; run `hermes plugins adopt` first"
+        result.reason = "self-cloned; run `akramcode plugins adopt` first"
         return result
 
     row = prov.row or {}
@@ -117,13 +117,13 @@ def check_local_provenance(prov: Provenance) -> CheckResult:
         # threat class as a swap; never adopt silently
         result.needs_fixing = (
             f"manifest declares update_url {claimed!r} but no url was saved "
-            "at install; run `hermes plugins trust-update-url` after review"
+            "at install; run `akramcode plugins trust-update-url` after review"
         )
         return result
     if saved is not None and claimed != saved:
         result.needs_fixing = (
             f"update_url mismatch: saved {saved!r}, manifest declares "
-            f"{claimed!r}; run `hermes plugins trust-update-url` after review"
+            f"{claimed!r}; run `akramcode plugins trust-update-url` after review"
         )
         return result
 
@@ -178,7 +178,7 @@ def check_provenanced(
             result.reason = f"feed unparseable: {exc}"
             return result
         result.latest = feed.get("version")
-        result.min_hermes = feed.get("min_hermes")
+        result.min_akramcode = feed.get("min_akramcode")
         # Like-for-like identity only (audit C17): a feed that ships a full
         # git SHA compares SHA vs recorded revision; otherwise the feed's
         # semantic version compares against the installed manifest's
@@ -236,7 +236,7 @@ def check_provenanced(
 
 def parse_feed_yml(text: str) -> dict:
     """The electron-updater-derived feed shape: version, released,
-    min_hermes, artifacts{git,bundle,bundle_sha256}, notes_url."""
+    min_akramcode, artifacts{git,bundle,bundle_sha256}, notes_url."""
     import akram_core.akramcode_yaml as yaml
 
     try:
@@ -249,7 +249,7 @@ def parse_feed_yml(text: str) -> dict:
     if not isinstance(version, str) or not version.strip():
         raise ValueError("feed missing 'version'")
     out: dict[str, Any] = {"version": version.strip()}
-    for key in ("min_hermes", "notes_url"):
+    for key in ("min_akramcode", "notes_url"):
         value = data.get(key)
         if isinstance(value, str) and value.strip():
             out[key] = value.strip()
@@ -286,7 +286,7 @@ def check_pip_plugins(
     recorded, nothing to drift."""
     if entry_points is None:
         entry_points = list(
-            importlib.metadata.entry_points().select(group="hermes_agent.plugins")
+            importlib.metadata.entry_points().select(group="akramcode_agent.plugins")
         )
     results: list[CheckResult] = []
     for ep in entry_points:
@@ -362,7 +362,7 @@ def https_update_url(url: object) -> str:
 def default_fetch(url: str) -> str:
     """The real feed fetcher: url -> text (raises on failure).
 
-    ONE implementation shared by the manual ``hermes plugins
+    ONE implementation shared by the manual ``akramcode plugins
     check-updates`` and the cadence tick — callers never re-derive it.
     """
     import urllib.request

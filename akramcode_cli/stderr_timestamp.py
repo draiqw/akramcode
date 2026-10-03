@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import BinaryIO, Sequence, TextIO
 
 EXTERNAL_SUPERVISOR_FLAG = "--external-supervisor"
-_LAUNCHD_LABEL_ENV = "HERMES_LAUNCHD_LABEL"
+_LAUNCHD_LABEL_ENV = "AKRAMCODE_LAUNCHD_LABEL"
 # gateway.restart.GATEWAY_FATAL_CONFIG_EXIT_CODE. This wrapper is a launcher boot
 # file: it runs from a source slice and stays stdlib-only.
 _GATEWAY_FATAL_CONFIG_EXIT_CODE = 78
@@ -27,7 +27,7 @@ _STDOUT_DRAIN_TIMEOUT_S = 5.0
 
 
 def timestamp() -> str:
-    """Local time in logging.Formatter's default ``%(asctime)s`` shape, which ``hermes logs --since`` parses."""
+    """Local time in logging.Formatter's default ``%(asctime)s`` shape, which ``akramcode logs --since`` parses."""
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S,%f")[:23]
 
 
@@ -56,7 +56,7 @@ def _copy_stderr_with_timestamps(stderr: BinaryIO, log_path: Path) -> None:
 
 def _copy_stdout_with_timestamps(stdout: BinaryIO) -> None:
     # fd 1 is the caller's target (launchd appends it to gateway.log, the logging handler's
-    # file), so lines keep their destination and gain the stamp `hermes logs --since` needs.
+    # file), so lines keep their destination and gain the stamp `akramcode logs --since` needs.
     with open(1, "w", encoding="utf-8", buffering=1, closefd=False) as out:
         for raw_line in iter(stdout.readline, b""):
             _write_timestamped_line(out, raw_line.decode("utf-8", errors="replace"))
@@ -71,7 +71,7 @@ def _install_signal_forwarders(proc: subprocess.Popen[bytes]) -> dict[int, objec
 
     previous: dict[int, object] = {}
     # SIGUSR1 is the gateway's drain-aware restart request. launchd owns THIS wrapper's PID,
-    # so `hermes update` signals us, not the gateway; an unforwarded SIGUSR1 kills the wrapper
+    # so `akramcode update` signals us, not the gateway; an unforwarded SIGUSR1 kills the wrapper
     # (Python's default action), launchd tears the group down with SIGTERM and applies its
     # ~60 s crash back-off per sibling profile (#101426). SIGUSR2 is the gateway's
     # faulthandler stack-dump request (gateway/run_startup.py); unforwarded it terminates
@@ -93,10 +93,10 @@ def _install_signal_forwarders(proc: subprocess.Popen[bytes]) -> dict[int, objec
     return previous
 
 
-def _is_hermes_gateway_run_argv(command: Sequence[str]) -> bool:
-    """True for Hermes ``gateway run`` argv this wrapper is allowed to upgrade.
+def _is_akramcode_gateway_run_argv(command: Sequence[str]) -> bool:
+    """True for AkramCode ``gateway run`` argv this wrapper is allowed to upgrade.
 
-    The wrapper is generic. Only historical/current Hermes gateway shapes get ``--external-
+    The wrapper is generic. Only historical/current AkramCode gateway shapes get ``--external-
     supervisor``; an arbitrary launchd child must not be marked as gateway-supervised (#87005).
     """
     try:
@@ -113,13 +113,13 @@ def _child_launchd_label_env(environ: Mapping[str, str] | None = None) -> dict[s
     interactive shell has none, the grandchild sees ``XPC_SERVICE_NAME=0``). Re-exporting the
     label lets the gateway resolve its job without it (the stop-drain cap reading the live
     ``ExitTimeOut``, the exit-75 restart route, the control-socket supervisor declaration — all
-    via ``gateway.restart.launchd_job_label``). Only ``ai.hermes.*`` labels are exported;
+    via ``gateway.restart.launchd_job_label``). Only ``ai.akramcode.*`` labels are exported;
     app-coalition labels are meaningless as a job identity.
     """
     env = os.environ if environ is None else environ
     for variable in ("XPC_SERVICE_NAME", _LAUNCHD_LABEL_ENV):
         label = str(env.get(variable, "") or "").strip()
-        if label.startswith("ai.hermes"):
+        if label.startswith("ai.akramcode"):
             return {_LAUNCHD_LABEL_ENV: label}
     return {}
 
@@ -129,13 +129,13 @@ def _prepare_child_command(command: Sequence[str], environ: Mapping[str, str] | 
 
     launchd stamps ``XPC_SERVICE_NAME=<job label>`` only on this wrapper (its direct child; an
     interactive shell has none, the grandchild sees ``XPC_SERVICE_NAME=0``). Newly generated
-    plists put ``--external-supervisor`` on the inner ``gateway run`` so ``hermes update`` can see
+    plists put ``--external-supervisor`` on the inner ``gateway run`` so ``akramcode update`` can see
     the flag on the live process argv.
     """
     argv = [str(part) for part in command]
     env = os.environ if environ is None else environ
     xpc_service = str(env.get("XPC_SERVICE_NAME", "")).strip()
-    if EXTERNAL_SUPERVISOR_FLAG not in argv and xpc_service and xpc_service != "0" and _is_hermes_gateway_run_argv(argv):
+    if EXTERNAL_SUPERVISOR_FLAG not in argv and xpc_service and xpc_service != "0" and _is_akramcode_gateway_run_argv(argv):
         argv.append(EXTERNAL_SUPERVISOR_FLAG)
     return argv
 
@@ -149,7 +149,7 @@ def _child_returncode_for_supervisor(command: Sequence[str], returncode: int) ->
     """
     if returncode < 0:
         return 128 + abs(returncode)
-    if returncode == _GATEWAY_FATAL_CONFIG_EXIT_CODE and _is_hermes_gateway_run_argv(command):
+    if returncode == _GATEWAY_FATAL_CONFIG_EXIT_CODE and _is_akramcode_gateway_run_argv(command):
         return 0
     return returncode
 

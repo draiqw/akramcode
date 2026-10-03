@@ -9,7 +9,7 @@ The fix is two-sided:
 
 * ``akramcode_state.guard._register_test_instance`` adds every successfully
   constructed SessionDB to a WeakSet registry when the
-  ``HERMES_TEST_ISOLATION`` marker is set (test-isolation runs only).
+  ``AKRAMCODE_TEST_ISOLATION`` marker is set (test-isolation runs only).
 * the autouse ``_close_leaked_session_dbs`` fixture in ``tests/conftest.py``
   closes everything in the registry at each test's teardown.
 

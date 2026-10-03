@@ -1,8 +1,8 @@
 """Migration 44→45: saved ``platform_toolsets`` lists gain the ``connections`` toolset.
 
-``hermes tools`` persists an explicit per-platform toolset list, and absence from
+``akramcode tools`` persists an explicit per-platform toolset list, and absence from
 that list reads as "unchecked" — so a toolset that ships after the list was saved
-stays off for picker users while composite (``[hermes-cli]``) users inherit it.
+stays off for picker users while composite (``[akramcode-cli]``) users inherit it.
 The 44→45 step turns ``connections`` on for stale lists, preserves an explicit
 decline, and leaves composites/empty lists alone.
 """
@@ -11,7 +11,7 @@ import os
 from unittest.mock import patch
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 
 class TestConnectionsToolsetMigration:
@@ -22,7 +22,7 @@ class TestConnectionsToolsetMigration:
         from akramcode_cli.config_migrations import run_migrations
 
         results = {"env_added": [], "config_added": [], "warnings": []}
-        with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}):
+        with patch.dict(os.environ, {"AKRAMCODE_HOME": str(tmp_path)}):
             run_migrations(current_ver, results, quiet=True)
         return results
 
@@ -72,7 +72,7 @@ class TestConnectionsToolsetMigration:
                 id="declined",
             ),
             pytest.param(  # (b) composite list already inherits every core tool
-                {"cli": ["hermes-cli"]},
+                {"cli": ["akramcode-cli"]},
                 {},
                 id="composite",
             ),
@@ -103,7 +103,7 @@ class TestConnectionsToolsetMigration:
 
     @pytest.mark.parametrize("disabled", [["browser", "connections", "web"], '["connections"]'], ids=["list", "json-string"])
     def test_global_disable_is_not_overridden_or_claimed(self, tmp_path, disabled):
-        """Blank Slate and `hermes tools --disable` write agent.disabled_toolsets, which the resolver
+        """Blank Slate and `akramcode tools --disable` write agent.disabled_toolsets, which the resolver
         subtracts last; appending to the platform list would print an enable that never takes effect."""
         platform_toolsets = {"cli": ["file", "skills", "terminal", "vision"]}
         self._write_config(
@@ -152,7 +152,7 @@ class TestConnectionsToolsetMigration:
             tmp_path,
             {"_config_version": 42, "platform_toolsets": {"cli": ["file", "terminal"]}},
         )
-        with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}):
+        with patch.dict(os.environ, {"AKRAMCODE_HOME": str(tmp_path)}):
             migrate_config(interactive=False, quiet=True)
         raw = self._read_config(tmp_path)
 

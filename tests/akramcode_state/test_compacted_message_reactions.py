@@ -9,7 +9,7 @@ from akramcode_state import SessionDB
 def test_compacted_reactions_are_delivered_once_without_reviving_rewound_rows(
     tmp_path, monkeypatch, react_before_compaction,
 ):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     db_path = tmp_path / "state.db"
     db = SessionDB(db_path=db_path)
     try:

@@ -263,7 +263,7 @@ class _ShallowLock:
         except OSError as exc:
             raise RuntimeError(f"cannot create shallow lock: {exc}") from exc
         try:
-            os.write(fd, b"hermes shallow maintenance\n")
+            os.write(fd, b"akramcode shallow maintenance\n")
         finally:
             os.close(fd)
         return self
@@ -334,7 +334,7 @@ def repair_broken_shallow_boundaries(repo_root: Path) -> int:
             if not repaired:
                 return 0
             _write_shallow(shallow_path, "\n".join(sorted(existing | repaired)) + "\n",
-                           suffix=".hermes-repair")
+                           suffix=".akramcode-repair")
             # Self-check under the same lock hold (rev-list never takes
             # shallow.lock): the rollback cannot be defeated by lock contention.
             if not _git_stdout_lines(repo_root, ["rev-list", "--count", "--all", "--reflog"]):
@@ -354,7 +354,7 @@ def prune_stale_shallow_grafts(repo_root: Path) -> int:
     Every ``git fetch --depth 1`` appends the fetched tip to ``.git/shallow`` as a new
     graft and never removes the previous one, so a long-lived shallow installer checkout
     accumulates one graft per update check (57 observed in the wild). The stale grafts
-    break ``merge-base`` and push ``hermes update`` into the orphan-divergence reset path
+    break ``merge-base`` and push ``akramcode update`` into the orphan-divergence reset path
     on every run. Keep only the boundaries that still protect referenced tips (HEAD,
     FETCH_HEAD, and every ref tip): the dropped commits are already unreachable and their
     objects are left for ``git gc``. Fetch reflogs naming a dropped graft are expired
@@ -397,7 +397,7 @@ def prune_stale_shallow_grafts(repo_root: Path) -> int:
                         cwd=str(repo_root), capture_output=True, timeout=10,
                         creationflags=windows_hide_flags(),
                     )
-            _write_shallow(shallow_path, "\n".join(sorted(keep)) + "\n", suffix=".hermes-prune")
+            _write_shallow(shallow_path, "\n".join(sorted(keep)) + "\n", suffix=".akramcode-prune")
             # Fail-safe: if any reachable walk now crosses a boundary we wrongly
             # removed, put the grafts back — a growing file beats a broken repo.
             # Runs under the same lock hold (rev-list never takes shallow.lock) so

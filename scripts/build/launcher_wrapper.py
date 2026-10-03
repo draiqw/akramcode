@@ -1,7 +1,7 @@
 """Bundled-payload CLI entry wrapper — the distlib launcher's zip overlay.
 
 scripts/build/launchers.py reads this file, substitutes the four
-HERMES_* placeholders (see the constants below), and hands the result to
+AKRAMCODE_* placeholders (see the constants below), and hands the result to
 a distlib ScriptMaker as
 the script text. On win32 the minted artifact is a real PE: the distlib
 launcher stub + a shebang whose interpreter is the ``<launcher_dir>``
@@ -25,7 +25,7 @@ The wrapper replaces everything the old rust shim + its sidecar did
   * drop inherited PYTHONPATH / PYTHONHOME so foreign installs can never
     shadow the bundle,
   * default sys.pycache_prefix to the user-level cache (%LOCALAPPDATA%
-    \\hermes\\pycache on win32, ~/.cache/hermes-pycache elsewhere) when the
+    \\akramcode\\pycache on win32, ~/.cache/akramcode-pycache elsewhere) when the
     user has not set one — the sealed payload must never see __pycache__
     writes (signature-breaking on mac, read-only mount on AppImage/MSIX).
 
@@ -38,10 +38,10 @@ import os
 import site
 import sys
 
-HERMES_ENTRY_MODULE = "__HERMES_ENTRY_MODULE__"
-HERMES_ENTRY_FUNC = "__HERMES_ENTRY_FUNC__"
-HERMES_REPO_REL = "__HERMES_REPO_REL__"
-HERMES_SITE_REL = "__HERMES_SITE_REL__"
+AKRAMCODE_ENTRY_MODULE = "__AKRAMCODE_ENTRY_MODULE__"
+AKRAMCODE_ENTRY_FUNC = "__AKRAMCODE_ENTRY_FUNC__"
+AKRAMCODE_REPO_REL = "__AKRAMCODE_REPO_REL__"
+AKRAMCODE_SITE_REL = "__AKRAMCODE_SITE_REL__"
 
 
 def _join_rel(here, rel):
@@ -59,7 +59,7 @@ def launcher_dir(argv0):
 def payload_sys_paths(here):
     """Import roots for the sealed payload: repo first (wins), then the
     venv's dependency tree — mirroring the old shim's PYTHONPATH order."""
-    return [_join_rel(here, HERMES_REPO_REL), _join_rel(here, HERMES_SITE_REL)]
+    return [_join_rel(here, AKRAMCODE_REPO_REL), _join_rel(here, AKRAMCODE_SITE_REL)]
 
 
 def default_pycache_dir(environ):
@@ -69,9 +69,9 @@ def default_pycache_dir(environ):
     PYTHONPYCACHEPREFIX."""
     if sys.platform == "win32":
         base = environ.get("LOCALAPPDATA")
-        return os.path.join(base, "hermes", "pycache") if base else None
+        return os.path.join(base, "akramcode", "pycache") if base else None
     base = environ.get("HOME")
-    return os.path.join(base, ".cache", "hermes-pycache") if base else None
+    return os.path.join(base, ".cache", "akramcode-pycache") if base else None
 
 
 def configure(here, environ=None):
@@ -105,7 +105,7 @@ def configure(here, environ=None):
         # baked bytecode and re-pay the cold-compile stall this marker exists
         # to remove. Without the marker (old payloads), the user-level
         # redirect below keeps bytecode writes out of the sealed tree.
-        if not os.path.exists(os.path.join(os.path.dirname(repo_entry), ".hermes-baked-pycache")):
+        if not os.path.exists(os.path.join(os.path.dirname(repo_entry), ".akramcode-baked-pycache")):
             default = default_pycache_dir(environ)
             if default:
                 environ["PYTHONPYCACHEPREFIX"] = default
@@ -121,8 +121,8 @@ def main(argv=None):
     here = launcher_dir(argv[0] if argv else sys.argv[0])
     configure(here)
     importlib.import_module("akram_core.akramcode_bootstrap")
-    module = importlib.import_module(HERMES_ENTRY_MODULE)
-    target = getattr(module, HERMES_ENTRY_FUNC)
+    module = importlib.import_module(AKRAMCODE_ENTRY_MODULE)
+    target = getattr(module, AKRAMCODE_ENTRY_FUNC)
     # main() reads sys.argv; hand it the real argv (argv[0] stays the
     # launcher path, exactly like a console-script entry point).
     return target()

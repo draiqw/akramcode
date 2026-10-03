@@ -1,4 +1,4 @@
-"""`hermes checkpoints clear-legacy` exit code must reflect whether the archives are gone.
+"""`akramcode checkpoints clear-legacy` exit code must reflect whether the archives are gone.
 
 `clear_legacy()` counts failed deletions as ``errors`` and the CLI turns a non-zero count into
 exit 2 plus a "Could not delete" line, so a run that left every archive on disk is no longer

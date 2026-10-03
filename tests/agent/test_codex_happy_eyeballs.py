@@ -4,7 +4,7 @@ import socket
 import httpcore
 import pytest
 
-import akram_core.hermes_bootstrap
+import akram_core.akramcode_bootstrap
 from agent import process_bootstrap
 
 
@@ -109,7 +109,7 @@ def test_connection_staggers_past_blackholed_ipv6(monkeypatch):
             pass
 
     monkeypatch.setattr(
-        akram_core.hermes_bootstrap.socket,
+        akram_core.akramcode_bootstrap.socket,
         "getaddrinfo",
         lambda *_args, **_kwargs: [
             (
@@ -128,22 +128,22 @@ def test_connection_staggers_past_blackholed_ipv6(monkeypatch):
             ),
         ],
     )
-    monkeypatch.setattr(akram_core.hermes_bootstrap.socket, "socket", FakeSocket)
+    monkeypatch.setattr(akram_core.akramcode_bootstrap.socket, "socket", FakeSocket)
     monkeypatch.setattr(
-        akram_core.hermes_bootstrap.selectors, "DefaultSelector", FakeSelector
+        akram_core.akramcode_bootstrap.selectors, "DefaultSelector", FakeSelector
     )
     monkeypatch.setattr(
-        akram_core.hermes_bootstrap.time, "monotonic", lambda: clock[0]
+        akram_core.akramcode_bootstrap.time, "monotonic", lambda: clock[0]
     )
 
-    winner = akram_core.hermes_bootstrap._happy_eyeballs_create_connection(
+    winner = akram_core.akramcode_bootstrap._happy_eyeballs_create_connection(
         ("chatgpt.com", 443),
         timeout=10.0,
     )
 
     assert winner.family == socket.AF_INET
     assert winner.timeout == 10.0
-    assert clock[0] == akram_core.hermes_bootstrap._HAPPY_EYEBALLS_DELAY_SECONDS
+    assert clock[0] == akram_core.akramcode_bootstrap._HAPPY_EYEBALLS_DELAY_SECONDS
     assert sockets[0].closed is True
     assert sockets[1].closed is False
 

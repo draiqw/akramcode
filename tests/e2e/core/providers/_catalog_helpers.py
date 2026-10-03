@@ -28,7 +28,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from tests.e2e.core._pending_fixes import known_failure
 from tests.e2e.core._pm_dependencies import select_test_dependencies
@@ -172,7 +172,7 @@ def discover_catalog() -> list[Row]:
     if _CATALOG is None:
         with tempfile.TemporaryDirectory(prefix="catalog-discover-") as d:
             env = {k: v for k, v in os.environ.items() if k in _PASSTHROUGH}
-            env.update(HOME=d, HERMES_HOME=str(Path(d) / ".hermes"), PYTHONPATH=str(REPO_ROOT))
+            env.update(HOME=d, AKRAMCODE_HOME=str(Path(d) / ".akramcode"), PYTHONPATH=str(REPO_ROOT))
             proc = subprocess.run([sys.executable, "-c", _DISCOVER], env=env, capture_output=True,
                                   text=True, timeout=120, cwd=str(REPO_ROOT))
         line = next((ln for ln in proc.stdout.splitlines() if ln.startswith("CATALOG=")), None)
@@ -195,10 +195,10 @@ def hermetic_env(home: Path, extra: dict[str, str]) -> dict[str, str]:
     env = {k: v for k, v in os.environ.items()
            if (k in _PASSTHROUGH or k.startswith("LC_")) and not k.endswith(_SECRET_SUFFIXES)}
     env.update({
-        "HOME": str(home), "HERMES_HOME": str(home / ".hermes"), "PYTHONPATH": str(REPO_ROOT),
+        "HOME": str(home), "AKRAMCODE_HOME": str(home / ".akramcode"), "PYTHONPATH": str(REPO_ROOT),
         "PYTHONUNBUFFERED": "1", "NO_COLOR": "1", "TERM": "dumb",
         # The child's HOME is tmp_path; this is the state-db guard's documented child escape hatch.
-        "HERMES_STATE_DB_GUARD_BYPASS": "1",
+        "AKRAMCODE_STATE_DB_GUARD_BYPASS": "1",
     })
     env.update(extra)
     return env
@@ -206,18 +206,18 @@ def hermetic_env(home: Path, extra: dict[str, str]) -> dict[str, str]:
 
 def write_home(root: Path, model: dict[str, Any], extra_cfg: dict[str, Any] | None = None) -> Path:
     home = root / "home"
-    (home / ".hermes").mkdir(parents=True, exist_ok=True)
+    (home / ".akramcode").mkdir(parents=True, exist_ok=True)
     cfg = {"model": {"default": "catalog-model-a", "context_length": 128000, **model},
            # auto_recovery_cycles: 0 — the documented post-exhaustion ladder (15/30/60/60/60 s) would
            # otherwise park a transport-failed turn for minutes; one bounded attempt is the contract here.
            "agent": {"api_max_retries": 1, "auto_recovery_cycles": 0}, "updates": {"check": False},
            **(extra_cfg or {})}
-    (home / ".hermes" / "config.yaml").write_text(yaml.safe_dump(cfg, sort_keys=False), encoding="utf-8")
-    select_test_dependencies(home / ".hermes", REPO_ROOT)
+    (home / ".akramcode" / "config.yaml").write_text(yaml.safe_dump(cfg, sort_keys=False), encoding="utf-8")
+    select_test_dependencies(home / ".akramcode", REPO_ROOT)
     return home
 
 
-def run_hermes(home: Path, cwd: Path, env_extra: dict[str, str], *args: str,
+def run_akramcode(home: Path, cwd: Path, env_extra: dict[str, str], *args: str,
                timeout: float = TURN_TIMEOUT) -> subprocess.CompletedProcess:
     """Run the real CLI; a child that outlives ``timeout`` is killed (rc -9, reason in stderr)."""
     with tempfile.TemporaryFile("w+", encoding="utf-8") as out, tempfile.TemporaryFile("w+", encoding="utf-8") as err:
@@ -236,7 +236,7 @@ def run_hermes(home: Path, cwd: Path, env_extra: dict[str, str], *args: str,
 
 
 def session_usage(home: Path) -> dict[str, Any] | None:
-    db = home / ".hermes" / "state.db"
+    db = home / ".akramcode" / "state.db"
     if not db.exists():
         return None
     con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
@@ -290,7 +290,7 @@ def drive_turn(row: Row, root: Path, catalog: list[Row]) -> TurnResult:
     started = time.monotonic()
     with CatalogFake(tool_args={"path": str(project / "canary.txt")}, final_text=FINAL, routes=row.routes()) as fake:
         home = write_home(root, {"provider": row.name, "base_url": fake.origin + row.base_path})
-        proc = run_hermes(home, project, {**keys, **fake.proxy_env()}, "-z", "Read canary.txt and report.")
+        proc = run_akramcode(home, project, {**keys, **fake.proxy_env()}, "-z", "Read canary.txt and report.")
         requests = list(fake.requests)
         egress = fake.egress_hosts()
     return TurnResult(row=row, rc=proc.returncode, stdout=proc.stdout, stderr=proc.stderr, requests=requests,

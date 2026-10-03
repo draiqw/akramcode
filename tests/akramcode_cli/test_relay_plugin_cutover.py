@@ -1,4 +1,4 @@
-"""Regression tests for migration from the removed Hermes Relay plugin."""
+"""Regression tests for migration from the removed AkramCode Relay plugin."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import os
 from unittest.mock import patch
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from akramcode_cli.config import migrate_config
 from akramcode_cli.doctor_config import collect_relay_plugin_cutover_findings
@@ -32,7 +32,7 @@ def test_v38_migration_removes_only_legacy_relay_plugin_keys(tmp_path):
         encoding="utf-8",
     )
 
-    with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}):
+    with patch.dict(os.environ, {"AKRAMCODE_HOME": str(tmp_path)}):
         results = migrate_config(interactive=False, quiet=True)
 
     raw = yaml.safe_load(config_path.read_text(encoding="utf-8"))
@@ -67,18 +67,18 @@ def test_doctor_reports_legacy_exporter_env_without_new_config(monkeypatch):
         collect_relay_plugin_cutover_findings(
             {},
             {
-                "HERMES_NEMO_RELAY_ATIF_ENABLED": "true",
-                "HERMES_NEMO_RELAY_ATIF_EXPORT_TIMEOUT_S": "30",
+                "AKRAMCODE_NEMO_RELAY_ATIF_ENABLED": "true",
+                "AKRAMCODE_NEMO_RELAY_ATIF_EXPORT_TIMEOUT_S": "30",
             },
         )
     )
 
-    assert "now ignored" in findings["HERMES_NEMO_RELAY_ATIF_ENABLED"]
-    assert RELAY_PLUGINS_CONFIG_ENV in findings["HERMES_NEMO_RELAY_ATIF_ENABLED"]
-    assert "now ignored" in findings["HERMES_NEMO_RELAY_ATIF_EXPORT_TIMEOUT_S"]
+    assert "now ignored" in findings["AKRAMCODE_NEMO_RELAY_ATIF_ENABLED"]
+    assert RELAY_PLUGINS_CONFIG_ENV in findings["AKRAMCODE_NEMO_RELAY_ATIF_ENABLED"]
+    assert "now ignored" in findings["AKRAMCODE_NEMO_RELAY_ATIF_EXPORT_TIMEOUT_S"]
     assert (
         RELAY_PLUGINS_CONFIG_ENV
-        in findings["HERMES_NEMO_RELAY_ATIF_EXPORT_TIMEOUT_S"]
+        in findings["AKRAMCODE_NEMO_RELAY_ATIF_EXPORT_TIMEOUT_S"]
     )
 
 
@@ -129,7 +129,7 @@ def test_doctor_does_not_warn_for_legacy_env_after_new_config_is_selected(
         {},
         {
             RELAY_PLUGINS_CONFIG_ENV: "/tmp/plugins.toml",
-            "HERMES_NEMO_RELAY_ATIF_ENABLED": "true",
+            "AKRAMCODE_NEMO_RELAY_ATIF_ENABLED": "true",
         },
     )
 

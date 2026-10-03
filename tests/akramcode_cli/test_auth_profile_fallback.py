@@ -1,6 +1,6 @@
 """Tests for cross-profile auth fallback.
 
-When ``HERMES_HOME`` points to a named profile, ``read_credential_pool()``
+When ``AKRAMCODE_HOME`` points to a named profile, ``read_credential_pool()``
 and ``get_provider_auth_state()`` fall back to the global-root
 ``auth.json`` per-provider when the profile has no entries for that
 provider.  Writes still target the profile only.
@@ -30,21 +30,21 @@ def _make_auth_store(pool: dict | None = None, providers: dict | None = None) ->
 
 @pytest.fixture()
 def profile_env(tmp_path, monkeypatch):
-    """Set up a global root + an active profile under Path.home()/.hermes/profiles/coder.
+    """Set up a global root + an active profile under Path.home()/.akramcode/profiles/coder.
 
     * Path.home() -> tmp_path
-    * Global root -> tmp_path/.hermes            (has its own auth.json fixture)
-    * Profile     -> tmp_path/.hermes/profiles/coder   (active, HERMES_HOME points here)
+    * Global root -> tmp_path/.akramcode            (has its own auth.json fixture)
+    * Profile     -> tmp_path/.akramcode/profiles/coder   (active, AKRAMCODE_HOME points here)
 
     This mirrors the real "named profile mounted under the default root"
     layout that profile users actually have on disk.
     """
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    global_root = tmp_path / ".hermes"
+    global_root = tmp_path / ".akramcode"
     global_root.mkdir()
     profile_dir = global_root / "profiles" / "coder"
     profile_dir.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(profile_dir))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(profile_dir))
     return {"global": global_root, "profile": profile_dir}
 
 
@@ -143,7 +143,7 @@ def test_provider_auth_state_returns_none_when_neither_has_it(profile_env):
 # ``resolve_nous_access_token``) call ``_load_provider_state`` directly with
 # a profile-loaded auth store rather than going through
 # ``get_provider_auth_state``. Without the fallback wired into
-# ``_load_provider_state`` itself, those helpers raise ``"Hermes is not
+# ``_load_provider_state`` itself, those helpers raise ``"AkramCode is not
 # logged into Nous Portal"`` even though the user has a valid global Nous
 # login. These tests pin the per-provider shadowing into the helper.
 # ---------------------------------------------------------------------------
@@ -298,7 +298,7 @@ def test_write_credential_pool_targets_profile_not_global(profile_env):
 def test_auth_lock_reentrancy_is_scoped_after_profile_context_switch(profile_env):
     """Changing profile context cannot inherit another store's lock depth."""
     import akramcode_cli.auth as auth
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from akramcode_constants import reset_akramcode_home_override, set_akramcode_home_override
 
     profile_b = profile_env["global"] / "profiles" / "reviewer"
     profile_b.mkdir(parents=True)
@@ -308,7 +308,7 @@ def test_auth_lock_reentrancy_is_scoped_after_profile_context_switch(profile_env
         holder_a = auth._auth_lock_holder_for(profile_env["profile"] / "auth.json")
         assert getattr(holder_a, "depth", 0) == 1
 
-        token = set_hermes_home_override(profile_b)
+        token = set_akramcode_home_override(profile_b)
         try:
             holder_b = auth._auth_lock_holder_for(profile_b / "auth.json")
             assert holder_b is not holder_a
@@ -319,7 +319,7 @@ def test_auth_lock_reentrancy_is_scoped_after_profile_context_switch(profile_env
                 assert profile_b_lock.exists()
                 assert getattr(holder_b, "depth", 0) == 1
         finally:
-            reset_hermes_home_override(token)
+            reset_akramcode_home_override(token)
 
     assert getattr(holder_a, "depth", 0) == 0
 
@@ -331,14 +331,14 @@ def test_auth_lock_reentrancy_is_scoped_after_profile_context_switch(profile_env
 
 @pytest.fixture()
 def classic_env(tmp_path, monkeypatch):
-    """Classic single-root layout (HERMES_HOME != ~/.hermes, no profiles)."""
+    """Classic single-root layout (AKRAMCODE_HOME != ~/.akramcode, no profiles)."""
     fake_home = tmp_path / "home"
     fake_home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: fake_home)
-    hermes_home = tmp_path / "classic"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    return hermes_home
+    akramcode_home = tmp_path / "classic"
+    akramcode_home.mkdir()
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
+    return akramcode_home
 
 
 def _pool_entry(**overrides) -> dict:

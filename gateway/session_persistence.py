@@ -25,9 +25,9 @@ _DB_UNPINNED = object()
 # Self-documenting sentinel written first into sessions.json; "_" keys are skipped on load.
 _SESSIONS_JSON_README = (
     "LEGACY MIRROR of the gateway routing index (the primary copy lives in the gateway_routing "
-    "table in ~/.hermes/state.db). Maps messaging session keys (agent:main:<platform>:...) to "
+    "table in ~/.akramcode/state.db). Maps messaging session keys (agent:main:<platform>:...) to "
     "active session IDs. This is NOT the session list. ALL sessions (CLI, TUI, and gateway) live "
-    "in ~/.hermes/state.db and are shown by `hermes sessions list` and `/sessions`. Disable this "
+    "in ~/.akramcode/state.db and are shown by `akramcode sessions list` and `/sessions`. Disable this "
     "file with `gateway.write_sessions_json: false` in config.yaml."
 )
 
@@ -42,7 +42,7 @@ class SessionPersistenceMixin:
 
     def _open_session_db_for_active_scope(self, db_path: Optional[Path] = None):
         """SessionDB for the active profile scope. ``db_path`` pins the store; otherwise
-        ``_default_db_path()`` follows the context-local HERMES_HOME (resolved per call so
+        ``_default_db_path()`` follows the context-local AKRAMCODE_HOME (resolved per call so
         multiplexed profiles reach their own store). Handles are cached per path; failed opens enter
         a bounded backoff during which callers keep using the JSONL fallback.
 
@@ -115,7 +115,7 @@ class SessionPersistenceMixin:
         return None if not profile or profile == "default" else profile
 
     def _profile_home_for_key(self, session_key: Optional[str]) -> Optional[Path]:
-        """HERMES_HOME of the profile owning *session_key*, or None (no named owner or
+        """AKRAMCODE_HOME of the profile owning *session_key*, or None (no named owner or
         unresolvable)."""
         profile = self._named_profile_for_key(session_key)
         if profile is None:
@@ -139,7 +139,7 @@ class SessionPersistenceMixin:
 
     def _db_for_key(self, session_key: Optional[str]):
         """The SessionDB holding *session_key*'s rows, whatever scope is active (the owning profile
-        is encoded in the key). ``_db`` follows the ambient HERMES_HOME that only the inbound message
+        is encoded in the key). ``_db`` follows the ambient AKRAMCODE_HOME that only the inbound message
         path installs; unscoped background work (expiry watcher) would otherwise write profile rows
         into the ROOT store until the stale-route self-heal drops a live conversation.
 

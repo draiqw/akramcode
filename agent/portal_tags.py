@@ -1,8 +1,8 @@
 """Centralized Nous Portal request tags.
 
-Every Hermes request to the Nous Portal (main loop, auxiliary client, fallback
+Every AkramCode request to the Nous Portal (main loop, auxiliary client, fallback
 paths) must carry the same product-attribution tags, sent in OpenAI-compatible
-``extra_body['tags']``: ``["product=hermes-agent", "client=hermes-client-v<base_version>"]``.
+``extra_body['tags']``: ``["product=akramcode-agent", "client=akramcode-client-v<base_version>"]``.
 The value comes from the canonical runtime identity's base version so build
 provenance never leaks into this compatibility tag.
 """
@@ -26,7 +26,7 @@ _conversation_id: ContextVar[Optional[str]] = ContextVar("nous_portal_conversati
 # chat (``prompt_cache_scope.declared_conversation_scope``). Only that declared value
 # is published; unset means consumers fall back to the conversation id, so delegate
 # trees keep sharing their parent's sticky key.
-_affinity_scope: ContextVar[Optional[str]] = ContextVar("hermes_affinity_scope", default=None)
+_affinity_scope: ContextVar[Optional[str]] = ContextVar("akramcode_affinity_scope", default=None)
 
 
 def _reset_var(var: ContextVar, token) -> None:
@@ -71,9 +71,9 @@ def get_conversation_context() -> Optional[str]:
 
 
 def akramcode_client_tag() -> str:
-    """``client=hermes-client-v<MAJOR>.<MINOR>.<PATCH>`` from canonical runtime identity."""
+    """``client=akramcode-client-v<MAJOR>.<MINOR>.<PATCH>`` from canonical runtime identity."""
     from akramcode_cli.version_info import get_version_info
-    return f"client=hermes-client-v{get_version_info().base_version}"
+    return f"client=akramcode-client-v{get_version_info().base_version}"
 
 
 def conversation_tag(session_id: str) -> str:
@@ -88,7 +88,7 @@ def nous_portal_tags(session_id: str | None = None) -> List[str]:
     The ambient conversation context (lineage ROOT id) wins over the explicit
     ``session_id``, a fallback for callers outside any agent turn.
     """
-    tags = ["product=hermes-agent", akramcode_client_tag()]
+    tags = ["product=akramcode-agent", akramcode_client_tag()]
     effective = get_conversation_context() or session_id
     if effective:
         tags.append(conversation_tag(effective))

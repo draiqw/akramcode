@@ -1,5 +1,5 @@
-"""Cron job storage: ~/.hermes/cron/jobs.json; output in
-~/.hermes/cron/output/{job_id}/{timestamp}.md"""
+"""Cron job storage: ~/.akramcode/cron/jobs.json; output in
+~/.akramcode/cron/output/{job_id}/{timestamp}.md"""
 
 import contextlib
 import copy
@@ -27,14 +27,14 @@ except ImportError:  # pragma: no cover - non-Windows
     msvcrt = None
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 from cron.constants import CLAIM_TTL_INACTIVITY_HEADROOM, FIRE_CLAIM_SKEW_SECONDS, FIRE_CLAIM_TTL_SECONDS
 from cron.env_settings import cron_env_setting
 from typing import Optional, Dict, List, Any, Callable, Set, Tuple, Union, Collection
 
 logger = logging.getLogger(__name__)
 
-from akram_core.akramcode_time import now as _hermes_now
+from akram_core.akramcode_time import now as _akramcode_now
 from akram_core.akramcode_time import get_timezone
 from akramcode_cli.observability.shared_metrics_gateway import record_cron_missed
 from utils import atomic_replace, atomic_write_text, fsync_directory
@@ -60,28 +60,28 @@ def _ensure_croniter() -> bool:
 
 # --- Configuration ---
 
-# Cron is per-profile by design: anchor at get_hermes_home() (active profile home), NOT
-# get_default_hermes_root() — the shared root would funnel every profile's jobs into one jobs.json
-# and run them under the ticker's HERMES_HOME, leaking config/credentials/skills across profiles.
-# Each profile owns its own cron store under its own HERMES_HOME, and a profile-scoped gateway runs that
-# profile's jobs under that same HERMES_HOME — so a job authored in profile `coder` lives in
-# `~/.hermes/profiles/coder/cron/jobs.json` and executes with `coder`'s `.env`, `config.yaml`, and skills.
+# Cron is per-profile by design: anchor at get_akramcode_home() (active profile home), NOT
+# get_default_akramcode_root() — the shared root would funnel every profile's jobs into one jobs.json
+# and run them under the ticker's AKRAMCODE_HOME, leaking config/credentials/skills across profiles.
+# Each profile owns its own cron store under its own AKRAMCODE_HOME, and a profile-scoped gateway runs that
+# profile's jobs under that same AKRAMCODE_HOME — so a job authored in profile `coder` lives in
+# `~/.akramcode/profiles/coder/cron/jobs.json` and executes with `coder`'s `.env`, `config.yaml`, and skills.
 # Do NOT change this to the default root: that re-breaks per-profile isolation. See also the dynamic
-# `_get_hermes_home()` / `_get_lock_paths()` resolution in cron/scheduler.py. See #4707.
-HERMES_DIR = get_hermes_home().resolve()
+# `_get_akramcode_home()` / `_get_lock_paths()` resolution in cron/scheduler.py. See #4707.
+AKRAMCODE_DIR = get_akramcode_home().resolve()
 # Default-profile fallback and compatibility surface for callers/tests. Cross-profile callers must
 # scope paths with use_cron_store() instead of mutating these process-wide.
-CRON_DIR = HERMES_DIR / "cron"
+CRON_DIR = AKRAMCODE_DIR / "cron"
 JOBS_FILE = CRON_DIR / "jobs.json"
-# Heartbeat: touched every ticker loop so `hermes cron status` can tell the ticker THREAD is alive,
+# Heartbeat: touched every ticker loop so `akramcode cron status` can tell the ticker THREAD is alive,
 # not just the gateway PROCESS; success = last tick that completed WITHOUT raising.
-# The gateway process and the (separate) ``hermes cron status`` process share it so status can tell whether
+# The gateway process and the (separate) ``akramcode cron status`` process share it so status can tell whether
 # the ticker THREAD is alive, not just whether the gateway PROCESS exists — a ticker that dies silently
 # inside a live gateway would otherwise report healthy (#32612, #32895).
 TICKER_HEARTBEAT_FILE = CRON_DIR / "ticker_heartbeat"
 TICKER_SUCCESS_FILE = CRON_DIR / "ticker_last_success"
 # Single source of truth for the ticker interval (scheduler_provider.py) and the staleness
-# threshold in `hermes cron status` (akramcode_cli/cron.py), so they never drift apart.
+# threshold in `akramcode cron status` (akramcode_cli/cron.py), so they never drift apart.
 TICKER_INTERVAL_SECONDS = 60
 
 # In-process lock for load_jobs→modify→save_jobs cycles; without it, parallel tick threads'
@@ -154,7 +154,7 @@ _IMPORT_STORE = _CronStorePaths(CRON_DIR, JOBS_FILE, OUTPUT_DIR)
 def _current_cron_store() -> _CronStorePaths:
     """Paths pinned to this execution context's profile. Precedence: (1) active use_cron_store()
     override; (2) deliberately re-pointed module constants; (3) the ACTIVE profile home via
-    get_hermes_home(), so re-pointing HERMES_HOME after import uses ITS OWN store rather than the
+    get_akramcode_home(), so re-pointing AKRAMCODE_HOME after import uses ITS OWN store rather than the
     user's real jobs.json frozen at import; (4) import-time constants."""
     override = _cron_store_override.get()
     if override is not None:
@@ -162,8 +162,8 @@ def _current_cron_store() -> _CronStorePaths:
     live_constants = _CronStorePaths(CRON_DIR, JOBS_FILE, OUTPUT_DIR)
     if live_constants != _IMPORT_STORE:
         return live_constants
-    home = get_hermes_home().resolve()
-    if home == HERMES_DIR:
+    home = get_akramcode_home().resolve()
+    if home == AKRAMCODE_DIR:
         return live_constants
     return _CronStorePaths.for_dir(home / "cron")
 
@@ -184,7 +184,7 @@ def get_cron_output_dir() -> Path:
     return _current_cron_store().output_dir
 
 
-# Fallback stale-recovery window for a one-shot's running-claim when HERMES_CRON_TIMEOUT=0
+# Fallback stale-recovery window for a one-shot's running-claim when AKRAMCODE_CRON_TIMEOUT=0
 # (unlimited, no bound to derive from); also the floor so a tiny timeout can't expire a claim
 # mid-run.
 ONESHOT_RUN_CLAIM_TTL_SECONDS = 1800
@@ -196,9 +196,9 @@ _DEFAULT_CRON_INACTIVITY_TIMEOUT = 600.0
 
 
 def _oneshot_run_claim_ttl_seconds() -> float:
-    """One-shot running-claim TTL from ``HERMES_CRON_TIMEOUT``: unset/invalid → 600s → 1800s;
+    """One-shot running-claim TTL from ``AKRAMCODE_CRON_TIMEOUT``: unset/invalid → 600s → 1800s;
     ``0`` (unlimited) → the fixed floor; positive N → ``max(N * headroom, floor)``."""
-    raw = cron_env_setting("HERMES_CRON_TIMEOUT").strip()
+    raw = cron_env_setting("AKRAMCODE_CRON_TIMEOUT").strip()
     try:
         timeout = float(raw) if raw else _DEFAULT_CRON_INACTIVITY_TIMEOUT
     except (ValueError, TypeError):
@@ -564,7 +564,7 @@ def _is_recoverable_error_job(job: Dict[str, Any]) -> bool:
 
 def _secure_dir(path: Path):
     """Owner-only (0700) via the shared helper, so cron/ and cron/output honor the same managed/
-    container/HERMES_HOME_MODE rules as the rest of HERMES_HOME (#10757)."""
+    container/AKRAMCODE_HOME_MODE rules as the rest of AKRAMCODE_HOME (#10757)."""
     from akramcode_cli.config import _secure_dir as _shared_secure_dir
     _shared_secure_dir(path)
 
@@ -599,7 +599,7 @@ def _preserve_file_ownership(path: Path, before: Optional[os.stat_result]) -> No
 
 
 def _is_named_profile_path(path: Path) -> bool:
-    """True if *path* is under ``<hermes_home>/profiles/<name>/`` (default/custom homes are not).
+    """True if *path* is under ``<akramcode_home>/profiles/<name>/`` (default/custom homes are not).
     Checks the resolved path (symlinked parents) and the raw path (symlinked profile homes)."""
     with contextlib.suppress(OSError, RuntimeError):
         if "profiles" in path.resolve().parts:
@@ -803,7 +803,7 @@ def parse_schedule(schedule: str) -> Dict[str, Any]:
     if 'T' in schedule or re.match(r'^\d{4}-\d{2}-\d{2}', schedule):
         try:
             dt = datetime.fromisoformat(schedule.replace('Z', '+00:00'))
-            # Naive timestamps become aware in the CONFIGURED Hermes timezone (not server-local):
+            # Naive timestamps become aware in the CONFIGURED AkramCode timezone (not server-local):
             # the due-check compares against akram_core.akramcode_time.now().
             # Make naive timestamps timezone-aware at parse time so the stored value doesn't depend on the
             # system timezone matching at check time. UTC) while now() runs in Asia/Kolkata, the stored
@@ -811,7 +811,7 @@ def parse_schedule(schedule: str) -> Dict[str, Any]:
             # never become due and recurring jobs fire at the wrong time. Using the configured zone makes
             # "20:07" mean 20:07 on the same clock the scheduler checks against (#51021).
             if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=_hermes_now().tzinfo)
+                dt = dt.replace(tzinfo=_akramcode_now().tzinfo)
             return {
                 "kind": "once",
                 "run_at": dt.isoformat(),
@@ -829,7 +829,7 @@ def parse_schedule(schedule: str) -> Dict[str, Any]:
         except ValueError:
             raise ValueError(
                 f"Invalid duration '{duration_str}' after 'in '. Use e.g. 'in 30m', 'in 2h'.")
-        now = _hermes_now()
+        now = _akramcode_now()
         # Durations measure elapsed time, not wall-clock hours across a DST transition.
         run_at = (now.astimezone(timezone.utc) + timedelta(minutes=minutes)).astimezone(now.tzinfo)
         return {"kind": "once", "run_at": run_at.isoformat(), "display": f"once in {duration_str}"}
@@ -847,10 +847,10 @@ def parse_schedule(schedule: str) -> Dict[str, Any]:
 
 
 def _ensure_aware(dt: datetime) -> datetime:
-    """Aware datetime in the configured Hermes timezone. Legacy naive values are read as
+    """Aware datetime in the configured AkramCode timezone. Legacy naive values are read as
     *system-local* wall time (what created them) then converted, preserving ordering across
     timezone changes and avoiding false not-due results."""
-    target_tz = _hermes_now().tzinfo
+    target_tz = _akramcode_now().tzinfo
     if dt.tzinfo is None:
         return dt.replace(tzinfo=datetime.now().astimezone().tzinfo).astimezone(target_tz)
     return dt.astimezone(target_tz)
@@ -1021,7 +1021,7 @@ def _schedule_cadence_seconds(schedule: Dict[str, Any]) -> Optional[float]:
     if expr in _cron_cadence_cache:
         return _cron_cadence_cache[expr]
     try:
-        it = croniter(expr, _hermes_now())
+        it = croniter(expr, _akramcode_now())
         first = it.get_next(datetime)
         gap = (it.get_next(datetime) - first).total_seconds()
         result = gap if gap > 0 else None
@@ -1056,7 +1056,7 @@ def _record_persisted_error_recovery(job: Dict[str, Any], previous_next_run: str
         "job_id": job.get("id"),
         "name": job.get("name") or job.get("id"),
         "previous_next_run_at": previous_next_run,
-        "rearmed_at": _hermes_now().isoformat(),
+        "rearmed_at": _akramcode_now().isoformat(),
     }
     _persisted_error_recoveries += 1
     _append_telemetry_record(
@@ -1146,7 +1146,7 @@ def _record_timezone_migration_catchup(
         "expr": (job.get("schedule") or {}).get("expr"),
         "stored_next_run_at": raw_next_run_dt.isoformat(),
         "normalized_next_run_at": next_run_dt.isoformat(),
-        "fired_at": _hermes_now().isoformat(),
+        "fired_at": _akramcode_now().isoformat(),
     }
     _timezone_migration_catchups += 1
     _append_telemetry_record(
@@ -1163,7 +1163,7 @@ def get_timezone_migration_catchup_stats() -> Dict[str, Any]:
 
 def compute_next_run(schedule: Dict[str, Any], last_run_at: Optional[str] = None) -> Optional[str]:
     """Compute the next run time for a schedule as an ISO string, or None if no more runs."""
-    now = _hermes_now()
+    now = _akramcode_now()
     if not isinstance(schedule, dict):
         return None
     kind = schedule.get("kind")
@@ -1186,7 +1186,7 @@ def compute_next_run(schedule: Dict[str, Any], last_run_at: Optional[str] = None
             logger.warning(
                 "Cannot compute next run for cron schedule %r: 'croniter' is "
                 "not installed. croniter is a core dependency as of v0.9.x; "
-                "reinstall hermes-agent or run 'pip install croniter' in your runtime env.",
+                "reinstall akramcode-agent or run 'pip install croniter' in your runtime env.",
                 expr)
             return None
         # Anchor cron matching to the CONFIGURED IANA timezone's WALL CLOCK,
@@ -1222,7 +1222,7 @@ def compute_next_run(schedule: Dict[str, Any], last_run_at: Optional[str] = None
     return None
 
 
-# --- Ticker heartbeat (liveness signal for `hermes cron status`) ---
+# --- Ticker heartbeat (liveness signal for `akramcode cron status`) ---
 
 def _write_marker(name: str, text: str, tmp_prefix: str) -> None:
     """Atomic (never torn) best-effort marker write; failures swallowed so markers never break the
@@ -1239,7 +1239,7 @@ def record_ticker_heartbeat(success: bool = False) -> None:
     "alive but failing" from "firing"; scoped per profile store.
 
     The ticker calls this once per loop iteration. ``success=True`` additionally bumps the *last successful
-    tick* marker. We track two distinct signals so `hermes cron status` can tell a thread that is merely
+    tick* marker. We track two distinct signals so `akramcode cron status` can tell a thread that is merely
     *alive and looping* (heartbeat fresh, success stale) from one that is actually *firing jobs* (both
     fresh) — a ticker stuck failing every tick would otherwise keep the plain heartbeat fresh and falsely
     report healthy (#32612, #32895).
@@ -1284,7 +1284,7 @@ def get_ticker_heartbeat_age() -> Optional[float]:
     not "dead").
 
     Resolution uses ``_current_cron_store()`` so the heartbeat is correctly scoped to the active profile —
-    critical under multiplex_profiles where ``hermes cron status`` must report per-profile liveness
+    critical under multiplex_profiles where ``akramcode cron status`` must report per-profile liveness
     (#69377).
     """
     return _epoch_file_age("ticker_heartbeat")
@@ -1294,7 +1294,7 @@ def get_ticker_success_age() -> Optional[float]:
     """Seconds since the ticker last completed a tick WITHOUT raising, or None.
 
     Resolution uses ``_current_cron_store()`` so the heartbeat is correctly scoped to the active profile —
-    critical under multiplex_profiles where ``hermes cron status`` must report per-profile liveness
+    critical under multiplex_profiles where ``akramcode cron status`` must report per-profile liveness
     (#69377).
     """
     return _epoch_file_age("ticker_last_success")
@@ -1539,7 +1539,7 @@ def _stage_jobs_payload(jobs_file: Path, jobs: List[Dict[str, Any]]) -> str:
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             json.dump(
-                {"jobs": jobs, "updated_at": _hermes_now().isoformat()},
+                {"jobs": jobs, "updated_at": _akramcode_now().isoformat()},
                 f, indent=2, ensure_ascii=False)
             f.flush()
             os.fsync(f.fileno())
@@ -1662,7 +1662,7 @@ def _main_model_pin() -> Tuple[Optional[str], Optional[str]]:
     no second precedence axis. ``(None, None)`` when nothing is configured (the job stays unpinned)."""
     from akramcode_cli.config_effective import load_user_config_effective
 
-    cfg_path = get_hermes_home() / "config.yaml"
+    cfg_path = get_akramcode_home() / "config.yaml"
     cfg = load_user_config_effective(cfg_path) if cfg_path.exists() else {}
     model_cfg = cfg.get("model") or {}
     model = model_cfg.get("default") or model_cfg.get("model") if isinstance(model_cfg, dict) else model_cfg
@@ -1850,7 +1850,7 @@ def create_job(
     if deliver is None:
         deliver = "origin" if origin else "local"
     job_id = uuid.uuid4().hex[:12]
-    now = _hermes_now().isoformat()
+    now = _akramcode_now().isoformat()
 
     raw = locals()
     f = {key: norm(raw[key]) for key, norm in _CREATE_FIELD_NORMALIZERS.items()}
@@ -2143,7 +2143,7 @@ def pause_job(job_id: str, reason: Optional[str] = None) -> Optional[Dict[str, A
     return update_job(job["id"], {
         "enabled": False,
         "state": "paused",
-        "paused_at": _hermes_now().isoformat(),
+        "paused_at": _akramcode_now().isoformat(),
         "paused_reason": reason,
     })
 
@@ -2165,7 +2165,7 @@ def resume_job(job_id: str) -> Optional[Dict[str, Any]]:
     if (
         job["schedule"].get("kind") in {"cron", "interval"}
         and stored_dt is not None
-        and _instant_at_or_before(stored_dt, _hermes_now())
+        and _instant_at_or_before(stored_dt, _akramcode_now())
     ):
         next_run_at = stored_next
         logger.info(
@@ -2198,9 +2198,9 @@ def trigger_job(job_id: str, extra_prompt: Optional[str] = None) -> Optional[Dic
         name = job.get("name", job_id)
         raise ValueError(
             f"Cannot run: job '{name}' is {job.get('state')} (terminal). "
-            f"Create a new occurrence with 'hermes cron resume {name} "
+            f"Create a new occurrence with 'akramcode cron resume {name} "
             "--run-now' or '--at <ISO-8601>'.")
-    manual_run_at = _hermes_now().isoformat()
+    manual_run_at = _akramcode_now().isoformat()
     return update_job(job["id"], {
         "enabled": True,
         "state": "scheduled",
@@ -2215,7 +2215,7 @@ def trigger_job(job_id: str, extra_prompt: Optional[str] = None) -> Optional[Dic
 
 def _claim_owner_is_dead(claim: Dict[str, Any]) -> bool:
     """True when the claim's ``by`` names a process on THIS host that provably no longer exists.
-    ``_machine_id()`` stamps ``host:pid[:token]``; a foreign host, an explicit HERMES_MACHINE_ID,
+    ``_machine_id()`` stamps ``host:pid[:token]``; a foreign host, an explicit AKRAMCODE_MACHINE_ID,
     or any liveness-probe failure returns False (fail safe: only a proven death shortens the TTL)."""
     parts = str(claim.get("by") or "").split(":")
     if len(parts) < 2 or not parts[1].isdigit():
@@ -2234,7 +2234,7 @@ def _claim_is_live(claim: Any, now: datetime, ttl_seconds: float) -> bool:
     """True for a well-formed claim aged within ``[0, ttl)`` whose owner is not provably dead:
     future-dated (clock/TZ skew) or malformed claims count as stale so they can never wedge a
     job, and a same-host owner pid that has exited releases the claim immediately instead of
-    after the TTL (a killed ``hermes cron run`` otherwise blocks the next manual run for the
+    after the TTL (a killed ``akramcode cron run`` otherwise blocks the next manual run for the
     full window with "already being fired")."""
     if not isinstance(claim, dict) or not claim.get("at"):
         return False
@@ -2264,7 +2264,7 @@ def rearm_oneshot(job_id: str, run_at: Any) -> Optional[Dict[str, Any]]:
         raise _oneshot_past_grace_error(parsed_schedule.get("run_at") or run_at)
 
     def apply(jobs, _i, job):
-        now = _hermes_now()
+        now = _akramcode_now()
         if _claim_is_live(job.get("run_claim"), now, _oneshot_run_claim_ttl_seconds()):
             raise ValueError("Cannot re-arm one-shot over a live run claim.")
         if _claim_is_live(job.get("fire_claim"), now, FIRE_CLAIM_TTL_SECONDS):
@@ -2354,7 +2354,7 @@ def note_fire_forward_failure(job_id: str, detail: str) -> bool:
     clears it."""
     def apply(jobs, _i, job):
         job["last_fire_error"] = {
-            "at": _hermes_now().isoformat(), "detail": str(detail or "")[:500]}
+            "at": _akramcode_now().isoformat(), "detail": str(detail or "")[:500]}
         save_jobs(jobs)
         return True
 
@@ -2478,7 +2478,7 @@ def mark_job_run(
                     "mark_job_run: job_id %s fire claim owner changed; discarding stale completion",
                     job_id)
                 return False
-        now = _hermes_now().isoformat()
+        now = _akramcode_now().isoformat()
         _record_run_outcome(job, success, error, delivery_error, status, now)
         _advance_after_run(job, now)
         from cron import quota_hold
@@ -2537,7 +2537,7 @@ def _write_wedged_oneshot_diagnostic(job: Dict[str, Any]) -> None:
         f"- name: {job.get('name')}\n"
         f"- dispatch claimed: {repeat.get('completed', '?')}/{repeat.get('times', '?')}\n"
         f"- run claimed at: {claim.get('at', 'unknown')} by {claim.get('by', 'unknown')}\n"
-        f"- removed at: {_hermes_now().isoformat()}\n\n"
+        f"- removed at: {_akramcode_now().isoformat()}\n\n"
         "This one-shot job's dispatch was claimed, but the run never "
         "completed (`last_run_at` was never written) — the scheduler "
         "process was most likely killed or restarted mid-execution. The "
@@ -2561,7 +2561,7 @@ def _write_missed_oneshot_diagnostic(job: Dict[str, Any], next_run: str) -> None
         f"- name: {job.get('name')}\n"
         f"- scheduled run time: {next_run}\n"
         f"- grace window: {ONESHOT_GRACE_SECONDS}s\n"
-        f"- removed at: {_hermes_now().isoformat()}\n\n"
+        f"- removed at: {_akramcode_now().isoformat()}\n\n"
         "This one-shot's run time is more than the grace window in the "
         "past (scheduler down past the window, host asleep, or jobs.json "
         "edited), which is outside the 'will never fire' contract "
@@ -2630,7 +2630,7 @@ def _refresh_claim(jobs: List[Dict[str, Any]], claim: Any, expected_owner: str) 
     """Compare-and-refresh a claim's ``at`` stamp; False unless *expected_owner* still holds it."""
     if not isinstance(claim, dict) or claim.get("by") != expected_owner:
         return False
-    claim["at"] = _hermes_now().isoformat()
+    claim["at"] = _akramcode_now().isoformat()
     save_jobs(jobs)
     return True
 
@@ -2679,7 +2679,7 @@ def advance_next_runs(job_ids) -> int:
         return 0
     with _jobs_lock():
         jobs = load_jobs()
-        now = _hermes_now().isoformat()
+        now = _akramcode_now().isoformat()
         advanced = 0
         for job in jobs:
             if (
@@ -2707,8 +2707,8 @@ def advance_next_run(job_id: str) -> bool:
 
 def _machine_id() -> str:
     """Claim attribution/debugging id (NOT correctness — that comes from the file lock and the
-    fresh-claim check): ``HERMES_MACHINE_ID`` if set, else hostname:pid."""
-    explicit = os.getenv("HERMES_MACHINE_ID", "").strip()
+    fresh-claim check): ``AKRAMCODE_MACHINE_ID`` if set, else hostname:pid."""
+    explicit = os.getenv("AKRAMCODE_MACHINE_ID", "").strip()
     if explicit:
         return explicit
     try:
@@ -2739,7 +2739,7 @@ def claim_job_for_fire(
         # (Trigger-now on a paused job) bypasses the gate and atomically resumes the job below.
         if not force and not is_job_runnable(job):
             return False
-        now = _hermes_now()
+        now = _akramcode_now()
         if _claim_is_live(job.get("fire_claim"), now, claim_ttl_seconds):
             return False  # someone holds a fresh claim
         from cron.occurrences import completed_occurrence, scheduled_instant
@@ -3169,7 +3169,7 @@ def _oneshot_dispatch_limit_reached(job: Dict[str, Any], scan: _DueScan) -> bool
             "Job '%s': one-shot dispatch limit reached (%d/%d) on a record that already completed "
             "a run (last_run_at=%s) — removing it WITHOUT firing. This record was re-armed "
             "without a budget reset (pre-#93615 store or hand edit); re-run it with "
-            "'hermes cron resume <job> --run-now' (#93524).",
+            "'akramcode cron resume <job> --run-now' (#93524).",
             name, completed, times, job.get("last_run_at"))
     else:
         logger.info(
@@ -3255,7 +3255,7 @@ def _evaluate_due_job(job: Dict[str, Any], scan: _DueScan, run_claim_ttl: float)
         if _retire_expired_oneshot(d) or _oneshot_dispatch_limit_reached(job, scan):
             return False
         # Durably claim the one-shot for the DURATION of its run: a second scheduler process on the
-        # same HERMES_HOME must not re-dispatch it while in flight, and advancing next_run_at by a
+        # same AKRAMCODE_HOME must not re-dispatch it while in flight, and advancing next_run_at by a
         # fixed window is not enough for a run that outlives a tick. The other process sees the
         # fresh claim and skips; mark_job_run() clears it. The TTL only covers a tick that DIES.
         claim = {"at": now.isoformat(), "by": _machine_id()}
@@ -3288,7 +3288,7 @@ def _evaluate_due_job(job: Dict[str, Any], scan: _DueScan, run_claim_ttl: float)
 def _get_due_jobs_locked() -> List[Dict[str, Any]]:
     """Inner implementation of get_due_jobs(); must be called with _jobs_lock held."""
     raw_jobs = load_jobs()
-    scan = _DueScan(raw_jobs, _hermes_now())
+    scan = _DueScan(raw_jobs, _akramcode_now())
     scan.needs_save = _normalize_due_scan_records(raw_jobs)
     jobs = [_apply_skill_fields(j) for j in copy.deepcopy(raw_jobs)]
     # One-shot run-claim TTL, resolved once per scan (see _oneshot_run_claim_ttl_seconds).
@@ -3367,7 +3367,7 @@ def save_job_output(job_id: str, output: str):
     job_output_dir = _job_output_dir(job_id)
     _ensure_cron_dir(job_output_dir)
     _secure_dir(job_output_dir)
-    output_file = job_output_dir / f"{_hermes_now().strftime('%Y-%m-%d_%H-%M-%S')}.md"
+    output_file = job_output_dir / f"{_akramcode_now().strftime('%Y-%m-%d_%H-%M-%S')}.md"
     atomic_write_text(output_file, output, tmp_prefix=".output_", mode=0o600)
     _secure_file(output_file)
     # Bound per-job output growth so long-running deploys don't fill the disk (#52383).

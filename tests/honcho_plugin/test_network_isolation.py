@@ -21,7 +21,7 @@ def _session(**kw) -> HonchoSession:
     return HonchoSession(
         key=kw.get("key", "cli:isolation"),
         user_peer_id="eri",
-        assistant_peer_id="hermes",
+        assistant_peer_id="akramcode",
         honcho_session_id=kw.get("sid", "cli-isolation"),
         messages=kw.get("messages", []),
     )

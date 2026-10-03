@@ -36,7 +36,7 @@ from gateway.session import (
 from gateway.session_transcript import TranscriptReadError
 from gateway.turn_context import TurnContext
 from gateway.turn_lease import DEFAULT_LEASE_WAIT, TurnLeaseTimeoutError
-from akramcode_constants import get_hermes_home_override
+from akramcode_constants import get_akramcode_home_override
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from utils import base_url_hostname
@@ -52,18 +52,18 @@ _tool_call_logger_lock = threading.Lock()
 
 
 def _tool_call_logger() -> logging.Logger:
-    """Process-wide ``hermes.tool_calls`` Logger + one RotatingFileHandler on logs/tool_calls.log.
+    """Process-wide ``akramcode.tool_calls`` Logger + one RotatingFileHandler on logs/tool_calls.log.
     Named Loggers live in ``logging.Logger.manager.loggerDict`` forever, so the former per-turn name
-    (``hermes.tool_calls.<id(log_queue)>``) leaked one Logger per logged turn (#62950); a single
+    (``akramcode.tool_calls.<id(log_queue)>``) leaked one Logger per logged turn (#62950); a single
     shared handler also keeps concurrent turns from double-writing lines."""
-    tool_logger = logging.getLogger("hermes.tool_calls")
+    tool_logger = logging.getLogger("akramcode.tool_calls")
     with _tool_call_logger_lock:
         if not tool_logger.handlers:
             from logging.handlers import RotatingFileHandler
             from agent.redact import RedactingFormatter
-            from gateway.run import _hermes_home
+            from gateway.run import _akramcode_home
 
-            log_dir = _hermes_home / "logs"
+            log_dir = _akramcode_home / "logs"
             log_dir.mkdir(parents=True, exist_ok=True)
             handler = RotatingFileHandler(
                 log_dir / "tool_calls.log", maxBytes=5 * 1024 * 1024, backupCount=3, encoding="utf-8",
@@ -270,7 +270,7 @@ class GatewayTurnMixin:
         if override and skey:
             model, runtime_kwargs = self._apply_session_model_override(skey, model, runtime_kwargs)
 
-        # Provider resolved but no model.default (`hermes auth add` without `hermes model`): use the
+        # Provider resolved but no model.default (`akramcode auth add` without `akramcode model`): use the
         # provider's first catalog model.
         if not model and runtime_kwargs.get("provider"):
             with suppress(Exception):
@@ -614,7 +614,7 @@ class GatewayTurnMixin:
         try:
             _lease_token = await _lease_registry.acquire(
                 session_entry.session_id, owner_key=_quick_key, generation=run_generation,
-                timeout=_float_env("HERMES_TURN_LEASE_TIMEOUT", DEFAULT_LEASE_WAIT),
+                timeout=_float_env("AKRAMCODE_TURN_LEASE_TIMEOUT", DEFAULT_LEASE_WAIT),
             )
         except TurnLeaseTimeoutError:
             # The cleanup finally starts later; restore the tokens here or this exit leaks identity.
@@ -1306,7 +1306,7 @@ class GatewayTurnMixin:
             attempt.future = loop.run_in_executor(
                 None,
                 # But it MUST run inside the caller's contextvars: under multiplex_profiles the profile
-                # secret scope / HERMES_HOME override live in ContextVars, and a bare run_in_executor worker
+                # secret scope / AKRAMCODE_HOME override live in ContextVars, and a bare run_in_executor worker
                 # starts with an empty Context — the summary model's get_secret(<PROVIDER>_API_KEY) then
                 # fails closed (UnscopedSecretError) and every hygiene compaction silently degrades to a
                 # lossy truncation (#100849 bundle).
@@ -1450,8 +1450,8 @@ class GatewayTurnMixin:
                 if prof and prof != "default" and _lgc().get_home_channel(source.platform):
                     home_env = "set"
         if not home_env:
-            # Slack routes every command through the parent `/hermes`; bare `/sethome` would fail.
-            sethome_cmd = "/hermes sethome" if source.platform == Platform.SLACK else "/sethome"
+            # Slack routes every command through the parent `/akramcode`; bare `/sethome` would fail.
+            sethome_cmd = "/akramcode sethome" if source.platform == Platform.SLACK else "/sethome"
             await self._deliver_platform_notice(
                 source, t("gateway.notify.no_home_channel", platform=platform_name.title(), sethome_cmd=sethome_cmd),
             )
@@ -1956,7 +1956,7 @@ class GatewayTurnMixin:
 
         return response
 
-    # Chat-side next steps keyed by HTTP status; Hermes commands only (/login is the gateway's own
+    # Chat-side next steps keyed by HTTP status; AkramCode commands only (/login is the gateway's own
     # sign-in, `{relogin}` the profile-aware host equivalent, filled from the turn's agent provider).
     # Values are catalog keys (``gateway.errors.hint_*``); 401 carries a ``{relogin}`` placeholder.
     _STATUS_HINTS = {
@@ -2577,7 +2577,7 @@ class GatewayTurnMixin:
         """
         from gateway.run import _profile_runtime_scope
         multiplex = bool(getattr(self.config, "multiplex_profiles", False))
-        if multiplex and not get_hermes_home_override():
+        if multiplex and not get_akramcode_home_override():
             profile_home = self._resolve_profile_home_for_source(event.source)
             with _profile_runtime_scope(Path(profile_home)):
                 return await self._execute_mcp_reload(event)
@@ -2603,7 +2603,7 @@ class GatewayTurnMixin:
             # Explicit reload also re-probes tool availability (check_fn).
             reprobe_tool_availability()
             # Reconnect by discovering tools (reads config.yaml fresh). A chat command cannot finish
-            # a browser OAuth flow either: an expired token parks with a `hermes mcp login` hint.
+            # a browser OAuth flow either: an expired token parks with a `akramcode mcp login` hint.
             from tools.mcp_oauth import suppress_interactive_oauth
             with suppress_interactive_oauth():
                 new_tools = await self._run_in_executor_with_context(discover_mcp_tools)
@@ -2754,7 +2754,7 @@ class GatewayTurnMixin:
         run_generation: Optional[int] = None, event_message_id: Optional[str] = None,
         scheduled_heartbeat: bool = False,
     ) -> Dict[str, Any]:
-        """Forward the message to a remote Hermes API server instead of running a local AIAgent.
+        """Forward the message to a remote AkramCode API server instead of running a local AIAgent.
 
         Lets a Docker container handle Matrix E2EE while the agent runs on the host with full
         access to local files, memory, skills, and a unified session store."""
@@ -2791,7 +2791,7 @@ class GatewayTurnMixin:
                 "history_offset": len(history), "session_id": session_id, "response_previewed": False,
             }
 
-        # OpenAI chat format. The remote keeps continuity via X-Hermes-Session-Id; send the current
+        # OpenAI chat format. The remote keeps continuity via X-AkramCode-Session-Id; send the current
         # message plus a compact text-only history for a remote that has none yet.
         api_messages: List[Dict[str, str]] = [{"role": "system", "content": context_prompt}] if context_prompt else []
         api_messages += [
@@ -2804,8 +2804,8 @@ class GatewayTurnMixin:
         if proxy_key:
             headers["Authorization"] = f"Bearer {proxy_key}"
         if session_id:
-            headers["X-Hermes-Session-Id"] = session_id
-        body = {"model": "hermes-agent", "messages": api_messages, "stream": True}
+            headers["X-AkramCode-Session-Id"] = session_id
+        body = {"model": "akramcode-agent", "messages": api_messages, "stream": True}
 
         _thread_metadata: Optional[Dict[str, Any]] = self._thread_metadata_for_source(source, event_message_id)
         _stream_consumer = (
@@ -2959,7 +2959,7 @@ class GatewayTurnMixin:
         # A raw os.getenv here reads whichever profile's env loaded last under multiplexing
         # (#116898); get_secret resolves through the active profile's scope instead.
         progress_mode, _tool_progress_explicit = resolve_tool_progress(
-            user_config, platform_key, get_secret("HERMES_TOOL_PROGRESS_MODE"),
+            user_config, platform_key, get_secret("AKRAMCODE_TOOL_PROGRESS_MODE"),
         )
         # "accumulate" (edit one bubble) or "separate" (one msg per tool)
         progress_grouping = resolve_display_setting(user_config, platform_key, "tool_progress_grouping") or "accumulate"
@@ -3004,7 +3004,7 @@ class GatewayTurnMixin:
         _live_status_adapter = (
             adapter if getattr(adapter, "supports_status_text", False) and _live_status_mode != "off" else None
         )
-        # "log" mode: tool calls go to ~/.hermes/logs/tool_calls.log instead of the chat. Gateway-only.
+        # "log" mode: tool calls go to ~/.akramcode/logs/tool_calls.log instead of the chat. Gateway-only.
         log_mode_enabled = progress_mode == "log" and not is_webhook
         # Interim assistant messages and thinking_progress are independent of tool progress (same
         # queue). Mattermost requires a per-platform opt-in: scratch text leaks into public threads.
@@ -3414,7 +3414,7 @@ class GatewayTurnMixin:
     def _run_agent_start_turn_worker(self, turn_ctx: TurnContext, run_sync: Callable[[], Any]) -> "GatewayRunner._RunAgentWorker":
         """Schedule ``run_sync`` on the executor plus the inactivity watchdog thread.
 
-        *Inactivity* timeout (agent.gateway_timeout / HERMES_AGENT_TIMEOUT, env wins; 0 = unlimited),
+        *Inactivity* timeout (agent.gateway_timeout / AKRAMCODE_AGENT_TIMEOUT, env wins; 0 = unlimited),
         not wall-clock. The daemon watchdog is independent of asyncio: cgroup memory reclaim can
         starve the loop that runs the normal timeout poll."""
         from gateway.run import _float_env, _watch_gateway_turn_inactivity
@@ -3422,7 +3422,7 @@ class GatewayTurnMixin:
         agent_holder, session_key, run_generation = turn_ctx.agent_holder, turn_ctx.session_key, turn_ctx.run_generation
         _agent_timeout, _agent_warning = (
             v if v > 0 else None
-            for v in (_float_env("HERMES_AGENT_TIMEOUT", 1800), _float_env("HERMES_AGENT_TIMEOUT_WARNING", 900))
+            for v in (_float_env("AKRAMCODE_AGENT_TIMEOUT", 1800), _float_env("AKRAMCODE_AGENT_TIMEOUT_WARNING", 900))
         )
 
         # background=true processes survive a turn: reap only children created by THIS turn on timeout.
@@ -4155,11 +4155,11 @@ class GatewayTurnMixin:
         no longer owns the session slot or the executor finished. ``_executor_task_holder[0]`` is
         bound just after this task is scheduled (reads as None until then).
 
-        Interval: agent.gateway_notify_interval / HERMES_AGENT_NOTIFY_INTERVAL (default 180s; 0 or
+        Interval: agent.gateway_notify_interval / AKRAMCODE_AGENT_NOTIFY_INTERVAL (default 180s; 0 or
         long_running_notifications=off disables)."""
         from gateway.run import _float_env, _interim_metadata, _non_conversational_metadata
         _notify_start = time.time()
-        _NOTIFY_INTERVAL = _float_env("HERMES_AGENT_NOTIFY_INTERVAL", 180)
+        _NOTIFY_INTERVAL = _float_env("AKRAMCODE_AGENT_NOTIFY_INTERVAL", 180)
         _long_running_mode = disp._display_surface_mode("long_running_notifications", default=True, allow_generic=True)
         if _NOTIFY_INTERVAL <= 0 or _long_running_mode == "off":
             return

@@ -29,9 +29,9 @@ from akramcode_cli.secret_prompt import masked_secret_prompt
 # Providers that support OAuth login in addition to API keys.
 _OAUTH_CAPABLE_PROVIDERS = {"anthropic", "nous", "openai-codex", "xai-oauth", "qwen-oauth", "minimax-oauth", "openrouter"}
 # ...and default to it when ``--type`` is omitted. OpenRouter stays API-key-first: the documented
-# ``hermes auth add openrouter --api-key sk-or-...`` must keep working with no ``--type``.
+# ``akramcode auth add openrouter --api-key sk-or-...`` must keep working with no ``--type``.
 _OAUTH_DEFAULT_PROVIDERS = _OAUTH_CAPABLE_PROVIDERS - {"openrouter"}
-# Providers whose sibling CLI login Hermes may borrow (``auth.adopt_external_logins``).
+# Providers whose sibling CLI login AkramCode may borrow (``auth.adopt_external_logins``).
 EXTERNAL_LOGIN_PROVIDERS = {"anthropic", "openai-codex"}
 
 
@@ -145,8 +145,8 @@ def _unknown_provider_exit(provider: str) -> SystemExit:
     close = difflib.get_close_matches(provider, known, n=3, cutoff=0.5)
     hint = f" Did you mean {', '.join(close)}?" if close else ""
     return SystemExit(
-        f"Unknown provider '{provider}'.{hint} Run `hermes auth` to see the provider list, or "
-        "`hermes model` to pick one interactively.")
+        f"Unknown provider '{provider}'.{hint} Run `akramcode auth` to see the provider list, or "
+        "`akramcode model` to pick one interactively.")
 
 
 def _display_source(source: str) -> str:
@@ -201,7 +201,7 @@ def _format_exhausted_status(entry) -> str:
 
 def _anthropic_oauth_login(args) -> dict:
     from agent import anthropic_credentials as anthropic_mod
-    creds = anthropic_mod.run_hermes_oauth_login_pure()
+    creds = anthropic_mod.run_akramcode_oauth_login_pure()
     if not creds:
         raise SystemExit("Anthropic OAuth login did not return credentials.")
     return creds
@@ -217,7 +217,7 @@ def _qwen_oauth_login(args) -> dict:
 
 @dataclass(frozen=True)
 class _OAuthAddSpec:
-    """Per-provider parameters for the generic ``hermes auth add <provider> --type oauth`` path."""
+    """Per-provider parameters for the generic ``akramcode auth add <provider> --type oauth`` path."""
 
     login: Callable[[Any], dict]
     token: Callable[[dict], str]
@@ -246,7 +246,7 @@ _OAUTH_ADD_SPECS: dict[str, _OAuthAddSpec] = {
     "anthropic": _OAuthAddSpec(
         login=_anthropic_oauth_login,
         token=lambda creds: creds["access_token"],
-        source=f"{SOURCE_MANUAL}:hermes_pkce",
+        source=f"{SOURCE_MANUAL}:akramcode_pkce",
         fields=lambda creds, provider: {
             "refresh_token": creds.get("refresh_token"),
             "expires_at_ms": creds.get("expires_at_ms"),
@@ -304,7 +304,7 @@ def _ask(prompt: str, reader: Callable[[str], str] | None = None) -> str | None:
 
 
 def _add_nous_oauth_credential(args, provider: str) -> PooledCredential:
-    """``hermes auth add nous --type oauth``: shared-credential import, else device-code login."""
+    """``akramcode auth add nous --type oauth``: shared-credential import, else device-code login."""
     custom_label = (getattr(args, "label", None) or "").strip() or None
     timeout = getattr(args, "timeout", None) or 15.0
 
@@ -317,8 +317,8 @@ def _add_nous_oauth_credential(args, provider: str) -> PooledCredential:
         print(f'{what} {provider} OAuth {"device-code " if what == "Saved" else ""}credentials: "{shown_label}"')
         return entry
 
-    # Codex-style auto-import: a shared Nous credential at <hermes-root>/shared/nous_auth.json
-    # (written by any previous login) makes `hermes --profile <name> auth add nous --type oauth`
+    # Codex-style auto-import: a shared Nous credential at <akramcode-root>/shared/nous_auth.json
+    # (written by any previous login) makes `akramcode --profile <name> auth add nous --type oauth`
     # a one-tap operation for multi-profile users.
     if auth_mod._read_shared_nous_state():
         try:
@@ -419,7 +419,7 @@ def _add_credential(args, provider: str, pool, requested_type: str) -> PooledCre
 
     spec = _OAUTH_ADD_SPECS.get(provider)
     if spec is None:
-        raise SystemExit(f"`hermes auth add {provider}` is not implemented for auth type {requested_type} yet.")
+        raise SystemExit(f"`akramcode auth add {provider}` is not implemented for auth type {requested_type} yet.")
 
     creds = spec.login(args)
     token = spec.token(creds)
@@ -459,14 +459,14 @@ def _warn_same_codex_account(token: str, existing: list[PooledCredential]) -> No
             print(f'warning: this login is the same OpenAI account as openai-codex credential #{position} '
                   f'("{sibling.label}"). Both logins share one token family, so OpenAI will revoke the older one '
                   "and you gain no extra quota. Log into a different account instead, or keep just one "
-                  f"(`hermes auth remove openai-codex {position}`).", file=sys.stderr)
+                  f"(`akramcode auth remove openai-codex {position}`).", file=sys.stderr)
             return
 
 
 def _report_priority(provider: str, pool, moved, requested: int, verb: str, prep: str) -> None:
     """Print the effective priority and say why it differs from the request, if it does."""
     print(f'{verb} {provider} credential "{moved.label}" {prep} priority {moved.priority} '
-          f"(#{moved.priority + 1} in `hermes auth list {provider}`)")
+          f"(#{moved.priority + 1} in `akramcode auth list {provider}`)")
     size = len(pool.entries())
     if moved.priority != requested:
         if requested < 0 or requested >= size:
@@ -482,7 +482,7 @@ def _report_priority(provider: str, pool, moved, requested: int, verb: str, prep
 
 
 def auth_priority_command(args) -> None:
-    """`hermes auth priority <provider> <target> <priority>`: reorder one pooled credential."""
+    """`akramcode auth priority <provider> <target> <priority>`: reorder one pooled credential."""
     provider = _normalize_provider(getattr(args, "provider", ""))
     pool = load_pool(provider)
     index, matched, error = pool.resolve_target(getattr(args, "target", None))
@@ -573,7 +573,7 @@ def auth_remove_command(args) -> None:
         raise SystemExit(f'No credential matching "{target}" for provider {provider}.')
     print(f"Removed {provider} credential #{index} ({removed.label})")
 
-    # Every credential source Hermes reads from (env vars, external OAuth files, auth.json blocks,
+    # Every credential source AkramCode reads from (env vars, external OAuth files, auth.json blocks,
     # custom config) has a RemovalStep in agent.credential_sources; it does the source-specific
     # cleanup while suppression + user-facing output are centralised here.
     from agent.credential_sources import find_removal_step
@@ -607,7 +607,7 @@ def auth_reset_command(args) -> None:
 
 
 def auth_refresh_command(args) -> None:
-    """`hermes auth refresh <provider> [target]`: force one pooled OAuth entry to refresh.
+    """`akramcode auth refresh <provider> [target]`: force one pooled OAuth entry to refresh.
 
     A successful refresh rotates the stored tokens and clears the entry's local
     exhaustion block, returning it to rotation before its persisted
@@ -627,7 +627,7 @@ def auth_refresh_command(args) -> None:
         if len(entries) != 1:
             raise SystemExit(
                 f"{provider} has {len(entries)} credentials; pass an index, entry id, or exact "
-                f"label (see `hermes auth list {provider}`).")
+                f"label (see `akramcode auth list {provider}`).")
         index, matched = 1, entries[0]
     else:
         index, matched, error = pool.resolve_target(target)
@@ -643,7 +643,7 @@ def auth_refresh_command(args) -> None:
         raise SystemExit(
             f"nous credential #{index} ({matched.label}) is not a refreshable OAuth "
             "credential: only the device_code singleton supports refresh. "
-            "Reauthenticate with `hermes auth add nous --type oauth`.")
+            "Reauthenticate with `akramcode auth add nous --type oauth`.")
     refreshed = pool.try_refresh_matching(credential_id=matched.id)
     if refreshed is None:
         after = next((e for e in pool.entries() if e.id == matched.id), None)
@@ -652,7 +652,7 @@ def auth_refresh_command(args) -> None:
                  else "the saved session is no longer valid")
         raise SystemExit(
             f"Could not renew the {label} sign-in for credential #{index} ({matched.label}); {state}. "
-            f"Sign in again with `hermes auth add {provider} --type oauth`.")
+            f"Sign in again with `akramcode auth add {provider} --type oauth`.")
     status = refreshed.last_status or "ok"
     if status == "ok":
         print(f"Refreshed {provider} credential #{index} ({refreshed.label}); status: ok")
@@ -665,7 +665,7 @@ def auth_refresh_command(args) -> None:
 def auth_status_command(args) -> None:
     provider = _normalize_provider(getattr(args, "provider", "") or "")
     if not provider:
-        raise SystemExit("Provider is required. Example: `hermes auth status spotify`.")
+        raise SystemExit("Provider is required. Example: `akramcode auth status spotify`.")
     if dispatch_plugin_auth("status", args, provider):
         return
     if provider in auth_mod.SINGLE_USE_REFRESH_POOL_PROVIDERS:
@@ -753,9 +753,9 @@ def _print_azure_entra_status() -> None:
         print(f"  Scope: {scope}")
         if not has_azure_identity_installed():
             print("  Status: ⚠ azure-identity not installed")
-            print("  From the Hermes environment, run: "
+            print("  From the AkramCode environment, run: "
                   f"{install_hint('azure-identity')}")
-            print("  Then restart Hermes.")
+            print("  Then restart AkramCode.")
         else:
             info = describe_active_credential(config=EntraIdentityConfig(scope=scope), timeout_seconds=10.0)
             env_sources = info.get("env_sources") or []
@@ -771,7 +771,7 @@ def _print_azure_entra_status() -> None:
 
 
 def _interactive_auth() -> None:
-    """Interactive credential pool management when `hermes auth` is called bare."""
+    """Interactive credential pool management when `akramcode auth` is called bare."""
     print("Credential Pool Status")
     print("=" * 50)
     auth_list_command(SimpleNamespace(provider=None))
@@ -887,7 +887,7 @@ def _interactive_strategy() -> None:
 
 
 def auth_upgrade_command(args) -> None:
-    """``hermes auth upgrade``: sign the free tier into a Nous account, keeping its connectors."""
+    """``akramcode auth upgrade``: sign the free tier into a Nous account, keeping its connectors."""
     from akramcode_cli.anon_auth import upgrade_guest
     code = upgrade_guest(args)
     if code:

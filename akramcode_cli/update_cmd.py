@@ -1,4 +1,4 @@
-"""Hermes update pipeline: dispatchers (``_cmd_update_impl``/``_cmd_update_check``) + git plumbing.
+"""AkramCode update pipeline: dispatchers (``_cmd_update_impl``/``_cmd_update_check``) + git plumbing.
 
 Each concern lives in ``update_cmd_<concern>.py`` and is re-imported here so
 ``akramcode_cli.update_cmd.<name>`` keeps resolving (and stays monkeypatchable). Imports are one-way:
@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import NoReturn
 
-from akramcode_cli.config import get_hermes_home  # noqa: F401  (re-exported; patched via update_cmd)
+from akramcode_cli.config import get_akramcode_home  # noqa: F401  (re-exported; patched via update_cmd)
 from akramcode_cli import update_handoff as _update_handoff
 from akramcode_cli.update_cmd_common import _best_effort
 # Captured BEFORE a checkout swap: parent transport/lifecycle never imports new code.
@@ -91,7 +91,7 @@ from akramcode_cli.update_cmd_maint import (  # noqa: F401
     _print_curator_first_run_notice, _print_curator_recent_run_notice,
     _print_fts_optimize_available_notice, _print_update_completion, _print_update_summary,
     _prepare_updated_checkout,
-    _print_verified_update_completion, _purge_stale_hermes_modules, _read_project_version,
+    _print_verified_update_completion, _purge_stale_akramcode_modules, _read_project_version,
     _reload_process_scan_modules, _reload_updated_runtime_modules,
     _resolve_pre_update_backup_mode, _restore_state_db_from_snapshot,
     _run_post_update_maintenance, _run_pre_update_backup,
@@ -101,7 +101,7 @@ from akramcode_cli.update_cmd_maint import (  # noqa: F401
 logger = logging.getLogger(__name__)
 
 
-def get_default_hermes_root() -> NoReturn:
+def get_default_akramcode_root() -> NoReturn:
     # Shim to suppress old updater work until relaunch. No path is safe to invent.
     stop_for_relaunch()
 
@@ -213,7 +213,7 @@ def _record_update_step(step: str, ok: bool, detail: str = "") -> None:
 
 
 # A fetch whose transport dead-stalls (HTTP/2 to GitHub on some networks, a black-holed proxy)
-# otherwise leaves `hermes update` on "Fetching updates..." forever (#93759, #95777). Five
+# otherwise leaves `akramcode update` on "Fetching updates..." forever (#93759, #95777). Five
 # minutes is generous for a scoped single-branch fetch and still ends in a real error.
 NETWORK_GIT_TIMEOUT_SECONDS = 300
 
@@ -320,7 +320,7 @@ def _validate_python_files_syntax(
     import tempfile
 
     root = Path(root)
-    with tempfile.TemporaryDirectory(prefix="hermes-syntax-check-") as tmpdir:
+    with tempfile.TemporaryDirectory(prefix="akramcode-syntax-check-") as tmpdir:
         for relpath in relpaths:
             path = root / relpath
             if not path.exists():
@@ -338,7 +338,7 @@ def _validate_python_files_syntax(
 def _validate_critical_files_syntax(root) -> tuple[bool, str | None, str | None]:
     """Compile each file in ``_UPDATE_CRITICAL_FILES`` to catch SyntaxErrors.
 
-    These are the files imported on every ``hermes`` startup; if any of them
+    These are the files imported on every ``akramcode`` startup; if any of them
     has a syntax error (orphan merge-conflict markers, bad ref to a name
     that no longer exists, etc.) the CLI can't bootstrap at all. We validate
     them after a successful ``git pull`` so we can auto-roll-back instead of
@@ -369,15 +369,15 @@ def _gateway_prompt(prompt_text: str, default: str = "", timeout: float = 300.0)
     Writes a prompt marker file so the gateway can forward the question to the
     user, then polls for a response file.  Falls back to *default* on timeout.
 
-    Used by ``hermes update --gateway`` so interactive prompts (stash restore,
+    Used by ``akramcode update --gateway`` so interactive prompts (stash restore,
     config migration) are forwarded to the messenger instead of being silently
     skipped.
     """
     import json as _json
     import uuid as _uuid
-    from akramcode_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
 
-    home = get_hermes_home()
+    home = get_akramcode_home()
     prompt_path = home / ".update_prompt.json"
     response_path = home / ".update_response"
 
@@ -474,7 +474,7 @@ def _format_update_failure_stage(exc: subprocess.CalledProcessError) -> str:
 def _should_zip_fallback_on_update_error(exc: BaseException) -> bool:
     """ZIP fallback is for Windows git file-I/O breakage, not later stages.
 
-    A dependency-install failure (locked ``hermes.exe`` / ``uv pip install``
+    A dependency-install failure (locked ``akramcode.exe`` / ``uv pip install``
     exit 2) is not a git failure. The pull has already succeeded by then, so
     re-downloading the source ZIP cannot fix the install and would replace
     every top-level entry except ``venv`` / ``node_modules`` / ``.git`` /
@@ -533,9 +533,9 @@ def _filter_non_gateway_concurrent_instances(
 
 
 def _log_only_write(text: str) -> None:
-    """Write ``text`` to ``~/.hermes/logs/update.log`` only, never the terminal.
+    """Write ``text`` to ``~/.akramcode/logs/update.log`` only, never the terminal.
 
-    During ``hermes update`` ``sys.stdout`` is an ``_UpdateOutputStream`` that
+    During ``akramcode update`` ``sys.stdout`` is an ``_UpdateOutputStream`` that
     mirrors to both the terminal and ``update.log``. Loud, low-signal
     subprocess output (npm installs, the Electron/vite build, the cua-driver
     installer's "Next steps" wall) should be captured and tucked into the log
@@ -548,7 +548,7 @@ def _log_only_write(text: str) -> None:
     log_file = getattr(stream, "_log", None)
     with suppress(Exception):
         if log_file is None:
-            log_path = get_hermes_home() / "logs" / "update.log"
+            log_path = get_akramcode_home() / "logs" / "update.log"
             log_path.parent.mkdir(parents=True, exist_ok=True)
             with log_path.open("a", encoding="utf-8") as fallback:
                 fallback.write(text)
@@ -609,7 +609,7 @@ def _source_update_channel(args=None, *, channel=None, branch_explicit=False) ->
 
 
 def _cmd_update_check(branch: str = "main", *, branch_explicit: bool = False, channel=None):
-    """Implement ``hermes update --check``: fetch and report without installing.
+    """Implement ``akramcode update --check``: fetch and report without installing.
 
     ``branch`` selects which branch the check compares against. Default is
     "main"; callers can pass another branch to ask "are there new commits
@@ -712,7 +712,7 @@ def _source_completion_request(opts, plan, snapshot_id, windows_resume, desktop,
         current = _completion_receipt._current.get()
     return {
         "schema": 1, "source": str(_m().PROJECT_ROOT.resolve()),
-        "home": str(get_hermes_home()), "branch": "main", "desktop": desktop,
+        "home": str(get_akramcode_home()), "branch": "main", "desktop": desktop,
         "assume_yes": opts.assume_yes, "gateway_mode": gateway_mode,
         "no_gateway_restart": getattr(opts, "no_gateway_restart", False),
         "pre_update_version": opts.pre_update_version, "snapshot_id": snapshot_id,
@@ -793,7 +793,7 @@ def _reconcile_diverged_checkout(git_cmd, branch: str, pre_pull_sha, *, target_r
         # SHA suffix so two updates in the same second get distinct refs.
         kind = "diverged" if has_common_ancestor else "orphan"
         rescue_ref = (
-            f"refs/hermes-update-backups/{kind}-{branch}-"
+            f"refs/akramcode-update-backups/{kind}-{branch}-"
             f"{_dt.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}-{pre_pull_sha[:12]}")
         head = (
             f"  ⚠ Local history has diverged from origin/{branch} — "
@@ -857,7 +857,7 @@ def _rollback_if_pulled_syntax_error(git_cmd, pre_pull_sha, *, rollback_branch=N
             rollback_result = _git_run(git_cmd, rollback_args)
         if rollback_result.returncode == 0:
             print("  ✓ Rollback complete — your install is unchanged.")
-            print("  Try ``hermes update`` again later once a fix lands.")
+            print("  Try ``akramcode update`` again later once a fix lands.")
         else:
             print("  ✗ Rollback failed. Recover manually with:")
             print(f"    cd {_m().PROJECT_ROOT} && git {shlex.join(rollback_args)}")
@@ -935,7 +935,7 @@ def _pull_updates(
                             ancestry_detail = (ancestry.stderr or ancestry.stdout or "").strip()
                             if ancestry_detail:
                                 print(f"  {ancestry_detail}")
-                        print("  Resolve the Git error and re-run `hermes update`; no reset was attempted.")
+                        print("  Resolve the Git error and re-run `akramcode update`; no reset was attempted.")
                         sys.exit(1)
         except KeyboardInterrupt:
             raise  # Ctrl-C reached git too (same process group): the tree may be torn, keep the marker
@@ -1150,7 +1150,7 @@ def _prepare_checkout_for_update(
 
 @dataclass
 class _UpdateOptions:
-    """Resolved ``hermes update`` inputs (flags, config, pre-update snapshots)."""
+    """Resolved ``akramcode update`` inputs (flags, config, pre-update snapshots)."""
 
     pre_update_version: object
     gw_input_fn: object
@@ -1207,7 +1207,7 @@ def _begin_update_receipt_and_plan(args):
 
     # Plan phase: snapshot runtimes/supervisors/version (read-only; probe failure records
     # nothing). Re-read AFTER the restart phase to reconcile — the plan is the worklist.
-    # Plan phase (#91277 Phase 2): snapshot the pre-update fleet — every running Hermes runtime, its
+    # Plan phase (#91277 Phase 2): snapshot the pre-update fleet — every running AkramCode runtime, its
     # supervisor, and its running code version — into the receipt, so a post-mortem can compare what the
     # update SAW against what it did. ``_pre_update_plan`` is read again AFTER the restart phase to
     # reconcile every planned runtime against the phase's bookkeeping (restart via declared mechanism — the
@@ -1243,7 +1243,7 @@ def _prepare_git_command() -> tuple[bool, list, bool]:
     use_zip_update = not git_dir.exists()
     if use_zip_update and sys.platform != "win32":
         print("✗ Not a git repository. Please reinstall:")
-        print("  curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash")
+        print("  curl -fsSL https://akramcode-agent.nousresearch.com/install.sh | bash")
         sys.exit(1)
 
     from akramcode_cli._subprocess_compat import expose_pm_git
@@ -1285,8 +1285,8 @@ def _verify_head_after_pull(
     # Verify HEAD actually moved (issue #79678). ``merge --ff-only`` succeeding only means the merge
     # completed, not that the update applied: a checkout that is pinned to a raw SHA (detached HEAD) can
     # report "N new commit(s)" against origin yet still sit on the old commit afterward (the branch-switch
-    # step re-detaches to the SHA). Before this guard, ``hermes update`` printed "✓ Code updated!" and
-    # reinstalled deps + rebuilt the desktop app against the stale tree — no error, no warning, ``hermes
+    # step re-detaches to the SHA). Before this guard, ``akramcode update`` printed "✓ Code updated!" and
+    # reinstalled deps + rebuilt the desktop app against the stale tree — no error, no warning, ``akramcode
     # doctor`` healthy. Compare pre-pull and post-pull HEAD; if they match, surface the no-op instead of
     # claiming success.
     post_pull_sha = _capture_head_sha(git_cmd, _m().PROJECT_ROOT)
@@ -1298,7 +1298,7 @@ def _verify_head_after_pull(
             f"origin/{branch} advanced but the working tree stayed put.")
         print(
             "  Reattach to the branch and retry: "
-            f"git -C {_m().PROJECT_ROOT} checkout {branch} && hermes update")
+            f"git -C {_m().PROJECT_ROOT} checkout {branch} && akramcode update")
         _m()._resume_windows_gateways_after_update(_windows_gateway_resume)
         sys.exit(1)
 
@@ -1312,7 +1312,7 @@ def _verify_head_after_pull(
             f"'{post_pull_branch}' — not claiming success.")
         print(
             "  Switch to the target branch and retry: "
-            f"git -C {_m().PROJECT_ROOT} checkout {branch} && hermes update")
+            f"git -C {_m().PROJECT_ROOT} checkout {branch} && akramcode update")
         _m()._resume_windows_gateways_after_update(_windows_gateway_resume)
         sys.exit(1)
     return post_pull_sha
@@ -1344,10 +1344,10 @@ def _handle_update_called_process_error(
             print(f"✗ {stage} (the code update itself succeeded).")
             _print_called_process_error_tail(e)
             print()
-            print("  Hermes may not start until the dependencies are installed. Fix the error above")
-            print("  (usually network or disk space), then run `hermes update` again.")
+            print("  AkramCode may not start until the dependencies are installed. Fix the error above")
+            print("  (usually network or disk space), then run `akramcode update` again.")
             if _m()._is_windows():
-                print("  If `hermes update` itself will not start, retry through the venv interpreter:")
+                print("  If `akramcode update` itself will not start, retry through the venv interpreter:")
                 print(
                     '    venv\\Scripts\\python.exe -c '
                     '"from akramcode_cli.main import main; main()" update --yes')
@@ -1422,18 +1422,18 @@ def _cmd_update_impl(args, gateway_mode: bool):
     # Marks this frame as the CURRENT updater for
     # _old_updater.in_historical_update(); historical on-disk updaters do not
     # declare this local, so only they hand off through retired shims.
-    _hermes_current_updater_frame = True
+    _akramcode_current_updater_frame = True
     git_operation = git_operation_in_progress(_m().PROJECT_ROOT)
     if git_operation:
         root = _m().PROJECT_ROOT
         print(f"✗ Cannot update while a Git {git_operation} is in progress in {root}.")
-        print(f"  Finish it or run `git {git_operation} --abort`, then re-run `hermes update`.")
+        print(f"  Finish it or run `git {git_operation} --abort`, then re-run `akramcode update`.")
         sys.exit(1)
 
     opts = _resolve_update_options(args, gateway_mode)
     gw_input_fn, assume_yes = opts.gw_input_fn, opts.assume_yes
 
-    print("☤ Updating Hermes Agent...")
+    print("☤ Updating AkramCode Agent...")
     print()
 
     _pre_update_plan = _begin_update_receipt_and_plan(args)
@@ -1452,7 +1452,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
 
 
     desktop_dir = _m().PROJECT_ROOT / "apps" / "desktop"
-    # An installed Hermes.app only this update refreshes counts even with no release/ build
+    # An installed AkramCode.app only this update refreshes counts even with no release/ build
     # beside it: without one it was never rebuilt, so it never got newer (#52339).
     had_desktop_app_before_update = (
         _m()._desktop_packaged_executable(desktop_dir) is not None
@@ -1560,7 +1560,7 @@ def _cmd_update_impl(args, gateway_mode: bool):
         if fetch_result.returncode != 0:
             if is_partial_clone_pack_objects_crash(fetch_result.stderr or ""):
                 print("✗ git still crashed after marking this checkout's packs. See 'Fetch fails with"
-                      " should_include_obj' in https://hermes-agent.nousresearch.com/docs/getting-started/updating")
+                      " should_include_obj' in https://akramcode-agent.nousresearch.com/docs/getting-started/updating")
             _print_fetch_failure(fetch_result.stderr)
             _m()._resume_windows_gateways_after_update(_windows_gateway_resume)
             sys.exit(1)

@@ -1,4 +1,4 @@
-"""Shared-metrics consent JSON-RPC handlers (the Desktop twin of ``hermes setup``'s Shared Metrics
+"""Shared-metrics consent JSON-RPC handlers (the Desktop twin of ``akramcode setup``'s Shared Metrics
 section). Both opt-ins live in the focused profile's config.yaml exactly where the wizard writes
 them — ``telemetry.shared_metrics.enabled`` (local collection) and ``.send`` (daily upload) — so the
 CLI and the app can never disagree about the answer. ``shared_metrics.set`` enforces the wizard's
@@ -95,7 +95,7 @@ def _(rid, params: dict) -> dict:
 def _(rid, params: dict) -> dict:
     """The Ink TUI (gateway ready) and Desktop (backend attached) each report their own launch ->
     ready time once per launch; ``launch_id`` latches it here too, so a reconnect to this backend
-    never re-counts. A Desktop on a URL/cloud backend has no ``HERMES_DESKTOP`` here, so the
+    never re-counts. A Desktop on a URL/cloud backend has no ``AKRAMCODE_DESKTOP`` here, so the
     client's declared surface wins over env detection. Always ``{ok: true}``."""
     from akramcode_cli.observability.shared_metrics_startup import record_rpc_startup_latency
 

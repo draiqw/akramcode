@@ -20,17 +20,17 @@ import pytest
 @pytest.fixture
 def session_db(tmp_path):
     """Create a real SessionDB for testing."""
-    os.environ["HERMES_HOME"] = str(tmp_path / ".hermes")
-    os.makedirs(tmp_path / ".hermes", exist_ok=True)
+    os.environ["AKRAMCODE_HOME"] = str(tmp_path / ".akramcode")
+    os.makedirs(tmp_path / ".akramcode", exist_ok=True)
     from akramcode_state import SessionDB
-    db = SessionDB(db_path=tmp_path / ".hermes" / "test_sessions.db")
+    db = SessionDB(db_path=tmp_path / ".akramcode" / "test_sessions.db")
     yield db
     db.close()
 
 
 @pytest.fixture
 def cli_instance(tmp_path, session_db):
-    """Create a minimal HermesCLI-like object for testing _handle_branch_command."""
+    """Create a minimal AkramCodeCLI-like object for testing _handle_branch_command."""
     # We'll mock the CLI enough to test the branch logic without full init
     from unittest.mock import MagicMock
 
@@ -71,11 +71,11 @@ class TestBranchCommandCLI:
         """Branching is child-first: when create_session fails the user stays on the original
         session, so it must not be marked ended as "branched" (#11030)."""
         from unittest.mock import patch
-        from cli import HermesCLI
+        from cli import AkramCodeCLI
 
         original = cli_instance.session_id
         with patch.object(session_db, "create_session", side_effect=RuntimeError("boom")):
-            HermesCLI._handle_branch_command(cli_instance, "/branch")
+            AkramCodeCLI._handle_branch_command(cli_instance, "/branch")
 
         assert cli_instance.session_id == original
         row = session_db.get_session(original)
@@ -83,9 +83,9 @@ class TestBranchCommandCLI:
 
     def test_branch_copies_history(self, cli_instance, session_db):
         """Branching should copy all messages to the new session."""
-        from cli import HermesCLI
+        from cli import AkramCodeCLI
 
-        HermesCLI._handle_branch_command(cli_instance, "/branch")
+        AkramCodeCLI._handle_branch_command(cli_instance, "/branch")
 
         messages = session_db.get_messages_as_conversation(cli_instance.session_id)
         assert len(messages) == 4  # All 4 messages copied
@@ -94,9 +94,9 @@ class TestBranchCommandCLI:
 
     def test_branch_with_custom_name(self, cli_instance, session_db):
         """Custom branch name should be used as the title."""
-        from cli import HermesCLI
+        from cli import AkramCodeCLI
 
-        HermesCLI._handle_branch_command(cli_instance, "/branch refactor approach")
+        AkramCodeCLI._handle_branch_command(cli_instance, "/branch refactor approach")
 
         title = session_db.get_session_title(cli_instance.session_id)
         assert title == "refactor approach"
@@ -105,10 +105,10 @@ class TestBranchCommandCLI:
 
     def test_branch_no_session_db(self, cli_instance):
         """Branching without a session DB should show an error."""
-        from cli import HermesCLI
+        from cli import AkramCodeCLI
         cli_instance._session_db = None
 
-        HermesCLI._handle_branch_command(cli_instance, "/branch")
+        AkramCodeCLI._handle_branch_command(cli_instance, "/branch")
 
         # session_id should not have changed
         assert cli_instance.session_id == "20260403_120000_abc123"
@@ -122,7 +122,7 @@ class TestBranchCommandCLI:
         Without this, providers that cache per-session state in
         initialize() keep writing under the old session_id. See #6672.
         """
-        from cli import HermesCLI
+        from cli import AkramCodeCLI
 
         # Wire a real-ish agent object with a MagicMock memory_manager
         agent = MagicMock()
@@ -131,7 +131,7 @@ class TestBranchCommandCLI:
         cli_instance.agent = agent
         original_id = cli_instance.session_id
 
-        HermesCLI._handle_branch_command(cli_instance, "/branch")
+        AkramCodeCLI._handle_branch_command(cli_instance, "/branch")
 
         # Hook must have been called exactly once with the new session_id,
         # parent pointing at the branched-from session, reset=False, and
@@ -153,12 +153,12 @@ class TestBranchFlushesBeforeEndSession:
     compress_context() already do."""
 
     def test_branch_flushes_when_agent_present(self, cli_instance, session_db):
-        from cli import HermesCLI
+        from cli import AkramCodeCLI
 
         agent = MagicMock()
         cli_instance.agent = agent
 
-        HermesCLI._handle_branch_command(cli_instance, "/branch")
+        AkramCodeCLI._handle_branch_command(cli_instance, "/branch")
 
         agent._flush_messages_to_session_db.assert_called_once_with(
             cli_instance.conversation_history,
@@ -168,19 +168,19 @@ class TestBranchFlushesBeforeEndSession:
     def test_branch_child_row_carries_the_parent_system_prompt(self, cli_instance, session_db):
         """The branch's first turn must send the bytes the parent already sends: with no stored prompt the
         child rebuilds (a fresh workspace probe) and the copied transcript's warm cache is lost at byte 0."""
-        from cli import HermesCLI
+        from cli import AkramCodeCLI
 
         parent_id = cli_instance.session_id
         session_db.update_system_prompt(parent_id, "PARENT PROMPT\n\nWorkspace snapshot: session start")
         # No live agent: the parent's persisted row is the source.
-        HermesCLI._handle_branch_command(cli_instance, "/branch")
+        AkramCodeCLI._handle_branch_command(cli_instance, "/branch")
         child = session_db.get_session(cli_instance.session_id)
         assert child["parent_session_id"] == parent_id
         assert child["system_prompt"] == "PARENT PROMPT\n\nWorkspace snapshot: session start"
 
         # A live agent's cached prompt (what THIS process sends) wins over the row.
         cli_instance.agent = MagicMock(_cached_system_prompt="LIVE PROMPT")
-        HermesCLI._handle_branch_command(cli_instance, "/branch")
+        AkramCodeCLI._handle_branch_command(cli_instance, "/branch")
         assert session_db.get_session(cli_instance.session_id)["system_prompt"] == "LIVE PROMPT"
 
 
@@ -211,7 +211,7 @@ class TestBranchPreservesReasoningFields:
     """
 
     def test_reasoning_fields_survive_branch(self, cli_instance, session_db):
-        from cli import HermesCLI
+        from cli import AkramCodeCLI
 
         cli_instance.conversation_history = [
             {"role": "user", "content": "Sort this list."},
@@ -225,7 +225,7 @@ class TestBranchPreservesReasoningFields:
             },
         ]
 
-        HermesCLI._handle_branch_command(cli_instance, "/branch")
+        AkramCodeCLI._handle_branch_command(cli_instance, "/branch")
 
         messages = session_db.get_messages_as_conversation(cli_instance.session_id)
         assistant = next(m for m in messages if m["role"] == "assistant")

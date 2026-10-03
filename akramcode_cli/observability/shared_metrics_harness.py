@@ -5,9 +5,9 @@ These tune the agent loop itself: which fuzzy-match strategies earn their keep, 
 guards fire, whether a model recovers after a failed tool call, which kinds of commands fail, and
 which models return empty / refused / truncated replies. Producers pass RAW values; every builder
 maps them onto closed enums. Nothing here reads command text, file paths, tool arguments or reply
-text beyond the structural checks Hermes already makes (think-block stripping for "visible text").
+text beyond the structural checks AkramCode already makes (think-block stripping for "visible text").
 
-Hermes-owned agent loops (the background self-improvement review and the curator fork) are not user
+AkramCode-owned agent loops (the background self-improvement review and the curator fork) are not user
 work and never count. Recording is a no-op unless shared metrics are enabled for the owning profile,
 and never raises into the caller. Stdlib-only at import time: tool modules import this on their hot
 path.
@@ -241,13 +241,13 @@ _KILLED_STATUSES = frozenset({137, 143})
 
 
 def terminal_outcome(result: Any) -> str | None:
-    """How one foreground command ended, from the backend's raw result dict. Hermes' own deadline
+    """How one foreground command ended, from the backend's raw result dict. AkramCode' own deadline
     and interrupt set flags on the result, so a command's own ``exit 124`` reads ``nonzero``."""
     if not isinstance(result, dict):
         return None
-    if result.get("hermes_timed_out") is True:
+    if result.get("akramcode_timed_out") is True:
         return "timeout"
-    if result.get("hermes_interrupted") is True:
+    if result.get("akramcode_interrupted") is True:
         return "killed"
     code = result.get("returncode")
     if not isinstance(code, int) or isinstance(code, bool):
@@ -269,9 +269,9 @@ def terminal_outcome_fields(*, command: Any, backend: Any, outcome: str) -> dict
 
 
 def record_terminal_outcome(command: Any, backend: Any, result: Any = None, *, outcome: str | None = None) -> None:
-    """Count one foreground terminal command that reached an exit status (or Hermes' deadline).
+    """Count one foreground terminal command that reached an exit status (or AkramCode' deadline).
     Commands handed to the background, refused by a guard, or whose backend failed never ran to
-    an exit status and are not counted here (``hermes.execution_backend.count`` covers them)."""
+    an exit status and are not counted here (``akramcode.execution_backend.count`` covers them)."""
     try:
         if not _enabled() or _background_tool_call():
             return

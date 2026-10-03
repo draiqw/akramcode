@@ -235,7 +235,7 @@ _DISCORD_NONCONVERSATIONAL_HISTORY_MESSAGE_PATTERNS = (
         re.IGNORECASE,
     ),
     re.compile(
-        r"^\s*(?:✅|❌)\s+Hermes update\s+"
+        r"^\s*(?:✅|❌)\s+AkramCode update\s+"
         r"(?:finished|failed|timed out)[\s\S]*$",
         re.IGNORECASE,
     ),
@@ -417,7 +417,7 @@ def _format_privileged_intents_guidance(*, needs_members: bool) -> str:
     lines = [
         "Discord rejected the connection because privileged Gateway Intents "
         "are not enabled for this bot in the Developer Portal.",
-        "Hermes is requesting:",
+        "AkramCode is requesting:",
         "  - Message Content Intent (required to read message text)",
     ]
     if needs_members:
@@ -430,7 +430,7 @@ def _format_privileged_intents_guidance(*, needs_members: bool) -> str:
             "Fix: https://discord.com/developers/applications → your application "
             "→ Bot → Privileged Gateway Intents → enable the intent(s) listed "
             "above → Save Changes, then restart the gateway.",
-            "Docs: https://hermes-agent.nousresearch.com/docs/user-guide/messaging/discord",
+            "Docs: https://akramcode-agent.nousresearch.com/docs/user-guide/messaging/discord",
         ]
     )
     return "\n".join(lines)
@@ -495,9 +495,9 @@ class _DiscordNonConversationalMessageTracker:
         self._persist_lock = asyncio.Lock()
 
     def _state_path(self) -> _Path:
-        from hermes_constants import get_hermes_home
+        from akramcode_constants import get_akramcode_home
         return (
-            get_hermes_home()
+            get_akramcode_home()
             / _DISCORD_COMMAND_SYNC_STATE_SUBDIR
             / _DISCORD_NONCONVERSATIONAL_STATE_FILENAME
         )
@@ -690,12 +690,12 @@ def _build_allowed_mentions(extra: Optional[dict] = None):
 
 def _discord_ready_timeout_seconds() -> float:
     """Return the Discord ready wait timeout during gateway startup."""
-    raw = os.getenv("HERMES_GATEWAY_PLATFORM_CONNECT_TIMEOUT", "").strip()
+    raw = os.getenv("AKRAMCODE_GATEWAY_PLATFORM_CONNECT_TIMEOUT", "").strip()
     if raw:
         try:
             return max(0.0, float(raw))
         except ValueError:
-            logger.warning("Ignoring invalid HERMES_GATEWAY_PLATFORM_CONNECT_TIMEOUT=%r", raw)
+            logger.warning("Ignoring invalid AKRAMCODE_GATEWAY_PLATFORM_CONNECT_TIMEOUT=%r", raw)
     return 30.0
 
 
@@ -1088,8 +1088,8 @@ class DiscordAdapter(DiscordMediaMixin, BasePlatformAdapter):
         self._voice_clients: Dict[int, Any] = {}  # guild_id -> VoiceClient
         self._voice_locks: Dict[int, asyncio.Lock] = {}  # guild_id -> serialize join/leave
         # Text batching: merge rapid successive messages (Telegram-style)
-        self._text_batch_delay_seconds = env_float("HERMES_DISCORD_TEXT_BATCH_DELAY_SECONDS", 0.6)
-        self._text_batch_split_delay_seconds = env_float("HERMES_DISCORD_TEXT_BATCH_SPLIT_DELAY_SECONDS", 2.0)
+        self._text_batch_delay_seconds = env_float("AKRAMCODE_DISCORD_TEXT_BATCH_DELAY_SECONDS", 0.6)
+        self._text_batch_split_delay_seconds = env_float("AKRAMCODE_DISCORD_TEXT_BATCH_SPLIT_DELAY_SECONDS", 2.0)
         # A tagged bot may emit one logical response as several Discord
         # messages. Keep its unmentioned continuation chunks eligible for the
         # existing text batcher during this short, sender-scoped window.
@@ -1123,11 +1123,11 @@ class DiscordAdapter(DiscordMediaMixin, BasePlatformAdapter):
         # ready/open/ACK + heartbeat latency; consecutive failures -> retryable-fatal. 0 disables.
         self._liveness_interval_seconds = self._finite_positive_config_float(
             "websocket_liveness_interval_seconds", 15.0,
-            env_key="HERMES_DISCORD_LIVENESS_INTERVAL_SECONDS",
+            env_key="AKRAMCODE_DISCORD_LIVENESS_INTERVAL_SECONDS",
         )
         self._liveness_failure_threshold = self._config_int(
             "websocket_liveness_failure_threshold", 2,
-            env_key="HERMES_DISCORD_LIVENESS_FAILURE_THRESHOLD",
+            env_key="AKRAMCODE_DISCORD_LIVENESS_FAILURE_THRESHOLD",
         )
         self._heartbeat_ack_max_age_seconds = self._finite_positive_config_float(
             "websocket_heartbeat_ack_max_age_seconds", 60.0,
@@ -1152,9 +1152,9 @@ class DiscordAdapter(DiscordMediaMixin, BasePlatformAdapter):
         # connection, which is not silence.
         self._last_dispatched_event_monotonic: Optional[float] = None
         self._missed_message_backfill_task: Optional[asyncio.Task] = None
-        from hermes_constants import get_hermes_home
+        from akramcode_constants import get_akramcode_home
         from plugins.platforms.discord.recovery import DiscordRecoveryStore
-        self._discord_recovery_store = DiscordRecoveryStore(get_hermes_home())
+        self._discord_recovery_store = DiscordRecoveryStore(get_akramcode_home())
         # Dedup cache: Discord RESUME replays events after reconnects.
         self._dedup = MessageDeduplicator()
         # Reply threading mode: "off", "first" (default; first chunk only), "all" (every chunk).
@@ -1947,7 +1947,7 @@ class DiscordAdapter(DiscordMediaMixin, BasePlatformAdapter):
         """Deadline for flushing pending text batches during shutdown: strictly below the gateway's
         per-adapter disconnect budget so its outer ``wait_for`` can't cancel the flush first."""
         budget = 5.0  # mirrors gateway _ADAPTER_DISCONNECT_TIMEOUT_SECS_DEFAULT
-        raw = os.getenv("HERMES_GATEWAY_ADAPTER_DISCONNECT_TIMEOUT", "").strip()
+        raw = os.getenv("AKRAMCODE_GATEWAY_ADAPTER_DISCONNECT_TIMEOUT", "").strip()
         if raw:
             try:
                 parsed = float(raw)
@@ -1997,8 +1997,8 @@ class DiscordAdapter(DiscordMediaMixin, BasePlatformAdapter):
         logger.info("[%s] Disconnected", self.name)
 
     def _command_sync_state_path(self) -> _Path:
-        from hermes_constants import get_hermes_home
-        directory = get_hermes_home() / _DISCORD_COMMAND_SYNC_STATE_SUBDIR
+        from akramcode_constants import get_akramcode_home
+        directory = get_akramcode_home() / _DISCORD_COMMAND_SYNC_STATE_SUBDIR
         try:
             directory.mkdir(parents=True, exist_ok=True)
         except Exception:
@@ -2512,7 +2512,7 @@ class DiscordAdapter(DiscordMediaMixin, BasePlatformAdapter):
         self._with_discord_recovery_db(_op)
 
     async def _should_backfill_discord_message(self, message: Any) -> bool:
-        """Return True when a recent Discord message still needs Hermes work."""
+        """Return True when a recent Discord message still needs AkramCode work."""
         if not self._client or not getattr(self._client, "user", None):
             return False
         if getattr(getattr(message, "author", None), "id", None) == getattr(self._client.user, "id", None):
@@ -2527,9 +2527,9 @@ class DiscordAdapter(DiscordMediaMixin, BasePlatformAdapter):
         return not await self._message_has_non_down_bot_response(message)
 
     def _is_down_notice_content(self, content: str) -> bool:
-        """Recognize only explicit Hermes/gateway outage notices."""
+        """Recognize only explicit AkramCode/gateway outage notices."""
         text = (content or "").lower()
-        subject = r"(?:hermes|the agent|agent|the gateway|gateway|bmo)"
+        subject = r"(?:akramcode|the agent|agent|the gateway|gateway|bmo)"
         state = r"(?:is|was|appears to be|is currently|was currently)"
         condition = r"(?:down|offline|unavailable|not running)"
         return re.search(rf"\b{subject}\s+{state}\s+{condition}\b", text) is not None
@@ -2818,7 +2818,7 @@ class DiscordAdapter(DiscordMediaMixin, BasePlatformAdapter):
         return "safe"
 
     def _canonicalize_app_command_payload(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        """Reduce command payloads to the semantic fields Hermes manages."""
+        """Reduce command payloads to the semantic fields AkramCode manages."""
         contexts = payload.get("contexts")
         integration_types = payload.get("integration_types")
         return {
@@ -3551,7 +3551,7 @@ class DiscordAdapter(DiscordMediaMixin, BasePlatformAdapter):
             phrase = random.choice(phrases)
         import uuid as _uuid
         audio_path = os.path.join(
-            tempfile.gettempdir(), "hermes_voice", f"ack_{_uuid.uuid4().hex[:12]}.mp3",
+            tempfile.gettempdir(), "akramcode_voice", f"ack_{_uuid.uuid4().hex[:12]}.mp3",
         )
         os.makedirs(os.path.dirname(audio_path), exist_ok=True)
         try:
@@ -3929,7 +3929,7 @@ class DiscordAdapter(DiscordMediaMixin, BasePlatformAdapter):
         return bool(channel_ids & allowed)
 
     def _is_pairing_approved_user(self, user_id: str) -> bool:
-        """True when the Discord user has an explicit Hermes pairing grant."""
+        """True when the Discord user has an explicit AkramCode pairing grant."""
         user_id = str(user_id or "").strip()
         if not user_id:
             return False
@@ -5340,7 +5340,7 @@ class DiscordAdapter(DiscordMediaMixin, BasePlatformAdapter):
 
         Strip Discord mention syntax (users / roles / channels) so thread titles don't show raw <@id>,
         <@&id>, or <#id> markers — the ID isn't meaningful to humans glancing at the thread list (#6336).
-        Real semantic naming is done after the first agent turn, when Hermes has an LLM-generated session
+        Real semantic naming is done after the first agent turn, when AkramCode has an LLM-generated session
         title and can safely rename only this newly-created thread.
         """
         content = (content or "").strip()
@@ -5357,7 +5357,7 @@ class DiscordAdapter(DiscordMediaMixin, BasePlatformAdapter):
     def _stamp_auto_thread_name(thread: Any, thread_name: str) -> Any:
         """Remember the placeholder name so the semantic rename can verify it wasn't changed by a human."""
         try:
-            setattr(thread, "_hermes_auto_thread_initial_name", thread_name)
+            setattr(thread, "_akramcode_auto_thread_initial_name", thread_name)
         except Exception:
             pass
         return thread
@@ -5433,7 +5433,7 @@ class DiscordAdapter(DiscordMediaMixin, BasePlatformAdapter):
         if edit is None:
             return False
         try:
-            await edit(name=cleaned, reason="Hermes semantic session title")
+            await edit(name=cleaned, reason="AkramCode semantic session title")
             logger.info(
                 "[%s] Renamed Discord thread %s from %r to %r",
                 self.name, thread_id, current_name, cleaned,
@@ -5469,7 +5469,7 @@ class DiscordAdapter(DiscordMediaMixin, BasePlatformAdapter):
             )
             return None
         thread_name = (name or "handoff").strip()[:80] or "handoff"
-        reason = "Hermes session handoff"
+        reason = "AkramCode session handoff"
         try:
             create = getattr(parent, "create_thread", None)
             if create is not None:
@@ -5676,7 +5676,7 @@ class DiscordAdapter(DiscordMediaMixin, BasePlatformAdapter):
         self, chat_id: str, prompt: str, default: str = "", session_key: str = "",
         metadata: Optional[Dict[str, Any]] = None,
     ) -> SendResult:
-        """Yes/No prompt for the gateway ``/update`` watcher when ``hermes update --gateway`` needs input."""
+        """Yes/No prompt for the gateway ``/update`` watcher when ``akramcode update --gateway`` needs input."""
         def _build(_channel):
             default_hint = t("platform.discord.prompt.default_hint", default=default) if default else ""
             update_title = t("platform.discord.prompt.update_title")
@@ -6136,7 +6136,7 @@ class DiscordAdapter(DiscordMediaMixin, BasePlatformAdapter):
             role_authorized=role_authorized,
             auto_thread_created=auto_threaded_channel is not None,
             auto_thread_initial_name=(
-                getattr(auto_threaded_channel, "_hermes_auto_thread_initial_name", None)
+                getattr(auto_threaded_channel, "_akramcode_auto_thread_initial_name", None)
                 or self._derive_auto_thread_name(message.content or "")
             ) if auto_threaded_channel is not None else None,
         )
@@ -6304,8 +6304,8 @@ def _define_discord_view_classes() -> None:
     Called at module load and after a lazy install so the classes exist whenever DISCORD_AVAILABLE."""
     global ExecApprovalView, SlashConfirmView, UpdatePromptView, ModelPickerView, ClarifyChoiceView, ChoicePickerView
 
-    class _HermesView(discord.ui.View):
-        """Shared plumbing for Hermes component views: allowlist auth, single-use
+    class _AkramCodeView(discord.ui.View):
+        """Shared plumbing for AkramCode component views: allowlist auth, single-use
         ``resolved`` flag, ``_message`` handle for timeout edits."""
 
         def __init__(self, allowed_user_ids: set, allowed_role_ids: Optional[set], *, timeout):
@@ -6380,7 +6380,7 @@ def _define_discord_view_classes() -> None:
             self._disable_all()
             await self._expire_embed(t("platform.discord.prompt.expired_footer"))
 
-    class ExecApprovalView(_HermesView):
+    class ExecApprovalView(_AkramCodeView):
         """Allow Once / Allow Session / Always Allow / Deny buttons for a dangerous command.
         Clicks call ``resolve_gateway_approval()`` — the same mechanism as the text ``/approve`` flow."""
 
@@ -6471,7 +6471,7 @@ def _define_discord_view_classes() -> None:
         async def deny(self, interaction: discord.Interaction, button: discord.ui.Button):
             await self._resolve(interaction, "deny", discord.Color.red(), "platform.discord.approval.resolved_deny")
 
-    class SlashConfirmView(_HermesView):
+    class SlashConfirmView(_AkramCodeView):
         """Approve Once / Always Approve / Cancel for slash-command confirmations (``/reload-mcp``,
         ``GatewayRunner._request_slash_confirm``); clicks call ``tools.slash_confirm.resolve(...)``."""
 
@@ -6519,8 +6519,8 @@ def _define_discord_view_classes() -> None:
         async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
             await self._resolve(interaction, "cancel", discord.Color.greyple(), "platform.discord.slash_confirm.resolved_cancel")
 
-    class UpdatePromptView(_HermesView):
-        """Yes/No buttons for ``hermes update`` prompts; the answer is written to
+    class UpdatePromptView(_AkramCodeView):
+        """Yes/No buttons for ``akramcode update`` prompts; the answer is written to
         ``.update_response`` for the detached update process to pick up."""
 
         def __init__(self, session_key: str, allowed_user_ids: set, allowed_role_ids: Optional[set] = None):
@@ -6535,8 +6535,8 @@ def _define_discord_view_classes() -> None:
                 interaction, color,
                 t("platform.discord.approval.by_user", label=t(label_key), user=interaction.user.display_name))
             try:
-                from hermes_constants import get_hermes_home
-                response_path = get_hermes_home() / ".update_response"
+                from akramcode_constants import get_akramcode_home
+                response_path = get_akramcode_home() / ".update_response"
                 tmp = response_path.with_suffix(".tmp")
                 tmp.write_text(answer, encoding="utf-8")
                 tmp.replace(response_path)
@@ -6552,7 +6552,7 @@ def _define_discord_view_classes() -> None:
         async def no_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
             await self._respond(interaction, "n", discord.Color.red(), "platform.discord.prompt.negate")
 
-    class ModelPickerView(_HermesView):
+    class ModelPickerView(_AkramCodeView):
         """Two-step select-menu model picker: provider dropdown → model dropdown,
         editing the original message in place. Times out after 2 minutes."""
 
@@ -6740,7 +6740,7 @@ def _define_discord_view_classes() -> None:
                 except Exception:
                     pass
 
-    class ChoicePickerView(_HermesView):
+    class ChoicePickerView(_AkramCodeView):
         """Flat single-select picker for finite-choice commands (/reasoning, /fast); 2-minute timeout."""
 
         def __init__(self, choices: list, on_choice_selected, allowed_user_ids: set, allowed_role_ids: Optional[set] = None):
@@ -6793,7 +6793,7 @@ def _define_discord_view_classes() -> None:
                 except Exception:
                     pass
 
-    class ClarifyChoiceView(_HermesView):
+    class ClarifyChoiceView(_AkramCodeView):
         """One button per clarify choice (max 24) plus ``✏️ Other``. A numeric click resolves the
         gateway clarify entry immediately; ``Other`` flips to text-capture (next message answers).
         Single-use: after the first valid click all buttons disable."""
@@ -6918,7 +6918,7 @@ if DISCORD_AVAILABLE:
 
 # ── Standalone (out-of-process) sender ────────────────────────────────────────
 # Used by ``tools/send_message_tool._send_via_adapter`` when no live DiscordAdapter is in this
-# process (e.g. standalone ``hermes cron``); same forum/thread/multipart logic via Discord REST.
+# process (e.g. standalone ``akramcode cron``); same forum/thread/multipart logic via Discord REST.
 
 # Process-local channel-type probe cache: avoids re-probing every send when the directory cache misses.
 _DISCORD_CHANNEL_TYPE_PROBE_CACHE: Dict[str, bool] = {}
@@ -7283,7 +7283,7 @@ def interactive_setup() -> None:
         "  - Message Content Intent (required — without it Discord rejects the connection)",
         "  - Server Members Intent (required if you use usernames or role allowlists)",
         "Save Changes in the Developer Portal before starting the gateway.",
-        "Docs: https://hermes-agent.nousresearch.com/docs/user-guide/messaging/discord",
+        "Docs: https://akramcode-agent.nousresearch.com/docs/user-guide/messaging/discord",
     )
     token = _prompt_discord_bot_token(prompt)
     if not token:
@@ -7309,7 +7309,7 @@ def interactive_setup() -> None:
         )
     print()
     _info_lines(
-        "📬 Home Channel: where Hermes delivers cron job results,",
+        "📬 Home Channel: where AkramCode delivers cron job results,",
         "   cross-platform messages, and notifications.",
         "   To get a channel ID: right-click a channel → Copy Channel ID",
         "   (requires Developer Mode in Discord settings)",
@@ -7329,8 +7329,8 @@ _YAML_BOOL_ENV_KEYS = (
 )
 # (public websocket_* key, legacy liveness_* alias, env bridge var)
 _YAML_WEBSOCKET_LIVENESS_KEYS = (
-    ("websocket_liveness_interval_seconds", "liveness_interval_seconds", "HERMES_DISCORD_LIVENESS_INTERVAL_SECONDS"),
-    ("websocket_liveness_failure_threshold", "liveness_failure_threshold", "HERMES_DISCORD_LIVENESS_FAILURE_THRESHOLD"),
+    ("websocket_liveness_interval_seconds", "liveness_interval_seconds", "AKRAMCODE_DISCORD_LIVENESS_INTERVAL_SECONDS"),
+    ("websocket_liveness_failure_threshold", "liveness_failure_threshold", "AKRAMCODE_DISCORD_LIVENESS_FAILURE_THRESHOLD"),
     ("websocket_heartbeat_ack_max_age_seconds", None, None),
     ("websocket_max_latency_seconds", None, None),
     ("websocket_event_max_silence_seconds", None, None),
@@ -7440,7 +7440,7 @@ _is_connected = _env_is_connected("DISCORD_BOT_TOKEN")
 
 
 def register(ctx) -> None:
-    """Plugin entry point — called by the Hermes plugin system."""
+    """Plugin entry point — called by the AkramCode plugin system."""
     ctx.register_platform(
         name="discord",
         label="Discord",
@@ -7449,7 +7449,7 @@ def register(ctx) -> None:
         ensure_deps_fn=check_discord_requirements,
         is_connected=_is_connected,
         required_env=["DISCORD_BOT_TOKEN"],
-        install_hint="Run `hermes setup` to install Discord support.",
+        install_hint="Run `akramcode setup` to install Discord support.",
         setup_fn=interactive_setup,
         # YAML→env bridge: ``discord:`` config keys → ``DISCORD_*`` env vars read via os.getenv().
         # YAML→env config bridge — owns the translation of ``config.yaml`` ``discord:`` keys

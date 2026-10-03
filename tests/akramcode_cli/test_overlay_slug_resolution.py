@@ -1,7 +1,7 @@
 """Test that overlay providers with mismatched models.dev keys resolve correctly.
 
-HERMES_OVERLAYS keys may be models.dev IDs (e.g. "github-copilot") while
-_PROVIDER_MODELS and config.yaml use Hermes IDs ("copilot").  The slug
+AKRAMCODE_OVERLAYS keys may be models.dev IDs (e.g. "github-copilot") while
+_PROVIDER_MODELS and config.yaml use AkramCode IDs ("copilot").  The slug
 resolution in list_authenticated_providers() Section 2 must bridge this gap.
 
 Covers: #5223, #6492
@@ -17,7 +17,7 @@ from akramcode_cli.model_switch import list_authenticated_providers
 # -- Copilot slug resolution (env var path) ----------------------------------
 
 @patch.dict(os.environ, {"COPILOT_GITHUB_TOKEN": "fake-ghu"}, clear=False)
-def test_copilot_uses_hermes_slug():
+def test_copilot_uses_akramcode_slug():
     """github-copilot overlay should resolve to slug='copilot' with curated models."""
     providers = list_authenticated_providers(current_provider="copilot")
 

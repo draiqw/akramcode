@@ -18,8 +18,8 @@ class CLI(CLIStreamMixin):
 @pytest.mark.parametrize("setting", [None, False, True])
 @pytest.mark.parametrize("surface", ["cli", "tui"])
 def test_actual_credit_capture_depletion_and_recovery(tmp_path, monkeypatch, setting, surface):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.setenv("HERMES_MANAGED_DIR", str(tmp_path / "managed"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_MANAGED_DIR", str(tmp_path / "managed"))
     cfg = {} if setting is None else {"display": {"suppress_warning_notifications": setting}}
     (tmp_path / "config.yaml").write_text(json.dumps(cfg))
     agent = object.__new__(AIAgent)

@@ -46,7 +46,7 @@ def _(rid, params: dict) -> dict:
         return _err(rid, 4004, "empty paste")
     _paste_counter += 1
     line_count = text.count("\n") + 1
-    paste_dir = _hermes_home / "pastes"
+    paste_dir = _akramcode_home / "pastes"
     paste_dir.mkdir(parents=True, exist_ok=True)
     from datetime import datetime
     paste_file = paste_dir / f"paste_{_paste_counter}_{datetime.now().strftime('%H%M%S')}.txt"
@@ -58,7 +58,7 @@ def _(rid, params: dict) -> dict:
 def _profile_mention_items(prefix: str) -> list[dict]:
     """`@<profile>` completions (multi-agent UIs route `@<profile>` text to another
     profile). Bare-word matches only, never `@kind:` directives; the primary profile
-    is also offered as 'hermes' when no real profile claims that name."""
+    is also offered as 'akramcode' when no real profile claims that name."""
     out: list[dict] = []
     try:
         from akramcode_cli.profiles import list_profiles
@@ -70,8 +70,8 @@ def _profile_mention_items(prefix: str) -> list[dict]:
             seen.add(name.lower())
             if name.lower().startswith(prefix.lower()):
                 out.append(_item(f"@{name}", (getattr(p, "description", "") or "").strip() or "agent profile"))
-        if "hermes".startswith(prefix.lower()) and "hermes" not in seen:
-            out.append(_item("@hermes", "agent profile (primary)"))
+        if "akramcode".startswith(prefix.lower()) and "akramcode" not in seen:
+            out.append(_item("@akramcode", "agent profile (primary)"))
     except Exception:
         return []
     return out
@@ -173,7 +173,7 @@ def _backend_dir_entries(search_dir: str, session_key: str | None) -> list[tuple
         # configured), and Desktop's ws reconnect loop turns that into model traffic from an
         # idle machine (#115478). The script is a constant and the search dir is quoted, so
         # nothing here needs an approval verdict.
-        with unmetered_backend_calls():  # Hermes' own listing, not the user's backend work
+        with unmetered_backend_calls():  # AkramCode' own listing, not the user's backend work
             result = json.loads(terminal_tool(
                 f"sh -c {shlex.quote(script)} sh {shlex.quote(search_dir)}", task_id=session_key, timeout=3,
                 force=True))
@@ -387,10 +387,10 @@ def _(rid, params: dict) -> dict:
     if not (pconfig := PROVIDER_REGISTRY.get(slug)):
         return _err(rid, 4002, f"unknown provider: {slug}")
     if pconfig.auth_type != "api_key":
-        return _err(rid, 4003, f"{pconfig.name} uses {pconfig.auth_type} auth — run `hermes model` to configure")
+        return _err(rid, 4003, f"{pconfig.name} uses {pconfig.auth_type} auth — run `akramcode model` to configure")
     if not pconfig.api_key_env_vars:
         return _err(rid, 4004, f"no env var defined for {pconfig.name}")
-    # Save the key to ~/.hermes/.env via the unified credential lifecycle so any stale config.yaml mirror of
+    # Save the key to ~/.akramcode/.env via the unified credential lifecycle so any stale config.yaml mirror of
     # the previous key (model.api_key, custom_providers[*].api_key) is rotated in the same action (#62269).
     env_var = pconfig.api_key_env_vars[0]
     from akramcode_cli.config import load_env

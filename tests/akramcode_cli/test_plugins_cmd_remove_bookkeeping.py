@@ -1,13 +1,13 @@
 """``plugins remove`` (CLI, dashboard, ``plugins.manage`` RPC) leaves no config residue and never
 follows a symlink (#54336, plugin-scan L2-F1/F2/F5).
 
-Real removal core against a temp HERMES_HOME; the RPC path goes through ``tui_gateway.server``.
+Real removal core against a temp AKRAMCODE_HOME; the RPC path goes through ``tui_gateway.server``.
 """
 
 from __future__ import annotations
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from akramcode_cli import plugins_cmd
 from tui_gateway import server
@@ -23,10 +23,10 @@ def _write_plugin(root, rel, name, extra=""):
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    hermes_home = tmp_path / "hermes-home"
-    (hermes_home / "plugins").mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    return hermes_home
+    akramcode_home = tmp_path / "akramcode-home"
+    (akramcode_home / "plugins").mkdir(parents=True)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
+    return akramcode_home
 
 
 def _config(home):

@@ -1,4 +1,4 @@
-"""Hermes middleware contract helpers.
+"""AkramCode middleware contract helpers.
 
 Observer hooks report what happened. Middleware can change what happens by rewriting a request or
 wrapping the actual execution callback. Agent-loop call sites and plugins share this vocabulary.
@@ -13,8 +13,8 @@ from typing import Any, Callable, Dict, List
 
 logger = logging.getLogger(__name__)
 
-OBSERVER_SCHEMA_VERSION = "hermes.observer.v1"
-MIDDLEWARE_SCHEMA_VERSION = "hermes.middleware.v1"
+OBSERVER_SCHEMA_VERSION = "akramcode.observer.v1"
+MIDDLEWARE_SCHEMA_VERSION = "akramcode.middleware.v1"
 
 TOOL_REQUEST_MIDDLEWARE = "tool_request"
 TOOL_EXECUTION_MIDDLEWARE = "tool_execution"

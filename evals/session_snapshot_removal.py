@@ -1,13 +1,13 @@
 """Real config → SQLite persistence → explicit /save A/B, without provider calls.
 
-Run with a clean HOME/HERMES_HOME and PYTHONPATH pointing at the tree under test.
+Run with a clean HOME/AKRAMCODE_HOME and PYTHONPATH pointing at the tree under test.
 """
 import json
 import os
 from pathlib import Path
 from types import SimpleNamespace
 
-home = Path(os.environ["HERMES_HOME"])
+home = Path(os.environ["AKRAMCODE_HOME"])
 home.mkdir(parents=True, exist_ok=True)
 (home / "config.yaml").write_text("sessions:\n  write_json_snapshots: true\n", encoding="utf-8")
 from agent.agent_init import _init_session_state

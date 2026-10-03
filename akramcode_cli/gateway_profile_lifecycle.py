@@ -1,7 +1,7 @@
 """Named-profile lifecycle inside the host gateway, never a service-manager action."""
 from __future__ import annotations
 
-from akramcode_constants import get_hermes_home, get_default_hermes_root
+from akramcode_constants import get_akramcode_home, get_default_akramcode_root
 from akramcode_cli.profiles import parked_marker_path, profile_is_parked, profile_is_standalone, profiles_to_serve
 
 
@@ -24,7 +24,7 @@ def host_scope_for_all_verb(owner):
     named-profile guard then refused (exit 78): the host stayed down after a Desktop update.
     """
     from akramcode_cli.gateway_migrate import _home_env
-    return _home_env(owner.home if owner is not None else get_default_hermes_root())
+    return _home_env(owner.home if owner is not None else get_default_akramcode_root())
 
 
 def profile_lifecycle(command: str, args) -> bool:
@@ -35,7 +35,7 @@ def profile_lifecycle(command: str, args) -> bool:
     name = gw._current_profile_name()
     if not name or name == "default" or getattr(args, "all", False) or getattr(args, "force", False):
         return False
-    home = get_hermes_home()
+    home = get_akramcode_home()
     if profile_is_standalone(home):
         # gateway.standalone wins: the host never serves (or parks) an opted-out profile, so its
         # verbs keep addressing its own gateway process even while a stale host record lists it.
@@ -55,7 +55,7 @@ def profile_lifecycle(command: str, args) -> bool:
             from akramcode_cli.gateway_multiplex_served import live_default_gateway_pid
             if live_default_gateway_pid() is None:
                 return False  # Unpark even when today's normal start path must start the host first.
-        host_home = owner.home if owner is not None else get_default_hermes_root()
+        host_home = owner.home if owner is not None else get_default_akramcode_root()
         answer = request_serve_profile_hot(host_home, name)
         if _confirmed(answer, "served", name):
             print(f"Profile '{name}' served by the host gateway.")
@@ -70,14 +70,14 @@ def profile_lifecycle(command: str, args) -> bool:
     owner = gw._served_by_another_host_gateway()
     if owner is None and not gw.named_profile_served_by_running_multiplexer():
         return False
-    host_home = owner.home if owner is not None else get_default_hermes_root()
+    host_home = owner.home if owner is not None else get_default_akramcode_root()
     if command == "stop":
         # Persist intent BEFORE teardown: the periodic rescan must not re-add this profile.
         marker.touch()
         answer = request_unserve_profile(host_home, name)
         if _confirmed(answer, "unserved", name):
             print(f"Profile '{name}' parked; its bots and cron are stopped. "
-                  f"Start again with: hermes -p {name} gateway start")
+                  f"Start again with: akramcode -p {name} gateway start")
         else:
             print(f"Profile '{name}' parked, but immediate stop was not confirmed: {_failure(answer)}.")
             print("The host drops it on its next rescan (within 30s).")
@@ -100,8 +100,8 @@ def print_parked_status() -> bool:
     """A parked satellite is still installed, but is not a running gateway."""
     from akramcode_cli import gateway as gw
     name = gw._current_profile_name()
-    if name and name != "default" and profile_is_parked(get_hermes_home()):
-        print(f"Profile '{name}': parked (hermes -p {name} gateway start)")
+    if name and name != "default" and profile_is_parked(get_akramcode_home()):
+        print(f"Profile '{name}': parked (akramcode -p {name} gateway start)")
         return True
     if not name or name == "default":
         parked = [profile for profile, home in profiles_to_serve(True, include_parked=True)
@@ -111,5 +111,5 @@ def print_parked_status() -> bool:
             if owner is not None:
                 print(f"Served profiles: {', '.join(owner.profiles)}")
             for profile in parked:
-                print(f"Profile '{profile}': parked (hermes -p {profile} gateway start)")
+                print(f"Profile '{profile}': parked (akramcode -p {profile} gateway start)")
     return False

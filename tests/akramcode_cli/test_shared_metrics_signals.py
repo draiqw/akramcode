@@ -1,4 +1,4 @@
-"""v5 signals: hermes.tool_unavailable.count, hermes.provider_setup.count, hermes.feature_adoption.count."""
+"""v5 signals: akramcode.tool_unavailable.count, akramcode.provider_setup.count, akramcode.feature_adoption.count."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from akramcode_cli.observability.shared_metrics import SharedMetricsStore
 def marks(tmp_path, monkeypatch):
     captured: list[tuple[str, dict]] = []
     policy = {"on": True}
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
     monkeypatch.setattr(relay_shared_metrics, "enabled", lambda: policy["on"])
     monkeypatch.setattr(relay_shared_metrics, "record_process_mark", lambda mark, data: captured.append((mark, data)))
 
@@ -104,7 +104,7 @@ def test_counter_rows_map_to_features():
     assert signals.features_for(contract.FEATURE_USED_MARK, {"feature": "bot_mode"}) == ("bot_mode",)
 
 
-def test_hermes_internal_work_never_latches_adoption():
+def test_akramcode_internal_work_never_latches_adoption():
     from akramcode_cli.observability.shared_metrics_fields import milestones_for
 
     curator = {"archived_bucket": "0", "created_bucket": "0", "merged_bucket": "0", "patched_bucket": "0",
@@ -138,7 +138,7 @@ def test_days_since_install_bucket(monkeypatch, tmp_path, age_s, bucket):
 
 
 def test_feature_adoption_latches_once_per_install(tmp_path):
-    resource = {"hermes_version": "1.0.0", "os_family": "linux", "architecture": "x86_64", "install_method": "git"}
+    resource = {"akramcode_version": "1.0.0", "os_family": "linux", "architecture": "x86_64", "install_method": "git"}
     store = SharedMetricsStore(tmp_path / "m.sqlite3", tmp_path / "outbox")
     assert store.record_feature_adoption("memory", "same_day", resource) is True
     again = SharedMetricsStore(tmp_path / "m.sqlite3", tmp_path / "outbox")
@@ -338,7 +338,7 @@ def _settle_disabled() -> None:
     import threading
 
     for thread in threading.enumerate():
-        if thread.name == "hermes-feature-disabled":
+        if thread.name == "akramcode-feature-disabled":
             thread.join(10)
 
 
@@ -393,7 +393,7 @@ def test_record_config_saved_needs_a_surface_and_collection(marks, monkeypatch):
 
 
 def test_store_counts_feature_disabled_once_per_day(tmp_path):
-    resource = {"hermes_version": "1.0.0", "os_family": "linux", "architecture": "x86_64", "install_method": "git"}
+    resource = {"akramcode_version": "1.0.0", "os_family": "linux", "architecture": "x86_64", "install_method": "git"}
     store = SharedMetricsStore(tmp_path / "m.sqlite3", tmp_path / "outbox")
     dims = {"event": "disabled", "kind": "toolset", "name": "memory", "surface": "cli_tools"}
     assert store.record_counter_once_per_day(contract.FEATURE_DISABLED_METRIC, dims, resource) is True
@@ -425,7 +425,7 @@ def test_migrations_and_env_templates_are_not_user_disables(marks, monkeypatch):
     monkeypatch.setattr(disabled_metrics, "_process_surface", "cli_config")
     config = load_config()
     config.setdefault("memory", {})["memory_enabled"] = False
-    _persist_migration(config)  # e.g. `hermes config migrate` / profile create in the dashboard
+    _persist_migration(config)  # e.g. `akramcode config migrate` / profile create in the dashboard
     # A ``${VAR}`` template on the raw side vs its expanded value: nothing moved.
     monkeypatch.setenv("MEM_ON", "false")
     (marks.home / "config.yaml").write_text("compression:\n  enabled: ${MEM_ON}\n")
@@ -439,7 +439,7 @@ def test_migrations_and_env_templates_are_not_user_disables(marks, monkeypatch):
 def test_diff_and_record_run_off_the_callers_lock_in_the_owning_profile(marks, monkeypatch, tmp_path):
     import threading
 
-    from hermes_constants import get_hermes_home, reset_hermes_home_override, set_hermes_home_override
+    from akramcode_constants import get_akramcode_home, reset_akramcode_home_override, set_akramcode_home_override
 
     monkeypatch.setattr(disabled_metrics, "_process_surface", "cli_config")
     gate, seen = threading.Event(), []
@@ -447,17 +447,17 @@ def test_diff_and_record_run_off_the_callers_lock_in_the_owning_profile(marks, m
 
     def slow(old, new):
         gate.wait(5)
-        seen.append(str(get_hermes_home()))
+        seen.append(str(get_akramcode_home()))
         return real(old, new)
 
     monkeypatch.setattr(disabled_metrics, "config_transitions", slow)
-    token = set_hermes_home_override(str(tmp_path / "b"))
+    token = set_akramcode_home_override(str(tmp_path / "b"))
     try:
         with threading.Lock():  # the caller's write lock (the dashboard's _CONFIG_MUTATION_LOCK)
             disabled_metrics.record_config_saved({}, {"memory": {"memory_enabled": False}})
             assert marks.rows == []  # returned without diffing
     finally:
-        reset_hermes_home_override(token)
+        reset_akramcode_home_override(token)
     gate.set()
     _settle_disabled()
     assert seen == [str(tmp_path / "b")] and [m for m, _ in marks.rows] == [contract.FEATURE_DISABLED_MARK]
@@ -466,10 +466,10 @@ def test_diff_and_record_run_off_the_callers_lock_in_the_owning_profile(marks, m
 def test_off_thread_setup_records_in_the_owning_profile(marks, tmp_path, monkeypatch):
     seen: list[str] = []
     monkeypatch.setattr(relay_shared_metrics, "record_process_marks_saved", lambda rows: (
-        seen.append(str(__import__("hermes_constants").get_hermes_home())), len(rows))[1])
+        seen.append(str(__import__("akramcode_constants").get_akramcode_home())), len(rows))[1])
     home_a, home_b = tmp_path / "a", tmp_path / "b"
     for home in (home_a, home_b, home_a):
-        flow = setup_metrics.begin_provider_setup("dashboard", "xai", hermes_home=home)
+        flow = setup_metrics.begin_provider_setup("dashboard", "xai", akramcode_home=home)
         assert flow.marker.parent == setup_metrics.markers_dir(home)
         setup_metrics.finish_provider_setup(flow, "completed")
     assert seen == [str(h) for h in (home_a, home_a, home_b, home_b, home_a, home_a)]

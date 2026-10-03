@@ -15,15 +15,15 @@ from types import SimpleNamespace
 
 import pytest
 
-import hermes_constants
+import akramcode_constants
 from akramcode_cli import gateway_migrate as gm
 
 
 def _write_live_gateway(home: Path, served: list[str] | None = None) -> None:
-    record = {"pid": os.getpid(), "hermes_home": str(home), "gateway_state": "running"}
+    record = {"pid": os.getpid(), "akramcode_home": str(home), "gateway_state": "running"}
     if served is not None:
         record["served_profiles"] = served
-    (home / "gateway.pid").write_text(json.dumps({"pid": os.getpid(), "hermes_home": str(home)}))
+    (home / "gateway.pid").write_text(json.dumps({"pid": os.getpid(), "akramcode_home": str(home)}))
     (home / "gateway_state.json").write_text(json.dumps(record))
 
 
@@ -31,20 +31,20 @@ def _write_live_gateway(home: Path, served: list[str] | None = None) -> None:
 def stranded(tmp_path, monkeypatch):
     """A host mid-migration: manifest on disk, both secondaries' units already uninstalled,
     nothing serving. Exactly what an apply that died in ``_wait_for_served`` leaves behind."""
-    root = tmp_path / "home" / ".hermes"
+    root = tmp_path / "home" / ".akramcode"
     for sub in ("profiles/coder", "profiles/ops"):
         (root / sub).mkdir(parents=True)
         (root / sub / "SOUL.md").write_text("x\n", encoding="utf-8")
     (root / "config.yaml").write_text("gateway:\n  multiplex_profiles: true\n", encoding="utf-8")
     (root / ".env").write_text("TELEGRAM_BOT_TOKEN=111111:shared\n", encoding="utf-8")
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(root))
     monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "state"))
-    monkeypatch.setenv("HERMES_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
+    monkeypatch.setenv("AKRAMCODE_GATEWAY_LOCK_DIR", str(tmp_path / "locks"))
     for name in ("TELEGRAM_BOT_TOKEN", "DISCORD_BOT_TOKEN", "GATEWAY_MULTIPLEX_PROFILES"):
         monkeypatch.delenv(name, raising=False)
-    monkeypatch.setattr(hermes_constants, "_default_hermes_root_memo", None)
-    assert str(hermes_constants.get_default_hermes_root()).startswith(str(tmp_path))
+    monkeypatch.setattr(akramcode_constants, "_default_akramcode_root_memo", None)
+    assert str(akramcode_constants.get_default_akramcode_root()).startswith(str(tmp_path))
 
     (root / gm.MANIFEST_NAME).write_text(json.dumps({
         "version": 1, "flag_was": False,
@@ -61,13 +61,13 @@ def stranded(tmp_path, monkeypatch):
     state = SimpleNamespace(root=root, ops=ops, start_succeeds=True)
 
     def _service_op(kind, system, verb, home, *, run_as_user=None):
-        name = hermes_constants.profile_name_for_home(home) or "default"
+        name = akramcode_constants.profile_name_for_home(home) or "default"
         ops.append((name, verb))
         if verb in ("start", "restart") and name == "default" and state.start_succeeds:
             _write_live_gateway(root, ["default", "coder", "ops"])
 
     import gateway.status as status
-    monkeypatch.setattr(status, "_read_process_cmdline", lambda pid: "hermes gateway run")
+    monkeypatch.setattr(status, "_read_process_cmdline", lambda pid: "akramcode gateway run")
     monkeypatch.setattr(gm, "_installed_services", lambda home: [])
     monkeypatch.setattr(gm, "_service_op", _service_op)
     monkeypatch.setattr(gm, "_host_supports_migration", lambda: None)

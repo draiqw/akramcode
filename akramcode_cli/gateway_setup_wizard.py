@@ -1,4 +1,4 @@
-"""Gateway platform setup wizard (hermes gateway setup): platform registry/status table, per-platform setup prompts, service offer.
+"""Gateway platform setup wizard (akramcode gateway setup): platform registry/status table, per-platform setup prompts, service offer.
 
 Extracted from ``akramcode_cli/gateway.py``. Bodies read facade helpers through ``_gw()`` (late
 binding on ``akramcode_cli.gateway``) so the seams tests and callers patch on the facade keep
@@ -26,7 +26,7 @@ _PLATFORMS = [
         "setup_instructions": [
             "1. In Mattermost: Integrations → Bot Accounts → Add Bot Account",
             "   (System Console → Integrations → Bot Accounts must be enabled)",
-            "2. Give it a username (e.g. hermes) and copy the bot token",
+            "2. Give it a username (e.g. akramcode) and copy the bot token",
             "3. Works with any self-hosted Mattermost instance — enter your server URL",
             "4. To find your user ID: click your avatar (top-left) → Profile",
             "   Your user ID is displayed there — click it to copy.",
@@ -42,7 +42,7 @@ _PLATFORMS = [
              "password": False, "is_allowlist": True, "help": "Your Mattermost user ID from step 4 above."},
             {"name": "MATTERMOST_HOME_CHANNEL",
              "prompt": "Home channel ID (for cron/notification delivery, or empty to set later with /set-home)",
-             "password": False, "help": "Channel ID where Hermes delivers cron results and notifications."},
+             "password": False, "help": "Channel ID where AkramCode delivers cron results and notifications."},
             {"name": "MATTERMOST_REPLY_MODE",
              "prompt": "Reply mode — 'off' for flat messages, 'thread' for threaded replies (default: off)",
              "password": False,
@@ -60,9 +60,9 @@ _PLATFORMS = [
             "2. Complete the BlueBubbles setup wizard — sign in with your Apple ID",
             "3. In BlueBubbles Settings → API, note the Server URL and password",
             "4. The server URL is typically http://<your-mac-ip>:1234",
-            "5. Hermes connects via the BlueBubbles REST API and receives",
+            "5. AkramCode connects via the BlueBubbles REST API and receives",
             "   incoming messages via a local webhook",
-            "6. To authorize users, use DM pairing: hermes pairing generate bluebubbles",
+            "6. To authorize users, use DM pairing: akramcode pairing generate bluebubbles",
             "   Share the code — the user sends it via iMessage to get approved",
         ],
         "vars": [
@@ -109,7 +109,7 @@ _PLATFORMS = [
             "1. Download the Yuanbao app from https://yuanbao.tencent.com/",
             "2. In the app, go to PAI → My Bot and create a new bot",
             "3. After the bot is created, copy the App ID and App Secret",
-            "4. Enter them below and Hermes will connect automatically over WebSocket",
+            "4. Enter them below and AkramCode will connect automatically over WebSocket",
         ],
         "vars": [
             {"name": "YUANBAO_APP_ID", "prompt": "App ID", "password": False,
@@ -224,7 +224,7 @@ _UNAUTHORIZED_ACCESS_CHOICES = {
         "Keep unknown senders silent"),
     False: (1,
         "Enable open access (anyone can message the bot)",
-        "Use DM pairing (unknown users request access, you approve with 'hermes pairing approve')",
+        "Use DM pairing (unknown users request access, you approve with 'akramcode pairing approve')",
         "Politely decline unknown senders (one-time message, then silence)",
         "Skip for now (bot will deny all users until configured)"),
 }
@@ -243,14 +243,14 @@ def _prompt_unauthorized_access(platform_key: str) -> None:
         if is_email:
             _set_platform_unauthorized_dm_behavior("email", "pair")
         _gw().print_success("  DM pairing mode — users will receive a code to request access.")
-        _gw().print_info("  Approve with: hermes pairing approve <platform> <code>")
+        _gw().print_info("  Approve with: akramcode pairing approve <platform> <code>")
     elif access_idx == 2:
         _set_platform_unauthorized_dm_behavior(platform_key, "decline")
         _gw().print_success("  Unknown senders get one polite decline, then silence (unauthorized_dm_behavior: decline).")
     elif is_email:
         _gw().print_success("  Unknown email senders will be ignored.")
     else:
-        _gw().print_info("  Skipped — configure later with 'hermes gateway setup'")
+        _gw().print_info("  Skipped — configure later with 'akramcode gateway setup'")
 
 
 def _telegram_auto_setup(token_var: str) -> tuple[bool, object]:
@@ -416,9 +416,9 @@ def _setup_weixin():
     _print_setup_header("💬 Weixin / WeChat")
     print()
     _gw()._print_info_lines(
-        "  1. Hermes will open Tencent iLink QR login in this terminal.",
+        "  1. AkramCode will open Tencent iLink QR login in this terminal.",
         "  2. Use WeChat to scan and confirm the QR code.",
-        "  3. Hermes will store the returned account_id/token in ~/.hermes/.env.",
+        "  3. AkramCode will store the returned account_id/token in ~/.akramcode/.env.",
         "  4. This adapter supports native text, image, video, and document delivery.",
     )
 
@@ -434,7 +434,7 @@ def _setup_weixin():
 
     if not check_weixin_requirements():
         _gw().print_error("  Missing dependencies: Weixin needs aiohttp and cryptography.")
-        _gw().print_info("  Install them, then rerun `hermes gateway setup`.")
+        _gw().print_info("  Install them, then rerun `akramcode gateway setup`.")
         return
 
     print()
@@ -443,7 +443,7 @@ def _setup_weixin():
         return
 
     try:
-        credentials = _gw().asyncio.run(qr_login(str(_gw().get_hermes_home())))
+        credentials = _gw().asyncio.run(qr_login(str(_gw().get_akramcode_home())))
     except KeyboardInterrupt:
         print()
         _gw().print_warning("  Weixin setup cancelled.")
@@ -484,7 +484,7 @@ def _setup_weixin():
         emit(message)
         if access_idx == 0:
             _gw().print_info(
-                "  Unknown DM users can request access and you approve them with `hermes pairing approve`."
+                "  Unknown DM users can request access and you approve them with `akramcode pairing approve`."
             )
 
     print()
@@ -571,7 +571,7 @@ def _setup_qqbot():
                 _gw().print_success(f"  Allow list set to {user_openid}")
         _gw().save_env_value("QQ_ALLOWED_USERS", allowed)
         _gw().print_success("  DM pairing enabled.")
-        _gw().print_info("  Unknown users can request access; approve with `hermes pairing approve`.")
+        _gw().print_info("  Unknown users can request access; approve with `akramcode pairing approve`.")
     elif access_idx == 1:
         _save_env_values(QQ_ALLOW_ALL_USERS="true", QQ_ALLOWED_USERS="")
         _gw().print_warning("  Open DM access enabled for QQ Bot.")
@@ -625,7 +625,7 @@ def _setup_signal():
         print()
         _gw()._print_info_lines(
             "  After installing, link your account and start the daemon:",
-            '    signal-cli link -n "HermesAgent"',
+            '    signal-cli link -n "AkramCodeAgent"',
             "    signal-cli --account +YOURNUMBER daemon --http 127.0.0.1:8080",
         )
         print()
@@ -728,7 +728,7 @@ def _configure_platform(platform: dict) -> None:
     _print_setup_header(f"{platform.get('emoji', '🔌')} {label}")
     required = entry.required_env if entry else []
     if required:
-        _gw().print_info(f"  Set these env vars in ~/.hermes/.env: {', '.join(required)}")
+        _gw().print_info(f"  Set these env vars in ~/.akramcode/.env: {', '.join(required)}")
     else:
         _gw().print_info(f"  Configure {label} in config.yaml under gateway.platforms.{platform['key']}")
     if platform.get("install_hint"):
@@ -754,7 +754,7 @@ def _setup_service_action(
             _gw()._service_call(backend, action, None if action == "restart" else system)
         elif action == "restart" and windows:
             _gw().stop_profile_gateway()
-            _gw().print_info("Start manually: hermes gateway")
+            _gw().print_info("Start manually: akramcode gateway")
     except _gw().UserSystemdUnavailableError as e:
         _gw().print_error(f"  {failed_label} — user systemd not reachable:")
         _gw()._print_indented(str(e))
@@ -782,16 +782,16 @@ _WIZARD_BACKEND_LABELS = {"systemd": "systemd", "launchd": "launchd", "windows":
 # Post-setup guidance when no service backend applies, keyed by the fallthrough reason.
 _WIZARD_NO_SERVICE_LINES = {
     "wsl": (
-        "  WSL detected but systemd is not running.", "  Run in foreground: hermes gateway run",
-        "  For persistence:   tmux new -s hermes 'hermes gateway run'",
+        "  WSL detected but systemd is not running.", "  Run in foreground: akramcode gateway run",
+        "  For persistence:   tmux new -s akramcode 'akramcode gateway run'",
         "  To enable systemd: add systemd=true to /etc/wsl.conf, then 'wsl --shutdown'",
     ),
     "termux": (
-        "  Termux does not use systemd/launchd services.", "  Run in foreground: hermes gateway run",
-        "  Or start it manually in the background (best effort): nohup hermes gateway run >{home}/logs/gateway.log 2>&1 &",
+        "  Termux does not use systemd/launchd services.", "  Run in foreground: akramcode gateway run",
+        "  Or start it manually in the background (best effort): nohup akramcode gateway run >{home}/logs/gateway.log 2>&1 &",
     ),
     "unsupported": (
-        "  Service install not supported on this platform.", "  Run in foreground: hermes gateway run",
+        "  Service install not supported on this platform.", "  Run in foreground: akramcode gateway run",
     ),
 }
 
@@ -806,7 +806,7 @@ def _wizard_service_status_block() -> None:
         _gw().print_systemd_scope_conflict_warning()
         print()
 
-    if _gw().supports_systemd_services() and _gw().has_legacy_hermes_units():
+    if _gw().supports_systemd_services() and _gw().has_legacy_akramcode_units():
         _gw().print_legacy_unit_warning()
         print()
 
@@ -850,10 +850,10 @@ def _wizard_install_service(backend: str) -> None:
     )
     if not (start_now or start_on_login):
         _gw().print_info("  Skipped start and auto-start setup.")
-        _gw().print_info("  You can install later: hermes gateway install")
+        _gw().print_info("  You can install later: akramcode gateway install")
         if _gw().supports_systemd_services():
-            _gw().print_info("  Or as a boot-time service: sudo hermes gateway install --system")
-        _gw().print_info("  Or run in foreground:  hermes gateway run")
+            _gw().print_info("  Or as a boot-time service: sudo akramcode gateway install --system")
+        _gw().print_info("  Or run in foreground:  akramcode gateway run")
         return
     try:
         installed_scope, did_install = None, True
@@ -871,7 +871,7 @@ def _wizard_install_service(backend: str) -> None:
             _gw()._setup_service_action("start", failed_label="Start failed", system=installed_scope == "system")
     except subprocess.CalledProcessError as e:
         _gw().print_error(f"  Install failed: {e}")
-        _gw().print_info("  You can try manually: hermes gateway install")
+        _gw().print_info("  You can try manually: akramcode gateway install")
 
 
 def _wizard_post_setup() -> None:
@@ -896,7 +896,7 @@ def _wizard_post_setup() -> None:
         if _gw().is_wsl():
             reason, home = "wsl", ""
         elif _gw().is_termux():
-            from akramcode_constants import display_hermes_home as _dhh
+            from akramcode_constants import display_akramcode_home as _dhh
             reason, home = "termux", _dhh()
         else:
             reason, home = "unsupported", ""
@@ -925,6 +925,6 @@ def gateway_setup():
         _gw()._wizard_post_setup()
     else:
         print()
-        _gw().print_info("No platforms configured. Run 'hermes gateway setup' when ready.")
+        _gw().print_info("No platforms configured. Run 'akramcode gateway setup' when ready.")
 
     print()

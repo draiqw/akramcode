@@ -1,4 +1,4 @@
-"""Regression for #74973 — `hermes update` must not leave the gateway down.
+"""Regression for #74973 — `akramcode update` must not leave the gateway down.
 
 On macOS the update's launchd branch guarded the restart behind
 ``launchctl list <label>`` exiting 0. A job that has been *booted out* of
@@ -6,7 +6,7 @@ launchd exits non-zero there, so the whole restart branch was skipped — with
 no ``else`` and no message. The update printed ``✓ Update complete!`` and
 exited 0 while the gateway was stopped *and* deregistered, which ``KeepAlive``
 cannot recover because the job definition is gone. Messaging adapters and
-cron stayed dark until someone manually ran ``hermes gateway restart``.
+cron stayed dark until someone manually ran ``akramcode gateway restart``.
 
 ``launchctl list`` is also not a reliable loaded/unloaded classifier: it is
 session-scoped and can exit non-zero while the job is alive in its gui/user
@@ -42,7 +42,7 @@ def launchd(monkeypatch):
 
     import akramcode_cli.gateway as gateway_mod
 
-    monkeypatch.setattr(gateway_mod, "get_launchd_label", lambda: "ai.hermes.gateway", raising=False)
+    monkeypatch.setattr(gateway_mod, "get_launchd_label", lambda: "ai.akramcode.gateway", raising=False)
     monkeypatch.setattr(gateway_mod, "get_launchd_plist_path", lambda: state["plist"], raising=False)
 
     def fake_restart():
@@ -74,7 +74,7 @@ class TestLaunchdRestartAfterUpdate:
         """
         calls, state, subprocess_calls = launchd
 
-        assert update_cmd._restart_launchd_gateway_after_update(supervision_verify=False) == (["ai.hermes.gateway"], [])
+        assert update_cmd._restart_launchd_gateway_after_update(supervision_verify=False) == (["ai.akramcode.gateway"], [])
         assert calls == ["restart"]
         # No `launchctl list` classification happens in this helper.
         assert subprocess_calls == []
@@ -86,10 +86,10 @@ class TestLaunchdRestartAfterUpdate:
             returncode=1, cmd=["launchctl", "kickstart"], stderr="kickstart refused"
         )
 
-        assert update_cmd._restart_launchd_gateway_after_update(supervision_verify=False) == ([], ["ai.hermes.gateway"])
+        assert update_cmd._restart_launchd_gateway_after_update(supervision_verify=False) == ([], ["ai.akramcode.gateway"])
         out = capsys.readouterr().out
         assert "kickstart refused" in out
-        assert "hermes gateway restart" in out
+        assert "akramcode gateway restart" in out
 
     @pytest.mark.parametrize(
         "exc",
@@ -103,10 +103,10 @@ class TestLaunchdRestartAfterUpdate:
         calls, state, _ = launchd
         state["restart_exc"] = exc
 
-        assert update_cmd._restart_launchd_gateway_after_update(supervision_verify=False) == ([], ["ai.hermes.gateway"])
+        assert update_cmd._restart_launchd_gateway_after_update(supervision_verify=False) == ([], ["ai.akramcode.gateway"])
         assert calls == []
         out = capsys.readouterr().out
-        assert "hermes gateway restart" in out
+        assert "akramcode gateway restart" in out
 
     def test_no_plist_is_not_a_launchd_install(self, launchd, capsys):
         """No service definition → nothing to restart, and nothing to warn about."""
@@ -121,12 +121,12 @@ class TestLaunchdRestartAfterUpdate:
 # `launchctl print gui/<uid>/<label>` excerpt for a running service, matching
 # the real output shape (tab-indented, lowercase `pid = <N>`).
 _PRINT_OUTPUT_RUNNING = """\
-ai.hermes.gateway = {
+ai.akramcode.gateway = {
 \tactive count = 1
-\tpath = /Users/u/Library/LaunchAgents/ai.hermes.gateway.plist
+\tpath = /Users/u/Library/LaunchAgents/ai.akramcode.gateway.plist
 \tstate = running
 \tpid = 59038
-\tprogram = /Users/u/.hermes/bin/hermes
+\tprogram = /Users/u/.akramcode/bin/akramcode
 }
 """
 
@@ -149,7 +149,7 @@ class TestServicePidSweepExclusion:
         state = {"list_rc": 1, "print_rc": 0, "print_out": _PRINT_OUTPUT_RUNNING}
 
         monkeypatch.setattr(gateway_mod, "supports_systemd_services", lambda: False)
-        monkeypatch.setattr(gateway_mod, "get_launchd_label", lambda: "ai.hermes.gateway")
+        monkeypatch.setattr(gateway_mod, "get_launchd_label", lambda: "ai.akramcode.gateway")
         monkeypatch.setattr(gateway_mod, "_launchd_domain", lambda: "gui/501")
 
         def fake_run(argv, **kwargs):

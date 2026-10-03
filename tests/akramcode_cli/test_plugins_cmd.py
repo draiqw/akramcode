@@ -1,4 +1,4 @@
-"""Tests for akramcode_cli.plugins_cmd — the ``hermes plugins`` CLI subcommand."""
+"""Tests for akramcode_cli.plugins_cmd — the ``akramcode plugins`` CLI subcommand."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from tests.pm._fixtures import client, isolated_python  # noqa: F401
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from akramcode_cli.plugins_cmd import (
     PluginOperationError,
@@ -32,7 +32,7 @@ def _write_portable_app_plugin(root: Path, app: Path) -> None:
     (root / "plugin.json").write_text(json.dumps({
         "$schema": PLUGIN_SCHEMA_V1,
         "name": "example-plugin",
-        "extensions": {"com.nousresearch.hermes": {"servers": {"worker": {
+        "extensions": {"com.nousresearch.akramcode": {"servers": {"worker": {
             "app": {os_family(): {"presence": "executable", "location": str(app)}},
             "requires": {"app": True},
         }}}},
@@ -229,7 +229,7 @@ class TestGitPullPluginDirAutostash:
         assert "preserved in git stash" in msg
         # The local edit is recoverable from the kept stash entry.
         stash_list = git(checkout, "stash", "list")
-        assert "hermes-plugin-update-autostash" in stash_list
+        assert "akramcode-plugin-update-autostash" in stash_list
         stash_diff = git(checkout, "stash", "show", "-p", "stash@{0}")
         assert "VALUE = 99" in stash_diff
 
@@ -454,7 +454,7 @@ class TestCmdRemove:
     def test_remove_deletes_only_the_requested_plugin(self, tmp_path, monkeypatch):
         from akramcode_cli.plugins_cmd import cmd_remove
 
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
         target = tmp_path / "plugins/test-plugin"
         target.mkdir(parents=True)
         (target / "plugin.yaml").write_text("name: test-plugin\n", encoding="utf-8")
@@ -592,7 +592,7 @@ class TestProviderDiscovery:
 
     def test_save_context_engine(self, tmp_path, monkeypatch):
         """Saving a context engine persists to config.yaml."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
         config_file = tmp_path / "config.yaml"
         config_file.write_text("context:\n  engine: compressor\n", encoding="utf-8")
         from akramcode_cli.plugins_cmd import _save_context_engine
@@ -669,7 +669,7 @@ class TestSubdirInstallE2E:
         self._make_repo_with_subdir_plugin(repo_root)
 
         plugins_dir = tmp_path / "home/plugins"
-        monkeypatch.setenv("HERMES_HOME", str(plugins_dir.parent))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(plugins_dir.parent))
 
         identifier = f"file://{repo_root}#my-plugin"
         target, manifest, name = pc._install_plugin_core(identifier, force=False)
@@ -716,7 +716,7 @@ class TestSubdirInstallE2E:
         repo_root = tmp_path / "monorepo"
         self._make_repo_with_subdir_plugin(repo_root)
         plugins_dir = tmp_path / "home/plugins"
-        monkeypatch.setenv("HERMES_HOME", str(plugins_dir.parent))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(plugins_dir.parent))
         target, _manifest, _name = pc._install_plugin_core(f"file://{repo_root}#my-plugin", force=False)
         assert not (target / ".git").exists()
 
@@ -760,7 +760,7 @@ class TestSubdirInstallE2E:
         sp.run(["git", "add", "-A"], cwd=repo_root, check=True, env=env)
         sp.run(["git", "commit", "-q", "-m", "init"], cwd=repo_root, check=True, env=env)
         plugins_dir = tmp_path / "home/plugins"
-        monkeypatch.setenv("HERMES_HOME", str(plugins_dir.parent))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(plugins_dir.parent))
 
         target, manifest, name = pc._install_plugin_core(
             f"file://{repo_root}", force=False
@@ -899,7 +899,7 @@ def test_portable_manifest_is_visible_to_plugin_cli(tmp_path):
 def test_autostash_dirty_tree_promotes_intent_to_add_entries(tmp_path):
     """A plugin checkout holding `git add -N` entries must still autostash.
 
-    Same class as the `hermes update` autostash: an intent-to-add entry is never "uptodate", so
+    Same class as the `akramcode update` autostash: an intent-to-add entry is never "uptodate", so
     `git stash push` refuses it. A plugin install is patched in place often enough that this state is
     ordinary rather than exotic, and the failure would abort the plugin update with a confusing error.
     """
@@ -932,22 +932,22 @@ def test_autostash_dirty_tree_promotes_intent_to_add_entries(tmp_path):
 
 
 def test_toggle_plugin_toolset_rewrites_a_list_literal_string_platform_entry(tmp_path, monkeypatch):
-    """``hermes plugins enable`` must reach a platform whose ``platform_toolsets`` entry is the
-    list-literal string an older ``hermes config set`` stored, and re-save it as a real list —
+    """``akramcode plugins enable`` must reach a platform whose ``platform_toolsets`` entry is the
+    list-literal string an older ``akramcode config set`` stored, and re-save it as a real list —
     the runtime already reads that string as the user's selection (follow-up to #115866)."""
 
     from akramcode_cli import plugins_cmd
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     (tmp_path / "config.yaml").write_text(
-        yaml.safe_dump({"platform_toolsets": {"cli": '["web", "terminal"]', "telegram": ["hermes-telegram"]}}),
+        yaml.safe_dump({"platform_toolsets": {"cli": '["web", "terminal"]', "telegram": ["akramcode-telegram"]}}),
         encoding="utf-8")
     monkeypatch.setattr(plugins_cmd, "_get_plugin_toolset_key", lambda name: "my-plugin")
 
     plugins_cmd._toggle_plugin_toolset("my-plugin", enable=True)
     saved = yaml.safe_load((tmp_path / "config.yaml").read_text(encoding="utf-8"))["platform_toolsets"]
     assert saved["cli"] == ["web", "terminal", "my-plugin"]
-    assert saved["telegram"] == ["hermes-telegram", "my-plugin"]
+    assert saved["telegram"] == ["akramcode-telegram", "my-plugin"]
 
     plugins_cmd._toggle_plugin_toolset("my-plugin", enable=False)
     saved = yaml.safe_load((tmp_path / "config.yaml").read_text(encoding="utf-8"))["platform_toolsets"]
@@ -956,7 +956,7 @@ def test_toggle_plugin_toolset_rewrites_a_list_literal_string_platform_entry(tmp
 
 @pytest.fixture
 def prepared_publication(client, tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
 
 
 def test_default_compressor_does_not_activate_an_offered_plugin(monkeypatch):

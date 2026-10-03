@@ -20,7 +20,7 @@ import re
 from datetime import datetime
 from typing import Any, Dict, Optional
 
-from akram_core.akramcode_time import now as _hermes_now, safe_strftime
+from akram_core.akramcode_time import now as _akramcode_now, safe_strftime
 
 logger = logging.getLogger("cron.scheduler")
 
@@ -61,7 +61,7 @@ def hold_active(job: Dict[str, Any], now: Optional[datetime] = None) -> bool:
     from cron.jobs import _instant_after, _parse_aware  # late: jobs imports this module's helpers
 
     until = _parse_aware(job.get(STATE_KEY)) if job.get(STATE_KEY) else None
-    return until is not None and _instant_after(until, now or _hermes_now())
+    return until is not None and _instant_after(until, now or _akramcode_now())
 
 
 def clear_state(job: Dict[str, Any]) -> None:
@@ -86,7 +86,7 @@ def is_recovery_fire(job: Dict[str, Any], next_run: str) -> bool:
 def _window_end(hold_seconds: float) -> datetime:
     from cron.jobs import _seconds_after
 
-    return _seconds_after(_hermes_now(), float(hold_seconds) + HOLD_SLACK_SECONDS)
+    return _seconds_after(_akramcode_now(), float(hold_seconds) + HOLD_SLACK_SECONDS)
 
 
 def _recovery_worthwhile(

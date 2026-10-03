@@ -21,8 +21,8 @@ import fcntl
 
 
 def run_case(root, output, name, behind, early=False, cancel=False):
-    with tempfile.TemporaryDirectory(prefix="hermes_test_notice_") as home:
-        hh = Path(home) / ".hermes"
+    with tempfile.TemporaryDirectory(prefix="akramcode_test_notice_") as home:
+        hh = Path(home) / ".akramcode"
         hh.mkdir()
         (hh / "config.yaml").write_text(
             "model:\n  default: test-model\n  provider: custom\n"
@@ -36,7 +36,7 @@ def run_case(root, output, name, behind, early=False, cancel=False):
             cache.write_bytes(payload)
         else:
             os.mkfifo(cache)
-        env = {"PATH": os.environ["PATH"], "HOME": home, "HERMES_HOME": str(hh),
+        env = {"PATH": os.environ["PATH"], "HOME": home, "AKRAMCODE_HOME": str(hh),
                "PYTHONPATH": str(root), "PYTHONUNBUFFERED": "1",
                "TERM": "xterm-256color", "LANG": "C.UTF-8",
                "OPENAI_API_KEY": "local-not-used", "PROMPT_TOOLKIT_NO_CPR": "1"}

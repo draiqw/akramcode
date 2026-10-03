@@ -293,8 +293,8 @@ class TestTeamsInteractiveSetup:
         from akramcode_cli.cli_output (not akramcode_cli.config) and persist
         credentials to .env without crashing.
         """
-        hermes_home = tmp_path / "hermes"
-        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        akramcode_home = tmp_path / "akramcode"
+        monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
 
         import akramcode_cli.cli_output as cli_output_mod
 
@@ -307,7 +307,7 @@ class TestTeamsInteractiveSetup:
 
         _teams_mod.interactive_setup()
 
-        env_text = (hermes_home / ".env").read_text(encoding="utf-8")
+        env_text = (akramcode_home / ".env").read_text(encoding="utf-8")
         assert "TEAMS_CLIENT_ID=client-id" in env_text
         assert "TEAMS_TENANT_ID=tenant-id" in env_text
 
@@ -1109,8 +1109,8 @@ class TestTeamsRequireMention:
         ("channel", {}, False),
         ("groupChat", {}, False),
         ("channel", {"text": "<at>Alice</at> hi", "mentioned_id": "29:alice"}, False),  # someone else
-        ("channel", {"text": "<at>Hermes</at> hi", "mentioned_id": "28:bot-id"}, True),  # wire form of the bot id
-        ("groupChat", {"text": "<at>Hermes</at> hi", "mentioned_id": "bot-id"}, True),
+        ("channel", {"text": "<at>AkramCode</at> hi", "mentioned_id": "28:bot-id"}, True),  # wire form of the bot id
+        ("groupChat", {"text": "<at>AkramCode</at> hi", "mentioned_id": "bot-id"}, True),
         ("channel", {"reply_to_id": "bot-msg-1"}, True),
         ("personal", {}, True),
     ])

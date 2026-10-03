@@ -2,7 +2,7 @@
 
 feeds the desktop GUI model picker (and onboarding) so it can show $/Mtok
 columns + Free/Pro badges and gate paid models on free Nous accounts, the
-same way the `hermes model` CLI picker does.
+same way the `akramcode model` CLI picker does.
 """
 
 from threading import Event
@@ -186,10 +186,10 @@ def test_prewarm_preserves_context_and_runs_once_per_profile(tmp_path, monkeypat
         reset_secret_scope,
         set_secret_scope,
     )
-    from hermes_constants import (
-        hermes_home_key,
-        reset_hermes_home_override,
-        set_hermes_home_override,
+    from akramcode_constants import (
+        akramcode_home_key,
+        reset_akramcode_home_override,
+        set_akramcode_home_override,
     )
 
     monkeypatch.setattr(inv, "_pricing_prewarm_threads", {})
@@ -200,7 +200,7 @@ def test_prewarm_preserves_context_and_runs_once_per_profile(tmp_path, monkeypat
     def capture_context(_rows):
         scope = current_secret_scope()
         label = scope["PROFILE_MARKER"]
-        observed[label] = (hermes_home_key(), dict(scope))
+        observed[label] = (akramcode_home_key(), dict(scope))
         started[label].set()
         release.wait(timeout=5)
 
@@ -210,23 +210,23 @@ def test_prewarm_preserves_context_and_runs_once_per_profile(tmp_path, monkeypat
     try:
         for label in ("a", "b"):
             home = tmp_path / label
-            home_token = set_hermes_home_override(str(home))
+            home_token = set_akramcode_home_override(str(home))
             secret_token = set_secret_scope({"PROFILE_MARKER": label})
             try:
                 threads.append(inv._prewarm_pricing_async([{"models": []}]))
             finally:
                 reset_secret_scope(secret_token)
-                reset_hermes_home_override(home_token)
+                reset_akramcode_home_override(home_token)
 
         assert threads[0] is not threads[1]
         assert started["a"].wait(timeout=1)
         assert started["b"].wait(timeout=1)
         assert observed["a"] == (
-            hermes_home_key(tmp_path / "a"),
+            akramcode_home_key(tmp_path / "a"),
             {"PROFILE_MARKER": "a"},
         )
         assert observed["b"] == (
-            hermes_home_key(tmp_path / "b"),
+            akramcode_home_key(tmp_path / "b"),
             {"PROFILE_MARKER": "b"},
         )
     finally:
@@ -273,9 +273,9 @@ def test_prewarm_deduplicates_inflight_scope_and_cleans_up(monkeypatch):
 
 def test_prewarm_endpoint_rotation_starts_a_new_worker(tmp_path, monkeypatch):
     """A live endpoint-A worker must not suppress endpoint B for its profile."""
-    from hermes_constants import (
-        reset_hermes_home_override,
-        set_hermes_home_override,
+    from akramcode_constants import (
+        reset_akramcode_home_override,
+        set_akramcode_home_override,
     )
 
     endpoint_a = "https://endpoint-a.example"
@@ -308,7 +308,7 @@ def test_prewarm_endpoint_rotation_starts_a_new_worker(tmp_path, monkeypatch):
         lambda _rows: models_pricing.get_pricing_for_provider("nous"),
     )
 
-    token = set_hermes_home_override(str(tmp_path / "profile"))
+    token = set_akramcode_home_override(str(tmp_path / "profile"))
     threads = []
     try:
         threads.append(
@@ -341,14 +341,14 @@ def test_prewarm_endpoint_rotation_starts_a_new_worker(tmp_path, monkeypatch):
         for thread in threads:
             if thread is not None:
                 thread.join(timeout=2)
-        reset_hermes_home_override(token)
+        reset_akramcode_home_override(token)
 
 
 def test_prewarm_nous_rotation_when_another_provider_is_current(tmp_path, monkeypatch):
     """Nous endpoint identity must not depend on Nous being selected."""
-    from hermes_constants import (
-        reset_hermes_home_override,
-        set_hermes_home_override,
+    from akramcode_constants import (
+        reset_akramcode_home_override,
+        set_akramcode_home_override,
     )
 
     endpoint_a = "https://endpoint-a.example"
@@ -384,7 +384,7 @@ def test_prewarm_nous_rotation_when_another_provider_is_current(tmp_path, monkey
         lambda _rows: models_pricing.get_pricing_for_provider("nous"),
     )
 
-    token = set_hermes_home_override(str(tmp_path / "profile"))
+    token = set_akramcode_home_override(str(tmp_path / "profile"))
     threads = []
     try:
         threads.append(
@@ -417,7 +417,7 @@ def test_prewarm_nous_rotation_when_another_provider_is_current(tmp_path, monkey
         for thread in threads:
             if thread is not None:
                 thread.join(timeout=2)
-        reset_hermes_home_override(token)
+        reset_akramcode_home_override(token)
 
 
 def test_cached_only_pricing_returns_a_warm_value_without_fetching(monkeypatch):
@@ -438,9 +438,9 @@ def test_cached_only_pricing_returns_a_warm_value_without_fetching(monkeypatch):
 
 def test_cached_only_dynamic_pricing_is_profile_scoped(tmp_path, monkeypatch):
     """Alternating profiles read the endpoint each profile warmed."""
-    from hermes_constants import (
-        reset_hermes_home_override,
-        set_hermes_home_override,
+    from akramcode_constants import (
+        reset_akramcode_home_override,
+        set_akramcode_home_override,
     )
 
     endpoint_a = "https://profile-a.example"
@@ -461,14 +461,14 @@ def test_cached_only_dynamic_pricing_is_profile_scoped(tmp_path, monkeypatch):
     )
 
     def in_profile(home, endpoint, *, cached_only):
-        token = set_hermes_home_override(str(home))
+        token = set_akramcode_home_override(str(home))
         active_endpoint["value"] = endpoint
         try:
             return models_pricing.get_pricing_for_provider(
                 "nous", cached_only=cached_only
             )
         finally:
-            reset_hermes_home_override(token)
+            reset_akramcode_home_override(token)
 
     assert in_profile(tmp_path / "a", endpoint_a, cached_only=False) == expected_a
     assert in_profile(tmp_path / "b", endpoint_b, cached_only=False) == expected_b

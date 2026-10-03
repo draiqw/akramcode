@@ -39,5 +39,5 @@ class TestCurrentProviderCatalogWins:
         from akramcode_cli import models_detect
 
         monkeypatch.setattr(models_detect, "provider_has_credentials", lambda p: p == "openrouter")
-        live_catalog["nous"] = ["hermes-4-405b"]
+        live_catalog["nous"] = ["akramcode-4-405b"]
         assert models.detect_provider_for_model("no-such-model", "nous") == ("openrouter", "vendor/no-such-model")

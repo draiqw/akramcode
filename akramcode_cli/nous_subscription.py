@@ -17,7 +17,7 @@ from tools.tool_backend_helpers import (
 )
 
 
-_DEFAULT_PLATFORM_TOOLSETS = {"cli": "hermes-cli"}
+_DEFAULT_PLATFORM_TOOLSETS = {"cli": "akramcode-cli"}
 
 
 @dataclass(frozen=True)
@@ -230,7 +230,7 @@ def _provider_label(kind: str, current_provider: str) -> str:
 
 def _local_stt_backend_available() -> bool:
     """True when faster-whisper imports or a custom local STT command is configured."""
-    if get_env_value("HERMES_LOCAL_STT_COMMAND"):
+    if get_env_value("AKRAMCODE_LOCAL_STT_COMMAND"):
         return True
     try:
         from tools.transcription_tools import _HAS_FASTER_WHISPER
@@ -614,7 +614,7 @@ def prompt_enable_tool_gateway(config: Dict[str, object], *, force_fresh: bool =
     return changed
 
 
-# Inline Nous Portal login for the Tool Gateway picker (`hermes tools`)
+# Inline Nous Portal login for the Tool Gateway picker (`akramcode tools`)
 
 
 def ensure_nous_portal_access(*, capability: str = "the Nous Tool Gateway", coverage_category: Optional[str] = None) -> bool:

@@ -25,10 +25,10 @@ def _args(**overrides) -> Namespace:
 
 @pytest.fixture(autouse=True)
 def _isolated_config_env(monkeypatch, tmp_path):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.delenv("HERMES_IGNORE_USER_CONFIG", raising=False)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
+    monkeypatch.delenv("AKRAMCODE_IGNORE_USER_CONFIG", raising=False)
     yield
-    os.environ.pop("HERMES_IGNORE_USER_CONFIG", None)
+    os.environ.pop("AKRAMCODE_IGNORE_USER_CONFIG", None)
 
 @pytest.mark.parametrize(
     "args",
@@ -156,7 +156,7 @@ def test_env_only_config_bypass_allows_noninteractive_recovery(monkeypatch, tmp_
     from akramcode_cli import main as main_mod
 
     (tmp_path / "config.yaml").write_text("model: [unterminated\n")
-    monkeypatch.setenv("HERMES_IGNORE_USER_CONFIG", "1")
+    monkeypatch.setenv("AKRAMCODE_IGNORE_USER_CONFIG", "1")
     args = _args()
 
     main_mod._guard_noninteractive_user_config(args)

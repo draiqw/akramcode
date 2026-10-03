@@ -1,4 +1,4 @@
-"""Agent construction + session-resume display for ``HermesCLI``: credential resolution,
+"""Agent construction + session-resume display for ``AkramCodeCLI``: credential resolution,
 per-turn agent config, first-use build, resume preload + recap. ``cli.py`` helpers are
 imported lazily inside each method (import cycle)."""
 
@@ -13,7 +13,7 @@ from utils import base_url_host_matches
 
 
 def _single_query_clarify_callback(questions: list) -> dict:
-    """Headless clarify answer for ``hermes chat -q``.
+    """Headless clarify answer for ``akramcode chat -q``.
 
     A -q turn never builds the prompt_toolkit app, so the interactive clarify modal
     can never be painted or answered — the CLI callback would poll until
@@ -227,7 +227,7 @@ def _retire_agent(cli) -> None:
 
 
 class CLIAgentSetupMixin:
-    """Agent construction + session-resume display methods for ``HermesCLI``."""
+    """Agent construction + session-resume display methods for ``AkramCodeCLI``."""
 
     def _ensure_runtime_credentials(self) -> bool:
         """Re-resolve provider credentials before agent use so key rotation / token
@@ -242,7 +242,7 @@ class CLIAgentSetupMixin:
         try:
             # target_model: the ladder's model-keyed rungs (Zen/Go api_mode, Copilot/Nous
             # api_mode) must see the model this CLI will actually send, not config's `default`,
-            # or `hermes -m mimo-v2.5 --provider opencode-go` resolves an api_mode/base_url the
+            # or `akramcode -m mimo-v2.5 --provider opencode-go` resolves an api_mode/base_url the
             # sent model cannot use (#112600).
             runtime = resolve_runtime_provider(
                 requested=self.requested_provider, explicit_api_key=self._explicit_api_key,
@@ -306,14 +306,14 @@ class CLIAgentSetupMixin:
         self.base_url = base_url
 
         # A custom_provider entry's explicit `model` wins when the CLI model is unset or
-        # is just the provider slug/display name (`hermes chat --model <provider-name>`
+        # is just the provider slug/display name (`akramcode chat --model <provider-name>`
         # would otherwise send the provider name as the model string -> 400).
         runtime_model = runtime.get("model")
         if runtime_model and isinstance(runtime_model, str) and (
             not self.model or self.model == self.provider or self.model == runtime.get("name")):
             self.model = runtime_model
 
-        # Still empty (e.g. `hermes auth add` without `hermes model`): fall back to the
+        # Still empty (e.g. `akramcode auth add` without `akramcode model`): fall back to the
         # provider's first catalog model so the API doesn't reject an empty model.
         if not self.model and resolved_provider:
             try:
@@ -468,7 +468,7 @@ class CLIAgentSetupMixin:
 
     def _offer_first_run_setup(self) -> bool:
         """Offer the provider picker when no provider is configured at all (interactive
-        startup, TTY). Runs the same flow as ``hermes model`` so onboarding has a single
+        startup, TTY). Runs the same flow as ``akramcode model`` so onboarding has a single
         source of truth. True when a provider was configured."""
         from cli import _cprint, logger
         _cprint("")
@@ -570,7 +570,7 @@ class CLIAgentSetupMixin:
         from cli import ChatConsole, _DIM, _RST, _accent_hex, _cprint
         session_meta = self._session_db.get_session(self.session_id)
         # Quiet mode (tool_progress_mode == "off") routes resume status lines to
-        # stderr so stdout stays machine-readable for `$(hermes chat -Q --resume ...)`.
+        # stderr so stdout stays machine-readable for `$(akramcode chat -Q --resume ...)`.
         # Without this, the resume banner pollutes captured stdout. See #11793.
         _quiet_mode = getattr(self, "tool_progress_mode", "full") == "off"
 
@@ -840,7 +840,7 @@ class CLIAgentSetupMixin:
 
         # role -> (label, label style, body style, continuation indent)
         you_label = f"  {t('cli.resume.label_you')} "
-        assistant_label = f"  {t('cli.resume.label_assistant', agent_name='Hermes')} "
+        assistant_label = f"  {t('cli.resume.label_assistant', agent_name='AkramCode')} "
         role_styles = {
             "user": (you_label, f"dim bold {_session_label_c}", "dim", " " * len(you_label)),
             "assistant": (assistant_label, f"dim bold {_assistant_label_c}", "dim", " " * len(assistant_label)),

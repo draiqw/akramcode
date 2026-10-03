@@ -52,12 +52,12 @@ def prepare(request: dict) -> tuple[Path, dict[str, str]]:
 
 def _record_failure(request: dict, result: Path, code: int, detail: str) -> None:
     from akramcode_cli import update_receipt
-    from akramcode_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
 
     update_receipt.record_step("historical_takeover", False, detail)
     saved = update_receipt.finalize_pending_update_receipt(code, detail)
     if request.get("gateway_mode"):
-        (get_hermes_home() / ".update_exit_code").write_text(f"{code}\n", encoding="utf-8")
+        (get_akramcode_home() / ".update_exit_code").write_text(f"{code}\n", encoding="utf-8")
     result.write_text(json.dumps({"receipt_handled": saved is not None, "resume_handled": False}), encoding="utf-8")
 
 
@@ -74,7 +74,7 @@ def main() -> int:
         root = Path(request["root"])
         python = resolve_store_python(root)
         if python is None:
-            print("Cannot resume stopped backends: no selected Hermes interpreter", file=sys.stderr)
+            print("Cannot resume stopped backends: no selected AkramCode interpreter", file=sys.stderr)
             return 1
         return subprocess.run(
             [str(python), "-I", "-B", "-X", "utf8", str(root / "akramcode_cli/update_serve_resume.py"),

@@ -1,4 +1,4 @@
-"""``hermes debug`` debug tools for Hermes Agent."""
+"""``akramcode debug`` debug tools for AkramCode Agent."""
 
 import contextlib
 import datetime
@@ -15,14 +15,14 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Optional
 
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)
 
 # Prepended to upload-bound content when redaction is enabled so paste reviewers know.
 _REDACTION_BANNER = (
-    "[hermes debug share: log content redacted at upload time. "
+    "[akramcode debug share: log content redacted at upload time. "
     "run with --no-redact to disable]\n")
 _EMAIL_ADDRESS_RE = re.compile(
     r"(?<![A-Za-z0-9._%+-])"
@@ -30,17 +30,17 @@ _EMAIL_ADDRESS_RE = re.compile(
     r"(?![A-Za-z0-9._%+-])")
 _PASTE_RS_URL = "https://paste.rs/"  # primary; dpaste.com is the fallback
 _DPASTE_COM_URL = "https://dpaste.com/api/"
-_USER_AGENT = "hermes-agent/debug-share"
+_USER_AGENT = "akramcode-agent/debug-share"
 _MAX_LOG_BYTES = 512_000  # per log file for upload (paste.rs caps at ~1 MB)
 _AUTO_DELETE_SECONDS = 21600  # 6 hours
 
 # Pending-deletion tracking: the gateway cron ticker calls ``_sweep_expired_pastes`` hourly and
-# ``hermes debug`` sweeps on entry (CLI-only users). Replaced a fork-and-sleep subprocess that
+# ``akramcode debug`` sweeps on entry (CLI-only users). Replaced a fork-and-sleep subprocess that
 # leaked ~20 MB per share.
 
 
 def _pending_file() -> Path:
-    return get_hermes_home() / "pastes" / "pending.json"
+    return get_akramcode_home() / "pastes" / "pending.json"
 
 
 def _load_pending() -> list[dict]:
@@ -57,7 +57,7 @@ def _save_pending(entries: list[dict]) -> None:
     try:
         atomic_json_write(_pending_file(), entries)
     except OSError:
-        pass  # non-fatal — worst case the user runs ``hermes debug delete`` manually
+        pass  # non-fatal — worst case the user runs ``akramcode debug delete`` manually
 
 
 def _sweep_expired_pastes(now: Optional[float] = None) -> tuple[int, int]:
@@ -114,7 +114,7 @@ after 6 hours, but may be archived by third parties in the meantime.
 
 If paste.rs is unreachable, uploads fall back to dpaste.com: those pastes
 stay public for the --expire window (default: 1 day) and CANNOT be deleted
-with `hermes debug delete`.
+with `akramcode debug delete`.
 
 Use --local to view the report without uploading.
 """
@@ -122,7 +122,7 @@ Use --local to view the report without uploading.
 _GATEWAY_PRIVACY_NOTICE = (
     "⚠️ **Privacy notice:** This uploads system info + recent log tails "
     "(may contain conversation fragments) to a public paste service. "
-    "Full logs are NOT included from the gateway — use `hermes debug share` "
+    "Full logs are NOT included from the gateway — use `akramcode debug share` "
     "from the CLI for full log uploads.\n"
     "Pastes auto-delete after 6 hours (dpaste.com fallback pastes: kept for "
     "1 day, cannot be deleted).")
@@ -186,7 +186,7 @@ def _upload_paste_rs(content: str) -> str:
 
 
 def _upload_dpaste_com(content: str, expiry_days: int = 1) -> str:
-    boundary = "----HermesDebugBoundary9f3c"
+    boundary = "----AkramCodeDebugBoundary9f3c"
     fields = (("content", content), ("syntax", "text"), ("expiry_days", str(expiry_days)))
     body = ("".join(f'--{boundary}\r\nContent-Disposition: form-data; name="{n}"\r\n\r\n{v}\r\n'
                     for n, v in fields) + f"--{boundary}--\r\n").encode("utf-8")
@@ -224,14 +224,14 @@ def _primary_log_path(log_name: str) -> Optional[Path]:
     """Where *log_name* would live if present. Doesn't check existence."""
     from akramcode_cli.logs import LOG_FILES
     filename = LOG_FILES.get(log_name)
-    return (get_hermes_home() / "logs" / filename) if filename else None
+    return (get_akramcode_home() / "logs" / filename) if filename else None
 
 
 # Logs written by a client process, invisible to a remote/docker/SSH backend running `debug
 # share`; a bare "(file not found)" would read as "the app logged nothing" and misdirect triage.
 _CLIENT_SIDE_LOGS = {
     "desktop": (
-        "written by Hermes Desktop on the machine running the app, not by this "
+        "written by AkramCode Desktop on the machine running the app, not by this "
         "backend. If the desktop connects to a remote/docker/SSH backend, collect "
         "it on that client machine")}
 
@@ -352,7 +352,7 @@ def _capture_default_log_snapshots(
 
 
 def _capture_dump(redact: bool = True) -> str:
-    """Run ``hermes dump`` and return its stdout, force-redacted unless *redact* is False: the dump
+    """Run ``akramcode dump`` and return its stdout, force-redacted unless *redact* is False: the dump
     is upload-bound and quotes config values (e.g. ``fallback_providers``), so URL credentials are
     redacted too, as in the uploaded logs."""
     from akramcode_cli.dump import run_dump
@@ -368,7 +368,7 @@ def collect_debug_report(
     log_snapshots: Optional[dict[str, LogSnapshot]] = None) -> str:
     """Build the summary debug report (system dump + log tails) as upload-ready text.
 
-    ``dump_text`` is pre-captured dump output; when empty, ``hermes dump`` is run internally.
+    ``dump_text`` is pre-captured dump output; when empty, ``akramcode dump`` is run internally.
     """
     buf = io.StringIO()
     buf.write(dump_text or _capture_dump())
@@ -398,7 +398,7 @@ def collect_debug_report(
 
 
 # Nous-S3 envelope format id; the discord-support viewer keys off it.
-_NOUS_BUNDLE_FORMAT = "hermes-debug-share/1"
+_NOUS_BUNDLE_FORMAT = "akramcode-debug-share/1"
 
 
 def collect_share_bundle(log_lines: int = 200, redact: bool = True) -> dict[str, str]:
@@ -445,14 +445,14 @@ def build_debug_share(
         *, log_lines: int = 200, expiry: int = 1, redact: bool = True) -> DebugShareResult:
     """Collect the debug report + full logs, upload each, return the URLs.
 
-    Shared by ``hermes debug share`` and the dashboard ``POST /api/ops/debug-share``. Blocking
+    Shared by ``akramcode debug share`` and the dashboard ``POST /api/ops/debug-share``. Blocking
     network I/O — callers inside an event loop must run it in a worker thread.
     """
     _best_effort_sweep_expired_pastes()
     bundle = collect_share_bundle(log_lines=log_lines, redact=redact)
     if redact:
         logger.info(
-            "hermes debug share: applied force-mode redaction to log snapshots before upload")
+            "akramcode debug share: applied force-mode redaction to log snapshots before upload")
     report = bundle["report"]
     failures: list[str] = []
     # The summary report is required (raises so callers can fall back); full logs are optional.
@@ -538,7 +538,7 @@ def run_debug_share(args):
         result = build_debug_share(log_lines=log_lines, expiry=expiry, redact=redact)
     except RuntimeError as exc:
         print(f"\nUpload failed: {exc}", file=sys.stderr)
-        print("\nRun `hermes debug share --local` to print the report instead.\n")
+        print("\nRun `akramcode debug share --local` to print the report instead.\n")
         sys.exit(1)
     label_width = max(len(k) for k in result.urls)
     print("\nDebug report uploaded:")
@@ -552,18 +552,18 @@ def run_debug_share(args):
               f"{result.auto_delete_seconds // 3600} hours.")
         print(f"⚠️  {len(dpaste_urls)} of {len(result.urls)} upload(s) fell back to "
               f"dpaste.com: those pastes stay public for {expiry} day(s) and CANNOT be "
-              "deleted with `hermes debug delete`.\n"
-              "\nShare these links with the Hermes team for support.")
+              "deleted with `akramcode debug delete`.\n"
+              "\nShare these links with the AkramCode team for support.")
     else:
         print(f"\n⏱  Pastes will auto-delete in {result.auto_delete_seconds // 3600} hours.\n"
-              "To delete now:  hermes debug delete <url>\n"
-              "\nShare these links with the Hermes team for support.")
+              "To delete now:  akramcode debug delete <url>\n"
+              "\nShare these links with the AkramCode team for support.")
 
 
 _NOUS_PRIVACY_NOTICE = """\
 ⚠️  --nous: This uploads your debug bundle to Nous-INTERNAL storage (AWS S3),
     NOT a public paste service. The following is included:
-  • System info (OS, Python/Hermes version, provider, which API keys are
+  • System info (OS, Python/AkramCode version, provider, which API keys are
     configured — NOT the actual keys)
   • Full agent.log, gateway.log, and desktop.log (up to 512 KB each — likely
     contains conversation content, tool outputs, and file paths), plus
@@ -578,7 +578,7 @@ _NOUS_PRIVACY_NOTICE = """\
 
 
 def _run_debug_share_nous(args, *, log_lines: int, redact: bool) -> None:
-    """``hermes debug share --nous``: gzip the same bundle into the Nous envelope → Nous-S3."""
+    """``akramcode debug share --nous``: gzip the same bundle into the Nous envelope → Nous-S3."""
     from akramcode_cli.diagnostics_upload import share_to_nous
     print(_NOUS_PRIVACY_NOTICE)
     if not _confirm_upload(args):
@@ -589,15 +589,15 @@ def _run_debug_share_nous(args, *, log_lines: int, redact: bool) -> None:
     _best_effort_sweep_expired_pastes()
     bundle = collect_share_bundle(log_lines=log_lines, redact=redact)
     if redact:
-        logger.info("hermes debug share --nous: applied force-mode redaction before upload")
+        logger.info("akramcode debug share --nous: applied force-mode redaction before upload")
     print("Uploading to Nous diagnostics storage...")
     try:
         res = share_to_nous(build_nous_bundle(bundle, redact=redact))
     except Exception as exc:
         print(f"\nNous upload failed: {exc}\n"
               "\nThe Nous diagnostics service may be unavailable or not yet provisioned.\n"
-              "Run `hermes debug share --local` to print the report instead, "
-              "or `hermes debug share` to upload to a public paste service.\n", file=sys.stderr)
+              "Run `akramcode debug share --local` to print the report instead, "
+              "or `akramcode debug share` to upload to a public paste service.\n", file=sys.stderr)
         sys.exit(1)
     view_url = res.get("viewUrl") or res.get("view_url")
     expires_at = res.get("expiresAt") or res.get("expires_at")
@@ -609,7 +609,7 @@ def _run_debug_share_nous(args, *, log_lines: int, redact: bool) -> None:
     print("\nShare this private link with the Nous team — only Nous staff "
           "(via Google login) can open it.\n"
           "\nPick up the discussion in:\n"
-          "  GitHub Issues        https://github.com/NousResearch/hermes-agent/issues\n"
+          "  GitHub Issues        https://github.com/NousResearch/akramcode-agent/issues\n"
           "  Nous Portal Support  https://portal.nousresearch.com/help\n"
           "  Discord              https://discord.gg/NousResearch")
 
@@ -618,8 +618,8 @@ def run_debug_delete(args):
     """Delete one or more paste URLs uploaded by /debug."""
     urls = getattr(args, "urls", [])
     if not urls:
-        print("Usage: hermes debug delete <url> [<url> ...]\n"
-              "  Deletes paste.rs pastes uploaded by 'hermes debug share'.")
+        print("Usage: akramcode debug delete <url> [<url> ...]\n"
+              "  Deletes paste.rs pastes uploaded by 'akramcode debug share'.")
         return
     for url in urls:
         try:
@@ -645,7 +645,7 @@ def run_debug(args):
 
 
 _DEBUG_USAGE = """\
-Usage: hermes debug <command>
+Usage: akramcode debug <command>
 
 Commands:
   share    Upload debug report to a paste service and print URL

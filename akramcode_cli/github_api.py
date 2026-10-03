@@ -3,7 +3,7 @@
 The passive source check asks the REST API for a branch tip. Unauthenticated
 that budget is 60 requests/hour keyed on the *client IP*, so a shared exit
 (office NAT, VPN, proxy) exhausts it for everyone behind it and the check
-reports a 403 that read as "Hermes can't reach the update server".
+reports a 403 that read as "AkramCode can't reach the update server".
 Authenticating moves the caller onto the token's 5,000/hour budget.
 
 Credential ladder: GITHUB_TOKEN, then GH_TOKEN, then ``gh auth token`` (the

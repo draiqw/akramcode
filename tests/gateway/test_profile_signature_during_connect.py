@@ -13,10 +13,10 @@ from gateway.run import GatewayRunner
 @pytest.mark.asyncio
 @pytest.mark.parametrize("startup", [False, True])
 async def test_config_saved_during_connect_is_rescanned(tmp_path, monkeypatch, startup):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     profile = home / "profiles" / "worker"
     profile.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
     monkeypatch.setattr(
         "akramcode_cli.profiles.get_active_profile_name", lambda: "default"

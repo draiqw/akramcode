@@ -2,7 +2,7 @@
 
 When a local LLM provider is detected (Ollama, llama.cpp, vLLM, etc.),
 the httpx stream read timeout should be automatically increased from the
-default 60s to HERMES_API_TIMEOUT (1800s) to avoid premature connection
+default 60s to AKRAMCODE_API_TIMEOUT (1800s) to avoid premature connection
 kills during long prefill phases.
 """
 

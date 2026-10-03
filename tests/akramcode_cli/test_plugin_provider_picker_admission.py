@@ -2,7 +2,7 @@
 
 Regression: the CANONICAL_PROVIDERS auto-extend skipped every plugin profile whose ``auth_type``
 was not ``api_key``, so an out-of-tree external-process (ACP) or OAuth provider loaded, inferred and
-was invisible to ``/model``, ``hermes model`` and ``list_available_providers()`` — while the in-tree
+was invisible to ``/model``, ``akramcode model`` and ``list_available_providers()`` — while the in-tree
 copilot-acp row (same auth_type, hand-written entry) appeared. Visibility is gated by credentials
 downstream, so admission by slug is safe (#102421).
 """

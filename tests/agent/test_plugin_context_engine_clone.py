@@ -1,6 +1,6 @@
 """A plugin-registered context engine is one shared instance; agent init hands each agent its own
 copy through ``clone_for_agent()`` (default deepcopy), so engines with uncopyable state (locks,
-SQLite connections — hermes-lcm) stay selectable and a child's model never leaks into the parent
+SQLite connections — akramcode-lcm) stay selectable and a child's model never leaks into the parent
 (#99640, #42449)."""
 
 import threading
@@ -28,7 +28,7 @@ class _Engine(ContextEngine):
 
 
 class _LockedEngine(_Engine):
-    """Holds a lock (deepcopy raises) and hands out per-agent clones like hermes-lcm does."""
+    """Holds a lock (deepcopy raises) and hands out per-agent clones like akramcode-lcm does."""
 
     def __init__(self):
         super().__init__()

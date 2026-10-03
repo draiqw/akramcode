@@ -13,7 +13,7 @@ class StuckSocket extends EventTarget {
   }
 }
 
-const connectErrorMessage = 'Could not connect to Hermes gateway'
+const connectErrorMessage = 'Could not connect to AkramCode gateway'
 
 const rejection = (pending: Promise<void>): Promise<Error> =>
   pending.then(

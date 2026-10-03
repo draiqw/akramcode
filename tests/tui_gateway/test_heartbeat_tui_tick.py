@@ -1,6 +1,6 @@
 """/heartbeat firing from the TUI/Desktop session-owner process (#102056, #103044).
 
-The slash worker that parses ``/heartbeat`` runs a HermesCLI whose watchdog queues the due prompt
+The slash worker that parses ``/heartbeat`` runs a AkramCodeCLI whose watchdog queues the due prompt
 into its own ``_pending_input`` — a queue no turn loop drains in that process. The per-session
 notification poller (the same driver that fires ``/loop``) must poll the persisted HeartbeatManager
 and re-enter the live session through ``_run_prompt_submit``.
@@ -18,11 +18,11 @@ import pytest
 
 
 @pytest.fixture()
-def hermes_home(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+def akramcode_home(tmp_path, monkeypatch):
+    home = tmp_path / ".akramcode"
     home.mkdir()
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     from akramcode_cli import goals
 
     goals._DB_CACHE.clear()
@@ -31,7 +31,7 @@ def hermes_home(tmp_path, monkeypatch):
 
 
 @pytest.fixture()
-def server(hermes_home):
+def server(akramcode_home):
     with patch.dict("sys.modules", {"akramcode_cli.env_loader": MagicMock(), "akramcode_cli.banner": MagicMock()}):
         mod = importlib.import_module("tui_gateway.server")
         yield mod
@@ -92,7 +92,7 @@ def test_notification_poller_fires_due_heartbeat_when_idle(server, session):
     assert load_heartbeat(key).fire_count == 1 and not load_heartbeat(key).is_due()
 
 
-def test_desktop_poller_leaves_gateway_owned_heartbeat_for_gateway(server, session, hermes_home):
+def test_desktop_poller_leaves_gateway_owned_heartbeat_for_gateway(server, session, akramcode_home):
     """A Desktop viewer must not consume a messaging session's routed heartbeat, but ownership follows the
     gateway's live routing index, not the row's immutable ``source``: once /reset archives the row the gateway
     never registers a watch for it again, so the Desktop viewer must fire it (else nobody does)."""
@@ -102,7 +102,7 @@ def test_desktop_poller_leaves_gateway_owned_heartbeat_for_gateway(server, sessi
 
     sid, _, s = session
     s["source"] = "desktop"
-    store = SessionStore(hermes_home / "sessions", GatewayConfig())
+    store = SessionStore(akramcode_home / "sessions", GatewayConfig())
     store._db = server._get_db()  # the routing index lives in the store the Desktop poller reads
     src = SessionSource(platform=Platform.TELEGRAM, chat_id="42")
     archived_key = store.get_or_create_session(src).session_id
@@ -163,7 +163,7 @@ def test_heartbeat_dispatch_that_never_starts_a_turn_stays_due(server, session, 
     assert load_heartbeat(key).fire_count == 0 and load_heartbeat(key).is_due()
 
 
-def test_abandon_fire_never_overwrites_a_concurrent_pause(hermes_home):
+def test_abandon_fire_never_overwrites_a_concurrent_pause(akramcode_home):
     from akramcode_cli.heartbeat import HeartbeatManager, load_heartbeat
 
     key = "hb-abandon-race"

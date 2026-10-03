@@ -147,10 +147,10 @@ class TestCronJobTrigger:
     async def test_routed_profile_scope_reaches_the_job_run(self, tmp_path, monkeypatch):
         """/p/<profile>/ routes must fire the job from THAT profile's cron store, not the gateway's
         default home (and route-level skills stay out of the per-run context — the job's own apply)."""
-        home = tmp_path / ".hermes"
+        home = tmp_path / ".akramcode"
         (home / "profiles" / "sec").mkdir(parents=True)
-        monkeypatch.setenv("HERMES_HOME", str(home))
-        monkeypatch.setattr("akramcode_cli.profiles._get_default_hermes_home", lambda: home)
+        monkeypatch.setenv("AKRAMCODE_HOME", str(home))
+        monkeypatch.setattr("akramcode_cli.profiles._get_default_akramcode_home", lambda: home)
         monkeypatch.setattr("akramcode_cli.profiles._get_profiles_root", lambda: home / "profiles")
         adapter = _make_adapter({"ev": {"secret": _INSECURE_NO_AUTH, "cron_job": "sweeper", "profile": "sec",
                                         "skills": ["some-skill"], "prompt": "hello {n}"}})
@@ -159,8 +159,8 @@ class TestCronJobTrigger:
         seen = []
 
         def _fake_execute(job_ref, extra_prompt=None):
-            from hermes_constants import get_hermes_home
-            seen.append((get_hermes_home(), extra_prompt))
+            from akramcode_constants import get_akramcode_home
+            seen.append((get_akramcode_home(), extra_prompt))
             return {"claimed": True, "success": True, "error": None}
 
         with patch("tools.cronjob_tools.execute_job_for_event", side_effect=_fake_execute):

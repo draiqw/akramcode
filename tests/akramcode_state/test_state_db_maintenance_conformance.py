@@ -227,19 +227,19 @@ def test_copy_honesty_truncated_db(tmp_path):
 def test_quick_snapshot_flags_corrupt_state_db(tmp_path):
     """The quick-snapshot path must flag — never silently absorb — a bad DB.
 
-    A fake HERMES_HOME carries a truncated state.db plus a config.yaml. The
+    A fake AKRAMCODE_HOME carries a truncated state.db plus a config.yaml. The
     snapshot must either return None or record state.db in the manifest's
     failed_dbs; a manifest listing state.db as captured is the #90613 class
     surfacing through the snapshot path.
     """
-    home = tmp_path / "hermes_home"
+    home = tmp_path / "akramcode_home"
     home.mkdir()
     (home / "config.yaml").write_text("test: true\n")
     good = _make_state_db(tmp_path)
     raw = good.read_bytes()
     (home / "state.db").write_bytes(raw[: len(raw) - 4096 - 100])
 
-    snap_id = create_quick_snapshot(label="conformance", hermes_home=home)
+    snap_id = create_quick_snapshot(label="conformance", akramcode_home=home)
     if snap_id is None:
         return  # refused outright: honest
     snap_dir = home / "state-snapshots" / snap_id

@@ -2,22 +2,22 @@
 sidebar_position: 13
 sidebar_label: "Plugin Catalog"
 title: "Plugin Catalog"
-description: "Give Hermes new powers with reviewed plugins you can install in one click"
+description: "Give AkramCode new powers with reviewed plugins you can install in one click"
 ---
 
 # Plugin Catalog
 
-The plugin catalog is a curated, human-reviewed directory of Hermes plugins you
+The plugin catalog is a curated, human-reviewed directory of AkramCode plugins you
 can install by name with a single command:
 
 ```bash
-hermes plugins install <name>
+akramcode plugins install <name>
 ```
 
 Browse it visually at **[/docs/plugins](/plugins)** — entries are shelved by
 category (Memory, Desktop, Platforms, Web & Browser, Tools, Voice, Automation,
 Models), with search, tier filters (Official / Community), capability chips, and
-**Open in Hermes Desktop** buttons and copyable CLI commands for every entry.
+**Open in AkramCode Desktop** buttons and copyable CLI commands for every entry.
 
 Every entry also has its own page at `/docs/plugins/<name>` (click a card):
 the full description and any disclosure, the pinned commit, tools, hooks and
@@ -45,9 +45,9 @@ same reviewed commit this page describes.
 ### Published browse data
 
 The website and Desktop read the same generated CDN snapshot:
-[`https://hermes-agent.nousresearch.com/docs/api/plugins.json`](https://hermes-agent.nousresearch.com/docs/api/plugins.json).
+[`https://akramcode-agent.nousresearch.com/docs/api/plugins.json`](https://akramcode-agent.nousresearch.com/docs/api/plugins.json).
 Desktop fetches it through
-`https://nousresearch.github.io/hermes-agent/docs/api/plugins.json`; the public
+`https://nousresearch.github.io/akramcode-agent/docs/api/plugins.json`; the public
 docs alias serves the same data. The docs build reads `plugin-catalog/*.yaml`
 and adds cached repository star counts. It also publishes the installer's
 removed-entry list. Neither Browse view crawls source repositories or queries
@@ -59,19 +59,19 @@ This browse snapshot is distinct from the installer's
 ## What's in an entry
 
 Each catalog entry is a small YAML file in the
-[`plugin-catalog/`](https://github.com/NousResearch/hermes-agent/tree/main/plugin-catalog)
-directory of the hermes-agent repository, declaring:
+[`plugin-catalog/`](https://github.com/NousResearch/akramcode-agent/tree/main/plugin-catalog)
+directory of the akramcode-agent repository, declaring:
 
 | Field | Meaning |
 |---|---|
-| `name` | The catalog key you pass to `hermes plugins install` |
+| `name` | The catalog key you pass to `akramcode plugins install` |
 | `repo` | The plugin's public git repository |
 | `sha` | The **exact 40-hex commit** that was reviewed — installs check out this pin, not a branch tip |
 | `tier` | `official` (maintained by NousResearch) or `community` |
 | `category` | Browse shelf: `desktop` (default), `memory`, `platform`, `web`, `tools`, `voice`, `automation`, `models` or `general` |
 | `maintainer` | Who owns the plugin |
 | `capabilities` | Declared tools, hooks, middleware, and required env vars |
-| `requires_hermes` | Minimum Hermes version, e.g. `>=0.19` (optional) |
+| `requires_akramcode` | Minimum AkramCode version, e.g. `>=0.19` (optional) |
 | `platforms` | OS restrictions, empty = all (optional) |
 | `title` | Human name shown on cards, e.g. `NVIDIA App` (optional; defaults to `name`) |
 | `onboarding` | `true` offers the plugin on the desktop onboarding card, beside the hosted connectors, on the platforms it lists. Curated: official entries only (optional, default `false`) |
@@ -92,7 +92,7 @@ The catalog is designed so you know exactly what you're installing:
   author pushing new code to their repo does **not** change what the catalog
   installs — updating the pin requires another reviewed PR.
 - **Scanned at admission, trusted at install.** Admission CI runs the same
-  security scanner the installer runs (`hermes plugins validate` includes a
+  security scanner the installer runs (`akramcode plugins validate` includes a
   `security scan` check): a `dangerous` verdict fails the entry, `caution`
   findings are listed for the reviewer. Because the reviewer saw them, a
   catalog install checked out at exactly the pinned SHA does not stop to ask
@@ -101,12 +101,12 @@ The catalog is designed so you know exactly what you're installing:
 - **Desktop plugins run with the app's authority — review is the boundary.**
   A plugin's `desktop/plugin.js` is evaluated inside the Desktop app itself,
   in the same realm as the app's own code: there is no sandbox, and it can
-  do anything the app can (gateway RPC, the full `window.hermesDesktop`
+  do anything the app can (gateway RPC, the full `window.akramcodeDesktop`
   bridge, storage of other plugins). What protects you is the trust model
   above — a human read the exact pinned commit, and the install is that
   commit — plus two tripwires: admission's `desktop surface` lint refuses
   the obvious moves outside the plugin SDK (patching built-in prototypes,
-  `eval`, importing anything other than `@hermes/plugin-sdk`/`react`,
+  `eval`, importing anything other than `@akramcode/plugin-sdk`/`react`,
   including remote scripts), and the app's loader refuses every non-SDK
   import again at load time. The lint reads a `<script` regex — a literal, or
   the pattern string of a `new RegExp(...)` passed straight to
@@ -124,7 +124,7 @@ The catalog is designed so you know exactly what you're installing:
   `http://` and `www.` spellings of the same repo all match. The installer
   refuses to install anything on the removed list, and a plugin that lands on
   the list *after* you installed it stops updating, cannot be enabled and is
-  refused at load time (`hermes plugins remove <name>`, or reinstall with
+  refused at load time (`akramcode plugins remove <name>`, or reinstall with
   `--allow-removed` to keep it knowingly).
 - **Installed ≠ enabled.** Installing a catalog plugin puts it on disk; like
   any plugin it must still be enabled before it loads. See
@@ -139,10 +139,10 @@ repository. Review the code of anything you give credentials to.
 
 ## Installing from the catalog
 
-On the website, **Open in Hermes Desktop** opens a protocol link of this form:
+On the website, **Open in AkramCode Desktop** opens a protocol link of this form:
 
 ```text
-hermes://plugin/install?catalog=example-plugin
+akramcode://plugin/install?catalog=example-plugin
 ```
 
 Desktop resolves the name against the published catalog and asks you to review
@@ -152,21 +152,21 @@ lookup shows an error; it never falls back to a repository install. For the
 agent-plugin component, the backend resolves the catalog name to its reviewed pin.
 
 Use an updated Desktop build for catalog links and the Skills Hub's
-`hermes://skill/install?identifier=...` route. The cards retain CLI commands,
+`akramcode://skill/install?identifier=...` route. The cards retain CLI commands,
 so you can install by catalog name without Desktop:
 
 ```bash
 # Install a reviewed catalog entry by name (checks out the pinned SHA)
-hermes plugins install <name>
+akramcode plugins install <name>
 
 # Then enable it, as with any plugin
-hermes plugins enable <name>
+akramcode plugins enable <name>
 ```
 
 The install prompt shows the entry's capability summary — declared tools,
 hooks, and required env vars — before anything is cloned.
 
-The catalog name and the plugin's own manifest name can differ; `hermes
+The catalog name and the plugin's own manifest name can differ; `akramcode
 plugins install` prints the installed name, and `enable` takes that one. For
 example the `touchdesigner` entry (a portable Agent Plugins v1 package that
 bundles the twozero MCP server with the `touchdesigner-mcp` skill) installs as
@@ -174,23 +174,23 @@ bundles the twozero MCP server with the `touchdesigner-mcp` skill) installs as
 function-name limits:
 
 ```bash
-hermes plugins install touchdesigner
-hermes plugins enable td
+akramcode plugins install touchdesigner
+akramcode plugins enable td
 ```
 
 Portable packages can also carry a stdio MCP server. The `snyk` entry pins the
 Snyk CLI (`npx -y snyk@<version> mcp`) and bundles the `snyk-security-scan`
-skill, so one install gives Hermes code, dependency, container and IaC scanning
+skill, so one install gives AkramCode code, dependency, container and IaC scanning
 plus the workflow for using it; the catalog name and manifest name match:
 
 ```bash
-hermes plugins install snyk
-hermes plugins enable snyk
+akramcode plugins install snyk
+akramcode plugins enable snyk
 ```
 
 ### Updating a catalog install
 
-`hermes plugins update <name>` never runs `git pull` for catalog installs —
+`akramcode plugins update <name>` never runs `git pull` for catalog installs —
 it compares your installed pin against the current catalog pin and, when the
 catalog moved (via a reviewed PR), prepares and dependency-validates the new SHA
 before publishing it. Your
@@ -210,17 +210,17 @@ dependency metadata (`pyproject.toml`, `package.json`, lockfiles). If a user-sta
 path conflicts with the new tree's file/directory layout, the update stops before
 publication so the installed copy — and the user's data — remain intact.
 Edits you made to *tracked* files are not carried onto the new code; copies are
-saved under `~/.hermes/plugins-backup/<name>-<sha>/` and the update warns you.
+saved under `~/.akramcode/plugins-backup/<name>-<sha>/` and the update warns you.
 If the new pin renames the plugin's manifest, the old directory is removed and
-your enabled flag follows the new name. `hermes plugins list` shows catalog
+your enabled flag follows the new name. `akramcode plugins list` shows catalog
 installs as `catalog:<tier>@<sha>` so you can see provenance at a glance.
 
 PM validates the dependencies of an active plugin before its new code replaces
 the installed version. A version, scan, dependency, or publication failure keeps
 the working code and dependency selection. Disabled plugins stay disabled.
-Provenance is recorded by the installer in `~/.hermes/plugins/.install-metadata.json`,
+Provenance is recorded by the installer in `~/.akramcode/plugins/.install-metadata.json`,
 outside the plugin's own tree — a repository cannot ship a file that makes it
-look like a reviewed catalog install. (The `.hermes-catalog.json` inside the
+look like a reviewed catalog install. (The `.akramcode-catalog.json` inside the
 plugin directory is a convenience copy only.) Installing a catalog entry with
 `--ref <sha>` records the SHA you actually checked out, so `list`, the Desktop
 Plugins tab and `update` all report it as off the reviewed pin.
@@ -236,22 +236,22 @@ unreviewed name index. Install such plugins by `owner/repo` or Git URL instead
 ### Live refresh
 
 The docs build publishes the catalog as one JSON document
-(`https://hermes-agent.nousresearch.com/docs/api/plugin-catalog.json`).
+(`https://akramcode-agent.nousresearch.com/docs/api/plugin-catalog.json`).
 `search`/`install`/`update` fetch it at most every six hours and cache it under
-`~/.hermes/cache/`, so new entries and removals reach installed clients without
-updating Hermes. Offline, the cached copy is used for up to 24 hours, then the
+`~/.akramcode/cache/`, so new entries and removals reach installed clients without
+updating AkramCode. Offline, the cached copy is used for up to 24 hours, then the
 copy shipped with your checkout takes over (a failed fetch is remembered for a
 minute, so `plugins list` and the dashboard's Plugins page pay at most one
 connection timeout, not one per installed plugin). When the cached document and
 your checkout disagree on an entry's pin, the newer of the two wins — a git
 checkout whose catalog was committed after the document was published (a fresh
-`hermes update`) installs its own pin, never the cached older one. Removals
+`akramcode update`) installs its own pin, never the cached older one. Removals
 from the in-tree list and the live list are always both enforced, whatever the
 cache's age.
 
 ### Custom git URLs are different
 
-`hermes plugins install <git-url>` still works for any repository, but it
+`akramcode plugins install <git-url>` still works for any repository, but it
 bypasses the catalog entirely:
 
 - **No review** — you get whatever is at the branch tip, not a reviewed pin.
@@ -265,7 +265,7 @@ catalog for discovery.
 
 Submissions are pull requests that add one `plugin-catalog/<name>.yaml` file.
 The full checklist lives in the
-[plugin-catalog README](https://github.com/NousResearch/hermes-agent/tree/main/plugin-catalog);
+[plugin-catalog README](https://github.com/NousResearch/akramcode-agent/tree/main/plugin-catalog);
 in short, an entry must be:
 
 1. **Owner-submitted** — the PR author owns or maintains the plugin repo.
@@ -278,7 +278,7 @@ in short, an entry must be:
    the PR (schema, SHA format, reachability).
 5. **Not self-updating** — the catalog build must not download and replace
    its own files; the pinned SHA is the only update path (a SHA-bump PR plus
-   `hermes plugins update <name>`).
+   `akramcode plugins update <name>`).
 
 Pin updates (bumping `sha` to a newer commit) follow the same PR + review
 process; bump `version` in the same PR so the label users see matches the
@@ -286,14 +286,14 @@ code, and re-pin any `image` / `screenshots` URLs that embed the sha. Your
 plugin page (`/docs/plugins/<name>`) is built from the same file: add
 `screenshots:` there to fill it out (the README renders by default) — there is no separate
 listing to maintain. Installed plugins compare their recorded sha against the live pin:
-`hermes plugins list --json` reports `update_available`, the Desktop Plugins
-tab shows an **Update to 1.4.0** button, and `hermes plugins update <name>`
+`akramcode plugins list --json` reports `update_available`, the Desktop Plugins
+tab shows an **Update to 1.4.0** button, and `akramcode plugins update <name>`
 checks out exactly the new pin.
 
 ## See also
 
 - [Plugins](plugins.md) — the plugin system itself: manifest format, enabling,
   configuration
-- [Built-in Plugins](built-in-plugins.md) — plugins that ship with Hermes
-- [Build a Hermes Plugin](../../developer-guide/plugins/index.md) — write your own
+- [Built-in Plugins](built-in-plugins.md) — plugins that ship with AkramCode
+- [Build a AkramCode Plugin](../../developer-guide/plugins/index.md) — write your own
 - [Plugin Catalog page](/plugins) — the browsable catalog

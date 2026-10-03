@@ -21,9 +21,9 @@ from pm.store import current_target
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ACTIVATE = REPO_ROOT / "activate"
 ACTIVATE_PS1 = REPO_ROOT / "activate.ps1"
-SETUP_HERMES_SH = REPO_ROOT / "setup-hermes.sh"
-SETUP_HERMES_PS1 = REPO_ROOT / "setup-hermes.ps1"
-CANARY = "HERMES_PM_ACTIVATE_CANARY"
+SETUP_AKRAMCODE_SH = REPO_ROOT / "setup-akramcode.sh"
+SETUP_AKRAMCODE_PS1 = REPO_ROOT / "setup-akramcode.ps1"
+CANARY = "AKRAMCODE_PM_ACTIVATE_CANARY"
 
 
 def _posix(path: Path) -> str:
@@ -71,7 +71,7 @@ def _spawnable_python() -> Path:
     base interpreter, then whichever python can run a trivial child; last
     resort is sys.executable."""
     candidates: list[Path] = []
-    for env_name in ("HERMES_TEST_PYTHON",):
+    for env_name in ("AKRAMCODE_TEST_PYTHON",):
         val = os.environ.get(env_name)
         if val:
             candidates.append(Path(val))
@@ -158,16 +158,16 @@ def _isolated_checkout(tmp_path: Path) -> Path:
     root.mkdir()
     shutil.copytree(REPO_ROOT / "pm", root / "pm", ignore=shutil.ignore_patterns("__pycache__"))
     (root / "akramcode_cli").mkdir()
-    for relative in ("activate", "activate.ps1", "hermes_constants.py", "akramcode_cli/__init__.py",
+    for relative in ("activate", "activate.ps1", "akramcode_constants.py", "akramcode_cli/__init__.py",
                      "pm/environments.py", "akramcode_cli/runtime_state.py"):
         shutil.copy2(REPO_ROOT / relative, root / relative)
     # Environment-only tests do not exercise provisioning; the runtime tests
     # replace these stubs with a publisher that records and applies each sync.
-    (root / "setup-hermes.sh").write_text(
+    (root / "setup-akramcode.sh").write_text(
         'test "$#" = 2 && test "$1" = --runtime-only && case "$2" in --test-environment*) ;; *) exit 2 ;; esac\n',
         encoding="utf-8",
     )
-    (root / "setup-hermes.ps1").write_text(
+    (root / "setup-akramcode.ps1").write_text(
         "param([switch]$RuntimeOnly)\nif (-not $RuntimeOnly) { exit 2 }\n", encoding="utf-8",
     )
     return root
@@ -177,10 +177,10 @@ def _bash_env(store: Path) -> dict:
     env = _child_env()
     home = store.parent / "home"
     home.mkdir(exist_ok=True)
-    env.update(HOME=_posix(home), USERPROFILE=str(home), HERMES_HOME=_posix(home / "hermes"))
-    for key in ("PYTHONHOME", "PYTHONPATH", "VIRTUAL_ENV", "BASH_ENV", "__HERMES_ACTIVATED"):
+    env.update(HOME=_posix(home), USERPROFILE=str(home), AKRAMCODE_HOME=_posix(home / "akramcode"))
+    for key in ("PYTHONHOME", "PYTHONPATH", "VIRTUAL_ENV", "BASH_ENV", "__AKRAMCODE_ACTIVATED"):
         env.pop(key, None)
-    env["HERMES_RUNTIME_DIR"] = _posix(store)
+    env["AKRAMCODE_RUNTIME_DIR"] = _posix(store)
     # Keep the real env out of the composed pm output so the canary export
     # is the only thing activate adds beyond the ambient environment.
     env.pop(CANARY, None)
@@ -188,7 +188,7 @@ def _bash_env(store: Path) -> dict:
 
 
 def test_bash_scripts_pass_syntax_check():
-    for script in (ACTIVATE, SETUP_HERMES_SH):
+    for script in (ACTIVATE, SETUP_AKRAMCODE_SH):
         result = subprocess.run(
             [_bash(), "-n", _posix(script)], capture_output=True, text=True, env=_child_env()
         )
@@ -201,7 +201,7 @@ def test_source_activate_exports_the_pm_env(tmp_path: Path):
     store, _ = _fake_store(tmp_path)
     script = (
         f'source "{_posix(root / "activate")}" && '
-        f'test -n "$__HERMES_ACTIVATED" && '
+        f'test -n "$__AKRAMCODE_ACTIVATED" && '
         f'printf "%s" "${CANARY}"'
     )
     result = subprocess.run(
@@ -224,9 +224,9 @@ def test_activate_exports_the_sentinel_to_child_processes(tmp_path: Path):
     store, _ = _fake_store(tmp_path)
     script = (
         f'source "{_posix(root / "activate")}" && '
-        f'"$BASH" -c \'test -n "$__HERMES_ACTIVATED"\' && '
+        f'"$BASH" -c \'test -n "$__AKRAMCODE_ACTIVATED"\' && '
         f'deactivate && '
-        f'! "$BASH" -c \'test -n "$__HERMES_ACTIVATED"\' && '
+        f'! "$BASH" -c \'test -n "$__AKRAMCODE_ACTIVATED"\' && '
         f'echo exported-then-cleared'
     )
     result = subprocess.run(
@@ -247,7 +247,7 @@ def test_deactivate_restores_the_prior_shell(tmp_path: Path):
     script = (
         f'source "{_posix(root / "activate")}" && deactivate && '
         f'test -z "${{{CANARY}+set}}" && '
-        f'test -z "${{__HERMES_ACTIVATED+set}}" && '
+        f'test -z "${{__AKRAMCODE_ACTIVATED+set}}" && '
         f"! declare -F deactivate >/dev/null && "
         f'echo restored'
     )
@@ -331,7 +331,7 @@ def test_powershell_scripts_parse():
     ps = _powershell()
     if ps is None:
         pytest.skip("no PowerShell host available")
-    for script in (ACTIVATE_PS1, SETUP_HERMES_PS1):
+    for script in (ACTIVATE_PS1, SETUP_AKRAMCODE_PS1):
         result = subprocess.run(
             [
                 ps,

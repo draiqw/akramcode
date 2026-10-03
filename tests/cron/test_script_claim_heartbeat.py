@@ -18,7 +18,7 @@ def test_script_termination_reaps_descendants(tmp_path, monkeypatch, trigger, to
     import psutil
     from cron import scheduler, scheduler_script
 
-    monkeypatch.setattr(scheduler, "_get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr(scheduler, "_get_akramcode_home", lambda: tmp_path)
     monkeypatch.setattr(scheduler_script, "_get_script_timeout", lambda: 3 if trigger == "timeout" else 60)
     scripts = tmp_path / "scripts"
     scripts.mkdir()
@@ -140,7 +140,7 @@ def test_long_running_script_refreshes_owned_claim_in_profile_store(
     original_time = datetime.fromisoformat(original_timestamp)
     claim_ttl = jobs._oneshot_run_claim_ttl_seconds()
     current_time = [original_time + timedelta(seconds=claim_ttl - 60)]
-    monkeypatch.setattr(jobs, "_hermes_now", lambda: current_time[0])
+    monkeypatch.setattr(jobs, "_akramcode_now", lambda: current_time[0])
 
     def _job() -> dict:
         return {

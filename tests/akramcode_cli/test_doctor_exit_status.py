@@ -1,4 +1,4 @@
-"""Regression for #117276: ``hermes doctor``'s exit status must agree with its unresolved findings."""
+"""Regression for #117276: ``akramcode doctor``'s exit status must agree with its unresolved findings."""
 from types import SimpleNamespace
 
 import pytest
@@ -41,7 +41,7 @@ from akramcode_cli.doctor_report import Finding
 from akramcode_cli.main import main
 issues = ['fixture unresolved problem'] if {unresolved!r} else []
 doctor.DOCTOR_CHECKS = ((None, lambda fix: Finding(issues=issues)),)
-sys.argv = ['hermes', 'doctor']
+sys.argv = ['akramcode', 'doctor']
 main()
 """
     result = subprocess.run(

@@ -1,7 +1,7 @@
 """The fake NAS anonymous surface shared by the free-tier tests.
 
 One ``FakePortal`` and one ``install_portal`` behind every ``portal`` fixture: the wire contract is
-exercised through Hermes' real client code, never mocked away. Scenarios flip its behaviour
+exercised through AkramCode' real client code, never mocked away. Scenarios flip its behaviour
 (``gate_closed``, ``dead_tokens``, a canned ``create_response`` / ``token_response``, or a
 ``raise_transport`` that makes the wire itself fail).
 """
@@ -82,10 +82,10 @@ def install_portal(monkeypatch, tmp_path, fake: FakePortal | None = None) -> Fak
     from akramcode_cli import auth as auth_mod
 
     fake = fake or FakePortal()
-    monkeypatch.setenv("HERMES_PORTAL_BASE_URL", PORTAL)
-    monkeypatch.setenv("HERMES_ANON_API_SECRET", "test-secret")
-    monkeypatch.setenv("HERMES_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
-    monkeypatch.setenv("HERMES_GUEST_ONBOARDING", "1")
+    monkeypatch.setenv("AKRAMCODE_PORTAL_BASE_URL", PORTAL)
+    monkeypatch.setenv("AKRAMCODE_ANON_API_SECRET", "test-secret")
+    monkeypatch.setenv("AKRAMCODE_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
+    monkeypatch.setenv("AKRAMCODE_GUEST_ONBOARDING", "1")
     for var in ("OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "NOUS_API_KEY"):
         monkeypatch.delenv(var, raising=False)
     real_client = httpx.Client

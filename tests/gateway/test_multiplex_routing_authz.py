@@ -1,6 +1,6 @@
 """Routing/authorization invariants for a multiplexed gateway (#104933, #103717).
 
-Every test builds a bare ``GatewayRunner`` with stub adapters against a temp ``HERMES_HOME`` and
+Every test builds a bare ``GatewayRunner`` with stub adapters against a temp ``AKRAMCODE_HOME`` and
 exercises the real resolvers (no patched predicates).
 """
 
@@ -45,7 +45,7 @@ def mux(tmp_path, monkeypatch):
     (home / ".env").write_text("TELEGRAM_ALLOWED_USERS=777\n")
     (home / "profiles" / "team_b" / ".env").write_text("TELEGRAM_ALLOWED_USERS=72719239\n")
     (home / "profiles" / "ops" / ".env").write_text("")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     for key in ("TELEGRAM_ALLOWED_USERS", "GATEWAY_ALLOW_ALL_USERS", "GATEWAY_ALLOWED_USERS"):
         monkeypatch.delenv(key, raising=False)
     prev = secret_scope.is_multiplex_active()

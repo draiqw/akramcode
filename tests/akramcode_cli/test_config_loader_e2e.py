@@ -1,7 +1,7 @@
 """E2E for the canonical-loader migration (managed-scope/env-expansion drift fix).
 
-Runs a real subprocess with a temp HERMES_HOME whose config.yaml contains a
-``${ENV_VAR}`` reference, plus a managed-scope overlay dir (HERMES_MANAGED_DIR).
+Runs a real subprocess with a temp AKRAMCODE_HOME whose config.yaml contains a
+``${ENV_VAR}`` reference, plus a managed-scope overlay dir (AKRAMCODE_MANAGED_DIR).
 
 Asserts the two halves of the contract:
 
@@ -10,9 +10,9 @@ Asserts the two halves of the contract:
   2. A WRITE-BACK site round-trips the raw user file without leaking managed
      values, expanded literals, or merged defaults into it.
 
-Subprocess (not in-process monkeypatching) so module-level ``_hermes_home``
+Subprocess (not in-process monkeypatching) so module-level ``_akramcode_home``
 globals, managed-scope caches, and ``_under_pytest`` guards behave like
-production: ``HERMES_MANAGED_DIR`` is set explicitly, which bypasses the
+production: ``AKRAMCODE_MANAGED_DIR`` is set explicitly, which bypasses the
 pytest suppression in ``get_managed_dir``.
 """
 
@@ -57,7 +57,7 @@ def _run_py(code: str, env_extra: dict[str, str], tmp_path: Path) -> dict:
 def test_behavioral_read_gets_expansion_and_overlay_while_writeback_stays_raw(
     tmp_path,
 ):
-    home = tmp_path / "hermes_home"
+    home = tmp_path / "akramcode_home"
     home.mkdir()
     user_yaml = (
         "custom_prompt: 'hello ${E2E_PROMPT_SUFFIX}'\n"
@@ -90,7 +90,7 @@ def test_behavioral_read_gets_expansion_and_overlay_while_writeback_stays_raw(
 
         import os
         from pathlib import Path
-        saved = Path(server._hermes_home, "config.yaml").read_text(encoding="utf-8")
+        saved = Path(server._akramcode_home, "config.yaml").read_text(encoding="utf-8")
         Path(os.environ["E2E_OUT_FILE"]).write_text(json.dumps({
             "behavioral_prompt": cfg.get("custom_prompt"),
             "behavioral_effort": (cfg.get("agent") or {}).get("reasoning_effort"),
@@ -103,8 +103,8 @@ def test_behavioral_read_gets_expansion_and_overlay_while_writeback_stays_raw(
     out = _run_py(
         code,
         {
-            "HERMES_HOME": str(home),
-            "HERMES_MANAGED_DIR": str(managed_dir),
+            "AKRAMCODE_HOME": str(home),
+            "AKRAMCODE_MANAGED_DIR": str(managed_dir),
             "E2E_PROMPT_SUFFIX": "world",
         },
         tmp_path,
@@ -131,7 +131,7 @@ def test_behavioral_read_gets_expansion_and_overlay_while_writeback_stays_raw(
 def test_writeback_roundtrip_byte_identical_when_unchanged(tmp_path):
     """read_user_config_raw → save with no mutation must not alter content
     semantics (yaml re-dump may reorder nothing here: flat mapping)."""
-    home = tmp_path / "hermes_home"
+    home = tmp_path / "akramcode_home"
     home.mkdir()
     original = "custom_prompt: keep ${NOT_SET_VAR}\ndisplay:\n  skin: usertheme\n"
     (home / "config.yaml").write_text(original, encoding="utf-8")
@@ -141,9 +141,9 @@ def test_writeback_roundtrip_byte_identical_when_unchanged(tmp_path):
         import json
         from pathlib import Path
         from akramcode_cli.config import read_user_config_raw
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
 
-        p = Path(__import__('os').environ['HERMES_HOME']) / 'config.yaml'
+        p = Path(__import__('os').environ['AKRAMCODE_HOME']) / 'config.yaml'
         before = p.read_text(encoding='utf-8')
         data = read_user_config_raw(p)
         # No mutation, no save — the primitive itself must be read-only.
@@ -155,6 +155,6 @@ def test_writeback_roundtrip_byte_identical_when_unchanged(tmp_path):
         }), encoding="utf-8")
         """
     )
-    out = _run_py(code, {"HERMES_HOME": str(home)}, tmp_path)
+    out = _run_py(code, {"AKRAMCODE_HOME": str(home)}, tmp_path)
     assert out["identical"] is True
     assert out["parsed"]["custom_prompt"] == "keep ${NOT_SET_VAR}"

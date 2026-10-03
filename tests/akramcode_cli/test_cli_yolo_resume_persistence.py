@@ -1,4 +1,4 @@
-"""Regression tests: YOLO mode persists across ``hermes --resume``.
+"""Regression tests: YOLO mode persists across ``akramcode --resume``.
 
 Pre-fix bug: the ``/yolo`` toggle (and the process-start ``--yolo`` flag)
 lived only in the in-memory ``tools.approval._session_yolo`` set / the
@@ -13,7 +13,7 @@ The fix persists a ``yolo_mode`` flag inside the session row's
   like ``_branched_from``), written by the CLI ``/yolo`` toggle.
 - ``AIAgent._ensure_db_session`` carries a live session bypass (or a frozen
   ``--yolo`` launch, via agent_init) into the creation-time model_config.
-- ``HermesCLI._restore_session_yolo`` reads the flag on every resume path
+- ``AkramCodeCLI._restore_session_yolo`` reads the flag on every resume path
   and re-enables the in-memory bypass.
 """
 
@@ -25,7 +25,7 @@ import pytest
 
 import tools.approval as approval_module
 from tools import approval_context
-from cli import HermesCLI
+from cli import AkramCodeCLI
 from akramcode_state import SessionDB
 
 
@@ -34,7 +34,7 @@ SESSION_ID = "yolo_persist_session"
 
 @pytest.fixture(autouse=True)
 def _hermetic_yolo(monkeypatch):
-    monkeypatch.delenv("HERMES_YOLO_MODE", raising=False)
+    monkeypatch.delenv("AKRAMCODE_YOLO_MODE", raising=False)
     monkeypatch.setattr(approval_module, "_YOLO_MODE_FROZEN", False)
     approval_module.clear_session(SESSION_ID)
     yield
@@ -117,20 +117,20 @@ class TestRestoreSessionYolo:
         meta = {"id": SESSION_ID, "model_config": '{"yolo_mode": true}'}
 
         assert approval_module.is_session_yolo_enabled(SESSION_ID) is False
-        HermesCLI._restore_session_yolo(stand_in, meta)
+        AkramCodeCLI._restore_session_yolo(stand_in, meta)
         assert approval_module.is_session_yolo_enabled(SESSION_ID) is True
 
     def test_restore_noop_when_flag_absent(self):
         stand_in = _stand_in()
         meta = {"id": SESSION_ID, "model_config": '{"max_iterations": 10}'}
 
-        HermesCLI._restore_session_yolo(stand_in, meta)
+        AkramCodeCLI._restore_session_yolo(stand_in, meta)
         assert approval_module.is_session_yolo_enabled(SESSION_ID) is False
 
     def test_restore_noop_when_meta_empty(self):
         stand_in = _stand_in()
-        HermesCLI._restore_session_yolo(stand_in, {})
-        HermesCLI._restore_session_yolo(stand_in, None)
+        AkramCodeCLI._restore_session_yolo(stand_in, {})
+        AkramCodeCLI._restore_session_yolo(stand_in, None)
         assert approval_module.is_session_yolo_enabled(SESSION_ID) is False
 
     def test_restore_idempotent_when_already_enabled(self):
@@ -138,14 +138,14 @@ class TestRestoreSessionYolo:
         approval_module.enable_session_yolo(SESSION_ID)
         meta = {"id": SESSION_ID, "model_config": '{"yolo_mode": true}'}
         # Should not raise or print duplicate banners; state stays enabled.
-        HermesCLI._restore_session_yolo(stand_in, meta)
+        AkramCodeCLI._restore_session_yolo(stand_in, meta)
         assert approval_module.is_session_yolo_enabled(SESSION_ID) is True
 
     def test_restore_skipped_under_frozen_process_yolo(self):
         stand_in = _stand_in()
         meta = {"id": SESSION_ID, "model_config": '{"yolo_mode": true}'}
         with patch.object(approval_module, "_YOLO_MODE_FROZEN", True):
-            HermesCLI._restore_session_yolo(stand_in, meta)
+            AkramCodeCLI._restore_session_yolo(stand_in, meta)
         # Frozen bypass already covers everything — the session set is
         # untouched (avoids persisting a session-scoped bypass the user
         # only asked for at process scope).
@@ -157,12 +157,12 @@ class TestToggleYoloPersists:
     def test_toggle_survives_missing_session_db(self):
         stand_in = SimpleNamespace(session_id=SESSION_ID, _session_db=None)
         stand_in._persist_session_yolo = (
-            lambda key, enabled: HermesCLI._persist_session_yolo(
+            lambda key, enabled: AkramCodeCLI._persist_session_yolo(
                 stand_in, key, enabled
             )
         )
         with patch("cli._cprint"):
-            HermesCLI._toggle_yolo(stand_in)  # must not raise
+            AkramCodeCLI._toggle_yolo(stand_in)  # must not raise
         assert approval_module.is_session_yolo_enabled(SESSION_ID) is True
 
 
@@ -176,12 +176,12 @@ class TestEndToEndPersistAndRestore:
         # Process 1: user toggles /yolo ON — persisted to the row.
         cli_one = SimpleNamespace(session_id=SESSION_ID, _session_db=db)
         cli_one._persist_session_yolo = (
-            lambda key, enabled: HermesCLI._persist_session_yolo(
+            lambda key, enabled: AkramCodeCLI._persist_session_yolo(
                 cli_one, key, enabled
             )
         )
         with patch("cli._cprint"):
-            HermesCLI._toggle_yolo(cli_one)
+            AkramCodeCLI._toggle_yolo(cli_one)
         assert approval_module.is_session_yolo_enabled(SESSION_ID) is True
 
         # Simulate process exit: in-memory approval state is gone.
@@ -191,7 +191,7 @@ class TestEndToEndPersistAndRestore:
         # Process 2: --resume reads the row and restores the bypass.
         meta = db.get_session(SESSION_ID)
         cli_two = _stand_in(session_db=db)
-        HermesCLI._restore_session_yolo(cli_two, meta)
+        AkramCodeCLI._restore_session_yolo(cli_two, meta)
         assert approval_module.is_session_yolo_enabled(SESSION_ID) is True
 
         token = approval_context.set_current_session_key(SESSION_ID)
@@ -214,16 +214,16 @@ class TestEndToEndPersistAndRestore:
         )
         cli_one = SimpleNamespace(session_id=SESSION_ID, _session_db=db)
         cli_one._persist_session_yolo = (
-            lambda key, enabled: HermesCLI._persist_session_yolo(
+            lambda key, enabled: AkramCodeCLI._persist_session_yolo(
                 cli_one, key, enabled
             )
         )
         approval_module.enable_session_yolo(SESSION_ID)
         with patch("cli._cprint"):
-            HermesCLI._toggle_yolo(cli_one)  # OFF
+            AkramCodeCLI._toggle_yolo(cli_one)  # OFF
         approval_module.clear_session(SESSION_ID)
 
         meta = db.get_session(SESSION_ID)
         cli_two = _stand_in(session_db=db)
-        HermesCLI._restore_session_yolo(cli_two, meta)
+        AkramCodeCLI._restore_session_yolo(cli_two, meta)
         assert approval_module.is_session_yolo_enabled(SESSION_ID) is False

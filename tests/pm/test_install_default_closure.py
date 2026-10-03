@@ -5,7 +5,7 @@ publish_launchers, akramcode_cli/_launchers.py) that exec the pm STORE
 interpreter. The `python`
 package is marked optional (dev installs use their own venv; sealed bundles
 adopt a shipped one), so the old default closure — every non-optional
-lockfile package — skipped it and left `hermes` unbootable (audit C05).
+lockfile package — skipped it and left `akramcode` unbootable (audit C05).
 
 Behavioral: drive cmd_install with the real lockfile/registry and stub
 installers, asserting on the requested package names, not on script text.
@@ -124,7 +124,7 @@ def test_a_failed_default_download_does_not_fail_the_install(install_spy, capsys
     install_spy["fail"] = {"agent-browser"}
     assert "agent-browser" in _bare_install(install_spy)
     assert install_spy["sync_extras"] == ["all"]
-    assert "hermes pm install agent-browser" in capsys.readouterr().out
+    assert "akramcode pm install agent-browser" in capsys.readouterr().out
 
 
 def test_termux_has_no_pm_browser_default():

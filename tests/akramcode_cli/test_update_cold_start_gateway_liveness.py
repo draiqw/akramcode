@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import pytest
 
-from akramcode_cli import gateway as hermes_gateway
+from akramcode_cli import gateway as akramcode_gateway
 from akramcode_cli import gateway_windows
 from akramcode_cli import main as cli_main
 import akramcode_cli.main_install_repair as main_install_repair
@@ -26,7 +26,7 @@ def _run_cold_start(monkeypatch, capsys, *, surviving_pids):
     # The pre-spawn re-check (``all_profiles=True``) must find nothing
     # running so the cold-start path proceeds and actually spawns.
     monkeypatch.setattr(
-        hermes_gateway,
+        akramcode_gateway,
         "find_gateway_pids",
         lambda all_profiles=False: [] if all_profiles else surviving_pids,
     )
@@ -55,7 +55,7 @@ def test_failed_readiness_keeps_the_dead_attestation_for_the_retry(monkeypatch, 
     """#110020 review: the attestation is the retry's only authority to spawn under Desktop
     ownership, so a spawn that returns a PID but never becomes ready must NOT consume it —
     otherwise the registered retry sees ownership with no marker and "succeeds" with no gateway."""
-    monkeypatch.setattr("akramcode_cli.config.get_hermes_home", lambda: str(tmp_path))
+    monkeypatch.setattr("akramcode_cli.config.get_akramcode_home", lambda: str(tmp_path))
     gateway_windows._write_start_attestation([555], "direct spawn (PID 555)")
     marker = tmp_path / "state" / "gateway.start-attestation.json"
 

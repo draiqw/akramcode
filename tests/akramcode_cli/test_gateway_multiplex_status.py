@@ -1,6 +1,6 @@
 """PR #69118: a named profile served by the default multiplexer reports as running.
 
-``hermes gateway status`` / ``gateway list`` / ``profile list`` keyed liveness
+``akramcode gateway status`` / ``gateway list`` / ``profile list`` keyed liveness
 off the profile's own gateway.pid, so a satellite profile served by the default
 multiplexer showed "not running" even though the multiplexer was its live
 inbound process. All three now consult the same
@@ -21,7 +21,7 @@ def _fake_multiplexer(monkeypatch, tmp_path, *, multiplex: bool, pid_file: bool 
     launch-service gateway whose ``gateway.pid`` was unlinked while it kept serving."""
     import json
 
-    import hermes_constants
+    import akramcode_constants
     import gateway.status as status
 
     (tmp_path / "profiles" / "beta").mkdir(parents=True)
@@ -33,11 +33,11 @@ def _fake_multiplexer(monkeypatch, tmp_path, *, multiplex: bool, pid_file: bool 
     if pid_file:
         (tmp_path / "gateway.pid").write_text(str(os.getpid()))
     (tmp_path / "gateway_state.json").write_text(json.dumps({
-        "pid": os.getpid(), "kind": "hermes-gateway", "gateway_state": "running",
-        "start_time": status._get_process_start_time(os.getpid()), "hermes_home": str(tmp_path),
+        "pid": os.getpid(), "kind": "akramcode-gateway", "gateway_state": "running",
+        "start_time": status._get_process_start_time(os.getpid()), "akramcode_home": str(tmp_path),
     }))
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "profiles" / "beta"))
-    monkeypatch.setattr(hermes_constants, "_default_hermes_root_memo", None)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "profiles" / "beta"))
+    monkeypatch.setattr(akramcode_constants, "_default_akramcode_root_memo", None)
     monkeypatch.setattr(
         status, "_read_process_cmdline", lambda pid: "python -m akramcode_cli.main gateway run --replace"
     )
@@ -81,7 +81,7 @@ def test_served_named_profile_reports_running_without_default_pid_file(monkeypat
     assert _run_status().startswith("✓ Gateway is running via the default-profile multiplexer")
 
 def test_standalone_profile_status_reports_standalone_by_config(monkeypatch, tmp_path):
-    """`hermes -p X gateway status` on a standalone X says so and never claims the multiplexer."""
+    """`akramcode -p X gateway status` on a standalone X says so and never claims the multiplexer."""
     _fake_multiplexer(monkeypatch, tmp_path, multiplex=True)
     (tmp_path / "profiles" / "beta" / "config.yaml").write_text("gateway:\n  standalone: true\n", encoding="utf-8")
     from akramcode_cli import gateway as gw

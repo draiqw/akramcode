@@ -32,7 +32,7 @@ if TYPE_CHECKING:  # annotation-only; the runtime import would be a cycle
 # Log-record parity with the origin module (caplog tests pin "akramcode_cli.auth").
 logger = logging.getLogger("akramcode_cli.auth")
 
-_UNUSABLE_JWT_RELOGIN = "Re-authenticate with: hermes auth add nous"
+_UNUSABLE_JWT_RELOGIN = "Re-authenticate with: akramcode auth add nous"
 
 
 def _unusable_invoke_jwt_error(reason: str, *, no_refresh_token: bool = False) -> AuthError:
@@ -56,7 +56,7 @@ def _token_fingerprint(token: Any) -> Optional[str]:
 
 
 def _oauth_trace(event: str, *, sequence_id: Optional[str] = None, **fields: Any) -> None:
-    if os.getenv("HERMES_OAUTH_TRACE", "").strip().lower() not in {"1", "true", "yes", "on"}:
+    if os.getenv("AKRAMCODE_OAUTH_TRACE", "").strip().lower() not in {"1", "true", "yes", "on"}:
         return
     payload: Dict[str, Any] = {"event": event}
     if sequence_id:
@@ -160,7 +160,7 @@ def _validate_nous_inference_url_from_network(url: Optional[str]) -> Optional[st
 
 def _scoped_operator_override(*names: str) -> Optional[str]:
     """The first set operator routing override among ``names`` (``NOUS_INFERENCE_BASE_URL``,
-    ``HERMES_PORTAL_BASE_URL`` / its ``NOUS_PORTAL_BASE_URL`` alias), resolved through the profile
+    ``AKRAMCODE_PORTAL_BASE_URL`` / its ``NOUS_PORTAL_BASE_URL`` alias), resolved through the profile
     secret scope, or None.
 
     ``get_secret`` already reads ``os.environ`` for a single-profile process, so the only time it
@@ -199,7 +199,7 @@ def _nous_inference_env_override() -> Optional[str]:
 
 
 def _nous_portal_env_override() -> Optional[str]:
-    """``HERMES_PORTAL_BASE_URL`` / ``NOUS_PORTAL_BASE_URL`` override or None.
+    """``AKRAMCODE_PORTAL_BASE_URL`` / ``NOUS_PORTAL_BASE_URL`` override or None.
 
     Documented dev/staging escape hatch (e.g. hosted agents on the staging Portal). Trusted env
     source: must NOT be gated by ``_NOUS_PORTAL_ALLOWED_HOSTS``, which rejects untrusted
@@ -209,7 +209,7 @@ def _nous_portal_env_override() -> Optional[str]:
     secondary's refresh token to the DEFAULT profile's Portal.
     """
     from akramcode_cli.auth import _optional_base_url
-    return _optional_base_url(_scoped_operator_override("HERMES_PORTAL_BASE_URL", "NOUS_PORTAL_BASE_URL"))
+    return _optional_base_url(_scoped_operator_override("AKRAMCODE_PORTAL_BASE_URL", "NOUS_PORTAL_BASE_URL"))
 
 
 def _scope_values(raw_scope: Any) -> set[str]:
@@ -328,28 +328,28 @@ _nous_shared_lock_holder = threading.local()
 
 
 def _nous_shared_auth_dir() -> Path:
-    """Directory of the shared Nous token store: ``HERMES_SHARED_AUTH_DIR`` or ``<root>/shared/``.
+    """Directory of the shared Nous token store: ``AKRAMCODE_SHARED_AUTH_DIR`` or ``<root>/shared/``.
 
-    Outside any named profile so all profiles share it (``hermes --profile X auth add nous --type
+    Outside any named profile so all profiles share it (``akramcode --profile X auth add nous --type
     oauth`` one-tap imports it). Written on login AND every runtime refresh so the refresh_token
     stays current across profiles; a stale token just falls back to device-code.
     """
-    override = os.getenv("HERMES_SHARED_AUTH_DIR", "").strip()
+    override = os.getenv("AKRAMCODE_SHARED_AUTH_DIR", "").strip()
     if override:
         return Path(override).expanduser()
-    from akramcode_constants import get_default_hermes_root
-    return get_default_hermes_root() / "shared"
+    from akramcode_constants import get_default_akramcode_root
+    return get_default_akramcode_root() / "shared"
 
 
 def _nous_shared_store_path() -> Path:
     path = _nous_shared_auth_dir() / NOUS_SHARED_STORE_FILENAME
     # Seat belt (mirrors the _auth_file_path() guard): under pytest, refuse a path under the real
-    # user's Hermes root so a test that forgot HERMES_SHARED_AUTH_DIR fails loudly instead of
+    # user's AkramCode root so a test that forgot AKRAMCODE_SHARED_AUTH_DIR fails loudly instead of
     # corrupting cross-profile state.
     if os.environ.get("PYTEST_CURRENT_TEST"):
-        from akramcode_constants import get_default_hermes_root
+        from akramcode_constants import get_default_akramcode_root
         real_home_shared = (
-            get_default_hermes_root() / "shared" / NOUS_SHARED_STORE_FILENAME).resolve(strict=False)
+            get_default_akramcode_root() / "shared" / NOUS_SHARED_STORE_FILENAME).resolve(strict=False)
         try:
             resolved = path.resolve(strict=False)
         except Exception:
@@ -357,7 +357,7 @@ def _nous_shared_store_path() -> Path:
         if resolved == real_home_shared:
             raise RuntimeError(
                 f"Refusing to touch real user shared Nous auth store during test run: "
-                f"{path}. Set HERMES_SHARED_AUTH_DIR to a tmp_path in your test fixture.")
+                f"{path}. Set AKRAMCODE_SHARED_AUTH_DIR to a tmp_path in your test fixture.")
     return path
 
 
@@ -372,7 +372,7 @@ def _nous_shared_store_lock(timeout_seconds: float = AUTH_LOCK_TIMEOUT_SECONDS):
     try:
         lock_path = _nous_shared_store_path().with_suffix(".lock")
     except RuntimeError:
-        yield  # No HERMES_HOME yet (pre-setup): fall through without locking.
+        yield  # No AKRAMCODE_HOME yet (pre-setup): fall through without locking.
         return
     with _file_lock(
         lock_path, _nous_shared_lock_holder, timeout_seconds,
@@ -643,19 +643,19 @@ def _refresh_access_token(
     description = str(error_payload.get("error_description") or "Refresh token exchange failed")
     relogin = code in _OAUTH_GRANT_DEAD_CODES
     # OAuth 2.1 "refresh token reuse": an external process (health check, monitoring tool, custom
-    # self-heal hook) redeemed Hermes's refresh_token without persisting the rotated token, so the
+    # self-heal hook) redeemed AkramCode's refresh_token without persisting the rotated token, so the
     # server retired the original and revoked the whole session chain as a token-theft signal.
     if code == "refresh_token_reused" or "reuse" in description.lower():
         description = (
             "Nous Portal detected refresh-token reuse and revoked this session.\n"
             "This usually means an external process (monitoring script, "
-            "custom self-heal hook, or another Hermes install sharing "
-            "~/.hermes/auth.json) called POST /api/oauth/token with Hermes's "
+            "custom self-heal hook, or another AkramCode install sharing "
+            "~/.akramcode/auth.json) called POST /api/oauth/token with AkramCode's "
             "refresh token without persisting the rotated token back.\n"
-            "Nous refresh tokens are single-use — only Hermes may call the "
-            "refresh endpoint. For health checks, use `hermes auth status` "
+            "Nous refresh tokens are single-use — only AkramCode may call the "
+            "refresh endpoint. For health checks, use `akramcode auth status` "
             "instead.\n"
-            "Re-authenticate with: hermes auth add nous")
+            "Re-authenticate with: akramcode auth add nous")
         relogin = True
     raise _nous_err(description, code, relogin=relogin)
 
@@ -748,8 +748,8 @@ def fetch_nous_models(
     model_ids: List[str] = []
     for item in data:
         model_id = item.get("id") if isinstance(item, dict) else None
-        # Hermes models aren't reliable for agentic tool-calling
-        if _nonempty_str(model_id) and "hermes" not in model_id.lower():
+        # AkramCode models aren't reliable for agentic tool-calling
+        if _nonempty_str(model_id) and "akramcode" not in model_id.lower():
             model_ids.append(model_id.strip())
     model_ids.sort(key=_model_priority)
     return list(dict.fromkeys(model_ids))
@@ -1088,7 +1088,7 @@ def _resolve_nous_runtime_credentials(
         _tls_state_from_verify)
     with _provider_state_transaction("nous") as (auth_store, state, state_source_path):
         if not state:
-            raise _nous_err("Hermes is not logged into Nous Portal.", "nous_auth_missing", relogin=True)
+            raise _nous_err("AkramCode is not logged into Nous Portal.", "nous_auth_missing", relogin=True)
         run = _NousRuntimeResolve(
             auth_store, state, state_source_path, force_refresh=force_refresh,
             stale_access_token=stale_access_token, timeout_seconds=timeout_seconds)
@@ -1304,7 +1304,7 @@ def _pool_first_oauth_status(
     on_pool_miss: Optional[Callable[[], Optional[Dict[str, Any]]]] = None) -> Dict[str, Any]:
     """Status snapshot for a store-backed OAuth provider (Codex, xAI).
 
-    Pool first (where `hermes auth` / `hermes model` store device_code tokens), then
+    Pool first (where `akramcode auth` / `akramcode model` store device_code tokens), then
     *on_pool_miss* for a pool-derived degraded status, then the legacy state via *resolve*.
 
     The pool read is an observation (``peek``), not a lease: ``select()`` refreshes an expiring
@@ -1359,7 +1359,7 @@ def _nous_device_code_login(
         _tls_state_from_verify, format_auth_error, refresh_nous_oauth_from_state)
     pconfig = PROVIDER_REGISTRY["nous"]
     portal_base_url = (
-        portal_base_url or os.getenv("HERMES_PORTAL_BASE_URL") or os.getenv("NOUS_PORTAL_BASE_URL")
+        portal_base_url or os.getenv("AKRAMCODE_PORTAL_BASE_URL") or os.getenv("NOUS_PORTAL_BASE_URL")
         or pconfig.portal_base_url).rstrip("/")
     requested_inference_url = (
         inference_base_url or os.getenv("NOUS_INFERENCE_BASE_URL")
@@ -1369,7 +1369,7 @@ def _nous_device_code_login(
     verify: bool | str = False if insecure else (ca_bundle if ca_bundle else True)
     if _is_remote_session():
         open_browser = False
-    print(f"Starting Hermes login via {pconfig.name}...")
+    print(f"Starting AkramCode login via {pconfig.name}...")
     print(f"Portal: {portal_base_url}")
     if insecure:
         print("TLS verification: disabled (--insecure)")
@@ -1420,7 +1420,7 @@ def _nous_device_code_login(
             print(format_auth_error(exc))
             print(f"  Subscribe here: {portal_url}/billing")
             print()
-            print("After subscribing, run `hermes model` again to finish setup.")
+            print("After subscribing, run `akramcode model` again to finish setup.")
             raise SystemExit(1)
         raise
 
@@ -1585,7 +1585,7 @@ def _login_nous(args, pconfig: ProviderConfig) -> None:
         _write_shared_nous_state, format_auth_error)
     timeout_seconds = getattr(args, "timeout", None) or 15.0
     ca_bundle = (
-        getattr(args, "ca_bundle", None) or os.getenv("HERMES_CA_BUNDLE")
+        getattr(args, "ca_bundle", None) or os.getenv("AKRAMCODE_CA_BUNDLE")
         or os.getenv("SSL_CERT_FILE"))
     try:
         auth_state = _offer_shared_nous_import(timeout_seconds)
@@ -1624,7 +1624,7 @@ def _login_nous(args, pconfig: ProviderConfig) -> None:
             _restore_active_provider(prior_active_provider)
             print()
             print("No provider change. Nous credentials saved for future use.")
-            print("  Run `hermes model` again to switch to Nous Portal.")
+            print("  Run `akramcode model` again to switch to Nous Portal.")
             return
         config_path = _update_config_for_provider(
             "nous", inference_base_url, default_model=selected_model)

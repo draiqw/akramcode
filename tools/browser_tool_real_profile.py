@@ -1,5 +1,5 @@
 """Real-profile local browsing: snapshot the user's default Chromium profile into a
-hermes-owned copy, launch the real browser binary on it, and attach agent-browser.
+akramcode-owned copy, launch the real browser binary on it, and attach agent-browser.
 
 State (``_REAL_PROFILE_SESSION``, ``_real_profile_cdp_lock``, ``_real_profile_cdp_cache``,
 ``_real_profile_chrome_procs``) lives in ``tools.browser_tool``; it is read
@@ -40,7 +40,7 @@ def _cdp_http_ready(http_cdp: str) -> bool:
 def _real_profile_daemon_env() -> dict:
     """Reaper-visible socket dir + ``owner_pid`` claim like every other lane (agent-browser's
     default dir is invisible to the reaper — #100855). The daemon-side idle timeout is dropped:
-    Chrome is launched by Hermes, not the daemon, so a self-exiting daemon would leave Chrome
+    Chrome is launched by AkramCode, not the daemon, so a self-exiting daemon would leave Chrome
     holding the copy dir under the next snapshot overlay."""
     _bt = _origin()
     socket_dir = _session._prepare_session_socket_dir(_bt._REAL_PROFILE_SESSION)
@@ -145,7 +145,7 @@ def _real_profile_snapshot_error(err: str) -> str:
     from akramcode_cli.browser_connect import _PROFILE_LOCKED_PREFIX
     if err and err.startswith(_PROFILE_LOCKED_PREFIX):
         return (err[len(_PROFILE_LOCKED_PREFIX):] + " To close it (only after the user approves — it "
-                "quits their browser and loses unsaved tabs), run: `hermes browser close-profile`, then retry.")
+                "quits their browser and loses unsaved tabs), run: `akramcode browser close-profile`, then retry.")
     return f"{_RP}{err}"
 
 
@@ -268,7 +268,7 @@ def _real_profile_cdp() -> tuple:
 
         # Reuse BEFORE writing anything. CRITICAL: the snapshot overlay (truncates/rewrites
         # Cookies / Login Data) must NOT run while a live copy-browser (maybe from a previous
-        # hermes process) holds the user-data-dir open — that corrupts the databases.
+        # akramcode process) holds the user-data-dir open — that corrupts the databases.
         copy_dir = real_profile_copy_dir(browser)
         existing = _agent_browser_get_cdp(_bt._REAL_PROFILE_SESSION)
         if existing and _cdp_http_ready(existing) and _cdp_on_data_dir(existing, copy_dir):
@@ -276,7 +276,7 @@ def _real_profile_cdp() -> tuple:
             return existing, None
         if existing:  # stale/wrong-dir session: close it so nothing holds the dir open
             _agent_browser_close_session(_bt._REAL_PROFILE_SESSION)
-        # A Chrome from an earlier hermes process can still hold the copy dir after its attach
+        # A Chrome from an earlier akramcode process can still hold the copy dir after its attach
         # daemon was reaped (that owner died). Re-attach to it rather than overlay a live profile;
         # if the daemon cannot attach, fail closed — never snapshot over an open profile. Not ours
         # to terminate (no Popen handle): it lives until the user closes it, by design.

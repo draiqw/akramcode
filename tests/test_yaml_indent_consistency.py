@@ -2,7 +2,7 @@
 
 import pytest
 
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 from utils import atomic_roundtrip_yaml_update, atomic_yaml_write
 
 

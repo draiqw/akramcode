@@ -23,7 +23,7 @@ def desktop_stamp(tmp_path, monkeypatch):
         }))
         monkeypatch.setattr("akramcode_cli.config.get_project_root", lambda: root)
         monkeypatch.setattr("pm.paths.repo_root", lambda: root)
-        monkeypatch.delenv("HERMES_INSTALL_ROOT", raising=False)
+        monkeypatch.delenv("AKRAMCODE_INSTALL_ROOT", raising=False)
         from akramcode_cli.version_info import _reset_version_info_cache
         _reset_version_info_cache()
         return root

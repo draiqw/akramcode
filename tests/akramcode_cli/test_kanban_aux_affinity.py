@@ -52,7 +52,7 @@ def test_in_turn_caller_keeps_its_declared_affinity_key():
 
 
 def _dashboard_plugin_api():
-    mod_name = "hermes_dashboard_plugin_kanban_aux_affinity_test"
+    mod_name = "akramcode_dashboard_plugin_kanban_aux_affinity_test"
     if mod_name not in sys.modules:
         plugin_file = Path(__file__).resolve().parents[2] / "plugins" / "kanban" / "dashboard" / "plugin_api.py"
         spec = importlib.util.spec_from_file_location(mod_name, plugin_file)

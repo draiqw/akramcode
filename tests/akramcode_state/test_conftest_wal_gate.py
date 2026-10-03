@@ -3,7 +3,7 @@
 ``tests/conftest.py::_wal_is_usable`` duplicates the SQLite WAL-reset version
 predicate instead of importing ``akramcode_state``. That is deliberate: importing
 ``akramcode_state`` during collection caches ``DEFAULT_DB_PATH`` from the real
-``~/.hermes`` before the per-test ``HERMES_HOME`` redirect, which makes tests
+``~/.akramcode`` before the per-test ``AKRAMCODE_HOME`` redirect, which makes tests
 read the developer's live production database.
 
 Duplication needs a guard, so these tests pin the two implementations in
@@ -46,7 +46,7 @@ def test_conftest_does_not_import_akramcode_state_at_collection():
     """The gate must stay import-free of akramcode_state.
 
     Importing it during collection caches DEFAULT_DB_PATH from the real
-    ~/.hermes, so tests read live production sessions instead of a tempdir.
+    ~/.akramcode, so tests read live production sessions instead of a tempdir.
     Reading the source is not an option here (banned), so assert on behavior:
     the gate must work with ``akramcode_state`` absent from ``sys.modules`` and
     blocked from being imported.
@@ -62,7 +62,7 @@ def test_conftest_does_not_import_akramcode_state_at_collection():
             blocked.append(name)
             raise AssertionError(
                 "conftest._wal_is_usable imported akramcode_state — this caches "
-                "DEFAULT_DB_PATH from the real ~/.hermes during collection"
+                "DEFAULT_DB_PATH from the real ~/.akramcode during collection"
             )
         return real_import(name, *args, **kwargs)
 

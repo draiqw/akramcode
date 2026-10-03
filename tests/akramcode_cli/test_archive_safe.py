@@ -1,6 +1,6 @@
 """Tests for the shared tar.gz writer (``akramcode_cli.archive_safe.make_targz``).
 
-``make_targz`` backs both ``hermes profile export`` and ``hermes kanban
+``make_targz`` backs both ``akramcode profile export`` and ``akramcode kanban
 export``. The contract pinned down here: a failure partway through writing
 the archive (disk full, permission loss, interruption) must never destroy a
 pre-existing file at the destination path — the same failure-atomicity

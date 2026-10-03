@@ -1,4 +1,4 @@
-"""Skill usage telemetry + provenance for the Curator: a sidecar ``~/.hermes/skills/.usage.json`` keyed by
+"""Skill usage telemetry + provenance for the Curator: a sidecar ``~/.akramcode/skills/.usage.json`` keyed by
 skill name (never frontmatter — keeps telemetry out of user-authored SKILL.md and off bundled/hub skills).
 Counter bumps are best-effort (DEBUG-logged failures never break the tool call); writes are atomic under a
 cross-process lock. Curator management is an explicit ``created_by: agent`` marker written by skill_manage —
@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 from agent.skill_utils import is_excluded_skill_path, is_external_skill_path
 from utils import atomic_write_text
 
@@ -45,7 +45,7 @@ def is_protected_builtin(skill_name: str) -> bool:
 
 
 def _skills_dir() -> Path:
-    return get_hermes_home() / "skills"
+    return get_akramcode_home() / "skills"
 
 
 def _usage_file() -> Path:

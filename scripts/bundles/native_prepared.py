@@ -25,7 +25,7 @@ def preparation_lock(out: Path):
 
     if out != out.resolve():
         raise ValueError("symlinked native output")
-    for name in ("hermes-agent", "tools", "venv", "pm-runtime", "uv-cache", "bin",
+    for name in ("akramcode-agent", "tools", "venv", "pm-runtime", "uv-cache", "bin",
                  "enabled-features.json", "manifest.json"):
         path = out / name
         if path.is_symlink() or (path.exists() and is_junction(path)):
@@ -78,11 +78,11 @@ def _check_links(path: Path, out: Path) -> None:
 
 
 def _input_paths(inputs: AgentInputs, out: Path) -> list[Path]:
-    expected = {"code": out / "hermes-agent", "project": out / "hermes-agent/pyproject.toml",
+    expected = {"code": out / "akramcode-agent", "project": out / "akramcode-agent/pyproject.toml",
                 "tools": out / "tools", "environment": out / "venv", "pm_runtime": out / "pm-runtime",
                 "features": out / "enabled-features.json"}
     if (any(getattr(inputs, key) != path for key, path in expected.items())
-            or inputs.placement != "contained" or inputs.repo != "hermes-agent"
+            or inputs.placement != "contained" or inputs.repo != "akramcode-agent"
             or inputs.frontends or inputs.stamp or inputs.command_dir or inputs.env
             or inputs.resources != {name: inputs.code / name for name in RESOURCE_ENV}
             or not inputs.site_packages.is_relative_to(inputs.environment)):

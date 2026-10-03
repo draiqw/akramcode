@@ -60,7 +60,7 @@ def pool_cooldown_message(provider_id: str) -> Optional[str]:
 
     ``resolve_provider_client()`` returns ``None`` both when no credential exists and when every
     pool entry sits in a 429/quota cooldown, so the raise sites could only say "no credentials
-    were found. Run hermes auth add …" — wrong on both counts for a valid OAuth grant that is
+    were found. Run akramcode auth add …" — wrong on both counts for a valid OAuth grant that is
     merely rate-limited (#56810). Read the persisted pool state (no seeding, no writes) and name
     the cooldown and its reset time instead; ``None`` when the pool is empty or a credential is
     usable (the caller keeps the missing-credential diagnostic).
@@ -86,8 +86,8 @@ def pool_cooldown_message(provider_id: str) -> Optional[str]:
              else f"all {len(live)} credentials are")
     return (f"Provider '{provider_id}' is set in config.yaml but {which} cooling down after a "
             f"rate limit / quota error (429); the next one resets at {when}. Wait for the reset, "
-            f"add another credential with `hermes auth add {provider_id}`, or switch to a "
-            "different provider with `hermes model`.")
+            f"add another credential with `akramcode auth add {provider_id}`, or switch to a "
+            "different provider with `akramcode model`.")
 
 
 class ProviderCredentialsExhaustedError(RuntimeError):
@@ -173,7 +173,7 @@ def pool_billing_message(
     return (
         f"Provider '{provider_id}'{scope} is out of usable credentials: {which} exhausted"
         f"{code_text}. Add credits or update billing with that provider, then retry, or switch "
-        f"to a different provider with `hermes model`."
+        f"to a different provider with `akramcode model`."
     )
 
 
@@ -211,10 +211,10 @@ def missing_provider_credentials_message(provider_id: str) -> str:
     elif pconfig is None:
         remedy = f"Set the {provider_id.upper().replace('-', '_')}_API_KEY environment variable"
     elif str(pconfig.auth_type).startswith("oauth"):
-        problem, remedy = "no credentials were found", f"Run `hermes auth add {provider_id}` to sign in"
+        problem, remedy = "no credentials were found", f"Run `akramcode auth add {provider_id}` to sign in"
     else:
         problem = "no credentials were found"
-    switch = "switch to a different provider with `hermes model`."
+    switch = "switch to a different provider with `akramcode model`."
     return (f"Provider '{provider_id}' is set in config.yaml but {problem}. "
             + (f"{remedy}, or {switch}" if remedy else switch.capitalize()))
 
@@ -237,7 +237,7 @@ def _nous_credential_present(exc: BaseException) -> bool:
 def record_nous_credential_failure(exc: BaseException) -> str:
     """Remember *exc* as the latest Nous credential failure.
 
-    Logged once per distinct message: WARNING when a real credential failed, DEBUG when Hermes was
+    Logged once per distinct message: WARNING when a real credential failed, DEBUG when AkramCode was
     simply never logged into Nous.
     """
     from akramcode_cli.auth import format_auth_error

@@ -10,7 +10,7 @@ import json
 from unittest import mock
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from akramcode_cli.plugin_packs import (
     PackError,
@@ -186,7 +186,7 @@ def test_load_pack_rejects_insecure_url_schemes(tmp_path):
 
 
 def test_load_pack_reads_local_file(tmp_path):
-    f = tmp_path / "hermes-pack.yaml"
+    f = tmp_path / "akramcode-pack.yaml"
     f.write_text(_pack_yaml(), encoding="utf-8")
     assert load_pack(str(f)).name == "voice-pack"
 

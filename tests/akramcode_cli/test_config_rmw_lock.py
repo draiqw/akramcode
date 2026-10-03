@@ -17,11 +17,11 @@ from __future__ import annotations
 import threading
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 
 @pytest.fixture
-def client(monkeypatch, _isolate_hermes_home):
+def client(monkeypatch, _isolate_akramcode_home):
     from starlette.testclient import TestClient
 
     from akramcode_cli.config import load_config, save_config
@@ -81,8 +81,8 @@ def _race_second_writer_into_first_writers_save(monkeypatch, first, second, time
 
 
 def _on_disk() -> dict:
-    from hermes_constants import get_hermes_home
-    return yaml.safe_load((get_hermes_home() / "config.yaml").read_text(encoding="utf-8"))
+    from akramcode_constants import get_akramcode_home
+    return yaml.safe_load((get_akramcode_home() / "config.yaml").read_text(encoding="utf-8"))
 
 
 def test_custom_endpoint_upsert_racing_config_autosave_keeps_both_writes(client, monkeypatch):

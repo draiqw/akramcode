@@ -2,7 +2,7 @@
 """Project tools — the agent's INTENTIONAL handle on first-class Projects (per-profile
 ``projects.db``, the desktop sidebar's named workspaces). Creating/switching is an explicit
 tool call, never a side effect of ``cd``. GUI-only: the `project` toolset stays off
-``_HERMES_CORE_TOOLS``; the desktop/TUI gateway folds it in and wires
+``_AKRAMCODE_CORE_TOOLS``; the desktop/TUI gateway folds it in and wires
 ``set_project_workspace_callback`` so the live session's cwd and sidebar follow. A live
 session create/switch re-anchors only that session; it must not move the profile-global
 Desktop selection shared by concurrent chats."""

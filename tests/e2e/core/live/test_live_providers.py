@@ -8,7 +8,7 @@ credential routing + ``/models`` parse). See ``_helpers.py`` for the matrix.
 Spend: cheap models only, three scripted turns (plus at most one cache warm-up
 retry on cache-capable routes), bounded max_tokens/iterations and a hard
 per-test token + dollar guard. Usage and estimated cost are printed per test
-(``LIVE-USAGE {...}``) and appended to ``$HERMES_LIVE_USAGE_FILE`` when set.
+(``LIVE-USAGE {...}``) and appended to ``$AKRAMCODE_LIVE_USAGE_FILE`` when set.
 """
 
 from __future__ import annotations
@@ -61,14 +61,14 @@ def _lookup_tool():
 @pytest.fixture()
 def live_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     # HOME too (a sibling, not the parent: state.db's live-system guard treats
-    # $HOME/.hermes as production), so nothing can resolve the developer's real home.
+    # $HOME/.akramcode as production), so nothing can resolve the developer's real home.
     home = tmp_path / "home"
-    hermes_home = tmp_path / "hermes_home"
+    akramcode_home = tmp_path / "akramcode_home"
     home.mkdir()
-    hermes_home.mkdir()
+    akramcode_home.mkdir()
     monkeypatch.setenv("HOME", str(home))
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    return hermes_home
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
+    return akramcode_home
 
 
 def _resolve(provider: str, model: str | None) -> dict:
@@ -199,7 +199,7 @@ def test_three_turn_tool_conversation(case: LiveCase, live_home: Path, monkeypat
     runtime = _resolve(case.provider, model)
     assert runtime.get("api_key") == secret, f"{case.id}: resolver did not pick the {case.key_env} credential"
 
-    from hermes_constants import parse_reasoning_effort
+    from akramcode_constants import parse_reasoning_effort
     from akramcode_state import SessionDB
     from run_agent import AIAgent
 

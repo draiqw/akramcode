@@ -1487,7 +1487,7 @@ def dump_api_request_debug(
         }
         if error is not None:
             dump_payload["error"] = _api_error_debug_info(error)
-        # Sanitize the session ID (may come from an untrusted X-Hermes-Session-Id header) so a
+        # Sanitize the session ID (may come from an untrusted X-AkramCode-Session-Id header) so a
         # "../"-shaped ID cannot write outside logs_dir.
         from agent.session_persistence import _safe_session_filename_component
         safe_sid = _safe_session_filename_component(agent.session_id)
@@ -1499,7 +1499,7 @@ def dump_api_request_debug(
         _redacted_payload = json.loads(redact_sensitive_text(_serialized, force=True))
         atomic_json_write(dump_file, _redacted_payload, default=str)
         agent._vprint(f"{agent.log_prefix}🧾 Request debug dump written to: {dump_file}")
-        if env_var_enabled("HERMES_DUMP_REQUEST_STDOUT"):
+        if env_var_enabled("AKRAMCODE_DUMP_REQUEST_STDOUT"):
             print(json.dumps(_redacted_payload, ensure_ascii=False, indent=2, default=str))
         return dump_file
     except Exception as dump_error:
@@ -1921,7 +1921,7 @@ def create_openai_client(agent, client_kwargs: dict, *, reason: str, shared: boo
     _validate_base_url(client_kwargs.get("base_url"))
     # Provider-supplied client (registration seam): a provider whose wire protocol is not
     # OpenAI-over-HTTP supplies its own client from ProviderProfile.create_client(). Consulted
-    # before the built-in ladder so a profile registered from ~/.hermes/plugins/ or a pip entry
+    # before the built-in ladder so a profile registered from ~/.akramcode/plugins/ or a pip entry
     # point can ship a transport without editing this function (what makes an out-of-tree ACP
     # provider possible). None (the default) falls through, so existing providers are unaffected.
     provider_client = _provider_supplied_client(agent, client_kwargs)
@@ -1966,7 +1966,7 @@ def create_openai_client(agent, client_kwargs: dict, *, reason: str, shared: boo
             client_kwargs["http_client"] = keepalive_http
     # Retries belong to the outer conversation loop (honors Retry-After); SDK retries would
     # double-retry inside it. auxiliary_client keeps SDK retries as it isn't wrapped.
-    # Delegate all rate-limit / 5xx retry to hermes's outer conversation loop, which honors Retry-After and
+    # Delegate all rate-limit / 5xx retry to akramcode's outer conversation loop, which honors Retry-After and
     # applies adaptive/jittered backoff. The OpenAI SDK default (max_retries=2) uses its own 1-2s backoff
     # that ignores Retry-After and double-retries inside our loop — the same deadlock the Anthropic clients
     # hit (#26293). This is the single chokepoint every primary OpenAI/aggregator client passes through
@@ -1974,7 +1974,7 @@ def create_openai_client(agent, client_kwargs: dict, *, reason: str, shared: boo
     # keeps SDK retries because it is NOT wrapped by the conversation loop.
     client_kwargs.setdefault("max_retries", 0)
     _ensure_copilot_headers(client_kwargs)
-    # All primary construction and recovery paths must identify Hermes to the official Codex
+    # All primary construction and recovery paths must identify AkramCode to the official Codex
     # endpoint, including snapshots with custom header overrides.
     from agent.codex_headers import apply_required_codex_headers
     apply_required_codex_headers(
@@ -2704,7 +2704,7 @@ def _log_empty_non_final_heal(healed: int) -> None:
                     "⚠️ Your session transcript required repeated repair "
                     f"({total_events} heal passes so far). Replies keep "
                     "working, but a corrupted turn is stuck in this "
-                    "session's history — run /debug share or `hermes "
+                    "session's history — run /debug share or `akramcode "
                     "doctor` to capture diagnostics, or /new to start a clean session."
                 )
     if escalate:
@@ -3040,7 +3040,7 @@ def _realign_tool_result_names(messages: List[Dict[str, Any]]) -> List[Dict[str,
     #   ``tool_name_by_call_id`` over the result name; requests that reach Gemini through the
     #   OpenAI-compatible path (OpenRouter, Vertex/LiteLLM proxies, any OpenAI-shaped gateway) skip that
     #   translation entirely and still send the internal name on the wire. Normalizing here rather than in
-    #   the OpenAI-compat serializer keeps it provider-agnostic: Gemini reaches Hermes under many model
+    #   the OpenAI-compat serializer keeps it provider-agnostic: Gemini reaches AkramCode under many model
     #   strings and base URLs, so sniffing for "is this really Google?" is unreliable, and every other
     #   provider either ignores the field or agrees with the call name. Runs on the per-call copy, so the
     #   stored trajectory keeps the real tool name for the session DB and the UI — only the wire payload
@@ -3378,7 +3378,7 @@ def _iter_pool_sockets(client: Any):
         return
     if not pools:
         return
-    from agent.process_bootstrap import HERMES_TRANSPORT_OWNER_EXT
+    from agent.process_bootstrap import AKRAMCODE_TRANSPORT_OWNER_EXT
     seen: set[int] = set()
     for pool, owner in pools:
         # ``is None``, not falsiness: an empty ``_connections`` must still let us walk in-flight ``_requests``.
@@ -3392,7 +3392,7 @@ def _iter_pool_sockets(client: Any):
         for pool_req in list(getattr(pool, "_requests", None) or []):
             if owner is not None:
                 exts = getattr(getattr(pool_req, "request", None), "extensions", None) or {}
-                if exts.get(HERMES_TRANSPORT_OWNER_EXT) != owner:
+                if exts.get(AKRAMCODE_TRANSPORT_OWNER_EXT) != owner:
                     continue
             conn = getattr(pool_req, "connection", None)
             if conn is not None:

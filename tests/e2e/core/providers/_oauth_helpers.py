@@ -1,7 +1,7 @@
 """Hermetic subprocess harness for the OAuth E2E tests (fake HOME, tagged tree).
 
-Every ``hermes`` child runs with an allowlisted environment (no inherited
-credentials or ``HERMES_*``), ``HOME``/``HERMES_HOME`` under ``tmp_path``, and
+Every ``akramcode`` child runs with an allowlisted environment (no inherited
+credentials or ``AKRAMCODE_*``), ``HOME``/``AKRAMCODE_HOME`` under ``tmp_path``, and
 a unique ``OAUTH_E2E_TAG`` so cleanup signals only this test's processes.
 """
 
@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from tests.fakes.providers.anthropic_messages import ApiError, AnthropicMessagesServer, Reply, Response, Text, ToolUse
 
@@ -34,30 +34,30 @@ _PASSTHROUGH_ENV = frozenset({"PATH", "LANG", "LANGUAGE", "USER", "LOGNAME", "SH
 class FakeHome:
     root: Path
     home: Path
-    hermes_home: Path
+    akramcode_home: Path
     tag: str = field(default_factory=lambda: uuid.uuid4().hex)
 
     @property
     def auth_path(self) -> Path:
-        return self.hermes_home / "auth.json"
+        return self.akramcode_home / "auth.json"
 
     def env(self, extra: dict[str, str] | None = None) -> dict[str, str]:
         import pwd  # POSIX-only; the suite is Linux-gated
 
-        real_root = Path(pwd.getpwuid(os.getuid()).pw_dir, ".hermes").resolve()
-        fixture = self.hermes_home.resolve()
+        real_root = Path(pwd.getpwuid(os.getuid()).pw_dir, ".akramcode").resolve()
+        fixture = self.akramcode_home.resolve()
         assert fixture != real_root and fixture.parent != real_root / "profiles", (
-            f"fixture HERMES_HOME {fixture} is the real install's live home")
+            f"fixture AKRAMCODE_HOME {fixture} is the real install's live home")
         env = {
             k: v for k, v in os.environ.items()
             if (k in _PASSTHROUGH_ENV or k.startswith("LC_")) and not k.endswith(_SECRET_ENV_SUFFIXES)
         }
         env.update({
-            "HOME": str(self.home), "HERMES_HOME": str(self.hermes_home),
+            "HOME": str(self.home), "AKRAMCODE_HOME": str(self.akramcode_home),
             "PYTHONPATH": str(REPO_ROOT), "PYTHONUNBUFFERED": "1", "NO_COLOR": "1", "TERM": "dumb",
             TAG_VAR: self.tag,
-            # The child's ~/.hermes/state.db IS the tmp home's db; see parity/_helpers.py.
-            "HERMES_STATE_DB_GUARD_BYPASS": "1",
+            # The child's ~/.akramcode/state.db IS the tmp home's db; see parity/_helpers.py.
+            "AKRAMCODE_STATE_DB_GUARD_BYPASS": "1",
         })
         env.update(extra or {})
         return env
@@ -65,7 +65,7 @@ class FakeHome:
     def write_config(self, cfg: dict[str, Any]) -> None:
         base = {"updates": {"check": False}, "display": {"compact": True}}
         base.update(cfg)
-        (self.hermes_home / "config.yaml").write_text(yaml.safe_dump(base, sort_keys=False), encoding="utf-8")
+        (self.akramcode_home / "config.yaml").write_text(yaml.safe_dump(base, sort_keys=False), encoding="utf-8")
 
     def write_auth(self, store: dict[str, Any]) -> None:
         self.auth_path.write_text(json.dumps(store, indent=2), encoding="utf-8")
@@ -77,27 +77,27 @@ class FakeHome:
 
 def make_home(root: Path) -> FakeHome:
     home = root / "home"
-    (home / ".hermes").mkdir(parents=True, exist_ok=True)
-    fh = FakeHome(root=root, home=home, hermes_home=home / ".hermes")
+    (home / ".akramcode").mkdir(parents=True, exist_ok=True)
+    fh = FakeHome(root=root, home=home, akramcode_home=home / ".akramcode")
     fh.write_config({})
     return fh
 
 
-def hermes_argv(*args: str) -> list[str]:
+def akramcode_argv(*args: str) -> list[str]:
     return [sys.executable, "-m", "akramcode_cli.main", *args]
 
 
-def run_hermes(fh: FakeHome, args: list[str], *, extra_env: dict[str, str] | None = None,
+def run_akramcode(fh: FakeHome, args: list[str], *, extra_env: dict[str, str] | None = None,
                timeout: float = 120.0) -> subprocess.CompletedProcess:
-    return subprocess.run(hermes_argv(*args), env=fh.env(extra_env), cwd=str(fh.root), stdin=subprocess.DEVNULL,
+    return subprocess.run(akramcode_argv(*args), env=fh.env(extra_env), cwd=str(fh.root), stdin=subprocess.DEVNULL,
                           capture_output=True, text=True, timeout=timeout)
 
 
-def spawn_hermes(fh: FakeHome, args: list[str], *, extra_env: dict[str, str] | None = None,
+def spawn_akramcode(fh: FakeHome, args: list[str], *, extra_env: dict[str, str] | None = None,
                  log: Path) -> subprocess.Popen:
     out = open(log, "w", encoding="utf-8")  # noqa: SIM115 - closed when the child is reaped
     try:
-        return subprocess.Popen(hermes_argv(*args), env=fh.env(extra_env), cwd=str(fh.root),
+        return subprocess.Popen(akramcode_argv(*args), env=fh.env(extra_env), cwd=str(fh.root),
                                 stdin=subprocess.DEVNULL, stdout=out, stderr=subprocess.STDOUT, text=True)
     finally:
         out.close()

@@ -67,19 +67,19 @@ class TestBangContextGating:
     """Bang mode is CLI-only — gateway/cron users have their own shells."""
 
     def test_enabled_in_plain_cli(self, monkeypatch):
-        for var in ("HERMES_GATEWAY_SESSION", "HERMES_CRON_SESSION",
-                    "HERMES_SESSION_PLATFORM"):
+        for var in ("AKRAMCODE_GATEWAY_SESSION", "AKRAMCODE_CRON_SESSION",
+                    "AKRAMCODE_SESSION_PLATFORM"):
             monkeypatch.delenv(var, raising=False)
         assert bang_shell_enabled() is True
 
     @pytest.mark.parametrize("var,value", [
-        ("HERMES_GATEWAY_SESSION", "1"),
-        ("HERMES_CRON_SESSION", "true"),
-        ("HERMES_SESSION_PLATFORM", "discord"),
+        ("AKRAMCODE_GATEWAY_SESSION", "1"),
+        ("AKRAMCODE_CRON_SESSION", "true"),
+        ("AKRAMCODE_SESSION_PLATFORM", "discord"),
     ])
     def test_disabled_in_non_cli_contexts(self, monkeypatch, var, value):
-        for v in ("HERMES_GATEWAY_SESSION", "HERMES_CRON_SESSION",
-                  "HERMES_SESSION_PLATFORM"):
+        for v in ("AKRAMCODE_GATEWAY_SESSION", "AKRAMCODE_CRON_SESSION",
+                  "AKRAMCODE_SESSION_PLATFORM"):
             monkeypatch.delenv(v, raising=False)
         monkeypatch.setenv(var, value)
         assert bang_shell_enabled() is False
@@ -142,10 +142,10 @@ class TestBangExecution:
 # ── CLI handler: approval gate, usage hint, exit codes ─────────────────────
 
 def _make_cli(history=None):
-    """Build a HermesCLI shell with only what handle_bang_shell touches."""
-    from cli import HermesCLI
+    """Build a AkramCodeCLI shell with only what handle_bang_shell touches."""
+    from cli import AkramCodeCLI
 
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = AkramCodeCLI.__new__(AkramCodeCLI)
     cli.config = {}
     cli.console = MagicMock()
     cli.agent = None
@@ -190,7 +190,7 @@ class TestBangHandlerDispatch:
     def test_disabled_context_falls_through(self, monkeypatch):
         """Gateway sessions must not execute bang commands."""
         cli = _make_cli()
-        monkeypatch.setenv("HERMES_GATEWAY_SESSION", "1")
+        monkeypatch.setenv("AKRAMCODE_GATEWAY_SESSION", "1")
         with patch("akramcode_cli.bang_shell.run_bang_command") as runner:
             assert cli.handle_bang_shell("!echo nope") is False
         runner.assert_not_called()
@@ -239,7 +239,7 @@ class TestBangApprovalGate:
 # ── THE load-bearing invariant ─────────────────────────────────────────────
 
 _SEED_HISTORY = [
-    {"role": "system", "content": "You are Hermes."},
+    {"role": "system", "content": "You are AkramCode."},
     {"role": "user", "content": "hello"},
     {"role": "assistant", "content": "Hi there."},
     {"role": "user", "content": "list the files"},

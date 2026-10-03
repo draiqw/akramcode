@@ -7,7 +7,7 @@ import os
 from unittest.mock import patch
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 import akramcode_cli.commands_completion as commands_mod
 

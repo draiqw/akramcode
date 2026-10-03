@@ -2,7 +2,7 @@
 
 Two invariants:
 1. A timed-out CLI delivery queues exactly one SHORT degraded-delivery marker via the
-   deferred lane (flagged on the record, references `hermes cron runs`, never repeats the
+   deferred lane (flagged on the record, references `akramcode cron runs`, never repeats the
    full payload); a timeout while draining that marker queues nothing further.
 2. A turn report appearing in the kill window books the delivery instead of raising
    TimeoutExpired (a delivered turn must not be reported as lost).
@@ -19,10 +19,10 @@ from cron import scheduler_delivery as delivery
 @pytest.fixture()
 def cli_lane(tmp_path, monkeypatch):
     """Route _deliver_to_bot_chat straight into the CLI fallback lane."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     monkeypatch.setattr(
         delivery, "_run_bot_chat_turn",
-        Mock(side_effect=subprocess.TimeoutExpired(["hermes"], 600)))
+        Mock(side_effect=subprocess.TimeoutExpired(["akramcode"], 600)))
     return tmp_path
 
 
@@ -43,7 +43,7 @@ def test_timeout_queues_degraded_marker(cli_lane, monkeypatch):
     assert kw.get("degraded") is True
     assert "DELIVERY DEGRADED" in marker and "job-1" in marker
     assert not marker.startswith("[")  # a plain body: the standard cronjob header wraps it
-    assert "hermes cron runs" in marker
+    assert "akramcode cron runs" in marker
     assert "P1 findings: everything on fire" in marker  # short excerpt only...
     assert payload.strip() not in marker  # ...never the full payload
     assert result is not None and "degraded-delivery notice was queued" in result
@@ -111,6 +111,6 @@ def test_late_turn_report_books_delivery(tmp_path, monkeypatch):
     monkeypatch.setattr(_FakeProc, "kill", kill_and_flag)
     monkeypatch.setattr(qsq, "read_turn_report", fake_read)
 
-    result = delivery._run_bot_chat_turn(["hermes"], {}, str(tmp_path / "r.json"), 0.4)
+    result = delivery._run_bot_chat_turn(["akramcode"], {}, str(tmp_path / "r.json"), 0.4)
     assert isinstance(result, subprocess.CompletedProcess)
     assert result.returncode == 0

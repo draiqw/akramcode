@@ -101,7 +101,7 @@ def test_current_custom_endpoint_passthrough_marks_current_row(monkeypatch):
     """Interactive picker should preserve current custom endpoint semantics."""
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", lambda: {})
     monkeypatch.setattr("agent.models_dev.PROVIDER_TO_MODELS_DEV", {})
-    monkeypatch.setattr("akramcode_cli.providers.HERMES_OVERLAYS", {})
+    monkeypatch.setattr("akramcode_cli.providers.AKRAMCODE_OVERLAYS", {})
     monkeypatch.setattr("akramcode_cli.models.fetch_openrouter_models",
                         lambda *a, **kw: [])
 
@@ -183,7 +183,7 @@ def _stub_kimi_discovery(monkeypatch, *, canonical):
         name = "Kimi For Coding"
 
     monkeypatch.setattr(md, "get_provider_info", lambda _pid: _PInfo())
-    monkeypatch.setattr("akramcode_cli.providers.HERMES_OVERLAYS", {})
+    monkeypatch.setattr("akramcode_cli.providers.AKRAMCODE_OVERLAYS", {})
     monkeypatch.setattr(hm, "CANONICAL_PROVIDERS", canonical)
     monkeypatch.setattr(akramcode_cli_models_catalog_static, "CANONICAL_PROVIDERS", canonical)
     monkeypatch.setattr(hm, "cached_provider_model_ids",
@@ -247,7 +247,7 @@ def test_non_blocking_listing_opens_no_socket(monkeypatch, tmp_path):
     """#74003: ``non_blocking_catalogs=True`` must not run a single live catalog probe in the calling
     thread — not the per-provider ``/models`` prefetch and not OpenRouter's curated-catalog GET —
     even with several credentialed providers and an empty on-disk cache."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     monkeypatch.setattr(models_mod, "_openrouter_catalog_cache", None)
     for key in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY", "DEEPSEEK_API_KEY", "GROQ_API_KEY",
                 "MISTRAL_API_KEY", "XAI_API_KEY", "OPENROUTER_API_KEY"):

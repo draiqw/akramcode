@@ -90,9 +90,9 @@ class TestResolveAutoMainFirst:
         acting model). The virtual moa://local base_url + placeholder key must
         be dropped so the aggregator resolves via its own provider credentials.
         """
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
 
-        home = tmp_path / ".hermes"
+        home = tmp_path / ".akramcode"
         home.mkdir()
         (home / "config.yaml").write_text(
             yaml.safe_dump(
@@ -110,7 +110,7 @@ class TestResolveAutoMainFirst:
                 }
             )
         )
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(home))
 
         with patch(
             "agent.auxiliary_client.resolve_provider_client"

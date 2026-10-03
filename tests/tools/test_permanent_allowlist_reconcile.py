@@ -5,7 +5,7 @@ call at the bottom of the module), and `load_permanent()` only ever unions into
 `_permanent_approved` — nothing removes. `save_permanent_allowlist()` then wrote
 that in-memory set straight back over `config["command_allowlist"]`.
 
-So a hand edit made while a Hermes process is live was undone by the next
+So a hand edit made while a AkramCode process is live was undone by the next
 `[a]lways`, in both directions at once: an entry the operator ADDED on disk was
 deleted, and an entry they REMOVED — the documented way to withdraw a standing
 approval — came back.
@@ -97,7 +97,7 @@ def test_a_revoked_entry_stops_being_honoured_in_memory_after_the_save(fake_conf
 
 
 def test_a_second_process_writing_first_does_not_lose_this_ones_approval(fake_config):
-    """Two live Hermes processes. Whoever writes second must not drop the first."""
+    """Two live AkramCode processes. Whoever writes second must not drop the first."""
     _start_process_with(fake_config, ["ls *"])
     # The other process approved something and wrote it out.
     fake_config["command_allowlist"] = ["ls *", "cargo *"]

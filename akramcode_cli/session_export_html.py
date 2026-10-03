@@ -16,7 +16,7 @@ ICON_SPARKLES = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
 ICON_CHEVRON_RIGHT = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"/></svg>'
 ICON_SEARCH = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>'
 ICON_SHIELD = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/></svg>'
-ICON_HERMES = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>'
+ICON_AKRAMCODE = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFD700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>'
 
 HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
@@ -554,12 +554,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <body>
     <div class="layout {layout_class}">
         {sidebar_html}
-        
+
         <div class="main-content">
             {sessions_html}
-            
+
             <footer>
-                Built with ☤ Hermes Agent • Generated on {generated_at}
+                Built with ☤ AkramCode Agent • Generated on {generated_at}
             </footer>
         </div>
     </div>
@@ -748,7 +748,7 @@ def _sidebar_html(sessions: List[Dict[str, Any]]) -> str:
         <aside class="sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-brand">
-                    {ICON_HERMES} Hermes History
+                    {ICON_AKRAMCODE} AkramCode History
                 </div>
                 <div class="search-container">
                     {ICON_SEARCH}
@@ -772,7 +772,7 @@ def _session_view_html(s: Dict[str, Any], is_multi: bool) -> str:
     return f"""
         <div class="{"session-view" if is_multi else "session-view active"}" id="view-{escaped_sid}">
             <header class="fade-in">
-                <h1>{_escape_html(s.get("title") or "Hermes Session")}</h1>
+                <h1>{_escape_html(s.get("title") or "AkramCode Session")}</h1>
                 <div class="meta">
                     <div class="meta-item"><strong>ID:</strong> {escaped_sid}</div>
                     <div class="meta-item"><strong>Model:</strong> {_escape_html(s.get("model") or "Unknown")}</div>
@@ -792,7 +792,7 @@ def generate_multi_session_html_export(sessions: List[Dict[str, Any]]) -> str:
         return "<html><body><h1>No sessions to export.</h1></body></html>"
     is_multi = len(sessions) > 1
     return HTML_TEMPLATE.format(
-        page_title="Hermes Session Export" if is_multi else _escape_html(sessions[0].get("title") or "Hermes Session"),
+        page_title="AkramCode Session Export" if is_multi else _escape_html(sessions[0].get("title") or "AkramCode Session"),
         sidebar_html=_sidebar_html(sessions) if is_multi else "",
         sessions_html="\n".join(_session_view_html(s, is_multi) for s in sessions),
         main_margin="var(--sidebar-width)" if is_multi else "0",

@@ -111,7 +111,7 @@ class TestHealsPoisonedStoredValue:
         state = {
             "access_token": "tok",
             "refresh_token": "rtok",
-            "client_id": "hermes-cli",
+            "client_id": "akramcode-cli",
             "portal_base_url": auth.DEFAULT_NOUS_PORTAL_URL,
             "inference_base_url": poisoned,
         }
@@ -204,7 +204,7 @@ class TestEnvOverrideWins:
         return {
             "access_token": "tok",
             "refresh_token": "rtok",
-            "client_id": "hermes-cli",
+            "client_id": "akramcode-cli",
             "portal_base_url": auth.DEFAULT_NOUS_PORTAL_URL,
             "inference_base_url": stored,
             "agent_key": "ak-123",

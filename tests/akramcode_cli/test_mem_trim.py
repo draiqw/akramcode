@@ -24,23 +24,23 @@ def test_unsupported_allocator_is_noop_without_gc(monkeypatch):
 
 
 def test_config_kill_switch_overrides_force_from_config_file(monkeypatch, tmp_path):
-    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from akramcode_constants import reset_akramcode_home_override, set_akramcode_home_override
 
-    hermes_home = tmp_path / "hermes"
-    hermes_home.mkdir()
-    (hermes_home / "config.yaml").write_text(
+    akramcode_home = tmp_path / "akramcode"
+    akramcode_home.mkdir()
+    (akramcode_home / "config.yaml").write_text(
         "context:\n  memory_trim:\n    enabled: false\n",
         encoding="utf-8",
     )
     trim = Mock(return_value=1)
     monkeypatch.setattr(mem_trim, "_malloc_trim", trim)
-    token = set_hermes_home_override(hermes_home)
+    token = set_akramcode_home_override(akramcode_home)
 
     try:
         assert mem_trim.trim_memory(force=True) is False
         trim.assert_not_called()
     finally:
-        reset_hermes_home_override(token)
+        reset_akramcode_home_override(token)
 
 
 

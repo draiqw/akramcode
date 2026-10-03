@@ -1,4 +1,4 @@
-"""``hermes sessions repair-profiles`` — the CLI face of :mod:`akramcode_cli.sessions_repair_profiles`.
+"""``akramcode sessions repair-profiles`` — the CLI face of :mod:`akramcode_cli.sessions_repair_profiles`.
 
 Runs pre-DB (``_PRE_DB_HANDLERS``): it opens every profile's store itself rather than the one
 ambient ``SessionDB()``. Report-only unless ``--apply``; ``--json`` for automation.
@@ -58,7 +58,7 @@ def cmd_repair_profiles(args) -> int:
         if live:
             names = ", ".join(f"{profile} (pid {pid})" for profile, pid in live)
             print(f"A gateway is running for: {names}. It holds the routing index in memory and would "
-                  "write it back over this repair. Stop it (`hermes gateway stop`), then re-run --apply.",
+                  "write it back over this repair. Stop it (`akramcode gateway stop`), then re-run --apply.",
                   file=sys.stderr)
             return 1
 

@@ -1,6 +1,6 @@
 """Regression tests for #88583 — one-shot resumed-session turns must persist.
 
-Bot Mode's bot-to-bot send (``hermes -p <bot> chat --in ~ -c "Bot Chat"
+Bot Mode's bot-to-bot send (``akramcode -p <bot> chat --in ~ -c "Bot Chat"
 --create-if-missing -Q -q "..."``) runs exactly one turn and exits. The
 receiving agent replied, the CLI banner said it resumed the titled session,
 but nothing landed in state.db when the turn's in-loop transcript flush

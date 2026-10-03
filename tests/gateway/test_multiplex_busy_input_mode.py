@@ -115,7 +115,7 @@ async def test_secondary_profile_busy_mode_controls_live_busy_behavior(
     expected_text_mode,
 ):
     """A routed profile chooses queue/steer/interrupt independently."""
-    monkeypatch.setenv("HERMES_GATEWAY_BUSY_ACK_ENABLED", "false")
+    monkeypatch.setenv("AKRAMCODE_GATEWAY_BUSY_ACK_ENABLED", "false")
     runner = _runner(default_mode="interrupt")
     adapter = await _load_profile_snapshot(
         runner,
@@ -155,7 +155,7 @@ async def test_secondary_profile_busy_mode_controls_priority_path(
     secondary_mode,
 ):
     """The runner's early active-agent path uses the same routed policy."""
-    monkeypatch.setenv("HERMES_TELEGRAM_FOLLOWUP_GRACE_SECONDS", "0")
+    monkeypatch.setenv("AKRAMCODE_TELEGRAM_FOLLOWUP_GRACE_SECONDS", "0")
     runner = _runner(default_mode="interrupt")
     adapter = await _load_profile_snapshot(
         runner,
@@ -208,7 +208,7 @@ async def test_busy_change_updates_only_routed_profile(tmp_path, monkeypatch):
         "display:\n  busy_input_mode: interrupt\n",
         encoding="utf-8",
     )
-    monkeypatch.setenv("HERMES_HOME", str(default_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(default_home))
 
     runner = _runner(default_mode="interrupt")
     profile_home = tmp_path / "research"
@@ -270,7 +270,7 @@ async def test_secondary_profile_busy_mode_controls_priority_restart_drain(
     tmp_path,
     monkeypatch,
 ):
-    monkeypatch.setenv("HERMES_TELEGRAM_FOLLOWUP_GRACE_SECONDS", "0")
+    monkeypatch.setenv("AKRAMCODE_TELEGRAM_FOLLOWUP_GRACE_SECONDS", "0")
     runner = _runner(default_mode="interrupt")
     adapter = await _load_profile_snapshot(
         runner,
@@ -299,7 +299,7 @@ async def test_secondary_adapter_busy_guard_stamps_profile_before_resolving_mode
     monkeypatch,
 ):
     """Per-profile adapters route busy events before the message wrapper runs."""
-    monkeypatch.setenv("HERMES_GATEWAY_BUSY_ACK_ENABLED", "false")
+    monkeypatch.setenv("AKRAMCODE_GATEWAY_BUSY_ACK_ENABLED", "false")
     runner = _runner(default_mode="interrupt")
     adapter = await _load_profile_snapshot(
         runner,
@@ -354,7 +354,7 @@ async def test_secondary_legacy_busy_text_mode_is_profile_specific(tmp_path):
 
 @pytest.mark.asyncio
 async def test_default_busy_mode_is_unchanged_by_secondary_profile(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_GATEWAY_BUSY_ACK_ENABLED", "false")
+    monkeypatch.setenv("AKRAMCODE_GATEWAY_BUSY_ACK_ENABLED", "false")
     runner = _runner(default_mode="interrupt")
     await _load_profile_snapshot(runner, tmp_path / "research", "steer")
     adapter = _adapter()
@@ -460,16 +460,16 @@ async def test_primary_adapter_busy_origin_uses_routed_privacy(
     """The primary busy callback bypasses the scoped normal-message handler."""
     from dataclasses import asdict
     from agent.agent_runtime_helpers import apply_pending_steer_to_tool_results
-    from hermes_constants import get_hermes_home_override
+    from akramcode_constants import get_akramcode_home_override
     from run_agent import AIAgent
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     secondary = home / "profiles" / "research"
     secondary.mkdir(parents=True)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setattr("gateway.run._hermes_home", home)
-    monkeypatch.setenv("HERMES_GATEWAY_BUSY_ACK_ENABLED", "false")
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
+    monkeypatch.setattr("gateway.run._akramcode_home", home)
+    monkeypatch.setenv("AKRAMCODE_GATEWAY_BUSY_ACK_ENABLED", "false")
     for directory, privacy in ((home, not secondary_privacy), (secondary, secondary_privacy)):
         (directory / "config.yaml").write_text(
             f"privacy:\n  redact_pii: {str(privacy).lower()}\n", encoding="utf-8",
@@ -497,7 +497,7 @@ async def test_primary_adapter_busy_origin_uses_routed_privacy(
     agent._executing_tools = mode == "interrupt"
     runner._session_state(key).turn.agent = agent
     adapter._active_sessions[key] = asyncio.Event()
-    ambient = get_hermes_home_override()
+    ambient = get_akramcode_home_override()
     await adapter._handle_message_while_active(event, key)
     messages = [{"role": "tool", "tool_call_id": "probe", "content": "Tool completed."}]
     apply_pending_steer_to_tool_results(agent, messages, 1)
@@ -506,7 +506,7 @@ async def test_primary_adapter_busy_origin_uses_routed_privacy(
     for value in (event.source.chat_id, event.source.user_id, event.message_id, "research"):
         assert (value not in output) is secondary_privacy
     assert asdict(event.source) == original
-    assert get_hermes_home_override() == ambient
+    assert get_akramcode_home_override() == ambient
     assert key not in adapter._pending_messages
 
 
@@ -514,8 +514,8 @@ async def test_primary_adapter_busy_origin_uses_routed_privacy(
 async def test_secondary_busy_text_timing_follows_profile_config_not_process_env(tmp_path, monkeypatch):
     """Debounce / hard-cap are per-profile config (#116893): a launch-process env value must not
     reach a secondary profile's adapter, and each profile keeps its own numbers across A->B->A."""
-    monkeypatch.setenv("HERMES_GATEWAY_BUSY_TEXT_DEBOUNCE_SECONDS", "9.0")
-    monkeypatch.setenv("HERMES_GATEWAY_BUSY_TEXT_HARD_CAP_SECONDS", "9.0")
+    monkeypatch.setenv("AKRAMCODE_GATEWAY_BUSY_TEXT_DEBOUNCE_SECONDS", "9.0")
+    monkeypatch.setenv("AKRAMCODE_GATEWAY_BUSY_TEXT_HARD_CAP_SECONDS", "9.0")
     runner = _runner()
     runner._busy_text_timing = (0.35, 1.0)
     homes = {"alpha": tmp_path / "alpha", "beta": tmp_path / "beta"}
@@ -554,9 +554,9 @@ def test_busy_text_timing_rejects_non_numeric_config(caplog):
 async def test_secondary_human_delay_follows_profile_config_not_process_env(tmp_path, monkeypatch):
     """``human_delay`` pacing is per-profile config (#116895): the launch-process env must not reach
     any adapter, and each profile keeps its own range across A->B->A."""
-    monkeypatch.setenv("HERMES_HUMAN_DELAY_MODE", "custom")
-    monkeypatch.setenv("HERMES_HUMAN_DELAY_MIN_MS", "1")
-    monkeypatch.setenv("HERMES_HUMAN_DELAY_MAX_MS", "2")
+    monkeypatch.setenv("AKRAMCODE_HUMAN_DELAY_MODE", "custom")
+    monkeypatch.setenv("AKRAMCODE_HUMAN_DELAY_MIN_MS", "1")
+    monkeypatch.setenv("AKRAMCODE_HUMAN_DELAY_MAX_MS", "2")
     runner = _runner()
     runner._human_delay = None
     homes = {"alpha": tmp_path / "alpha", "beta": tmp_path / "beta"}

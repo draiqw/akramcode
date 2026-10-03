@@ -6,7 +6,7 @@ import os
 from unittest.mock import patch
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from akramcode_cli.config import (
     config_command,
@@ -15,11 +15,11 @@ from akramcode_cli.config import (
 
 
 @pytest.fixture(autouse=True)
-def _isolated_hermes_home(tmp_path):
-    """Point HERMES_HOME at a temp dir so tests never touch real config."""
+def _isolated_akramcode_home(tmp_path):
+    """Point AKRAMCODE_HOME at a temp dir so tests never touch real config."""
     env_file = tmp_path / ".env"
     env_file.touch()
-    with patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}):
+    with patch.dict(os.environ, {"AKRAMCODE_HOME": str(tmp_path)}):
         yield tmp_path
 
 
@@ -45,12 +45,12 @@ class TestExplicitAllowlist:
         "SUDO_PASSWORD",
         "API_SERVER_KEY",
     ])
-    def test_explicit_key_routes_to_env(self, key, _isolated_hermes_home):
+    def test_explicit_key_routes_to_env(self, key, _isolated_akramcode_home):
         set_config_value(key, "test-value-123")
-        env_content = _read_env(_isolated_hermes_home)
+        env_content = _read_env(_isolated_akramcode_home)
         assert f"{key}=test-value-123" in env_content
         # Must NOT appear in config.yaml
-        assert key not in _read_config(_isolated_hermes_home)
+        assert key not in _read_config(_isolated_akramcode_home)
 
 
 # ---------------------------------------------------------------------------
@@ -65,11 +65,11 @@ class TestCatchAllPatterns:
         "MY_CUSTOM_TOKEN",
         "CLIENT_SECRET",
     ])
-    def test_api_key_suffix_routes_to_env(self, key, _isolated_hermes_home):
+    def test_api_key_suffix_routes_to_env(self, key, _isolated_akramcode_home):
         set_config_value(key, "secret-456")
-        env_content = _read_env(_isolated_hermes_home)
+        env_content = _read_env(_isolated_akramcode_home)
         assert f"{key}=secret-456" in env_content
-        assert key not in _read_config(_isolated_hermes_home)
+        assert key not in _read_config(_isolated_akramcode_home)
 
 
 # ---------------------------------------------------------------------------
@@ -80,13 +80,13 @@ class TestGatewayPlatformsPrefixRedirect:
     """#115212: ``gateway.platforms.<p>.<field>`` lands on the top-level ``platforms.<p>.<field>``
     the gateway prefers, instead of a nested key that an existing top-level value shadows."""
 
-    def test_set_lands_on_top_level_platforms_block_the_loader_reads(self, _isolated_hermes_home, capsys):
-        (_isolated_hermes_home / "config.yaml").write_text(
+    def test_set_lands_on_top_level_platforms_block_the_loader_reads(self, _isolated_akramcode_home, capsys):
+        (_isolated_akramcode_home / "config.yaml").write_text(
             "platforms:\n  telegram:\n    enabled: false\n", encoding="utf-8")
         set_config_value("gateway.platforms.telegram.enabled", "true")
         out = capsys.readouterr().out
         assert "saved as platforms.telegram.enabled" in out
-        loaded = yaml.safe_load(_read_config(_isolated_hermes_home))
+        loaded = yaml.safe_load(_read_config(_isolated_akramcode_home))
         assert loaded["platforms"]["telegram"]["enabled"] is True
         assert "gateway" not in loaded
         from gateway.config import Platform, load_gateway_config
@@ -97,41 +97,41 @@ class TestGatewayPlatformsPrefixRedirect:
         key, _ = _redirect_platform_display_key("gateway.platforms.telegram.streaming")
         assert key == "display.platforms.telegram.streaming"
 
-    def test_get_and_unset_still_reach_a_legacy_nested_only_value(self, _isolated_hermes_home, capsys):
+    def test_get_and_unset_still_reach_a_legacy_nested_only_value(self, _isolated_akramcode_home, capsys):
         """A config whose value lives ONLY under ``gateway.platforms`` is still honoured by the gateway
         (``merge_platform_sections``), so ``get`` must read it and ``unset`` must remove it instead of
         reporting "not set" while the gateway keeps the platform enabled."""
         from akramcode_cli.config import get_config_value, unset_config_value
 
         legacy = "gateway:\n  platforms:\n    telegram:\n      enabled: true\n"
-        (_isolated_hermes_home / "config.yaml").write_text(legacy, encoding="utf-8")
+        (_isolated_akramcode_home / "config.yaml").write_text(legacy, encoding="utf-8")
         get_config_value("gateway.platforms.telegram.enabled")
         assert capsys.readouterr().out.strip().lower() == "true"
 
         unset_config_value("gateway.platforms.telegram.enabled")
-        assert "gateway" not in (yaml.safe_load(_read_config(_isolated_hermes_home)) or {})
+        assert "gateway" not in (yaml.safe_load(_read_config(_isolated_akramcode_home)) or {})
 
         # set on top of a nested-only value leaves one source of truth, not a shadowed duplicate
-        (_isolated_hermes_home / "config.yaml").write_text(legacy, encoding="utf-8")
+        (_isolated_akramcode_home / "config.yaml").write_text(legacy, encoding="utf-8")
         set_config_value("gateway.platforms.telegram.enabled", "false")
-        loaded = yaml.safe_load(_read_config(_isolated_hermes_home))
+        loaded = yaml.safe_load(_read_config(_isolated_akramcode_home))
         assert loaded == {"platforms": {"telegram": {"enabled": False}}}
 
 
 class TestConfigYamlRouting:
     """Regular config keys should go to config.yaml, NOT .env."""
 
-    def test_simple_key(self, _isolated_hermes_home):
+    def test_simple_key(self, _isolated_akramcode_home):
         set_config_value("model", "gpt-4o")
-        config = _read_config(_isolated_hermes_home)
+        config = _read_config(_isolated_akramcode_home)
         assert "gpt-4o" in config
-        assert "model" not in _read_env(_isolated_hermes_home)
+        assert "model" not in _read_env(_isolated_akramcode_home)
 
 
 
 
 
-    def test_tool_search_defer_is_recognized(self, _isolated_hermes_home, capsys):
+    def test_tool_search_defer_is_recognized(self, _isolated_akramcode_home, capsys):
         """tools.tool_search.defer is read by ToolSearchConfig.from_raw, so it must be a
         registered config key (not flagged as unrecognized) and coerce to a real list."""
         set_config_value("tools.tool_search.defer", '["todo_list", "skill_manage"]')
@@ -139,21 +139,21 @@ class TestConfigYamlRouting:
         captured = capsys.readouterr()
         assert "not a recognized config key" not in captured.out
         assert "not a recognized config key" not in captured.err
-        config = yaml.safe_load(_read_config(_isolated_hermes_home))
+        config = yaml.safe_load(_read_config(_isolated_akramcode_home))
         assert config["tools"]["tool_search"]["defer"] == ["todo_list", "skill_manage"]
 
 
     def test_terminal_docker_shared_key_preserves_string_values(
-        self, _isolated_hermes_home, capsys
+        self, _isolated_akramcode_home, capsys
     ):
         set_config_value("terminal.docker_shared_container_key", "off")
 
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
 
-        saved = yaml.safe_load(_read_config(_isolated_hermes_home))
+        saved = yaml.safe_load(_read_config(_isolated_akramcode_home))
         assert saved["terminal"]["docker_shared_container_key"] == "off"
         assert "TERMINAL_DOCKER_SHARED_CONTAINER_KEY=off" in _read_env(
-            _isolated_hermes_home
+            _isolated_akramcode_home
         )
         assert "not a recognized config key" not in capsys.readouterr().out
 
@@ -173,18 +173,18 @@ class TestFalsyValues:
         with pytest.raises(SystemExit):
             config_command(args)
 
-    def test_config_command_accepts_empty_string(self, _isolated_hermes_home):
+    def test_config_command_accepts_empty_string(self, _isolated_akramcode_home):
         """config set KEY '' should not exit — it should set the value."""
         args = argparse.Namespace(config_command="set", key="model", value="")
         config_command(args)
-        config = _read_config(_isolated_hermes_home)
+        config = _read_config(_isolated_akramcode_home)
         assert "model" in config
 
 
 class TestConfigGetUnset:
     """config get/unset should mirror config set for scriptable workflows."""
 
-    def test_config_get_prints_resolved_nested_value(self, _isolated_hermes_home, capsys):
+    def test_config_get_prints_resolved_nested_value(self, _isolated_akramcode_home, capsys):
         set_config_value("terminal.timeout", "120")
         capsys.readouterr()
 
@@ -194,23 +194,23 @@ class TestConfigGetUnset:
         assert capsys.readouterr().out.strip() == "120"
 
 
-    def test_config_unset_removes_yaml_key_and_synced_env(self, _isolated_hermes_home, capsys):
+    def test_config_unset_removes_yaml_key_and_synced_env(self, _isolated_akramcode_home, capsys):
         set_config_value("terminal.backend", "docker")
-        assert "TERMINAL_ENV=docker" in _read_env(_isolated_hermes_home)
+        assert "TERMINAL_ENV=docker" in _read_env(_isolated_akramcode_home)
         capsys.readouterr()
 
         args = argparse.Namespace(config_command="unset", key="terminal.backend")
         config_command(args)
 
-        import akram_core.hermes_yaml as yaml
-        reloaded = yaml.safe_load(_read_config(_isolated_hermes_home)) or {}
+        import akram_core.akramcode_yaml as yaml
+        reloaded = yaml.safe_load(_read_config(_isolated_akramcode_home)) or {}
         assert reloaded == {}
-        assert "TERMINAL_ENV=" not in _read_env(_isolated_hermes_home)
+        assert "TERMINAL_ENV=" not in _read_env(_isolated_akramcode_home)
         assert "Unset terminal.backend" in capsys.readouterr().out
 
 
-    def test_config_unset_removes_dotted_token_yaml_key(self, _isolated_hermes_home, capsys):
-        (_isolated_hermes_home / "config.yaml").write_text(
+    def test_config_unset_removes_dotted_token_yaml_key(self, _isolated_akramcode_home, capsys):
+        (_isolated_akramcode_home / "config.yaml").write_text(
             "platforms:\n"
             "  teams:\n"
             "    extra:\n"
@@ -221,8 +221,8 @@ class TestConfigGetUnset:
         args = argparse.Namespace(config_command="unset", key="platforms.teams.extra.access_token")
         config_command(args)
 
-        import akram_core.hermes_yaml as yaml
-        reloaded = yaml.safe_load(_read_config(_isolated_hermes_home))
+        import akram_core.akramcode_yaml as yaml
+        reloaded = yaml.safe_load(_read_config(_isolated_akramcode_home))
         assert "access_token" not in reloaded["platforms"]["teams"]["extra"]
         assert reloaded["platforms"]["teams"]["extra"]["tenant_id"] == "tenant"
         assert "Unset platforms.teams.extra.access_token" in capsys.readouterr().out
@@ -235,9 +235,9 @@ class TestConfigGetPhantomKeyNotice:
     """
 
     def test_unknown_nested_key_flags_on_stderr_and_keeps_stdout_parseable(
-        self, _isolated_hermes_home, capsys
+        self, _isolated_akramcode_home, capsys
     ):
-        (_isolated_hermes_home / "config.yaml").write_text(
+        (_isolated_akramcode_home / "config.yaml").write_text(
             "compression:\n  compressor:\n    enabled: true\n"
         )
 
@@ -249,11 +249,11 @@ class TestConfigGetPhantomKeyNotice:
         assert "not a recognized config key" in captured.err
 
     def test_unseeded_live_key_notice_hedges_instead_of_asserting_unread(
-        self, _isolated_hermes_home, capsys
+        self, _isolated_akramcode_home, capsys
     ):
         # The check is a DEFAULT_CONFIG walk; ``browser.cloud_provider`` is deliberately unseeded
         # yet read by tools/browser_tool_cloud.py, so the notice must not claim it is never read.
-        (_isolated_hermes_home / "config.yaml").write_text("browser:\n  cloud_provider: local\n")
+        (_isolated_akramcode_home / "config.yaml").write_text("browser:\n  cloud_provider: local\n")
 
         config_command(argparse.Namespace(config_command="get", key="browser.cloud_provider", json=False))
 
@@ -271,9 +271,9 @@ class TestConfigGetPhantomKeyNotice:
         ],
     )
     def test_recognized_and_custom_keys_are_not_flagged(
-        self, _isolated_hermes_home, capsys, key, body
+        self, _isolated_akramcode_home, capsys, key, body
     ):
-        (_isolated_hermes_home / "config.yaml").write_text(body)
+        (_isolated_akramcode_home / "config.yaml").write_text(body)
 
         args = argparse.Namespace(config_command="get", key=key, json=False)
         config_command(args)
@@ -287,7 +287,7 @@ class TestConfigGetPhantomKeyNotice:
 # ---------------------------------------------------------------------------
 
 class TestListNavigation:
-    """hermes config set must preserve YAML list fields when using numeric
+    """akramcode config set must preserve YAML list fields when using numeric
     indices.  Before #17876, _set_nested would silently replace the entire
     list with a dict, destroying every sibling entry.
     """
@@ -295,9 +295,9 @@ class TestListNavigation:
     def _write_config(self, tmp_path, body):
         (tmp_path / "config.yaml").write_text(body)
 
-    def test_indexed_set_preserves_sibling_list_entries(self, _isolated_hermes_home):
+    def test_indexed_set_preserves_sibling_list_entries(self, _isolated_akramcode_home):
         """Setting custom_providers.0.api_key must not destroy entry 1."""
-        self._write_config(_isolated_hermes_home, (
+        self._write_config(_isolated_akramcode_home, (
             "custom_providers:\n"
             "- name: provider-a\n"
             "  api_key: old-a\n"
@@ -309,8 +309,8 @@ class TestListNavigation:
 
         set_config_value("custom_providers.0.api_key", "new-a")
 
-        import akram_core.hermes_yaml as yaml
-        reloaded = yaml.safe_load(_read_config(_isolated_hermes_home))
+        import akram_core.akramcode_yaml as yaml
+        reloaded = yaml.safe_load(_read_config(_isolated_akramcode_home))
         # The list must still be a list
         assert isinstance(reloaded["custom_providers"], list)
         assert len(reloaded["custom_providers"]) == 2
@@ -323,9 +323,9 @@ class TestListNavigation:
         assert reloaded["custom_providers"][1]["api_key"] == "old-b"
         assert reloaded["custom_providers"][1]["base_url"] == "https://b.example.com"
 
-    def test_indexed_set_preserves_non_targeted_fields(self, _isolated_hermes_home):
+    def test_indexed_set_preserves_non_targeted_fields(self, _isolated_akramcode_home):
         """Setting one field in a list entry must not drop other fields."""
-        self._write_config(_isolated_hermes_home, (
+        self._write_config(_isolated_akramcode_home, (
             "custom_providers:\n"
             "- name: provider-a\n"
             "  api_key: old\n"
@@ -337,17 +337,17 @@ class TestListNavigation:
 
         set_config_value("custom_providers.0.api_key", "rotated")
 
-        import akram_core.hermes_yaml as yaml
-        reloaded = yaml.safe_load(_read_config(_isolated_hermes_home))
+        import akram_core.akramcode_yaml as yaml
+        reloaded = yaml.safe_load(_read_config(_isolated_akramcode_home))
         entry = reloaded["custom_providers"][0]
         assert entry["api_key"] == "rotated"
         assert entry["name"] == "provider-a"
         assert entry["base_url"] == "https://a.example.com"
         assert set(entry["models"].keys()) == {"foo", "bar"}
 
-    def test_deeper_nesting_through_list(self, _isolated_hermes_home):
+    def test_deeper_nesting_through_list(self, _isolated_akramcode_home):
         """Navigation path mixing dict → list → dict → scalar."""
-        self._write_config(_isolated_hermes_home, (
+        self._write_config(_isolated_akramcode_home, (
             "telegram:\n"
             "  allowlist:\n"
             "    - name: alice\n"
@@ -362,8 +362,8 @@ class TestListNavigation:
         # the canonical path.
         set_config_value("telegram.allowlist.1.role", "admin")
 
-        import akram_core.hermes_yaml as yaml
-        reloaded = yaml.safe_load(_read_config(_isolated_hermes_home))
+        import akram_core.akramcode_yaml as yaml
+        reloaded = yaml.safe_load(_read_config(_isolated_akramcode_home))
         allowlist = reloaded["telegram"]["allowlist"]
         assert isinstance(allowlist, list)
         assert allowlist[0] == {"name": "alice", "role": "admin"}
@@ -377,12 +377,12 @@ class TestListNavigation:
 
 class TestStringTypedConfigValues:
     @pytest.mark.parametrize("value", ["off", "true", "01"])
-    def test_string_typed_values_are_not_coerced(self, _isolated_hermes_home, value):
+    def test_string_typed_values_are_not_coerced(self, _isolated_akramcode_home, value):
         """Values stay strings when DEFAULT_CONFIG declares the leaf as a string."""
         set_config_value("approvals.mode", value)
 
-        import akram_core.hermes_yaml as yaml
-        saved = yaml.safe_load(_read_config(_isolated_hermes_home))
+        import akram_core.akramcode_yaml as yaml
+        saved = yaml.safe_load(_read_config(_isolated_akramcode_home))
         assert saved["approvals"]["mode"] == value
         assert isinstance(saved["approvals"]["mode"], str)
 
@@ -391,25 +391,25 @@ class TestStringTypedConfigValues:
         ("approvals.timeout", "30", 30),
     ])
     def test_non_string_defaults_keep_existing_coercion(
-        self, _isolated_hermes_home, key, value, expected
+        self, _isolated_akramcode_home, key, value, expected
     ):
         set_config_value(key, value)
 
-        import akram_core.hermes_yaml as yaml
-        saved = yaml.safe_load(_read_config(_isolated_hermes_home))
+        import akram_core.akramcode_yaml as yaml
+        saved = yaml.safe_load(_read_config(_isolated_akramcode_home))
         node = saved
         for part in key.split("."):
             node = node[part]
         assert node == expected
         assert type(node) is type(expected)
 
-    def test_unknown_keys_keep_existing_coercion(self, _isolated_hermes_home):
+    def test_unknown_keys_keep_existing_coercion(self, _isolated_akramcode_home):
         # ``custom`` is not a known top-level key, so it now requires --force
         # (schema validation, #34067); coercion behavior is unchanged.
         set_config_value("custom.enabled", "off", force=True)
 
-        import akram_core.hermes_yaml as yaml
-        saved = yaml.safe_load(_read_config(_isolated_hermes_home))
+        import akram_core.akramcode_yaml as yaml
+        saved = yaml.safe_load(_read_config(_isolated_akramcode_home))
         assert saved["custom"]["enabled"] is False
 
 
@@ -452,7 +452,7 @@ class TestSecretRedactionInDisplay:
         # Exact-match only — substrings like token_count must NOT be masked.
         assert out == cfg
 
-    def test_set_echo_masks_secret_value(self, _isolated_hermes_home, capsys):
+    def test_set_echo_masks_secret_value(self, _isolated_akramcode_home, capsys):
         secret = "cfut_ANOTHERSECRET0987654321zyxwvu"
         set_config_value("model.api_key", secret)
 
@@ -483,9 +483,9 @@ class TestSchemaValidation:
         ("agent.gateway.strict", "gateway.strict"),
     ])
     def test_unknown_subkey_under_known_section_refused_before_write(
-        self, key, suggestion, _isolated_hermes_home, capsys
+        self, key, suggestion, _isolated_akramcode_home, capsys
     ):
-        config_path = _isolated_hermes_home / "config.yaml"
+        config_path = _isolated_akramcode_home / "config.yaml"
         config_path.write_text("model: gpt-4o\n", encoding="utf-8")
 
         with pytest.raises(SystemExit):
@@ -510,12 +510,12 @@ class TestSchemaValidation:
         ("gateway.filter_silence_narration", "false", False, None),
     ])
     def test_unknown_leaf_under_known_section_is_written_with_notice(
-        self, key, value, expected, suggestion, _isolated_hermes_home, capsys
+        self, key, value, expected, suggestion, _isolated_akramcode_home, capsys
     ):
         """Unseeded runtime settings are not proven typos merely by a schema walk."""
         set_config_value(key, value)
 
-        saved = yaml.safe_load(_read_config(_isolated_hermes_home))
+        saved = yaml.safe_load(_read_config(_isolated_akramcode_home))
         section, name = key.split(".")
         assert saved[section][name] == expected
         out = capsys.readouterr().out
@@ -528,9 +528,9 @@ class TestSchemaValidation:
         else:
             assert f"Did you mean: {suggestion}" in out
 
-    def test_unknown_top_level_key_still_written_with_notice(self, _isolated_hermes_home, capsys):
+    def test_unknown_top_level_key_still_written_with_notice(self, _isolated_akramcode_home, capsys):
         set_config_value("brand_new_future_key", "value")
-        assert "brand_new_future_key" in _read_config(_isolated_hermes_home)
+        assert "brand_new_future_key" in _read_config(_isolated_akramcode_home)
         assert "not a recognized config key" in capsys.readouterr().out
 
 
@@ -542,14 +542,14 @@ class TestSchemaValidation:
 
 
 
-    def test_force_suppresses_notice(self, _isolated_hermes_home, capsys):
+    def test_force_suppresses_notice(self, _isolated_akramcode_home, capsys):
         """``--force`` writes unknown keys without the notice (scripted
         forward-compat writes)."""
         set_config_value("brand_new_future_key", "value", force=True)
         out = capsys.readouterr().out
         assert "not a recognized config key" not in out
         # And the value WAS written.
-        content = _read_config(_isolated_hermes_home)
+        content = _read_config(_isolated_akramcode_home)
         assert "brand_new_future_key" in content
 
 
@@ -605,14 +605,14 @@ class TestDisplaySkinTouch:
 
     The gateway's skin watcher broadcasts ``skin.changed`` on a signature move
     of (active name, skin-file mtime). Re-affirming the already-configured skin
-    (`hermes config set display.skin X` while it is already X — the recovery
+    (`akramcode config set display.skin X` while it is already X — the recovery
     path when a surface missed the original activation) moves NEITHER part, so
     without the touch the explicit apply is invisible to every live surface.
     """
 
-    def test_reaffirming_same_skin_moves_the_watcher_signature(self, _isolated_hermes_home):
+    def test_reaffirming_same_skin_moves_the_watcher_signature(self, _isolated_akramcode_home):
         import os as _os
-        skins = _isolated_hermes_home / "skins"
+        skins = _isolated_akramcode_home / "skins"
         skins.mkdir()
         skin_file = skins / "synthwave.yaml"
         skin_file.write_text("name: synthwave\ncolors:\n  background: '#1a1030'\n")
@@ -627,13 +627,13 @@ class TestDisplaySkinTouch:
         set_config_value("display.skin", "synthwave")  # same name, re-affirmed
         assert skin_file.stat().st_mtime > 1_000_000_000
 
-    def test_builtin_or_missing_skin_file_is_fine(self, _isolated_hermes_home):
+    def test_builtin_or_missing_skin_file_is_fine(self, _isolated_akramcode_home):
         """Built-ins have no user file — the set must still succeed cleanly."""
         set_config_value("display.skin", "mono")
-        assert "skin: mono" in _read_config(_isolated_hermes_home)
+        assert "skin: mono" in _read_config(_isolated_akramcode_home)
 
-    def test_touch_preserves_skin_file_contents(self, _isolated_hermes_home):
-        skins = _isolated_hermes_home / "skins"
+    def test_touch_preserves_skin_file_contents(self, _isolated_akramcode_home):
+        skins = _isolated_akramcode_home / "skins"
         skins.mkdir()
         body = "name: neon\ncolors:\n  ui_accent: '#ff33aa'\n"
         (skins / "neon.yaml").write_text(body)
@@ -647,18 +647,18 @@ class TestDisplaySkinTouch:
 # ---------------------------------------------------------------------------
 
 class TestMappingGuard:
-    """``hermes config set <section> <scalar>`` must not silently destroy an
+    """``akramcode config set <section> <scalar>`` must not silently destroy an
     existing mapping.  Bare ``model`` is a documented shorthand — redirect to
     ``model.default``.  All other mapping sections are refused without --force.
     """
 
     def _write_config(self, tmp_path, data: dict):
-        import akram_core.hermes_yaml as _yaml
+        import akram_core.akramcode_yaml as _yaml
         (tmp_path / "config.yaml").write_text(_yaml.safe_dump(data))
 
-    def test_bare_model_shorthand_preserves_siblings(self, _isolated_hermes_home):
-        """hermes config set model <id> → model.default, siblings survive."""
-        self._write_config(_isolated_hermes_home, {
+    def test_bare_model_shorthand_preserves_siblings(self, _isolated_akramcode_home):
+        """akramcode config set model <id> → model.default, siblings survive."""
+        self._write_config(_isolated_akramcode_home, {
             "model": {
                 "default": "gpt-4o",
                 "provider": "openai-api",
@@ -667,22 +667,22 @@ class TestMappingGuard:
             }
         })
         set_config_value("model", "claude-sonnet-4-20250514")
-        config_text = _read_config(_isolated_hermes_home)
-        import akram_core.hermes_yaml as _yaml
+        config_text = _read_config(_isolated_akramcode_home)
+        import akram_core.akramcode_yaml as _yaml
         parsed = _yaml.safe_load(config_text)
         assert parsed["model"]["default"] == "claude-sonnet-4-20250514"
         assert parsed["model"]["provider"] == "openai-api"
         assert parsed["model"]["context_length"] == 128_000
         assert parsed["model"]["base_url"] == "https://api.example.com/v1"
 
-    def test_bare_model_shorthand_creates_default_when_none(self, _isolated_hermes_home):
+    def test_bare_model_shorthand_creates_default_when_none(self, _isolated_akramcode_home):
         """Bare model shorthand still works when config is empty (legacy behaviour)."""
         set_config_value("model", "gpt-5.6-sol")
-        assert "gpt-5.6-sol" in _read_config(_isolated_hermes_home)
+        assert "gpt-5.6-sol" in _read_config(_isolated_akramcode_home)
 
-    def test_non_model_mapping_is_refused(self, _isolated_hermes_home):
-        """hermes config set terminal bash → refuse, terminal has sub-keys."""
-        self._write_config(_isolated_hermes_home, {
+    def test_non_model_mapping_is_refused(self, _isolated_akramcode_home):
+        """akramcode config set terminal bash → refuse, terminal has sub-keys."""
+        self._write_config(_isolated_akramcode_home, {
             "terminal": {
                 "backend": "docker",
                 "docker_image": "python:3.12",
@@ -693,36 +693,36 @@ class TestMappingGuard:
             set_config_value("terminal", "zsh")
         assert exc.value.code == 1
 
-    def test_non_model_mapping_force_overwrites(self, _isolated_hermes_home):
-        """hermes config set --force terminal bash → proceed, section wiped."""
-        self._write_config(_isolated_hermes_home, {
+    def test_non_model_mapping_force_overwrites(self, _isolated_akramcode_home):
+        """akramcode config set --force terminal bash → proceed, section wiped."""
+        self._write_config(_isolated_akramcode_home, {
             "terminal": {
                 "backend": "docker",
                 "shell": "bash",
             }
         })
         set_config_value("terminal", "zsh", force=True)
-        import akram_core.hermes_yaml as _yaml
-        parsed = _yaml.safe_load(_read_config(_isolated_hermes_home))
+        import akram_core.akramcode_yaml as _yaml
+        parsed = _yaml.safe_load(_read_config(_isolated_akramcode_home))
         assert parsed["terminal"] == "zsh"
 
-    def test_model_default_dotted_path_is_not_guarded(self, _isolated_hermes_home):
+    def test_model_default_dotted_path_is_not_guarded(self, _isolated_akramcode_home):
         """model.default is already a dotted path — guard must not fire."""
-        self._write_config(_isolated_hermes_home, {
+        self._write_config(_isolated_akramcode_home, {
             "model": {
                 "default": "gpt-4o",
                 "provider": "openai-api",
             }
         })
         set_config_value("model.default", "claude-opus-4")
-        import akram_core.hermes_yaml as _yaml
-        parsed = _yaml.safe_load(_read_config(_isolated_hermes_home))
+        import akram_core.akramcode_yaml as _yaml
+        parsed = _yaml.safe_load(_read_config(_isolated_akramcode_home))
         assert parsed["model"]["default"] == "claude-opus-4"
         assert parsed["model"]["provider"] == "openai-api"
 
-    def test_model_force_overwrites_entire_section(self, _isolated_hermes_home):
-        """hermes config set --force model <id> → overwrite entire section."""
-        self._write_config(_isolated_hermes_home, {
+    def test_model_force_overwrites_entire_section(self, _isolated_akramcode_home):
+        """akramcode config set --force model <id> → overwrite entire section."""
+        self._write_config(_isolated_akramcode_home, {
             "model": {
                 "default": "gpt-4o",
                 "provider": "openai-api",
@@ -730,36 +730,36 @@ class TestMappingGuard:
             }
         })
         set_config_value("model", "claude-opus-4", force=True)
-        import akram_core.hermes_yaml as _yaml
-        parsed = _yaml.safe_load(_read_config(_isolated_hermes_home))
+        import akram_core.akramcode_yaml as _yaml
+        parsed = _yaml.safe_load(_read_config(_isolated_akramcode_home))
         assert parsed["model"] == "claude-opus-4"
 
 
 class TestScalarModelSubKeyPreservation:
     """#75426: setting model.provider when model is a scalar must not lose the model id."""
 
-    def test_scalar_model_id_preserved_after_provider_write(self, _isolated_hermes_home):
+    def test_scalar_model_id_preserved_after_provider_write(self, _isolated_akramcode_home):
         """Seed model: gpt-4o, then set model.provider → model.default must survive."""
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
 
         set_config_value("model", "gpt-4o")
         set_config_value("model.provider", "openai")
 
-        raw = _read_config(_isolated_hermes_home)
+        raw = _read_config(_isolated_akramcode_home)
         parsed = yaml.safe_load(raw)
         model = parsed["model"]
         assert model["default"] == "gpt-4o", f"model.default lost: {model}"
         assert model["provider"] == "openai"
 
-    def test_scalar_model_id_preserved_after_api_key_write(self, _isolated_hermes_home):
+    def test_scalar_model_id_preserved_after_api_key_write(self, _isolated_akramcode_home):
         """model.api_key must also preserve the existing scalar model id."""
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
 
         set_config_value("model", "claude-sonnet")
         # model.api_key is a sub-key (has a dot), so it stays in config.yaml
         set_config_value("model.api_key", "sk-test")
 
-        raw = _read_config(_isolated_hermes_home)
+        raw = _read_config(_isolated_akramcode_home)
         parsed = yaml.safe_load(raw)
         assert parsed["model"]["default"] == "claude-sonnet"
         assert parsed["model"]["api_key"] == "sk-test"
@@ -772,33 +772,33 @@ class TestMalformedYAMLConfigPreservation:
     def _write_broken_config(self, home):
         (home / "config.yaml").write_text(self.BROKEN_CONFIG)
 
-    def test_set_config_value_refuses_broken_yaml(self, _isolated_hermes_home, capsys):
+    def test_set_config_value_refuses_broken_yaml(self, _isolated_akramcode_home, capsys):
         """set_config_value must raise, not overwrite the broken config."""
-        self._write_broken_config(_isolated_hermes_home)
+        self._write_broken_config(_isolated_akramcode_home)
 
         with pytest.raises(RuntimeError, match="formatting error"):
             set_config_value("agent.max_turns", "50")
 
         captured = capsys.readouterr()
         combined = captured.out + captured.err
-        assert "formatting error" in combined and "`hermes config edit`" in combined
+        assert "formatting error" in combined and "`akramcode config edit`" in combined
         # Original config must remain intact
-        raw = _read_config(_isolated_hermes_home)
+        raw = _read_config(_isolated_akramcode_home)
         assert raw == self.BROKEN_CONFIG, f"Config was overwritten:\n{raw}"
 
-    def test_unset_config_value_refuses_broken_yaml(self, _isolated_hermes_home, capsys):
+    def test_unset_config_value_refuses_broken_yaml(self, _isolated_akramcode_home, capsys):
         """unset_config_value must raise, not overwrite the broken config."""
         from akramcode_cli.config import unset_config_value
 
-        self._write_broken_config(_isolated_hermes_home)
+        self._write_broken_config(_isolated_akramcode_home)
 
         with pytest.raises(RuntimeError, match="formatting error"):
             unset_config_value("model")
 
         captured = capsys.readouterr()
         combined = captured.out + captured.err
-        assert "formatting error" in combined and "`hermes config edit`" in combined
-        raw = _read_config(_isolated_hermes_home)
+        assert "formatting error" in combined and "`akramcode config edit`" in combined
+        raw = _read_config(_isolated_akramcode_home)
         assert raw == self.BROKEN_CONFIG
 
 
@@ -807,7 +807,7 @@ class TestMalformedYAMLConfigPreservation:
 # ---------------------------------------------------------------------------
 
 class TestLiteralDotKeyEscaping:
-    """``hermes config set/unset/get`` must not split a key segment on a
+    """``akramcode config set/unset/get`` must not split a key segment on a
     literal dot.  Provider names routinely embed version numbers
     (``qwen3.5-397b-wafer``), and before the backslash-escape (#84064)
     ``providers.qwen3.5-397b-wafer.api_key`` silently created a bogus nested
@@ -815,7 +815,7 @@ class TestLiteralDotKeyEscaping:
     """
 
     def _write_config(self, tmp_path, data: dict):
-        import akram_core.hermes_yaml as _yaml
+        import akram_core.akramcode_yaml as _yaml
         (tmp_path / "config.yaml").write_text(_yaml.safe_dump(data, sort_keys=False))
 
     def test_split_key_path_escaped_dot(self):
@@ -832,8 +832,8 @@ class TestLiteralDotKeyEscaping:
         # Backslash before a non-dot char is preserved verbatim.
         assert _split_key_path("win\\path.key") == ["win\\path", "key"]
 
-    def test_set_preserves_literal_dot_in_provider_key(self, _isolated_hermes_home, capsys):
-        self._write_config(_isolated_hermes_home, {
+    def test_set_preserves_literal_dot_in_provider_key(self, _isolated_akramcode_home, capsys):
+        self._write_config(_isolated_akramcode_home, {
             "providers": {
                 "qwen3.5-397b-wafer-non-zdr": {"api": "https://pass.wafer.ai/v1"},
                 "openrouter": {"api_key": "or-keep"},
@@ -845,8 +845,8 @@ class TestLiteralDotKeyEscaping:
             '{"Wafer-ZDR": "required"}',
         )
 
-        import akram_core.hermes_yaml as yaml
-        saved = yaml.safe_load(_read_config(_isolated_hermes_home))
+        import akram_core.akramcode_yaml as yaml
+        saved = yaml.safe_load(_read_config(_isolated_akramcode_home))
         providers = saved["providers"]
         # No bogus ``qwen3`` nesting was created; the existing entry was updated.
         assert "qwen3" not in providers
@@ -860,8 +860,8 @@ class TestLiteralDotKeyEscaping:
         # Escaped key is schema-known (providers.* is an open dict) — no warning.
         assert "not a recognized config key" not in capsys.readouterr().out
 
-    def test_unset_removes_literal_dot_provider_key(self, _isolated_hermes_home, capsys):
-        self._write_config(_isolated_hermes_home, {
+    def test_unset_removes_literal_dot_provider_key(self, _isolated_akramcode_home, capsys):
+        self._write_config(_isolated_akramcode_home, {
             "providers": {
                 "qwen3.5-397b-wafer-non-zdr": {"api": "https://pass.wafer.ai/v1"},
                 "openrouter": {"api_key": "or-keep"},
@@ -874,14 +874,14 @@ class TestLiteralDotKeyEscaping:
         )
         config_command(args)
 
-        import akram_core.hermes_yaml as yaml
-        saved = yaml.safe_load(_read_config(_isolated_hermes_home))
+        import akram_core.akramcode_yaml as yaml
+        saved = yaml.safe_load(_read_config(_isolated_akramcode_home))
         assert "qwen3.5-397b-wafer-non-zdr" not in saved["providers"]
         assert saved["providers"]["openrouter"] == {"api_key": "or-keep"}
         assert "Unset providers.qwen3\\.5-397b-wafer-non-zdr" in capsys.readouterr().out
 
-    def test_unset_nested_field_under_literal_dot_key(self, _isolated_hermes_home, capsys):
-        self._write_config(_isolated_hermes_home, {
+    def test_unset_nested_field_under_literal_dot_key(self, _isolated_akramcode_home, capsys):
+        self._write_config(_isolated_akramcode_home, {
             "providers": {
                 "qwen3.5-397b-wafer-non-zdr": {
                     "api": "https://pass.wafer.ai/v1",
@@ -896,14 +896,14 @@ class TestLiteralDotKeyEscaping:
         )
         config_command(args)
 
-        import akram_core.hermes_yaml as yaml
-        saved = yaml.safe_load(_read_config(_isolated_hermes_home))
+        import akram_core.akramcode_yaml as yaml
+        saved = yaml.safe_load(_read_config(_isolated_akramcode_home))
         target = saved["providers"]["qwen3.5-397b-wafer-non-zdr"]
         assert "extra_headers" not in target
         assert target["api"] == "https://pass.wafer.ai/v1"
 
-    def test_get_reads_literal_dot_provider_key(self, _isolated_hermes_home, capsys):
-        self._write_config(_isolated_hermes_home, {
+    def test_get_reads_literal_dot_provider_key(self, _isolated_akramcode_home, capsys):
+        self._write_config(_isolated_akramcode_home, {
             "providers": {"qwen3.5-397b": {"api": "https://pass.wafer.ai/v1"}},
         })
 
@@ -916,12 +916,12 @@ class TestLiteralDotKeyEscaping:
 
         assert capsys.readouterr().out.strip() == "https://pass.wafer.ai/v1"
 
-    def test_unescaped_dotted_path_unchanged(self, _isolated_hermes_home):
+    def test_unescaped_dotted_path_unchanged(self, _isolated_akramcode_home):
         """Nesting semantics for plain dotted keys are untouched."""
         set_config_value("terminal.backend", "docker")
 
-        import akram_core.hermes_yaml as yaml
-        saved = yaml.safe_load(_read_config(_isolated_hermes_home))
+        import akram_core.akramcode_yaml as yaml
+        saved = yaml.safe_load(_read_config(_isolated_akramcode_home))
         assert saved["terminal"]["backend"] == "docker"
 
 
@@ -941,8 +941,8 @@ class TestConfigGetRedaction:
 
     @pytest.mark.parametrize("key", ["providers", "providers.gemini.api_key", "GEMINI_API_KEY",
                                      "mcp_servers.s.env.MY_API_KEY"])
-    def test_config_get_masks_every_credential_path(self, _isolated_hermes_home, capsys, monkeypatch, key):
-        self._seed(_isolated_hermes_home, monkeypatch)
+    def test_config_get_masks_every_credential_path(self, _isolated_akramcode_home, capsys, monkeypatch, key):
+        self._seed(_isolated_akramcode_home, monkeypatch)
         from akramcode_cli.config import get_config_value
 
         get_config_value(key)
@@ -953,8 +953,8 @@ class TestConfigGetRedaction:
         if key == "providers":
             assert "gemini" in out
 
-    def test_config_get_raw_prints_the_real_value(self, _isolated_hermes_home, capsys, monkeypatch):
-        self._seed(_isolated_hermes_home, monkeypatch)
+    def test_config_get_raw_prints_the_real_value(self, _isolated_akramcode_home, capsys, monkeypatch):
+        self._seed(_isolated_akramcode_home, monkeypatch)
         from akramcode_cli.config import get_config_value
 
         get_config_value("providers.gemini.api_key", raw=True)
@@ -974,11 +974,11 @@ class TestConfigGetRedaction:
         ("mcp_servers.s.env.UNSET_THING_API_KEY", "", "    env: {UNSET_THING_API_KEY: '${UNSET_THING_API_KEY}'}\n", False),
     ])
     def test_config_get_classifies_env_header_and_enum_keys(
-            self, _isolated_hermes_home, capsys, monkeypatch, key, env_line, yaml_line, masked):
+            self, _isolated_akramcode_home, capsys, monkeypatch, key, env_line, yaml_line, masked):
         monkeypatch.delenv("UNSET_THING_API_KEY", raising=False)
-        (_isolated_hermes_home / "config.yaml").write_text(
+        (_isolated_akramcode_home / "config.yaml").write_text(
             "mcp_servers:\n  s:\n    url: https://x.example\n" + yaml_line, encoding="utf-8")
-        (_isolated_hermes_home / ".env").write_text(env_line + "\n", encoding="utf-8")
+        (_isolated_akramcode_home / ".env").write_text(env_line + "\n", encoding="utf-8")
         from akramcode_cli.config import get_config_value
 
         get_config_value(key)
@@ -996,11 +996,11 @@ class TestContainerTypeRefusal:
     echoed it back."""
 
     def _write_config(self, tmp_path, data: dict):
-        import akram_core.hermes_yaml as _yaml
+        import akram_core.akramcode_yaml as _yaml
         (tmp_path / "config.yaml").write_text(_yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
 
-    def test_string_where_schema_wants_list_is_refused(self, _isolated_hermes_home, capsys):
-        self._write_config(_isolated_hermes_home, {"model": {"default": "m"}})
+    def test_string_where_schema_wants_list_is_refused(self, _isolated_akramcode_home, capsys):
+        self._write_config(_isolated_akramcode_home, {"model": {"default": "m"}})
 
         with pytest.raises(SystemExit):
             set_config_value("custom_providers", "plainstring")
@@ -1010,10 +1010,10 @@ class TestContainerTypeRefusal:
         err = capsys.readouterr().err
         assert "must be a list, got a string" in err
         assert "not valid YAML/JSON" in err
-        assert "custom_providers" not in _read_config(_isolated_hermes_home)
+        assert "custom_providers" not in _read_config(_isolated_akramcode_home)
 
-    def test_valid_literal_and_scalar_keys_still_write(self, _isolated_hermes_home):
-        self._write_config(_isolated_hermes_home, {"model": {"default": "m", "aliases": {"a": "p/m"}}})
+    def test_valid_literal_and_scalar_keys_still_write(self, _isolated_akramcode_home):
+        self._write_config(_isolated_akramcode_home, {"model": {"default": "m", "aliases": {"a": "p/m"}}})
 
         set_config_value("custom_providers", "[{name: ok, base_url: http://h/v1}]")
         set_config_value("model.default", "bar")
@@ -1022,32 +1022,32 @@ class TestContainerTypeRefusal:
         # --force keeps its documented meaning: replace a whole mapping section.
         set_config_value("model.aliases", "replaced", force=True)
 
-        import akram_core.hermes_yaml as _yaml
-        saved = _yaml.safe_load(_read_config(_isolated_hermes_home))
+        import akram_core.akramcode_yaml as _yaml
+        saved = _yaml.safe_load(_read_config(_isolated_akramcode_home))
         assert saved["custom_providers"] == [{"name": "ok", "base_url": "http://h/v1"}]
         assert saved["model"] == {"default": "bar", "aliases": "replaced"}
 
     @pytest.mark.parametrize("key", ["model.aliases", "providers", "toolsets"])
     def test_unseeded_or_top_level_container_key_is_refused_without_on_disk_value(
-            self, _isolated_hermes_home, key):
+            self, _isolated_akramcode_home, key):
         # #114471 writer atom: the shape is fixed by the readers, not by what is on disk yet.
-        self._write_config(_isolated_hermes_home, {"model": {"default": "m"}})
+        self._write_config(_isolated_akramcode_home, {"model": {"default": "m"}})
 
         with pytest.raises(SystemExit):
             set_config_value(key, "notacontainer")
 
-        import akram_core.hermes_yaml as _yaml
-        saved = _yaml.safe_load(_read_config(_isolated_hermes_home))
+        import akram_core.akramcode_yaml as _yaml
+        saved = _yaml.safe_load(_read_config(_isolated_akramcode_home))
         assert saved == {"model": {"default": "m"}}
 
-    def test_bare_name_for_string_list_slot_is_stored_as_one_item_list(self, _isolated_hermes_home):
+    def test_bare_name_for_string_list_slot_is_stored_as_one_item_list(self, _isolated_akramcode_home):
         # agent.disabled_toolsets readers accept a bare name (parse_config_string_list); keep it writable.
-        self._write_config(_isolated_hermes_home, {"model": {"default": "m"}})
+        self._write_config(_isolated_akramcode_home, {"model": {"default": "m"}})
 
         set_config_value("agent.disabled_toolsets", "web")
 
-        import akram_core.hermes_yaml as _yaml
-        saved = _yaml.safe_load(_read_config(_isolated_hermes_home))
+        import akram_core.akramcode_yaml as _yaml
+        saved = _yaml.safe_load(_read_config(_isolated_akramcode_home))
         assert saved["agent"]["disabled_toolsets"] == ["web"]
 
 
@@ -1068,10 +1068,10 @@ class TestProviderSwitchClearsBaseUrl:
         ("mylab", ROUTE),                        # named custom entry has its own endpoint
         ("anthropic", {"api_mode": "codex_responses"}),  # wire mode alone is old-route state
     ])
-    def test_switching_provider_clears_foreign_route(self, _isolated_hermes_home, capsys, target, seed_route):
-        self._seed(_isolated_hermes_home, {"provider": "opencode-go", "default": "gpt-5.3-codex", **seed_route})
+    def test_switching_provider_clears_foreign_route(self, _isolated_akramcode_home, capsys, target, seed_route):
+        self._seed(_isolated_akramcode_home, {"provider": "opencode-go", "default": "gpt-5.3-codex", **seed_route})
         set_config_value("model.provider", target)
-        model = yaml.safe_load(_read_config(_isolated_hermes_home))["model"]
+        model = yaml.safe_load(_read_config(_isolated_akramcode_home))["model"]
         assert model == {"provider": target, "default": "gpt-5.3-codex"}
         out = capsys.readouterr().out
         assert "Cleared" in out and "opencode-go" in out
@@ -1086,10 +1086,10 @@ class TestProviderSwitchClearsBaseUrl:
         ("model.provider", "custom", {"provider": "openai", "base_url": "https://api.openai.com/v1"}),
         ("model.provider", "anthropic", {"provider": "opencode-go", "base_url": "http://proxy.internal:8080/v1"}),
     ])
-    def test_route_that_belongs_to_target_is_kept(self, _isolated_hermes_home, capsys, key, target, seed):
-        self._seed(_isolated_hermes_home, {**seed, "default": "m"})
+    def test_route_that_belongs_to_target_is_kept(self, _isolated_akramcode_home, capsys, key, target, seed):
+        self._seed(_isolated_akramcode_home, {**seed, "default": "m"})
         set_config_value(key, target)
-        model = yaml.safe_load(_read_config(_isolated_hermes_home))["model"]
+        model = yaml.safe_load(_read_config(_isolated_akramcode_home))["model"]
         expected = {**seed, "default": "m", key.split(".", 1)[1]: target}
         assert model == expected
         out = capsys.readouterr().out

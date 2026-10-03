@@ -1,12 +1,12 @@
 ---
 sidebar_position: 1
 title: "Architecture"
-description: "Hermes Agent internals — major subsystems, execution paths, data flow, and where to read next"
+description: "AkramCode Agent internals — major subsystems, execution paths, data flow, and where to read next"
 ---
 
 # Architecture
 
-This page is the top-level map of Hermes Agent internals. Use it to orient yourself in the codebase, then dive into subsystem-specific docs for implementation details.
+This page is the top-level map of AkramCode Agent internals. Use it to orient yourself in the codebase, then dive into subsystem-specific docs for implementation details.
 
 ## System Overview
 
@@ -51,13 +51,13 @@ This page is the top-level map of Hermes Agent internals. Use it to orient yours
 ## Directory Structure
 
 ```text
-hermes-agent/
+akramcode-agent/
 ├── run_agent.py              # AIAgent facade — loop lives in agent/conversation_loop.py + agent/turn_*.py
-├── cli.py                    # HermesCLI facade — mixins in akramcode_cli/cli_*_mixin.py
+├── cli.py                    # AkramCodeCLI facade — mixins in akramcode_cli/cli_*_mixin.py
 ├── model_tools.py            # Tool discovery, schema collection, dispatch
 ├── toolsets.py               # Tool groupings and platform presets
 ├── akramcode_state.py           # SQLite session/state database facade (+ akramcode_state_*.py siblings)
-├── hermes_constants.py       # HERMES_HOME, profile-aware paths
+├── akramcode_constants.py       # AKRAMCODE_HOME, profile-aware paths
 ├── batch_runner.py           # Batch trajectory generation
 │
 ├── agent/                    # Agent internals
@@ -76,7 +76,7 @@ hermes-agent/
 │   └── trajectory.py         # Trajectory saving helpers
 │
 ├── akramcode_cli/               # CLI subcommands and setup
-│   ├── main.py               # Entry point — `hermes` subcommands (parsers in subcommands/, main_*.py)
+│   ├── main.py               # Entry point — `akramcode` subcommands (parsers in subcommands/, main_*.py)
 │   ├── config.py             # DEFAULT_CONFIG, OPTIONAL_ENV_VARS, migration
 │   ├── commands.py           # COMMAND_REGISTRY — central slash command definitions
 │   ├── auth.py               # PROVIDER_REGISTRY, credential resolution (+ auth_*.py siblings)
@@ -85,12 +85,12 @@ hermes-agent/
 │   ├── model_switch.py       # /model command logic (CLI + gateway shared)
 │   ├── setup.py              # Interactive setup wizard (+ setup_*.py siblings)
 │   ├── skin_engine.py        # CLI theming engine
-│   ├── skills_config.py      # hermes skills — enable/disable per platform
+│   ├── skills_config.py      # akramcode skills — enable/disable per platform
 │   ├── skills_hub.py         # /skills slash command
-│   ├── tools_config.py       # hermes tools — enable/disable per platform
+│   ├── tools_config.py       # akramcode tools — enable/disable per platform
 │   ├── plugins.py            # PluginManager — discovery, loading, hooks
 │   ├── callbacks.py          # Terminal callbacks (clarify, sudo, approval)
-│   └── gateway.py            # hermes gateway start/stop
+│   └── gateway.py            # akramcode gateway start/stop
 │
 ├── tools/                    # Tool implementations (one file per tool)
 │   ├── registry.py           # Central tool registry
@@ -140,7 +140,7 @@ hermes-agent/
 ### CLI Session
 
 ```text
-User input → HermesCLI.process_input()
+User input → AkramCodeCLI.process_input()
   → AIAgent.run_conversation()
     → prompt_builder.build_system_prompt()
     → runtime_provider.resolve_runtime_provider()
@@ -231,7 +231,7 @@ Long-running process with 25+ platform adapters (built-in + bundled plugins), un
 
 ### Plugin System
 
-Three discovery sources: `~/.hermes/plugins/` (user), `.hermes/plugins/` (project), and pip entry points. Plugins register tools, hooks, and CLI commands through a context API. Two specialized plugin types exist: memory providers (`plugins/memory/`) and context engines (`plugins/context_engine/`). Both are single-select — only one of each can be active at a time, configured via `hermes plugins` or `config.yaml`.
+Three discovery sources: `~/.akramcode/plugins/` (user), `.akramcode/plugins/` (project), and pip entry points. Plugins register tools, hooks, and CLI commands through a context API. Two specialized plugin types exist: memory providers (`plugins/memory/`) and context engines (`plugins/context_engine/`). Both are single-select — only one of each can be active at a time, configured via `akramcode plugins` or `config.yaml`.
 
 → [Plugin Guide](./plugins/index.md), [Memory Provider Plugin](./memory-provider-plugin.md)
 
@@ -243,7 +243,7 @@ First-class agent tasks (not shell tasks). Jobs store in JSON, support multiple 
 
 ### ACP Integration
 
-Exposes Hermes as an editor-native agent over stdio/JSON-RPC for VS Code, Zed, and JetBrains.
+Exposes AkramCode as an editor-native agent over stdio/JSON-RPC for VS Code, Zed, and JetBrains.
 
 → [ACP Internals](./acp-internals.md)
 
@@ -262,7 +262,7 @@ Generates ShareGPT-format trajectories from agent sessions for training data gen
 | **Interruptible** | API calls and tool execution can be cancelled mid-flight by user input or signals. |
 | **Platform-agnostic core** | One AIAgent class serves CLI, gateway, ACP, batch, and API server. Platform differences live in the entry point, not the agent. |
 | **Loose coupling** | Optional subsystems (MCP, plugins, memory providers, RL environments) use registry patterns and check_fn gating, not hard dependencies. |
-| **Profile isolation** | Each profile (`hermes -p <name>`) gets its own HERMES_HOME, config, memory, sessions, and gateway PID. Multiple profiles run concurrently. |
+| **Profile isolation** | Each profile (`akramcode -p <name>`) gets its own AKRAMCODE_HOME, config, memory, sessions, and gateway PID. Multiple profiles run concurrently. |
 
 ## File Dependency Chain
 

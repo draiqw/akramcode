@@ -40,7 +40,7 @@ _STALE_GATEWAY_ARGV = [
     "run",
     "--replace",
 ]
-_LAUNCHD_ENV = {"PATH": "/usr/bin", "XPC_SERVICE_NAME": "ai.hermes.gateway-butler"}
+_LAUNCHD_ENV = {"PATH": "/usr/bin", "XPC_SERVICE_NAME": "ai.akramcode.gateway-butler"}
 
 
 def test_main_timestamps_each_stderr_line(tmp_path):
@@ -75,7 +75,7 @@ def test_main_timestamps_each_stderr_line(tmp_path):
 
 def test_wrapper_timestamps_child_stdout_into_its_own_stdout(tmp_path):
     """launchd appends the wrapper's stdout to gateway.log; a raw print() there has no stamp,
-    so ``hermes logs gateway --since`` can never filter it out."""
+    so ``akramcode logs gateway --since`` can never filter it out."""
     stdout_log = tmp_path / "gateway.log"
     error_log = tmp_path / "gateway.error.log"
     code = (
@@ -138,19 +138,19 @@ def test_prepare_skips_interactive_xpc_zero_even_for_gateway_argv():
     )
 
 
-def test_child_launchd_label_env_exports_only_hermes_job_labels():
-    assert stderr_timestamp._child_launchd_label_env(_LAUNCHD_ENV) == {LAUNCHD_LABEL_ENV: "ai.hermes.gateway-butler"}
+def test_child_launchd_label_env_exports_only_akramcode_job_labels():
+    assert stderr_timestamp._child_launchd_label_env(_LAUNCHD_ENV) == {LAUNCHD_LABEL_ENV: "ai.akramcode.gateway-butler"}
     # Interactive shells and the grandchild itself read "0": nothing to export. App-coalition labels
-    # (IDE integrated terminals) are not a Hermes job identity either.
+    # (IDE integrated terminals) are not a AkramCode job identity either.
     for env in ({"PATH": "/usr/bin", "XPC_SERVICE_NAME": "0"}, {"PATH": "/usr/bin"},
                 {"PATH": "/usr/bin", "XPC_SERVICE_NAME": "application.com.example.ide.123"}):
         assert stderr_timestamp._child_launchd_label_env(env) == {}
 
 
-@pytest.mark.parametrize("xpc, expected", [("ai.hermes.gateway-butler", "ai.hermes.gateway-butler"), ("0", "unset")],
+@pytest.mark.parametrize("xpc, expected", [("ai.akramcode.gateway-butler", "ai.akramcode.gateway-butler"), ("0", "unset")],
                          ids=["launchd-job", "foreground-xpc-zero"])
 def test_main_forwards_launchd_label_to_child_only_under_launchd(tmp_path, monkeypatch, xpc, expected):
-    """The gateway grandchild must resolve its job (drain cap, restart route) from HERMES_LAUNCHD_LABEL;
+    """The gateway grandchild must resolve its job (drain cap, restart route) from AKRAMCODE_LAUNCHD_LABEL;
     a foreground/unsupervised start must not inherit a fabricated one."""
     monkeypatch.setenv("XPC_SERVICE_NAME", xpc)
     monkeypatch.delenv(LAUNCHD_LABEL_ENV, raising=False)
@@ -173,7 +173,7 @@ def test_main_forwards_launchd_label_to_child_only_under_launchd(tmp_path, monke
 @pytest.mark.spawns_gateway_lookalike
 def test_main_injects_flag_into_stale_gateway_child(tmp_path, monkeypatch):
     """Stale plist inner argv must grow --external-supervisor in the grandchild."""
-    monkeypatch.setenv("XPC_SERVICE_NAME", "ai.hermes.gateway-butler")
+    monkeypatch.setenv("XPC_SERVICE_NAME", "ai.akramcode.gateway-butler")
     monkeypatch.delenv(EXTERNAL_GATEWAY_SUPERVISOR_ENV, raising=False)
     log_path = tmp_path / "gateway.error.log"
     marker_path = tmp_path / "argv.txt"
@@ -198,7 +198,7 @@ def test_main_injects_flag_into_stale_gateway_child(tmp_path, monkeypatch):
 
 
 def test_main_does_not_mark_arbitrary_launchd_child(tmp_path, monkeypatch):
-    monkeypatch.setenv("XPC_SERVICE_NAME", "ai.hermes.gateway-butler")
+    monkeypatch.setenv("XPC_SERVICE_NAME", "ai.akramcode.gateway-butler")
     monkeypatch.delenv(EXTERNAL_GATEWAY_SUPERVISOR_ENV, raising=False)
     log_path = tmp_path / "gateway.error.log"
     marker_path = tmp_path / "marker.txt"
@@ -300,7 +300,7 @@ def test_main_maps_gateway_ex_config_to_clean_stop(tmp_path):
 
 @pytest.mark.platforms("posix")  # POSIX signals
 def test_wrapper_forwards_sigusr1_restart_request_to_child(tmp_path):
-    """Regression for #101426: launchd owns the wrapper's PID, so ``hermes update`` sends its
+    """Regression for #101426: launchd owns the wrapper's PID, so ``akramcode update`` sends its
     drain-aware SIGUSR1 to the wrapper. It must reach the gateway child and the wrapper must
     report the child's planned exit code — not die of the signal itself (which makes launchd
     treat the restart as a crash and apply its back-off to every sibling profile)."""

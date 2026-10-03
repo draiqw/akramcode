@@ -3,7 +3,7 @@
 Every set here is something Nous itself publishes (slash-command registry, bundled and optional
 skills, optional-mcps/ and plugin-catalog/ entries, built-in auxiliary tasks, shipped locales).
 A name outside its set is reported as ``custom`` so user-defined identities never leave the machine.
-Loaders are cached: the catalogs only change with the installed Hermes version.
+Loaders are cached: the catalogs only change with the installed AkramCode version.
 """
 
 from __future__ import annotations
@@ -80,13 +80,13 @@ def display_languages() -> frozenset[str]:
 
 @functools.cache
 def provider_names() -> frozenset[str]:
-    """Provider ids Hermes itself ships: built-in auth rows, overlays, alias tables and the
+    """Provider ids AkramCode itself ships: built-in auth rows, overlays, alias tables and the
     in-tree ``plugins/model-providers`` profiles. Never the live registries (``PROVIDER_REGISTRY``,
-    picker labels): ``$HERMES_HOME`` and pip provider plugins add their user-chosen names there."""
+    picker labels): ``$AKRAMCODE_HOME`` and pip provider plugins add their user-chosen names there."""
     import providers
     from akramcode_cli.auth import _PROVIDER_ALIASES, BUILTIN_PROVIDER_IDS
     from akramcode_cli.models_catalog_static import _PROVIDER_ALIASES as _CATALOG_ALIASES
-    from akramcode_cli.providers import ALIASES, HERMES_OVERLAYS
+    from akramcode_cli.providers import ALIASES, AKRAMCODE_OVERLAYS
 
     providers.list_providers()  # runs discovery; bundled profiles land in the process-wide layer
     bundled = {
@@ -94,7 +94,7 @@ def provider_names() -> frozenset[str]:
         for alias in (name, *profile.aliases)
     }
     return BUILTIN_PROVIDER_IDS.union(
-        HERMES_OVERLAYS, ALIASES, _PROVIDER_ALIASES, _CATALOG_ALIASES, bundled, ("openrouter", CUSTOM)
+        AKRAMCODE_OVERLAYS, ALIASES, _PROVIDER_ALIASES, _CATALOG_ALIASES, bundled, ("openrouter", CUSTOM)
     )
 
 
@@ -119,7 +119,7 @@ def user_named_model_providers() -> frozenset[str]:
 
 @functools.cache
 def custom_provider_aliases() -> frozenset[str]:
-    """Provider ids Hermes routes through the generic ``custom`` provider (``ollama``, ``vllm``,
+    """Provider ids AkramCode routes through the generic ``custom`` provider (``ollama``, ``vllm``,
     ``llamacpp``...): shipped names, but the server and its model ids are the user's own."""
     from akramcode_cli import auth, models, providers
 
@@ -130,7 +130,7 @@ def custom_provider_aliases() -> frozenset[str]:
 # ---- v4 gateway ----
 @functools.cache
 def bundled_platform_names() -> frozenset[str]:
-    """Messaging platforms Hermes ships as ``plugins/platforms/<name>`` (the dir is the registered name)."""
+    """Messaging platforms AkramCode ships as ``plugins/platforms/<name>`` (the dir is the registered name)."""
     root = _REPO_ROOT / "plugins" / "platforms"
     try:
         return frozenset(p.name.lower() for p in root.iterdir() if (p / "plugin.yaml").is_file())
@@ -155,9 +155,9 @@ def platform_metric_name(raw: object, core: frozenset[str]) -> str:
         return name
     if not name:
         return "plugin"
-    from akramcode_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
 
-    return _catalog_platform_owner(str(get_hermes_home()), name) or "plugin"
+    return _catalog_platform_owner(str(get_akramcode_home()), name) or "plugin"
 
 
 @functools.lru_cache(maxsize=64)
@@ -299,7 +299,7 @@ def model_metric_name(raw: object, provider: str, *, max_length: int) -> str:
 
 @functools.cache
 def public_model_ids() -> frozenset[str]:
-    """Model ids Hermes ships in its static catalogs plus every id in the local models.dev cache
+    """Model ids AkramCode ships in its static catalogs plus every id in the local models.dev cache
     (never a network call), with and without a ``vendor/`` prefix."""
     from agent.models_dev import fetch_models_dev
     from akramcode_cli.models_catalog_static import _PROVIDER_MODELS

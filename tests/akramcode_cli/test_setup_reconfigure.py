@@ -1,10 +1,10 @@
 """Tests for the setup wizard's returning-user behavior.
 
 On an existing install:
-- Bare `hermes setup` drops straight into the full reconfigure wizard
+- Bare `akramcode setup` drops straight into the full reconfigure wizard
   (every prompt shows the current value as its default).
-- `hermes setup --quick` runs the narrower "fill in missing items" flow.
-- `hermes setup --reconfigure` is a backwards-compat alias for the
+- `akramcode setup --quick` runs the narrower "fill in missing items" flow.
+- `akramcode setup --reconfigure` is a backwards-compat alias for the
   bare-setup default.
 
 On a fresh install, all three are no-ops — fall through to first-time setup.
@@ -30,20 +30,20 @@ def _make_setup_args(**overrides):
 @pytest.fixture
 def existing_install(tmp_path, monkeypatch):
     """Simulate a returning user with an existing configured install."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
     monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     return home
 
 
 @pytest.fixture
 def fresh_install(tmp_path, monkeypatch):
     """Simulate a first-time user with no existing configuration."""
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
     monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     return home
 
 
@@ -55,7 +55,7 @@ def _enter_existing_install_patches(stack, **extra):
     """
     # Unconditional mocks (no return values to assert against).
     for target, kwargs in [
-        ("akramcode_cli.setup.ensure_hermes_home", {}),
+        ("akramcode_cli.setup.ensure_akramcode_home", {}),
         ("akramcode_cli.setup.is_interactive_stdin", {"return_value": True}),
         ("akramcode_cli.config.is_managed", {"return_value": False}),
         ("akramcode_cli.setup.load_config", {"return_value": {}}),
@@ -76,7 +76,7 @@ def _enter_existing_install_patches(stack, **extra):
 
 def _enter_fresh_install_patches(stack, **extra):
     for target, kwargs in [
-        ("akramcode_cli.setup.ensure_hermes_home", {}),
+        ("akramcode_cli.setup.ensure_akramcode_home", {}),
         ("akramcode_cli.setup.is_interactive_stdin", {"return_value": True}),
         ("akramcode_cli.config.is_managed", {"return_value": False}),
         ("akramcode_cli.setup.load_config", {"return_value": {}}),
@@ -98,7 +98,7 @@ def _enter_fresh_install_patches(stack, **extra):
 
 
 class TestExistingInstallDefault:
-    """Bare `hermes setup` on an existing install = full reconfigure wizard."""
+    """Bare `akramcode setup` on an existing install = full reconfigure wizard."""
 
     def test_bare_setup_runs_full_reconfigure_without_menu(self, existing_install):
         """No menu, no prompt_choice — just run every section in sequence."""
@@ -225,7 +225,7 @@ class TestArgparse:
             "akramcode_cli.setup.run_setup_wizard",
             lambda args: captured.setdefault("args", args),
         )
-        monkeypatch.setattr(sys, "argv", ["hermes", "setup", "--reconfigure"])
+        monkeypatch.setattr(sys, "argv", ["akramcode", "setup", "--reconfigure"])
         try:
             main()
         except SystemExit:

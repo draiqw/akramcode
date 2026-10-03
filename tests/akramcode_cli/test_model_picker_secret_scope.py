@@ -101,11 +101,11 @@ class TestSwitchModelKeyEnvScope:
 
 class TestPickerKeyEnvDotenv:
     """``key_env`` must resolve through the chat path's chain (``get_env_prefer_dotenv``): a key
-    that lives only in ``$HERMES_HOME/.env`` authenticates the ``/model`` verification probe, and
+    that lives only in ``$AKRAMCODE_HOME/.env`` authenticates the ``/model`` verification probe, and
     a scoped multiplex read never borrows the ``.env``/process value of another profile."""
 
     def _dotenv(self, monkeypatch, tmp_path, value):
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
         (tmp_path / ".env").write_text(f"ACME_RELAY_KEY={value}\n", encoding="utf-8")
         from akramcode_cli.config import invalidate_env_cache
         invalidate_env_cache()

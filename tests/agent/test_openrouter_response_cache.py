@@ -57,8 +57,8 @@ class TestEnvVarOverrides:
         """Invalid TTL env values are ignored; cache still enabled without TTL."""
         from agent.auxiliary_client import build_or_headers
 
-        monkeypatch.setenv("HERMES_OPENROUTER_CACHE", "1")
-        monkeypatch.setenv("HERMES_OPENROUTER_CACHE_TTL", ttl)
+        monkeypatch.setenv("AKRAMCODE_OPENROUTER_CACHE", "1")
+        monkeypatch.setenv("AKRAMCODE_OPENROUTER_CACHE_TTL", ttl)
         headers = build_or_headers(or_config={})
         assert headers["X-OpenRouter-Cache"] == "true"
         assert "X-OpenRouter-Cache-TTL" not in headers
@@ -68,16 +68,16 @@ class TestEnvVarOverrides:
         """Boundary TTL values (1, 300, 86400) are accepted."""
         from agent.auxiliary_client import build_or_headers
 
-        monkeypatch.setenv("HERMES_OPENROUTER_CACHE", "yes")
-        monkeypatch.setenv("HERMES_OPENROUTER_CACHE_TTL", ttl)
+        monkeypatch.setenv("AKRAMCODE_OPENROUTER_CACHE", "yes")
+        monkeypatch.setenv("AKRAMCODE_OPENROUTER_CACHE_TTL", ttl)
         assert build_or_headers(or_config={})["X-OpenRouter-Cache-TTL"] == ttl
 
     def test_no_env_vars_falls_through_to_config(self, monkeypatch):
         """Without env vars, config.yaml controls behavior."""
         from agent.auxiliary_client import build_or_headers
 
-        monkeypatch.delenv("HERMES_OPENROUTER_CACHE", raising=False)
-        monkeypatch.delenv("HERMES_OPENROUTER_CACHE_TTL", raising=False)
+        monkeypatch.delenv("AKRAMCODE_OPENROUTER_CACHE", raising=False)
+        monkeypatch.delenv("AKRAMCODE_OPENROUTER_CACHE_TTL", raising=False)
         headers = build_or_headers(or_config={"response_cache": True, "response_cache_ttl": 600})
         assert headers["X-OpenRouter-Cache"] == "true"
         assert headers["X-OpenRouter-Cache-TTL"] == "600"

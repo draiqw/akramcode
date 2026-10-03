@@ -1,4 +1,4 @@
-"""Git worktree isolation for ``hermes -w`` sessions: create, classify, prune.
+"""Git worktree isolation for ``akramcode -w`` sessions: create, classify, prune.
 
 Every git call goes through ``_git``/``_git_out``/``_git_quiet`` (UTF-8 text, captured,
 bounded timeout). Classification helpers fail SAFE toward "preserve". ``cli`` re-exports
@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Dict, Optional
 
 from akramcode_cli._subprocess_compat import kill_process_tree
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 from utils import atomic_json_write
 
 logger = logging.getLogger("cli")
@@ -115,11 +115,11 @@ def _cleanup_failed_worktree_add(repo_root: str, wt_path: Path, branch_name: str
 
 _PACK_SPRAWL_THRESHOLD = 15
 _REPACK_TIMEOUT = 1800
-# One repack attempt per clone per interval, box-wide. Every ``hermes -w`` launch on a shared clone
+# One repack attempt per clone per interval, box-wide. Every ``akramcode -w`` launch on a shared clone
 # used to start its own ``git repack -a`` of the whole store; on a multi-agent box that stacked 50+
 # concurrent multi-GB repacks (each too slow under the others to ever finish inside the timeout).
 _REPACK_MIN_INTERVAL = 6 * 3600
-_REPACK_LOCK = "hermes-repack.lock"
+_REPACK_LOCK = "akramcode-repack.lock"
 
 
 def _claim_repack_slot(git_dir: Path) -> bool:
@@ -398,7 +398,7 @@ def _setup_worktree(repo_root: str = None, sync_base: bool = True,
     """Create an isolated git worktree -> ``{path, branch, repo_root, base}``, or None on failure.
 
     *sync_base* branches from the fetched remote tip (``_resolve_worktree_base``), else local
-    HEAD. *name* replaces the random ``hermes-<id>``; named trees lack the ``hermes-`` prefix so
+    HEAD. *name* replaces the random ``akramcode-<id>``; named trees lack the ``akramcode-`` prefix so
     the pruner ages them on its slower schedule.
 
     Set ``worktree_sync: false`` in config to branch from local ``HEAD`` (the pre-#10760-followup behavior).
@@ -406,12 +406,12 @@ def _setup_worktree(repo_root: str = None, sync_base: bool = True,
     repo_root = repo_root or _git_repo_root()
     if not repo_root:
         _cprint("\033[31m✗ --worktree requires being inside a git repository.\033[0m")
-        print("  cd into your project repo first, then run hermes -w")
+        print("  cd into your project repo first, then run akramcode -w")
         return None
 
     wt_name = ((name and re.sub(r"[^A-Za-z0-9._-]+", "-", name).strip("-._")[:40])
-               or f"hermes-{uuid.uuid4().hex[:8]}")
-    branch_name = f"hermes/{wt_name}"
+               or f"akramcode-{uuid.uuid4().hex[:8]}")
+    branch_name = f"akramcode/{wt_name}"
 
     worktrees_dir = Path(repo_root) / ".worktrees"
     worktrees_dir.mkdir(parents=True, exist_ok=True)
@@ -437,7 +437,7 @@ def _setup_worktree(repo_root: str = None, sync_base: bool = True,
 
     # Lock so other processes (and `git worktree remove`) see it is in use; fail-soft.
     try:
-        _git(["worktree", "lock", "--reason", f"hermes pid={os.getpid()}", str(wt_path)], repo_root)
+        _git(["worktree", "lock", "--reason", f"akramcode pid={os.getpid()}", str(wt_path)], repo_root)
         logger.debug("Worktree locked: %s (pid=%s)", wt_path, os.getpid())
     except Exception as e:
         logger.debug("git worktree lock failed (non-fatal): %s", e)
@@ -574,7 +574,7 @@ _WORKTREE_MERGE_CACHE_MAX = 1000
 
 def _worktree_merge_cache_path() -> Path:
     """Path of the patch-equivalence verdict cache (profile-aware)."""
-    return get_hermes_home() / "cache" / "worktree_merge_verdicts.json"
+    return get_akramcode_home() / "cache" / "worktree_merge_verdicts.json"
 
 
 def _load_worktree_merge_cache() -> Dict[str, bool]:
@@ -724,9 +724,9 @@ def _worktree_branch_pushed_exact(
 
 
 def _worktree_lock_is_live(repo_root: str, worktree_path: str, timeout: int = 10):
-    """Lock state: ``"live"`` (owning pid runs), ``"dead"`` (pid gone / non-hermes reason), None (unlocked).
+    """Lock state: ``"live"`` (owning pid runs), ``"dead"`` (pid gone / non-akramcode reason), None (unlocked).
 
-    ``hermes -w`` locks with reason ``hermes pid=<pid>``; ``worktree remove --force`` refuses
+    ``akramcode -w`` locks with reason ``akramcode pid=<pid>``; ``worktree remove --force`` refuses
     locked trees, so a crashed session's lock would keep its tree forever. Fails SAFE toward "live".
     """
     try:
@@ -748,7 +748,7 @@ def _worktree_lock_is_live(repo_root: str, worktree_path: str, timeout: int = 10
             if current != target:
                 continue
             reason = line[len("locked"):].strip()
-            m = re.search(r"hermes pid=(\d+)", reason)
+            m = re.search(r"akramcode pid=(\d+)", reason)
             if not m:
                 # A foreign lock here is a leftover; the age/dirty/unpushed gates already passed.
                 return "dead"
@@ -766,7 +766,7 @@ def _worktree_lock_is_live(repo_root: str, worktree_path: str, timeout: int = 10
 def _prune_candidates(worktrees_dir: Path, max_age_hours: int, now: float) -> list:
     """Phase 1, stat-only age filter -> ``[(entry, mtime, force)]`` for trees past their soft cutoff.
 
-    Kanban trees (``t_<hex>``) belong to the kanban gc. ``hermes-*`` trees age on *max_age_hours*,
+    Kanban trees (``t_<hex>``) belong to the kanban gc. ``akramcode-*`` trees age on *max_age_hours*,
     deliberately named trees at 3x; *force* marks the hard (3x) tier.
     """
     kanban_re = re.compile(r"^t_[0-9a-f]+$")
@@ -774,7 +774,7 @@ def _prune_candidates(worktrees_dir: Path, max_age_hours: int, now: float) -> li
     for entry in sorted(worktrees_dir.iterdir()):
         if not entry.is_dir() or kanban_re.match(entry.name):
             continue
-        tier_hours = max_age_hours if entry.name.startswith("hermes-") else max_age_hours * 3
+        tier_hours = max_age_hours if entry.name.startswith("akramcode-") else max_age_hours * 3
         try:
             mtime = entry.stat().st_mtime
             if mtime > now - (tier_hours * 3600):
@@ -828,7 +828,7 @@ def _classify_prune_candidates(repo_root: str, candidates: list) -> list:
                 return (entry, mtime, force, "unpushed", None)
             keep_branch = not merged
 
-        # Live lock = running hermes; a dead lock is unlocked in phase 3.
+        # Live lock = running akramcode; a dead lock is unlocked in phase 3.
         lock_state = _worktree_lock_is_live(repo_root, str(entry), timeout=5)
         if lock_state == "live":
             return (entry, mtime, force, "locked-live", None)
@@ -839,7 +839,7 @@ def _classify_prune_candidates(repo_root: str, candidates: list) -> list:
     try:
         if workers > 1:
             with concurrent.futures.ThreadPoolExecutor(
-                max_workers=workers, thread_name_prefix="hermes-wt-prune"
+                max_workers=workers, thread_name_prefix="akramcode-wt-prune"
             ) as pool:
                 verdicts = list(pool.map(_classify, candidates))
         else:
@@ -925,7 +925,7 @@ def _prune_stale_worktrees(repo_root: str, max_age_hours: int = 24) -> None:
 
     if preserved_stale:
         logger.warning("Preserving %d worktree(s) older than 7 days with unmerged work "
-                       "(run `hermes worktree prune` to review and reclaim): %s",
+                       "(run `akramcode worktree prune` to review and reclaim): %s",
                        len(preserved_stale), ", ".join(sorted(preserved_stale)))
 
     _prune_orphaned_branches(repo_root, protect=kept_branches)
@@ -937,14 +937,14 @@ def _prune_stale_worktrees(repo_root: str, max_age_hours: int = 24) -> None:
         count, size_mb = worktrees_summary(repo_root)
         if count >= 10 or (size_mb or 0) >= 5120:
             size_txt = f"{size_mb / 1024:.1f}GB" if size_mb else "unknown size"
-            logger.warning(".worktrees/ holds %d tree(s) (%s) — run `hermes worktree list` "
-                           "to audit and `hermes worktree prune` to reclaim safely.", count, size_txt)
+            logger.warning(".worktrees/ holds %d tree(s) (%s) — run `akramcode worktree list` "
+                           "to audit and `akramcode worktree prune` to reclaim safely.", count, size_txt)
     except Exception:
         pass
 
 
 def _prune_orphaned_branches(repo_root: str, protect: Optional[set] = None) -> None:
-    """Delete local ``hermes/hermes-*`` and ``pr-*`` branches with no worktree, except *protect*."""
+    """Delete local ``akramcode/akramcode-*`` and ``pr-*`` branches with no worktree, except *protect*."""
     try:
         listing = _git_out(["branch", "--format=%(refname:short)"], repo_root)
         if listing is None:
@@ -972,7 +972,7 @@ def _prune_orphaned_branches(repo_root: str, protect: Optional[set] = None) -> N
     active_branches.add("main")
 
     orphaned = [b for b in all_branches if b not in active_branches and b not in (protect or ())
-                and (b.startswith("hermes/hermes-") or b.startswith("pr-"))]
+                and (b.startswith("akramcode/akramcode-") or b.startswith("pr-"))]
 
     if not orphaned:
         return

@@ -50,7 +50,7 @@ def _fingerprint_basis(block: dict, key_fn) -> str:
 def _credential_fingerprint(config: HonchoClientConfig | None) -> str:
     """Stable identity for the credential a client will be built with, or ''. Must NOT change
     on in-place access-token rotation, but must change on account switch so
-    'hermes honcho setup' yields a NEW cache identity."""
+    'akramcode honcho setup' yields a NEW cache identity."""
     from plugins.memory.honcho.client import _host_block
 
     try:
@@ -89,7 +89,7 @@ def _client_cache_key(config: HonchoClientConfig | None) -> tuple:
     if config is not None:
         return ("explicit", config.host, config.workspace_id, config.base_url or "", config.environment,
                 str(config.config_path) if config.config_path is not None else "",
-                str(config.hermes_home) if config.hermes_home is not None else "",
+                str(config.akramcode_home) if config.akramcode_home is not None else "",
                 _resolve_timeout_from_sources(config), _credential_fingerprint(config))
     return ("ambient", str(resolve_config_path()), resolve_active_host(),
             _resolve_timeout_from_sources(None), _credential_fingerprint(None))

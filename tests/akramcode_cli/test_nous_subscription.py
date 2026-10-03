@@ -192,7 +192,7 @@ def test_logged_in_entitled_account_yields_a_state_for_every_feature(monkeypatch
     """The logged-in + entitled branch must produce a state for EVERY feature, including
     those with no config selection field (modal). Regression: the managed-availability
     table indexed the selection map by every feature key and raised KeyError('modal'),
-    crashing `hermes status`, `hermes tools`, and the dashboard toolsets API."""
+    crashing `akramcode status`, `akramcode tools`, and the dashboard toolsets API."""
     monkeypatch.setattr(ns, "get_nous_portal_account_info", lambda **kw: _pool_account())
     monkeypatch.setattr(ns, "is_managed_tool_gateway_ready", lambda gateway: True)
     monkeypatch.setattr(ns, "get_env_value", lambda name: "")
@@ -228,7 +228,7 @@ def test_get_gateway_eligible_tools_treats_explicit_backend_as_configured(monkey
     """A keyless local backend (e.g. searxng) has no credentials to detect,
     but an explicit non-nous selection must still keep it out of
     'unconfigured' — regression for #92647, where it was pre-checked and a
-    single Enter during `hermes model` overwrote it to `web.backend: nous`.
+    single Enter during `akramcode model` overwrote it to `web.backend: nous`.
     """
     monkeypatch.setattr(ns, "get_nous_portal_account_info", lambda **kw: _account(logged_in=True, paid=True))
     monkeypatch.setattr(
@@ -404,7 +404,7 @@ def test_apply_nous_managed_defaults_writes_video_gen_config(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# ensure_nous_portal_access — inline login gate for `hermes tools`
+# ensure_nous_portal_access — inline login gate for `akramcode tools`
 # ---------------------------------------------------------------------------
 
 
@@ -436,7 +436,7 @@ def _block_legacy_agent_browser_checks(monkeypatch):
             None if cmd == "agent-browser" else real_which(cmd, *args, **kwargs)
         ),
     )
-    monkeypatch.setattr("hermes_constants.agent_browser_runnable", lambda path: False)
+    monkeypatch.setattr("akramcode_constants.agent_browser_runnable", lambda path: False)
 
 
 def test_has_agent_browser_uses_passive_runtime_resolution(monkeypatch):
@@ -481,7 +481,7 @@ def test_has_agent_browser_import_failure_does_not_run_another_resolver(monkeypa
         ),
     )
     monkeypatch.setattr(
-        "hermes_constants.agent_browser_runnable",
+        "akramcode_constants.agent_browser_runnable",
         lambda path: path == "/fake/bin/agent-browser",
     )
 

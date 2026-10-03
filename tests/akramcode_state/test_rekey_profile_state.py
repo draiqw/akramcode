@@ -1,4 +1,4 @@
-"""Regression tests for profile-name-keyed state migration on `hermes profile rename`.
+"""Regression tests for profile-name-keyed state migration on `akramcode profile rename`.
 
 When a profile is renamed, the directory move carries the row data, but the profile name is also
 baked into session keys (``agent:<name>:*``), ``sessions.profile_name``, ``gateway_heartbeats.profile``,
@@ -114,7 +114,7 @@ class TestRekeyProfileState:
             backend_id="be1", pid=123, started_at=time.time(),
             profile="oldname", host="h")
         # delivery_obligations is created lazily by the delivery ledger against the same state.db.
-        monkeypatch.setenv("HERMES_HOME", str(db.db_path.parent))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(db.db_path.parent))
         from gateway import delivery_ledger
         monkeypatch.setattr(delivery_ledger, "_db_path", lambda: db.db_path)
         with delivery_ledger._connect() as conn:

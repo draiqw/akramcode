@@ -6,7 +6,7 @@ sidebar_position: 0
 
 # Integrations
 
-Hermes Agent connects to external systems for AI inference, tool servers, IDE workflows, programmatic access, and more. These integrations extend what Hermes can do and where it can run.
+AkramCode Agent connects to external systems for AI inference, tool servers, IDE workflows, programmatic access, and more. These integrations extend what AkramCode can do and where it can run.
 
 :::tip Start here
 If you only have time to set up one integration, set up [Nous Portal](./nous-portal.md) — a single OAuth login covers 300+ models plus the four Tool Gateway tools (web search, image generation, TTS, and browser automation).
@@ -14,19 +14,19 @@ If you only have time to set up one integration, set up [Nous Portal](./nous-por
 
 ## AI Providers & Routing
 
-Hermes supports multiple AI inference providers out of the box. Use `hermes model` to configure interactively, or set them in `config.yaml`.
+AkramCode supports multiple AI inference providers out of the box. Use `akramcode model` to configure interactively, or set them in `config.yaml`.
 
-- **[AI Providers](./providers.md)** — OpenRouter, Anthropic, OpenAI, Google, and any OpenAI-compatible endpoint. Hermes auto-detects capabilities like vision, streaming, and tool use per provider.
+- **[AI Providers](./providers.md)** — OpenRouter, Anthropic, OpenAI, Google, and any OpenAI-compatible endpoint. AkramCode auto-detects capabilities like vision, streaming, and tool use per provider.
 - **[Provider Routing](../user-guide/features/provider-routing.md)** — Fine-grained control over which underlying providers handle your OpenRouter requests. Optimize for cost, speed, or quality with sorting, whitelists, blacklists, and explicit priority ordering.
 - **[Fallback Providers](../user-guide/features/fallback-providers.md)** — Automatic failover to backup LLM providers when your primary model encounters errors. Includes primary model fallback and independent auxiliary task fallback for vision, compression, and web extraction.
 
 ## Tool Servers (MCP)
 
-- **[MCP Servers](../user-guide/features/mcp.md)** — Connect Hermes to external tool servers via Model Context Protocol. Access tools from GitHub, databases, file systems, browser stacks, internal APIs, and more without writing native Hermes tools. Supports both stdio and SSE transports, per-server tool filtering, and capability-aware resource/prompt registration.
+- **[MCP Servers](../user-guide/features/mcp.md)** — Connect AkramCode to external tool servers via Model Context Protocol. Access tools from GitHub, databases, file systems, browser stacks, internal APIs, and more without writing native AkramCode tools. Supports both stdio and SSE transports, per-server tool filtering, and capability-aware resource/prompt registration.
 
 ## Web Search Backends
 
-The `web_search` and `web_extract` tools support eight backend providers, configured via `config.yaml` or `hermes tools`:
+The `web_search` and `web_extract` tools support eight backend providers, configured via `config.yaml` or `akramcode tools`:
 
 | Backend | Env Var | Search | Extract | Crawl |
 |---------|---------|--------|---------|-------|
@@ -49,7 +49,7 @@ If `web.backend` is not set, the backend is auto-detected from whichever API key
 
 ## Browser Automation
 
-Hermes includes full browser automation with multiple backend options for navigating websites, filling forms, and extracting information:
+AkramCode includes full browser automation with multiple backend options for navigating websites, filling forms, and extracting information:
 
 - **Browser Use Cloud** — Managed Chromium with stealth, residential proxies, CAPTCHA solving, and reusable browser profiles
 - **Browserbase** — Alternative cloud browser provider with managed browsers, anti-bot tooling, CAPTCHA solving, and residential proxies
@@ -75,20 +75,20 @@ Speech-to-text supports eight providers: local faster-whisper (free, runs on-dev
 
 ## IDE & Editor Integration
 
-- **[IDE Integration (ACP)](../user-guide/features/acp.md)** — Use Hermes Agent inside ACP-compatible editors such as VS Code, Zed, and JetBrains. Hermes runs as an ACP server, rendering chat messages, tool activity, file diffs, and terminal commands inside your editor.
+- **[IDE Integration (ACP)](../user-guide/features/acp.md)** — Use AkramCode Agent inside ACP-compatible editors such as VS Code, Zed, and JetBrains. AkramCode runs as an ACP server, rendering chat messages, tool activity, file diffs, and terminal commands inside your editor.
 
 ## Programmatic Access
 
-- **[API Server](../user-guide/features/api-server.md)** — Expose Hermes as an OpenAI-compatible HTTP endpoint. Any frontend that speaks the OpenAI format — Open WebUI, LobeChat, LibreChat, NextChat, ChatBox — can connect and use Hermes as a backend with its full toolset.
+- **[API Server](../user-guide/features/api-server.md)** — Expose AkramCode as an OpenAI-compatible HTTP endpoint. Any frontend that speaks the OpenAI format — Open WebUI, LobeChat, LibreChat, NextChat, ChatBox — can connect and use AkramCode as a backend with its full toolset.
 
 ## Memory & Personalization
 
 - **[Built-in Memory](../user-guide/features/memory.md)** — Persistent, curated memory via `MEMORY.md` and `USER.md` files. The agent maintains bounded stores of personal notes and user profile data that survive across sessions.
-- **[Memory Providers](../user-guide/features/memory-providers.md)** — Plug in external memory backends for deeper personalization. Seven providers ship with Hermes: Honcho (dialectic reasoning), OpenViking (tiered retrieval), Mem0 (cloud extraction), Holographic (local SQLite), RetainDB (hybrid search), ByteRover (CLI-based), and Supermemory; Hindsight (knowledge graphs) is available from the plugin catalog via `hermes plugins install hindsight`.
+- **[Memory Providers](../user-guide/features/memory-providers.md)** — Plug in external memory backends for deeper personalization. Seven providers ship with AkramCode: Honcho (dialectic reasoning), OpenViking (tiered retrieval), Mem0 (cloud extraction), Holographic (local SQLite), RetainDB (hybrid search), ByteRover (CLI-based), and Supermemory; Hindsight (knowledge graphs) is available from the plugin catalog via `akramcode plugins install hindsight`.
 
 ## Messaging Platforms
 
-Hermes runs as a gateway bot on 27+ messaging platforms, all configured through the same `gateway` subsystem:
+AkramCode runs as a gateway bot on 27+ messaging platforms, all configured through the same `gateway` subsystem:
 
 - **[Telegram](../user-guide/messaging/telegram.md)**, **[Discord](../user-guide/messaging/discord.md)**, **[Slack](../user-guide/messaging/slack.md)**, **[WhatsApp](../user-guide/messaging/whatsapp.md)**, **[Signal](../user-guide/messaging/signal.md)**, **[Matrix](../user-guide/messaging/matrix.md)**, **[Mattermost](../user-guide/messaging/mattermost.md)**, **[Email](../user-guide/messaging/email.md)**, **[SMS](../user-guide/messaging/sms.md)**, **[DingTalk](../user-guide/messaging/dingtalk.md)**, **[Feishu/Lark](../user-guide/messaging/feishu.md)**, **[WeCom](../user-guide/messaging/wecom.md)**, **[WeCom Callback](../user-guide/messaging/wecom-callback.md)**, **[Weixin](../user-guide/messaging/weixin.md)**, **[BlueBubbles](../user-guide/messaging/bluebubbles.md)**, **[Buzz](../user-guide/messaging/buzz.md)**, **[QQ Bot](../user-guide/messaging/qqbot.md)**, **[Yuanbao](../user-guide/messaging/yuanbao.md)**, **[Home Assistant](../user-guide/messaging/homeassistant.md)**, **[Microsoft Teams](../user-guide/messaging/teams.md)**, **[Microsoft Teams Meetings](../user-guide/messaging/teams-meetings.md)**, **[Microsoft Graph Webhook](../user-guide/messaging/msgraph-webhook.md)**, **[Google Chat](../user-guide/messaging/google_chat.md)**, **[LINE](../user-guide/messaging/line.md)**, **[ntfy](../user-guide/messaging/ntfy.md)**, **[SimpleX](../user-guide/messaging/simplex.md)**, **[Open WebUI](../user-guide/messaging/open-webui.md)**, **[Webhooks](../user-guide/messaging/webhooks.md)**
 
@@ -102,7 +102,7 @@ The big platforms have a canonical "create your bot/app" URL, and some accept pa
 |----------|-------------|---------------|
 | **Telegram** | [t.me/BotFather](https://t.me/BotFather) | Chat with BotFather — send `/newbot` to mint a bot token |
 | **Discord** | [discord.com/developers/applications?new_application=true](https://discord.com/developers/applications?new_application=true) | Developer Portal with the **New Application** dialog pre-opened |
-| **Slack** | [api.slack.com/apps?new_app=1](https://api.slack.com/apps?new_app=1) | The **Create New App** dialog — pick *From an app manifest* and paste the manifest `hermes slack manifest --agent-view` generates |
+| **Slack** | [api.slack.com/apps?new_app=1](https://api.slack.com/apps?new_app=1) | The **Create New App** dialog — pick *From an app manifest* and paste the manifest `akramcode slack manifest --agent-view` generates |
 | **LINE** | [developers.line.biz/console](https://developers.line.biz/console/) | LINE Developers Console for creating a Messaging API channel |
 | **Feishu/Lark** | [open.feishu.cn/app](https://open.feishu.cn/app) | Feishu open-platform console for creating a custom app |
 
@@ -110,7 +110,7 @@ Each platform's setup page walks through what to do once you're there.
 
 ## Collaboration Workspaces
 
-- **[Buzz](./buzz.md)** — Block's Nostr-based human+agent workspace. Three integration paths: Buzz Desktop spawns Hermes as a managed ACP runtime, the `buzz-acp` relay bridge hosts a Hermes identity server-side, or the native gateway platform joins Buzz channels with full Hermes memory/skills/approvals/cron. The overview page compares all three.
+- **[Buzz](./buzz.md)** — Block's Nostr-based human+agent workspace. Three integration paths: Buzz Desktop spawns AkramCode as a managed ACP runtime, the `buzz-acp` relay bridge hosts a AkramCode identity server-side, or the native gateway platform joins Buzz channels with full AkramCode memory/skills/approvals/cron. The overview page compares all three.
 
 ## Home Automation
 
@@ -118,8 +118,8 @@ Each platform's setup page walks through what to do once you're there.
 
 ## Plugins
 
-- **[Plugin System](../user-guide/features/plugins.md)** — Extend Hermes with custom tools, lifecycle hooks, and CLI commands without modifying core code. Plugins are discovered from `~/.hermes/plugins/`, project-local `.hermes/plugins/`, and pip-installed entry points.
-- **[Build a Plugin](../developer-guide/plugins/index.md)** — Step-by-step guide for creating Hermes plugins with tools, hooks, and CLI commands.
+- **[Plugin System](../user-guide/features/plugins.md)** — Extend AkramCode with custom tools, lifecycle hooks, and CLI commands without modifying core code. Plugins are discovered from `~/.akramcode/plugins/`, project-local `.akramcode/plugins/`, and pip-installed entry points.
+- **[Build a Plugin](../developer-guide/plugins/index.md)** — Step-by-step guide for creating AkramCode plugins with tools, hooks, and CLI commands.
 
 ## Training & Evaluation
 

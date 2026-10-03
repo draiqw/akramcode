@@ -11,8 +11,8 @@ import threading
 
 
 def main():
-    with tempfile.TemporaryDirectory(prefix="hermes-echo-") as tmp:
-        os.environ.update(HOME=tmp, HERMES_HOME=tmp, CODEX_HOME=tmp, HERMES_DISABLE_PLUGINS="1")
+    with tempfile.TemporaryDirectory(prefix="akramcode-echo-") as tmp:
+        os.environ.update(HOME=tmp, AKRAMCODE_HOME=tmp, CODEX_HOME=tmp, AKRAMCODE_DISABLE_PLUGINS="1")
         from agent import codex_runtime
         from agent.message_metadata import append_message
         from agent.session_persistence import SessionPersistenceMixin

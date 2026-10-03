@@ -138,7 +138,7 @@ def populated_db(db):
 class TestHasKnownPricing:
 
     def test_unknown_custom_model(self):
-        assert _has_known_pricing("FP16_Hermes_4.5") is False
+        assert _has_known_pricing("FP16_AkramCode_4.5") is False
         assert _has_known_pricing("my-custom-model") is False
         assert _has_known_pricing("glm-5") is False
         assert _has_known_pricing("") is False

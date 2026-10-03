@@ -167,7 +167,7 @@ def usage_model_from_account(account_info: Any) -> UsageModel:
 
 
 def build_usage_model(*, timeout: float = 10.0) -> UsageModel:
-    """Fetch account-info and build the usage model; fail-open. ``HERMES_DEV_CREDITS_FIXTURE`` short-circuits to a fixture."""
+    """Fetch account-info and build the usage model; fail-open. ``AKRAMCODE_DEV_CREDITS_FIXTURE`` short-circuits to a fixture."""
     fixture = _dev_fixture_usage_model()
     if fixture is not None:
         return fixture
@@ -185,8 +185,8 @@ def _plan_bar(remaining: float, spent: float) -> UsageBar:
 
 
 def _dev_fixture_usage_model() -> Optional[UsageModel]:
-    """``HERMES_DEV_CREDITS_FIXTURE`` -> fixture model (``free|healthy|low|topup|depleted``), else None."""
-    name = (os.getenv("HERMES_DEV_CREDITS_FIXTURE") or "").strip().lower()
+    """``AKRAMCODE_DEV_CREDITS_FIXTURE`` -> fixture model (``free|healthy|low|topup|depleted``), else None."""
+    name = (os.getenv("AKRAMCODE_DEV_CREDITS_FIXTURE") or "").strip().lower()
     name = {"mid": "healthy", "top-up": "topup"}.get(name, name)
     plus = dict(available=True, plan_name="Plus", renews_at="2026-07-01")
     specs: dict[str, dict] = {

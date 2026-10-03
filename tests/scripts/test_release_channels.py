@@ -96,7 +96,7 @@ def object_server():
 def publisher(url, **kwargs):
     from scripts.releases.channels import ChannelPublisher, R2ChannelStore
     store = R2ChannelStore({"access_key_id": "fixture", "secret_key": "fixture"}, url, "bucket")
-    return ChannelPublisher(store, "example/hermes-agent", url + "/bucket",
+    return ChannelPublisher(store, "example/akramcode-agent", url + "/bucket",
                             authorize=kwargs.pop("authorize", lambda action, record: None), **kwargs)
 
 
@@ -104,13 +104,13 @@ def test_unknown_channel_created_over_http_retains_identity_and_immutable_reques
     from akramcode_cli.release_channels import ChannelReader, ChannelNotFound
     with object_server() as (url, objects, headers, requests, faults):
         pub = publisher(url)
-        reader = ChannelReader(url + "/bucket", repository="example/hermes-agent")
+        reader = ChannelReader(url + "/bucket", repository="example/akramcode-agent")
         with pytest.raises(ChannelNotFound):
             reader.resolve("not-registered-in-code")
         record = pub.create("not-registered-in-code")
         assert reader.resolve(record["name"]).manifest is None
-        one = pub.allocate(record["name"], "a" * 40, "1.2.3", {"HERMES_GUEST_ONBOARDING": "1"})
-        two = pub.allocate(record["name"], "a" * 40, "1.2.3", {"HERMES_GUEST_ONBOARDING": "0"})
+        one = pub.allocate(record["name"], "a" * 40, "1.2.3", {"AKRAMCODE_GUEST_ONBOARDING": "1"})
+        two = pub.allocate(record["name"], "a" * 40, "1.2.3", {"AKRAMCODE_GUEST_ONBOARDING": "0"})
         assert one["identity"] == two["identity"] == record["identity"]
         assert one["buildId"] != two["buildId"]
         assert one["sequence"] < two["sequence"]
@@ -126,10 +126,10 @@ def test_stable_branded_channel_reuses_the_published_stable_identity(monkeypatch
     is held to."""
     from akramcode_cli.release_channels import ChannelError, canonical_json
     from scripts.releases import channel_releases
-    product = {"token": "f204dc6857361e33", "displayName": "Hermes Agent",
-               "appId": "com.nousresearch.hermes-bundled", "appNamePascal": "HermesBundled",
-               "artifactNamePascal": "HermesBundled", "cliName": "hermes",
-               "windowsExecutableName": "Hermes Agent", "msixAppIdWithOrg": "NousResearch.HermesBundled"}
+    product = {"token": "f204dc6857361e33", "displayName": "AkramCode Agent",
+               "appId": "com.nousresearch.akramcode-bundled", "appNamePascal": "AkramCodeBundled",
+               "artifactNamePascal": "AkramCodeBundled", "cliName": "akramcode",
+               "windowsExecutableName": "AkramCode Agent", "msixAppIdWithOrg": "NousResearch.AkramCodeBundled"}
     monkeypatch.setattr(channel_releases, "product_identity", lambda tag: dict(product))
     with object_server() as (url, objects, headers, requests, faults):
         pub = publisher(url)
@@ -227,7 +227,7 @@ def test_list_bootstrap_protected_roles_and_qualification_gate():
     from akramcode_cli.release_channels import ChannelError
     with object_server() as (url, objects, headers, requests, faults):
         pub = publisher(url)
-        main = {"schema": 1, "name": "main", "repository": "example/hermes-agent", "policy": "source-branch", "state": "active", "revision": 1, "nextSequence": 1, "identity": None, "head": None, "delivery": {"kind": "source-branch", "branch": "main"}}
+        main = {"schema": 1, "name": "main", "repository": "example/akramcode-agent", "policy": "source-branch", "state": "active", "revision": 1, "nextSequence": 1, "identity": None, "head": None, "delivery": {"kind": "source-branch", "branch": "main"}}
         assert pub.bootstrap(main) == main and not objects
         pub.bootstrap(main, publish=True)
         for name in ("first", "second", "third"):
@@ -506,10 +506,10 @@ def test_protected_transaction_refuses_custom_workflow_and_unpublished_release(m
     from akramcode_cli.release_channels import ChannelError
     attempt, tag, commit = "rc.1-v2.0.0", "v2.0.0", "a" * 40
     env = {"GITHUB_ACTIONS": "true", "GITHUB_EVENT_NAME": "workflow_dispatch",
-           "GITHUB_REPOSITORY": "example/hermes-agent", "RELEASE_TAG": attempt,
+           "GITHUB_REPOSITORY": "example/akramcode-agent", "RELEASE_TAG": attempt,
            "RELEASE_COMMIT": commit, "RELEASE_CLAIM_TAG": attempt,
            "RELEASE_CLAIM_OBJECT": "b" * 40,
-           "GITHUB_WORKFLOW_REF": "example/hermes-agent/.github/workflows/stable-release.yml@refs/tags/" + attempt}
+           "GITHUB_WORKFLOW_REF": "example/akramcode-agent/.github/workflows/stable-release.yml@refs/tags/" + attempt}
     published = [True]
 
     def final_context(_env, run):
@@ -541,10 +541,10 @@ def test_stable_admission_requires_an_attempt_ref_release_tag(monkeypatch):
     from akramcode_cli.release_channels import ChannelError
     attempt, commit = "rc.2-v1.2.3", "c" * 40
     env = {"GITHUB_ACTIONS": "true", "GITHUB_EVENT_NAME": "workflow_dispatch",
-           "GITHUB_REPOSITORY": "example/hermes-agent", "RELEASE_TAG": attempt,
+           "GITHUB_REPOSITORY": "example/akramcode-agent", "RELEASE_TAG": attempt,
            "RELEASE_COMMIT": commit, "RELEASE_CLAIM_TAG": attempt,
            "RELEASE_CLAIM_OBJECT": "b" * 40,
-           "GITHUB_WORKFLOW_REF": "example/hermes-agent/.github/workflows/stable-release.yml@refs/tags/" + attempt}
+           "GITHUB_WORKFLOW_REF": "example/akramcode-agent/.github/workflows/stable-release.yml@refs/tags/" + attempt}
     monkeypatch.setattr(channel_releases.stable, "final_context",
                         lambda _env, run: ("v1.2.3", commit, {}))
 

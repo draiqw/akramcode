@@ -366,7 +366,7 @@ def _continue_text(st: _Trunc, _retry: TurnRetryState, assistant_message: Any) -
 
 
 def _model_output_limit(agent: Any) -> Optional[int]:
-    """The model's real max output tokens when Hermes knows it, else None."""
+    """The model's real max output tokens when AkramCode knows it, else None."""
     if getattr(agent, "api_mode", None) != "anthropic_messages":
         return None
     # Local: only Anthropic-Messages turns need the adapter module.

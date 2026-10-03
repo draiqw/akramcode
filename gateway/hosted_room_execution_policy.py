@@ -75,7 +75,7 @@ def _served_profile_scope(target_profile: str):
     launch profile's env or whatever home happens to be active (#116900)."""
     from contextlib import nullcontext
     from akramcode_cli.profiles import get_profile_dir, normalize_profile_name, profile_exists, profile_matches_home
-    # "default" is the launch home (a `-p x` multiplexer hosts it too), never a switch to ~/.hermes.
+    # "default" is the launch home (a `-p x` multiplexer hosts it too), never a switch to ~/.akramcode.
     if normalize_profile_name(target_profile) == "default" or profile_matches_home(target_profile):
         return nullcontext()
     if not profile_exists(target_profile):

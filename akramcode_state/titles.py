@@ -171,7 +171,7 @@ class SessionTitlesMixin:
         # IS its exact title (Bot Mode re-resolves it by name on every open, no id pointer).
         # A "<title> #N" sibling — a Desktop branch or a client-minted numbered row — is NOT
         # a Bot Mode session: it is visible, unmanaged, and the message_agent gate is off in
-        # it. Every DM transport (``hermes -p <bot> chat --in ~ -c "Bot Chat"``: message_agent,
+        # it. Every DM transport (``akramcode -p <bot> chat --in ~ -c "Bot Chat"``: message_agent,
         # bot_relay, cron delivery) resolves through here, so letting the numbered row win
         # silently routes teammates' messages into a chat whose bot cannot answer back.
         if exact is not None and title == self.CANONICAL_BOT_CHAT_TITLE:

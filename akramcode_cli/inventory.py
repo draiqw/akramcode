@@ -474,7 +474,7 @@ def _append_unconfigured_rows(
             warning = (
                 f"Configured provider missing usable credentials; paste {key_env} to reactivate. {tail}"
                 if auth_type == "api_key" and key_env
-                else f"Configured provider is not authenticated; run `hermes model` to reactivate. {tail}"
+                else f"Configured provider is not authenticated; run `akramcode model` to reactivate. {tail}"
             )
             extras.append(_canonical_row(
                 entry, cur, models=[saved_model] if saved_model else [], total_models=1 if saved_model else 0,
@@ -487,12 +487,12 @@ def _append_unconfigured_rows(
 
 
 def _anthropic_oauth_credentials_present() -> bool:
-    """True when the user explicitly authenticated Anthropic via OAuth (Hermes device flow or Claude Code
+    """True when the user explicitly authenticated Anthropic via OAuth (AkramCode device flow or Claude Code
     login) — those leave no trace in active_provider / model.provider / API-key env vars."""
     try:
-        from agent.anthropic_credentials import read_claude_code_credentials, read_hermes_oauth_credentials
+        from agent.anthropic_credentials import read_claude_code_credentials, read_akramcode_oauth_credentials
 
-        readers = (read_hermes_oauth_credentials, read_claude_code_credentials)
+        readers = (read_akramcode_oauth_credentials, read_claude_code_credentials)
         if any((read() or {}).get("accessToken") for read in readers):
             return True
     except Exception:
@@ -594,7 +594,7 @@ def _apply_picker_hints(rows: list[dict]) -> None:
         row["auth_type"] = auth_type
         row["key_env"] = key_env
         row["warning"] = (f"paste {key_env} to activate" if auth_type == "api_key" and key_env
-                          else f"run `hermes model` to configure ({auth_type})")
+                          else f"run `akramcode model` to configure ({auth_type})")
 
 
 def _reorder_canonical(rows: list[dict]) -> list[dict]:
@@ -738,14 +738,14 @@ def _prewarm_pricing_async(
 ) -> Optional[Thread]:
     """Warm picker pricing caches without delaying the current payload (one worker per
     profile + endpoint scope; a live worker is reused)."""
-    from akramcode_constants import hermes_home_key
+    from akramcode_constants import akramcode_home_key
     from akramcode_cli.models_pricing import pricing_cache_scope
 
     slugs = {str(row.get("slug") or "").lower() for row in rows if row.get("slug")}
     endpoint_scope = tuple(sorted(
         (slug, pricing_cache_scope(slug, current_provider=current_provider, current_base_url=current_base_url))
         for slug in slugs))
-    prewarm_key = (hermes_home_key(), endpoint_scope)
+    prewarm_key = (akramcode_home_key(), endpoint_scope)
 
     with _pricing_prewarm_lock:
         current = _pricing_prewarm_threads.get(prewarm_key)
@@ -763,7 +763,7 @@ def _prewarm_pricing_async(
                         _pricing_prewarm_threads.pop(prewarm_key, None)
 
         thread = Thread(target=copy_context().run, args=(_worker,),
-                        name="hermes-picker-pricing-prewarm", daemon=True)
+                        name="akramcode-picker-pricing-prewarm", daemon=True)
         _pricing_prewarm_threads[prewarm_key] = thread
         thread.start()
         return thread

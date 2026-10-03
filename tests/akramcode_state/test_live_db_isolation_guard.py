@@ -2,7 +2,7 @@
 
 Forensic background (Aug 2026): pytest fixture rows (chat-1 / wx-chat
 sessions, gateway_routing scopes under /tmp/pytest-of-*) were found in the
-developer's REAL ~/.hermes/state.db, and a pytest-spawned process flipped
+developer's REAL ~/.akramcode/state.db, and a pytest-spawned process flipped
 the journal mode under the WAL-mode gateway writer, destroying committed
 transcripts. The guard under test makes any pytest-context ``SessionDB``
 construction that resolves to a production state.db fail hard instead of
@@ -27,9 +27,9 @@ from akramcode_state import SessionDB
 # These probe the live-DB guard against the real root on purpose.
 pytestmark = pytest.mark.allow_real_home_io
 
-# Must match the root the guard itself computes.  Hardcoding ``~/.hermes``
+# Must match the root the guard itself computes.  Hardcoding ``~/.akramcode``
 # silently disarmed every assertion below on Windows, where the real root is
-# ``%LOCALAPPDATA%\hermes``: the paths under test were then *correctly*
+# ``%LOCALAPPDATA%\akramcode``: the paths under test were then *correctly*
 # classified as non-production, so the guard never raised and the whole
 # TestProductionPathRefused class failed for the wrong reason (#82770).
 REAL_ROOT = akramcode_state._real_platform_state_root()
@@ -41,7 +41,7 @@ if REAL_ROOT is None:  # pragma: no cover - no resolvable home on this platform
 
 class TestProductionPathRefused:
     def test_explicit_production_db_path_raises(self):
-        """SessionDB pointed at the real ~/.hermes/state.db must fail hard."""
+        """SessionDB pointed at the real ~/.akramcode/state.db must fail hard."""
         with pytest.raises(RuntimeError, match="live-system guard"):
             SessionDB(db_path=REAL_ROOT / "state.db")
 
@@ -64,11 +64,11 @@ class TestProductionPathRefused:
     def test_default_resolution_to_production_raises(self, monkeypatch):
         """The argless-construction path is guarded, not just explicit paths.
 
-        Simulates the escape vector: HERMES_HOME leaked/reset to the real
+        Simulates the escape vector: AKRAMCODE_HOME leaked/reset to the real
         home (subprocess child, stale worktree, gateway-launched shell) so
         ``_default_db_path()`` resolves the production DB.
         """
-        monkeypatch.setenv("HERMES_HOME", str(REAL_ROOT))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(REAL_ROOT))
         # Neutralize the conftest's DEFAULT_DB_PATH re-pin so the default
         # resolver follows the (production-pointing) env, as it would in a
         # process that never imported the hermetic conftest.
@@ -81,9 +81,9 @@ class TestProductionPathRefused:
 
 class TestHermeticPathsAllowed:
 
-    def test_tmp_hermes_home_default_resolution_works(self, tmp_path, monkeypatch):
-        """Argless SessionDB() under a hermetic HERMES_HOME must succeed."""
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path / "hermetic-home"))
+    def test_tmp_akramcode_home_default_resolution_works(self, tmp_path, monkeypatch):
+        """Argless SessionDB() under a hermetic AKRAMCODE_HOME must succeed."""
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "hermetic-home"))
         monkeypatch.setattr(
             akramcode_state, "DEFAULT_DB_PATH", akramcode_state._IMPORT_DEFAULT_DB_PATH
         )
@@ -140,8 +140,8 @@ class TestSessionStoreLoudFailure:
 
 
 class TestSubprocessChildCovered:
-    def test_child_without_hermes_home_is_refused(self, tmp_path):
-        """A subprocess child of a test (no HERMES_HOME) must be blocked.
+    def test_child_without_akramcode_home_is_refused(self, tmp_path):
+        """A subprocess child of a test (no AKRAMCODE_HOME) must be blocked.
 
         This is the real leak vector: tests spawning ``python -m ...``
         children that never import the hermetic conftest. The guard is
@@ -152,7 +152,7 @@ class TestSubprocessChildCovered:
         env = {
             k: v
             for k, v in os.environ.items()
-            if k not in ("HERMES_HOME", "PYTEST_PLUGINS", "PYTHONPATH")
+            if k not in ("AKRAMCODE_HOME", "PYTEST_PLUGINS", "PYTHONPATH")
         }
         env["PYTEST_CURRENT_TEST"] = "tests/fake.py::test_child (call)"
         env["PYTHONPATH"] = str(Path(__file__).resolve().parents[2])
@@ -170,15 +170,15 @@ class TestSubprocessChildCovered:
         assert proc.returncode != 0
         assert "live-system guard" in proc.stderr
 
-    def test_child_with_tmp_hermes_home_succeeds(self, tmp_path):
-        """Same child, hermetic HERMES_HOME: must work — no false positive."""
+    def test_child_with_tmp_akramcode_home_succeeds(self, tmp_path):
+        """Same child, hermetic AKRAMCODE_HOME: must work — no false positive."""
         env = {
             k: v
             for k, v in os.environ.items()
             if k not in ("PYTEST_PLUGINS", "PYTHONPATH")
         }
         env["PYTEST_CURRENT_TEST"] = "tests/fake.py::test_child (call)"
-        env["HERMES_HOME"] = str(tmp_path / "child-home")
+        env["AKRAMCODE_HOME"] = str(tmp_path / "child-home")
         env["PYTHONPATH"] = str(Path(__file__).resolve().parents[2])
         code = (
             "from akramcode_state import SessionDB\n"

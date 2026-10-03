@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 logger = logging.getLogger(__name__)
 
 #: Production ingest endpoint. Overridable through config only — deliberately NOT by an
-#: environment variable: AGENTS.md reserves HERMES_* for secrets, and an inherited variable
+#: environment variable: AGENTS.md reserves AKRAMCODE_* for secrets, and an inherited variable
 #: could silently redirect consented metrics to any host with nothing visible in config.
 #: Tests and the staging E2E write this key into a throwaway profile instead.
 DEFAULT_ENDPOINT = "https://telemetry.nousresearch.com/v1/telemetry"

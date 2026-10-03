@@ -76,11 +76,11 @@ def test_legacy_string_model_section_does_not_crash(mock_openai):
 
 @patch("agent.process_bootstrap.OpenAI")
 def test_streaming_false_read_from_real_config_file(mock_openai):
-    """End-to-end: a real config.yaml in HERMES_HOME (sandboxed per-test by
+    """End-to-end: a real config.yaml in AKRAMCODE_HOME (sandboxed per-test by
     conftest) with ``model.streaming: false`` must seed the flag through the
     actual config loader — not just the patched function."""
     mock_openai.return_value = MagicMock()
-    home = Path(os.environ["HERMES_HOME"])
+    home = Path(os.environ["AKRAMCODE_HOME"])
     (home / "config.yaml").write_text(
         "model:\n"
         "  default: \"test/model\"\n"

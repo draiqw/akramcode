@@ -3,9 +3,9 @@ Loader for G0DM0D3 scripts. Handles the exec-scoping issues.
 
 Usage in execute_code:
     exec(open(os.path.expanduser(
-        os.path.join(os.environ.get("HERMES_HOME", os.path.expanduser("~/.hermes")), "skills/security/godmode/scripts/load_godmode.py")
+        os.path.join(os.environ.get("AKRAMCODE_HOME", os.path.expanduser("~/.akramcode")), "skills/security/godmode/scripts/load_godmode.py")
     )).read())
-    
+
     # Now all functions are available:
     # - auto_jailbreak(), undo_jailbreak()
     # - race_models(), race_godmode_classic()
@@ -17,7 +17,7 @@ Usage in execute_code:
 import os, sys
 from pathlib import Path
 
-_gm_scripts_dir = Path(os.getenv("HERMES_HOME", Path.home() / ".hermes")) / "skills" / "security" / "godmode" / "scripts"
+_gm_scripts_dir = Path(os.getenv("AKRAMCODE_HOME", Path.home() / ".akramcode")) / "skills" / "security" / "godmode" / "scripts"
 
 _gm_old_argv = sys.argv
 sys.argv = ["_godmode_loader"]

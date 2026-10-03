@@ -1,13 +1,13 @@
 """Interrupted-update fleet-restart obligation (#95294 parts 1+2).
 
-A ``hermes update`` killed after git pull advanced HEAD but before the
+A ``akramcode update`` killed after git pull advanced HEAD but before the
 fleet restart left running gateways on stale code. The next update said
 "Already up to date" and skipped restart. These tests cover:
 
 - ``fleet_restart_pending`` marker written after HEAD advances, cleared
   after a successful (or no-op) fleet restart
 - interrupt between pull and restart leaves the marker
-- next ``hermes update`` with git already up to date still runs the
+- next ``akramcode update`` with git already up to date still runs the
   pending restart when the marker OR a skewed unfinished latest.json is
   present
 
@@ -21,13 +21,13 @@ from types import SimpleNamespace
 
 import pytest
 
-from akramcode_cli import main as hermes_main
+from akramcode_cli import main as akramcode_main
 import akramcode_cli.main_web_build as main_web_build
 import akramcode_cli.main_install_repair as main_install_repair
 from akramcode_cli import update_cmd
 import akramcode_cli.update_cmd_fleet as update_cmd_fleet
 from akramcode_cli.update_receipt import COMMAND_BOUNDARY_STOP_REASON
-from hermes_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 import akramcode_cli.update_host_obligation as host_obligation
 from gateway import host_rendezvous
 
@@ -83,12 +83,12 @@ def _make_head_moved_side_effect(pre_sha="abc123", post_sha="def456"):
 
 def _patch_update_deps(monkeypatch, tmp_path, run_side_effect):
     """Isolate machine maintenance while exercising interrupted fleet updates."""
-    monkeypatch.setattr(hermes_main.subprocess, "run", run_side_effect)
-    monkeypatch.setattr(hermes_main, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(akramcode_main.subprocess, "run", run_side_effect)
+    monkeypatch.setattr(akramcode_main, "PROJECT_ROOT", tmp_path)
     monkeypatch.setattr(update_cmd, "_prepare_updated_checkout", lambda *a, **k: None)
     (tmp_path / ".git").mkdir()
-    monkeypatch.setattr(hermes_main, "_resolve_update_branch", lambda args: "main")
-    monkeypatch.setattr(hermes_main, "_is_windows", lambda: False)
+    monkeypatch.setattr(akramcode_main, "_resolve_update_branch", lambda args: "main")
+    monkeypatch.setattr(akramcode_main, "_is_windows", lambda: False)
     monkeypatch.setattr(main_install_repair, "_is_windows", lambda: False)
     monkeypatch.setattr(
         update_cmd, "_restart_macos_launchd_gateways", lambda *a, **k: None
@@ -97,39 +97,39 @@ def _patch_update_deps(monkeypatch, tmp_path, run_side_effect):
         update_cmd_fleet, "_restart_macos_launchd_gateways", lambda *a, **k: None
     )
     monkeypatch.setattr(
-        hermes_main,
+        akramcode_main,
         "_get_origin_url",
-        lambda *a, **k: "https://github.com/NousResearch/hermes-agent.git",
+        lambda *a, **k: "https://github.com/NousResearch/akramcode-agent.git",
     )
     monkeypatch.setattr(update_cmd, "_is_fork", lambda *a, **k: False)
     monkeypatch.setattr(
-        hermes_main, "_stash_local_changes_if_needed", lambda *a, **k: None
+        akramcode_main, "_stash_local_changes_if_needed", lambda *a, **k: None
     )
-    monkeypatch.setattr(hermes_main, "_clear_bytecode_cache", lambda *a, **k: 0)
+    monkeypatch.setattr(akramcode_main, "_clear_bytecode_cache", lambda *a, **k: 0)
     monkeypatch.setattr(
-        hermes_main, "_record_bytecode_fingerprint", lambda *a, **k: None
+        akramcode_main, "_record_bytecode_fingerprint", lambda *a, **k: None
     )
     monkeypatch.setattr(
         main_web_build, "_record_bytecode_fingerprint", lambda *a, **k: None
     )
-    monkeypatch.setattr(hermes_main, "_run_pre_update_backup", lambda *a, **k: None)
+    monkeypatch.setattr(akramcode_main, "_run_pre_update_backup", lambda *a, **k: None)
     monkeypatch.setattr(
-        hermes_main, "_pause_windows_gateways_for_update", lambda: None
+        akramcode_main, "_pause_windows_gateways_for_update", lambda: None
     )
     monkeypatch.setattr(
-        hermes_main, "_resume_windows_gateways_after_update", lambda *a, **k: None
+        akramcode_main, "_resume_windows_gateways_after_update", lambda *a, **k: None
     )
     # _install_hangup_protection wraps sys.stdout in a mirror stream that
     # survives the test and breaks later capsys captures — no-op it.
     monkeypatch.setattr(
-        hermes_main,
+        akramcode_main,
         "_install_hangup_protection",
         lambda gateway_mode=False: {
             "prev_stdout": None, "prev_stderr": None,
             "log_file": None, "installed": False,
         },
     )
-    monkeypatch.setattr(hermes_main, "_finalize_update_output", lambda *a, **k: None)
+    monkeypatch.setattr(akramcode_main, "_finalize_update_output", lambda *a, **k: None)
     # _check_and_apply_config_migration → _run_migrate_config_fresh →
     # _reload_config_modules() force-reloads akramcode_cli.config via
     # importlib, replacing the module object pytest's capsys + the config
@@ -150,17 +150,17 @@ def _patch_update_deps(monkeypatch, tmp_path, run_side_effect):
         "akramcode_cli.version_info.get_version_info",
         lambda *a, **k: SimpleNamespace(),
     )
-    monkeypatch.setattr(update_cmd, "_purge_stale_hermes_modules", lambda: None)
-    monkeypatch.setattr(hermes_main, "_purge_stale_hermes_modules", lambda: None)
+    monkeypatch.setattr(update_cmd, "_purge_stale_akramcode_modules", lambda: None)
+    monkeypatch.setattr(akramcode_main, "_purge_stale_akramcode_modules", lambda: None)
 
-    import akramcode_cli.gateway as hermes_gateway
+    import akramcode_cli.gateway as akramcode_gateway
 
     monkeypatch.setattr(
-        hermes_gateway, "find_gateway_pids", lambda **_kwargs: []
+        akramcode_gateway, "find_gateway_pids", lambda **_kwargs: []
     )
-    monkeypatch.setattr(hermes_gateway, "supports_systemd_services", lambda: False)
+    monkeypatch.setattr(akramcode_gateway, "supports_systemd_services", lambda: False)
     monkeypatch.setattr(
-        hermes_gateway, "find_profile_gateway_processes", lambda *a, **k: []
+        akramcode_gateway, "find_profile_gateway_processes", lambda *a, **k: []
     )
     monkeypatch.setattr(
         "akramcode_cli.update_receipt.collect_fleet_versions",
@@ -171,7 +171,7 @@ def _patch_update_deps(monkeypatch, tmp_path, run_side_effect):
         lambda: SimpleNamespace(runtimes=[], to_dict=lambda: {}),
     )
     # The restart phase imports discovery fns fresh after
-    # _purge_stale_hermes_modules (the update reloads code in-place), so
+    # _purge_stale_akramcode_modules (the update reloads code in-place), so
     # module-attr mocks are lost; stub os.kill so the conftest live-system
     # guard never fires on real pids. No gateways are expected, so the
     # post-restart fleet matrix must not demand rows.
@@ -179,7 +179,7 @@ def _patch_update_deps(monkeypatch, tmp_path, run_side_effect):
 
     monkeypatch.setattr(_os_mod, "kill", lambda *a, **k: None)
     monkeypatch.setattr(
-        hermes_main, "_fleet_probe_expected_runtimes", lambda *a, **k: False
+        akramcode_main, "_fleet_probe_expected_runtimes", lambda *a, **k: False
     )
 
 
@@ -203,7 +203,7 @@ def test_obligation_round_trip_is_host_scoped():
     record = json.loads(path.read_text(encoding="utf-8"))
     assert record["expected_sha"] == "abc123"
     assert record["pid"] and record["started"]
-    assert not (get_hermes_home() / "fleet_restart_pending").exists()
+    assert not (get_akramcode_home() / "fleet_restart_pending").exists()
 
     update_cmd._clear_fleet_restart_pending_marker()
     assert not update_cmd_fleet._fleet_restart_obligation_armed()
@@ -222,7 +222,7 @@ def test_pending_needed_when_unfinished_receipt_runtime_sha_skews(monkeypatch):
     monkeypatch.setattr(update_cmd, "_current_checkout_sha", lambda: disk_sha)
     monkeypatch.setattr(update_cmd_fleet, "_current_checkout_sha", lambda: disk_sha)
 
-    receipt_dir = get_hermes_home() / "logs" / "update_receipts"
+    receipt_dir = get_akramcode_home() / "logs" / "update_receipts"
     receipt_dir.mkdir(parents=True)
     (receipt_dir / "latest.json").write_text(
         json.dumps(
@@ -260,7 +260,7 @@ def test_successful_receipt_with_pre_update_plan_shas_does_not_retrigger(
     monkeypatch.setattr(update_cmd, "_current_checkout_sha", lambda: disk_sha)
     monkeypatch.setattr(update_cmd_fleet, "_current_checkout_sha", lambda: disk_sha)
 
-    receipt_dir = get_hermes_home() / "logs" / "update_receipts"
+    receipt_dir = get_akramcode_home() / "logs" / "update_receipts"
     receipt_dir.mkdir(parents=True)
     (receipt_dir / "latest.json").write_text(
         json.dumps(
@@ -304,7 +304,7 @@ def test_successful_command_boundary_receipt_without_fleet_does_not_retrigger(
     monkeypatch.setattr(update_cmd, "_current_checkout_sha", lambda: disk_sha)
     monkeypatch.setattr(update_cmd_fleet, "_current_checkout_sha", lambda: disk_sha)
 
-    receipt_dir = get_hermes_home() / "logs" / "update_receipts"
+    receipt_dir = get_akramcode_home() / "logs" / "update_receipts"
     receipt_dir.mkdir(parents=True)
     (receipt_dir / "latest.json").write_text(
         json.dumps(
@@ -354,7 +354,7 @@ def test_stale_fleet_matrix_on_latest_receipt_is_pending(monkeypatch):
     monkeypatch.setattr(update_cmd, "_current_checkout_sha", lambda: disk_sha)
     monkeypatch.setattr(update_cmd_fleet, "_current_checkout_sha", lambda: disk_sha)
 
-    receipt_dir = get_hermes_home() / "logs" / "update_receipts"
+    receipt_dir = get_akramcode_home() / "logs" / "update_receipts"
     receipt_dir.mkdir(parents=True)
     (receipt_dir / "latest.json").write_text(
         json.dumps(
@@ -397,7 +397,7 @@ def test_marker_written_after_pull_cleared_after_successful_restart(
 
     monkeypatch.setattr(update_cmd, "_write_fleet_restart_pending_marker", _spy)
 
-    hermes_main.cmd_update(args)
+    akramcode_main.cmd_update(args)
 
     assert wrote == [True], "marker must exist immediately after HEAD advances"
     assert not update_cmd_fleet._fleet_restart_obligation_armed()
@@ -409,7 +409,7 @@ def test_clean_update_escalates_surviving_serve_as_unaccounted(
     monkeypatch, tmp_path, capsys
 ):
     """#100479 end to end: the plan inventoried a gateway (restarted through
-    ``hermes-gateway.service``) and an unmanaged ``serve`` on the same
+    ``akramcode-gateway.service``) and an unmanaged ``serve`` on the same
     default profile. The serve survives the update as the SAME process, so
     the update must (1) warn, (2) reconcile it as ``unaccounted`` instead of
     borrowing the gateway's restart, and (3) exit 1 with a ``partial``
@@ -439,7 +439,7 @@ def test_clean_update_escalates_surviving_serve_as_unaccounted(
 
     def _match(p, **kw):
         kw["restarted_services"] = list(kw.get("restarted_services") or []) + [
-            "hermes-gateway.service"
+            "akramcode-gateway.service"
         ]
         return real_match(p, **kw)
 
@@ -461,7 +461,7 @@ def test_clean_update_escalates_surviving_serve_as_unaccounted(
     )
 
     with pytest.raises(SystemExit) as excinfo:
-        hermes_main.cmd_update(args)
+        akramcode_main.cmd_update(args)
     assert excinfo.value.code == 1
 
     out = capsys.readouterr().out
@@ -469,7 +469,7 @@ def test_clean_update_escalates_surviving_serve_as_unaccounted(
     assert "Planned runtimes the restart phase never touched" in out
     assert "serve [default] pid 5555" in out
 
-    latest = get_hermes_home() / "logs" / "update_receipts" / "latest.json"
+    latest = get_akramcode_home() / "logs" / "update_receipts" / "latest.json"
     receipt = json.loads(latest.read_text(encoding="utf-8"))
     assert receipt["outcome"] == "partial"
     by_pid = {o["pid"]: o["outcome"] for o in receipt["runtime_outcomes"]}
@@ -509,7 +509,7 @@ def test_clean_update_defers_desktop_owned_serve_and_clears_marker(
 
     def _match(p, **kw):
         kw["restarted_services"] = list(kw.get("restarted_services") or []) + [
-            "hermes-gateway.service"
+            "akramcode-gateway.service"
         ]
         return real_match(p, **kw)
 
@@ -526,7 +526,7 @@ def test_clean_update_defers_desktop_owned_serve_and_clears_marker(
         lambda **_k: [{"pid": 6161, "purpose": "serve", "create_time": 1000.0}],
     )
 
-    hermes_main.cmd_update(args)  # no SystemExit(1)
+    akramcode_main.cmd_update(args)  # no SystemExit(1)
 
     out = capsys.readouterr().out
     assert "pid 6161" in out and "pre-update code" in out
@@ -534,7 +534,7 @@ def test_clean_update_defers_desktop_owned_serve_and_clears_marker(
     assert "Planned runtimes the restart phase never touched" not in out
     assert not update_cmd_fleet._fleet_restart_obligation_armed()
 
-    latest = get_hermes_home() / "logs" / "update_receipts" / "latest.json"
+    latest = get_akramcode_home() / "logs" / "update_receipts" / "latest.json"
     receipt = json.loads(latest.read_text(encoding="utf-8"))
     assert receipt["outcome"] == "success"
     by_pid = {o["pid"]: o["outcome"] for o in receipt["runtime_outcomes"]}
@@ -550,10 +550,10 @@ def test_interrupt_between_pull_and_restart_leaves_marker(
     def _interrupt(*_a, **_k):
         raise KeyboardInterrupt()
 
-    monkeypatch.setattr(hermes_main, "_clear_bytecode_cache", _interrupt)
+    monkeypatch.setattr(akramcode_main, "_clear_bytecode_cache", _interrupt)
 
     with pytest.raises(KeyboardInterrupt):
-        hermes_main.cmd_update(args)
+        akramcode_main.cmd_update(args)
 
     assert update_cmd_fleet._fleet_restart_obligation_armed()
     record = json.loads(host_obligation.host_obligation_path().read_text(encoding="utf-8"))
@@ -565,7 +565,7 @@ def test_startup_warn_prints_when_marker_present(capsys):
     update_cmd._warn_pending_fleet_restart_on_startup()
     err = capsys.readouterr().err
     assert "did not restart running gateways" in err
-    assert "hermes gateway restart" in err
+    assert "akramcode gateway restart" in err
 
 
 def test_startup_warn_silent_when_nothing_pending(capsys):
@@ -577,7 +577,7 @@ def test_startup_warn_silent_when_nothing_pending(capsys):
 
 # ── Self-heal: marker left behind by a supervisor-level restart (#105417 / #111272) ──
 #
-# `systemctl --user restart hermes-gateway` never runs this module's clear path, and an update
+# `systemctl --user restart akramcode-gateway` never runs this module's clear path, and an update
 # whose fleet probe answered empty exits before clearing — so the marker survives a restart
 # that DID bring the fleet to the pulled code, and every later CLI call warns forever. The
 # marker is discharged when (and only when) the fleet provably serves expected_sha.
@@ -615,7 +615,7 @@ def test_startup_warn_discharged_when_multiplexer_covers_owed_profiles(monkeypat
         runtimes=[{"kind": "gateway", "profile": p} for p in ("default", "coder")],
     )
     _patch_marker_sha(monkeypatch, disk_sha)
-    receipt_dir = get_hermes_home() / "logs" / "update_receipts"
+    receipt_dir = get_akramcode_home() / "logs" / "update_receipts"
     receipt_dir.mkdir(parents=True)
     (receipt_dir / "latest.json").write_text(
         json.dumps(
@@ -740,7 +740,7 @@ def test_startup_warn_kept_without_positive_evidence(monkeypatch, capsys, disk_s
 #
 # A cherry-picked hotfix on top of the pulled SHA moves HEAD without arming a fresh obligation,
 # so an equality gate on ``expected_sha`` could never discharge the old one: every CLI start
-# warned and every no-op ``hermes update`` exited 1 while the gateway verifiably served HEAD.
+# warned and every no-op ``akramcode update`` exited 1 while the gateway verifiably served HEAD.
 
 
 def _checkout_with_carried_commit(monkeypatch, tmp_path):
@@ -764,7 +764,7 @@ def _checkout_with_carried_commit(monkeypatch, tmp_path):
     git("add", "b")
     git("commit", "-qm", "carried hotfix")
     head = git("rev-parse", "HEAD")
-    monkeypatch.setattr(hermes_main, "PROJECT_ROOT", repo)
+    monkeypatch.setattr(akramcode_main, "PROJECT_ROOT", repo)
     _patch_marker_sha(monkeypatch, head)
     return expected, head
 
@@ -802,7 +802,7 @@ def test_startup_warn_kept_when_receipt_owed_gateway_is_down(monkeypatch, capsys
     disk_sha = "e" * 40
     update_cmd._write_fleet_restart_pending_marker(expected_sha=disk_sha, runtimes=[{"kind": "gateway", "profile": p} for p in ("alpha", "beta")])
     _patch_marker_sha(monkeypatch, disk_sha)
-    receipt_dir = get_hermes_home() / "logs" / "update_receipts"
+    receipt_dir = get_akramcode_home() / "logs" / "update_receipts"
     receipt_dir.mkdir(parents=True)
     (receipt_dir / "latest.json").write_text(
         json.dumps(
@@ -835,10 +835,10 @@ def test_startup_warn_silent_when_failed_receipt_already_restarted_fleet(monkeyp
     """#112604 aftermath: the update pulled ``pulled``, restarted every gateway onto it, then a
     post-restart step crashed (receipt ``failed``, empty ``fleet`` matrix). Later a manual
     ``git pull`` moved the checkout again. The startup hint must not blame that update for a
-    restart it performed; ``hermes update``'s catch-up still owes the fleet the checkout."""
+    restart it performed; ``akramcode update``'s catch-up still owes the fleet the checkout."""
     pre, pulled, checkout = "a" * 40, "b" * 40, "c" * 40
     _patch_marker_sha(monkeypatch, checkout)
-    receipt_dir = get_hermes_home() / "logs" / "update_receipts"
+    receipt_dir = get_akramcode_home() / "logs" / "update_receipts"
     receipt_dir.mkdir(parents=True)
     (receipt_dir / "latest.json").write_text(
         json.dumps(
@@ -847,7 +847,7 @@ def test_startup_warn_silent_when_failed_receipt_already_restarted_fleet(monkeyp
                 "stop_reason": "AttributeError: module 'akramcode_cli.main_dashboard' has no attribute 'x'",
                 "pre_update": {"sha": pre}, "post_update": {"sha": pulled},
                 "gateway_restart": {
-                    "restarted_services": ["hermes-gateway"], "relaunched_profiles": [],
+                    "restarted_services": ["akramcode-gateway"], "relaunched_profiles": [],
                     "externally_supervised_profiles": [], "killed_pids": [], "failed_units": [],
                     "incomplete": False, "phase_error": "",
                 },
@@ -872,11 +872,11 @@ def test_startup_warn_silent_when_failed_receipt_already_restarted_fleet(monkeyp
 
 def test_startup_warn_silent_when_completed_update_fleet_restarted_onto_moved_checkout(monkeypatch, capsys):
     """The remedy the warning names must clear it: after a completed update, a manual ``git pull``
-    plus ``hermes gateway restart`` leaves every owed gateway on today's checkout — newer than the
+    plus ``akramcode gateway restart`` leaves every owed gateway on today's checkout — newer than the
     update's ``post_update.sha`` — which is nothing that update still owes (#113350 steps 3–4)."""
     pre, pulled, checkout = "a" * 40, "b" * 40, "c" * 40
     _patch_marker_sha(monkeypatch, checkout)
-    receipt_dir = get_hermes_home() / "logs" / "update_receipts"
+    receipt_dir = get_akramcode_home() / "logs" / "update_receipts"
     receipt_dir.mkdir(parents=True)
     (receipt_dir / "latest.json").write_text(
         json.dumps(
@@ -884,7 +884,7 @@ def test_startup_warn_silent_when_completed_update_fleet_restarted_onto_moved_ch
                 "outcome": "success", "exit_code": 0,
                 "pre_update": {"sha": pre}, "post_update": {"sha": pulled},
                 "gateway_restart": {
-                    "restarted_services": ["hermes-gateway"], "relaunched_profiles": [],
+                    "restarted_services": ["akramcode-gateway"], "relaunched_profiles": [],
                     "externally_supervised_profiles": [], "killed_pids": [], "failed_units": [],
                     "incomplete": False, "phase_error": "",
                 },
@@ -978,7 +978,7 @@ def test_pending_fleet_restart_cleared_instead_of_exit_1(monkeypatch, tmp_path):
 
     monkeypatch.setattr(update_cmd_fleet, "_current_checkout_sha", lambda: "abc123")
 
-    hermes_main.cmd_update(args)
+    akramcode_main.cmd_update(args)
 
     assert not marker.exists()
 
@@ -1013,7 +1013,7 @@ def _spy_fleet_restart(monkeypatch):
 
 
 def test_up_to_date_update_leaves_current_fleet_alone(monkeypatch, tmp_path, capsys):
-    """Every live gateway already serves the checkout code: `hermes update` (cron, a second
+    """Every live gateway already serves the checkout code: `akramcode update` (cron, a second
     profile) must not drain and restart the shared multiplexer again, and must still discharge
     the obligation it armed and finish clean."""
     args = _update_args()
@@ -1023,7 +1023,7 @@ def test_up_to_date_update_leaves_current_fleet_alone(monkeypatch, tmp_path, cap
     monkeypatch.setattr("akramcode_cli.update_receipt.collect_fleet_versions", lambda **k: _current_row("abc123"))
     restarts = _spy_fleet_restart(monkeypatch)
 
-    hermes_main.cmd_update(args)
+    akramcode_main.cmd_update(args)
 
     assert restarts == []
     assert not update_cmd_fleet._fleet_restart_obligation_armed()
@@ -1048,7 +1048,7 @@ def test_up_to_date_update_still_restarts_a_stale_gateway(monkeypatch, tmp_path)
     restarts = _spy_fleet_restart(monkeypatch)
 
     with pytest.raises(SystemExit) as error:
-        hermes_main.cmd_update(args)
+        akramcode_main.cmd_update(args)
 
     assert error.value.code == 3
     assert len(restarts) == 1
@@ -1112,7 +1112,7 @@ def test_startup_warn_kept_when_sha_less_marker_fleet_is_all_external(monkeypatc
         "akramcode_cli.update_receipt.collect_fleet_versions",
         lambda **kwargs: [
             {"profile": "other", "pid": 43, "code_sha": "f" * 40, "code_version": "0.21.5", "state": "external",
-             "code_root": "/elsewhere/hermes-agent"}
+             "code_root": "/elsewhere/akramcode-agent"}
         ],
     )
 

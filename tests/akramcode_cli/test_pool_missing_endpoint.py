@@ -1,10 +1,10 @@
 """Endpoint-less manual credentials resolve through the public runtime ladder."""
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from akramcode_cli.auth import PROVIDER_REGISTRY, write_credential_pool
 from akramcode_cli.runtime_provider import resolve_runtime_provider
-from hermes_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 
 
 KEY = "test-only-not-a-real-provider-key"
@@ -35,7 +35,7 @@ def test_missing_pool_endpoint_uses_provider_default(endpoint, requested):
 def test_pool_endpoint_preserves_entry_and_provider_config_boundaries(entry_url, config_provider):
     default = PROVIDER_REGISTRY["deepseek"].inference_base_url
     config_url = "https://config.example/v1"
-    (get_hermes_home() / "config.yaml").write_text(yaml.safe_dump({
+    (get_akramcode_home() / "config.yaml").write_text(yaml.safe_dump({
         "model": {"provider": config_provider, "base_url": config_url},
     }), encoding="utf-8")
     fields = {} if entry_url is None else {"base_url": default if entry_url == "default" else entry_url}

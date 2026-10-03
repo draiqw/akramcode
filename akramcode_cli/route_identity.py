@@ -85,7 +85,7 @@ def provider_owns_route(provider: Any, base_url: Any, config: Any = None) -> Opt
 
 def drop_stale_model_route(model_cfg: Any, provider: Any, config: Any = None) -> "tuple[dict[str, Any], bool]":
     """Pop the route keys (``base_url``, ``api_mode``) a previous provider left in ``model:``
-    when the block is re-pointed at *provider* without a fresh route (``hermes config set
+    when the block is re-pointed at *provider* without a fresh route (``akramcode config set
     model.provider``). Mirrors what a persisted ``/model`` switch writes: the route is synced to
     the target, never carried over. Returns ``(popped {key: old value}, unverified)`` where
     ``unverified`` is True when a base_url of unknown ownership was kept — the caller should say so.

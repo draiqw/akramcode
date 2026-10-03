@@ -1,8 +1,8 @@
-"""hermes.process.exit: how Hermes processes (and watchdog-killed turns) end.
+"""akramcode.process.exit: how AkramCode processes (and watchdog-killed turns) end.
 
 A crash or SIGKILL cannot record itself. Each long-lived entrypoint drops a small marker under its
 profile's store dir at start and restamps it on the way out (``clean``, ``crash`` + class from the
-excepthook, ``watchdog`` from a hard-exit watchdog). The NEXT Hermes start in that profile reports
+excepthook, ``watchdog`` from a hard-exit watchdog). The NEXT AkramCode start in that profile reports
 every marker whose owner is gone; one still ``running`` whose pid fails the canonical start-time
 liveness check was killed. Reporting runs on a daemon thread so startup never waits on the Relay
 runtime; a claimed-but-unreported marker (the reporter died mid-way) is reclaimed later.
@@ -74,7 +74,7 @@ def _excepthook(previous: Any) -> Any:
 def begin_process(kind: str) -> None:
     """Mark this process as a running ``kind`` and report dead predecessors. Once per process."""
     try:
-        from akramcode_constants import get_hermes_home
+        from akramcode_constants import get_akramcode_home
 
         from .shared_metrics_desktop import ONBOARDING_LATCH_DIRNAME
         from .shared_metrics_setup import markers_dir as setup_markers_dir
@@ -84,7 +84,7 @@ def begin_process(kind: str) -> None:
             return
         _STATE["kind"] = kind  # watchdog turn rows name the surface even when this home is off
         if not _collection_on():
-            home = get_hermes_home()
+            home = get_akramcode_home()
             purge_pending_updates(home)  # parked while on, never to be counted once off
             latches = home / "telemetry" / "shared_metrics" / ONBOARDING_LATCH_DIRNAME  # an opt-out outside Desktop
             for directory in (markers_dir(home), setup_markers_dir(home), latches):  # likewise pending exits/setups
@@ -92,7 +92,7 @@ def begin_process(kind: str) -> None:
             return
         from gateway.status import get_process_start_time
 
-        home = get_hermes_home()
+        home = get_akramcode_home()
         directory = markers_dir(home)
         directory.mkdir(parents=True, exist_ok=True)
         pid = os.getpid()
@@ -104,7 +104,7 @@ def begin_process(kind: str) -> None:
         sys.excepthook = _excepthook(sys.excepthook)
         atexit.register(stamp_exit, "clean")
         threading.Thread(
-            target=_report_dead_markers, args=(home, path), name="hermes-exit-metrics", daemon=True,
+            target=_report_dead_markers, args=(home, path), name="akramcode-exit-metrics", daemon=True,
         ).start()
     except Exception:
         logger.debug("Process exit marker not started", exc_info=True)
@@ -176,12 +176,12 @@ def settle_claim(claimed: Path, original: Path, saved: bool) -> None:
 
 
 def _report_dead_markers(home: Path, own: Path) -> None:
-    from akramcode_constants import reset_hermes_home_override, set_hermes_home_override
+    from akramcode_constants import reset_akramcode_home_override, set_akramcode_home_override
 
     from . import shared_metrics_contract as contract
     from .shared_metrics_events import emit_saved
 
-    token = set_hermes_home_override(home)  # a thread does not inherit the profile binding
+    token = set_akramcode_home_override(home)  # a thread does not inherit the profile binding
     try:
         for path in sorted(markers_dir(home).iterdir()):
             if path == own or path.name.startswith(".") or ".json" not in path.name:
@@ -203,16 +203,16 @@ def _report_dead_markers(home: Path, own: Path) -> None:
     except Exception:
         logger.debug("Dead process markers not reported", exc_info=True)
     finally:
-        reset_hermes_home_override(token)
+        reset_akramcode_home_override(token)
 
 
 def arm_turn(agent: Any) -> None:
     """At turn entry (profile scope bound): the owning home for an off-thread watchdog abort, and
     a fresh once-per-turn latch shared by both turn watchdogs."""
     try:
-        from akramcode_constants import get_hermes_home
+        from akramcode_constants import get_akramcode_home
 
-        agent._metrics_turn_home = str(get_hermes_home())
+        agent._metrics_turn_home = str(get_akramcode_home())
         agent._metrics_watchdog_abort_counted = False
     except Exception:
         logger.debug("Turn exit metrics not armed", exc_info=True)
@@ -226,17 +226,17 @@ def record_watchdog_turn_abort(agent: Any) -> None:
         if not home or getattr(agent, "_metrics_watchdog_abort_counted", True):
             return
         agent._metrics_watchdog_abort_counted = True
-        from akramcode_constants import reset_hermes_home_override, set_hermes_home_override
+        from akramcode_constants import reset_akramcode_home_override, set_akramcode_home_override
 
         from . import shared_metrics_contract as contract
         from .shared_metrics_events import _emit
 
-        token = set_hermes_home_override(home)
+        token = set_akramcode_home_override(home)
         try:
             _emit(contract.PROCESS_EXIT_MARK, lambda: {
                 "crash_class": "none", "exit_kind": "watchdog", "process_kind": current_process_kind(),
             })
         finally:
-            reset_hermes_home_override(token)
+            reset_akramcode_home_override(token)
     except Exception:
         logger.debug("Watchdog turn abort not recorded", exc_info=True)

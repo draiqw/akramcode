@@ -254,10 +254,10 @@ def _slot_runtime(slot: dict[str, Any]) -> dict[str, Any]:
     """
     provider = str(slot.get("provider") or "").strip()
     model = str(slot.get("model") or "").strip()
-    # hermes_home_key() in the key: the resolved api_key/base_url are per-profile, and under a
+    # akramcode_home_key() in the key: the resolved api_key/base_url are per-profile, and under a
     # multiplex gateway two profiles can share (provider, model) with different accounts.
-    from akramcode_constants import hermes_home_key
-    cache_key = (hermes_home_key(), provider, model)
+    from akramcode_constants import akramcode_home_key
+    cache_key = (akramcode_home_key(), provider, model)
     now = time.monotonic()
     with _runtime_cache_lock:
         entry = _runtime_cache.get(cache_key)
@@ -882,7 +882,7 @@ def aggregate_moa_context(
     synth_prompt = (
         "You are the aggregator in a Mixture of Agents process. Synthesize the "
         "reference responses into concise, actionable guidance for the main "
-        "Hermes agent. Focus on next steps, tool-use strategy, risks, and any "
+        "AkramCode agent. Focus on next steps, tool-use strategy, risks, and any "
         "disagreements. Do not answer the user directly unless that is all that "
         "is needed; produce context the main agent should use in its normal loop.\n\n"
         f"Original user prompt:\n{user_prompt}\n\n"
@@ -908,7 +908,7 @@ def aggregate_moa_context(
 
     return (
         "[Mixture of Agents context — use this as private guidance for the "
-        "normal Hermes agent loop. You may call tools, continue reasoning, or "
+        "normal AkramCode agent loop. You may call tools, continue reasoning, or "
         "finish normally.]\n"
         f"Aggregator: {agg_label}\n"
         f"References: {_slot_labels(reference_models)}\n\n"

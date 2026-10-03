@@ -146,7 +146,7 @@ def _session_tool_names(enabled_toolsets, *, connectors, disabled_toolsets=None)
 
 
 def test_cli_session_gets_the_tool_outside_a_code_workspace(tmp_path, monkeypatch):
-    """The path a plain `hermes` run takes: _get_platform_tools, no git cwd."""
+    """The path a plain `akramcode` run takes: _get_platform_tools, no git cwd."""
     from akramcode_cli.tools_config import _get_platform_tools
 
     monkeypatch.chdir(tmp_path)
@@ -162,7 +162,7 @@ def test_tui_and_desktop_sessions_get_the_tool(monkeypatch):
     """The path the TUI/desktop gateway takes to build its selection."""
     from tui_gateway.server import _load_enabled_toolsets
 
-    monkeypatch.delenv("HERMES_TUI_TOOLSETS", raising=False)
+    monkeypatch.delenv("AKRAMCODE_TUI_TOOLSETS", raising=False)
     for platform in ("tui", "desktop"):
         selection = _load_enabled_toolsets(platform)
         names = _session_tool_names(selection, connectors=True)
@@ -194,7 +194,7 @@ def test_session_the_portal_has_not_enabled_never_receives_the_tool(tmp_path, mo
     from tui_gateway.server import _load_enabled_toolsets
 
     monkeypatch.chdir(tmp_path)
-    monkeypatch.delenv("HERMES_TUI_TOOLSETS", raising=False)
+    monkeypatch.delenv("AKRAMCODE_TUI_TOOLSETS", raising=False)
     selections = [
         sorted(_get_platform_tools({}, "cli", include_default_mcp_servers=True)),
         _load_enabled_toolsets("tui"),
@@ -225,7 +225,7 @@ def test_operator_can_still_turn_it_off(tmp_path, monkeypatch):
         enabled, connectors=True, disabled_toolsets=["connections"]
     )
     assert "manage_connections" in _session_tool_names(
-        enabled, connectors=True, disabled_toolsets=["hermes-cli"]
+        enabled, connectors=True, disabled_toolsets=["akramcode-cli"]
     )
 
 

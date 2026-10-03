@@ -253,7 +253,7 @@ class TestFallbackChainAdvancement:
 
     def test_nous_non_anthropic_fallback_stays_on_chat_completions(self):
         portal = "https://inference-api.nousresearch.com/v1"
-        fbs = [{"provider": "nous", "model": "hermes-4-405b"}]
+        fbs = [{"provider": "nous", "model": "akramcode-4-405b"}]
         agent = _make_agent(fallback_model=fbs)
         with (
             patch(
@@ -264,7 +264,7 @@ class TestFallbackChainAdvancement:
                 "agent.auxiliary_client.resolve_provider_client",
                 return_value=(
                     _mock_client(base_url=portal, api_key="portal-jwt"),
-                    "hermes-4-405b",
+                    "akramcode-4-405b",
                 ),
             ),
             patch(
@@ -486,10 +486,10 @@ class TestFallbackExtraBodyReResolution:
 
 
 def _write_moa_home(tmp_path, monkeypatch):
-    """Real config.yaml with a MoA preset under a temp HERMES_HOME (genuine preset resolution)."""
-    import akram_core.hermes_yaml as yaml
+    """Real config.yaml with a MoA preset under a temp AKRAMCODE_HOME (genuine preset resolution)."""
+    import akram_core.akramcode_yaml as yaml
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir(exist_ok=True)
     (home / "config.yaml").write_text(yaml.safe_dump({
         "moa": {"default_preset": "default", "presets": {"default": {
@@ -498,7 +498,7 @@ def _write_moa_home(tmp_path, monkeypatch):
             "aggregator": {"provider": "xai", "model": "grok-4.6"},
         }}},
     }))
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     return home
 
 

@@ -118,7 +118,7 @@ def _tz_issues(config):
 
 class TestTimezoneValidation:
     """An invalid ``timezone`` silently puts the agent clock and every cron
-    schedule on server-local time (akram_core.hermes_time._get_zoneinfo falls back with
+    schedule on server-local time (akram_core.akramcode_time._get_zoneinfo falls back with
     one log warning). validate_config_structure must report it (#111725)."""
 
     @pytest.mark.skipif(not _has_tz_database(), reason="no tz database in this interpreter")
@@ -126,7 +126,7 @@ class TestTimezoneValidation:
         [issue] = _tz_issues({"timezone": "Asia/Tokio", "model": {"provider": "nous"}})
         assert issue.severity == "error"
         assert "Asia/Tokio" in issue.message
-        assert "IANA" in issue.hint and "HERMES_TIMEZONE" in issue.hint
+        assert "IANA" in issue.hint and "AKRAMCODE_TIMEZONE" in issue.hint
         [issue] = _tz_issues({"timezone": 9, "model": {"provider": "nous"}})
         assert issue.severity == "error" and "string" in issue.message
 
@@ -148,7 +148,7 @@ class TestUnknownTopLevelKeys:
     """Arbitrary top-level keys must NOT warn — they are bridged to os.environ.
 
     Top-level scalars in config.yaml are forwarded into the environment
-    (gateway/run.py, hermes send) so users can feed skills and external apps
+    (gateway/run.py, akramcode send) so users can feed skills and external apps
     env-style keys like DISCORD_HOME_CHANNEL or MY_APP_TOKEN. A closed-world
     allowlist can never enumerate those, so no "Unknown top-level config key"
     warning may exist.
@@ -181,7 +181,7 @@ class TestQuotedContainerValues:
         })
         flagged = {i.message.split(" ", 1)[0]: i for i in issues if "quoted string" in i.message}
         assert set(flagged) == {"plugins.enabled", "model_catalog.excluded_providers"}
-        assert "hermes config set plugins.enabled '[\"a\",\"b\"]'" in flagged["plugins.enabled"].hint
+        assert "akramcode config set plugins.enabled '[\"a\",\"b\"]'" in flagged["plugins.enabled"].hint
 
     def test_string_typed_and_tolerant_slots_are_not_flagged(self):
         """`approvals.mode` is a string in the schema; `model: name` is the documented shorthand;

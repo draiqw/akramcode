@@ -102,12 +102,12 @@ def _clear_consent(store):
 
 def _add_package(store, package_id, period_day, *, exported=True, install_id=INSTALL_ID):
     payload = {
-        "schema_version": "hermes.shared_metrics.v2",
+        "schema_version": "akramcode.shared_metrics.v2",
         "package_id": package_id,
         "install_id": install_id,
         "period_start": f"{period_day}T00:00:00Z",
         "period_end": f"{period_day}T23:59:59Z",
-        "metrics": [{"name": "hermes.client.active", "type": "counter", "value": 1}],
+        "metrics": [{"name": "akramcode.client.active", "type": "counter", "value": 1}],
     }
     with store._connection() as connection:
         connection.execute(
@@ -466,7 +466,7 @@ class TestClaimingAndBounds:
         assert outcome.sent == MAX_PACKAGES_PER_PASS
 
     def test_two_concurrent_passes_do_not_double_send(self, store):
-        """Claiming is what stops two Hermes processes duplicating work.
+        """Claiming is what stops two AkramCode processes duplicating work.
 
         The second pass must RECORD what it saw rather than raise: _send_one
         catches every exception as a retryable transport failure, so an

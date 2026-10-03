@@ -26,5 +26,5 @@ def test_kept_skill_edits_have_an_actionable_update_report(tmp_path, monkeypatch
     _print_bundled_skills_sync_report()
     out = capsys.readouterr().out
     assert "1 user-modified (kept)" in out
-    assert "hermes skills list-modified" in out
+    assert "akramcode skills list-modified" in out
     assert user_skill.read_text(encoding="utf-8") == "My local instructions\n"

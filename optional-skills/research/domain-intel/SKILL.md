@@ -2,11 +2,11 @@
 name: domain-intel
 description: Passive recon of subdomains, SSL certs, WHOIS, and DNS.
 version: 1.0.0
-author: FurkanL0, Hermes Agent
+author: FurkanL0, AkramCode Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
+  akramcode:
     tags: [Domains, OSINT, DNS, Research]
     related_skills: []
 ---

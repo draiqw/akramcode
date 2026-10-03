@@ -1,9 +1,9 @@
-"""Persistent slash-command worker — one HermesCLI per TUI session.
+"""Persistent slash-command worker — one AkramCodeCLI per TUI session.
 
 Protocol: reads JSON lines from stdin {id, command}, writes {id, ok, output|error} to stdout.
 """
 
-# Stop a ``utils/`` (or ``proxy/``, ``ui/``) package in the launch directory from shadowing Hermes's own
+# Stop a ``utils/`` (or ``proxy/``, ``ui/``) package in the launch directory from shadowing AkramCode's own
 # top-level modules: this worker is spawned as ``-m tui_gateway.slash_worker`` with the user's CWD, so
 # ``import cli`` would otherwise resolve ``utils`` to a colliding local package and crash the child in a
 # retry loop. ``akram_core.akramcode_bootstrap`` lives at the repo root (no collision risk), so importing it first is safe.
@@ -25,14 +25,14 @@ import threading
 import time
 
 import cli as cli_mod
-from cli import HermesCLI
+from cli import AkramCodeCLI
 from tui_gateway._env import env_float
 from tui_gateway._stdin_recovery import handle_spurious_eof
 from rich.console import Console
 
 # Env-overridable so the integration test can drive sub-second timing.
-_WATCHDOG_POLL_S = max(0.05, env_float("HERMES_SLASH_WATCHDOG_POLL_S", 2.0))
-_ORPHAN_GRACE_S = max(0.0, env_float("HERMES_SLASH_WATCHDOG_GRACE_S", 5.0))
+_WATCHDOG_POLL_S = max(0.05, env_float("AKRAMCODE_SLASH_WATCHDOG_POLL_S", 2.0))
+_ORPHAN_GRACE_S = max(0.0, env_float("AKRAMCODE_SLASH_WATCHDOG_GRACE_S", 5.0))
 _in_flight = threading.Event()  # set while a command is executing
 logger = logging.getLogger(__name__)
 
@@ -43,8 +43,8 @@ def _is_orphaned(original_ppid, getppid=os.getppid) -> bool:
 
 
 def _prepare_slash_worker_runtime() -> None:
-    """Start bounded MCP discovery before HermesCLI snapshots tools: each slash_worker child is its
-    own process — the parent ``hermes serve`` discovery thread does not populate this registry.
+    """Start bounded MCP discovery before AkramCodeCLI snapshots tools: each slash_worker child is its
+    own process — the parent ``akramcode serve`` discovery thread does not populate this registry.
 
     See #61891.
     """
@@ -97,7 +97,7 @@ def _refuse_skill_slash(command: str) -> None:
         raise SkillSlashRefused(base)
 
 
-def _run(cli: HermesCLI, command: str) -> str:
+def _run(cli: AkramCodeCLI, command: str) -> str:
     """Run one command; return its captured, ANSI-stripped output.
 
     A command like /prompt or /blueprint parks the composed text on the one-shot
@@ -146,17 +146,17 @@ def main():
     p.add_argument("--model", default="")
     p.add_argument("--provider", default="")
     args = p.parse_args()
-    os.environ["HERMES_SESSION_KEY"] = args.session_key
-    os.environ["HERMES_INTERACTIVE"] = "1"
-    # Start before the (hundreds-of-ms) HermesCLI build — that window is itself an orphan risk if the
+    os.environ["AKRAMCODE_SESSION_KEY"] = args.session_key
+    os.environ["AKRAMCODE_INTERACTIVE"] = "1"
+    # Start before the (hundreds-of-ms) AkramCodeCLI build — that window is itself an orphan risk if the
     # gateway dies mid-spawn.
     _start_parent_death_watchdog(os.getppid())
     _prepare_slash_worker_runtime()
     with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
         # --provider pins the CLI to the parent agent's resolved provider (a MoA session's virtual
-        # "moa" provider included). Without it HermesCLI re-resolves from config and dispatches the
+        # "moa" provider included). Without it AkramCodeCLI re-resolves from config and dispatches the
         # MoA preset NAME to the configured real provider (#57283).
-        cli = HermesCLI(model=args.model or None, provider=args.provider or None,
+        cli = AkramCodeCLI(model=args.model or None, provider=args.provider or None,
                         compact=True, resume=args.session_key, verbose=False)
     cli._slash_metrics_surface = None  # the TUI/Desktop client already counted the typed command
     cli.is_slash_worker = True

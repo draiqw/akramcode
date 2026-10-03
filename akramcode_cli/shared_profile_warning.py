@@ -4,20 +4,20 @@ from __future__ import annotations
 from pathlib import Path
 
 from akramcode_cli.process_identity import install_id, ledger_entries
-from akramcode_constants import hermes_home_key
+from akramcode_constants import akramcode_home_key
 
 
 def shared_profile_warning(*, home: Path | None = None, project_root: Path | None = None) -> str:
     """An old stamp or a profile name alone cannot prove concurrent use."""
     own_install = install_id(project_root)
-    home_key = hermes_home_key(home)
+    home_key = akramcode_home_key(home)
     if any(
         entry.get("install") and entry["install"] != own_install
-        and entry.get("hermes_home") == home_key
+        and entry.get("akramcode_home") == home_key
         for entry in ledger_entries(all_installs=True, verified_only=True)
     ):
         return (
-            "Another Hermes installation is using this profile. Both installations share "
+            "Another AkramCode installation is using this profile. Both installations share "
             "its settings and data, so changes can conflict. You can continue, or close "
             "the other installation before making changes."
         )

@@ -21,7 +21,7 @@ def legacy_env(request, tmp_path, monkeypatch):
     home = tmp_path / "home"
     store = home / "tools"
     lock_path = tmp_path / "lock.json"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     monkeypatch.setattr(paths, "store_root", lambda: store)
     monkeypatch.setattr(paths, "lockfile_path", lambda: lock_path)
     target = pm.current_target()

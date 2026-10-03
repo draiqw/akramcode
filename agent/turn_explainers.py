@@ -137,7 +137,7 @@ class TurnExplainersMixin:
             if changed is not None:
                 changed.update(landed_paths)
             # Feed the checkpoint agent-write ledger so /rollback's safe mode can tell
-            # Hermes-authored content from later user hand-edits.
+            # AkramCode-authored content from later user hand-edits.
             mgr = getattr(self, "_checkpoint_mgr", None)
             if mgr is not None and getattr(mgr, "enabled", False):
                 from tools.file_tools_paths import container_backend_for_task
@@ -178,16 +178,16 @@ class TurnExplainersMixin:
         }
 
     def _file_mutation_verifier_enabled(self) -> bool:
-        """``display.file_mutation_verifier`` / ``HERMES_FILE_MUTATION_VERIFIER`` (a patchable seam)."""
+        """``display.file_mutation_verifier`` / ``AKRAMCODE_FILE_MUTATION_VERIFIER`` (a patchable seam)."""
         return _display_flag_enabled(
-            self, env_var="HERMES_FILE_MUTATION_VERIFIER", config_key="file_mutation_verifier",
+            self, env_var="AKRAMCODE_FILE_MUTATION_VERIFIER", config_key="file_mutation_verifier",
             cache_attr="_file_mutation_verifier_enabled_cache",
         )
 
     def _turn_completion_explainer_enabled(self) -> bool:
-        """``display.turn_completion_explainer`` / ``HERMES_TURN_COMPLETION_EXPLAINER``."""
+        """``display.turn_completion_explainer`` / ``AKRAMCODE_TURN_COMPLETION_EXPLAINER``."""
         return _display_flag_enabled(
-            self, env_var="HERMES_TURN_COMPLETION_EXPLAINER", config_key="turn_completion_explainer",
+            self, env_var="AKRAMCODE_TURN_COMPLETION_EXPLAINER", config_key="turn_completion_explainer",
             cache_attr="_turn_completion_explainer_enabled_cache",
         )
 
@@ -253,22 +253,22 @@ class TurnExplainersMixin:
         if key is not None:
             body = t(key, model=model or t("explainer.shared.the_model"))
         elif reason == "session_persistence_failed":
-            from akramcode_constants import display_hermes_home, profile_cli_selector
+            from akramcode_constants import display_akramcode_home, profile_cli_selector
             from akramcode_state.errors import STORAGE_RECOVERY_DOCS_URL
 
-            # Copy-pasteable, so pin every `hermes` command to the profile whose store failed:
+            # Copy-pasteable, so pin every `akramcode` command to the profile whose store failed:
             # a multi-profile backend (Desktop serve) hosts sessions whose state.db is NOT the
-            # process default, and a bare `hermes` follows active_profile (#105887).
+            # process default, and a bare `akramcode` follows active_profile (#105887).
             fill: Dict[str, str] = {
-                "home": display_hermes_home(), "profile_arg": profile_cli_selector(),
+                "home": display_akramcode_home(), "profile_arg": profile_cli_selector(),
                 "recovery_docs": STORAGE_RECOVERY_DOCS_URL, "db_path": "", "backups_dir": "",
             }
             if persistence_cause in ("corrupt", "fts_index"):
-                from akramcode_constants import get_default_hermes_root
+                from akramcode_constants import get_default_akramcode_root
                 from akramcode_state import _default_db_path
 
                 fill["db_path"] = str(db_path or _default_db_path())
-                fill["backups_dir"] = str(get_default_hermes_root() / "backups")
+                fill["backups_dir"] = str(get_default_akramcode_root() / "backups")
             body = t(_persistence_explanation_key(persistence_cause), **fill)
         else:
             body = None

@@ -204,7 +204,7 @@ class _TurnScopes:
 
     approval: Any = None
     session_tokens: list = dataclasses.field(default_factory=list)
-    home: Any = None  # per-turn HERMES_HOME override for a resumed remote profile
+    home: Any = None  # per-turn AKRAMCODE_HOME override for a resumed remote profile
     secret: Any = None
     terminal: Any = None
 
@@ -637,11 +637,11 @@ def _stage_first_contact_onboarding_note(session: dict, agent, history_empty: bo
     try:
         from agent.onboarding import first_contact_turn_note
         from akramcode_cli.config import load_config as _load_onboarding_config
-        from akramcode_constants import get_hermes_home
+        from akramcode_constants import get_akramcode_home
 
         note = first_contact_turn_note(
             _load_onboarding_config() or {},
-            get_hermes_home() / "config.yaml",
+            get_akramcode_home() / "config.yaml",
             session_history_empty=history_empty,
             install_has_prior_sessions=_install_has_prior_sessions(session),
         )
@@ -1035,7 +1035,7 @@ def _finish_turn(sid: str, session: dict, st: _TurnRun) -> None:
     history.clear()
     if isinstance(run_kwargs, dict):
         run_kwargs.clear()
-    try:  # while the profile HERMES_HOME override is still active (session's own config)
+    try:  # while the profile AKRAMCODE_HOME override is still active (session's own config)
         from akramcode_cli.mem_trim import trim_memory
         # The finishing session is still marked running here; every OTHER session must be idle (#58576).
         if _sessions_quiescent(exclude=sid):
@@ -1062,7 +1062,7 @@ def _finish_turn(sid: str, session: dict, st: _TurnRun) -> None:
             from tools.approval_context import reset_current_session_key
             reset_current_session_key(scopes.approval)
     if scopes.home is not None:
-        reset_hermes_home_override(scopes.home)
+        reset_akramcode_home_override(scopes.home)
     if scopes.secret is not None:
         reset_secret_scope(scopes.secret)
     if scopes.terminal is not None:

@@ -14,7 +14,7 @@ from akramcode_cli import main_platform_setup
 
 
 def _parse_slack_args(argv):
-    """Build the real `hermes slack` parser and parse argv against it."""
+    """Build the real `akramcode slack` parser and parse argv against it."""
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="command")
     build_slack_parser(subparsers, cmd_slack=lambda _args: 0)
@@ -96,7 +96,7 @@ class TestSlackManifestArgparse:
     def test_long_description_file_reports_tilde_expansion_errors(
         self, monkeypatch, capsys
     ):
-        source = "~hermes-user-that-does-not-exist-20260716/AGENTS.md"
+        source = "~akramcode-user-that-does-not-exist-20260716/AGENTS.md"
 
         def fail_expanduser(_path):
             raise RuntimeError("home directory unavailable")
@@ -115,7 +115,7 @@ class TestSlackManifestArgparse:
 
 
 class TestSlackFullManifest:
-    """Generated full Slack app manifest used by `hermes slack manifest`."""
+    """Generated full Slack app manifest used by `akramcode slack manifest`."""
 
 
 
@@ -123,7 +123,7 @@ class TestSlackFullManifest:
 
 
     def test_assistant_features_remain_enabled(self):
-        manifest = _build_full_manifest("Hermes", "Your Hermes agent on Slack")
+        manifest = _build_full_manifest("AkramCode", "Your AkramCode agent on Slack")
 
         assert "assistant_view" in manifest["features"]
         assert "agent_view" not in manifest["features"]
@@ -137,7 +137,7 @@ class TestSlackFullManifest:
     def test_no_assistant_preserves_core_surface(self):
         """Dropping assistant mode must NOT strip the regular messaging surface."""
         manifest = _build_full_manifest(
-            "Hermes", "Your Hermes agent on Slack", include_assistant=False
+            "AkramCode", "Your AkramCode agent on Slack", include_assistant=False
         )
 
         # Flat DM still needs the Messages tab writable.

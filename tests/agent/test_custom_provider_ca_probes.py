@@ -12,7 +12,7 @@ _BASE = "https://relay.example.invalid/v1"
 
 @pytest.fixture
 def clean_env(monkeypatch):
-    for key in ("HERMES_CA_BUNDLE", "REQUESTS_CA_BUNDLE", "SSL_CERT_FILE", "SSL_CERT_DIR", "CURL_CA_BUNDLE"):
+    for key in ("AKRAMCODE_CA_BUNDLE", "REQUESTS_CA_BUNDLE", "SSL_CERT_FILE", "SSL_CERT_DIR", "CURL_CA_BUNDLE"):
         monkeypatch.delenv(key, raising=False)
     return monkeypatch
 

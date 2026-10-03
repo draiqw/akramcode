@@ -1,4 +1,4 @@
-"""Host-platform checks for hermes doctor: interpreter, SQLite, certificates, macOS TCC, gateway supervision, command install.
+"""Host-platform checks for akramcode doctor: interpreter, SQLite, certificates, macOS TCC, gateway supervision, command install.
 Split out of ``akramcode_cli/doctor.py``, which re-exports every name so ``akramcode_cli.doctor.<name>`` keeps resolving (and monkeypatching)."""
 
 from __future__ import annotations
@@ -27,8 +27,8 @@ def _python_repair_hint() -> str:
         return recommended_update_command_for_method(method)
     if method in ("docker", "apt"):
         command = recommended_update_command_for_method(method)
-        return f"Run `{command}`" + (", then recreate the Hermes container" if method == "docker" else "")
-    return "Run `hermes pm repair`, then restart Hermes"
+        return f"Run `{command}`" + (", then recreate the AkramCode container" if method == "docker" else "")
+    return "Run `akramcode pm repair`, then restart AkramCode"
 
 
 def _system_package_install_cmd(pkg: str) -> str:
@@ -42,16 +42,16 @@ def _sqlite_upgrade_hint(install_method: str | None = None) -> str:
     method = install_method or detect_install_method(PROJECT_ROOT)
     cmd = recommended_update_command_for_method(method)
     action = cmd if is_nix_install_method(method) else {  # nix: prose guidance, not a shell command
-        "docker": f"run `{cmd}`, then recreate all Hermes containers", "apt": f"run `{cmd}`"}.get(method, "run `hermes update`")
+        "docker": f"run `{cmd}`, then recreate all AkramCode containers", "apt": f"run `{cmd}`"}.get(method, "run `akramcode update`")
     return f"({action}; fixed versions: 3.51.3+ / 3.50.7 / 3.44.6 — see https://sqlite.org/wal.html#walresetbug)"
 
 
-def _hermes_database_paths(hermes_home: Path) -> list[tuple[str, Path]]:
-    """(display name, path) pairs for Hermes-managed SQLite databases: backup.py's per-profile store list + per-board kanban.db."""
+def _akramcode_database_paths(akramcode_home: Path) -> list[tuple[str, Path]]:
+    """(display name, path) pairs for AkramCode-managed SQLite databases: backup.py's per-profile store list + per-board kanban.db."""
     from akramcode_cli.backup import _QUICK_STATE_FILES
-    entries = [(name, hermes_home / name) for name in _QUICK_STATE_FILES if name.endswith(".db")]
-    for board_db in sorted((hermes_home / "kanban" / "boards").glob("*/kanban.db")):
-        entries.append((str(board_db.relative_to(hermes_home)), board_db))
+    entries = [(name, akramcode_home / name) for name in _QUICK_STATE_FILES if name.endswith(".db")]
+    for board_db in sorted((akramcode_home / "kanban" / "boards").glob("*/kanban.db")):
+        entries.append((str(board_db.relative_to(akramcode_home)), board_db))
     return entries
 
 
@@ -120,19 +120,19 @@ def _report_database_holders(name: str, db_path: Path) -> None:
         check_info(f"{name}: no other process holds it right now — the offline conversion can run")
 
 
-def _report_database_journal_modes(hermes_home: Path | None = None, version_info: tuple[int, ...] | None = None) -> None:
+def _report_database_journal_modes(akramcode_home: Path | None = None, version_info: tuple[int, ...] | None = None) -> None:
     """List each database's journal mode; warn on WAL under a vulnerable SQLite, and on a configured
     ``database.journal_mode: delete`` that never took effect."""
-    from akramcode_cli.doctor import HERMES_HOME
+    from akramcode_cli.doctor import AKRAMCODE_HOME
     from akramcode_state.wal import (
         _path_on_cross_vm_fs, _wal_reset_repair_hint, is_sqlite_wal_reset_vulnerable, resolve_journal_mode,
     )
     vulnerable = is_sqlite_wal_reset_vulnerable(version_info)
     configured = resolve_journal_mode()
     try:
-        databases = _hermes_database_paths(hermes_home if hermes_home is not None else HERMES_HOME)
+        databases = _akramcode_database_paths(akramcode_home if akramcode_home is not None else AKRAMCODE_HOME)
     except Exception as exc:
-        check_warn(f"Could not list Hermes databases: {exc}")
+        check_warn(f"Could not list AkramCode databases: {exc}")
         return
     exposed = []
     for name, path in databases:
@@ -151,8 +151,8 @@ def _report_database_journal_modes(hermes_home: Path | None = None, version_info
             check_warn(f"{name} is in WAL mode ({size}) despite database.journal_mode=delete",
                        "(the setting never applied: an existing WAL database is never live-downgraded"
                        + ("; also exposed to the WAL-reset bug" if vulnerable else "")
-                       + ". Stop every Hermes process for this profile, then run "
-                       f"`hermes sessions set-journal-mode delete{'' if name == 'state.db' else f' --db {path}'}`)")
+                       + ". Stop every AkramCode process for this profile, then run "
+                       f"`akramcode sessions set-journal-mode delete{'' if name == 'state.db' else f' --db {path}'}`)")
             _report_database_holders(name, path)
         elif error is not None:
             if vulnerable:
@@ -166,8 +166,8 @@ def _report_database_journal_modes(hermes_home: Path | None = None, version_info
             if vulnerable:
                 exposed.append(name)
             check_warn(f"{name} is in WAL mode on a cross-VM filesystem (virtiofs/9p, {size})",
-                       "(WAL can silently corrupt across the VM boundary; stop every Hermes process and run "
-                       f"`hermes sessions set-journal-mode delete{'' if name == 'state.db' else f' --db {path}'}`, then "
+                       "(WAL can silently corrupt across the VM boundary; stop every AkramCode process and run "
+                       f"`akramcode sessions set-journal-mode delete{'' if name == 'state.db' else f' --db {path}'}`, then "
                        "set `database.journal_mode: delete` — or move the database onto a native/named volume)")
         elif mode == "wal" and vulnerable:
             exposed.append(name)
@@ -191,7 +191,7 @@ def _check_s6_supervision(issues: list[str]) -> None:
         return
     _section("s6 Supervision")
     mgr = S6ServiceManager()
-    for static in ("main-hermes", "dashboard"):  # s6-rc symlinks under /run/service/, same s6-svstat probe
+    for static in ("main-akramcode", "dashboard"):  # s6-rc symlinks under /run/service/, same s6-svstat probe
         up = mgr.is_running(static)
         (check_ok if up else check_info)(f"{static}: up" if up else f"{static}: down (expected if not enabled via env)")
     _report_host_gateway_slot(mgr, issues)
@@ -206,10 +206,10 @@ def _report_host_gateway_slot(mgr, issues: list[str]) -> None:
     topology = host_gateway_topology()
     if topology is None:
         if not slots:
-            return check_info("No gateway registered yet — run `hermes gateway install`")
+            return check_info("No gateway registered yet — run `akramcode gateway install`")
         up = [p for p in slots if mgr.is_running(f"gateway-{p}")]
         issues.append("No host gateway owns the gateway role — start the ONE host multiplexer: "
-                      "hermes --profile default gateway start")
+                      "akramcode --profile default gateway start")
         return check_warn(f"No host gateway owns the gateway role ({len(up)}/{len(slots)} supervision "
                           f"slots up: {', '.join(slots)})", "(nothing is serving these profiles)")
     check_ok(f"Host gateway: {topology.describe()}")
@@ -218,7 +218,7 @@ def _report_host_gateway_slot(mgr, issues: list[str]) -> None:
         check_warn(f"LEGACY per-profile gateway slots still supervised: {', '.join(legacy_up)}",
                    "(multiplex-only: the host gateway already serves every profile from one process)")
         issues.append("Fold the legacy per-profile gateways into the host gateway: "
-                      "hermes --profile default gateway migrate --multiplex")
+                      "akramcode --profile default gateway migrate --multiplex")
 
 
 def check_certificates(should_fix: bool = False, issues: "list | None" = None) -> None:
@@ -282,11 +282,11 @@ def _check_gateway_service_linger(issues: list[str]) -> None:
 
 _TCC_CDHASH_DETAIL = (
     "the desktop bundle's designated requirement is cdhash-pinned (pre-#73681 build) — rebuilds invalidate "
-    "all permission grants. Run `hermes update` to get the stable identifier-pinned signing identity, "
+    "all permission grants. Run `akramcode update` to get the stable identifier-pinned signing identity, "
     "then re-grant permissions once.")
 _TCC_STABLE_DETAIL = {
     True: "(certificate-anchored DR; grants survive rebuilds)",
-    False: "(identifier-pinned DR; grants survive rebuilds — for the strongest anchor, see `hermes desktop --setup-tcc-identity`)",
+    False: "(identifier-pinned DR; grants survive rebuilds — for the strongest anchor, see `akramcode desktop --setup-tcc-identity`)",
 }
 
 
@@ -311,18 +311,18 @@ def check_macos_tcc_grants() -> None:
     # --setup-tcc-identity or notarized build (certificate-anchored) is the strongest anchor.
     check_ok("macOS TCC signing identity is stable", _TCC_STABLE_DETAIL["certificate" in dr.lower()])
     check_info("If macOS still re-prompts for permissions (toggle shows ON): the stored grant is stale — run "
-               "`tccutil reset ScreenCapture com.nousresearch.hermes` (repeat per affected service), toggle it ON in "
-               "System Settings, then fully quit & relaunch Hermes once.")
+               "`tccutil reset ScreenCapture com.nousresearch.akramcode` (repeat per affected service), toggle it ON in "
+               "System Settings, then fully quit & relaunch AkramCode once.")
 
 
 def _desktop_app_bundle() -> Path | None:
-    """Locate the locally-built desktop bundle (``apps/desktop/release/mac-<arch>/Hermes.app``), newest first.
+    """Locate the locally-built desktop bundle (``apps/desktop/release/mac-<arch>/AkramCode.app``), newest first.
 
-    The only layout whose ad-hoc re-signed bundle can invalidate TCC grants. ``/Applications/Hermes.app`` is
-    deliberately not probed: it is the separately-signed, certificate-anchored Hermes-Setup launcher.
+    The only layout whose ad-hoc re-signed bundle can invalidate TCC grants. ``/Applications/AkramCode.app`` is
+    deliberately not probed: it is the separately-signed, certificate-anchored AkramCode-Setup launcher.
     """
     release_dir = Path(__file__).resolve().parents[1] / "apps" / "desktop" / "release"
-    candidates = [p for p in release_dir.glob("mac*/Hermes.app") if p.is_dir()]
+    candidates = [p for p in release_dir.glob("mac*/AkramCode.app") if p.is_dir()]
     return max(candidates, key=lambda p: p.stat().st_mtime) if candidates else None
 
 
@@ -372,12 +372,12 @@ def check_macos_full_disk_access() -> None:
     try:
         os.listdir(Path.home() / "Library" / "Application Support" / "com.apple.TCC")
     except PermissionError:
-        check_info("One switch silences all macOS folder prompts: grant your terminal app Full Disk Access and Hermes "
+        check_info("One switch silences all macOS folder prompts: grant your terminal app Full Disk Access and AkramCode "
                    "will never trip per-folder dialogs (Desktop/Downloads/Documents/...) again. Open: System Settings → "
                    "Privacy & Security → Full Disk Access — or run:\n"
                    "      open \"x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles\"\n"
-                   "    then enable your terminal (and Hermes.app if you use Desktop), and restart them once. "
-                   "With Hermes' stable signing identities the grant survives every update.")
+                   "    then enable your terminal (and AkramCode.app if you use Desktop), and restart them once. "
+                   "With AkramCode' stable signing identities the grant survives every update.")
     except OSError:
         pass  # missing dir / other error: indeterminate, stay silent
     else:
@@ -396,7 +396,7 @@ def _check_security_advisories(should_fix: bool, f: Finding) -> None:
         # Fail row + remediation text indented under it as one section; also into the summary action list.
         _fail_and_issue(f"{hit.advisory.title}", f"({hit.package}=={hit.installed_version})",
                         f"Resolve security advisory {hit.advisory.id}: uninstall {hit.package}=={hit.installed_version} "
-                        f"and rotate credentials, then run `hermes doctor --ack {hit.advisory.id}`.", f.manual_issues)
+                        f"and rotate credentials, then run `akramcode doctor --ack {hit.advisory.id}`.", f.manual_issues)
         for line in full_remediation_text(hit):
             print(f"    {color(line, Colors.YELLOW)}" if line else "")
     acked_ids = get_acked_ids()  # acked-but-still-installed stays visible
@@ -441,7 +441,7 @@ def _check_python_environment(should_fix: bool, f: Finding) -> None:
         import sqlite3
         from akramcode_state.wal import is_sqlite_wal_reset_vulnerable, sqlite_source_id
         src = sqlite_source_id()
-        # Warn-only: Hermes already refuses WAL on fresh DBs and runtime repair is best-effort.
+        # Warn-only: AkramCode already refuses WAL on fresh DBs and runtime repair is best-effort.
         check_bool(not is_sqlite_wal_reset_vulnerable(), f"SQLite {sqlite3.sqlite_version}",
                    (f"SQLite {sqlite3.sqlite_version} (WAL-reset bug)", _sqlite_upgrade_hint()))
         if src:
@@ -512,7 +512,7 @@ def _check_windows_gateway_autostart(should_fix: bool, f: Finding) -> None:
     if not should_fix:
         for path in redundant:
             check_warn("Redundant gateway login item", f"({path})")
-        f.issues.append("Remove duplicate Windows gateway autostart entries: hermes doctor --fix")
+        f.issues.append("Remove duplicate Windows gateway autostart entries: akramcode doctor --fix")
         return
     done, warnings = gateway_windows.reconcile_autostart_launchers()
     for message in done:
@@ -530,7 +530,7 @@ def _check_web_dashboard_import(should_fix: bool, f: Finding) -> None:
     """Import the dashboard web surface in a subprocess so an import-time crash lands in the report.
 
     When starlette is updated past the fastapi pinned beside it (the CVE starlette pin ships in
-    several extras on its own), ``hermes dashboard`` dies constructing ``FastAPI(...)`` with a
+    several extras on its own), ``akramcode dashboard`` dies constructing ``FastAPI(...)`` with a
     TypeError — not an ImportError — so the module's own lazy-install fallback never fires and the
     process exits before a single log line. Importing in a subprocess keeps a dead web surface
     from taking the doctor down with it; lazy installs stay off so the probe never mutates the
@@ -538,7 +538,7 @@ def _check_web_dashboard_import(should_fix: bool, f: Finding) -> None:
     """
     from akramcode_cli.doctor import PROJECT_ROOT
 
-    env = dict(os.environ, HERMES_DISABLE_LAZY_INSTALLS="1")
+    env = dict(os.environ, AKRAMCODE_DISABLE_LAZY_INSTALLS="1")
     try:
         proc = subprocess.run(
             [sys.executable, "-c", "import akramcode_cli.web_server"],
@@ -554,7 +554,7 @@ def _check_web_dashboard_import(should_fix: bool, f: Finding) -> None:
         _fail_and_issue(
             "Dashboard web surface",
             "(import probe timed out)",
-            "Repair the dashboard dependencies: `hermes pm repair`, then restart Hermes",
+            "Repair the dashboard dependencies: `akramcode pm repair`, then restart AkramCode",
             f.issues,
         )
         return
@@ -571,7 +571,7 @@ def _check_web_dashboard_import(should_fix: bool, f: Finding) -> None:
     _fail_and_issue(
         "Dashboard web surface",
         detail,
-        "Repair the dashboard dependencies: `hermes pm repair`, then restart Hermes",
+        "Repair the dashboard dependencies: `akramcode pm repair`, then restart AkramCode",
         f.issues,
     )
 
@@ -594,11 +594,11 @@ def _check_command_installation(should_fix: bool, f: Finding) -> None:
 
     method = detect_install_method(PROJECT_ROOT)
     if is_nix_install_method(method) or method in ("docker", "apt"):
-        command = shutil.which("hermes")
+        command = shutil.which("akramcode")
         if command:
-            check_ok(f"Hermes command managed by {method} ({command})")
+            check_ok(f"AkramCode command managed by {method} ({command})")
         else:
-            check_warn(f"Hermes command not on PATH ({method}-managed)")
+            check_warn(f"AkramCode command not on PATH ({method}-managed)")
             f.manual_issues.append(_python_repair_hint())
         return
     from akramcode_cli._launchers import resolve_store_python
@@ -610,47 +610,47 @@ def _check_command_installation(should_fix: bool, f: Finding) -> None:
         check_fail("Cannot resolve selected dependencies", str(exc))
         return f.manual_issues.append(_python_repair_hint())
     pm_launcher = selected != base_venv(PROJECT_ROOT) or resolve_store_python(PROJECT_ROOT) is not None
-    venv_bin = PROJECT_ROOT / "hermes" if pm_launcher else selected / "bin" / "hermes"
+    venv_bin = PROJECT_ROOT / "akramcode" if pm_launcher else selected / "bin" / "akramcode"
     if not venv_bin.is_file():
-        check_warn("Hermes entry point not found", f"({venv_bin})")
-        return f.manual_issues.append("Repair or reinstall the Hermes launcher through the installation owner")
-    check_ok(f"Hermes entry point exists ({venv_bin})")
+        check_warn("AkramCode entry point not found", f"({venv_bin})")
+        return f.manual_issues.append("Repair or reinstall the AkramCode launcher through the installation owner")
+    check_ok(f"AkramCode entry point exists ({venv_bin})")
     # Expected command link directory (mirrors install.sh logic).
     prefix = os.environ.get("PREFIX", "")
     termux = prefix and (os.environ.get("TERMUX_VERSION") or "com.termux/files/usr" in prefix)
     link_dir, display = (Path(prefix) / "bin", "$PREFIX/bin") if termux else (Path.home() / ".local" / "bin", "~/.local/bin")
-    link = link_dir / "hermes"
+    link = link_dir / "akramcode"
     if link.is_symlink():
         target, expected = link.resolve(), venv_bin.resolve()
         if target == expected:
-            return check_ok(f"{display}/hermes → correct target")
-        check_warn(f"{display}/hermes points to wrong target", f"(→ {target}, expected → {expected})")
-        owned_targets = {(PROJECT_ROOT / name / "bin" / "hermes").resolve() for name in ("venv", ".venv")}
+            return check_ok(f"{display}/akramcode → correct target")
+        check_warn(f"{display}/akramcode points to wrong target", f"(→ {target}, expected → {expected})")
+        owned_targets = {(PROJECT_ROOT / name / "bin" / "akramcode").resolve() for name in ("venv", ".venv")}
         if target not in owned_targets:
-            return f.manual_issues.append(f"Review {display}/hermes manually; its target is user-managed and was not changed")
+            return f.manual_issues.append(f"Review {display}/akramcode manually; its target is user-managed and was not changed")
         if not should_fix:
-            return f.issues.append(f"Broken symlink at {display}/hermes — run 'hermes doctor --fix'")
+            return f.issues.append(f"Broken symlink at {display}/akramcode — run 'akramcode doctor --fix'")
         verb = "Fixed"
     elif link.exists():  # regular file (wrapper script), not a symlink
-        return check_ok(f"{display}/hermes exists (non-symlink)")
+        return check_ok(f"{display}/akramcode exists (non-symlink)")
     else:
-        check_fail(f"{display}/hermes not found", "(hermes command may not work outside the venv)")
+        check_fail(f"{display}/akramcode not found", "(akramcode command may not work outside the venv)")
         if not should_fix:
-            return f.issues.append(f"Missing {display}/hermes symlink — run 'hermes doctor --fix'")
+            return f.issues.append(f"Missing {display}/akramcode symlink — run 'akramcode doctor --fix'")
         link_dir.mkdir(parents=True, exist_ok=True)
         verb = "Created"
     if pm_launcher:
         from akramcode_cli._launchers import stage_launcher
 
-        if stage_launcher("hermes", PROJECT_ROOT, link_dir) is None:
-            check_fail("Could not publish Hermes launcher")
-            return f.manual_issues.append("Repair the PM store interpreter through the installation owner, then rerun 'hermes doctor --fix'")
-        check_ok(f"{verb} PM launcher: {display}/hermes")
+        if stage_launcher("akramcode", PROJECT_ROOT, link_dir) is None:
+            check_fail("Could not publish AkramCode launcher")
+            return f.manual_issues.append("Repair the PM store interpreter through the installation owner, then rerun 'akramcode doctor --fix'")
+        check_ok(f"{verb} PM launcher: {display}/akramcode")
     else:
         if link.is_symlink():
             link.unlink()
         link.symlink_to(venv_bin)
-        check_ok(f"{verb} symlink: {display}/hermes → {venv_bin}")
+        check_ok(f"{verb} symlink: {display}/akramcode → {venv_bin}")
     f.fixed += 1
     if verb == "Created" and str(link_dir) not in os.environ.get("PATH", "").split(os.pathsep):
         check_warn(f"{display} is not on your PATH", "(add it to your shell config: export PATH=\"$HOME/.local/bin:$PATH\")")

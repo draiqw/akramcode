@@ -1,6 +1,6 @@
-"""hermes-memory-store — holographic memory plugin (MemoryProvider): structured fact storage with entity
+"""akramcode-memory-store — holographic memory plugin (MemoryProvider): structured fact storage with entity
 resolution, trust scoring, and HRR-based compositional retrieval. Original plugin by dusterbloom (PR #2351).
-Config in $HERMES_HOME/config.yaml under plugins.hermes-memory-store: db_path ($HERMES_HOME/memory_store.db),
+Config in $AKRAMCODE_HOME/config.yaml under plugins.akramcode-memory-store: db_path ($AKRAMCODE_HOME/memory_store.db),
 auto_extract (false), default_trust (0.5), min_trust_threshold (0.3), temporal_decay_half_life (0),
 hrr_dim (1024), hrr_weight (0.3)."""
 
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 # Expanded by initialize() against the profile that opens it. A concrete path is copied by a profile clone
 # and outlives a rename, so it keeps naming the old profile's DB.
-_DEFAULT_DB_PATH = "$HERMES_HOME/memory_store.db"
+_DEFAULT_DB_PATH = "$AKRAMCODE_HOME/memory_store.db"
 
 
 FACT_STORE_SCHEMA = {
@@ -81,7 +81,7 @@ _EXTRACT_CATEGORIES = (
 def _load_plugin_config() -> dict:
     try:
         from akramcode_cli.config import load_config_readonly  # canonical: managed-scope overlay + ${VAR} expansion
-        return cfg_get(load_config_readonly(), "plugins", "hermes-memory-store", default={}) or {}
+        return cfg_get(load_config_readonly(), "plugins", "akramcode-memory-store", default={}) or {}
     except Exception:
         return {}
 
@@ -115,18 +115,18 @@ class HolographicMemoryProvider(MemoryProvider):
     def is_available(self) -> bool:
         return True  # SQLite is always available, numpy is optional
 
-    def save_config(self, values, hermes_home):
-        """Write config to config.yaml under plugins.hermes-memory-store."""
+    def save_config(self, values, akramcode_home):
+        """Write config to config.yaml under plugins.akramcode-memory-store."""
         # The canonical writer: config lock, managed-mode refusal, default stripping, atomic replace.
-        # ``merge_existing`` keeps every other section; *hermes_home* is the active profile already.
+        # ``merge_existing`` keeps every other section; *akramcode_home* is the active profile already.
         from akramcode_cli.config import save_config
         values = dict(values)
         # This profile's own DB spelled out (older setups wrote it; the dashboard form re-submits what it
         # read) pins every clone and rename of the profile to this file, so it is stored as the placeholder.
         db_path = values.get("db_path")
-        if isinstance(db_path, str) and Path(db_path).expanduser() == Path(hermes_home) / "memory_store.db":
+        if isinstance(db_path, str) and Path(db_path).expanduser() == Path(akramcode_home) / "memory_store.db":
             values["db_path"] = _DEFAULT_DB_PATH
-        save_config({"plugins": {"hermes-memory-store": values}}, merge_existing=True)
+        save_config({"plugins": {"akramcode-memory-store": values}}, merge_existing=True)
 
     def get_config_schema(self):
         return [
@@ -137,11 +137,11 @@ class HolographicMemoryProvider(MemoryProvider):
         ]
 
     def initialize(self, session_id: str, **kwargs) -> None:
-        from hermes_constants import get_hermes_home
-        _hermes_home = str(get_hermes_home())
-        db_path = self._config.get("db_path", _hermes_home + "/memory_store.db")
-        if isinstance(db_path, str):  # expand $HERMES_HOME so paths resolve to the active profile
-            db_path = db_path.replace("$HERMES_HOME", _hermes_home).replace("${HERMES_HOME}", _hermes_home)
+        from akramcode_constants import get_akramcode_home
+        _akramcode_home = str(get_akramcode_home())
+        db_path = self._config.get("db_path", _akramcode_home + "/memory_store.db")
+        if isinstance(db_path, str):  # expand $AKRAMCODE_HOME so paths resolve to the active profile
+            db_path = db_path.replace("$AKRAMCODE_HOME", _akramcode_home).replace("${AKRAMCODE_HOME}", _akramcode_home)
         hrr_dim = int(self._config.get("hrr_dim", 1024))
         self._store = MemoryStore(db_path=db_path, default_trust=float(self._config.get("default_trust", 0.5)), hrr_dim=hrr_dim)
         self._retriever = FactRetriever(store=self._store, hrr_dim=hrr_dim, hrr_weight=float(self._config.get("hrr_weight", 0.3)),

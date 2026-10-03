@@ -63,13 +63,13 @@ def _is_oauth_pool_payload(entry: Any) -> bool:
 
 
 def _is_pkce_row(row: Dict[str, Any]) -> bool:
-    return str(row.get("source") or "").endswith("hermes_pkce")
+    return str(row.get("source") or "").endswith("akramcode_pkce")
 
 
 def strip_cloned_single_use_oauth_grants(profile_dir: Path) -> Dict[str, Any]:
     """Remove forked single-use OAuth grants from a freshly cloned profile.
 
-    Called after any path that copies credential files between profiles (``hermes profile create
+    Called after any path that copies credential files between profiles (``akramcode profile create
     --clone-all``, the dashboard/TUI ``mirror_credentials`` flow). API-key pool rows are kept — a
     static key is safe to duplicate. Returns ``{"pool": [...provider ids], "providers": [...],
     "files": [...]}`` of what was stripped. Never raises: a clone must not fail because hygiene
@@ -94,8 +94,8 @@ def strip_cloned_single_use_oauth_grants(profile_dir: Path) -> Dict[str, Any]:
     # a samefile() OSError as "two stores", which here would fail OPEN — so resolve identity
     # positively: same path, or samefile() says so; any error refuses.
     try:
-        from akramcode_constants import get_default_hermes_root
-        root_auth_path = get_default_hermes_root() / "auth.json"
+        from akramcode_constants import get_default_akramcode_root
+        root_auth_path = get_default_akramcode_root() / "auth.json"
         if _same_path(auth_path, root_auth_path) or (
             root_auth_path.exists() and auth_path.samefile(root_auth_path)
         ):
@@ -155,7 +155,7 @@ _oauth_heal_notices: List[str] = []
 _oauth_heal_clean_marks: Dict[str, Tuple[Any, ...]] = {}
 
 # Filename for the ON-DISK twin of ``_oauth_heal_clean_marks``. The in-memory mark only silences
-# the heal for the life of ONE process, so every fresh `hermes` invocation and every new worker
+# the heal for the life of ONE process, so every fresh `akramcode` invocation and every new worker
 # re-pays the heal's two nested EXCLUSIVE auth-store locks just to discover there is nothing to
 # consolidate. Behind a sibling holding those locks that costs a full AUTH_LOCK_TIMEOUT_SECONDS
 # per provider (measured: 30s for two providers on an otherwise-idle machine) before the process
@@ -225,8 +225,8 @@ def _persist_oauth_heal_clean_mark(provider_id: str, fingerprint: tuple) -> None
         if marks.get(provider_id) == new_mark:
             return  # already recorded; skip the rewrite
         marks[provider_id] = new_mark
-        from akramcode_constants import mkdir_under_hermes_home
-        mkdir_under_hermes_home(path.parent)
+        from akramcode_constants import mkdir_under_akramcode_home
+        mkdir_under_akramcode_home(path.parent)
         # 0o600 like the MCP schema cache: this names credential-store paths.
         atomic_json_write(path, marks, mode=0o600)
     except Exception:
@@ -243,7 +243,7 @@ def _mark_oauth_heal_clean(provider_id: str, fingerprint: tuple) -> None:
 def consume_oauth_heal_notices() -> List[str]:
     """Return (and clear) human-readable notes about heals run in this process.
 
-    ``hermes auth list`` / ``hermes auth status`` print them so the user sees the consolidation.
+    ``akramcode auth list`` / ``akramcode auth status`` print them so the user sees the consolidation.
     """
     from akramcode_cli.auth import _oauth_heal_notices
     notes = list(_oauth_heal_notices)
@@ -348,7 +348,7 @@ def heal_forked_single_use_oauth_grants(provider_id: str) -> Optional[Dict[str, 
     LINEAGE with a root row (same pool id or shared token material), keeps the
     freshest rotation, writes it into ROOT when root's is older, and strips the profile's copy so
     the profile borrows root from then on. Idempotent; never touches API-key rows; never deletes a
-    row with no root counterpart (an independent ``hermes -p <p> auth add`` grant, or the only
+    row with no root counterpart (an independent ``akramcode -p <p> auth add`` grant, or the only
     surviving copy); reads only the two auth.json files the root fallback already reads. Returns
     ``{"adopted", "stripped_ids", "files", "providers_block"}`` when something healed, else None.
     Never raises.
@@ -468,7 +468,7 @@ class _HealPass:
                 self.lineage_proven = True
                 self._adopt_root_row(match_idx, row)
             # No root pool counterpart. Root's grant may live only in its .anthropic_oauth.json
-            # (the ``hermes auth`` PKCE shape); a profile hermes_pkce-family row is its copy.
+            # (the ``akramcode auth`` PKCE shape); a profile akramcode_pkce-family row is its copy.
             elif _is_pkce_row(row) and self.root_singleton_row is not None and not self.r_oauth:
                 self._adopt_root_singleton(row)
             else:
@@ -524,7 +524,7 @@ class _HealPass:
             logger.debug("could not remove %s", profile_singleton, exc_info=True)
 
     def sync_root_singleton_with_pkce_row(self) -> None:
-        """Keep root's singleton and its ``hermes_pkce``-seeded pool row in step.
+        """Keep root's singleton and its ``akramcode_pkce``-seeded pool row in step.
 
         Root's next load_pool() re-seeds that row FROM the singleton file, so a stale file would
         resurrect the spent pair (and a stale row would be overwritten by a fresh file).
@@ -535,7 +535,7 @@ class _HealPass:
             return
         pkce_idx = next(
             (i for i, r in enumerate(self.r_rows)
-             if _is_oauth_pool_payload(r) and r.get("source") == "hermes_pkce"), None)
+             if _is_oauth_pool_payload(r) and r.get("source") == "akramcode_pkce"), None)
         if pkce_idx is None:
             return
         pkce_row = self.r_rows[pkce_idx]
@@ -576,9 +576,9 @@ def _heal_forked_single_use_oauth_grants(provider_id: str) -> Optional[Dict[str,
         return None  # classic mode: nothing to consolidate into
     if os.environ.get("PYTEST_CURRENT_TEST"):
         # Same seat belt as the write-through paths: never touch the real user's
-        # ~/.hermes/auth.json from a test that forgot to isolate HOME.
+        # ~/.akramcode/auth.json from a test that forgot to isolate HOME.
         real_home_env = os.environ.get("HOME", "")
-        if real_home_env and _same_path(root_path, Path(real_home_env) / ".hermes" / "auth.json"):
+        if real_home_env and _same_path(root_path, Path(real_home_env) / ".akramcode" / "auth.json"):
             return None
     profile_path = _auth_file_path()
     profile_home = profile_path.parent
@@ -646,8 +646,8 @@ def _heal_forked_single_use_oauth_grants(provider_id: str) -> Optional[Dict[str,
                 _save_auth_store(root_store, target_path=root_path)
             singleton_row = run.root_singleton_row
             if summary["adopted"] and root_singleton is not None and singleton_row is not None:
-                from agent.anthropic_credentials import _write_hermes_oauth_credentials
-                _write_hermes_oauth_credentials(
+                from agent.anthropic_credentials import _write_akramcode_oauth_credentials
+                _write_akramcode_oauth_credentials(
                     singleton_row.get("access_token") or "", singleton_row.get("refresh_token"),
                     singleton_row.get("expires_at_ms"), target=root_singleton)
             if run.profile_changed and profile_path.exists():

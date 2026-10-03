@@ -83,7 +83,7 @@ def _foreign_acquire(key: str):
 
 
 def _registry() -> list[dict]:
-    path = os.path.join(os.environ["HERMES_HOME"], "runtime", "active_sessions.json")
+    path = os.path.join(os.environ["AKRAMCODE_HOME"], "runtime", "active_sessions.json")
     with open(path, "r", encoding="utf-8") as fh:
         return json.load(fh).get("entries", [])
 
@@ -100,7 +100,7 @@ def isolated_env(monkeypatch, tmp_path):
     """Real _build_server_session → _init_session → _run_prompt_submit → _admit_prompt_turn pipeline,
     with the environment-heavy side paths neutralized. The turn BODY is cut right after admission
     (``_prepare_turn_input`` → None), so the lease path under test runs REAL against the
-    conftest-sandboxed HERMES_HOME registry while nothing calls a provider."""
+    conftest-sandboxed AKRAMCODE_HOME registry while nothing calls a provider."""
     agent = _stub_agent(["a ", "b "])
     monkeypatch.setattr(server, "_make_agent", lambda *a, **kw: agent)
     monkeypatch.setattr(server, "_wire_callbacks", lambda sid: None)
@@ -166,7 +166,7 @@ def test_isolated_turn_without_matching_vouch_still_fails_closed(isolated_env):
             "s1", active_session_lease={"lease_id": parent.lease_id, "session_id": "stale-A"}))
         errors = [f["message"]["params"]["payload"]["message"] for f in frames
                   if f["type"] == "rpc" and (f["message"].get("params") or {}).get("type") == "error"]
-        assert errors and "open in another Hermes window" in errors[0]
+        assert errors and "open in another AkramCode window" in errors[0]
         assert [e["lease_id"] for e in _registry()] == [parent.lease_id]
     finally:
         parent.release()

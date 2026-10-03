@@ -2,11 +2,11 @@
 name: youtube-content
 description: "YouTube transcripts to summaries, threads, blogs."
 version: 1.0.0
-author: Teknium (teknium1), Hermes Agent
+author: Teknium (teknium1), AkramCode Agent
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
-  hermes:
+  akramcode:
     tags: [YouTube, Video, Transcripts, Media]
     related_skills: []
 ---
@@ -21,12 +21,12 @@ Extract transcripts from YouTube videos and convert them into useful formats.
 
 ## Setup
 
-Use `terminal` with the Python from a PM-prepared Hermes source checkout. The
+Use `terminal` with the Python from a PM-prepared AkramCode source checkout. The
 `youtube` extra declares the helper's dependency; do not install packages into
-Hermes with raw pip or project-discovering `uv run`.
+AkramCode with raw pip or project-discovering `uv run`.
 
 From that checkout, first follow the isolated development-home setup in
-[Package Management](https://hermes-agent.nousresearch.com/docs/reference/package-management#developer-workflow),
+[Package Management](https://akramcode-agent.nousresearch.com/docs/reference/package-management#developer-workflow),
 then prepare the extra and reactivate before running the helper:
 
 ```bash

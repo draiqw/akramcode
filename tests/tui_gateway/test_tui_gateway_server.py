@@ -13,7 +13,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+from akramcode_constants import reset_akramcode_home_override, set_akramcode_home_override
 from akramcode_cli.active_sessions import active_session_registry_snapshot
 from akramcode_cli.browser_connect import ChromeDebugLaunch
 from tools import async_delegation as ad
@@ -94,10 +94,10 @@ def _reap_leaked_notification_pollers():
 
 
 def test_session_slot_is_claimed_on_first_turn_not_on_create(monkeypatch, tmp_path):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
     (home / "config.yaml").write_text("max_concurrent_sessions: 1\n", encoding="utf-8")
-    token = set_hermes_home_override(home)
+    token = set_akramcode_home_override(home)
 
     def _clear_server_sessions():
         for session in list(server._sessions.values()):
@@ -142,7 +142,7 @@ def test_session_slot_is_claimed_on_first_turn_not_on_create(monkeypatch, tmp_pa
         server._cfg_cache = None
         server._cfg_sig = None
         server._cfg_path = None
-        reset_hermes_home_override(token)
+        reset_akramcode_home_override(token)
 
 
 def test_session_context_uses_session_cwd(monkeypatch, tmp_path):
@@ -765,7 +765,7 @@ def test_session_context_explicit_cwd_for_ephemeral_task(monkeypatch, tmp_path):
 
 
 def _write_profile_cfg(home: Path, cwd: str | None) -> Path:
-    import akram_core.hermes_yaml as yaml
+    import akram_core.akramcode_yaml as yaml
 
     home.mkdir(parents=True, exist_ok=True)
     cfg = {"terminal": {"cwd": cwd}} if cwd is not None else {}
@@ -774,9 +774,9 @@ def _write_profile_cfg(home: Path, cwd: str | None) -> Path:
 
 
 def test_profile_scoped_mcp_discovery_uses_target_home(monkeypatch, tmp_path):
-    """MCP discovery must start under the selected profile's HERMES_HOME."""
+    """MCP discovery must start under the selected profile's AKRAMCODE_HOME."""
     from akramcode_cli import mcp_startup
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
     from tui_gateway import entry
 
     profile_home = tmp_path / "profiles" / "sheepyr"
@@ -789,8 +789,8 @@ def test_profile_scoped_mcp_discovery_uses_target_home(monkeypatch, tmp_path):
         encoding="utf-8",
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "default"))
-    token = set_hermes_home_override(str(profile_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "default"))
+    token = set_akramcode_home_override(str(profile_home))
 
     seen = []
 
@@ -802,7 +802,7 @@ def test_profile_scoped_mcp_discovery_uses_target_home(monkeypatch, tmp_path):
     monkeypatch.setattr(
         mcp_startup,
         "_discover_mcp_tools_without_interactive_oauth",
-        lambda: seen.append(str(get_hermes_home())),
+        lambda: seen.append(str(get_akramcode_home())),
     )
 
     try:
@@ -811,7 +811,7 @@ def test_profile_scoped_mcp_discovery_uses_target_home(monkeypatch, tmp_path):
         assert thread is not None
         thread.join(timeout=2)
     finally:
-        reset_hermes_home_override(token)
+        reset_akramcode_home_override(token)
 
     assert seen == [str(profile_home)]
 
@@ -823,12 +823,12 @@ def test_profile_scoped_agent_build_starts_mcp_discovery_in_profile_home(
     import threading
     import uuid
 
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
 
     profile_home = tmp_path / "profiles" / "sheepyr"
     profile_home.mkdir(parents=True)
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "default"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "default"))
 
     seen = []
     built = threading.Event()
@@ -841,7 +841,7 @@ def test_profile_scoped_agent_build_starts_mcp_discovery_in_profile_home(
     )
     monkeypatch.setattr(
         "tui_gateway.entry.ensure_mcp_discovery_started",
-        lambda: seen.append(str(get_hermes_home())),
+        lambda: seen.append(str(get_akramcode_home())),
     )
     monkeypatch.setattr(server, "_wire_callbacks", lambda _sid: None)
     monkeypatch.setattr(server, "_SlashWorker", lambda *args: None)
@@ -891,7 +891,7 @@ def test_profile_scoped_agent_build_installs_secret_scope(monkeypatch, tmp_path)
         "PROXMOX_TOKEN=grace-secret\n", encoding="utf-8"
     )
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "default"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "default"))
 
     scopes = []
     built = threading.Event()
@@ -964,7 +964,7 @@ def test_completion_cwd_prefers_profile_over_stale_env(monkeypatch, tmp_path):
     stale.mkdir()
 
     monkeypatch.setenv("TERMINAL_CWD", str(stale))
-    monkeypatch.setattr(server, "_hermes_home", tmp_path / "launch-home")
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path / "launch-home")
     monkeypatch.setattr(server, "_profile_home", lambda name: home if name else None)
 
     assert server._completion_cwd({"profile": "ef-design"}) == str(profile_b)
@@ -983,12 +983,12 @@ def test_completion_cwd_prefers_launch_config_over_stale_env(monkeypatch, tmp_pa
     """
     configured = tmp_path / "omni"
     configured.mkdir()
-    stale = tmp_path / "hermes-agent"
+    stale = tmp_path / "akramcode-agent"
     stale.mkdir()
     launch_home = _write_profile_cfg(tmp_path / "launch-home", str(configured))
 
     monkeypatch.setenv("TERMINAL_CWD", str(stale))
-    monkeypatch.setattr(server, "_hermes_home", launch_home)
+    monkeypatch.setattr(server, "_akramcode_home", launch_home)
     monkeypatch.setattr(server, "_profile_home", lambda _name: None)
 
     assert server._completion_cwd({}) == str(configured)
@@ -1005,7 +1005,7 @@ def test_default_session_cwd_prefers_launch_config(monkeypatch, tmp_path):
     launch_home = _write_profile_cfg(tmp_path / "launch-home", str(configured))
 
     monkeypatch.setenv("TERMINAL_CWD", str(stale))
-    monkeypatch.setattr(server, "_hermes_home", launch_home)
+    monkeypatch.setattr(server, "_akramcode_home", launch_home)
 
     assert server._default_session_cwd() == str(configured)
 
@@ -1727,12 +1727,12 @@ def test_voice_toggle_returns_configured_record_key(monkeypatch):
             check_voice_requirements=lambda: {"available": True, "details": ""}
         ),
     )
-    # ``voice.toggle`` action=on mutates ``os.environ["HERMES_VOICE"]``
+    # ``voice.toggle`` action=on mutates ``os.environ["AKRAMCODE_VOICE"]``
     # directly (CLI parity, runtime-only flag). Take monkeypatch
     # ownership of the var so the change is reverted at teardown and
     # later tests don't inherit a stale ON state (Copilot round-5
     # review on #19835).
-    monkeypatch.setenv("HERMES_VOICE", "0")
+    monkeypatch.setenv("AKRAMCODE_VOICE", "0")
 
     on_resp = _dispatch_sync(
         {"id": "voice-on", "method": "voice.toggle", "params": {"action": "on"}}
@@ -1821,7 +1821,7 @@ def test_voice_record_start_handles_non_dict_voice_cfg(monkeypatch):
             start_continuous=fake_start_continuous, stop_continuous=lambda: None
         ),
     )
-    monkeypatch.setenv("HERMES_VOICE", "1")
+    monkeypatch.setenv("AKRAMCODE_VOICE", "1")
 
     for bad in (True, "cmd+b", None, 42, ["ctrl+b"], {"silence_threshold": "loud"}):
         captured.clear()
@@ -1901,8 +1901,8 @@ def test_prompt_submit_typed_stop_phrase_ends_voice_chat(monkeypatch):
         ),
     )
     monkeypatch.setattr(server, "_tts_stream_stop", lambda user_barge=False: None)
-    monkeypatch.setenv("HERMES_VOICE", "1")
-    monkeypatch.setenv("HERMES_VOICE_TTS", "1")
+    monkeypatch.setenv("AKRAMCODE_VOICE", "1")
+    monkeypatch.setenv("AKRAMCODE_VOICE_TTS", "1")
 
     resp = server.dispatch(
         {
@@ -1913,8 +1913,8 @@ def test_prompt_submit_typed_stop_phrase_ends_voice_chat(monkeypatch):
     )
 
     assert resp["result"] == {"voice_stopped": True}
-    assert os.environ["HERMES_VOICE"] == "0"
-    assert os.environ["HERMES_VOICE_TTS"] == "0"
+    assert os.environ["AKRAMCODE_VOICE"] == "0"
+    assert os.environ["AKRAMCODE_VOICE_TTS"] == "0"
     assert calls["stop_continuous"] == 1
     assert ("voice.transcript", {"stop_phrase": True, "typed": True}) in emitted
 
@@ -1931,7 +1931,7 @@ def test_prompt_submit_typed_stop_passes_through_when_voice_off(monkeypatch):
             )
         ),
     )
-    monkeypatch.setenv("HERMES_VOICE", "0")
+    monkeypatch.setenv("AKRAMCODE_VOICE", "0")
 
     resp = server.dispatch(
         {
@@ -1988,13 +1988,13 @@ def test_wake_owner_is_sticky_and_routes_detection_to_first_transport(monkeypatc
 
     monkeypatch.setattr(wake_word, "load_wake_word_config", lambda: {
         "enabled": True,
-        "phrase": "hey hermes",
+        "phrase": "hey akramcode",
         "surface": "auto",
         "start_new_session": True,
     })
     monkeypatch.setattr(wake_word, "check_wake_word_requirements", lambda _cfg: {
         "available": True,
-        "phrase": "hey hermes",
+        "phrase": "hey akramcode",
         "provider": "test",
         "hint": "",
     })
@@ -2020,7 +2020,7 @@ def test_wake_owner_is_sticky_and_routes_detection_to_first_transport(monkeypatc
             stop_continuous=lambda **_kwargs: None,
         ),
     )
-    monkeypatch.setenv("HERMES_VOICE", "1")
+    monkeypatch.setenv("AKRAMCODE_VOICE", "1")
 
     first = types.SimpleNamespace(_closed=False)
     second = types.SimpleNamespace(_closed=False)
@@ -2076,7 +2076,7 @@ def test_wake_owner_is_sticky_and_routes_detection_to_first_transport(monkeypatc
         assert emitted == [(
             "wake.detected",
             "first-session",
-            {"phrase": "hey hermes", "profile": None, "start_new_session": True},
+            {"phrase": "hey akramcode", "profile": None, "start_new_session": True},
             first,
         )]
         assert state["paused"] is True
@@ -2113,7 +2113,7 @@ def test_wake_owner_is_sticky_and_routes_detection_to_first_transport(monkeypatc
         assert emitted[-1] == (
             "wake.detected",
             "second-session",
-            {"phrase": "hey hermes", "profile": None, "start_new_session": True},
+            {"phrase": "hey akramcode", "profile": None, "start_new_session": True},
             second,
         )
 
@@ -2136,7 +2136,7 @@ def test_wake_toggle_persists_enabled_flag_only_on_explicit_gesture(monkeypatch)
     """The ear toggle / /wake on|off write wake_word.enabled; auto-arm never does."""
     from tools import wake_word
 
-    config = {"enabled": False, "phrase": "hey hermes", "surface": "auto",
+    config = {"enabled": False, "phrase": "hey akramcode", "surface": "auto",
               "start_new_session": True}
     persisted = []
 
@@ -2149,7 +2149,7 @@ def test_wake_toggle_persists_enabled_flag_only_on_explicit_gesture(monkeypatch)
     monkeypatch.setattr(wake_word, "load_wake_word_config", lambda: dict(config))
     monkeypatch.setattr(wake_word, "check_wake_word_requirements", lambda _cfg: {
         "available": True,
-        "phrase": "hey hermes",
+        "phrase": "hey akramcode",
         "provider": "test",
         "hint": "",
     })
@@ -2236,7 +2236,7 @@ def test_voice_record_start_forwards_max_recording_seconds(monkeypatch):
             start_continuous=fake_start_continuous, stop_continuous=lambda: None
         ),
     )
-    monkeypatch.setenv("HERMES_VOICE", "1")
+    monkeypatch.setenv("AKRAMCODE_VOICE", "1")
 
     for cfg, expected in (
         ({"max_recording_seconds": 45}, 45),        # explicit cap forwarded as-is
@@ -2291,7 +2291,7 @@ def test_voice_record_start_cuts_inflight_tts(monkeypatch):
     monkeypatch.setattr(
         server, "_tts_stream_stop", lambda user_barge=True: tts_calls.append(user_barge)
     )
-    monkeypatch.setenv("HERMES_VOICE", "1")
+    monkeypatch.setenv("AKRAMCODE_VOICE", "1")
 
     resp = _dispatch_sync(
         {
@@ -2365,7 +2365,7 @@ def test_voice_record_start_reports_busy_when_stop_is_in_progress(monkeypatch):
             stop_continuous=lambda **_kwargs: None,
         ),
     )
-    monkeypatch.setenv("HERMES_VOICE", "1")
+    monkeypatch.setenv("AKRAMCODE_VOICE", "1")
     monkeypatch.setattr(server, "_load_cfg", lambda: {"voice": {}})
 
     resp = _dispatch_sync(
@@ -2400,11 +2400,11 @@ def test_voice_toggle_tts_branch_also_carries_record_key(monkeypatch):
             check_voice_requirements=lambda: {"available": True, "details": ""}
         ),
     )
-    monkeypatch.setenv("HERMES_VOICE", "1")
-    # setenv (not delenv) — the handler writes HERMES_VOICE_TTS directly, and
+    monkeypatch.setenv("AKRAMCODE_VOICE", "1")
+    # setenv (not delenv) — the handler writes AKRAMCODE_VOICE_TTS directly, and
     # delenv on an absent var registers no teardown, leaking TTS=1 into every
     # later test in the file (which now spins up the streaming TTS pipeline).
-    monkeypatch.setenv("HERMES_VOICE_TTS", "0")
+    monkeypatch.setenv("AKRAMCODE_VOICE_TTS", "0")
 
     tts_resp = _dispatch_sync(
         {"id": "voice-tts", "method": "voice.toggle", "params": {"action": "tts"}}
@@ -2415,13 +2415,13 @@ def test_voice_toggle_tts_branch_also_carries_record_key(monkeypatch):
 
 
 def test_load_enabled_toolsets_prefers_tui_env(monkeypatch):
-    monkeypatch.setenv("HERMES_TUI_TOOLSETS", "web, terminal, ,memory")
+    monkeypatch.setenv("AKRAMCODE_TUI_TOOLSETS", "web, terminal, ,memory")
 
     assert server._load_enabled_toolsets() == ["web", "terminal", "memory"]
 
 
 def test_load_enabled_toolsets_filters_invalid_tui_env(monkeypatch, capsys):
-    monkeypatch.setenv("HERMES_TUI_TOOLSETS", "web, nope")
+    monkeypatch.setenv("AKRAMCODE_TUI_TOOLSETS", "web, nope")
     monkeypatch.setitem(
         sys.modules,
         "akramcode_cli.plugins",
@@ -2433,7 +2433,7 @@ def test_load_enabled_toolsets_filters_invalid_tui_env(monkeypatch, capsys):
 
 
 def test_load_enabled_toolsets_accepts_plugin_env_after_discovery(monkeypatch):
-    monkeypatch.setenv("HERMES_TUI_TOOLSETS", "plugin_demo")
+    monkeypatch.setenv("AKRAMCODE_TUI_TOOLSETS", "plugin_demo")
 
     import toolsets
 
@@ -2459,7 +2459,7 @@ def test_load_enabled_toolsets_folds_project_into_focus_posture(monkeypatch):
     # Focus-mode coding posture returns before the config fallback, but it's
     # still a GUI-only resolver — `project` must come along so the desktop keeps
     # the project tools while sitting in a repo.
-    monkeypatch.delenv("HERMES_TUI_TOOLSETS", raising=False)
+    monkeypatch.delenv("AKRAMCODE_TUI_TOOLSETS", raising=False)
 
     import agent.coding_context as cc
 
@@ -2470,7 +2470,7 @@ def test_load_enabled_toolsets_folds_project_into_focus_posture(monkeypatch):
 
 def test_load_enabled_toolsets_honors_disabled_project_on_focus_path(monkeypatch):
     """#54433: focus/coding posture must not re-add `project` when disabled."""
-    monkeypatch.delenv("HERMES_TUI_TOOLSETS", raising=False)
+    monkeypatch.delenv("AKRAMCODE_TUI_TOOLSETS", raising=False)
 
     import agent.coding_context as cc
 
@@ -2486,7 +2486,7 @@ def test_load_enabled_toolsets_honors_disabled_project_on_configured_fallback(
     monkeypatch,
 ):
     """#54433: configured/fallback path must not re-add disabled `project`."""
-    monkeypatch.delenv("HERMES_TUI_TOOLSETS", raising=False)
+    monkeypatch.delenv("AKRAMCODE_TUI_TOOLSETS", raising=False)
 
     import agent.coding_context as cc
     import akramcode_cli.tools_config as tools_config_mod
@@ -2523,7 +2523,7 @@ def test_with_session_toolsets_keeps_desktop_ui_when_project_disabled(monkeypatc
 
 
 def test_load_enabled_toolsets_rejects_disabled_mcp_env(monkeypatch, capsys):
-    monkeypatch.setenv("HERMES_TUI_TOOLSETS", "mcp-off")
+    monkeypatch.setenv("AKRAMCODE_TUI_TOOLSETS", "mcp-off")
     monkeypatch.setitem(
         sys.modules,
         "akramcode_cli.plugins",
@@ -2558,7 +2558,7 @@ def test_load_enabled_toolsets_rejects_disabled_mcp_env(monkeypatch, capsys):
 
 
 def test_load_enabled_toolsets_falls_back_when_tui_env_invalid(monkeypatch, capsys):
-    monkeypatch.setenv("HERMES_TUI_TOOLSETS", "nope")
+    monkeypatch.setenv("AKRAMCODE_TUI_TOOLSETS", "nope")
     monkeypatch.setitem(
         sys.modules,
         "akramcode_cli.plugins",
@@ -2582,7 +2582,7 @@ def test_load_enabled_toolsets_falls_back_when_tui_env_invalid(monkeypatch, caps
 
 
 def test_load_enabled_toolsets_warns_when_config_fallback_fails(monkeypatch, capsys):
-    monkeypatch.setenv("HERMES_TUI_TOOLSETS", "nope")
+    monkeypatch.setenv("AKRAMCODE_TUI_TOOLSETS", "nope")
     monkeypatch.setitem(
         sys.modules,
         "akramcode_cli.plugins",
@@ -2600,7 +2600,7 @@ def test_load_enabled_toolsets_warns_when_config_fallback_fails(monkeypatch, cap
 
 
 def test_load_enabled_toolsets_honors_builtin_env_if_config_fails(monkeypatch):
-    monkeypatch.setenv("HERMES_TUI_TOOLSETS", "web")
+    monkeypatch.setenv("AKRAMCODE_TUI_TOOLSETS", "web")
 
     import akramcode_cli.config as config_mod
 
@@ -2612,7 +2612,7 @@ def test_load_enabled_toolsets_honors_builtin_env_if_config_fails(monkeypatch):
 
 
 def test_load_enabled_toolsets_all_env_means_all(monkeypatch):
-    monkeypatch.setenv("HERMES_TUI_TOOLSETS", "all")
+    monkeypatch.setenv("AKRAMCODE_TUI_TOOLSETS", "all")
 
     assert server._load_enabled_toolsets() is None
 
@@ -2647,7 +2647,7 @@ def test_load_disabled_toolsets_none_when_unset_or_config_fails(monkeypatch):
 
 
 def test_load_enabled_toolsets_reports_disabled_mcp_separately(monkeypatch, capsys):
-    monkeypatch.setenv("HERMES_TUI_TOOLSETS", "web,mcp-off,nope")
+    monkeypatch.setenv("AKRAMCODE_TUI_TOOLSETS", "web,mcp-off,nope")
     monkeypatch.setitem(
         sys.modules,
         "akramcode_cli.plugins",
@@ -2714,7 +2714,7 @@ def test_history_to_messages_types_the_failed_turn_boundary_for_resume():
         {"role": "user", "content": "b"},
         {"role": "assistant", "content": PARTIAL_FAILED_TURN_NOTICE},  # legacy untyped row
         {"role": "user", "content": "c"},
-        {"role": "assistant", "content": f"Quoting Hermes: {FAILED_TURN_NOTICE}"},  # a real reply
+        {"role": "assistant", "content": f"Quoting AkramCode: {FAILED_TURN_NOTICE}"},  # a real reply
     ]
 
     assert [m.get("display_kind") for m in server._history_to_messages(history)] == [
@@ -3103,17 +3103,17 @@ def _two_repo_project_skill_sessions(tmp_path, monkeypatch) -> tuple[Path, Path]
     def repo(name: str, skill: str) -> Path:
         r = tmp_path / name
         (r / ".git").mkdir(parents=True)
-        (r / ".hermes" / "skills" / skill).mkdir(parents=True)
-        (r / ".hermes" / "skills" / skill / "SKILL.md").write_text(
+        (r / ".akramcode" / "skills" / skill).mkdir(parents=True)
+        (r / ".akramcode" / "skills" / skill / "SKILL.md").write_text(
             f"---\nname: {skill}\ndescription: from {name}\n---\n\n# {skill}\n\nBODY OF {skill.upper()}\n")
         return r
 
     repo_a, repo_b = repo("proj-a", "alpha-skill"), repo("proj-b", "beta-skill")
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "akramcode-home"
     (home / "skills").mkdir(parents=True)
     (home / "config.yaml").write_text(
         f"skills:\n  external_dirs: []\n  trusted_project_dirs: ['{repo_a}', '{repo_b}']\n")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     monkeypatch.setattr(skills_tool, "SKILLS_DIR", home / "skills")
     monkeypatch.setattr(skill_utils, "_skills_cfg", lambda: {
         "external_dirs": [], "trusted_project_dirs": [str(repo_a), str(repo_b)]})
@@ -3162,7 +3162,7 @@ def test_command_dispatch_reviews_staged_skill_writes(tmp_path, monkeypatch):
     home = tmp_path / "home"
     home.mkdir()
     (home / "config.yaml").write_text("skills:\n  write_approval: true\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     rec = wa.stage_write(
         wa.SKILLS,
         {"action": "create", "name": "demo-review",
@@ -3200,7 +3200,7 @@ def test_command_dispatch_skills_gate_off_answers_instead_of_refusing(tmp_path, 
     home = tmp_path / "home"
     home.mkdir()
     (home / "config.yaml").write_text("skills:\n  write_approval: false\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     server._sessions["sid-wa"] = _session(profile_home=str(home))
     try:
         res = server._methods["command.dispatch"](
@@ -3219,7 +3219,7 @@ def test_command_dispatch_memory_pending_reviews_staged_writes(tmp_path, monkeyp
     home = tmp_path / "home"
     home.mkdir()
     (home / "config.yaml").write_text("memory:\n  write_approval: true\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     wa.stage_write(wa.MEMORY, {"action": "add", "target": "memory", "content": "dispatched fact"},
                    summary="add dispatched fact", origin="foreground")
     server._sessions["sid-wa"] = _session(profile_home=str(home))
@@ -4306,20 +4306,20 @@ def test_status_callback_accepts_single_message_argument():
 
 
 def test_resolve_model_uses_inference_model_env(monkeypatch):
-    monkeypatch.delenv("HERMES_MODEL", raising=False)
-    monkeypatch.setenv("HERMES_INFERENCE_MODEL", " anthropic/claude-sonnet-4.6\n")
+    monkeypatch.delenv("AKRAMCODE_MODEL", raising=False)
+    monkeypatch.setenv("AKRAMCODE_INFERENCE_MODEL", " anthropic/claude-sonnet-4.6\n")
 
     assert server._resolve_model() == "anthropic/claude-sonnet-4.6"
 
 
 def test_resolve_model_strips_config_model(monkeypatch):
-    monkeypatch.delenv("HERMES_MODEL", raising=False)
-    monkeypatch.delenv("HERMES_INFERENCE_MODEL", raising=False)
+    monkeypatch.delenv("AKRAMCODE_MODEL", raising=False)
+    monkeypatch.delenv("AKRAMCODE_INFERENCE_MODEL", raising=False)
     monkeypatch.setattr(
-        server, "_load_cfg", lambda: {"model": {"default": " nous/hermes-test "}}
+        server, "_load_cfg", lambda: {"model": {"default": " nous/akramcode-test "}}
     )
 
-    assert server._resolve_model() == "nous/hermes-test"
+    assert server._resolve_model() == "nous/akramcode-test"
 
 
 def _sync_test_session(**extra):
@@ -4332,8 +4332,8 @@ def _sync_test_session(**extra):
 
 
 def _patch_config_model(monkeypatch, model, provider=""):
-    monkeypatch.delenv("HERMES_MODEL", raising=False)
-    monkeypatch.delenv("HERMES_INFERENCE_MODEL", raising=False)
+    monkeypatch.delenv("AKRAMCODE_MODEL", raising=False)
+    monkeypatch.delenv("AKRAMCODE_INFERENCE_MODEL", raising=False)
     cfg_model = {"default": model}
     if provider:
         cfg_model["provider"] = provider
@@ -4462,10 +4462,10 @@ def test_config_sync_failure_emits_error_once_per_edit(monkeypatch):
 
 
 def test_config_sync_config_wins_over_env_seed(monkeypatch):
-    # Hosted instances set HERMES_INFERENCE_MODEL as a provision-time seed;
+    # Hosted instances set AKRAMCODE_INFERENCE_MODEL as a provision-time seed;
     # the per-turn sync must follow config.yaml edits, not stay pinned to it.
-    monkeypatch.setenv("HERMES_INFERENCE_MODEL", "seed/model")
-    monkeypatch.delenv("HERMES_MODEL", raising=False)
+    monkeypatch.setenv("AKRAMCODE_INFERENCE_MODEL", "seed/model")
+    monkeypatch.delenv("AKRAMCODE_MODEL", raising=False)
     monkeypatch.setattr(server, "_load_cfg", lambda: {"model": {"default": "new/model"}})
     session = _sync_test_session(config_model_seen=("seed/model", ""))
     calls = []
@@ -4482,14 +4482,14 @@ def test_config_sync_config_wins_over_env_seed(monkeypatch):
 
 
 def test_config_sync_ignores_env_seed_without_config_model(monkeypatch):
-    # `hermes --tui -m <model>` sets HERMES_MODEL/HERMES_INFERENCE_MODEL as a
+    # `akramcode --tui -m <model>` sets AKRAMCODE_MODEL/AKRAMCODE_INFERENCE_MODEL as a
     # launch-scoped seed. When config.yaml has NO model.default (typical
     # custom-provider-only setup), the sync must NOT adopt the env seed as a
     # config target — doing so replayed the -m flag as a /model switch and
     # (with persist_switch_by_default=True) wrote it into config.yaml
     # permanently.
-    monkeypatch.setenv("HERMES_MODEL", "one-shot/model")
-    monkeypatch.setenv("HERMES_INFERENCE_MODEL", "one-shot/model")
+    monkeypatch.setenv("AKRAMCODE_MODEL", "one-shot/model")
+    monkeypatch.setenv("AKRAMCODE_INFERENCE_MODEL", "one-shot/model")
     monkeypatch.setattr(
         server, "_load_cfg", lambda: {"model": {"provider": "custom:mylocal"}}
     )
@@ -4548,29 +4548,29 @@ def test_apply_model_switch_persist_override_false_never_persists(monkeypatch):
 
 
 def test_startup_runtime_uses_tui_provider_env(monkeypatch):
-    monkeypatch.setenv("HERMES_MODEL", "nous/hermes-test")
-    monkeypatch.setenv("HERMES_TUI_PROVIDER", "nous")
-    monkeypatch.delenv("HERMES_INFERENCE_PROVIDER", raising=False)
+    monkeypatch.setenv("AKRAMCODE_MODEL", "nous/akramcode-test")
+    monkeypatch.setenv("AKRAMCODE_TUI_PROVIDER", "nous")
+    monkeypatch.delenv("AKRAMCODE_INFERENCE_PROVIDER", raising=False)
 
-    assert server._resolve_startup_runtime() == ("nous/hermes-test", "nous")
+    assert server._resolve_startup_runtime() == ("nous/akramcode-test", "nous")
 
 
 def test_startup_runtime_does_not_treat_inference_provider_as_explicit(monkeypatch):
-    monkeypatch.setenv("HERMES_MODEL", "nous/hermes-test")
-    monkeypatch.delenv("HERMES_TUI_PROVIDER", raising=False)
-    monkeypatch.setenv("HERMES_INFERENCE_PROVIDER", "nous")
+    monkeypatch.setenv("AKRAMCODE_MODEL", "nous/akramcode-test")
+    monkeypatch.delenv("AKRAMCODE_TUI_PROVIDER", raising=False)
+    monkeypatch.setenv("AKRAMCODE_INFERENCE_PROVIDER", "nous")
     monkeypatch.setattr(
         "akramcode_cli.models.detect_static_provider_for_model",
         lambda model, provider: None,
     )
 
-    assert server._resolve_startup_runtime() == ("nous/hermes-test", None)
+    assert server._resolve_startup_runtime() == ("nous/akramcode-test", None)
 
 
 
 
 def test_load_fallback_model_merges_chain_providers_first(monkeypatch):
-    # Parity with HermesCLI / gateway: fallback_providers stays first and keeps
+    # Parity with AkramCodeCLI / gateway: fallback_providers stays first and keeps
     # its order, with any distinct legacy fallback_model entry merged in after
     # (deduped on provider/model/base_url).
     fallback_chain = [
@@ -4603,11 +4603,11 @@ def test_make_agent_passes_configured_fallback_chain(monkeypatch):
         captured.update(kwargs)
         return types.SimpleNamespace(model=kwargs.get("model"))
 
-    monkeypatch.delenv("HERMES_MODEL", raising=False)
-    monkeypatch.delenv("HERMES_INFERENCE_MODEL", raising=False)
-    monkeypatch.delenv("HERMES_TUI_PROVIDER", raising=False)
-    monkeypatch.delenv("HERMES_DESKTOP", raising=False)
-    monkeypatch.delenv("HERMES_DESKTOP_TERMINAL", raising=False)
+    monkeypatch.delenv("AKRAMCODE_MODEL", raising=False)
+    monkeypatch.delenv("AKRAMCODE_INFERENCE_MODEL", raising=False)
+    monkeypatch.delenv("AKRAMCODE_TUI_PROVIDER", raising=False)
+    monkeypatch.delenv("AKRAMCODE_DESKTOP", raising=False)
+    monkeypatch.delenv("AKRAMCODE_DESKTOP_TERMINAL", raising=False)
     monkeypatch.setattr(
         server,
         "_load_cfg",
@@ -4639,7 +4639,7 @@ def test_make_agent_passes_configured_fallback_chain(monkeypatch):
 
 def test_make_agent_forwards_agent_disabled_toolsets(monkeypatch):
     """``agent.disabled_toolsets`` must reach AIAgent in gateway sessions too: only the AIAgent
-    filter strips a toolset out of composite defaults (``hermes-cli``), which the gateway's
+    filter strips a toolset out of composite defaults (``akramcode-cli``), which the gateway's
     enabled-list resolver can't reach into (#44499)."""
     captured = _capture_make_agent_kwargs(monkeypatch)
     monkeypatch.setattr(server, "_load_enabled_toolsets", lambda *_a, **_kw: ["file"])
@@ -4875,9 +4875,9 @@ def test_background_agent_kwargs_falls_back_to_config_disabled_toolsets(monkeypa
 
 
 def test_startup_runtime_resolves_short_alias_without_network(monkeypatch):
-    monkeypatch.setenv("HERMES_MODEL", "sonnet")
-    monkeypatch.delenv("HERMES_TUI_PROVIDER", raising=False)
-    monkeypatch.delenv("HERMES_INFERENCE_PROVIDER", raising=False)
+    monkeypatch.setenv("AKRAMCODE_MODEL", "sonnet")
+    monkeypatch.delenv("AKRAMCODE_TUI_PROVIDER", raising=False)
+    monkeypatch.delenv("AKRAMCODE_INFERENCE_PROVIDER", raising=False)
     monkeypatch.setattr(server, "_load_cfg", lambda: {"model": {"provider": "auto"}})
     monkeypatch.setattr(
         "akramcode_cli.models.fetch_openrouter_models",
@@ -4893,9 +4893,9 @@ def test_startup_runtime_resolves_short_alias_without_network(monkeypatch):
 
 
 def test_startup_runtime_does_not_call_network_detector(monkeypatch):
-    monkeypatch.setenv("HERMES_MODEL", "sonnet")
-    monkeypatch.delenv("HERMES_TUI_PROVIDER", raising=False)
-    monkeypatch.delenv("HERMES_INFERENCE_PROVIDER", raising=False)
+    monkeypatch.setenv("AKRAMCODE_MODEL", "sonnet")
+    monkeypatch.delenv("AKRAMCODE_TUI_PROVIDER", raising=False)
+    monkeypatch.delenv("AKRAMCODE_INFERENCE_PROVIDER", raising=False)
     monkeypatch.setattr(server, "_load_cfg", lambda: {"model": {"provider": "auto"}})
     monkeypatch.setattr(
         "akramcode_cli.models.detect_provider_for_model",
@@ -8332,8 +8332,8 @@ def test_ensure_session_db_row_persists_explicit_cwd(monkeypatch, tmp_path):
 
     monkeypatch.setattr(server, "_get_db", lambda: _FakeDB())
     monkeypatch.setattr(server, "_resolve_model", lambda: "test-model")
-    monkeypatch.delenv("HERMES_DESKTOP", raising=False)
-    monkeypatch.delenv("HERMES_DESKTOP_TERMINAL", raising=False)
+    monkeypatch.delenv("AKRAMCODE_DESKTOP", raising=False)
+    monkeypatch.delenv("AKRAMCODE_DESKTOP_TERMINAL", raising=False)
 
     server._ensure_session_db_row({"session_key": "k1", "cwd": str(tmp_path), "explicit_cwd": True})
 
@@ -8364,7 +8364,7 @@ def test_ensure_session_db_row_persists_session_source(monkeypatch):
 def test_ensure_session_db_row_records_a_terminal_workspace(monkeypatch, tmp_path):
     """A terminal session's directory IS its workspace, so the row records it.
 
-    The user cd'd there before running hermes. Leaving it null stranded the row
+    The user cd'd there before running akramcode. Leaving it null stranded the row
     with no cwd and no git_repo_root, so the sidebar could never place the
     session under its project.
     """
@@ -8378,8 +8378,8 @@ def test_ensure_session_db_row_records_a_terminal_workspace(monkeypatch, tmp_pat
 
     monkeypatch.setattr(server, "_get_db", lambda: _FakeDB())
     monkeypatch.setattr(server, "_resolve_model", lambda: "test-model")
-    monkeypatch.delenv("HERMES_DESKTOP", raising=False)
-    monkeypatch.delenv("HERMES_DESKTOP_TERMINAL", raising=False)
+    monkeypatch.delenv("AKRAMCODE_DESKTOP", raising=False)
+    monkeypatch.delenv("AKRAMCODE_DESKTOP_TERMINAL", raising=False)
 
     server._ensure_session_db_row({"session_key": "k1", "cwd": str(tmp_path)})
 
@@ -8834,8 +8834,8 @@ def test_config_set_yolo_toggles_session_scope():
 
 def test_config_set_yolo_stale_session_id_is_refused_not_process_scoped(monkeypatch):
     """A runtime id the backend no longer holds must answer 4001 so the client resumes, not flip
-    the process HERMES_YOLO_MODE that every child spawned afterwards inherits."""
-    monkeypatch.setenv("HERMES_YOLO_MODE", "0")  # setenv, not delenv: undo must also drop a leaked "1"
+    the process AKRAMCODE_YOLO_MODE that every child spawned afterwards inherits."""
+    monkeypatch.setenv("AKRAMCODE_YOLO_MODE", "0")  # setenv, not delenv: undo must also drop a leaked "1"
 
     with patch.dict(server._sessions, {}, clear=True):
         resp = server.handle_request(
@@ -8847,16 +8847,16 @@ def test_config_set_yolo_stale_session_id_is_refused_not_process_scoped(monkeypa
         )
 
     assert resp.get("error", {}).get("code") == 4001, resp
-    assert os.environ["HERMES_YOLO_MODE"] == "0"
+    assert os.environ["AKRAMCODE_YOLO_MODE"] == "0"
 
 
 def test_config_set_yolo_global_scope_writes_approvals_mode(tmp_path, monkeypatch):
     """Shift+click the desktop zap -> scope="global" flips persistent approvals.mode."""
-    import akram_core.hermes_yaml as yaml
+    import akram_core.akramcode_yaml as yaml
 
     cfg_path = tmp_path / "config.yaml"
     cfg_path.write_text(yaml.safe_dump({"approvals": {"mode": "manual"}}), encoding="utf-8")
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
 
     resp_on = server.handle_request(
         {
@@ -8883,13 +8883,13 @@ def test_config_set_yolo_global_scope_writes_approvals_mode(tmp_path, monkeypatc
 def test_config_get_approval_mode_uses_smart_default_when_key_is_missing(
     tmp_path, monkeypatch
 ):
-    import akram_core.hermes_yaml as yaml
+    import akram_core.akramcode_yaml as yaml
 
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
-    # Point the canonical resolver (load_config → env HERMES_HOME) at the
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
+    # Point the canonical resolver (load_config → env AKRAMCODE_HOME) at the
     # temp home too, so the smart default is asserted against THIS config
-    # rather than whatever the developer's real ~/.hermes happens to hold.
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    # rather than whatever the developer's real ~/.akramcode happens to hold.
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     (tmp_path / "config.yaml").write_text(
         yaml.safe_dump({"approvals": {"timeout": 15}})
     )
@@ -8903,14 +8903,14 @@ def test_config_get_approval_mode_uses_smart_default_when_key_is_missing(
 def test_config_get_approval_mode_fails_safe_to_manual_for_invalid_explicit_value(
     tmp_path, monkeypatch
 ):
-    import akram_core.hermes_yaml as yaml
+    import akram_core.akramcode_yaml as yaml
 
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
     # _load_approval_mode delegates to the canonical resolver in
     # tools.approval, which reads via akramcode_cli.config.load_config —
-    # that path resolves HERMES_HOME from the environment, not
-    # server._hermes_home.
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    # that path resolves AKRAMCODE_HOME from the environment, not
+    # server._akramcode_home.
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     (tmp_path / "config.yaml").write_text(
         yaml.safe_dump({"approvals": {"mode": "sometimes"}})
     )
@@ -8922,12 +8922,12 @@ def test_config_get_approval_mode_fails_safe_to_manual_for_invalid_explicit_valu
 
 
 def test_config_get_approval_mode_normalizes_yaml_off(tmp_path, monkeypatch):
-    import akram_core.hermes_yaml as yaml
+    import akram_core.akramcode_yaml as yaml
 
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
     # See fail-safe test above: the canonical resolver reads via
-    # load_config, which resolves HERMES_HOME from the environment.
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    # load_config, which resolves AKRAMCODE_HOME from the environment.
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     (tmp_path / "config.yaml").write_text(
         yaml.safe_dump({"approvals": {"mode": False}})
     )
@@ -8941,13 +8941,13 @@ def test_config_get_approval_mode_normalizes_yaml_off(tmp_path, monkeypatch):
 def test_config_set_approval_mode_persists_three_way_value_and_emits_live_status(
     tmp_path, monkeypatch
 ):
-    import akram_core.hermes_yaml as yaml
+    import akram_core.akramcode_yaml as yaml
 
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
-    # config.set writes via server._hermes_home, but the post-write
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
+    # config.set writes via server._akramcode_home, but the post-write
     # session.info emit resolves the effective mode through the canonical
-    # tools.approval resolver (load_config → env HERMES_HOME).
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    # tools.approval resolver (load_config → env AKRAMCODE_HOME).
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     emitted = []
     monkeypatch.setattr(server, "_emit", lambda *args: emitted.append(args))
     server._sessions["sid"] = {"agent": object(), "session_key": "profile-session"}
@@ -8976,10 +8976,10 @@ def test_pet_gallery_quoted_false_enabled_reports_disabled(tmp_path, monkeypatch
     quoted YAML value kept the petdex mascot enabled against the operator's
     explicit intent.
     """
-    import akram_core.hermes_yaml as yaml
+    import akram_core.akramcode_yaml as yaml
 
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     (tmp_path / "config.yaml").write_text(
         yaml.safe_dump({"display": {"pet": {"enabled": "false"}}})
     )
@@ -9055,11 +9055,11 @@ def test_config_set_approval_mode_rejects_unknown_value():
 
 def test_config_set_yolo_global_scope_honors_explicit_value(tmp_path, monkeypatch):
     """An explicit value pins global approvals.mode regardless of prior state."""
-    import akram_core.hermes_yaml as yaml
+    import akram_core.akramcode_yaml as yaml
 
     cfg_path = tmp_path / "config.yaml"
     cfg_path.write_text(yaml.safe_dump({"approvals": {"mode": "manual"}}), encoding="utf-8")
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
 
     resp = server.handle_request(
         {
@@ -9262,7 +9262,7 @@ def test_config_busy_get_and_set(monkeypatch):
 
 
 def test_config_set_yolo_process_scope_treats_false_like_env_as_disabled(monkeypatch):
-    monkeypatch.setenv("HERMES_YOLO_MODE", "false")
+    monkeypatch.setenv("AKRAMCODE_YOLO_MODE", "false")
 
     resp = server.handle_request(
         {
@@ -9273,7 +9273,7 @@ def test_config_set_yolo_process_scope_treats_false_like_env_as_disabled(monkeyp
     )
 
     assert resp["result"]["value"] == "1"
-    assert os.environ.get("HERMES_YOLO_MODE") == "1"
+    assert os.environ.get("AKRAMCODE_YOLO_MODE") == "1"
 
 
 def test_config_get_statusbar_survives_non_dict_display(monkeypatch):
@@ -9297,11 +9297,11 @@ def test_config_get_busy_survives_non_dict_display(monkeypatch):
 
 
 def test_config_set_statusbar_survives_non_dict_display(tmp_path, monkeypatch):
-    import akram_core.hermes_yaml as yaml
+    import akram_core.akramcode_yaml as yaml
 
     cfg_path = tmp_path / "config.yaml"
     cfg_path.write_text(yaml.safe_dump({"display": "broken"}), encoding="utf-8")
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
 
     resp = server.handle_request(
         {
@@ -9317,7 +9317,7 @@ def test_config_set_statusbar_survives_non_dict_display(tmp_path, monkeypatch):
 
 
 def test_config_set_details_mode_pins_all_sections(tmp_path, monkeypatch):
-    import akram_core.hermes_yaml as yaml
+    import akram_core.akramcode_yaml as yaml
 
     cfg_path = tmp_path / "config.yaml"
     cfg_path.write_text(
@@ -9325,7 +9325,7 @@ def test_config_set_details_mode_pins_all_sections(tmp_path, monkeypatch):
             {"display": {"sections": {"tools": "expanded", "activity": "hidden"}}}
         )
     )
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
 
     resp = server.handle_request(
         {
@@ -9347,10 +9347,10 @@ def test_config_set_details_mode_pins_all_sections(tmp_path, monkeypatch):
 
 
 def test_config_set_section_writes_per_section_override(tmp_path, monkeypatch):
-    import akram_core.hermes_yaml as yaml
+    import akram_core.akramcode_yaml as yaml
 
     cfg_path = tmp_path / "config.yaml"
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
 
     resp = server.handle_request(
         {
@@ -9366,7 +9366,7 @@ def test_config_set_section_writes_per_section_override(tmp_path, monkeypatch):
 
 
 def test_config_set_section_clears_override_on_empty_value(tmp_path, monkeypatch):
-    import akram_core.hermes_yaml as yaml
+    import akram_core.akramcode_yaml as yaml
 
     cfg_path = tmp_path / "config.yaml"
     cfg_path.write_text(
@@ -9374,7 +9374,7 @@ def test_config_set_section_clears_override_on_empty_value(tmp_path, monkeypatch
             {"display": {"sections": {"activity": "hidden", "tools": "expanded"}}}
         )
     )
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
 
     resp = server.handle_request(
         {
@@ -9390,7 +9390,7 @@ def test_config_set_section_clears_override_on_empty_value(tmp_path, monkeypatch
 
 
 def test_config_set_section_rejects_unknown_section_or_mode(tmp_path, monkeypatch):
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
 
     bad_section = server.handle_request(
         {
@@ -9491,21 +9491,21 @@ def test_config_mouse_accepts_preset_strings_and_aliases(monkeypatch):
 
 
 def test_enable_gateway_prompts_sets_gateway_env(monkeypatch):
-    monkeypatch.delenv("HERMES_EXEC_ASK", raising=False)
-    monkeypatch.delenv("HERMES_GATEWAY_SESSION", raising=False)
-    monkeypatch.delenv("HERMES_INTERACTIVE", raising=False)
+    monkeypatch.delenv("AKRAMCODE_EXEC_ASK", raising=False)
+    monkeypatch.delenv("AKRAMCODE_GATEWAY_SESSION", raising=False)
+    monkeypatch.delenv("AKRAMCODE_INTERACTIVE", raising=False)
 
     server._enable_gateway_prompts()
 
-    assert server.os.environ["HERMES_GATEWAY_SESSION"] == "1"
-    assert server.os.environ["HERMES_EXEC_ASK"] == "1"
-    assert server.os.environ["HERMES_INTERACTIVE"] == "1"
+    assert server.os.environ["AKRAMCODE_GATEWAY_SESSION"] == "1"
+    assert server.os.environ["AKRAMCODE_EXEC_ASK"] == "1"
+    assert server.os.environ["AKRAMCODE_INTERACTIVE"] == "1"
 
 
 
 
 def test_setup_status_answers_from_the_bootstrap_record_once_it_exists(monkeypatch):
-    """Under ``hermes serve`` the boot bootstrap owns the free-tier identity; ``setup.status`` reports
+    """Under ``akramcode serve`` the boot bootstrap owns the free-tier identity; ``setup.status`` reports
     its record (blocking for it while it is in flight) instead of re-probing, so a client's first poll
     sees the identity that exists rather than racing the mint."""
     import threading
@@ -9611,7 +9611,7 @@ def test_setup_runtime_check_failure_names_the_configured_pin_not_the_chain_tail
 
 
 def test_setup_runtime_check_failure_names_startup_env_pin(monkeypatch):
-    """The startup env pin (HERMES_TUI_PROVIDER) outranks the config model pin."""
+    """The startup env pin (AKRAMCODE_TUI_PROVIDER) outranks the config model pin."""
     monkeypatch.setattr("akramcode_cli.main._has_any_provider_configured", lambda **_kw: True)
     monkeypatch.setattr(server, "_resolve_startup_runtime", lambda: ("glm-5.3", "zai"))
     monkeypatch.setattr(server, "_load_cfg", lambda: {"model": {"provider": "openai-api"}})
@@ -9748,10 +9748,10 @@ def test_setup_runtime_check_scopes_launch_profile_in_multiplex_backend(monkeypa
     from agent import secret_scope
     from tui_gateway import launch_profile_policy
 
-    launch_home = tmp_path / ".hermes"
+    launch_home = tmp_path / ".akramcode"
     launch_home.mkdir()
-    monkeypatch.setenv("HERMES_CODEX_BASE_URL", "https://codex.launch.test/v1")
-    monkeypatch.setattr(server, "_hermes_home", launch_home)
+    monkeypatch.setenv("AKRAMCODE_CODEX_BASE_URL", "https://codex.launch.test/v1")
+    monkeypatch.setattr(server, "_akramcode_home", launch_home)
     monkeypatch.setattr(launch_profile_policy, "_snapshot", None)
     monkeypatch.setattr("akramcode_cli.main._has_any_provider_configured", lambda **_kw: True)
     monkeypatch.setattr(server, "_resolve_startup_runtime", lambda: ("gpt-5.3-codex", None))
@@ -9761,7 +9761,7 @@ def test_setup_runtime_check_scopes_launch_profile_in_multiplex_backend(monkeypa
         return {
             "provider": "openai-codex",
             "api_key": "codex-oauth-token",
-            "base_url": secret_scope.get_secret("HERMES_CODEX_BASE_URL"),
+            "base_url": secret_scope.get_secret("AKRAMCODE_CODEX_BASE_URL"),
             "source": "credential-pool",
         }
 
@@ -9789,7 +9789,7 @@ def test_setup_readiness_scopes_to_requested_profile(monkeypatch, tmp_path):
     credentials must not make an unconfigured bot look ready, and the bot's
     own .env must be what the strict check sees."""
     from agent import secret_scope
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
 
     bot_home = tmp_path / "profiles" / "bot"
     bot_home.mkdir(parents=True)
@@ -9799,7 +9799,7 @@ def test_setup_readiness_scopes_to_requested_profile(monkeypatch, tmp_path):
     seen = {}
 
     def fake_resolve(requested=None, **kwargs):
-        seen["home"] = Path(str(get_hermes_home())).resolve()
+        seen["home"] = Path(str(get_akramcode_home())).resolve()
         seen["secret"] = secret_scope.get_secret("OPENROUTER_API_KEY")
         return {"provider": "openrouter", "api_key": seen["secret"] or "", "source": "env"}
 
@@ -9826,7 +9826,7 @@ def test_setup_readiness_scopes_to_requested_profile(monkeypatch, tmp_path):
     assert runtime["result"]["ok"] is True
     assert runtime["result"]["profile"] == "bot"
     assert seen == {"home": bot_home.resolve(), "secret": "sk-or-bot-profile-secret-00001"}
-    assert Path(str(get_hermes_home())).resolve() != bot_home.resolve()
+    assert Path(str(get_akramcode_home())).resolve() != bot_home.resolve()
 
 
 def test_setup_readiness_unknown_profile_never_answers_for_launch_profile(monkeypatch):
@@ -9983,7 +9983,7 @@ def test_complete_slash_leaves_argument_stages_alone(monkeypatch):
 def test_config_get_reasoning_renders_dict_form_custom_tier(tmp_path, monkeypatch):
     """`agent.reasoning_effort: {enabled: true, effort: thinking}` (a provider's bespoke tier)
     must read back as the tier name, not `str(dict)`."""
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
     (tmp_path / "config.yaml").write_text(
         "agent:\n  reasoning_effort:\n    enabled: true\n    effort: thinking\n", encoding="utf-8"
     )
@@ -9994,7 +9994,7 @@ def test_config_get_reasoning_renders_dict_form_custom_tier(tmp_path, monkeypatc
 
 
 def test_config_set_reasoning_updates_live_session_and_agent(tmp_path, monkeypatch):
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
     (tmp_path / "config.yaml").write_text("agent:\n  reasoning_effort: medium\n", encoding="utf-8")
     agent = types.SimpleNamespace(reasoning_config=None)
     server._sessions["sid"] = _session(agent=agent)
@@ -10091,7 +10091,7 @@ def test_config_set_reasoning_updates_live_session_and_agent(tmp_path, monkeypat
 
 
 def test_config_set_reasoning_global_scope_clears_session_override(tmp_path, monkeypatch):
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
     (tmp_path / "config.yaml").write_text("agent:\n  reasoning_effort: medium\n", encoding="utf-8")
     agent = types.SimpleNamespace(reasoning_config=None)
     server._sessions["sid"] = _session(agent=agent)
@@ -10121,7 +10121,7 @@ def test_config_set_reasoning_global_scope_clears_session_override(tmp_path, mon
 
 
 def test_config_set_verbose_updates_session_mode_and_agent(tmp_path, monkeypatch):
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
     agent = types.SimpleNamespace(verbose_logging=False)
     server._sessions["sid"] = _session(agent=agent)
 
@@ -10366,7 +10366,7 @@ def test_config_set_model_recovers_failed_profile_resume_after_build_completes(
     boundary. Provider resolution is the only model-switch leaf replaced.
     """
     from agent.secret_scope import current_secret_scope
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
 
     launch_url = "https://launch.example/v1"
     profile_url = "https://profile.example/v1"
@@ -10400,9 +10400,9 @@ def test_config_set_model_recovers_failed_profile_resume_after_build_completes(
     (profile_home / ".env").write_text(
         "PROFILE_API_KEY=profile-secret\n", encoding="utf-8"
     )
-    monkeypatch.setenv("HERMES_HOME", str(launch_home))
-    monkeypatch.delenv("HERMES_MODEL", raising=False)
-    monkeypatch.delenv("HERMES_INFERENCE_MODEL", raising=False)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(launch_home))
+    monkeypatch.delenv("AKRAMCODE_MODEL", raising=False)
+    monkeypatch.delenv("AKRAMCODE_INFERENCE_MODEL", raising=False)
 
     class ControlledReady:
         def __init__(self):
@@ -10446,7 +10446,7 @@ def test_config_set_model_recovers_failed_profile_resume_after_build_completes(
         secrets = dict(current_secret_scope() or {})
         api_key = secrets[provider["key_env"]]
         seen["switch"] = {
-            "home": get_hermes_home(),
+            "home": get_akramcode_home(),
             "secrets": secrets,
             "base_url": provider["base_url"],
             "api_key": api_key,
@@ -10492,7 +10492,7 @@ def test_config_set_model_recovers_failed_profile_resume_after_build_completes(
             raise RuntimeError(failure_text)
         override = kwargs["model_override"]
         seen["build"] = {
-            "home": get_hermes_home(),
+            "home": get_akramcode_home(),
             "secrets": dict(current_secret_scope() or {}),
             "overrides": kwargs,
         }
@@ -10663,7 +10663,7 @@ def test_config_set_model_explicit_provider_surfaces_selected_provider_errors(mo
 def test_config_set_model_does_not_leak_inference_provider_env(monkeypatch):
     """A /model switch must NOT mutate process-global env vars. The desktop /
     dashboard tui_gateway backend hosts every same-profile session in one
-    process; writing HERMES_INFERENCE_PROVIDER on a switch leaked the new
+    process; writing AKRAMCODE_INFERENCE_PROVIDER on a switch leaked the new
     provider into every other live session's next agent rebuild. The switch
     must instead record a per-session override and leave shared env untouched.
 
@@ -10692,7 +10692,7 @@ def test_config_set_model_does_not_leak_inference_provider_env(monkeypatch):
 
     session = _session(agent=_Agent())
     server._sessions["sid"] = session
-    monkeypatch.setenv("HERMES_INFERENCE_PROVIDER", "openrouter")
+    monkeypatch.setenv("AKRAMCODE_INFERENCE_PROVIDER", "openrouter")
     monkeypatch.setattr(
         "akramcode_cli.model_switch.switch_model", lambda **_kwargs: result
     )
@@ -10713,7 +10713,7 @@ def test_config_set_model_does_not_leak_inference_provider_env(monkeypatch):
         )
 
         # Shared process env is UNCHANGED (the contamination vector is gone).
-        assert os.environ["HERMES_INFERENCE_PROVIDER"] == "openrouter"
+        assert os.environ["AKRAMCODE_INFERENCE_PROVIDER"] == "openrouter"
         # The switch was recorded as a per-session override instead.
         assert session["model_override"]["provider"] == "anthropic"
         assert session["model_override"]["model"] == "claude-sonnet-4.6"
@@ -10752,8 +10752,8 @@ def test_config_set_model_records_per_session_override_not_env(monkeypatch):
 
     session = _session(agent=_Agent())
     server._sessions["sid"] = session
-    monkeypatch.delenv("HERMES_TUI_PROVIDER", raising=False)
-    monkeypatch.delenv("HERMES_INFERENCE_PROVIDER", raising=False)
+    monkeypatch.delenv("AKRAMCODE_TUI_PROVIDER", raising=False)
+    monkeypatch.delenv("AKRAMCODE_INFERENCE_PROVIDER", raising=False)
     monkeypatch.setattr(
         "akramcode_cli.model_switch.switch_model", lambda **_kwargs: result
     )
@@ -10774,8 +10774,8 @@ def test_config_set_model_records_per_session_override_not_env(monkeypatch):
         )
 
         # No process-global env mutation.
-        assert "HERMES_TUI_PROVIDER" not in os.environ
-        assert "HERMES_INFERENCE_PROVIDER" not in os.environ
+        assert "AKRAMCODE_TUI_PROVIDER" not in os.environ
+        assert "AKRAMCODE_INFERENCE_PROVIDER" not in os.environ
         # The user's explicit provider + resolved endpoint live on the session,
         # carried into the next /new rebuild by _make_agent.
         override = session["model_override"]
@@ -10790,7 +10790,7 @@ def test_config_set_model_records_per_session_override_not_env(monkeypatch):
 
 def test_config_set_model_switches_agent_without_touching_env(monkeypatch):
     """A /model switch mutates the target session's agent in place and records
-    a per-session override; it does NOT write HERMES_MODEL / HERMES_TUI_PROVIDER
+    a per-session override; it does NOT write AKRAMCODE_MODEL / AKRAMCODE_TUI_PROVIDER
     etc. into the shared process environment.
 
     (Was test_config_set_model_syncs_tui_provider_env.)
@@ -10839,9 +10839,9 @@ def test_config_set_model_switches_agent_without_touching_env(monkeypatch):
     agent._session_db = db
     session = _session(agent=agent)
     server._sessions["sid"] = session
-    monkeypatch.setenv("HERMES_TUI_PROVIDER", "openai-codex")
-    monkeypatch.delenv("HERMES_MODEL", raising=False)
-    monkeypatch.delenv("HERMES_INFERENCE_MODEL", raising=False)
+    monkeypatch.setenv("AKRAMCODE_TUI_PROVIDER", "openai-codex")
+    monkeypatch.delenv("AKRAMCODE_MODEL", raising=False)
+    monkeypatch.delenv("AKRAMCODE_INFERENCE_MODEL", raising=False)
     monkeypatch.setattr(server, "_restart_slash_worker", lambda sid, session: None)
     monkeypatch.setattr(server, "_emit", lambda *args, **kwargs: None)
 
@@ -10897,9 +10897,9 @@ def test_config_set_model_switches_agent_without_touching_env(monkeypatch):
             "content": session["history"][-1]["content"],
         }
         # ...and the shared process env was NOT touched.
-        assert os.environ["HERMES_TUI_PROVIDER"] == "openai-codex"
-        assert "HERMES_MODEL" not in os.environ
-        assert "HERMES_INFERENCE_MODEL" not in os.environ
+        assert os.environ["AKRAMCODE_TUI_PROVIDER"] == "openai-codex"
+        assert "AKRAMCODE_MODEL" not in os.environ
+        assert "AKRAMCODE_INFERENCE_MODEL" not in os.environ
     finally:
         server._sessions.clear()
 
@@ -10932,8 +10932,8 @@ def test_config_set_model_once_keeps_env_and_records_restore(monkeypatch):
     agent = Agent()
     session = _session(agent=agent)
     server._sessions["sid"] = session
-    monkeypatch.setenv("HERMES_INFERENCE_PROVIDER", "openrouter")
-    monkeypatch.setenv("HERMES_MODEL", "old/model")
+    monkeypatch.setenv("AKRAMCODE_INFERENCE_PROVIDER", "openrouter")
+    monkeypatch.setenv("AKRAMCODE_MODEL", "old/model")
     monkeypatch.setattr(
         "akramcode_cli.model_switch.switch_model",
         lambda **kwargs: seen.update(kwargs) or result,
@@ -10958,8 +10958,8 @@ def test_config_set_model_once_keeps_env_and_records_restore(monkeypatch):
         assert seen["is_global"] is False
         assert agent.model == "claude-sonnet-4.6"
         assert session["one_turn_model_restore"]["model"] == "old/model"
-        assert os.environ["HERMES_INFERENCE_PROVIDER"] == "openrouter"
-        assert os.environ["HERMES_MODEL"] == "old/model"
+        assert os.environ["AKRAMCODE_INFERENCE_PROVIDER"] == "openrouter"
+        assert os.environ["AKRAMCODE_MODEL"] == "old/model"
     finally:
         server._sessions.clear()
 
@@ -11925,7 +11925,7 @@ def test_file_attach_uses_in_workspace_file_without_copying(monkeypatch, tmp_pat
         assert resp["result"]["ref_text"] == "@file:data/exam.csv"
         # No copy: nothing staged under desktop-attachments or the home
         # attachments dir.
-        assert not (workspace / ".hermes" / "desktop-attachments").exists()
+        assert not (workspace / ".akramcode" / "desktop-attachments").exists()
         assert not (tmp_path / "home" / "attachments").exists()
     finally:
         server._sessions.pop("sid", None)
@@ -11993,7 +11993,7 @@ def test_file_attach_quotes_ref_with_spaces(monkeypatch, tmp_path):
 def test_file_attach_workspace_storage_follows_the_owning_profiles_config(monkeypatch, tmp_path):
     """``attachments.storage: workspace`` is read from the SESSION's profile config.
 
-    Opt-in profiles stage under ``<workspace>/.hermes/attachments`` (inside the
+    Opt-in profiles stage under ``<workspace>/.akramcode/attachments`` (inside the
     allowed ref root, #110662); a profile without the opt-in keeps the
     bind-mounted ``<profile home>/attachments`` — one serve process, two homes,
     each session follows its own profile's config.
@@ -12029,17 +12029,17 @@ def test_file_attach_workspace_storage_follows_the_owning_profiles_config(monkey
             },
         )
 
-        staged_a = workspace_a / ".hermes" / "attachments" / "report.txt"
+        staged_a = workspace_a / ".akramcode" / "attachments" / "report.txt"
         assert resp["result"]["attached"] is True
         assert resp["result"]["path"] == str(staged_a)
         assert staged_a.read_text(encoding="utf-8") == "hello"
         # Workspace staging lands inside the allowed ref root: the ref is
         # workspace-relative, not an absolute out-of-workspace path.
-        assert resp["result"]["ref_text"] == "@file:.hermes/attachments/report.txt"
+        assert resp["result"]["ref_text"] == "@file:.akramcode/attachments/report.txt"
         assert not (home_a / "attachments").exists()
 
         # Same serve process, second profile WITHOUT the opt-in: staging stays
-        # on that profile's hermes-home attachments dir.
+        # on that profile's akramcode-home attachments dir.
         workspace_b = tmp_path / "work-b"
         workspace_b.mkdir()
         home_b = tmp_path / "home-b"
@@ -12057,7 +12057,7 @@ def test_file_attach_workspace_storage_follows_the_owning_profiles_config(monkey
         staged_b = home_b / "attachments" / "report.txt"
         assert resp["result"]["path"] == str(staged_b)
         assert staged_b.read_text(encoding="utf-8") == "hello"
-        assert not (workspace_b / ".hermes").exists()
+        assert not (workspace_b / ".akramcode").exists()
     finally:
         server._sessions.pop("sid-a", None)
         server._sessions.pop("sid-b", None)
@@ -12294,14 +12294,14 @@ def test_commands_catalog_includes_plugin_commands(monkeypatch):
 
 def test_plugin_slash_command_runs_under_the_session_env(monkeypatch):
     # TUI/Desktop sibling of #108698: command.dispatch and slash.exec ran plugin handlers on the RPC
-    # thread with no HERMES_SESSION_* binding, so a handler reading get_session_env() saw "" (or the
+    # thread with no AKRAMCODE_SESSION_* binding, so a handler reading get_session_env() saw "" (or the
     # launch process's inherited values) instead of the session it was invoked from.
     from gateway.session_context import get_session_env
 
     seen = {}
 
     def handler(arg):
-        seen["key"] = get_session_env("HERMES_SESSION_KEY")
+        seen["key"] = get_session_env("AKRAMCODE_SESSION_KEY")
         return f"ok:{arg}"
 
     monkeypatch.setattr("akramcode_cli.plugins.get_plugin_command_handler",
@@ -12313,7 +12313,7 @@ def test_plugin_slash_command_runs_under_the_session_env(monkeypatch):
     assert res["result"] == {"type": "plugin", "output": "ok:x"}
     assert seen["key"] == "agent:tui:key-p"
     # Nothing leaks past the RPC.
-    assert get_session_env("HERMES_SESSION_KEY") in ("", None)
+    assert get_session_env("AKRAMCODE_SESSION_KEY") in ("", None)
 
 
 def test_session_status_reads_live_gateway_agent(monkeypatch):
@@ -16061,8 +16061,8 @@ def test_session_delete_success_returns_deleted_id(monkeypatch):
     assert resp["result"] == {"deleted": "old-1"}
     assert captured["sid"] == "old-1"
     # sessions_dir must be forwarded so transcript files get cleaned up
-    # too — not just the SQLite row.  The autouse _isolate_hermes_home
-    # fixture pins HERMES_HOME to a temp dir; the handler should append
+    # too — not just the SQLite row.  The autouse _isolate_akramcode_home
+    # fixture pins AKRAMCODE_HOME to a temp dir; the handler should append
     # /sessions to it.
     assert captured["sessions_dir"] is not None
     assert str(captured["sessions_dir"]).endswith("sessions")
@@ -16173,7 +16173,7 @@ def test_handoff_request_uses_session_profile_home(monkeypatch, tmp_path):
     import contextlib
 
     from gateway.config import GatewayConfig, HomeChannel, Platform, PlatformConfig
-    from akramcode_cli.config import get_hermes_home
+    from akramcode_cli.config import get_akramcode_home
     from tui_gateway import methods_session
 
     methods_session.register(server)
@@ -16182,7 +16182,7 @@ def test_handoff_request_uses_session_profile_home(monkeypatch, tmp_path):
     seen_homes = []
 
     def load_config():
-        home = get_hermes_home()
+        home = get_akramcode_home()
         seen_homes.append(home)
         config = GatewayConfig()
         if home == profile_home:
@@ -16191,7 +16191,7 @@ def test_handoff_request_uses_session_profile_home(monkeypatch, tmp_path):
                 home_channel=HomeChannel(
                     platform=Platform.DISCORD,
                     chat_id="discord-home",
-                    name="Hermes / #chat-coding",
+                    name="AkramCode / #chat-coding",
                 ),
             )
         return config
@@ -16232,7 +16232,7 @@ def test_handoff_request_uses_session_profile_home(monkeypatch, tmp_path):
     assert "result" in resp, resp
     assert resp["result"]["queued"] is True
     assert seen_homes == [profile_home]
-    assert get_hermes_home() != profile_home
+    assert get_akramcode_home() != profile_home
 
 
 def test_session_create_reports_requested_profile_name(monkeypatch, tmp_path):
@@ -16551,7 +16551,7 @@ def test_session_branch_writes_to_parent_profile_db(monkeypatch, tmp_path):
     """session.branch must copy history into the parent's profile state.db."""
     profile_home = tmp_path / "profiles" / "mlperf"
     profile_home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     seen: dict = {"msgs": []}
 
     class LaunchDB:
@@ -17039,7 +17039,7 @@ def test_session_create_without_parent_still_defers_row(monkeypatch):
 def test_session_branch_installs_parent_profile_secret_scope(monkeypatch, tmp_path):
     """The branched agent must be built under the parent profile's secrets.
 
-    session.branch already binds the parent's HERMES_HOME and state.db, but the
+    session.branch already binds the parent's AKRAMCODE_HOME and state.db, but the
     secret scope is what makes get_secret() resolve that profile's .env. Without
     it the build falls through to process os.environ — the LAUNCH profile's
     credentials — which is exactly the cross-profile resolution #67605 fixed for
@@ -17051,7 +17051,7 @@ def test_session_branch_installs_parent_profile_secret_scope(monkeypatch, tmp_pa
 
     profile_home = tmp_path / "profiles" / "mlperf"
     profile_home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     (profile_home / ".env").write_text(
         "PROXMOX_TOKEN=mlperf-secret\n", encoding="utf-8"
     )
@@ -17144,7 +17144,7 @@ def test_session_branch_uses_persisted_display_history_after_compaction(monkeypa
     """A live branch must copy the complete visible transcript, not the compacted model tail."""
     profile_home = tmp_path / "profiles" / "mlperf"
     profile_home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     seen: dict = {"msgs": []}
 
     display_history = [
@@ -17273,13 +17273,13 @@ def test_session_branch_uses_persisted_display_history_after_compaction(monkeypa
 
 
 # --------------------------------------------------------------------------
-# model.options — curated-list parity with `hermes model` and classic /model
+# model.options — curated-list parity with `akramcode model` and classic /model
 # --------------------------------------------------------------------------
 
 
 def test_model_options_does_not_overwrite_curated_models(monkeypatch):
     """The TUI model.options handler must surface the same curated model
-    list as `hermes model` and the classic CLI /model picker.
+    list as `akramcode model` and the classic CLI /model picker.
 
     Regression: earlier versions of this handler unconditionally replaced
     each provider's curated ``models`` field with ``provider_model_ids()``
@@ -17539,7 +17539,7 @@ def test_prompt_submit_releases_old_history_before_heap_trim(monkeypatch, tmp_pa
     session = _session(agent=_Agent())
     profile_home = tmp_path / "profiles" / "worker"
     profile_home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     session["profile_home"] = str(profile_home)
     session["history"] = [old]
     del old
@@ -17549,8 +17549,8 @@ def test_prompt_submit_releases_old_history_before_heap_trim(monkeypatch, tmp_pa
         monkeypatch.setattr(server, "_get_usage", lambda _a: {})
         monkeypatch.setattr(server, "render_message", lambda _t, _c: "")
         monkeypatch.setattr(server, "_emit", lambda *a: None)
-        monkeypatch.setattr(server, "set_hermes_home_override", lambda _home: object())
-        monkeypatch.setattr(server, "reset_hermes_home_override", lambda _token: order.append("reset_home"))
+        monkeypatch.setattr(server, "set_akramcode_home_override", lambda _home: object())
+        monkeypatch.setattr(server, "reset_akramcode_home_override", lambda _token: order.append("reset_home"))
         monkeypatch.setattr(server, "_session_profile_runtime_scope", lambda _session, **_kw: contextlib.nullcontext())
         monkeypatch.setattr("akramcode_cli.mem_trim.trim_memory", _trim)
 
@@ -17793,7 +17793,7 @@ def test_session_active_list_excludes_finalized_sessions(monkeypatch):
     that window ``session.active_list`` would otherwise still report the dead
     session, which is exactly the footer "N sessions" count that only ever grew
     until a gateway restart. A live session on the real stdio transport (the
-    standalone ``hermes --tui`` case) must still be reported.
+    standalone ``akramcode --tui`` case) must still be reported.
     """
     class _DB:
         def get_session_title(self, key):
@@ -18137,11 +18137,11 @@ def test_session_most_recent_handles_db_unavailable(monkeypatch):
 
 
 def test_verification_status_returns_recorded_evidence(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_VERIFY_ON_STOP", "1")  # ledger is inert when the guard is off
+    monkeypatch.setenv("AKRAMCODE_VERIFY_ON_STOP", "1")  # ledger is inert when the guard is off
     profile_home = tmp_path / "profiles" / "verify"
     profile_home.mkdir(parents=True)
     monkeypatch.setattr(server, "_profile_home", lambda p: profile_home if p == "verify" else None)
-    token = set_hermes_home_override(profile_home)
+    token = set_akramcode_home_override(profile_home)
     project = tmp_path / "project"
     project.mkdir()
     (project / ".git").mkdir()
@@ -18169,7 +18169,7 @@ def test_verification_status_returns_recorded_evidence(tmp_path, monkeypatch):
             }
         )
     finally:
-        reset_hermes_home_override(token)
+        reset_akramcode_home_override(token)
 
     verification = resp["result"]["verification"]
     assert verification["status"] == "passed"
@@ -18178,7 +18178,7 @@ def test_verification_status_returns_recorded_evidence(tmp_path, monkeypatch):
 
 
 def test_verification_status_outside_workspace_is_not_applicable(monkeypatch, tmp_path):
-    monkeypatch.setenv("HERMES_VERIFY_ON_STOP", "1")  # ledger is inert when the guard is off
+    monkeypatch.setenv("AKRAMCODE_VERIFY_ON_STOP", "1")  # ledger is inert when the guard is off
     # A cwd with no project facts (outside any code workspace) must report
     # not_applicable. Force the "no facts" precondition rather than relying on
     # tmp_path's ancestors being pristine — a stray marker file in a shared
@@ -18189,9 +18189,9 @@ def test_verification_status_outside_workspace_is_not_applicable(monkeypatch, tm
 
     monkeypatch.setattr(coding_context, "project_facts_for", lambda _cwd=None: None)
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    token = set_hermes_home_override(home)
+    token = set_akramcode_home_override(home)
     try:
         resp = server.handle_request(
             {
@@ -18201,7 +18201,7 @@ def test_verification_status_outside_workspace_is_not_applicable(monkeypatch, tm
             }
         )
     finally:
-        reset_hermes_home_override(token)
+        reset_akramcode_home_override(token)
 
     assert resp["result"]["verification"]["status"] == "not_applicable"
 
@@ -19312,18 +19312,18 @@ def test_notification_poller_requeues_when_busy(monkeypatch):
             process_registry.completion_queue.get_nowait()
 
 
-def test_session_save_writes_under_hermes_home_with_system_prompt(monkeypatch, tmp_path):
-    """TUI /save (session.save RPC) must snapshot under the Hermes profile
+def test_session_save_writes_under_akramcode_home_with_system_prompt(monkeypatch, tmp_path):
+    """TUI /save (session.save RPC) must snapshot under the AkramCode profile
     home — not the project/workspace CWD — and include the system prompt,
     mirroring the classic CLI /save and the dashboard save export.
 
-    Regression: the gateway handler wrote ``hermes_conversation_*.json`` to
+    Regression: the gateway handler wrote ``akramcode_conversation_*.json`` to
     ``os.path.abspath(...)`` (the workspace CWD) and only exported ``model``
     and ``messages``, so ``system_prompt`` was missing.
     """
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
 
     # Run from a different CWD to prove the snapshot does NOT leak there.
     work = tmp_path / "workspace"
@@ -19332,10 +19332,10 @@ def test_session_save_writes_under_hermes_home_with_system_prompt(monkeypatch, t
 
     sid = "save-sid"
     agent = types.SimpleNamespace(
-        model="hermes-test",
+        model="akramcode-test",
         session_id="20260101_120000_abc123",
         session_start=datetime(2026, 1, 1, 12, 0, 0),
-        _cached_system_prompt="You are Hermes.",
+        _cached_system_prompt="You are AkramCode.",
     )
     history = [
         {"role": "user", "content": "hi"},
@@ -19357,36 +19357,36 @@ def test_session_save_writes_under_hermes_home_with_system_prompt(monkeypatch, t
     saved_file = Path(resp["result"]["file"])
 
     # Must NOT leak into the workspace/project CWD.
-    assert not list(work.glob("hermes_conversation_*.json"))
+    assert not list(work.glob("akramcode_conversation_*.json"))
 
     saved_dir = home / "sessions" / "saved"
     assert saved_file.parent == saved_dir
     assert saved_file.exists()
 
     payload = json.loads(saved_file.read_text(encoding="utf-8-sig"))
-    assert payload["model"] == "hermes-test"
+    assert payload["model"] == "akramcode-test"
     assert payload["session_id"] == "20260101_120000_abc123"
     assert payload["session_start"] == "2026-01-01T12:00:00"
-    assert payload["system_prompt"] == "You are Hermes."
+    assert payload["system_prompt"] == "You are AkramCode."
     assert payload["messages"] == history
 
 
 
 def test_session_save_lands_in_the_sessions_own_profile_a_b_a(monkeypatch, tmp_path):
     """/save writes under the SESSION's profile home, launch -> secondary -> launch under multiplexing:
-    the RPC runs unscoped, so get_hermes_home() alone names the launch profile (#125241)."""
+    the RPC runs unscoped, so get_akramcode_home() alone names the launch profile (#125241)."""
     from agent.secret_scope import set_multiplex_active
-    launch_home = tmp_path / ".hermes"
+    launch_home = tmp_path / ".akramcode"
     work_home = launch_home / "profiles" / "s6probe-work"
     work_home.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(launch_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(launch_home))
     set_multiplex_active(True)
     parents = []
     try:
         for i, home in enumerate((None, work_home, None)):
             sid = f"save-profile-sid-{i}"
             server._sessions[sid] = {
-                "agent": types.SimpleNamespace(model="hermes-test", session_id="s1", session_start=None,
+                "agent": types.SimpleNamespace(model="akramcode-test", session_id="s1", session_start=None,
                                                _cached_system_prompt=""),
                 "session_key": sid, "profile_home": str(home) if home else None,
                 "history": [{"role": "user", "content": "hi"}], "history_lock": threading.Lock(),
@@ -19402,7 +19402,7 @@ def test_session_save_lands_in_the_sessions_own_profile_a_b_a(monkeypatch, tmp_p
 
     saved = launch_home / "sessions" / "saved"
     assert parents == [saved, work_home / "sessions" / "saved", saved]
-    assert len(list((work_home / "sessions" / "saved").glob("hermes_conversation_*.json"))) == 1
+    assert len(list((work_home / "sessions" / "saved").glob("akramcode_conversation_*.json"))) == 1
 
 
 def test_session_save_proxies_to_compute_host_history(monkeypatch):
@@ -19538,7 +19538,7 @@ def _attach_bytes_cli(monkeypatch):
 def test_image_attach_bytes_writes_to_gateway_dir(monkeypatch, tmp_path):
     """Remote client uploads base64 bytes; gateway writes them to its own disk."""
     _attach_bytes_cli(monkeypatch)
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
     server._sessions["abx"] = _session()
 
     resp = server.handle_request(
@@ -19565,7 +19565,7 @@ def test_image_attach_bytes_writes_to_gateway_dir(monkeypatch, tmp_path):
 
 def test_image_attach_bytes_accepts_data_url_prefix(monkeypatch, tmp_path):
     _attach_bytes_cli(monkeypatch)
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
     server._sessions["abx2"] = _session()
 
     resp = server.handle_request(
@@ -19584,7 +19584,7 @@ def test_image_attach_bytes_accepts_data_url_prefix(monkeypatch, tmp_path):
 def test_image_attach_bytes_data_alias_and_magic_sniff(monkeypatch, tmp_path):
     """Older desktop builds send `data` (not content_base64); ext sniffed from bytes."""
     _attach_bytes_cli(monkeypatch)
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
     server._sessions["abx3"] = _session()
 
     resp = server.handle_request(
@@ -19601,7 +19601,7 @@ def test_image_attach_bytes_data_alias_and_magic_sniff(monkeypatch, tmp_path):
 
 def test_image_attach_bytes_rejects_invalid_base64(monkeypatch, tmp_path):
     _attach_bytes_cli(monkeypatch)
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
     server._sessions["abx4"] = _session()
 
     resp = server.handle_request(
@@ -19619,7 +19619,7 @@ def test_image_attach_bytes_rejects_oversize(monkeypatch, tmp_path):
     import base64 as _b64
 
     _attach_bytes_cli(monkeypatch)
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
     monkeypatch.setattr(server, "_ATTACH_BYTES_MAX_BYTES", 10)
     server._sessions["abx5"] = _session()
 
@@ -19637,7 +19637,7 @@ def test_image_attach_bytes_rejects_oversize(monkeypatch, tmp_path):
 
 def test_image_attach_bytes_rejects_unsupported_extension(monkeypatch, tmp_path):
     _attach_bytes_cli(monkeypatch)
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
     server._sessions["abx6"] = _session()
 
     # filename hint forces a non-image extension; magic sniff is bypassed by hint
@@ -19659,7 +19659,7 @@ def test_image_attach_bytes_rejects_unsupported_extension(monkeypatch, tmp_path)
 def test_pdf_attach_requires_poppler(monkeypatch, tmp_path):
     """Without pdftoppm on PATH, pdf.attach returns a clear 5028."""
     _attach_bytes_cli(monkeypatch)
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
     monkeypatch.setattr("shutil.which", lambda _name: None)
     server._sessions["pdf1"] = _session()
 
@@ -19678,7 +19678,7 @@ def test_pdf_attach_rejects_non_pdf_bytes(monkeypatch, tmp_path):
     import base64 as _b64
 
     _attach_bytes_cli(monkeypatch)
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
     monkeypatch.setattr("shutil.which", lambda _name: "/usr/bin/pdftoppm")
     server._sessions["pdf2"] = _session()
 
@@ -19696,7 +19696,7 @@ def test_pdf_attach_rejects_non_pdf_bytes(monkeypatch, tmp_path):
 
 def test_pdf_attach_requires_path_or_bytes(monkeypatch, tmp_path):
     _attach_bytes_cli(monkeypatch)
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
     monkeypatch.setattr("shutil.which", lambda _name: "/usr/bin/pdftoppm")
     server._sessions["pdf3"] = _session()
 
@@ -21031,9 +21031,9 @@ class TestResolveRuntimeWithFallback:
             captured.update(kwargs)
             return types.SimpleNamespace(model=kwargs.get("model"))
 
-        monkeypatch.delenv("HERMES_MODEL", raising=False)
-        monkeypatch.delenv("HERMES_INFERENCE_MODEL", raising=False)
-        monkeypatch.delenv("HERMES_TUI_PROVIDER", raising=False)
+        monkeypatch.delenv("AKRAMCODE_MODEL", raising=False)
+        monkeypatch.delenv("AKRAMCODE_INFERENCE_MODEL", raising=False)
+        monkeypatch.delenv("AKRAMCODE_TUI_PROVIDER", raising=False)
         monkeypatch.setattr(
             server,
             "_load_cfg",
@@ -21178,20 +21178,20 @@ def _fake_tts_modules(monkeypatch, *, requirements=True, playback_stops=None, li
 
 
 def test_tts_stream_begin_requires_voice_tts(monkeypatch):
-    monkeypatch.setenv("HERMES_VOICE_TTS", "0")
+    monkeypatch.setenv("AKRAMCODE_VOICE_TTS", "0")
     assert server._tts_stream_begin() is None
 
 
 def test_tts_stream_begin_requires_working_provider(monkeypatch):
-    monkeypatch.setenv("HERMES_VOICE_TTS", "1")
+    monkeypatch.setenv("AKRAMCODE_VOICE_TTS", "1")
     _fake_tts_modules(monkeypatch, requirements=False)
     assert server._tts_stream_begin() is None
 
 
 def test_tts_stream_begin_and_stop_lifecycle(monkeypatch):
     """begin() spawns the consumer; stop() cuts it and clears the slot."""
-    monkeypatch.setenv("HERMES_VOICE_TTS", "1")
-    monkeypatch.setenv("HERMES_VOICE", "0")  # no barge-in monitor (no mic)
+    monkeypatch.setenv("AKRAMCODE_VOICE_TTS", "1")
+    monkeypatch.setenv("AKRAMCODE_VOICE", "0")  # no barge-in monitor (no mic)
     playback_stops: list = []
     started = _fake_tts_modules(monkeypatch, playback_stops=playback_stops)
 
@@ -21212,8 +21212,8 @@ def test_tts_stream_begin_and_stop_lifecycle(monkeypatch):
 
 def test_tts_stream_begin_barges_in_on_previous_pipeline(monkeypatch):
     """A new turn's pipeline stops the previous turn's speech (one speaker)."""
-    monkeypatch.setenv("HERMES_VOICE_TTS", "1")
-    monkeypatch.setenv("HERMES_VOICE", "0")
+    monkeypatch.setenv("AKRAMCODE_VOICE_TTS", "1")
+    monkeypatch.setenv("AKRAMCODE_VOICE", "0")
     _fake_tts_modules(monkeypatch)
 
     server._tts_stream_begin()
@@ -21230,8 +21230,8 @@ def test_tts_stream_stop_latches_interruption_for_next_turn(monkeypatch):
     import tools.tts_streaming as ts
 
     ts._interrupted_at = None
-    monkeypatch.setenv("HERMES_VOICE_TTS", "1")
-    monkeypatch.setenv("HERMES_VOICE", "0")
+    monkeypatch.setenv("AKRAMCODE_VOICE_TTS", "1")
+    monkeypatch.setenv("AKRAMCODE_VOICE", "0")
     _fake_tts_modules(monkeypatch)
 
     server._tts_stream_begin()
@@ -21248,8 +21248,8 @@ def test_tts_stream_stop_after_natural_finish_does_not_latch(monkeypatch):
     import tools.tts_streaming as ts
 
     ts._interrupted_at = None
-    monkeypatch.setenv("HERMES_VOICE_TTS", "1")
-    monkeypatch.setenv("HERMES_VOICE", "0")
+    monkeypatch.setenv("AKRAMCODE_VOICE_TTS", "1")
+    monkeypatch.setenv("AKRAMCODE_VOICE", "0")
     _fake_tts_modules(monkeypatch)
 
     server._tts_stream_begin()
@@ -21268,8 +21268,8 @@ def test_tts_stream_vad_barge_in_cuts_pipeline_and_submits_capture(monkeypatch, 
     import tools.tts_streaming as ts
 
     ts._interrupted_at = None
-    monkeypatch.setenv("HERMES_VOICE_TTS", "1")
-    monkeypatch.setenv("HERMES_VOICE", "1")
+    monkeypatch.setenv("AKRAMCODE_VOICE_TTS", "1")
+    monkeypatch.setenv("AKRAMCODE_VOICE", "1")
     monkeypatch.setattr(server, "_load_cfg", lambda: {"voice": {"barge_in": True}})
     events: list = []
     monkeypatch.setattr(
@@ -21308,8 +21308,8 @@ def test_full_duplex_generation_phase_interrupts_running_turn(monkeypatch, tmp_p
     import tools.tts_streaming as ts
 
     ts._interrupted_at = None
-    monkeypatch.setenv("HERMES_VOICE", "1")
-    monkeypatch.setenv("HERMES_VOICE_TTS", "0")
+    monkeypatch.setenv("AKRAMCODE_VOICE", "1")
+    monkeypatch.setenv("AKRAMCODE_VOICE_TTS", "0")
     monkeypatch.setattr(server, "_load_cfg", lambda: {"voice": {"barge_in": True}})
     events: list = []
     monkeypatch.setattr(
@@ -21349,7 +21349,7 @@ def test_full_duplex_generation_phase_interrupts_running_turn(monkeypatch, tmp_p
 def test_full_duplex_stop_phrase_mid_generation_ends_voice_chat(monkeypatch, tmp_path):
     """Bare 'stop' during generation = interrupt the turn AND end the voice
     chat ('stop everything'), emitted as the explicit stop_phrase signal."""
-    monkeypatch.setenv("HERMES_VOICE", "1")
+    monkeypatch.setenv("AKRAMCODE_VOICE", "1")
     monkeypatch.setattr(server, "_load_cfg", lambda: {"voice": {"barge_in": True}})
     events: list = []
     monkeypatch.setattr(
@@ -21391,7 +21391,7 @@ def test_full_duplex_stop_phrase_mid_generation_ends_voice_chat(monkeypatch, tmp
         time.sleep(0.01)
     assert interrupted.is_set()
     assert ("voice.transcript", {"stop_phrase": True, "text": "stop"}) in events
-    assert os.environ.get("HERMES_VOICE") == "0"  # voice chat ended
+    assert os.environ.get("AKRAMCODE_VOICE") == "0"  # voice chat ended
 
 
 def test_speak_text_with_barge_arms_monitor_and_cuts_playback(monkeypatch, tmp_path):
@@ -21403,8 +21403,8 @@ def test_speak_text_with_barge_arms_monitor_and_cuts_playback(monkeypatch, tmp_p
     import tools.tts_streaming as ts
 
     ts._interrupted_at = None
-    monkeypatch.setenv("HERMES_VOICE", "1")
-    monkeypatch.setenv("HERMES_VOICE_TTS", "1")
+    monkeypatch.setenv("AKRAMCODE_VOICE", "1")
+    monkeypatch.setenv("AKRAMCODE_VOICE_TTS", "1")
     monkeypatch.setattr(
         server,
         "_load_cfg",
@@ -21464,8 +21464,8 @@ def test_speak_text_with_barge_arms_monitor_and_cuts_playback(monkeypatch, tmp_p
 
 def test_speak_text_with_barge_no_monitor_when_voice_mode_off(monkeypatch):
     """Auto-speak with voice mode off (no mic loop) must not open the mic."""
-    monkeypatch.setenv("HERMES_VOICE", "0")
-    monkeypatch.setenv("HERMES_VOICE_TTS", "1")
+    monkeypatch.setenv("AKRAMCODE_VOICE", "0")
+    monkeypatch.setenv("AKRAMCODE_VOICE_TTS", "1")
     monkeypatch.setattr(server, "_load_cfg", lambda: {"voice": {"barge_in": True}})
 
     listened = threading.Event()
@@ -21579,7 +21579,7 @@ def test_build_persist_message_quotes_paths_containing_spaces(tmp_path):
     with a space parses as a truncated ref with the tail left as loose text.
     Desktop composer images live in the app's userData dir, which on macOS is
     ``~/Library/Application Support/...`` — a space every time."""
-    img_dir = tmp_path / "Application Support" / "Hermes" / "composer-images"
+    img_dir = tmp_path / "Application Support" / "AkramCode" / "composer-images"
     img_dir.mkdir(parents=True)
     img = img_dir / "cat.png"
     img.write_bytes(b"png")
@@ -21892,7 +21892,7 @@ def test_session_branch_keeps_reasoning_fields(monkeypatch, tmp_path):
 #
 # Until ~mid-2026 _save_cfg used yaml.safe_dump on a deep-loaded config dict.
 # Every /personality (or /reasoning, /details_mode, /prompt, ...) write
-# silently rewrote ~/.hermes/config.yaml top-to-bottom — top-level keys
+# silently rewrote ~/.akramcode/config.yaml top-to-bottom — top-level keys
 # reordered alphabetically, comments stripped, kaomoji/Chinese in stored
 # personality prompts mangled to \uXXXX escapes. These tests pin the
 # user-visible behavior of the comment-preserving replacement so we don't
@@ -21911,7 +21911,7 @@ def test_save_cfg_preserves_user_comments(tmp_path, monkeypatch):
         "  skin: default  # trailing skin note\n",
         encoding="utf-8",
     )
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
 
     server._save_cfg(
         {
@@ -21925,7 +21925,7 @@ def test_save_cfg_preserves_user_comments(tmp_path, monkeypatch):
     assert "# provider rationale" in text
     assert "# trailing skin note" in text
 
-    import akram_core.hermes_yaml as _yaml
+    import akram_core.akramcode_yaml as _yaml
 
     parsed = _yaml.safe_load(text)
     assert parsed["display"]["skin"] == "mono"
@@ -21939,14 +21939,14 @@ def test_save_cfg_preserves_top_level_key_order(tmp_path, monkeypatch):
         "model:\n"
         "  default: claude-opus-4-7\n"
         "toolsets:\n"
-        "  - hermes-cli\n"
+        "  - akramcode-cli\n"
         "agent:\n"
         "  max_turns: 90\n"
         "display:\n"
         "  skin: default\n",
         encoding="utf-8",
     )
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
 
     # Caller's dict iteration order is intentionally alphabetical to confirm
     # the helper consults disk order, not caller order.
@@ -21955,7 +21955,7 @@ def test_save_cfg_preserves_top_level_key_order(tmp_path, monkeypatch):
             "agent": {"max_turns": 90},
             "display": {"skin": "mono"},
             "model": {"default": "claude-opus-4-7"},
-            "toolsets": ["hermes-cli"],
+            "toolsets": ["akramcode-cli"],
         }
     )
 
@@ -21981,7 +21981,7 @@ def test_save_cfg_keeps_unicode_personalities_readable(tmp_path, monkeypatch):
         "  skin: default\n",
         encoding="utf-8",
     )
-    monkeypatch.setattr(server, "_hermes_home", tmp_path)
+    monkeypatch.setattr(server, "_akramcode_home", tmp_path)
 
     # Simulate an unrelated /skin write — must not corrupt the catgirl
     # personality string sitting in agent.personalities.
@@ -22989,7 +22989,7 @@ def test_prompt_submit_unconfirmed_truncation_refuses_before_target_resolution(
 
 def test_persist_live_session_system_prompt_uses_profile_home(monkeypatch, tmp_path):
     """Issue #50233: _persist_live_session_system_prompt must re-bind
-    HERMES_HOME to the session's profile before rebuilding the system
+    AKRAMCODE_HOME to the session's profile before rebuilding the system
     prompt.  Without this, a /model switch rebuilds the prompt with the
     root profile's SOUL.md and skills instead of the session's profile.
     """
@@ -23008,8 +23008,8 @@ def test_persist_live_session_system_prompt_uses_profile_home(monkeypatch, tmp_p
         _session_db = None
 
         def _build_system_prompt(self, system_message=None):
-            from hermes_constants import get_hermes_home
-            home = get_hermes_home()
+            from akramcode_constants import get_akramcode_home
+            home = get_akramcode_home()
             built_homes.append(str(home))
             soul = (
                 (home / "SOUL.md").read_text(encoding="utf-8-sig")
@@ -23033,7 +23033,7 @@ def test_persist_live_session_system_prompt_uses_profile_home(monkeypatch, tmp_p
     server._persist_live_session_system_prompt(session)
 
     # The system prompt must have been built while the override pointed
-    # to the profile home, not the root ~/.hermes.
+    # to the profile home, not the root ~/.akramcode.
     assert len(built_homes) == 1, f"expected 1 build, got {built_homes}"
     assert str(profile_home) in built_homes[0], (
         f"system prompt built with wrong home: {built_homes[0]}"
@@ -23041,8 +23041,8 @@ def test_persist_live_session_system_prompt_uses_profile_home(monkeypatch, tmp_p
     assert "Work persona" in agent._cached_system_prompt
 
     # The override must have been reset after the call.
-    from hermes_constants import get_hermes_home_override
-    assert get_hermes_home_override() is None
+    from akramcode_constants import get_akramcode_home_override
+    assert get_akramcode_home_override() is None
 
 
 def test_persist_live_session_system_prompt_no_profile_is_unchanged(monkeypatch):
@@ -23074,11 +23074,11 @@ def test_persist_live_session_system_prompt_no_profile_is_unchanged(monkeypatch)
 
 
 def test_persist_live_session_system_prompt_restores_pre_existing_override(tmp_path):
-    """reset_hermes_home_override() restores the previous ContextVar state,
+    """reset_akramcode_home_override() restores the previous ContextVar state,
     not just the unset case: when a caller already holds an override, the
     persist call must scope to the session's profile and then hand the
     caller's override back, rather than clearing it to None."""
-    from hermes_constants import get_hermes_home_override
+    from akramcode_constants import get_akramcode_home_override
 
     outer_home = tmp_path / "profile-outer"
     outer_home.mkdir()
@@ -23097,8 +23097,8 @@ def test_persist_live_session_system_prompt_restores_pre_existing_override(tmp_p
         _session_db = None
 
         def _build_system_prompt(self, system_message=None):
-            from hermes_constants import get_hermes_home
-            built_homes.append(str(get_hermes_home()))
+            from akramcode_constants import get_akramcode_home
+            built_homes.append(str(get_akramcode_home()))
             return "inner prompt"
 
     class FakeDB:
@@ -23113,7 +23113,7 @@ def test_persist_live_session_system_prompt_restores_pre_existing_override(tmp_p
         "profile_home": str(inner_home),
     }
 
-    outer_token = set_hermes_home_override(outer_home)
+    outer_token = set_akramcode_home_override(outer_home)
     try:
         server._persist_live_session_system_prompt(session)
 
@@ -23121,10 +23121,10 @@ def test_persist_live_session_system_prompt_restores_pre_existing_override(tmp_p
         assert built_homes == [str(inner_home)]
         # The caller's pre-existing override survived, instead of being reset
         # to None.
-        assert get_hermes_home_override() == str(outer_home)
+        assert get_akramcode_home_override() == str(outer_home)
     finally:
-        reset_hermes_home_override(outer_token)
-    assert get_hermes_home_override() is None
+        reset_akramcode_home_override(outer_token)
+    assert get_akramcode_home_override() is None
 
 
 def test_persist_live_session_system_prompt_binds_session_cwd(monkeypatch, tmp_path):
@@ -23322,7 +23322,7 @@ def test_ssh_named_profile_cwd_beats_launch_terminal_cwd(monkeypatch, tmp_path, 
     it even when that path does not exist on this host and the process
     TERMINAL_CWD still names the launch profile."""
     remote = "/home/kali"
-    launch = "/home/ubuntu/hermes_sync"
+    launch = "/home/ubuntu/akramcode_sync"
     assert not os.path.isdir(remote)
     home = tmp_path / "hunter"
     home.mkdir()

@@ -6,29 +6,29 @@ description: "External memory provider plugins — Honcho, OpenViking, Mem0, Hin
 
 # Memory Providers
 
-Hermes Agent ships with 7 external memory provider plugins that give the agent persistent, cross-session knowledge beyond the built-in MEMORY.md and USER.md, and more (such as Hindsight) are available from the [plugin catalog](./plugins.md). Only **one** external provider can be active at a time — the built-in memory is always active alongside it.
+AkramCode Agent ships with 7 external memory provider plugins that give the agent persistent, cross-session knowledge beyond the built-in MEMORY.md and USER.md, and more (such as Hindsight) are available from the [plugin catalog](./plugins.md). Only **one** external provider can be active at a time — the built-in memory is always active alongside it.
 
 ## Quick Start
 
 ```bash
-hermes memory setup      # interactive picker + configuration
-hermes memory status     # check what's active
-hermes memory off        # disable external provider
+akramcode memory setup      # interactive picker + configuration
+akramcode memory status     # check what's active
+akramcode memory off        # disable external provider
 ```
 
-You can also select the active memory provider via `hermes plugins` → Provider Plugins → Memory Provider.
+You can also select the active memory provider via `akramcode plugins` → Provider Plugins → Memory Provider.
 
-Or set manually in `~/.hermes/config.yaml`:
+Or set manually in `~/.akramcode/config.yaml`:
 
 ```yaml
 memory:
   provider: openviking   # or honcho, mem0, holographic, retaindb, byterover, supermemory,
-                         # or hindsight (plugin catalog — run `hermes plugins install hindsight` first)
+                         # or hindsight (plugin catalog — run `akramcode plugins install hindsight` first)
 ```
 
 ## How It Works
 
-When a memory provider is active, Hermes automatically:
+When a memory provider is active, AkramCode automatically:
 
 1. **Injects provider context** into the system prompt (what the provider knows)
 2. **Prefetches relevant memories** before each turn (background, non-blocking)
@@ -48,7 +48,7 @@ AI-native cross-session user modeling with dialectic reasoning, session-scoped c
 | | |
 |---|---|
 | **Best for** | Multi-agent systems with cross-session context, user-agent alignment |
-| **Requires** | `hermes memory setup` prepares the Honcho SDK through PM; [API key](https://app.honcho.dev) or self-hosted instance |
+| **Requires** | `akramcode memory setup` prepares the Honcho SDK through PM; [API key](https://app.honcho.dev) or self-hosted instance |
 | **Data storage** | Honcho Cloud or self-hosted |
 | **Cost** | Honcho pricing (cloud) / free (self-hosted) |
 
@@ -66,14 +66,14 @@ The auto-injected dialectic also scales its reasoning level by query length (lon
 
 **Setup Wizard:**
 ```bash
-hermes memory setup        # select "honcho" — runs the Honcho-specific post-setup
+akramcode memory setup        # select "honcho" — runs the Honcho-specific post-setup
 ```
 
-The legacy `hermes honcho setup` command still works (it now redirects to `hermes memory setup`), but is only registered after Honcho is selected as the active memory provider.
+The legacy `akramcode honcho setup` command still works (it now redirects to `akramcode memory setup`), but is only registered after Honcho is selected as the active memory provider.
 
 **Headless / remote machines:** for cloud auth on a box without a browser (SSH, remote VM), pick **device** at the wizard's auth-method prompt. The CLI prints a short code and a verification link; open the link in a browser on any other machine, approve, and setup completes — no API key copy-paste. The wizard defaults to this option automatically when it detects no usable local browser.
 
-**Config:** `$HERMES_HOME/honcho.json` (profile-local) or `~/.honcho/config.json` (global). Resolution order: `$HERMES_HOME/honcho.json` > `~/.hermes/honcho.json` > `~/.honcho/config.json`. See the [config reference](https://github.com/NousResearch/hermes-agent/blob/main/plugins/memory/honcho/README.md) and the [Honcho integration guide](https://docs.honcho.dev/v3/guides/integrations/hermes).
+**Config:** `$AKRAMCODE_HOME/honcho.json` (profile-local) or `~/.honcho/config.json` (global). Resolution order: `$AKRAMCODE_HOME/honcho.json` > `~/.akramcode/honcho.json` > `~/.honcho/config.json`. See the [config reference](https://github.com/NousResearch/akramcode-agent/blob/main/plugins/memory/honcho/README.md) and the [Honcho integration guide](https://docs.honcho.dev/v3/guides/integrations/akramcode).
 
 <details>
 <summary>Full config reference</summary>
@@ -113,11 +113,11 @@ The legacy `hermes honcho setup` command still works (it now redirects to `herme
 {
   "apiKey": "your-key-from-app.honcho.dev",
   "hosts": {
-    "hermes": {
+    "akramcode": {
       "enabled": true,
-      "aiPeer": "hermes",
+      "aiPeer": "akramcode",
       "peerName": "your-name",
-      "workspace": "hermes"
+      "workspace": "akramcode"
     }
   }
 }
@@ -132,11 +132,11 @@ The legacy `hermes honcho setup` command still works (it now redirects to `herme
 {
   "baseUrl": "http://localhost:8000",
   "hosts": {
-    "hermes": {
+    "akramcode": {
       "enabled": true,
-      "aiPeer": "hermes",
+      "aiPeer": "akramcode",
       "peerName": "your-name",
-      "workspace": "hermes"
+      "workspace": "akramcode"
     }
   }
 }
@@ -144,45 +144,45 @@ The legacy `hermes honcho setup` command still works (it now redirects to `herme
 
 </details>
 
-:::tip Migrating from `hermes honcho`
-If you previously used `hermes honcho setup`, your config and all server-side data are intact. Just re-enable through the setup wizard again or manually set `memory.provider: honcho` to reactivate via the new system.
+:::tip Migrating from `akramcode honcho`
+If you previously used `akramcode honcho setup`, your config and all server-side data are intact. Just re-enable through the setup wizard again or manually set `memory.provider: honcho` to reactivate via the new system.
 :::
 
 **Multi-peer setup:**
 
-Honcho models conversations as peers exchanging messages — one user peer plus one AI peer per Hermes profile, all sharing a workspace. The workspace is the shared environment: the user peer is global across profiles, each AI peer is its own identity. Every AI peer builds an independent representation / card from its own observations, so a `coder` profile stays code-oriented while a `writer` profile stays editorial against the same user.
+Honcho models conversations as peers exchanging messages — one user peer plus one AI peer per AkramCode profile, all sharing a workspace. The workspace is the shared environment: the user peer is global across profiles, each AI peer is its own identity. Every AI peer builds an independent representation / card from its own observations, so a `coder` profile stays code-oriented while a `writer` profile stays editorial against the same user.
 
 The mapping:
 
 | Concept | What it is |
 |---------|-----------|
-| **Workspace** | Shared environment. All Hermes profiles under one workspace see the same user identity. |
+| **Workspace** | Shared environment. All AkramCode profiles under one workspace see the same user identity. |
 | **User peer** (`peerName`) | The human. Shared across profiles in the workspace. |
-| **AI peer** (`aiPeer`) | One per Hermes profile. Host key `hermes` → default; `hermes.<profile>` for others. |
+| **AI peer** (`aiPeer`) | One per AkramCode profile. Host key `akramcode` → default; `akramcode.<profile>` for others. |
 | **Observation** | Per-peer toggles controlling what Honcho models from whose messages. `directional` (default, all four on) or `unified` (single-observer pool). |
 
 ### New profile, fresh Honcho peer
 
 ```bash
-hermes profile create coder --clone
+akramcode profile create coder --clone
 ```
 
-`--clone` creates a `hermes.coder` host block in `honcho.json` with `aiPeer: "coder"`, shared `workspace`, inherited `peerName`, `recallMode`, `writeFrequency`, `observation`, etc. The AI peer is eagerly created in Honcho so it exists before the first message.
+`--clone` creates a `akramcode.coder` host block in `honcho.json` with `aiPeer: "coder"`, shared `workspace`, inherited `peerName`, `recallMode`, `writeFrequency`, `observation`, etc. The AI peer is eagerly created in Honcho so it exists before the first message.
 
 ### Existing profiles, backfill Honcho peers
 
 ```bash
-hermes honcho sync
+akramcode honcho sync
 ```
 
-Scans every Hermes profile, creates host blocks for any profile without one, inherits settings from the default `hermes` block, and creates the new AI peers eagerly. Idempotent — skips profiles that already have a host block.
+Scans every AkramCode profile, creates host blocks for any profile without one, inherits settings from the default `akramcode` block, and creates the new AI peers eagerly. Idempotent — skips profiles that already have a host block.
 
 ### Per-profile observation
 
 Each host block can override the observation config independently. Example: a code-focused profile where the AI peer observes the user but doesn't self-model:
 
 ```json
-"hermes.coder": {
+"akramcode.coder": {
   "aiPeer": "coder",
   "observation": {
     "user": { "observeMe": true, "observeOthers": true },
@@ -217,7 +217,7 @@ The peer model above covers CLI, TUI, and desktop sessions, where every conversa
 | `userPeerAliases` | Maps specific runtime IDs to peers (`{"7654321": "alice"}`). The home for routing distinct identities — including agents that each carry their own peer |
 | `runtimePeerPrefix` | Namespaces any unmapped runtime ID (`telegram_7654321`) so platforms with same-shaped IDs don't collide |
 
-Off-gateway these keys do nothing. `hermes memory setup` only prompts for them when it detects a connected gateway platform. See the [Honcho page](./honcho.md#gateway-identity-mapping) for the resolver ladder and the setup flow.
+Off-gateway these keys do nothing. `akramcode memory setup` only prompts for them when it detects a connected gateway platform. See the [Honcho page](./honcho.md#gateway-identity-mapping) for the resolver ladder and the setup flow.
 
 <details>
 <summary>Full honcho.json example (multi-profile)</summary>
@@ -225,13 +225,13 @@ Off-gateway these keys do nothing. `hermes memory setup` only prompts for them w
 ```json
 {
   "apiKey": "your-key",
-  "workspace": "hermes",
+  "workspace": "akramcode",
   "peerName": "eri",
   "hosts": {
-    "hermes": {
+    "akramcode": {
       "enabled": true,
-      "aiPeer": "hermes",
-      "workspace": "hermes",
+      "aiPeer": "akramcode",
+      "workspace": "akramcode",
       "peerName": "eri",
       "recallMode": "hybrid",
       "writeFrequency": "async",
@@ -249,10 +249,10 @@ Off-gateway these keys do nothing. `hermes memory setup` only prompts for them w
       "messageMaxChars": 25000,
       "saveMessages": true
     },
-    "hermes.coder": {
+    "akramcode.coder": {
       "enabled": true,
       "aiPeer": "coder",
-      "workspace": "hermes",
+      "workspace": "akramcode",
       "peerName": "eri",
       "recallMode": "tools",
       "observation": {
@@ -260,10 +260,10 @@ Off-gateway these keys do nothing. `hermes memory setup` only prompts for them w
         "ai": { "observeMe": true, "observeOthers": true }
       }
     },
-    "hermes.writer": {
+    "akramcode.writer": {
       "enabled": true,
       "aiPeer": "writer",
-      "workspace": "hermes",
+      "workspace": "akramcode",
       "peerName": "eri"
     }
   },
@@ -275,7 +275,7 @@ Off-gateway these keys do nothing. `hermes memory setup` only prompts for them w
 
 </details>
 
-See the [config reference](https://github.com/NousResearch/hermes-agent/blob/main/plugins/memory/honcho/README.md) and [Honcho integration guide](https://docs.honcho.dev/v3/guides/integrations/hermes).
+See the [config reference](https://github.com/NousResearch/akramcode-agent/blob/main/plugins/memory/honcho/README.md) and [Honcho integration guide](https://docs.honcho.dev/v3/guides/integrations/akramcode).
 
 
 ---
@@ -300,16 +300,16 @@ openviking-server init
 openviking-server doctor
 openviking-server
 
-# Then configure Hermes
-hermes memory setup    # select "openviking"
+# Then configure AkramCode
+akramcode memory setup    # select "openviking"
 # Or manually:
-hermes config set memory.provider openviking
+akramcode config set memory.provider openviking
 ```
 
-`hermes memory setup` can reuse or copy connection values from
+`akramcode memory setup` can reuse or copy connection values from
 `~/.openviking/ovcli.conf`. Manual setup uses the active profile's `.env` file;
-for the default profile that is `~/.hermes/.env`, and for named profiles use
-`~/.hermes/profiles/<profile>/.env`.
+for the default profile that is `~/.akramcode/.env`, and for named profiles use
+`~/.akramcode/profiles/<profile>/.env`.
 
 ```text
 OPENVIKING_ENDPOINT=http://127.0.0.1:1933
@@ -323,11 +323,11 @@ OpenViking server settings live in `ov.conf` (`--config`,
 live in `ovcli.conf` (`OPENVIKING_CLI_CONFIG_FILE` or
 `~/.openviking/ovcli.conf`).
 
-When the endpoint is local and nothing is listening, Hermes starts
+When the endpoint is local and nothing is listening, AkramCode starts
 `openviking-server` in the background. That server gets your model-provider
 keys (for its embedding and VLM models), your `HOME` and
 `OPENVIKING_CONFIG_FILE`, but never bot, gateway or relay tokens, and not
-Hermes's `PYTHONPATH`. Put anything else the server needs in `ov.conf`.
+AkramCode's `PYTHONPATH`. Put anything else the server needs in `ov.conf`.
 
 **Key features:**
 - Tiered context loading: L0 (~100 tokens) → L1 (~2k) → L2 (full)
@@ -335,7 +335,7 @@ Hermes's `PYTHONPATH`. Put anything else the server needs in `ov.conf`.
 - `viking://` URI scheme for hierarchical knowledge browsing
 
 `OPENVIKING_ACCOUNT` and `OPENVIKING_USER` are used for local/trusted mode.
-Peer identity is optional. By default, Hermes sends no peer ID and writes
+Peer identity is optional. By default, AkramCode sends no peer ID and writes
 explicit memories to `viking://user/<user>/memories/...`. Setup does not ask
 for a peer ID. For separate assistant context, set
 `memory.openviking.agent: work-assistant` in `config.yaml`.
@@ -346,11 +346,11 @@ linked OpenViking config. Existing memories are not moved or deleted.
 With no peer ID, default search covers user memory and existing peer memories
 under the same OpenViking user. Old peer memories remain searchable at their
 existing paths. Ranking and result limits determine which memories are returned.
-Set `memory.openviking.agent: hermes` to restore the old peer-scoped writes.
+Set `memory.openviking.agent: akramcode` to restore the old peer-scoped writes.
 Memories written at user scope before this change stay there and remain
 searchable. The setting changes future writes, not existing memory locations.
 
-Hermes sends `User-Agent: openviking-memory-hermes/<version>` on OpenViking
+AkramCode sends `User-Agent: openviking-memory-akramcode/<version>` on OpenViking
 requests. This standard harness identifier contains no per-user identifier and
 does not add a separate request.
 
@@ -363,7 +363,7 @@ Server-side LLM fact extraction with semantic search, reranking, and automatic d
 | | |
 |---|---|
 | **Best for** | Hands-off memory management — Mem0 handles extraction automatically |
-| **Requires** | `hermes memory setup` prepares the Mem0 SDK through PM; API key (platform), a running Mem0 server (self-hosted dashboard), or an LLM + vector store (OSS) |
+| **Requires** | `akramcode memory setup` prepares the Mem0 SDK through PM; API key (platform), a running Mem0 server (self-hosted dashboard), or an LLM + vector store (OSS) |
 | **Data storage** | Mem0 Cloud (platform), your own Mem0 server (self-hosted dashboard), or in-process (OSS) |
 | **Cost** | Mem0 pricing (platform) / free (self-hosted or OSS) |
 
@@ -375,37 +375,37 @@ in-process SDK runs on that target.
 
 **Setup (Platform):**
 ```bash
-hermes memory setup    # select "mem0" → "Platform"
+akramcode memory setup    # select "mem0" → "Platform"
 # Or manually:
-hermes config set memory.provider mem0
-echo "MEM0_API_KEY=your-key" >> ~/.hermes/.env
+akramcode config set memory.provider mem0
+echo "MEM0_API_KEY=your-key" >> ~/.akramcode/.env
 ```
 
 **Setup (OSS):**
 ```bash
-hermes memory setup    # select "mem0" → "Open Source (self-hosted)"
+akramcode memory setup    # select "mem0" → "Open Source (self-hosted)"
 # Or via flags:
-hermes memory setup mem0 --mode oss --oss-llm openai --oss-llm-key sk-... --oss-vector qdrant
+akramcode memory setup mem0 --mode oss --oss-llm openai --oss-llm-key sk-... --oss-vector qdrant
 ```
 
 Preview without writing files:
 ```bash
-hermes memory setup mem0 --mode oss --oss-llm-key sk-... --dry-run
+akramcode memory setup mem0 --mode oss --oss-llm-key sk-... --dry-run
 ```
 
 **Setup (Self-Hosted Dashboard):** connect to a Mem0 server you run via Docker (the dashboard's REST API):
 
 ```bash
-hermes memory setup    # select "mem0" → "Self-hosted server"
+akramcode memory setup    # select "mem0" → "Self-hosted server"
 # Or via flags:
-hermes memory setup mem0 --mode selfhosted --host http://localhost:8888 --api-key your-admin-api-key
+akramcode memory setup mem0 --mode selfhosted --host http://localhost:8888 --api-key your-admin-api-key
 ```
 
 Or configure manually — either as env vars:
 
 ```bash
-echo "MEM0_HOST=http://localhost:8888" >> ~/.hermes/.env
-echo "MEM0_API_KEY=your-admin-api-key" >> ~/.hermes/.env
+echo "MEM0_HOST=http://localhost:8888" >> ~/.akramcode/.env
+echo "MEM0_API_KEY=your-admin-api-key" >> ~/.akramcode/.env
 ```
 
 or in `mem0.json`:
@@ -416,14 +416,14 @@ or in `mem0.json`:
 
 The plugin authenticates with `X-API-Key` and uses the server's `/search` / `/memories` routes. `api_key` is optional (omit only for `AUTH_DISABLED` servers). Don't set `mode: oss` — it takes precedence over `host`.
 
-**Config:** `$HERMES_HOME/mem0.json` (behavioral settings). Only the secret `MEM0_API_KEY` belongs in `~/.hermes/.env`.
+**Config:** `$AKRAMCODE_HOME/mem0.json` (behavioral settings). Only the secret `MEM0_API_KEY` belongs in `~/.akramcode/.env`.
 
 | Key | Default | Description |
 |-----|---------|-------------|
 | `mode` | `platform` | `platform` (Mem0 Cloud) or `oss` (self-managed, in-process) |
 | `host` | — | Self-hosted Mem0 server URL (Docker dashboard). Routes over HTTP with `X-API-Key`; don't combine with `mode: oss` |
-| `user_id` | `hermes-user` | User identifier |
-| `agent_id` | `hermes` | Agent identifier |
+| `user_id` | `akramcode-user` | User identifier |
+| `agent_id` | `akramcode` | Agent identifier |
 | `rerank` | `false` | Rerank search results for relevance (platform mode only) |
 | `sync_max_chars` | `450` | Per-message character cap applied before each turn is sent for fact extraction, cut at the last sentence boundary. The default fits 512-token embedders (Ollama `bge-small-zh-v1.5`, `all-minilm`); raise it (e.g. `6000`) for 8k-token embedders such as `text-embedding-3-small`, `jina-embeddings-v3` or `bge-m3` |
 
@@ -435,14 +435,14 @@ The plugin authenticates with `X-API-Key` and uses the server's `/search` / `/me
 | Embedder | openai, ollama |
 | Vector Store | qdrant (local/server), pgvector |
 
-**Switching modes:** Re-run `hermes memory setup mem0 --mode <platform|selfhosted|oss>` or edit `mem0.json` directly.
+**Switching modes:** Re-run `akramcode memory setup mem0 --mode <platform|selfhosted|oss>` or edit `mem0.json` directly.
 
 ---
 
 ### Hindsight
 
 :::info Plugin catalog
-Hindsight is maintained by [vectorize-io](https://github.com/vectorize-io/hindsight) and installed from the [plugin catalog](./plugins.md) rather than bundled with Hermes. Setup details live in the upstream docs: [hindsight.vectorize.io/sdks/integrations/hermes](https://hindsight.vectorize.io/sdks/integrations/hermes).
+Hindsight is maintained by [vectorize-io](https://github.com/vectorize-io/hindsight) and installed from the [plugin catalog](./plugins.md) rather than bundled with AkramCode. Setup details live in the upstream docs: [hindsight.vectorize.io/sdks/integrations/akramcode](https://hindsight.vectorize.io/sdks/integrations/akramcode).
 :::
 
 Long-term memory with knowledge graph, entity resolution, and multi-strategy retrieval. The `hindsight_reflect` tool provides cross-memory synthesis that no other provider offers. Automatically retains full conversation turns (including tool calls) with session-level document tracking.
@@ -450,7 +450,7 @@ Long-term memory with knowledge graph, entity resolution, and multi-strategy ret
 | | |
 |---|---|
 | **Best for** | Knowledge graph-based recall with entity relationships |
-| **Requires** | `hermes plugins install hindsight`. Cloud: API key from [ui.hindsight.vectorize.io](https://ui.hindsight.vectorize.io). Local: LLM API key (OpenAI, Groq, OpenRouter, etc.) |
+| **Requires** | `akramcode plugins install hindsight`. Cloud: API key from [ui.hindsight.vectorize.io](https://ui.hindsight.vectorize.io). Local: LLM API key (OpenAI, Groq, OpenRouter, etc.) |
 | **Data storage** | Hindsight Cloud, local embedded PostgreSQL, or an external local Hindsight server |
 | **Cost** | Hindsight pricing (cloud) or free (local) |
 
@@ -458,46 +458,46 @@ Long-term memory with knowledge graph, entity resolution, and multi-strategy ret
 
 **Setup:**
 ```bash
-hermes plugins install hindsight   # from the plugin catalog
-hermes memory setup                # select "hindsight"
+akramcode plugins install hindsight   # from the plugin catalog
+akramcode memory setup                # select "hindsight"
 # Or manually:
-hermes config set memory.provider hindsight
-echo "HINDSIGHT_API_KEY=your-key" >> ~/.hermes/.env
+akramcode config set memory.provider hindsight
+echo "HINDSIGHT_API_KEY=your-key" >> ~/.akramcode/.env
 ```
 
-The plugin lands in `~/.hermes/plugins/hindsight/` (per profile home) and is enabled under `plugins.enabled` in `config.yaml`. `hermes memory setup`, `hermes memory status`, `hermes plugins list` and the dashboard Memory settings all work with the catalog-installed plugin. In local embedded mode the plugin installs `hindsight-all` on first use through Hermes' lazy-install path, which honours `security.allow_lazy_installs`.
+The plugin lands in `~/.akramcode/plugins/hindsight/` (per profile home) and is enabled under `plugins.enabled` in `config.yaml`. `akramcode memory setup`, `akramcode memory status`, `akramcode plugins list` and the dashboard Memory settings all work with the catalog-installed plugin. In local embedded mode the plugin installs `hindsight-all` on first use through AkramCode' lazy-install path, which honours `security.allow_lazy_installs`.
 
-**Local mode UI:** `hindsight-embed -p hermes ui start`
+**Local mode UI:** `hindsight-embed -p akramcode ui start`
 
-**Config:** `$HERMES_HOME/hindsight/config.json`
+**Config:** `$AKRAMCODE_HOME/hindsight/config.json`
 
 | Key | Default | Description |
 |-----|---------|-------------|
 | `mode` | `cloud` | `cloud`, `local_embedded`, or `local_external` |
-| `bank_id` | `hermes` | Memory bank identifier |
+| `bank_id` | `akramcode` | Memory bank identifier |
 | `recall_budget` | `mid` | Recall thoroughness: `low` / `mid` / `high` |
 | `memory_mode` | `hybrid` | `hybrid` (context + tools), `context` (auto-inject only), `tools` (tools only) |
 | `auto_retain` | `true` | Automatically retain conversation turns |
 | `auto_recall` | `true` | Automatically recall memories before each turn |
 | `retain_async` | `true` | Process retain asynchronously on the server |
-| `retain_context` | `conversation between Hermes Agent and the User` | Context label for retained memories |
+| `retain_context` | `conversation between AkramCode Agent and the User` | Context label for retained memories |
 | `retain_tags` | — | Default tags applied to retained memories; merged with per-call tool tags |
 | `retain_source` | — | Optional `metadata.source` attached to retained memories |
 | `retain_user_prefix` | `User` | Label used before user turns in auto-retained transcripts |
 | `retain_assistant_prefix` | `Assistant` | Label used before assistant turns in auto-retained transcripts |
 | `recall_tags` | — | Tags to filter on recall |
 
-See the [upstream Hermes integration docs](https://hindsight.vectorize.io/sdks/integrations/hermes) for the full configuration reference.
+See the [upstream AkramCode integration docs](https://hindsight.vectorize.io/sdks/integrations/akramcode) for the full configuration reference.
 
 #### Migrating from bundled Hindsight
 
-Hindsight used to ship inside the Hermes tree (and as the `hermes-agent[hindsight]` pip extra). If your `config.yaml` already has `memory.provider: hindsight`, there is nothing to do for most users:
+Hindsight used to ship inside the AkramCode tree (and as the `akramcode-agent[hindsight]` pip extra). If your `config.yaml` already has `memory.provider: hindsight`, there is nothing to do for most users:
 
-- `hermes update` installs the catalog plugin into every profile home that names the provider (this runs even when `security.allow_lazy_installs` is `false`).
-- If the plugin is still missing on the first agent start (`hermes chat`, the gateway, …), Hermes installs it and prints `✓ Memory provider 'hindsight' moved out of core — installed its plugin from the catalog (your memory.hindsight settings and data are unchanged).`
-- With `security.allow_lazy_installs: false`, the agent-start path instead logs one line — ``Memory provider 'hindsight' is not installed; security.allow_lazy_installs is off — run `hermes plugins install hindsight`.`` — and you run `hermes plugins install hindsight` yourself.
+- `akramcode update` installs the catalog plugin into every profile home that names the provider (this runs even when `security.allow_lazy_installs` is `false`).
+- If the plugin is still missing on the first agent start (`akramcode chat`, the gateway, …), AkramCode installs it and prints `✓ Memory provider 'hindsight' moved out of core — installed its plugin from the catalog (your memory.hindsight settings and data are unchanged).`
+- With `security.allow_lazy_installs: false`, the agent-start path instead logs one line — ``Memory provider 'hindsight' is not installed; security.allow_lazy_installs is off — run `akramcode plugins install hindsight`.`` — and you run `akramcode plugins install hindsight` yourself.
 
-What changes on disk: the plugin appears in `~/.hermes/plugins/hindsight/` and `config.yaml` gains `plugins.enabled: [hindsight]`. `memory.provider`, `memory.hindsight.*`, `$HERMES_HOME/hindsight/config.json`, `HINDSIGHT_API_KEY` in `.env` and your memory bank data are untouched. Verify with `hermes memory status` (provider active) and `hermes plugins list` (plugin installed and enabled).
+What changes on disk: the plugin appears in `~/.akramcode/plugins/hindsight/` and `config.yaml` gains `plugins.enabled: [hindsight]`. `memory.provider`, `memory.hindsight.*`, `$AKRAMCODE_HOME/hindsight/config.json`, `HINDSIGHT_API_KEY` in `.env` and your memory bank data are untouched. Verify with `akramcode memory status` (provider active) and `akramcode plugins list` (plugin installed and enabled).
 
 ---
 
@@ -516,16 +516,16 @@ Local SQLite fact store with FTS5 full-text search, trust scoring, and HRR (Holo
 
 **Setup:**
 ```bash
-hermes memory setup    # select "holographic"
+akramcode memory setup    # select "holographic"
 # Or manually:
-hermes config set memory.provider holographic
+akramcode config set memory.provider holographic
 ```
 
-**Config:** `config.yaml` under `plugins.hermes-memory-store`
+**Config:** `config.yaml` under `plugins.akramcode-memory-store`
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| `db_path` | `$HERMES_HOME/memory_store.db` | SQLite database path |
+| `db_path` | `$AKRAMCODE_HOME/memory_store.db` | SQLite database path |
 | `auto_extract` | `false` | Auto-extract facts at session end |
 | `default_trust` | `0.5` | Default trust score (0.0–1.0) |
 
@@ -552,10 +552,10 @@ Cloud memory API with hybrid search (Vector + BM25 + Reranking), 7 memory types,
 
 **Setup:**
 ```bash
-hermes memory setup    # select "retaindb"
+akramcode memory setup    # select "retaindb"
 # Or manually:
-hermes config set memory.provider retaindb
-echo "RETAINDB_API_KEY=your-key" >> ~/.hermes/.env
+akramcode config set memory.provider retaindb
+echo "RETAINDB_API_KEY=your-key" >> ~/.akramcode/.env
 ```
 
 ---
@@ -578,15 +578,15 @@ Persistent memory via the `brv` CLI — hierarchical knowledge tree with tiered 
 # Install the CLI first
 curl -fsSL https://byterover.dev/install.sh | sh
 
-# Then configure Hermes
-hermes memory setup    # select "byterover"
+# Then configure AkramCode
+akramcode memory setup    # select "byterover"
 # Or manually:
-hermes config set memory.provider byterover
+akramcode config set memory.provider byterover
 ```
 
 **Key features:**
 - Automatic pre-compression extraction (saves insights before context compression discards them)
-- Knowledge tree stored at `$HERMES_HOME/byterover/` (profile-scoped)
+- Knowledge tree stored at `$AKRAMCODE_HOME/byterover/` (profile-scoped)
 - SOC2 Type II certified cloud sync (optional)
 
 ---
@@ -598,7 +598,7 @@ Semantic long-term memory with profile recall, semantic search, explicit memory 
 | | |
 |---|---|
 | **Best for** | Semantic recall with user profiling and session-level graph building |
-| **Requires** | `hermes memory setup` prepares the Supermemory SDK through PM; [cloud API key](http://app.supermemory.ai/integrations?connect=hermes), or a [self-hosted server](https://supermemory.ai/docs/self-hosting/overview) |
+| **Requires** | `akramcode memory setup` prepares the Supermemory SDK through PM; [cloud API key](http://app.supermemory.ai/integrations?connect=akramcode), or a [self-hosted server](https://supermemory.ai/docs/self-hosting/overview) |
 | **Data storage** | Supermemory Cloud or self-hosted |
 | **Cost** | Supermemory pricing (cloud) / free (self-hosted) |
 
@@ -606,10 +606,10 @@ Semantic long-term memory with profile recall, semantic search, explicit memory 
 
 **Setup:**
 ```bash
-hermes memory setup    # select "supermemory"
+akramcode memory setup    # select "supermemory"
 # Or manually:
-hermes config set memory.provider supermemory
-echo 'SUPERMEMORY_API_KEY=***' >> ~/.hermes/.env
+akramcode config set memory.provider supermemory
+echo 'SUPERMEMORY_API_KEY=***' >> ~/.akramcode/.env
 ```
 
 Self-hosted setup:
@@ -618,8 +618,8 @@ Self-hosted setup:
 npx supermemory local
 ```
 
-Before running `hermes memory setup`, set `base_url` in
-`$HERMES_HOME/supermemory.json`:
+Before running `akramcode memory setup`, set `base_url` in
+`$AKRAMCODE_HOME/supermemory.json`:
 
 ```json
 {
@@ -627,16 +627,16 @@ Before running `hermes memory setup`, set `base_url` in
 }
 ```
 
-Then run `hermes memory setup` and enter the API key printed by the local
+Then run `akramcode memory setup` and enter the API key printed by the local
 server. Configuring the endpoint first ensures the setup connection probe also
 stays local.
 
-**Config:** `$HERMES_HOME/supermemory.json`
+**Config:** `$AKRAMCODE_HOME/supermemory.json`
 
 | Key | Default | Description |
 |-----|---------|-------------|
 | `base_url` | `https://api.supermemory.ai` | API endpoint for hosted or self-hosted Supermemory. Takes priority over `SUPERMEMORY_BASE_URL`. |
-| `container_tag` | `hermes` | Container tag used for search and writes. Supports `{identity}` template for profile-scoped tags. |
+| `container_tag` | `akramcode` | Container tag used for search and writes. Supports `{identity}` template for profile-scoped tags. |
 | `auto_recall` | `true` | Inject relevant memory context before turns |
 | `auto_capture` | `true` | Store cleaned user-assistant turns after each response |
 | `max_recall_results` | `10` | Max recalled items to format into context |
@@ -655,7 +655,7 @@ Base URL precedence is `supermemory.json` → `SUPERMEMORY_BASE_URL` → `https:
 - Failed turn writes are retried (at-least-once) on the next turn, session end, `/reset`, or shutdown
 - End-to-end self-hosted routing — SDK and probe requests use the same configured endpoint
 - Profile facts injected on first turn and at configurable intervals
-- **Profile-scoped containers** — use `{identity}` in `container_tag` (e.g. `hermes-{identity}` → `hermes-coder`) to isolate memories per Hermes profile
+- **Profile-scoped containers** — use `{identity}` in `container_tag` (e.g. `akramcode-{identity}` → `akramcode-coder`) to isolate memories per AkramCode profile
 - **Multi-container mode** — enable `enable_custom_container_tags` with a `custom_containers` list to let the agent read/write across named containers. Automatic operations stay on the primary container.
 
 <details>
@@ -663,7 +663,7 @@ Base URL precedence is `supermemory.json` → `SUPERMEMORY_BASE_URL` → `https:
 
 ```json
 {
-  "container_tag": "hermes",
+  "container_tag": "akramcode",
   "enable_custom_container_tags": true,
   "custom_containers": ["project-alpha", "shared-knowledge"],
   "custom_container_instructions": "Use project-alpha for coding context."
@@ -681,7 +681,7 @@ Structured long-term memory using Memori Cloud, with background completed-turn c
 | | |
 |---|---|
 | **Best for** | Agent-controlled recall with structured project and session attribution |
-| **Requires** | Externally supplied `hermes-memori` CLI and provider integration + [Memori API key](https://app.memorilabs.ai/signup) |
+| **Requires** | Externally supplied `akramcode-memori` CLI and provider integration + [Memori API key](https://app.memorilabs.ai/signup) |
 | **Data storage** | Memori Cloud |
 | **Cost** | Memori pricing |
 
@@ -689,24 +689,24 @@ Structured long-term memory using Memori Cloud, with background completed-turn c
 
 **Setup:**
 
-`hermes-memori` is an external integration, not a managed PM tool name. Follow
+`akramcode-memori` is an external integration, not a managed PM tool name. Follow
 its publisher's instructions to install the CLI in an independent environment.
-Before running its installer, confirm that it targets the intended Hermes home
+Before running its installer, confirm that it targets the intended AkramCode home
 and supplies a provider with declared Python dependencies. Do not let an external
-installer pip-install into Hermes's selected environment. CLI availability alone
-does not make the Python provider available inside Hermes; an entry-point-only
+installer pip-install into AkramCode's selected environment. CLI availability alone
+does not make the Python provider available inside AkramCode; an entry-point-only
 distribution needs an owner-managed build that includes it.
 
 ```bash
 # Run only after confirming the external installer's integration contract above.
-hermes-memori install
-hermes config set memory.provider memori
-hermes memory setup
+akramcode-memori install
+akramcode config set memory.provider memori
+akramcode memory setup
 ```
 
 If the installer does not support PM-managed directory-provider admission, ask
-the publisher for that integration rather than inventing a `hermes pm install`
-package command. Restart Hermes after successful dependency preparation.
+the publisher for that integration rather than inventing a `akramcode pm install`
+package command. Restart AkramCode after successful dependency preparation.
 
 ---
 
@@ -717,32 +717,32 @@ package command. Restart Hermes after successful dependency preparation.
 | **Honcho** | Cloud | Paid | 5 | `honcho-ai` | Dialectic user modeling + session-scoped context |
 | **OpenViking** | Self-hosted | Free | 6 | `openviking` + server | Filesystem hierarchy + tiered loading |
 | **Mem0** | Cloud/Self-hosted | Free/Paid | 4 | `mem0ai` | Server-side LLM extraction + self-hosted/OSS modes |
-| **Hindsight** (plugin catalog) | Cloud/Local | Free/Paid | 3 | `hermes plugins install hindsight` | Knowledge graph + reflect synthesis |
+| **Hindsight** (plugin catalog) | Cloud/Local | Free/Paid | 3 | `akramcode plugins install hindsight` | Knowledge graph + reflect synthesis |
 | **Holographic** | Local | Free | 2 | None | HRR algebra + trust scoring |
 | **RetainDB** | Cloud | $20/mo | 10 | `requests` | Delta compression |
 | **ByteRover** | Local/Cloud | Free/Paid | 3 | `brv` CLI | Pre-compression extraction |
 | **Supermemory** | Cloud/Self-hosted | Free/Paid | 4 | `supermemory` | Context fencing + session graph ingest + multi-container |
-| **Memori** | Cloud | Free/Paid | 5 | `hermes-memori` | Tool-aware memory + structured recall |
+| **Memori** | Cloud | Free/Paid | 5 | `akramcode-memori` | Tool-aware memory + structured recall |
 
 ## Profile Isolation
 
 Each provider's data is isolated per [profile](../profiles.md):
 
-- **Local storage providers** (Holographic, ByteRover) use `$HERMES_HOME/` paths which differ per profile
-- **Config file providers** (Honcho, Mem0, Hindsight, Supermemory) store config in `$HERMES_HOME/` so each profile has its own credentials
+- **Local storage providers** (Holographic, ByteRover) use `$AKRAMCODE_HOME/` paths which differ per profile
+- **Config file providers** (Honcho, Mem0, Hindsight, Supermemory) store config in `$AKRAMCODE_HOME/` so each profile has its own credentials
 - **Cloud providers** (RetainDB) auto-derive profile-scoped project names
 - **Env var providers** (OpenViking) are configured via each profile's `.env` file
 
 ## Providers Moving to the Plugin Catalog
 
-Memory providers are moving out of the Hermes tree into their maintainers' own repositories,
+Memory providers are moving out of the AkramCode tree into their maintainers' own repositories,
 published through the [plugin catalog](./plugins.md) — Hindsight is the first (see
 [Migrating from bundled Hindsight](#migrating-from-bundled-hindsight)). Nothing changes for you: the
 provider name, your `memory.<name>` settings, its data directory and its tools stay the same.
-When a provider you have configured stops shipping with Hermes, `hermes update` installs its
+When a provider you have configured stops shipping with AkramCode, `akramcode update` installs its
 catalog plugin for every profile that names it; if you update through the Desktop app, the
 agent does the same the first time it starts (unless `security.allow_lazy_installs` is
-`false`, in which case it logs the `hermes plugins install <name>` one-liner instead).
+`false`, in which case it logs the `akramcode plugins install <name>` one-liner instead).
 
 ## Building a Memory Provider
 

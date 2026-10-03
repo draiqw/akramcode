@@ -91,7 +91,7 @@ TRAILING_PUNCTUATION = ",.;!?"
 _OPENERS = {")": "(", "]": "[", "}": "{"}
 _NEEDS_QUOTING = re.compile(r"""[\s()\[\]{}<>"'`]""")
 _SENSITIVE_HOME_DIRS = (".ssh", ".aws", ".gnupg", ".kube", ".docker", ".azure", ".config/gh")
-_SENSITIVE_HERMES_DIRS = (Path("skills") / ".hub",)
+_SENSITIVE_AKRAMCODE_DIRS = (Path("skills") / ".hub",)
 _SENSITIVE_HOME_FILES = tuple(Path(p) for p in (
     ".ssh/authorized_keys", ".ssh/id_rsa", ".ssh/id_ed25519", ".ssh/config", ".bashrc", ".zshrc",
     ".profile", ".bash_profile", ".zprofile", ".netrc", ".pgpass", ".npmrc", ".pypirc",
@@ -191,7 +191,7 @@ def preprocess_context_references(
     import concurrent.futures
     import contextvars
     # The side thread starts with an empty Context: without the caller's copy the served profile's
-    # HERMES_HOME override is lost and the credential-path guard checks the launch profile's .env.
+    # AKRAMCODE_HOME override is lost and the credential-path guard checks the launch profile's .env.
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
         return pool.submit(contextvars.copy_context().run, asyncio.run, coro).result()
 
@@ -472,7 +472,7 @@ def _is_under(path: Path, root: Path) -> bool:
     return True
 
 
-# Desktop persists a large plain-text paste as a `.txt` under this Hermes-managed
+# Desktop persists a large plain-text paste as a `.txt` under this AkramCode-managed
 # directory (apps/desktop/electron/composer-paste.ts) and attaches it as `@file:`.
 # The chat's cwd is rarely an ancestor of it, so it is the one anchored root the
 # workspace guard admits besides `allowed_root` itself.
@@ -480,12 +480,12 @@ COMPOSER_PASTES_DIRNAME = "composer-pastes"
 
 
 def _composer_paste_roots() -> list[Path]:
-    from agent.file_safety import _hermes_dirs
-    return [hermes_dir / COMPOSER_PASTES_DIRNAME for hermes_dir in _hermes_dirs()]
+    from agent.file_safety import _akramcode_dirs
+    return [akramcode_dir / COMPOSER_PASTES_DIRNAME for akramcode_dir in _akramcode_dirs()]
 
 
 def _agent_staged_path(path: Path) -> bool:
-    """True when *path* sits in a Hermes dir the gateway stages for the agent.
+    """True when *path* sits in a AkramCode dir the gateway stages for the agent.
 
     Those are the ``_CACHE_DIRS`` roots — ``attachments/`` (file drops),
     ``images/`` (image uploads), ``cache/*`` (platform downloads) and now
@@ -522,14 +522,14 @@ def _resolve_path(cwd: Path, target: str, *, allowed_root: Path | None = None) -
 
 def _ensure_reference_path_allowed(path: Path) -> None:
     """Refuse credential/internal paths. Fails CLOSED: the gateway feeds untrusted remote text here."""
-    from akramcode_constants import get_hermes_home
-    home, hermes_home = Path(os.path.expanduser("~")).resolve(), get_hermes_home().resolve()
-    blocked_exact = {home / rel for rel in _SENSITIVE_HOME_FILES} | {hermes_home / ".env"}
-    blocked_dirs = [home / rel for rel in _SENSITIVE_HOME_DIRS] + [hermes_home / rel for rel in _SENSITIVE_HERMES_DIRS]
+    from akramcode_constants import get_akramcode_home
+    home, akramcode_home = Path(os.path.expanduser("~")).resolve(), get_akramcode_home().resolve()
+    blocked_exact = {home / rel for rel in _SENSITIVE_HOME_FILES} | {akramcode_home / ".env"}
+    blocked_dirs = [home / rel for rel in _SENSITIVE_HOME_DIRS] + [akramcode_home / rel for rel in _SENSITIVE_AKRAMCODE_DIRS]
     if path in blocked_exact:
         raise ValueError("path is a sensitive credential file and cannot be attached")
     if any(_is_under(path, blocked_dir) for blocked_dir in blocked_dirs):
-        raise ValueError("path is a sensitive credential or internal Hermes path and cannot be attached")
+        raise ValueError("path is a sensitive credential or internal AkramCode path and cannot be attached")
     # Anchor to the canonical read deny-list (agent/file_safety.get_read_block_error): the
     # narrow list above never caught auth.json, .anthropic_oauth.json, mcp-tokens/, webhook
     # secrets or project .env files, and it grows automatically with that deny-list.
@@ -543,7 +543,7 @@ def _ensure_reference_path_allowed(path: Path) -> None:
         # guard closes; a spurious block is recoverable, a leaked credential is not.
         raise ValueError("path could not be verified against the credential deny-list and cannot be attached")
     if blocked:
-        raise ValueError("path is a sensitive credential or internal Hermes path and cannot be attached")
+        raise ValueError("path is a sensitive credential or internal AkramCode path and cannot be attached")
 
 
 def _strip_trailing_punctuation(value: str) -> str:

@@ -1,6 +1,6 @@
 """Plugin provenance: the 2x2 reconciliation of install metadata.
 
-Row-presence says "hermes installed this" (the .install-metadata.json
+Row-presence says "akramcode installed this" (the .install-metadata.json
 sidecar); ``.git``-presence cross-checks it. The reconciliation IS the
 disambiguation — ``source`` alone does not distinguish a git install
 from a manual copy (settled 2026-09-03, plugin-auto-update plan):
@@ -12,7 +12,7 @@ from a manual copy (settled 2026-09-03, plugin-auto-update plan):
 
 Pure functions over (plugins_dir, sidecar rows) — no globals, no
 network, fully testable. The sidecar remains the single authority for
-what *hermes* installed; this module only reads it.
+what *akramcode* installed; this module only reads it.
 """
 
 from __future__ import annotations

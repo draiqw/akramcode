@@ -123,7 +123,7 @@ async def connected(monkeypatch, *, extra=None, bot_id=111, is_reconnect=False):
 async def test_replay_is_admitted_once_before_dispatch(monkeypatch, tmp_path, kind, mode, concurrent):
     from gateway.config import GatewayConfig
     from gateway.session import SessionStore
-    from hermes_constants import set_hermes_home_override, reset_hermes_home_override
+    from akramcode_constants import set_akramcode_home_override, reset_akramcode_home_override
     import akramcode_cli.lifecycle
 
     monkeypatch.setattr(akramcode_cli.lifecycle, "has_hook", lambda name: True)
@@ -193,7 +193,7 @@ async def test_replay_is_admitted_once_before_dispatch(monkeypatch, tmp_path, ki
             assert len(delivered) == 2
         if mode == "owners":
             for profile, bot_id, fresh in (("alpha", 222, 1), ("beta", 333, 1), ("alpha", 222, 0)):
-                token = set_hermes_home_override(tmp_path / profile)
+                token = set_akramcode_home_override(tmp_path / profile)
                 try:
                     async with connected(monkeypatch, bot_id=bot_id) as (other, other_app, other_delivered):
                         await other_app.process_update(update(other_app.bot))
@@ -201,7 +201,7 @@ async def test_replay_is_admitted_once_before_dispatch(monkeypatch, tmp_path, ki
                         # A rebuilt adapter for the same bot and home reads that home's receipt.
                         assert len(other_delivered) == fresh
                 finally:
-                    reset_hermes_home_override(token)
+                    reset_akramcode_home_override(token)
             await app.process_update(update(app.bot))
             assert len(delivered) == 1
             # Same owner can reconnect with a different bot; its update-ID space is independent.
@@ -747,10 +747,10 @@ async def test_redelivery_to_rebuilt_adapter_is_dropped(monkeypatch, tmp_path):
     """The reconnect watcher and a gateway restart both build a new adapter, and a new PTB
     Updater polls from offset 0: Telegram resends every update whose acknowledgement never
     landed. The receipt must outlive the adapter that completed the update."""
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
     from plugins.platforms.telegram.update_admission import RECEIPT_TTL_SECONDS
 
-    receipts = get_hermes_home() / "telegram_update_receipts_111.json"
+    receipts = get_akramcode_home() / "telegram_update_receipts_111.json"
     async with connected(monkeypatch) as (adapter, app, delivered):
         await app.process_update(update(app.bot, 10))
         with monkeypatch.context() as broken:

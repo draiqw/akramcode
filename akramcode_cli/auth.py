@@ -1,7 +1,7 @@
-"""Multi-provider authentication system for Hermes Agent.
+"""Multi-provider authentication system for AkramCode Agent.
 
 - ``ProviderConfig`` / ``PROVIDER_REGISTRY`` describe every known inference provider.
-- The auth store (``~/.hermes/auth.json``) holds per-provider state, the credential pool and
+- The auth store (``~/.akramcode/auth.json``) holds per-provider state, the credential pool and
   suppression markers; ``_auth_store_lock`` / ``_load_auth_store`` / ``_save_auth_store`` are the
   only I/O primitives (cross-process flock, atomic 0o600 writes).
 - ``resolve_provider()`` picks the active provider via the documented priority chain.
@@ -30,7 +30,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, FrozenSet, Iterable, List, Optional, Tuple
 from urllib.parse import urlparse
 
-from akramcode_constants import OPENROUTER_BASE_URL, hermes_home_key, secure_parent_dir
+from akramcode_constants import OPENROUTER_BASE_URL, akramcode_home_key, secure_parent_dir
 from agent.credential_persistence import sanitize_borrowed_credential_payload
 from utils import atomic_json_write, env_float, file_signature, is_truthy_value  # noqa: F401  (env_float: agent.credential_pool reads auth_mod.env_float)
 from akramcode_cli.auth_zai_kimi import (  # noqa: F401  re-exported
@@ -258,7 +258,7 @@ BUILTIN_PROVIDER_IDS = frozenset(PROVIDER_REGISTRY)
 # a plugin never observes a partially initialized auth module (CONTRACT: during discovery a plugin may
 # rely only on ``ProviderConfig`` and ``PROVIDER_REGISTRY`` from here — nothing defined below).
 from akramcode_cli.config import (  # noqa: E402
-    atomic_config_replace, get_hermes_home, get_config_path, read_raw_config, require_readable_config_before_write)
+    atomic_config_replace, get_akramcode_home, get_config_path, read_raw_config, require_readable_config_before_write)
 
 # Plugin profiles (plugins/model-providers/<name>/) are mirrored into PROVIDER_REGISTRY with the
 # auth_type they declare; the mirror lives in the sibling so it can be re-run after discovery.
@@ -273,7 +273,7 @@ def get_anthropic_key() -> str:
 
     Order mirrors ``PROVIDER_REGISTRY["anthropic"].api_key_env_vars``.
 
-    Checks both the ``.env`` file and the process environment, preferring ``~/.hermes/.env`` so a deliberate
+    Checks both the ``.env`` file and the process environment, preferring ``~/.akramcode/.env`` so a deliberate
     key rotation isn't shadowed by a stale shell export (matches the api-key resolution path — see #20591).
     """
     from akramcode_cli.config import get_env_value_prefer_dotenv
@@ -362,7 +362,7 @@ def _model_level_key_env(provider_id: str) -> str:
     """``model.key_env`` when config.yaml's main model targets *provider_id*, else ``""``.
 
     The Desktop settings UI saves registry-provider keys as a credential pointer
-    (``model.key_env`` → ``$HERMES_HOME/.env``) instead of the registry's canonical env var,
+    (``model.key_env`` → ``$AKRAMCODE_HOME/.env``) instead of the registry's canonical env var,
     so credential resolution must consult it (#106336).
     """
     try:
@@ -393,12 +393,12 @@ def _resolve_api_key_provider_secret(provider_id: str, pconfig: ProviderConfig) 
             pass
         return "", ""
 
-    # Prefer ~/.hermes/.env over os.environ so a deliberate key rotation in .env isn't shadowed by
+    # Prefer ~/.akramcode/.env over os.environ so a deliberate key rotation in .env isn't shadowed by
     # a stale shell export inherited from a parent process (Codex CLI, test runners, etc.).
     from akramcode_cli.config import get_env_value_prefer_dotenv
 
     # Desktop-saved credential pointer: the settings UI persists registry-provider keys as
-    # model.key_env → $HERMES_HOME/.env (e.g. HERMES_CUSTOM_LMSTUDIO_API_KEY) while keeping
+    # model.key_env → $AKRAMCODE_HOME/.env (e.g. AKRAMCODE_CUSTOM_LMSTUDIO_API_KEY) while keeping
     # model.provider on the registry id, so the pointer must be honored here or the UI-saved
     # key is silently ignored and lmstudio falls through to its no-auth placeholder (#106336).
     key_env = _model_level_key_env(provider_id)
@@ -443,7 +443,7 @@ def _resolve_api_key_provider_secret(provider_id: str, pconfig: ProviderConfig) 
 
 def is_rate_limited_auth_error(error: Exception) -> bool:
     """True when an :class:`AuthError` is upstream rate-limiting / quota: transient, and
-    re-authenticating cannot fix it, so callers should say "retry later", not ``hermes auth``."""
+    re-authenticating cannot fix it, so callers should say "retry later", not ``akramcode auth``."""
     return (isinstance(error, AuthError) and not error.relogin_required
             and error.code == CODEX_RATE_LIMITED_CODE)
 
@@ -472,10 +472,10 @@ def format_auth_error(error: Exception) -> str:
         # Rate-limit / quota errors are not credential problems: never append "re-authenticate".
         return str(error)
     if error.relogin_required:
-        # Profile-aware: a bare `hermes model` from a named profile re-signs the ROOT store (#114012).
+        # Profile-aware: a bare `akramcode model` from a named profile re-signs the ROOT store (#114012).
         from akramcode_constants import profile_cli_selector
 
-        return f"{error} Run `hermes {profile_cli_selector()}model` to re-authenticate."
+        return f"{error} Run `akramcode {profile_cli_selector()}model` to re-authenticate."
     if error.code in _ENTITLEMENT_ERROR_CODES:
         if error.provider == "nous":
             return _format_nous_entitlement_auth_error(error)
@@ -491,17 +491,17 @@ def _nonempty_str(value: Any) -> bool:
     return isinstance(value, str) and bool(value.strip())
 
 
-# ── Auth Store — persistence layer for ~/.hermes/auth.json ──────────────────────────────────────────
+# ── Auth Store — persistence layer for ~/.akramcode/auth.json ──────────────────────────────────────────
 
 def _auth_file_path() -> Path:
-    path = get_hermes_home() / "auth.json"
+    path = get_akramcode_home() / "auth.json"
     # Seat belt: under pytest, refuse to touch the real user's auth store (tests that forgot to
-    # monkeypatch HERMES_HOME or escaped the hermetic conftest). In production: one dict lookup.
+    # monkeypatch AKRAMCODE_HOME or escaped the hermetic conftest). In production: one dict lookup.
     if (os.environ.get("PYTEST_CURRENT_TEST")
-            and _same_path(path, Path.home() / ".hermes" / "auth.json")):
+            and _same_path(path, Path.home() / ".akramcode" / "auth.json")):
         raise RuntimeError(
             f"Refusing to touch real user auth store during test run: {path}. "
-            "Set HERMES_HOME to a tmp_path in your test fixture, or run "
+            "Set AKRAMCODE_HOME to a tmp_path in your test fixture, or run "
             "via scripts/run_tests.sh for hermetic CI-parity env.")
     return path
 
@@ -511,11 +511,11 @@ def _global_auth_file_path() -> Optional[Path]:
 
     Read-only fallback path, so no pytest seat belt here (it lives on ``_auth_file_path()``)."""
     try:
-        from akramcode_constants import get_default_hermes_root
-        global_root = get_default_hermes_root()
+        from akramcode_constants import get_default_akramcode_root
+        global_root = get_default_akramcode_root()
     except Exception:
         return None
-    return None if _same_path(get_hermes_home(), global_root) else global_root / "auth.json"
+    return None if _same_path(get_akramcode_home(), global_root) else global_root / "auth.json"
 
 
 def _load_global_auth_store() -> Dict[str, Any]:
@@ -535,7 +535,7 @@ def _load_global_auth_store() -> Dict[str, Any]:
     if cache_key is not None and cached is not None and cached[:2] == cache_key:
         return cached[2]
     if os.environ.get("PYTEST_CURRENT_TEST") and os.environ.get("HOME"):
-        real_root = Path(os.environ["HOME"]) / ".hermes" / "auth.json"
+        real_root = Path(os.environ["HOME"]) / ".akramcode" / "auth.json"
         try:
             if os.path.normcase(os.path.abspath(global_path)) == os.path.normcase(os.path.abspath(real_root)):
                 _global_auth_store_cache = None
@@ -635,7 +635,7 @@ def _lock_holder_hint(lock_path: Path) -> str:
             return ""
         except OSError:
             pass  # exists but is not signalable (e.g. EPERM): still a live holder
-    return (f"another hermes process (pid {pid}) probably still holds it "
+    return (f"another akramcode process (pid {pid}) probably still holds it "
             "(e.g. a dashboard or a slow credential refresh)")
 
 
@@ -791,8 +791,8 @@ def _load_auth_store(auth_file: Optional[Path] = None) -> Dict[str, Any]:
 def _save_private_json(target: Path, data: Any, *, fsync_dir: bool = False, **dump_kwargs: Any) -> None:
     """0600 credential JSON under a 0700 parent (``secure_parent_dir`` refuses ``/``, top-level dirs
     and the install tree). ``atomic_json_write`` creates the temp file 0600 before any byte lands."""
-    from akramcode_constants import mkdir_under_hermes_home
-    mkdir_under_hermes_home(target.parent)
+    from akramcode_constants import mkdir_under_akramcode_home
+    mkdir_under_akramcode_home(target.parent)
     secure_parent_dir(target)
     atomic_json_write(target, data, mode=0o600, fsync_dir=fsync_dir, **dump_kwargs)
 
@@ -912,7 +912,7 @@ def _save_provider_state_to_source(
 
 
 def mark_provider_active_if_unset(provider_id: str) -> None:
-    """Set ``active_provider`` only when none is set yet: the first ``hermes auth add`` credential must
+    """Set ``active_provider`` only when none is set yet: the first ``akramcode auth add`` credential must
     make its provider active (else setup reports "No inference provider configured"); later adds
     leave the user's choice untouched."""
     with _auth_store_lock():
@@ -953,7 +953,7 @@ def read_credential_pool(provider_id: Optional[str] = None) -> Dict[str, Any]:
     """Return the persisted credential pool, or one provider slice.
 
     In profile mode the global-root ``auth.json`` is a read-only fallback applied per provider ONLY
-    when the profile has zero entries for it (``hermes auth add`` in the profile shadows global)."""
+    when the profile has zero entries for it (``akramcode auth add`` in the profile shadows global)."""
     pool = _load_auth_store().get("credential_pool")
     pool = pool if isinstance(pool, dict) else {}
     global_pool = _load_global_auth_store().get("credential_pool")
@@ -1050,7 +1050,7 @@ def _merge_disk_cooldown_state(
     ``write_credential_pool`` persists an in-memory snapshot that may predate another process
     marking the same credential exhausted/dead; without this merge the later rewrite resurrects a
     rate-limited key as healthy and both processes resume hammering it. The mirror image is a
-    ``hermes auth reset`` that postdates the snapshot's cooldown (``status_cleared_at`` newer than
+    ``akramcode auth reset`` that postdates the snapshot's cooldown (``status_cleared_at`` newer than
     its ``last_status_at``): the disk row wins there too, or a live session's next ordinary flush
     would write the reset cooldown straight back (#89415)."""
     if not isinstance(disk_entry, dict):
@@ -1107,7 +1107,7 @@ def write_credential_pool(
     Final disk-boundary sanitizer for borrowed credentials (callers may pass raw dicts). Entries on
     disk but missing from *entries* (added concurrently) are merged back unless in *removed_ids*,
     so a rotation/exhaustion rewrite never drops a concurrent credential. Entries in
-    *status_cleared_ids* were cleared deliberately (``hermes auth reset``) and skip the
+    *status_cleared_ids* were cleared deliberately (``akramcode auth reset``) and skip the
     recency merge, which would otherwise read their cleared ``last_status_at`` (None ->
     epoch 0) as a stale snapshot and copy a still-binding cooldown back."""
     removed = {rid for rid in (removed_ids or ()) if rid}
@@ -1260,26 +1260,26 @@ def _config_selects_provider(normalized: str) -> bool:
 
 
 def _explicit_pool_entry_present(normalized: str) -> bool:
-    """Pool rows from EXPLICIT Hermes flows (manual add / device-code / PKCE) or live env keys;
+    """Pool rows from EXPLICIT AkramCode flows (manual add / device-code / PKCE) or live env keys;
     ambient borrowed sources (gh_cli / claude_code / qwen-cli) are deliberately excluded."""
     return any(_pool_entry_is_explicit(entry) for entry in read_credential_pool(normalized))
 
 
-# Set by Claude Code itself, not by the user explicitly configuring anthropic in Hermes.
+# Set by Claude Code itself, not by the user explicitly configuring anthropic in AkramCode.
 _IMPLICIT_ENV_VARS = frozenset({"CLAUDE_CODE_OAUTH_TOKEN"})
-_EXPLICIT_POOL_SOURCES = frozenset({"device_code", "loopback_pkce", "hermes_pkce", "manual"})
+_EXPLICIT_POOL_SOURCES = frozenset({"device_code", "loopback_pkce", "akramcode_pkce", "manual"})
 _VERTEX_PROVIDER_IDS = ("vertex", "google-vertex", "vertex-ai", "gcp-vertex", "vertexai")
 
 
 def _env_secret(name: str) -> bool:
     """True when *name* resolves to a usable secret in the active profile scope.
 
-    Must not read raw ``os.getenv``: under ``hermes serve`` / Desktop multiplex the
+    Must not read raw ``os.getenv``: under ``akramcode serve`` / Desktop multiplex the
     process environ is the *launch* profile, so a DeepSeek key pasted into another
     profile's ``.env`` would be invisible to ``explicit_only`` Settings → Model
     until a Bot-chat Refresh ran against that profile's own backend.
     Same reader as the credential resolver (``get_env_value_prefer_dotenv``: the current
-    HERMES_HOME ``.env`` first, then the scope-checked environ) so the gate and the key that
+    AKRAMCODE_HOME ``.env`` first, then the scope-checked environ) so the gate and the key that
     actually authenticates never disagree — an empty ``DEEPSEEK_API_KEY=`` export in the parent
     shell must not hide a real key in ``.env`` (#77007).
     """
@@ -1308,7 +1308,7 @@ def _explicit_env_credentials_present(normalized: str) -> bool:
 
 
 def _pool_entry_is_explicit(entry: Any) -> bool:
-    """True for pool rows the user created via an explicit Hermes flow (or a still-live env key)."""
+    """True for pool rows the user created via an explicit AkramCode flow (or a still-live env key)."""
     if not isinstance(entry, dict):
         return False
     source = str(entry.get("source") or "").strip().lower()
@@ -1322,11 +1322,11 @@ def _pool_entry_is_explicit(entry: Any) -> bool:
 
 
 def _keyless_provider_has_explicit_config(normalized: str) -> bool:
-    """Vertex / Bedrock count as explicit when Hermes-scoped routing config is present.
+    """Vertex / Bedrock count as explicit when AkramCode-scoped routing config is present.
 
     Uses has_explicit_vertex_config(), NOT has_vertex_credentials(): the latter also counts an
     ambient GOOGLE_APPLICATION_CREDENTIALS path (commonly set for unrelated GCP work). Only
-    Hermes-scoped signals (VERTEX_PROJECT_ID / vertex.project_id / VERTEX_CREDENTIALS_PATH) count
+    AkramCode-scoped signals (VERTEX_PROJECT_ID / vertex.project_id / VERTEX_CREDENTIALS_PATH) count
     here."""
     if normalized in _VERTEX_PROVIDER_IDS:
         from agent.vertex_adapter import has_explicit_vertex_config
@@ -1350,7 +1350,7 @@ _EXPLICIT_CONFIG_CHECKS: Tuple[Tuple[Callable[[str], bool], bool], ...] = (
 def is_provider_explicitly_configured(provider_id: str) -> bool:
     """True only if the user explicitly configured this provider: auth.json ``active_provider``,
     config.yaml ``model.provider`` / MoA slots, a pasted provider env var, a pool entry from a
-    Hermes-initiated flow, or Hermes-scoped routing config for keyless cloud-SDK providers. Ambient
+    AkramCode-initiated flow, or AkramCode-scoped routing config for keyless cloud-SDK providers. Ambient
     borrowed credentials (gh CLI, qwen-cli, ~/.claude/.credentials.json) never count."""
     normalized = (provider_id or "").strip().lower()
     for check, best_effort in _EXPLICIT_CONFIG_CHECKS:
@@ -1366,7 +1366,7 @@ def is_provider_explicitly_configured(provider_id: str) -> bool:
 
 def clear_provider_auth(provider_id: Optional[str] = None) -> bool:
     """Clear auth state for a provider (the active one when *provider_id* is None). Used by
-    ``hermes logout``. Returns True if something was cleared."""
+    ``akramcode logout``. Returns True if something was cleared."""
     with _auth_store_lock():
         auth_store = _load_auth_store()
         target = provider_id or auth_store.get("active_provider")
@@ -1404,13 +1404,13 @@ def _get_config_hint_for_unknown_provider(provider_name: str) -> str:
         return ("OpenCode discontinued anonymous free-tier access outside its own client "
                 "(relay 403s FreeTierError), so the keyless 'opencode-free' provider was removed. "
                 "Switch to 'opencode-zen' (pay-as-you-go, OPENCODE_ZEN_API_KEY) or 'opencode-go' "
-                "($10/mo subscription, OPENCODE_GO_API_KEY) via 'hermes model'.")
+                "($10/mo subscription, OPENCODE_GO_API_KEY) via 'akramcode model'.")
     try:
         from akramcode_cli.config import validate_config_structure
         issues = validate_config_structure()
         if not issues:
             return ""
-        lines = ["Config issue detected — run 'hermes doctor' for full diagnostics:"]
+        lines = ["Config issue detected — run 'akramcode doctor' for full diagnostics:"]
         for ci in issues:
             lines.append(f"  [{'ERROR' if ci.severity == 'error' else 'WARNING'}] {ci.message}")
             if ci.hint and ci.hint.splitlines()[0]:
@@ -1438,7 +1438,7 @@ def _refuse_env_adoption_if_config_corrupt() -> None:
     raise AuthError(
         f"config.yaml at {path} is corrupt ({err}) — refusing to auto-select "
         f"an inference provider from environment keys. Fix the YAML (a backup "
-        f"was saved next to it) or run hermes setup.",
+        f"was saved next to it) or run akramcode setup.",
         code="corrupt_config")
 
 
@@ -1521,7 +1521,7 @@ def _scoped_key_env_reader() -> Callable[[str], str]:
 
 def _openrouter_auto_detected(scoped_key_env: Callable[[str], str]) -> bool:
     """True when an OpenRouter credential exists via env key or the credential pool (a key added via
-    `hermes auth add openrouter` has no env var; without the pool check it is invisible to
+    `akramcode auth add openrouter` has no env var; without the pool check it is invisible to
     auto-detection and requests go out with no Authorization header)."""
     if has_usable_secret(scoped_key_env("OPENROUTER_API_KEY")):
         return True
@@ -1531,9 +1531,9 @@ def _openrouter_auto_detected(scoped_key_env: Callable[[str], str]) -> bool:
     if has_usable_secret(legacy_key) and looks_like_openrouter_key(legacy_key):
         return True
     try:
-        # Auto-detect an OpenRouter credential added via `hermes auth add openrouter` (manual pool entry, no
+        # Auto-detect an OpenRouter credential added via `akramcode auth add openrouter` (manual pool entry, no
         # env var). Without this, a key that only lives in the credential pool is invisible to
-        # auto-detection — the user sees `hermes auth list` showing the credential while requests go out
+        # auto-detection — the user sees `akramcode auth list` showing the credential while requests go out
         # with no Authorization header ("HTTP 401: Missing Authentication header"). The env-var check above
         # only covers OPENROUTER_API_KEY and an sk-or- key in OPENAI_API_KEY. See issue #42130.
         from agent.credential_pool import load_pool as _load_pool
@@ -1567,7 +1567,7 @@ def _config_model_provider() -> Tuple[Any, Optional[str]]:
     this is the safety net for the direct ``resolve_provider("auto")`` callers. A configured custom
     endpoint is explicit intent like any registry pin: without this rung the boot inventory
     (``free_tier_bootstrap``) read a llama.cpp/vLLM install as "nothing configured" and the
-    dashboard's Ink chat parked every session on Setup Required while ``hermes chat`` worked
+    dashboard's Ink chat parked every session on Setup Required while ``akramcode chat`` worked
     (#108383)."""
     try:
         from akramcode_cli.config import load_config
@@ -1610,7 +1610,7 @@ _NO_AUTO_DETECT_PROVIDERS = frozenset({"copilot", "lmstudio"})
 def _env_key_auto_detected(
     scoped_key_env: Callable[[str], str], oauth_active: Optional[str]) -> Optional[str]:
     """First registry api_key provider (registry order) with a usable env key, warning when it
-    preempts a logged-in OAuth provider so a stale key in ~/.hermes/.env never switches silently."""
+    preempts a logged-in OAuth provider so a stale key in ~/.akramcode/.env never switches silently."""
     for pid, pconfig in PROVIDER_REGISTRY.items():
         if pconfig.auth_type != "api_key" or pid in _NO_AUTO_DETECT_PROVIDERS:
             continue
@@ -1620,7 +1620,7 @@ def _env_key_auto_detected(
                     logger.warning(
                         # An exported API key now wins over a logged-in OAuth provider (the #29285 fix).
                         # Surface that so a user who deliberately uses OAuth but has a stale key in
-                        # ~/.hermes/.env isn't silently switched without knowing why.
+                        # ~/.akramcode/.env isn't silently switched without knowing why.
                         "Provider resolved to %r via %s, preempting your "
                         "logged-in OAuth provider %r. If you meant to use the "
                         "OAuth login, unset %s or set `model.provider` "
@@ -1658,8 +1658,8 @@ def resolve_provider(
         return normalized
     if normalized != "auto":
         hint = _get_config_hint_for_unknown_provider(normalized)
-        tail = (f"\n\n{hint}" if hint else " Check 'hermes model' for available providers, "
-                "or run 'hermes doctor' to diagnose config issues.")
+        tail = (f"\n\n{hint}" if hint else " Check 'akramcode model' for available providers, "
+                "or run 'akramcode doctor' to diagnose config issues.")
         raise AuthError(f"Unknown provider '{normalized}'." + tail, code="invalid_provider")
 
     if explicit_api_key or explicit_base_url:  # one-off CLI creds always mean openrouter/custom
@@ -1715,12 +1715,12 @@ def resolve_provider(
             return "bedrock"
     except ImportError:
         pass  # boto3 not installed
-    from akramcode_constants import display_hermes_home
+    from akramcode_constants import display_akramcode_home
     raise AuthError(
-        "Hermes is not connected to any AI provider yet. Run `hermes model` to pick one (the free "
+        "AkramCode is not connected to any AI provider yet. Run `akramcode model` to pick one (the free "
         "Nous tier needs no API key), type `/login` in chat, or add a key with "
-        f"`hermes auth add <provider>`. (Advanced: put an API key such as OPENROUTER_API_KEY in "
-        f"{display_hermes_home()}/.env.)",
+        f"`akramcode auth add <provider>`. (Advanced: put an API key such as OPENROUTER_API_KEY in "
+        f"{display_akramcode_home()}/.env.)",
         code="no_provider_configured")
 
 
@@ -1798,8 +1798,8 @@ _NOUS_PORTAL_ALLOWED_HOSTS: FrozenSet[str] = frozenset({
 # Per-process memo for resolve_nous_access_token: startup runs one check_fn per managed tool and
 # each would trigger its own ~15s blocking refresh of an expired token; a short-TTL memo collapses
 # the burst into one round-trip. Callers needing freshness use force_fresh/refresh_nous_oauth_pure.
-# Keyed by hermes_home_key(): the resolution itself is profile-scoped (_auth_file_path reads the
-# per-turn HERMES_HOME override a multiplex gateway sets), so a single slot would hand profile A's
+# Keyed by akramcode_home_key(): the resolution itself is profile-scoped (_auth_file_path reads the
+# per-turn AKRAMCODE_HOME override a multiplex gateway sets), so a single slot would hand profile A's
 # Portal bearer to profile B for up to the TTL.
 _RESOLVE_TOKEN_CACHE_LOCK = threading.Lock()
 _RESOLVE_TOKEN_CACHE: "dict[str, tuple[float, str]]" = {}
@@ -1807,7 +1807,7 @@ _RESOLVE_TOKEN_CACHE_TTL_S = 5.0
 
 
 def _nous_portal_base_url(state: Dict[str, Any]) -> str:
-    """HERMES_PORTAL_BASE_URL / NOUS_PORTAL_BASE_URL is the trusted operator override and wins
+    """AKRAMCODE_PORTAL_BASE_URL / NOUS_PORTAL_BASE_URL is the trusted operator override and wins
     OUTRIGHT, bypassing the host allowlist (which exists to reject an untrusted network-provided
     value, not one the operator configured). Otherwise the stored/default value, allowlist-gated."""
     env_portal_override = _nous_portal_env_override()
@@ -1833,7 +1833,7 @@ def resolve_nous_access_token(
     """Resolve a refresh-aware Nous Portal access token for managed tool gateways."""
     # Only a default-TLS resolution is memoised; error paths never populate the memo.
     memoable = not insecure and ca_bundle is None
-    cache_key = hermes_home_key()
+    cache_key = akramcode_home_key()
     if memoable:
         with _RESOLVE_TOKEN_CACHE_LOCK:
             cached = _RESOLVE_TOKEN_CACHE.get(cache_key)
@@ -1848,7 +1848,7 @@ def resolve_nous_access_token(
 
     with _provider_state_transaction("nous") as (auth_store, state, state_source_path):
         if not state:
-            raise _nous_err("Hermes is not logged into Nous Portal.", "nous_auth_missing", relogin=True)
+            raise _nous_err("AkramCode is not logged into Nous Portal.", "nous_auth_missing", relogin=True)
         portal_base_url = _nous_portal_base_url(state)
         client_id = str(state.get("client_id") or DEFAULT_NOUS_CLIENT_ID)
         verify = _resolve_verify(insecure=insecure, ca_bundle=ca_bundle, auth_state=state)
@@ -1963,7 +1963,7 @@ class OAuthProviderFlow:
     resolve_fn: str
     status_fn: str
     terminal_refresh_codes: FrozenSet[str] = frozenset()  # retrying the same refresh token cannot succeed
-    # ``hermes logout`` with no active provider falls back to config.yaml ``model.provider`` only
+    # ``akramcode logout`` with no active provider falls back to config.yaml ``model.provider`` only
     # for providers whose credentials live in auth.json.
     logout_from_config: bool = False
 
@@ -2092,7 +2092,7 @@ def _external_process_auth_evidence(provider_id: str, resolved_command: Optional
 
     False means "not verifiable from here", NOT "signed out". Subprocess-free (spawning the CLI from
     status endpoints/pickers re-creates the cold-start stall copilot_auth.py avoids). Generic evidence
-    for any external-process profile is its binary resolving: the subprocess owns real auth and Hermes
+    for any external-process profile is its binary resolving: the subprocess owns real auth and AkramCode
     has nothing else to inspect, so out-of-tree ACP rows pass credential-gated surfaces (Desktop
     ``explicit_only`` picker) like the bundled one, whose CLI additionally exposes readable token stores."""
     if provider_id == "copilot-acp":
@@ -2140,8 +2140,8 @@ def _external_process_spec(
     pconfig: ProviderConfig) -> tuple[str, List[str], str, Optional[str], tuple[str, ...]]:
     """``(command, args, base_url, resolved_command, command_env_vars)`` for an ACP provider.
 
-    Launch details come from the provider's own profile (copilot-acp: HERMES_COPILOT_ACP_COMMAND /
-    COPILOT_CLI_PATH / HERMES_COPILOT_ACP_ARGS), so out-of-tree providers describe their binary."""
+    Launch details come from the provider's own profile (copilot-acp: AKRAMCODE_COPILOT_ACP_COMMAND /
+    COPILOT_CLI_PATH / AKRAMCODE_COPILOT_ACP_ARGS), so out-of-tree providers describe their binary."""
     base_url = _provider_env_base_url(pconfig) or pconfig.inference_base_url
     try:
         from providers import get_provider_profile as _get_provider_profile
@@ -2219,7 +2219,7 @@ def _get_azure_foundry_auth_status() -> Dict[str, Any]:
     """Structural auth status for Azure Foundry.
 
     ``entra_id``: ``azure-identity`` importable — never invokes the Entra credential chain (keeps
-    CLI startup flat; ``hermes doctor`` runs the live probe). ``api_key`` (default): usable
+    CLI startup flat; ``akramcode doctor`` runs the live probe). ``api_key`` (default): usable
     ``AZURE_FOUNDRY_API_KEY``."""
     info: Dict[str, Any] = {"provider": "azure-foundry"}
     try:
@@ -2246,11 +2246,11 @@ def _get_azure_foundry_auth_status() -> Dict[str, Any]:
                 credential_verified=False, logged_in=bool(installed),
                 hint=(
                     "azure-identity is installed; live credential validation "
-                    "is skipped here. Run `hermes doctor` to verify token acquisition."
+                    "is skipped here. Run `akramcode doctor` to verify token acquisition."
                 ) if installed else (
-                    "azure-identity not installed. From the Hermes environment, run: "
+                    "azure-identity not installed. From the AkramCode environment, run: "
                     f"{install_hint('azure-identity')}. "
-                    "Then restart Hermes."))
+                    "Then restart AkramCode."))
         except Exception as exc:
             info["logged_in"] = False
             info["error"] = f"azure-identity check failed: {exc}"
@@ -2445,9 +2445,9 @@ def _reset_config_provider() -> Path:
 
 
 def login_command(args) -> None:
-    """Deprecated: use 'hermes model' or 'hermes setup' instead."""
-    print("The 'hermes login' command has been removed.\nUse 'hermes auth' to manage credentials,\n"
-          "'hermes model' to select a provider, or 'hermes setup' for full setup.")
+    """Deprecated: use 'akramcode model' or 'akramcode setup' instead."""
+    print("The 'akramcode login' command has been removed.\nUse 'akramcode auth' to manage credentials,\n"
+          "'akramcode model' to select a provider, or 'akramcode setup' for full setup.")
     raise SystemExit(0)
 
 
@@ -2496,6 +2496,6 @@ def logout_command(args) -> None:
     if not should_reset_config:
         print("Model provider configuration was unchanged.")
     elif os.getenv("OPENROUTER_API_KEY"):
-        print("Hermes will use OpenRouter for inference.")
+        print("AkramCode will use OpenRouter for inference.")
     else:
-        print("Run `hermes model` or configure an API key to use Hermes.")
+        print("Run `akramcode model` or configure an API key to use AkramCode.")

@@ -23,16 +23,16 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _isolate_env(tmp_path, monkeypatch):
-    """Isolate HERMES_HOME for each test.
+    """Isolate AKRAMCODE_HOME for each test.
 
-    The global hermetic fixture already redirects HERMES_HOME to a tempdir,
+    The global hermetic fixture already redirects AKRAMCODE_HOME to a tempdir,
     but we want the plugin to work with a predictable subpath. We reset
-    HERMES_HOME here for clarity.
+    AKRAMCODE_HOME here for clarity.
     """
-    hermes_home = tmp_path / ".hermes"
-    hermes_home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(hermes_home))
-    yield hermes_home
+    akramcode_home = tmp_path / ".akramcode"
+    akramcode_home.mkdir()
+    monkeypatch.setenv("AKRAMCODE_HOME", str(akramcode_home))
+    yield akramcode_home
 
 
 def _load_lib():
@@ -53,20 +53,20 @@ def _load_plugin_init():
     plugin_dir = repo_root / "plugins" / "disk-cleanup"
     # Use the PluginManager's module naming convention so relative imports work.
     spec = importlib.util.spec_from_file_location(
-        "hermes_plugins.disk_cleanup",
+        "akramcode_plugins.disk_cleanup",
         plugin_dir / "__init__.py",
         submodule_search_locations=[str(plugin_dir)],
     )
     # Ensure parent namespace package exists for the relative `. import disk_cleanup`
     import types
-    if "hermes_plugins" not in sys.modules:
-        ns = types.ModuleType("hermes_plugins")
+    if "akramcode_plugins" not in sys.modules:
+        ns = types.ModuleType("akramcode_plugins")
         ns.__path__ = []
-        sys.modules["hermes_plugins"] = ns
+        sys.modules["akramcode_plugins"] = ns
     mod = importlib.util.module_from_spec(spec)
-    mod.__package__ = "hermes_plugins.disk_cleanup"
+    mod.__package__ = "akramcode_plugins.disk_cleanup"
     mod.__path__ = [str(plugin_dir)]
-    sys.modules["hermes_plugins.disk_cleanup"] = mod
+    sys.modules["akramcode_plugins.disk_cleanup"] = mod
     spec.loader.exec_module(mod)
     return mod
 
@@ -76,14 +76,14 @@ def _load_plugin_init():
 # ---------------------------------------------------------------------------
 
 class TestIsSafePath:
-    def test_accepts_path_under_hermes_home(self, _isolate_env):
+    def test_accepts_path_under_akramcode_home(self, _isolate_env):
         dg = _load_lib()
         p = _isolate_env / "subdir" / "file.txt"
         p.parent.mkdir()
         p.write_text("x")
         assert dg.is_safe_path(p) is True
 
-    def test_rejects_outside_hermes_home(self, _isolate_env):
+    def test_rejects_outside_akramcode_home(self, _isolate_env):
         dg = _load_lib()
         assert dg.is_safe_path(Path("/etc/passwd")) is False
 
@@ -152,7 +152,7 @@ class TestProfileUserTreesNeverCleaned:
 
     def test_session_end_hook_leaves_workspace_files_alone(self, _isolate_env):
         """End-to-end: write_file into a project tree, then session end. A scratch file at
-        the HERMES_HOME root is the control: it is still tracked and removed."""
+        the AKRAMCODE_HOME root is the control: it is still tracked and removed."""
         pi = _load_plugin_init()
         dg = _load_lib()
         keep = _isolate_env / "workspace" / "proj" / "tests" / "test_parse.py"
@@ -245,7 +245,7 @@ class TestGitWorktreeFilesNeverCleaned:
     git trees still are."""
 
     def test_quick_drops_stale_tracked_worktree_entry_instead_of_deleting(self, _isolate_env):
-        """A test_* file inside a linked git worktree ($HERMES_HOME/worktrees/, .git is a
+        """A test_* file inside a linked git worktree ($AKRAMCODE_HOME/worktrees/, .git is a
         pointer FILE) is not classified as disposable, and a stale pre-fix tracked entry
         (category "test") is dropped by quick()'s re-validation, not deleted."""
         dg = _load_lib()
@@ -263,9 +263,9 @@ class TestGitWorktreeFilesNeverCleaned:
         assert dg.load_tracked() == [], "stale entry is dropped from tracking, not kept"
 
     def test_scratch_outside_git_trees_still_cleaned(self, _isolate_env):
-        """Control: root-level test_* scratch is still auto-deleted — even when HERMES_HOME
-        itself lives inside a git checkout (dotfiles repo); a bare .git at or above HERMES_HOME
-        does not make untracked scratch git-owned — only a .git strictly below HERMES_HOME, or
+        """Control: root-level test_* scratch is still auto-deleted — even when AKRAMCODE_HOME
+        itself lives inside a git checkout (dotfiles repo); a bare .git at or above AKRAMCODE_HOME
+        does not make untracked scratch git-owned — only a .git strictly below AKRAMCODE_HOME, or
         git actually tracking the file, does."""
         dg = _load_lib()
         (_isolate_env.parent / ".git").mkdir()
@@ -278,12 +278,12 @@ class TestGitWorktreeFilesNeverCleaned:
         assert not scratch.exists()
         assert result["deleted"] == 1
 
-    def test_tracked_file_in_hermes_home_checkout_is_never_disposable(self, _isolate_env, monkeypatch):
-        """HERMES_HOME itself is a git checkout: a file git TRACKS is Git-owned, so a
+    def test_tracked_file_in_akramcode_home_checkout_is_never_disposable(self, _isolate_env, monkeypatch):
+        """AKRAMCODE_HOME itself is a git checkout: a file git TRACKS is Git-owned, so a
         ``test_*``/``tmp_*`` name must not classify it as disposable.
 
-        Observed live: ``~/.hermes`` is the userfiles repo, so ``~/.hermes/scripts/`` sits
-        inside a worktree but is not *below* HERMES_HOME — the parent-chain probe found no
+        Observed live: ``~/.akramcode`` is the userfiles repo, so ``~/.akramcode/scripts/`` sits
+        inside a worktree but is not *below* AKRAMCODE_HOME — the parent-chain probe found no
         ``.git`` and the bundled disk-cleanup plugin deleted two committed regression tests
         (``scripts/test_analyze_upstream_opportunities.py``,
         ``scripts/test_customization_protocol_v2.py``), committing the deletion."""
@@ -291,7 +291,7 @@ class TestGitWorktreeFilesNeverCleaned:
 
         dg = _load_lib()
         subprocess.run(["git", "init", "-q", str(_isolate_env)], check=True)
-        (dg.get_hermes_home() / "scripts").mkdir()
+        (dg.get_akramcode_home() / "scripts").mkdir()
         tracked = _isolate_env / "scripts" / "test_committed.py"
         tracked.write_text("x")
         scratch = _isolate_env / "test_untracked.py"
@@ -325,14 +325,14 @@ class TestGitWorktreeFilesNeverCleaned:
         subprocess.run(["git", "-C", str(_isolate_env), "add", "test_untracked.py"], check=True)
         assert dg.guess_category(scratch) is None
 
-        # HERMES_HOME nested in an enclosing repo (a ~/.git dotfiles repo) that tracks it.
+        # AKRAMCODE_HOME nested in an enclosing repo (a ~/.git dotfiles repo) that tracks it.
         outer = _isolate_env.parent / "outer"
-        (outer / ".hermes" / "scripts").mkdir(parents=True)
+        (outer / ".akramcode" / "scripts").mkdir(parents=True)
         subprocess.run(["git", "init", "-q", str(outer)], check=True)
-        nested = outer / ".hermes" / "scripts" / "test_x.py"
+        nested = outer / ".akramcode" / "scripts" / "test_x.py"
         nested.write_text("x")
         subprocess.run(["git", "-C", str(outer), "add", "."], check=True)
-        monkeypatch.setenv("HERMES_HOME", str(outer / ".hermes"))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(outer / ".akramcode"))
         assert dg.guess_category(nested) is None
 
 
@@ -550,10 +550,10 @@ class TestOnSessionEndHook:
 # ---------------------------------------------------------------------------
 
 class TestBundledDiscovery:
-    def _write_enabled_config(self, hermes_home, names):
+    def _write_enabled_config(self, akramcode_home, names):
         """Write plugins.enabled allow-list to config.yaml."""
-        import akram_core.hermes_yaml as yaml
-        cfg_path = hermes_home / "config.yaml"
+        import akram_core.akramcode_yaml as yaml
+        cfg_path = akramcode_home / "config.yaml"
         cfg_path.write_text(yaml.safe_dump({"plugins": {"enabled": list(names)}}))
 
     def test_disk_cleanup_discovered_but_not_loaded_by_default(self, _isolate_env):
@@ -572,7 +572,7 @@ class TestBundledDiscovery:
 
     def test_disabled_beats_enabled(self, _isolate_env):
         """plugins.disabled wins even if the plugin is also in plugins.enabled."""
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
         cfg_path = _isolate_env / "config.yaml"
         cfg_path.write_text(yaml.safe_dump({
             "plugins": {

@@ -1,4 +1,4 @@
-"""``hermes computer-use`` subcommand parser."""
+"""``akramcode computer-use`` subcommand parser."""
 
 from __future__ import annotations
 
@@ -18,26 +18,26 @@ def _cu_status(args) -> int:
     from tools.computer_use.cua_backend_driver import resolve_cua_driver_cmd
 
     path = resolve_cua_driver_cmd()
-    override = _os.environ.get("HERMES_CUA_DRIVER_CMD", "").strip()
+    override = _os.environ.get("AKRAMCODE_CUA_DRIVER_CMD", "").strip()
     if not path:
         print("cua-driver: not installed")
-        print("  Run: hermes computer-use install")
+        print("  Run: akramcode computer-use install")
         return 1
     contract = _cua_driver_contract_status(path)
     version = _cua_version_summary(contract.get("version") or "")
     # Name the override here too. Without it the operator is told to repair an
-    # install that `hermes computer-use install` will (correctly) refuse to touch,
+    # install that `akramcode computer-use install` will (correctly) refuse to touch,
     # with nothing pointing at the env var that actually selected the binary.
-    origin = " [custom binary from HERMES_CUA_DRIVER_CMD]" if override else ""
+    origin = " [custom binary from AKRAMCODE_CUA_DRIVER_CMD]" if override else ""
     print(f"cua-driver: installed at {path}{origin}" + (f" ({version})" if version else ""))
     if not contract.get("ready"):
         print("  ⚠ Repair required: " + (contract.get("reason") or "runtime contract is incomplete"))
         if override:
             print(
-                "    Update the binary selected by HERMES_CUA_DRIVER_CMD, or unset "
-                "the override and run: hermes computer-use install --upgrade")
+                "    Update the binary selected by AKRAMCODE_CUA_DRIVER_CMD, or unset "
+                "the override and run: akramcode computer-use install --upgrade")
         else:
-            print("    Run: hermes computer-use install")
+            print("    Run: akramcode computer-use install")
         return 1
     rc = 0
     if sys.platform == "linux":  # hand-written daemon units: dead `serve` is invisible to the binary contract (#114748)
@@ -49,7 +49,7 @@ def _cu_status(args) -> int:
                 print(f"    Check: systemctl --user status {unit}  (reinstalling the driver does not start it)")
                 rc = 1
     print("  ✓ Runtime contract ready (externally managed)." if override
-          else "  ✓ Runtime contract ready (Hermes PM pin).")
+          else "  ✓ Runtime contract ready (AkramCode PM pin).")
     return rc
 
 
@@ -72,7 +72,7 @@ def _cu_perms_status(args) -> None:
         print(f"Computer Use is not supported on {st['platform']}.")
         sys.exit(1)
     if not st["installed"]:
-        print("cua-driver: not installed. Run: hermes computer-use install")
+        print("cua-driver: not installed. Run: akramcode computer-use install")
         sys.exit(1)
     glyph = lambda v: "✅" if v is True else ("❌" if v is False else "•")  # noqa: E731
     print(f"cua-driver: {st['version'] or 'installed'} ({st['platform']})")
@@ -80,7 +80,7 @@ def _cu_perms_status(args) -> None:
         print(f"  {glyph(st['accessibility'])} Accessibility")
         print(f"  {glyph(st['screen_recording'])} Screen Recording")
         if not st["ready"]:
-            print("  Grant: hermes computer-use permissions grant")
+            print("  Grant: akramcode computer-use permissions grant")
             if hint := stale_tcc_grant_hint(*(f for f in TCC_FIELDS if st[f] is False)):
                 print(f"  {hint}")
     else:  # no TCC model — readiness is driver health
@@ -105,13 +105,13 @@ def build_computer_use_parser(subparsers) -> None:
         description="Install or check the cua-driver binary used by the\n"
             "`computer_use` toolset. Supported on macOS, Windows, and\n"
             "Linux.\n\n"
-            "Use `hermes computer-use install` to prepare the pinned\n"
+            "Use `akramcode computer-use install` to prepare the pinned\n"
             "cua-driver package and host integration. This is equivalent to the\n"
-            "post-setup hook that `hermes tools` runs when you first\n"
+            "post-setup hook that `akramcode tools` runs when you first\n"
             "enable the Computer Use toolset, and is a stable target\n"
             "for re-running the install if it didn't fire (e.g. when\n"
             "toggling the toolset on a returning-user setup).\n\n"
-            "Use `hermes computer-use doctor` to run cua-driver's\n"
+            "Use `akramcode computer-use doctor` to run cua-driver's\n"
             "`health_report` MCP tool and surface its check matrix\n"
             "(TCC, bundle identity, version, platform support, ...)\n"
             "in human-readable form.")
@@ -121,7 +121,7 @@ def build_computer_use_parser(subparsers) -> None:
         "install", help="Install or repair the cua-driver binary (macOS/Windows/Linux)")
     computer_use_install.add_argument(
         "--upgrade", action="store_true",
-        help="Reconcile cua-driver with Hermes' pinned PM package and repair host setup.")
+        help="Reconcile cua-driver with AkramCode' pinned PM package and repair host setup.")
     computer_use_sub.add_parser("status", help="Check the selected cua-driver and its runtime contract")
     computer_use_doctor = computer_use_sub.add_parser(
         "doctor", help="Run cua-driver `health_report` and surface the check matrix",
@@ -146,7 +146,7 @@ def build_computer_use_parser(subparsers) -> None:
         "permissions", help="Check or grant macOS Accessibility + Screen Recording (macOS)",
         description="Computer Use drives the Mac through cua-driver, whose TCC grants\n"
             "attach to cua-driver's own identity (com.trycua.driver) — not the\n"
-            "terminal or the Hermes app. `status` reports the driver's grant\n"
+            "terminal or the AkramCode app. `status` reports the driver's grant\n"
             "state; `grant` launches CuaDriver via LaunchServices so the macOS\n"
             "permission dialog is attributed to the process that does the work.")
     computer_use_perms_sub = computer_use_perms.add_subparsers(dest="computer_use_perms_action")

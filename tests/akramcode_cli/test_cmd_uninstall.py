@@ -50,7 +50,7 @@ def test_module_subprocess_removes_only_the_disposable_home(layout, tmp_path):
     env = {key: value for key, value in os.environ.items() if key.upper() in {
         "PATH", "SYSTEMROOT", "WINDIR", "SYSTEMDRIVE", "TEMP", "TMP",
     }}
-    env.update(HERMES_HOME=str(home), HERMES_RUNTIME_DIR=str(home / "machine" / "tool-store"),
+    env.update(AKRAMCODE_HOME=str(home), AKRAMCODE_RUNTIME_DIR=str(home / "machine" / "tool-store"),
                HOME=str(tmp_path), USERPROFILE=str(tmp_path), APPDATA=str(tmp_path),
                LOCALAPPDATA=str(tmp_path), PYTHONPATH=str(root), PYTHONUTF8="1")
     result = subprocess.run([sys.executable, "-m", "akramcode_cli.uninstall", "--mode", "data"],

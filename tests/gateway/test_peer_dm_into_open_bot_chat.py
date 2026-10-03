@@ -1,6 +1,6 @@
 """A peer DM into a Bot Chat that a Desktop holds open is answered BY that open chat.
 
-``hermes peer dm`` posts to ``/api/sessions/{id}/chat`` on the peer. When the peer's canonical Bot
+``akramcode peer dm`` posts to ``/api/sessions/{id}/chat`` on the peer. When the peer's canonical Bot
 Chat is open in its Desktop, the Desktop session holds the chat's single-writer lease; running the
 turn in the API server beside it made a second writer the open chat never saw. The message now goes
 through the owner's mailbox, like local and relayed DMs, and the owner's receipt carries the reply.
@@ -100,7 +100,7 @@ async def test_a_peer_turn_into_an_open_bot_chat_is_answered_by_its_live_owner(
     nobody holds, still runs here. A turn the owner has not finished inside the wait is reported as
     queued in that chat, never as a failure the sender would resend."""
     home = tmp_path.resolve()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     monkeypatch.setattr("tools.bot_mode_dm._LIVE_WAIT_SECONDS", 1.0)
     db = SessionDB(home / "state.db")
     db.create_session("bot-chat", "desktop")
@@ -136,7 +136,7 @@ async def test_a_peer_turn_into_an_open_bot_chat_is_answered_by_its_live_owner(
         if status == 200:
             assert body["message"]["content"] == content
         else:
-            assert (body["object"], body["status"]) == ("hermes.session.chat.queued", "queued")
+            assert (body["object"], body["status"]) == ("akramcode.session.chat.queued", "queued")
     finally:
         if lease is not None:
             lease.release()
@@ -161,7 +161,7 @@ async def test_a_streamed_peer_turn_into_an_open_bot_chat_is_answered_by_its_liv
     """The SSE sibling of the chat route takes the same door: the owner's receipt arrives as the run's
     single assistant.completed event (or run.queued at the budget) and no turn runs here."""
     home = tmp_path.resolve()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     monkeypatch.setattr("tools.bot_mode_dm._LIVE_WAIT_SECONDS", 1.0)
     db = SessionDB(home / "state.db")
     db.create_session("bot-chat", "desktop")
@@ -236,7 +236,7 @@ async def test_a_peer_run_into_an_open_bot_chat_is_driven_by_its_owners_receipt(
     chat's: the owner's receipt is the run's status — reply, classified failure, or a stop that
     ends the run without pretending it reached a turn this process never ran."""
     home = tmp_path.resolve()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     db = SessionDB(home / "state.db")
     db.create_session("bot-chat", "desktop")
     db.set_session_title("bot-chat", "Bot Chat")
@@ -304,7 +304,7 @@ def test_peer_dm_reports_a_turn_queued_in_the_open_bot_chat_as_delivered(monkeyp
     the sender not to resend, instead of printing ``(no reply)`` as if the turn were empty."""
     monkeypatch.setattr(peer_mod, "_ensure_bot_chat", lambda base, key: "bot-chat")
     monkeypatch.setattr(peer_mod, "_request", lambda url, key, **kw: {
-        "object": "hermes.session.chat.queued", "session_id": "bot-chat", "status": "claimed", "delivery_id": "d" * 32})
+        "object": "akramcode.session.chat.queued", "session_id": "bot-chat", "status": "claimed", "delivery_id": "d" * 32})
 
     code = peer_mod._peer_dm(SimpleNamespace(json=as_json), "hello", "mini", None, "http://peer:8642", "key")
     out = capsys.readouterr().out

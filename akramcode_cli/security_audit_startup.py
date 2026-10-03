@@ -12,7 +12,7 @@ import re
 from pathlib import Path
 from typing import Optional
 
-logger = logging.getLogger("hermes.security_audit")
+logger = logging.getLogger("akramcode.security_audit")
 
 # The audit runs once per process even if both the CLI and gateway startup paths call it.
 _AUDIT_RAN = False
@@ -30,7 +30,7 @@ def _is_root() -> bool:
 def _running_as_root() -> Optional[str]:
     return None if not _is_root() else (
         "Running as ROOT. The agent's terminal/file tools execute with full root privileges — a single "
-        "prompt-injection or exposed endpoint is a full host compromise. Run Hermes as an unprivileged user "
+        "prompt-injection or exposed endpoint is a full host compromise. Run AkramCode as an unprivileged user "
         "(or in a sandboxed terminal backend / container with a non-root user).")
 
 
@@ -71,7 +71,7 @@ def _in_container() -> bool:
     """Best-effort container detection (Docker / Podman / generic OCI)."""
     if os.path.exists("/.dockerenv"):
         return True
-    if os.environ.get("HERMES_DESKTOP_CHILD_PID"):
+    if os.environ.get("AKRAMCODE_DESKTOP_CHILD_PID"):
         return False  # desktop child, not a server container
     try:
         cgroup = Path("/proc/1/cgroup").read_text(encoding="utf-8", errors="replace")
@@ -104,18 +104,18 @@ def _path_is_mounted(path: Path) -> bool:
     return best_fstype not in ("overlay", "tmpfs", "aufs")
 
 
-def _container_no_volume_mount(hermes_home: Optional[Path]) -> Optional[str]:
+def _container_no_volume_mount(akramcode_home: Optional[Path]) -> Optional[str]:
     if not _in_container():
         return None
-    if hermes_home is None:
-        from akramcode_constants import get_hermes_home
+    if akramcode_home is None:
+        from akramcode_constants import get_akramcode_home
 
-        hermes_home = get_hermes_home()
-    if _path_is_mounted(hermes_home):  # any error propagates to run_security_audit (= no finding)
+        akramcode_home = get_akramcode_home()
+    if _path_is_mounted(akramcode_home):  # any error propagates to run_security_audit (= no finding)
         return None
-    return (f"Running in a container but the data dir ({hermes_home}) is NOT on a persistent volume mount — "
+    return (f"Running in a container but the data dir ({akramcode_home}) is NOT on a persistent volume mount — "
             "sessions, memory, skills, and API keys are ephemeral and lost on container restart. Mount a host "
-            "volume over the HERMES_HOME data directory.")
+            "volume over the AKRAMCODE_HOME data directory.")
 
 
 def _network_listener_without_auth(config: Optional[dict]) -> list[str]:
@@ -139,12 +139,12 @@ def _network_listener_without_auth(config: Optional[dict]) -> list[str]:
             "Set a strong API_SERVER_KEY."]
 
 
-def run_security_audit(*, hermes_home: Optional[Path] = None, config: Optional[dict] = None) -> list[str]:
+def run_security_audit(*, akramcode_home: Optional[Path] = None, config: Optional[dict] = None) -> list[str]:
     """Run all checks and return human-readable warning strings. Pure (no logging); a check that
     raises simply contributes no finding.
     """
     findings: list[str] = []
-    for check in (_running_as_root, _ssh_password_auth_enabled, lambda: _container_no_volume_mount(hermes_home),
+    for check in (_running_as_root, _ssh_password_auth_enabled, lambda: _container_no_volume_mount(akramcode_home),
                   lambda: _network_listener_without_auth(config)):
         try:
             r = check()
@@ -158,14 +158,14 @@ def run_security_audit(*, hermes_home: Optional[Path] = None, config: Optional[d
 
 
 def log_startup_security_warnings(
-    *, hermes_home: Optional[Path] = None, config: Optional[dict] = None, force: bool = False
+    *, akramcode_home: Optional[Path] = None, config: Optional[dict] = None, force: bool = False
 ) -> list[str]:
     """Run the audit once per process (``force=True`` re-runs) and log each finding as a warning."""
     global _AUDIT_RAN
     if _AUDIT_RAN and not force:
         return []
     _AUDIT_RAN = True
-    findings = run_security_audit(hermes_home=hermes_home, config=config)
+    findings = run_security_audit(akramcode_home=akramcode_home, config=config)
     if findings:
         logger.warning("Security posture audit found %d issue(s) — review your deployment:", len(findings))
         for i, f in enumerate(findings, 1):

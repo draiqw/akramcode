@@ -2,7 +2,7 @@
 
 tests/install/e2e-assets/verify-user-state.py is the standalone hook the
 install/update E2E drivers call around a real upgrade. These tests exercise it
-against a real temp HERMES_HOME (real files, real sqlite databases) — no
+against a real temp AKRAMCODE_HOME (real files, real sqlite databases) — no
 source-reading, no filesystem mocks.
 
 The contract under test: an upgrade may ADD state and may rewrite config.yaml

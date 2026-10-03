@@ -1,7 +1,7 @@
 """C26 wiring: the boot registry is reached by the real entry points, and
 the cadence has a production caller.
 
-Proven with real imports against a temp HERMES_HOME; the external
+Proven with real imports against a temp AKRAMCODE_HOME; the external
 boundaries (pm store, network check seams, process identity) are
 stubbed — the wiring itself is exercised through the exact public
 invocation (``akramcode_cli.main.main()``, ``gateway.run`` housekeeping).
@@ -15,10 +15,10 @@ import pytest
 
 
 @pytest.fixture
-def hermes_home(tmp_path, monkeypatch):
-    """Temp HERMES_HOME + runtime dir so no test touches a real profile."""
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(tmp_path / "runtime"))
+def akramcode_home(tmp_path, monkeypatch):
+    """Temp AKRAMCODE_HOME + runtime dir so no test touches a real profile."""
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("AKRAMCODE_RUNTIME_DIR", str(tmp_path / "runtime"))
     return tmp_path
 
 
@@ -52,8 +52,8 @@ def _run_cli_main(argv):
         sys.argv = old_argv
 
 
-def test_cli_main_runs_boot_bootstrap_once(hermes_home, boot_probe, capsys):
-    _run_cli_main(["hermes", "--version"])
+def test_cli_main_runs_boot_bootstrap_once(akramcode_home, boot_probe, capsys):
+    _run_cli_main(["akramcode", "--version"])
 
     assert len(boot_probe) == 1, "every dispatch through main() reaches the registry"
     # the root probed is THIS checkout (identity: git HEAD)
@@ -62,8 +62,8 @@ def test_cli_main_runs_boot_bootstrap_once(hermes_home, boot_probe, capsys):
     assert boot_probe[0] == str(install_root())
 
 
-def test_cli_main_skips_boot_bootstrap_during_update(hermes_home, boot_probe):
-    _run_cli_main(["hermes", "update", "--help"])
+def test_cli_main_skips_boot_bootstrap_during_update(akramcode_home, boot_probe):
+    _run_cli_main(["akramcode", "update", "--help"])
 
     assert boot_probe == [], "the update flow owns its own maintenance pass"
 

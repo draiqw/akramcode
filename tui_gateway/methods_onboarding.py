@@ -34,7 +34,7 @@ def _clear_setup_sessions(profile_dir) -> None:
     target = Path(profile_dir).resolve()
     with _sessions_lock:
         live = [sid for sid, sess in _sessions.items()
-                if Path(sess.get("profile_home") or _hermes_home).resolve() == target]
+                if Path(sess.get("profile_home") or _akramcode_home).resolve() == target]
     for sid in live:
         _close_session_by_id(sid, end_reason="setup_reset")
     from akramcode_state.registry import acquire, release_or_close

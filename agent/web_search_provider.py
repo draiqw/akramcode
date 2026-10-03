@@ -22,7 +22,7 @@ from agent.provider_base import ProviderBase
 
 
 def get_provider_env(name: str) -> str:
-    """Config-aware env lookup (``os.environ`` first, then ``~/.hermes/.env``) so
+    """Config-aware env lookup (``os.environ`` first, then ``~/.akramcode/.env``) so
     credentials set through the config layer are visible in gateway sessions /
     delegate children / subprocess runs. Stripped value, or ``""`` when unset.
 
@@ -68,7 +68,7 @@ class WebSearchProvider(ProviderBase):
     @abc.abstractmethod
     def is_available(self) -> bool:
         """True when this provider can service calls. Cheap check only (env var, importable
-        dep, instance URL) — NO network; runs at tool registration and on every ``hermes tools`` paint."""
+        dep, instance URL) — NO network; runs at tool registration and on every ``akramcode tools`` paint."""
 
     def supports_search(self) -> bool:
         """True if this provider implements :meth:`search`."""

@@ -14,11 +14,11 @@ import path from 'node:path';
  * @returns {{launcher: string, command: string, args: string[], windowsVerbatimArguments: boolean}}
  */
 export function sourceRuntimeSettleCommand(root, env, platform = process.platform) {
-  const local = path.join(root, '.hermes', 'bin');
+  const local = path.join(root, '.akramcode', 'bin');
   const candidates = platform === 'win32'
-    ? [path.join(local, 'hermes.cmd'), path.join(local, 'hermes.exe'),
-      path.join(root, 'venv', 'Scripts', 'hermes.exe')]
-    : [path.join(local, 'hermes'), path.join(root, 'venv', 'bin', 'hermes')];
+    ? [path.join(local, 'akramcode.cmd'), path.join(local, 'akramcode.exe'),
+      path.join(root, 'venv', 'Scripts', 'akramcode.exe')]
+    : [path.join(local, 'akramcode'), path.join(root, 'venv', 'bin', 'akramcode')];
   const launcher = candidates.find(candidate => fs.existsSync(candidate));
   if (!launcher) throw new Error(`No source launcher available to settle ${root}`);
 

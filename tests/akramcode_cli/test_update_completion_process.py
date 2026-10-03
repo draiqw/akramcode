@@ -72,13 +72,13 @@ def transition(tmp_path):
         "    from akramcode_cli.probe import event\n"
         "    event('activate')\n"
     )
-    (root / "hermes_constants.py").write_text(
+    (root / "akramcode_constants.py").write_text(
         # source_completion's update lock resolves the process home through
-        # hermes_constants (never a profile override), like the Rust updater does.
+        # akramcode_constants (never a profile override), like the Rust updater does.
         "import os\n"
         "from pathlib import Path\n"
-        "def get_process_hermes_home():\n"
-        "    return Path(os.environ['HERMES_HOME'])\n"
+        "def get_process_akramcode_home():\n"
+        "    return Path(os.environ['AKRAMCODE_HOME'])\n"
     )
     (package / "venv_sync.py").write_text(
         "from akramcode_cli.probe import event\n"
@@ -88,11 +88,11 @@ def transition(tmp_path):
         "from pathlib import Path\n"
         "import os\n"
         "def arm_completion(root):\n"
-        "    path = Path(os.environ['HERMES_HOME']) / 'completion-pending'\n"
+        "    path = Path(os.environ['AKRAMCODE_HOME']) / 'completion-pending'\n"
         "    path.write_text('owed')\n"
         "    return path\n"
         "def clear_completion(root):\n"
-        "    (Path(os.environ['HERMES_HOME']) / 'completion-pending').unlink()\n"
+        "    (Path(os.environ['AKRAMCODE_HOME']) / 'completion-pending').unlink()\n"
     )
     (package / "source_build.py").write_text(
         "from akramcode_cli.probe import event\n"
@@ -155,7 +155,7 @@ def transition(tmp_path):
         "    r = _current.get()\n"
         "    if r is None: return\n"
         "    r.data.update(exit_code=code, outcome='success' if code == 0 else 'failed', finished_at='now')\n"
-        "    path = pathlib.Path(os.environ['HERMES_HOME']) / 'logs/update_receipts'\n"
+        "    path = pathlib.Path(os.environ['AKRAMCODE_HOME']) / 'logs/update_receipts'\n"
         "    path.mkdir(parents=True, exist_ok=True)\n"
         "    path = path / ('update_test_' + r.correlation_id + '.json')\n"
         "    path.write_text(json.dumps(r.data, ensure_ascii=False), encoding=r.data.get('encoding', 'utf-8'))\n"
@@ -205,7 +205,7 @@ def test_old_process_new_git_tree_completes_in_fresh_python(transition, tmp_path
     )
     result = subprocess.run(
         [sys.executable, "-c", driver, update_completion.__file__, new, json.dumps(request)],
-        cwd=root, env={**os.environ, "PYTHONPATH": str(root), "HERMES_HOME": request["home"]},
+        cwd=root, env={**os.environ, "PYTHONPATH": str(root), "AKRAMCODE_HOME": request["home"]},
         capture_output=True, text=True, timeout=30,
     )
     assert result.returncode == 0, result.stdout + result.stderr
@@ -234,7 +234,7 @@ def test_missing_child_result_fails_boundary_receipt_and_releases_lock(transitio
 
     root, git, old, new, request = transition
     (root / "akramcode_cli/update_completion.py").write_text(f"import os\nos._exit({code})\n")
-    monkeypatch.setenv("HERMES_HOME", request["home"])
+    monkeypatch.setenv("AKRAMCODE_HOME", request["home"])
     monkeypatch.setattr(main, "_update_preflight_handled", lambda args: False)
     monkeypatch.setattr(main, "_install_hangup_protection", lambda **kw: None)
     monkeypatch.setattr(main, "_finalize_update_output", lambda state: None)
@@ -269,11 +269,11 @@ def test_interrupt_after_child_success_demotes_gateway_marker_at_boundary(transi
     marker = Path(request["home"]) / ".update_exit_code"
     (root / "akramcode_cli/update_completion.py").write_text(
         "import os, pathlib, time\n"
-        "(pathlib.Path(os.environ['HERMES_HOME']) / '.update_exit_code').write_text('0\\n')\n"
+        "(pathlib.Path(os.environ['AKRAMCODE_HOME']) / '.update_exit_code').write_text('0\\n')\n"
         "print('SUCCESS_PUBLISHED', flush=True)\n"
         "time.sleep(30)\n"
     )
-    monkeypatch.setenv("HERMES_HOME", request["home"])
+    monkeypatch.setenv("AKRAMCODE_HOME", request["home"])
     monkeypatch.setattr(main, "_update_preflight_handled", lambda args: False)
     monkeypatch.setattr(main, "_install_hangup_protection", lambda **kw: None)
     monkeypatch.setattr(main, "_finalize_update_output", lambda state: None)
@@ -392,7 +392,7 @@ def test_prepare_failure_preserves_correlated_pm_receipt(transition, monkeypatch
     )
     with (root / "pm/receipt.py").open("a") as stream:
         stream.write("last_for_update = lambda update_id: {'update_id': update_id, 'outcome': 'refused', 'refusal': {'reason': 'dependency refused'}}\n")
-    monkeypatch.setenv("HERMES_HOME", request["home"])
+    monkeypatch.setenv("AKRAMCODE_HOME", request["home"])
     monkeypatch.setattr(main, "_update_preflight_handled", lambda args: False)
     monkeypatch.setattr(main, "_install_hangup_protection", lambda **kw: None)
     monkeypatch.setattr(main, "_finalize_update_output", lambda state: None)

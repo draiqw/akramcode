@@ -33,8 +33,8 @@ class TestAgentConfigSignature:
 
         runtime = {"api_key": "sk-test12345678", "base_url": "https://openrouter.ai/api/v1",
                     "provider": "openrouter"}
-        sig1 = GatewayRunner._agent_config_signature("claude-sonnet-4", runtime, ["hermes-telegram"], "")
-        sig2 = GatewayRunner._agent_config_signature("claude-opus-4.6", runtime, ["hermes-telegram"], "")
+        sig1 = GatewayRunner._agent_config_signature("claude-sonnet-4", runtime, ["akramcode-telegram"], "")
+        sig2 = GatewayRunner._agent_config_signature("claude-opus-4.6", runtime, ["akramcode-telegram"], "")
         assert sig1 != sig2
 
     def test_same_token_prefix_different_full_token_changes_signature(self):
@@ -55,8 +55,8 @@ class TestAgentConfigSignature:
         }
 
         assert rt1["api_key"][:8] == rt2["api_key"][:8]
-        sig1 = GatewayRunner._agent_config_signature("gpt-5.3-codex", rt1, ["hermes-telegram"], "")
-        sig2 = GatewayRunner._agent_config_signature("gpt-5.3-codex", rt2, ["hermes-telegram"], "")
+        sig1 = GatewayRunner._agent_config_signature("gpt-5.3-codex", rt1, ["akramcode-telegram"], "")
+        sig2 = GatewayRunner._agent_config_signature("gpt-5.3-codex", rt2, ["akramcode-telegram"], "")
         assert sig1 != sig2
 
     def test_provider_change_different_signature(self):
@@ -64,8 +64,8 @@ class TestAgentConfigSignature:
 
         rt1 = {"api_key": "sk-test12345678", "base_url": "https://openrouter.ai/api/v1", "provider": "openrouter"}
         rt2 = {"api_key": "sk-test12345678", "base_url": "https://api.anthropic.com", "provider": "anthropic"}
-        sig1 = GatewayRunner._agent_config_signature("claude-sonnet-4", rt1, ["hermes-telegram"], "")
-        sig2 = GatewayRunner._agent_config_signature("claude-sonnet-4", rt2, ["hermes-telegram"], "")
+        sig1 = GatewayRunner._agent_config_signature("claude-sonnet-4", rt1, ["akramcode-telegram"], "")
+        sig2 = GatewayRunner._agent_config_signature("claude-sonnet-4", rt2, ["akramcode-telegram"], "")
         assert sig1 != sig2
 
     def test_capability_change_different_signature(self):

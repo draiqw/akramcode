@@ -88,10 +88,10 @@ def version_age_bucket(now: float | None = None) -> str:
 def behind_bucket(home: Path | None = None, now: float | None = None) -> str:
     """Commits/releases behind, from the update check's cached result for this exact revision."""
     from akramcode_cli.update_channel import install_id
-    from akramcode_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
 
     root = _project_root()
-    cache_file = (home or get_hermes_home()) / "source-checks" / f"{install_id(root)}.json"
+    cache_file = (home or get_akramcode_home()) / "source-checks" / f"{install_id(root)}.json"
     try:
         cached = json.loads(cache_file.read_text(encoding="utf-8-sig"))
     except (OSError, ValueError):

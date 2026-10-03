@@ -115,7 +115,7 @@ def test_prompt_model_selection_fallback_uses_line_editor_for_custom_model(
 def test_remove_custom_provider_falls_back_on_menu_runtime_error(tmp_path, monkeypatch):
     from akramcode_cli.main_provider_setup import _remove_custom_provider
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     monkeypatch.setattr("akramcode_cli.curses_ui.curses_radiolist", _raise_menu)
 
     cfg = load_config()

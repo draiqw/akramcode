@@ -37,7 +37,7 @@ def test_installer_post_pm_stages(tmp_path: Path, stage: str, expected: list[str
     calls = tmp_path / 'calls.json'
     publish_fixture_launcher(install, "import json, os, sys\nfrom pathlib import Path\ndef main():\n    Path(os.environ['CALLS']).write_text(json.dumps(sys.argv[1:])); return int(os.environ['STAGE_EXIT'])\n")
     command = ['bash', '-c', 'source "$1" --manifest >/dev/null; INSTALL_DIR="$2"; NON_INTERACTIVE=false; "stage_$3"', 'test', str(ROOT / 'scripts/install.sh'), str(install), stage]
-    env = {**os.environ, 'HOME': str(tmp_path), 'HERMES_HOME': str(tmp_path / 'home'), 'HERMES_RUNTIME_DIR': str(tmp_path / 'store'), 'CALLS': str(calls)}
+    env = {**os.environ, 'HOME': str(tmp_path), 'AKRAMCODE_HOME': str(tmp_path / 'home'), 'AKRAMCODE_RUNTIME_DIR': str(tmp_path / 'store'), 'CALLS': str(calls)}
     # `curl | bash` and Docker builds have no terminal: the interactive stage is skipped, not failed.
     result = subprocess.run(command, cwd=tmp_path, env={**env, 'STAGE_EXIT': '9'}, capture_output=True, text=True,
                             encoding='utf-8', timeout=20, start_new_session=True)
@@ -80,8 +80,8 @@ def test_products_and_desktop_stages_share_the_completion_tail(tmp_path: Path, s
                f'source "$1" --manifest >/dev/null; INSTALL_DIR="$2"; INCLUDE_DESKTOP={flag}; '
                'bootstrap_python() { boot_py="$PYTHON_FOR_TEST"; }; "stage_$3"',
                'test', str(ROOT / 'scripts/install.sh'), str(install), stage]
-    env = {**os.environ, 'HOME': str(tmp_path), 'HERMES_HOME': str(tmp_path / 'home'),
-           'HERMES_RUNTIME_DIR': str(tmp_path / 'store'), 'CALLS': str(calls), 'PYTHON_FOR_TEST': sys.executable}
+    env = {**os.environ, 'HOME': str(tmp_path), 'AKRAMCODE_HOME': str(tmp_path / 'home'),
+           'AKRAMCODE_RUNTIME_DIR': str(tmp_path / 'store'), 'CALLS': str(calls), 'PYTHON_FOR_TEST': sys.executable}
     result = subprocess.run(command, cwd=tmp_path, env=env, capture_output=True, text=True, timeout=20)
     assert result.returncode == 0, result.stdout + result.stderr
     argv = json.loads(calls.read_text())

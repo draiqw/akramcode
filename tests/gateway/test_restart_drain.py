@@ -22,8 +22,8 @@ async def test_restart_command_while_busy_requests_drain_without_interrupt(monke
     # which changes the restart call signature.
     monkeypatch.delenv("INVOCATION_ID", raising=False)
     monkeypatch.delenv("XPC_SERVICE_NAME", raising=False)
-    monkeypatch.delenv("HERMES_S6_SUPERVISED_CHILD", raising=False)
-    monkeypatch.delenv("HERMES_GATEWAY_EXTERNAL_SUPERVISOR", raising=False)
+    monkeypatch.delenv("AKRAMCODE_S6_SUPERVISED_CHILD", raising=False)
+    monkeypatch.delenv("AKRAMCODE_GATEWAY_EXTERNAL_SUPERVISOR", raising=False)
     # Hermeticity: neutralize the real container probe (see
     # test_restart_service_detection.py) — /.dockerenv on a containerized CI
     # runner would otherwise route via_service=True under this test.
@@ -59,9 +59,9 @@ async def test_restart_command_while_busy_requests_drain_without_interrupt(monke
 
 
 def test_load_busy_text_mode_follows_input_mode_and_honors_legacy(tmp_path, monkeypatch):
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
-    monkeypatch.delenv("HERMES_GATEWAY_BUSY_TEXT_MODE", raising=False)
-    monkeypatch.delenv("HERMES_GATEWAY_BUSY_INPUT_MODE", raising=False)
+    monkeypatch.setattr(gateway_run, "_akramcode_home", tmp_path)
+    monkeypatch.delenv("AKRAMCODE_GATEWAY_BUSY_TEXT_MODE", raising=False)
+    monkeypatch.delenv("AKRAMCODE_GATEWAY_BUSY_INPUT_MODE", raising=False)
 
     # No knobs set → follows busy_input_mode, which defaults to interrupt.
     assert gateway_run.GatewayRunner._load_busy_text_mode() == "interrupt"
@@ -83,18 +83,18 @@ def test_load_busy_text_mode_follows_input_mode_and_honors_legacy(tmp_path, monk
     (tmp_path / "config.yaml").write_text(
         "display:\n  busy_input_mode: interrupt\n", encoding="utf-8"
     )
-    monkeypatch.setenv("HERMES_GATEWAY_BUSY_TEXT_MODE", "queue")
+    monkeypatch.setenv("AKRAMCODE_GATEWAY_BUSY_TEXT_MODE", "queue")
     assert gateway_run.GatewayRunner._load_busy_text_mode() == "queue"
 
     # Bogus legacy value is ignored → falls through to busy_input_mode (interrupt).
-    monkeypatch.setenv("HERMES_GATEWAY_BUSY_TEXT_MODE", "bogus")
+    monkeypatch.setenv("AKRAMCODE_GATEWAY_BUSY_TEXT_MODE", "bogus")
     assert gateway_run.GatewayRunner._load_busy_text_mode() == "interrupt"
 
 
 def test_load_signal_interrupt_grace_timeout_from_typed_config(
     tmp_path, monkeypatch, caplog
 ):
-    monkeypatch.setattr(gateway_run, "_hermes_home", tmp_path)
+    monkeypatch.setattr(gateway_run, "_akramcode_home", tmp_path)
 
     assert (
         gateway_run.GatewayRunner._load_signal_interrupt_grace_timeout()
@@ -266,13 +266,13 @@ async def test_run_restart_excluded_from_stop_cancel_loop():
 @pytest.mark.asyncio
 async def test_restart_from_served_profile_chat_restarts_the_host_gateway(monkeypatch):
     """A /restart handled inside a served profile's runtime scope restarts the HOST gateway: the
-    detached watcher relaunches `hermes gateway restart` under the launch home (under a named
+    detached watcher relaunches `akramcode gateway restart` under the launch home (under a named
     profile's home it exits 78 and nothing comes back), and stop() - which flushes pending
-    messages under get_hermes_home() - runs outside the requester's profile scope."""
+    messages under get_akramcode_home() - runs outside the requester's profile scope."""
     from agent.secret_scope import current_secret_scope
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
 
-    launch_home = get_hermes_home()
+    launch_home = get_akramcode_home()
     profile_home = launch_home / "profiles" / "research"
     profile_home.mkdir(parents=True)
     (profile_home / ".env").write_text("RESEARCH_ONLY_TOKEN=x\n", encoding="utf-8")
@@ -281,22 +281,22 @@ async def test_restart_from_served_profile_chat_restarts_the_host_gateway(monkey
     seen = {}
 
     async def _recording_stop(**_kwargs):
-        seen["stop_home"] = get_hermes_home()
+        seen["stop_home"] = get_akramcode_home()
         seen["stop_secret_scope"] = current_secret_scope()
 
     runner.stop = _recording_stop
     watcher_envs = []
-    monkeypatch.setattr(gateway_run, "_resolve_hermes_bin", lambda: ["hermes"])
+    monkeypatch.setattr(gateway_run, "_resolve_akramcode_bin", lambda: ["akramcode"])
     monkeypatch.setattr(
         subprocess, "Popen", lambda _argv, **kwargs: watcher_envs.append(kwargs["env"]) or MagicMock()
     )
 
     async with gateway_run._async_profile_runtime_scope(profile_home):
-        assert get_hermes_home() == profile_home
+        assert get_akramcode_home() == profile_home
         assert runner.request_restart(detached=True, via_service=False) is True
     await runner._restart_task
 
-    assert [env.get("HERMES_HOME") for env in watcher_envs] == [str(launch_home)]
+    assert [env.get("AKRAMCODE_HOME") for env in watcher_envs] == [str(launch_home)]
     assert seen == {"stop_home": launch_home, "stop_secret_scope": None}
 
 
@@ -309,9 +309,9 @@ async def test_windows_detached_restart_scrubs_gateway_marker(monkeypatch, tmp_p
     runner, _adapter = make_restart_runner()
     popen_calls = []
 
-    monkeypatch.setattr(gateway_run, "_resolve_hermes_bin", lambda: ["hermes"])
+    monkeypatch.setattr(gateway_run, "_resolve_akramcode_bin", lambda: ["akramcode"])
     monkeypatch.setattr(gateway_run.os, "getpid", lambda: 321)
-    monkeypatch.setenv("_HERMES_GATEWAY", "1")
+    monkeypatch.setenv("_AKRAMCODE_GATEWAY", "1")
 
     import akramcode_cli._subprocess_compat as subprocess_compat
 
@@ -331,8 +331,8 @@ async def test_windows_detached_restart_scrubs_gateway_marker(monkeypatch, tmp_p
 
     assert len(popen_calls) == 1
     cmd, kwargs = popen_calls[0]
-    assert cmd[-3:] == ["hermes", "gateway", "restart"]
-    assert kwargs["env"].get("_HERMES_GATEWAY") is None
+    assert cmd[-3:] == ["akramcode", "gateway", "restart"]
+    assert kwargs["env"].get("_AKRAMCODE_GATEWAY") is None
     # The watcher is an installation-bound command: PM's bootstrap selects the
     # dependency generation at child start, no venv is captured in its env.
     from akramcode_cli._launchers import runtime_command
@@ -360,7 +360,7 @@ async def test_windows_detached_restart_watcher_keeps_console_python(monkeypatch
     site_packages.mkdir(parents=True)
 
     monkeypatch.setattr(gateway_run.sys, "executable", r"C:\venv\Scripts\python.exe")
-    monkeypatch.setattr(gateway_run, "_resolve_hermes_bin", lambda: ["hermes"])
+    monkeypatch.setattr(gateway_run, "_resolve_akramcode_bin", lambda: ["akramcode"])
     monkeypatch.setattr(gateway_run.os, "getpid", lambda: 321)
     monkeypatch.setenv("VIRTUAL_ENV", str(venv_dir))
 
@@ -383,7 +383,7 @@ async def test_windows_detached_restart_watcher_keeps_console_python(monkeypatch
     assert len(popen_calls) == 1
     cmd, kwargs = popen_calls[0]
     assert cmd[0] == r"C:\venv\Scripts\python.exe"
-    assert cmd[-3:] == ["hermes", "gateway", "restart"]
+    assert cmd[-3:] == ["akramcode", "gateway", "restart"]
     assert kwargs["creationflags"] == 0x08000200
 
 
@@ -428,7 +428,7 @@ async def test_drain_suppress_skips_home_channel_keeps_session_ping(tmp_path, mo
     from gateway.config import HomeChannel, Platform
     import gateway.drain_control as dc
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
 
     runner, adapter = make_restart_runner()
     # A home channel distinct from the active session's chat.
@@ -477,12 +477,12 @@ def _live_agent(idle_seconds: float = 1.0) -> MagicMock:
 async def test_request_restart_skips_wait_when_only_wedged_turns(monkeypatch):
     """A turn idle past agent.gateway_timeout must not defer the restart.
 
-    Regression: a WhatsApp turn wedged for 30+ min pinned `hermes update`
+    Regression: a WhatsApp turn wedged for 30+ min pinned `akramcode update`
     in "draining" for the full restart_after_turn_timeout cap — the
     after-turn wait counted the wedged agent as active work even though
     the inactivity watchdog had already declared it dead (Aug 2026).
     """
-    monkeypatch.delenv("HERMES_AGENT_TIMEOUT", raising=False)
+    monkeypatch.delenv("AKRAMCODE_AGENT_TIMEOUT", raising=False)
     runner, _adapter = make_restart_runner()
     runner.stop = AsyncMock()
     # A cap long enough that the test would hang without the wedge bypass.
@@ -502,7 +502,7 @@ async def test_request_restart_skips_wait_when_only_wedged_turns(monkeypatch):
 @pytest.mark.asyncio
 async def test_request_restart_still_waits_for_live_turn_alongside_wedged(monkeypatch):
     """Mixed live + wedged: the live turn is honored, the wedged one ignored."""
-    monkeypatch.delenv("HERMES_AGENT_TIMEOUT", raising=False)
+    monkeypatch.delenv("AKRAMCODE_AGENT_TIMEOUT", raising=False)
     runner, _adapter = make_restart_runner()
     runner.stop = AsyncMock()
     runner._launch_detached_restart_command = AsyncMock()
@@ -525,14 +525,14 @@ async def test_request_restart_still_waits_for_live_turn_alongside_wedged(monkey
 
 def test_wedged_agent_count_disabled_timeout_counts_nothing(monkeypatch):
     """gateway_timeout=0 (unbounded turns) disables wedge detection."""
-    monkeypatch.setenv("HERMES_AGENT_TIMEOUT", "0")
+    monkeypatch.setenv("AKRAMCODE_AGENT_TIMEOUT", "0")
     runner, _adapter = make_restart_runner()
     runner._running_agents["agent:main:telegram:dm:1"] = _wedged_agent(10**6)
     assert runner._wedged_agent_count() == 0
 
 
 def test_wedged_agent_count_ignores_sentinels_and_bad_summaries(monkeypatch):
-    monkeypatch.delenv("HERMES_AGENT_TIMEOUT", raising=False)
+    monkeypatch.delenv("AKRAMCODE_AGENT_TIMEOUT", raising=False)
     runner, _adapter = make_restart_runner()
     broken = MagicMock()
     broken.get_activity_summary = MagicMock(side_effect=RuntimeError("boom"))
@@ -553,14 +553,14 @@ def test_wedged_agent_count_ignores_sentinels_and_bad_summaries(monkeypatch):
 async def test_request_restart_skips_wait_for_cron_run_past_inflight_allowance(monkeypatch, tmp_path):
     """A cron run older than the scheduler's stale-inflight allowance is wedged: the restart proceeds.
 
-    #115469 Defect B: a no-agent job whose delivery hung pinned ``hermes update`` in "draining" for the
+    #115469 Defect B: a no-agent job whose delivery hung pinned ``akramcode update`` in "draining" for the
     full ``restart_after_turn_timeout`` because ``_wedged_agent_count`` only ever looked at chat agents,
     so the cron unit was structurally un-skippable ("0 wedged and excluded").
     """
     import cron.scheduler as sched
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    monkeypatch.delenv("HERMES_AGENT_TIMEOUT", raising=False)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
+    monkeypatch.delenv("AKRAMCODE_AGENT_TIMEOUT", raising=False)
     monkeypatch.setattr("cron.jobs.load_jobs", lambda: [])
     runner, _adapter = make_restart_runner()
     runner.stop = AsyncMock()
@@ -584,7 +584,7 @@ def test_wedged_cron_allowance_honours_young_runs_and_job_interval(monkeypatch, 
     """Control: a run inside ``max(2 * interval, cron.inflight_max_minutes)`` is live work, not wedged."""
     import cron.scheduler as sched
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     monkeypatch.setattr("cron.jobs.load_jobs", lambda: [{"id": "six-hourly-job", "schedule": {"kind": "interval", "minutes": 360}}])
     runner, _adapter = make_restart_runner()
     assert sched.try_register_running_job("six-hourly-job")
@@ -605,7 +605,7 @@ def test_wedged_cron_check_parses_jobs_once_per_run(monkeypatch, tmp_path):
     must be resolved once per in-flight run, not by a full jobs.json parse per job per tick."""
     import cron.scheduler as sched
 
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     loads = []
     monkeypatch.setattr("cron.jobs.load_jobs", lambda: loads.append(1) or [
         {"id": jid, "schedule": {"kind": "interval", "minutes": 360}} for jid in ("job-a", "job-b", "job-c")])

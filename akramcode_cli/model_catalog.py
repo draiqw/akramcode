@@ -1,7 +1,7 @@
 """Remote model catalog fetcher.
 
 ``get_catalog()`` returns the parsed manifest: in-process cache (TTL) → disk cache at
-``~/.hermes/cache/model_catalog.json`` → master URL fetch; any fetch failure keeps the stale copy
+``~/.akramcode/cache/model_catalog.json`` → master URL fetch; any fetch failure keeps the stale copy
 (or ``{}``). ``get_curated_openrouter_models()`` / ``get_curated_nous_models()`` are thin accessors
 whose callers fall back to the in-repo lists on ``None``.
 """
@@ -24,11 +24,11 @@ from utils import atomic_json_write
 logger = logging.getLogger(__name__)
 
 DEFAULT_CATALOG_URL = (
-    "https://hermes-agent.nousresearch.com/docs/api/model-catalog.json")
+    "https://akramcode-agent.nousresearch.com/docs/api/model-catalog.json")
 # The Docusaurus site sits behind Vercel, which occasionally 403s non-browser clients (bot
 # challenge); the raw GitHub copy is the same manifest and is not bot-gated.
 DEFAULT_CATALOG_FALLBACK_URLS: tuple[str, ...] = (
-    "https://raw.githubusercontent.com/NousResearch/hermes-agent/main/website/static/api/model-catalog.json",
+    "https://raw.githubusercontent.com/NousResearch/akramcode-agent/main/website/static/api/model-catalog.json",
 )
 DEFAULT_TTL_MINUTES = 20
 # Legacy key, honoured only when the user set it explicitly; ``ttl_minutes`` is the shipped default.
@@ -36,7 +36,7 @@ DEFAULT_TTL_HOURS = DEFAULT_TTL_MINUTES / 60.0
 DEFAULT_FETCH_TIMEOUT = 8.0
 SUPPORTED_SCHEMA_VERSION = 1
 
-_HERMES_USER_AGENT = f"hermes-cli/{get_version_info().base_version}"
+_AKRAMCODE_USER_AGENT = f"akramcode-cli/{get_version_info().base_version}"
 
 # In-process cache, invalidated against the disk file's path + mtime and TTL. The path matters:
 # under a multiplexed gateway each profile has its own ``<home>/cache/model_catalog.json``, and
@@ -81,14 +81,14 @@ def _load_catalog_config() -> dict[str, Any]:
 
 def _cache_path() -> Path:
     """Disk cache path; imported lazily so tests can monkeypatch home."""
-    from akramcode_constants import get_hermes_home
-    return get_hermes_home() / "cache" / "model_catalog.json"
+    from akramcode_constants import get_akramcode_home
+    return get_akramcode_home() / "cache" / "model_catalog.json"
 
 
 def _fetch_manifest(url: str, timeout: float) -> dict[str, Any] | None:
     """HTTP GET the manifest URL and return a validated dict, or None on failure."""
     try:
-        req = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": _HERMES_USER_AGENT})
+        req = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": _AKRAMCODE_USER_AGENT})
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             data = json.loads(resp.read().decode())
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError) as exc:
@@ -190,7 +190,7 @@ def _spawn_catalog_swr_refresh(url: str) -> None:
             with _catalog_swr_lock:
                 _catalog_swr_inflight.discard(inflight_key)
 
-    # copy_context: the picker may be serving a profile scoped by the HERMES_HOME ContextVar
+    # copy_context: the picker may be serving a profile scoped by the AKRAMCODE_HOME ContextVar
     # (tui_gateway ``_profile_scoped``), so the worker must write THAT profile's cache file.
     context = contextvars.copy_context()
     threading.Thread(target=lambda: context.run(_refresh), daemon=True, name="model-catalog-swr").start()
@@ -314,7 +314,7 @@ def _default_model_from_block(block: dict[str, Any] | None) -> str | None:
 
 
 def get_default_model_from_cache(provider: str) -> str | None:
-    """The manifest's labeled default for ``provider`` (the model Hermes silently lands on when the
+    """The manifest's labeled default for ``provider`` (the model AkramCode silently lands on when the
     user never picked one) — in-process then disk cache only, never a fetch."""
     cached = _in_process_catalog()
     found = _default_model_from_block(_block_of(cached, provider)) if cached is not None else None
@@ -326,7 +326,7 @@ def get_default_model_from_cache(provider: str) -> str | None:
 
 def seed_cache_from_checkout(project_root: "Path | str") -> bool:
     """Overwrite the disk cache with the checkout's ``website/static/api/model-catalog.json``.
-    After ``hermes update`` that file IS the newest catalog, so the picker stays current even when
+    After ``akramcode update`` that file IS the newest catalog, so the picker stays current even when
     the remote fetch is bot-gated. Validated, then written via the same atomic writer."""
     src = Path(project_root) / "website" / "static" / "api" / "model-catalog.json"
     try:
@@ -344,7 +344,7 @@ def seed_cache_from_checkout(project_root: "Path | str") -> bool:
 
 
 def reset_cache() -> None:
-    """Clear the in-process cache. Used by tests and ``hermes model --refresh``."""
+    """Clear the in-process cache. Used by tests and ``akramcode model --refresh``."""
     global _catalog_cache, _catalog_cache_source_mtime, _catalog_cache_source_path
     _catalog_cache = None
     _catalog_cache_source_mtime = 0.0

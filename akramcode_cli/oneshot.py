@@ -1,8 +1,8 @@
 """Oneshot (-z) mode: send a prompt, get the final content block, exit.
 
-Toolsets = explicit --toolsets, else the user's "cli" toolsets from `hermes tools`. Rules /
+Toolsets = explicit --toolsets, else the user's "cli" toolsets from `akramcode tools`. Rules /
 memory / AGENTS.md / preloaded skills = same as a normal chat turn. Approvals are auto-bypassed
-(HERMES_YOLO_MODE=1). Model/provider mirror `hermes chat`: both optional; only --model → auto-detect
+(AKRAMCODE_YOLO_MODE=1). Model/provider mirror `akramcode chat`: both optional; only --model → auto-detect
 the provider; only --provider → error (ambiguous).
 """
 
@@ -136,7 +136,7 @@ def _build_preloaded_skills_prompt(skills: object = None) -> str | None:
             raise ValueError(f"Unknown skill(s): {missing_display}")
         logging.warning(
             "Unknown skill(s) requested, skipping: %s. Continuing with: %s. "
-            "List available skills with `hermes skills list`.",
+            "List available skills with `akramcode skills list`.",
             missing_display,
             ", ".join(loaded_skills),
         )
@@ -171,7 +171,7 @@ def _validate_explicit_toolsets(toolsets: object = None) -> tuple[list[str] | No
     try:
         from toolsets import validate_toolset
     except Exception as exc:
-        return None, f"hermes -z: failed to validate --toolsets: {exc}\n"
+        return None, f"akramcode -z: failed to validate --toolsets: {exc}\n"
 
     built_in = [name for name in normalized if validate_toolset(name)]
     unresolved = [name for name in normalized if name not in built_in]
@@ -191,7 +191,7 @@ def _validate_explicit_toolsets(toolsets: object = None) -> tuple[list[str] | No
         ignored = [name for name in normalized if name not in _ALL_TOOLSETS]
         if ignored:
             sys.stderr.write(
-                "hermes -z: --toolsets all enables every toolset; "
+                "akramcode -z: --toolsets all enables every toolset; "
                 f"ignoring additional entries: {', '.join(ignored)}\n"
             )
         return None, None
@@ -203,14 +203,14 @@ def _validate_explicit_toolsets(toolsets: object = None) -> tuple[list[str] | No
     valid = built_in + mcp_valid
 
     if unknown:
-        sys.stderr.write(f"hermes -z: ignoring unknown --toolsets entries: {', '.join(unknown)}\n")
+        sys.stderr.write(f"akramcode -z: ignoring unknown --toolsets entries: {', '.join(unknown)}\n")
     if disabled:
         sys.stderr.write(
-            "hermes -z: ignoring disabled MCP servers (set enabled: true in config.yaml to use): "
+            "akramcode -z: ignoring disabled MCP servers (set enabled: true in config.yaml to use): "
             f"{', '.join(disabled)}\n"
         )
     if not valid:
-        return None, "hermes -z: --toolsets did not contain any valid toolsets.\n"
+        return None, "akramcode -z: --toolsets did not contain any valid toolsets.\n"
     return valid, None
 
 
@@ -249,7 +249,7 @@ def run_oneshot(
 ) -> int:
     """Execute a single prompt and print only the final content block.
 
-    Model/provider fall back to ``HERMES_INFERENCE_MODEL`` and config.yaml. ``usage_file`` gets a
+    Model/provider fall back to ``AKRAMCODE_INFERENCE_MODEL`` and config.yaml. ``usage_file`` gets a
     JSON usage report even when the run fails. ``resume`` is a session id (already normalized by
     the CLI layer: latest/title/--continue resolution) whose transcript is loaded and continued
     by this turn. Returns the exit code; the caller owns process termination.
@@ -260,10 +260,10 @@ def run_oneshot(
 
     # --provider without --model is ambiguous (the provider may not host the configured model, and
     # picking its catalog default hides the mismatch). Validate BEFORE the stderr redirect.
-    env_model_early = os.getenv("HERMES_INFERENCE_MODEL", "").strip()
+    env_model_early = os.getenv("AKRAMCODE_INFERENCE_MODEL", "").strip()
     if provider and not ((model or "").strip() or env_model_early):
         sys.stderr.write(
-            "hermes -z: --provider requires --model (or HERMES_INFERENCE_MODEL). "
+            "akramcode -z: --provider requires --model (or AKRAMCODE_INFERENCE_MODEL). "
             "Pass both explicitly, or neither to use your configured defaults.\n"
         )
         return 2
@@ -275,11 +275,11 @@ def run_oneshot(
     use_config_toolsets = _normalize_toolsets(toolsets) is None
 
     # Non-interactive by definition — an approval prompt would hang forever.
-    os.environ["HERMES_YOLO_MODE"] = "1"
-    os.environ["HERMES_ACCEPT_HOOKS"] = "1"
-    # Same finite-chat marker as `hermes chat -q` (cli.py): the session-source resolver uses it to drop an
+    os.environ["AKRAMCODE_YOLO_MODE"] = "1"
+    os.environ["AKRAMCODE_ACCEPT_HOOKS"] = "1"
+    # Same finite-chat marker as `akramcode chat -q` (cli.py): the session-source resolver uses it to drop an
     # inherited tui/desktop transport label, and delegate dispatch to route detached results inline.
-    os.environ["HERMES_SINGLE_QUERY_SESSION"] = "1"
+    os.environ["AKRAMCODE_SINGLE_QUERY_SESSION"] = "1"
 
     # Nothing here drains process_registry.completion_queue (only cli.py's process_loop and the
     # gateway watchers do), so left unbound delegate_task would be forced background and every
@@ -319,7 +319,7 @@ def run_oneshot(
             _write_usage_file(usage_file, result, failure=repr(failure))
             raise failure
         _write_usage_file(usage_file, result, failure=str(failure))
-        real_stderr.write(f"hermes -z: agent failed: {failure}\n")
+        real_stderr.write(f"akramcode -z: agent failed: {failure}\n")
         real_stderr.flush()
         return 1
 
@@ -339,13 +339,13 @@ def run_oneshot(
 
     exit_code = _oneshot_exit_code(response, result)
     if exit_code == 1:
-        real_stderr.write("hermes -z: no final response was produced; treating the run as failed.\n")
+        real_stderr.write("akramcode -z: no final response was produced; treating the run as failed.\n")
         real_stderr.flush()
     return exit_code
 
 
 def _create_session_db_for_oneshot():
-    """Best-effort SessionDB — oneshot bypasses ``HermesCLI._init_agent()``, so it must wire the
+    """Best-effort SessionDB — oneshot bypasses ``AkramCodeCLI._init_agent()``, so it must wire the
     SQLite store itself or ``session_search`` is advertised but always unavailable. The registry
     handle is the one in-process tools (delegation, goals) acquire during the run, so the process
     holds one writer; ``_close_agent``'s ``close()`` releases the refcount."""
@@ -388,7 +388,7 @@ def _resolve_model_and_provider(cfg: dict, model: Optional[str], provider: Optio
     from akramcode_cli.models import detect_provider_for_model
 
     model_cfg = cfg.get("model") or {}
-    env_model = os.getenv("HERMES_INFERENCE_MODEL", "").strip()
+    env_model = os.getenv("AKRAMCODE_INFERENCE_MODEL", "").strip()
     explicit_model = (model or "").strip() or env_model
     choice = _ModelChoice(explicit_model or _configured_model(model_cfg), (provider or "").strip() or None)
     if choice.provider is not None or not explicit_model:
@@ -406,8 +406,8 @@ def _resolve_model_and_provider(cfg: dict, model: Optional[str], provider: Optio
         cfg_provider = ""
         if isinstance(model_cfg, dict):
             cfg_provider = str(model_cfg.get("provider") or "").strip().lower()
-        current_provider = cfg_provider or os.getenv("HERMES_INFERENCE_PROVIDER", "").strip().lower() or "auto"
-        # Same owner as HermesCLI startup: a provider-qualified string (``custom:<name>:<model>``,
+        current_provider = cfg_provider or os.getenv("AKRAMCODE_INFERENCE_PROVIDER", "").strip().lower() or "auto"
+        # Same owner as AkramCodeCLI startup: a provider-qualified string (``custom:<name>:<model>``,
         # ``<provider>/<model>``) selects that provider before auto-detection can hand the unsplit
         # string to the configured default (#73943).
         route = _ms.resolve_startup_model_route(
@@ -444,7 +444,7 @@ def _load_resume_target(session_db, resume: Optional[str]) -> tuple[Optional[str
     ``session_meta`` rows dropped. An unknown session raises (the user passed an explicit id;
     silently starting a fresh session is the resume-dropped failure mode this exists to fix —
     see #105892). An empty stored transcript still returns the resolved id: the turn replays
-    nothing but is recorded under the requested session — ``hermes -z "hello" -c <title>
+    nothing but is recorded under the requested session — ``akramcode -z "hello" -c <title>
     --create-if-missing`` must fill the titled session it created, not mint a fresh id
     (same contract as the interactive /resume of an empty session).
 
@@ -585,13 +585,13 @@ def _run_agent(
             session_id=resume_sid,
             credential_pool=runtime.get("credential_pool"),
             fallback_model=get_fallback_chain(cfg) or None,
-            # The resolved provider's request body (a custom entry's extra_body), as `hermes chat` passes it.
+            # The resolved provider's request body (a custom entry's extra_body), as `akramcode chat` passes it.
             request_overrides=runtime.get("request_overrides"),
             ephemeral_system_prompt=skills_prompt,
             reasoning_config=reasoning_config,
             # The only interactive callback wired: no user sits at a terminal. Sudo prompts gate on
-            # HERMES_INTERACTIVE (never set), hook approval via HERMES_ACCEPT_HOOKS=1, dangerous
-            # commands via HERMES_YOLO_MODE=1, skill secret capture degrades gracefully.
+            # AKRAMCODE_INTERACTIVE (never set), hook approval via AKRAMCODE_ACCEPT_HOOKS=1, dangerous
+            # commands via AKRAMCODE_YOLO_MODE=1, skill secret capture degrades gracefully.
             clarify_callback=_oneshot_clarify_callback,
         )
         # Belt-and-braces: no streaming display callbacks may bypass our stdout capture.

@@ -29,7 +29,7 @@ def _profile_scoped_rpc(
     ``scoped=False`` ignores ``profile``.
 
     The scope is the same home + secret + terminal composition a turn binds
-    (``_session_profile_runtime_scope``), not HERMES_HOME alone: these bodies read config.yaml,
+    (``_session_profile_runtime_scope``), not AKRAMCODE_HOME alone: these bodies read config.yaml,
     whose ``${VAR}`` refs (``config._env_ref_lookup``) and the MCP probe's own header/env
     interpolation resolve through ``get_secret`` — with only the home bound they read plain
     ``os.environ``, i.e. the launch profile's values, so ``mcp.servers.test`` for a secondary
@@ -87,7 +87,7 @@ def _rpc(name: str, fail_code: int, prefix: str = "", *, live_session: bool = Fa
 
 
 def _scoped_rpc(name: str, fail_code: int = 5024, **kw):
-    """``@method(name)`` + ``_profile_scoped_rpc`` (optional ``profile`` HERMES_HOME scope)."""
+    """``@method(name)`` + ``_profile_scoped_rpc`` (optional ``profile`` AKRAMCODE_HOME scope)."""
     return lambda body: method(name)(_profile_scoped_rpc(fail_code, **kw)(body))
 
 
@@ -263,7 +263,7 @@ def _(rid, params: dict) -> dict:
 _SIMPLE_RPCS = {
     # Session-scoped view of the background process registry (desktop status stack).
     "process.stop": (5010, lambda params: {"killed": _tools_mod("tools.process_registry").process_registry.kill_all(source="process.stop")}),
-    # Re-read ``~/.hermes/.env`` (CLI ``/reload`` parity); built agents keep their pool, ``/new`` resolves fresh.
+    # Re-read ``~/.akramcode/.env`` (CLI ``/reload`` parity); built agents keep their pool, ``/new`` resolves fresh.
     "reload.env": (5015, lambda params: {"updated": int(_tools_mod("akramcode_cli.config").reload_env())}),
     "plugins.list": (5032, lambda params: {"plugins": [
         {"name": n, "version": getattr(i, "version", "?"), "enabled": getattr(i, "enabled", True)}
@@ -316,11 +316,11 @@ def _refresh_live_sessions(home=None, *, preserve_prefix: bool = False, note: st
     ``home``: only sessions of that profile home (a session with no ``profile_home`` belongs to the
     launch home). ``preserve_prefix``: append-only rebuild inside a live conversation. ``note``: queued
     for each session's next turn on the one-shot turn-note channel (``agent/turn_context.py``)."""
-    from akramcode_constants import hermes_home_key
-    want = hermes_home_key(home) if home is not None else None
+    from akramcode_constants import akramcode_home_key
+    want = akramcode_home_key(home) if home is not None else None
     with _sessions_lock:
         live = [(sid, sess) for sid, sess in _sessions.items() if sess.get("agent") is not None and (
-            want is None or hermes_home_key(sess.get("profile_home") or get_process_hermes_home()) == want)]
+            want is None or akramcode_home_key(sess.get("profile_home") or get_process_akramcode_home()) == want)]
     refresh = _tools_mod("tools.mcp_tool_agent").refresh_agent_mcp_tools
     for sid, sess in live:
         agent = sess["agent"]
@@ -547,14 +547,14 @@ def _(rid, params: dict) -> dict:
     if hint:
         return _ok(rid, {"blocked": True, "hint": hint, "code": -1, "output": ""})
     # Same-interpreter re-exec: ambient PYTHONPATH must survive the env factory's
-    # Hermes-owned strip (no-boot-through-venv).
+    # AkramCode-owned strip (no-boot-through-venv).
     _compat = _tools_mod("akramcode_cli._subprocess_compat")
     return _captured_exec(
         rid, [sys.executable, "-m", "akramcode_cli.main", *argv], min(int(params.get("timeout", 240)), 600),
         on_result=lambda r: _ok(rid, {
             "blocked": False, "code": r.returncode, "output": (_joined_output(r) or "(no output)")[:48_000]}),
         timeout_err=(5016, "cli.exec: timeout"), fail_code=5017,
-        env=_compat.restore_ambient_pythonpath(hermes_subprocess_env(inherit_credentials=True)))
+        env=_compat.restore_ambient_pythonpath(akramcode_subprocess_env(inherit_credentials=True)))
 
 
 @_rpc("command.resolve", 5012)
@@ -593,7 +593,7 @@ def _plugin_command_handler(name: str):
 
 
 def _run_plugin_command(handler, arg: str, session=None) -> str:
-    """Run a plugin slash-command handler under the session's ``HERMES_SESSION_*`` binding.
+    """Run a plugin slash-command handler under the session's ``AKRAMCODE_SESSION_*`` binding.
 
     Plugin handlers read ``get_session_env()`` for the chat/session they serve; these RPCs run on
     the socket/worker thread where nothing upstream binds it (only the turn path does), so a handler
@@ -609,7 +609,7 @@ def _run_plugin_command(handler, arg: str, session=None) -> str:
 
 @contextlib.contextmanager
 def _session_home_scope(session, cwd: str | None = None, profile: str | None = None):
-    """Bind HERMES_HOME and the logical cwd to the session for the block.
+    """Bind AKRAMCODE_HOME and the logical cwd to the session for the block.
 
     Skill/bundle/quick-command resolution is home-keyed (``skills.external_dirs``, ``skill-bundles/``,
     ``quick_commands`` all live in the profile's config/home); nothing upstream of these RPC handlers
@@ -625,7 +625,7 @@ def _session_home_scope(session, cwd: str | None = None, profile: str | None = N
     if not session and profile:
         profile_home = str(_profile_home(profile) or "") or None
     cwd = cwd or (str(session.get("cwd") or "") if session else "")
-    token = hc.set_hermes_home_override(profile_home) if profile_home else None
+    token = hc.set_akramcode_home_override(profile_home) if profile_home else None
     cwd_token = rc.set_session_cwd(cwd) if cwd else None
     try:
         yield
@@ -633,7 +633,7 @@ def _session_home_scope(session, cwd: str | None = None, profile: str | None = N
         if cwd_token is not None:
             rc.reset_session_cwd(cwd_token)
         if token is not None:
-            hc.reset_hermes_home_override(token)
+            hc.reset_akramcode_home_override(token)
 
 
 def _profile_skill_command(session: dict, base: str) -> bool | None:
@@ -855,7 +855,7 @@ def _tui_model_friction(signal, session, turns=1):
     from akramcode_cli.observability.shared_metrics_model import record_model_friction
     record_model_friction(
         signal, session_id=session.get("session_key"), agent=session.get("agent"),
-        hermes_home=session.get("profile_home"), turns=turns)
+        akramcode_home=session.get("profile_home"), turns=turns)
 
 
 def _cmd_steer(rid, params, session, name, arg):
@@ -997,7 +997,7 @@ def _cmd_compress(rid, params, session, name, arg):
 # The review surface (pending / approve / reject / diff / approval) is owned by the shared handler
 # akramcode_cli/write_approval_commands.handle_pending_subcommand, which the classic CLI and the
 # messaging gateway already reach. Desktop/TUI clients normally get it through slash.exec ->
-# _SlashWorker (a private HermesCLI), but command.dispatch is their FALLBACK stage — with no
+# _SlashWorker (a private AkramCodeCLI), but command.dispatch is their FALLBACK stage — with no
 # route here, a failed worker turned every /memory into the routing refusal "not a quick/
 # plugin/bundle/skill command: memory", so staged writes had no review path at all.
 #
@@ -1284,9 +1284,9 @@ def _(rid, params: dict) -> dict:
 def _(rid, params: dict) -> dict:
     cfg = _load_cfg()
     get_secret = _tools_mod("agent.secret_scope").get_secret
-    api_key = get_secret("HERMES_API_KEY", "") or cfg.get("api_key", "")
+    api_key = get_secret("AKRAMCODE_API_KEY", "") or cfg.get("api_key", "")
     masked = f"****{api_key[-4:]}" if len(api_key) > 4 else "(not set)"
-    base_url = get_secret("HERMES_BASE_URL", "") or cfg.get("base_url", "")
+    base_url = get_secret("AKRAMCODE_BASE_URL", "") or cfg.get("base_url", "")
     sections = [
         {"title": "Model", "rows": [
             ["Model", _resolve_model()], ["Base URL", base_url or "(default)"], ["API Key", masked]]},
@@ -1371,7 +1371,7 @@ def _configure_session_tools(rid, params: dict, sid: str, session) -> dict:
 # ─── Cron / learning / skills ────────────────────────────────────────────────
 @_scoped_rpc("cron.manage", 5023)
 def _(rid, params: dict) -> dict:
-    """cronjob() keys off HERMES_HOME, so ``profile`` reaches a per-profile cron store."""
+    """cronjob() keys off AKRAMCODE_HOME, so ``profile`` reaches a per-profile cron store."""
     cronjob = _tools_mod("tools.cronjob_tools").cronjob
     action, jid = params.get("action", "list"), params.get("name", "")
     if action == "list":
@@ -1547,7 +1547,7 @@ def _(rid, params: dict) -> dict:
     hc = _tools_mod("akramcode_constants")
     configured, plugins = _mcp_server_rows()
     include_runtime = (_tools_mod("agent.secret_scope").is_multiplex_active()
-                       or hc.hermes_home_key() == hc.hermes_home_key(hc.get_process_hermes_home()))
+                       or hc.akramcode_home_key() == hc.akramcode_home_key(hc.get_process_akramcode_home()))
     safe = ("name", "transport", "tools", "connected", "disabled", "status")
     servers = _tools_mod("tools.mcp_tool_discovery").get_mcp_status(configured, include_runtime=include_runtime)
     return _ok(rid, {"servers": [
@@ -1690,9 +1690,9 @@ def _(rid, params: dict) -> dict:
         if cfg.get("headers") and cfg.get("auth") != "oauth":
             return _err(rid, 4001, "this server uses header/API-key auth, not OAuth")
         cfg["auth"] = "oauth"
-        hermes_home = str(_tools_mod("akramcode_constants").get_hermes_home().expanduser().resolve(strict=False))
+        akramcode_home = str(_tools_mod("akramcode_constants").get_akramcode_home().expanduser().resolve(strict=False))
         result = _tools_mod("tui_gateway.mcp_oauth_sessions").start_flow(
-            hermes_home, name, cfg, client_redirect_uri=client_redirect_uri)
+            akramcode_home, name, cfg, client_redirect_uri=client_redirect_uri)
     except ValueError as e:
         return _err(rid, 4001, str(e))
     return _ok(rid, {"ok": True, **{k: result[k] for k in ("session_id", "auth_url", "flow")}})
@@ -1708,7 +1708,7 @@ def _(rid, params: dict) -> dict:
 @_mcp_rpc("oauth.cancel", _NAME_SESSION)
 def _(rid, params: dict) -> dict:
     """Cancel a flow owned by the resolved profile, waking its callback worker."""
-    home = str(_tools_mod("akramcode_constants").get_hermes_home().expanduser().resolve(strict=False))
+    home = str(_tools_mod("akramcode_constants").get_akramcode_home().expanduser().resolve(strict=False))
     cancel = _tools_mod("tui_gateway.mcp_oauth_sessions").cancel_flow
     return _ok(rid, cancel(_str_arg(params, "session_id"), _str_arg(params, "name"), home))
 
@@ -1731,7 +1731,7 @@ def _plugin_server_rows(
     if not portable or plugin_dir is None:
         return []
     package = _tools_mod("akramcode_cli.agent_plugins").load_agent_plugin(plugin_dir, plugin_dir)
-    namespace = package.manifest.get("extensions", {}).get("com.nousresearch.hermes", {})
+    namespace = package.manifest.get("extensions", {}).get("com.nousresearch.akramcode", {})
     declared = namespace.get("servers", {})
     if not isinstance(declared, dict):
         return []
@@ -1909,7 +1909,7 @@ def _plugins_update(rid, params):
 
 
 def _plugins_remove(rid, params):
-    """Uninstall a user install (``<HERMES_HOME>/plugins/<name>``) — the same core as ``hermes plugins
+    """Uninstall a user install (``<AKRAMCODE_HOME>/plugins/<name>``) — the same core as ``akramcode plugins
     remove`` and the dashboard; bundled plugins and paths outside the plugins dir are refused there."""
     name = (params.get("name") or "").strip()
     if not name:
@@ -1950,7 +1950,7 @@ _PLUGINS_ACTIONS = {"list": _plugins_list, "onboarding": _plugins_onboarding, "t
 
 @_scoped_rpc("plugins.manage", 5026, catch_resolve=False)
 def _(rid, params: dict) -> dict:
-    """TUI Plugins Hub backend (shares primitives with ``hermes plugins`` / the dashboard):
+    """TUI Plugins Hub backend (shares primitives with ``akramcode plugins`` / the dashboard):
     ``list`` → {plugins, user_count, bundled_count}; ``toggle`` flips ``key``/``name`` per ``enable``;
     ``install`` git-clones ``identifier``/``repo`` or a curated ``catalog_name`` (``force``, ``enable``
     default True); ``update`` re-pins a catalog install to the current catalog SHA; ``remove`` deletes

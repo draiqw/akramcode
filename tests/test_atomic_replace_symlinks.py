@@ -2,7 +2,7 @@
 
 ``os.replace(tmp, target)`` replaces whatever exists at ``target`` — including
 symlinks, which it swaps for a regular file.  Managed deployments that
-symlink ``~/.hermes/config.yaml`` (and other state files) to a git-tracked
+symlink ``~/.akramcode/config.yaml`` (and other state files) to a git-tracked
 profile package were silently detached on every config write.
 
 The fix: a shared ``atomic_replace`` helper in ``utils.py`` that resolves the
@@ -20,7 +20,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 # Ensure the repo root is importable when running via `pytest tests/...`.
 _REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -147,7 +147,7 @@ def test_atomic_yaml_write_restores_owner_on_real_symlink_target(
     """Config writes through symlinks must restore the real file's owner.
 
     Docker support hit this when a root-run setup wizard rewrote a
-    hermes-owned /opt/data/config.yaml via atomic replace, leaving the new file
+    akramcode-owned /opt/data/config.yaml via atomic replace, leaving the new file
     root-owned. The test forces a preserved uid/gid so it does not need root.
     """
     if os.name != "posix":
@@ -257,7 +257,7 @@ def test_atomic_replace_real_cross_device(tmp_path: Path) -> None:
     import shutil as _shutil
     import uuid as _uuid
 
-    other_fs_dir = shm / f"hermes-exdev-test-{_uuid.uuid4().hex[:8]}"
+    other_fs_dir = shm / f"akramcode-exdev-test-{_uuid.uuid4().hex[:8]}"
     other_fs_dir.mkdir()
     try:
         real = other_fs_dir / "config.yaml"

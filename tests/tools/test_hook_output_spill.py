@@ -31,7 +31,7 @@ class GetSpillConfigTests(unittest.TestCase):
 
 class SpillIfOversizedTests(unittest.TestCase):
     def setUp(self):
-        self.tmpdir = tempfile.mkdtemp(prefix="hermes-spill-test-")
+        self.tmpdir = tempfile.mkdtemp(prefix="akramcode-spill-test-")
 
     def tearDown(self):
         import shutil
@@ -57,12 +57,12 @@ class SpillIfOversizedTests(unittest.TestCase):
         self.assertEqual(hos.spill_if_oversized(small, config=self._cfg()), small)
 
 
-    def test_default_directory_uses_hermes_home(self):
-        """When no directory override, spill under HERMES_HOME/hook_outputs."""
-        test_home = tempfile.mkdtemp(prefix="hermes-home-")
+    def test_default_directory_uses_akramcode_home(self):
+        """When no directory override, spill under AKRAMCODE_HOME/hook_outputs."""
+        test_home = tempfile.mkdtemp(prefix="akramcode-home-")
         try:
-            with patch.dict(os.environ, {"HERMES_HOME": test_home}):
-                # Also patch get_hermes_home to the env var to mirror production.
+            with patch.dict(os.environ, {"AKRAMCODE_HOME": test_home}):
+                # Also patch get_akramcode_home to the env var to mirror production.
                 cfg = self._cfg(directory=None, max_chars=5)
                 hos.spill_if_oversized("x" * 200, session_id="sess", config=cfg)
             candidates = [Path(test_home) / "hook_outputs" / "sess"]

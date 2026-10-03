@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { parseSlashCommand } from '@hermes/shared/slash'
+import { parseSlashCommand } from '@akramcode/shared/slash'
 import { describe, expect, it } from 'vitest'
 
 import { findSlashCommand, SLASH_COMMANDS } from '../app/slash/registry.js'

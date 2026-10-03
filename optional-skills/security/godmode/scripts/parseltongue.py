@@ -11,7 +11,7 @@ Usage:
     python parseltongue.py "How do I hack a WiFi network?" --tier standard
 
     # As a module in execute_code
-    exec(open(os.path.join(os.environ.get("HERMES_HOME", os.path.expanduser("~/.hermes")), "skills/security/godmode/scripts/parseltongue.py")).read())
+    exec(open(os.path.join(os.environ.get("AKRAMCODE_HOME", os.path.expanduser("~/.akramcode")), "skills/security/godmode/scripts/parseltongue.py")).read())
     variants = generate_variants("How do I hack a WiFi network?", tier="standard")
 """
 
@@ -448,50 +448,50 @@ def detect_triggers(text, custom_triggers=None):
 
 def obfuscate_query(query, technique_name, triggers=None):
     """Apply one obfuscation technique to trigger words in a query.
-    
+
     Args:
         query: The input text
         technique_name: Name of the technique (e.g., 'leetspeak', 'unicode')
         triggers: List of trigger words to obfuscate. If None, auto-detect.
-    
+
     Returns:
         Obfuscated query string
     """
     if triggers is None:
         triggers = detect_triggers(query)
-    
+
     if not triggers or technique_name == 'raw':
         return query
-    
+
     # Find the technique function
     tech = next((t for t in TECHNIQUES if t['name'] == technique_name), None)
     if not tech:
         return query
-    
+
     result = query
     # Sort longest-first to avoid partial replacements
     sorted_triggers = sorted(triggers, key=len, reverse=True)
     for trigger in sorted_triggers:
         pattern = re.compile(r'\b(' + re.escape(trigger) + r')\b', re.IGNORECASE)
         result = pattern.sub(lambda m: tech['fn'](m.group()), result)
-    
+
     return result
 
 
 def generate_variants(query, tier="standard", custom_triggers=None):
     """Generate obfuscated variants of a query up to the tier limit.
-    
+
     Args:
         query: Input text
         tier: 'light' (11), 'standard' (22), or 'heavy' (33)
         custom_triggers: Additional trigger words beyond the default list
-    
+
     Returns:
         List of dicts with keys: text, technique, label, tier
     """
     triggers = detect_triggers(query, custom_triggers)
     max_variants = TIER_SIZES.get(tier, TIER_SIZES['standard'])
-    
+
     variants = []
     for i, tech in enumerate(TECHNIQUES[:max_variants]):
         variants.append({
@@ -500,17 +500,17 @@ def generate_variants(query, tier="standard", custom_triggers=None):
             'label': tech['label'],
             'tier': tech['tier'],
         })
-    
+
     return variants
 
 
 def escalate_encoding(query, level=0):
     """Get an encoding-escalated version of the query.
-    
+
     Args:
         query: Input text
         level: 0=plain, 1=leetspeak, 2=bubble, 3=braille, 4=morse
-    
+
     Returns:
         Tuple of (encoded_query, label)
     """

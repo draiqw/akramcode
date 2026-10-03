@@ -10,7 +10,7 @@ statistics aggregated across all batches. See ``main`` (fire CLI) for usage.
 try:
     import akram_core.akramcode_bootstrap  # noqa: F401
 except ModuleNotFoundError as exc:
-    # Partial ``hermes update`` (git reset landed, ``uv pip install -e .`` did not).
+    # Partial ``akramcode update`` (git reset landed, ``uv pip install -e .`` did not).
     if exc.name != "akram_core.akramcode_bootstrap":
         raise  # the bootstrap exists but cannot load: skipping it would skip PM activation
 
@@ -917,25 +917,25 @@ def main(
         reasoning_disabled (bool): Completely disable reasoning/thinking tokens (default: False)
         prefill_messages_file (str): Path to JSON file containing prefill messages (list of {role, content} dicts)
         max_samples (int): Only process the first N samples from the dataset (optional, processes all if not set)
-        
+
     Examples:
         # Basic usage
         python batch_runner.py --dataset_file=data.jsonl --batch_size=10 --run_name=my_run
-        
+
         # Resume interrupted run
         python batch_runner.py --dataset_file=data.jsonl --batch_size=10 --run_name=my_run --resume
-        
+
         # Use specific distribution
         python batch_runner.py --dataset_file=data.jsonl --batch_size=10 --run_name=image_test --distribution=image_gen
-        
+
         # With disabled reasoning
         python batch_runner.py --dataset_file=data.jsonl --batch_size=10 --run_name=my_run \\
                                --reasoning_disabled
-        
+
         # With prefill messages from file
         python batch_runner.py --dataset_file=data.jsonl --batch_size=10 --run_name=my_run \\
                                --prefill_messages_file=configs/prefill_opus.json
-        
+
         # List available distributions
         python batch_runner.py --list_distributions
     """

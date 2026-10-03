@@ -63,7 +63,7 @@ def lose_sidecars(db_path: Path, *, rename: bool) -> None:
 
 def write_second_generation(db_path: Path, n_rows: int) -> int:
     """From a process that does NOT already hold this db open, mint a fresh WAL generation through the path
-    (as any non-hermes opener would), write ``n_rows`` messages and checkpoint them into the main file.
+    (as any non-akramcode opener would), write ``n_rows`` messages and checkpoint them into the main file.
     Returns the message count on the path afterwards. MUST run in a different process from the writer that
     holds the deleted generation — two live handles on one db in one process collide on the -shm."""
     conn = sqlite3.connect(str(db_path), timeout=5.0, isolation_level=None)
@@ -117,9 +117,9 @@ _GATEWAY_CHILD = textwrap.dedent(
     """
     import gc, json, os, sys
     from pathlib import Path
-    repo, hermes_home, db_path = sys.argv[1], sys.argv[2], sys.argv[3]
+    repo, akramcode_home, db_path = sys.argv[1], sys.argv[2], sys.argv[3]
     sys.path.insert(0, repo)
-    os.environ["HERMES_HOME"] = hermes_home
+    os.environ["AKRAMCODE_HOME"] = akramcode_home
     import akramcode_state.wal
     if akramcode_state.wal.is_sqlite_wal_reset_vulnerable():
         akramcode_state.wal.is_sqlite_wal_reset_vulnerable = lambda version_info=None: False
@@ -229,16 +229,16 @@ def gateway_writer(tmp_path: Path):
 
     The child is torn down (stdin closed, then wait → terminate → kill) on exit from the block."""
     repo_root = os.path.dirname(os.path.abspath(akramcode_state.__file__))
-    hermes_home = tmp_path / "home"
-    hermes_home.mkdir()
+    akramcode_home = tmp_path / "home"
+    akramcode_home.mkdir()
     path = tmp_path / "state.db"
     stderr_path = tmp_path / "writer-stderr.log"
     with stderr_path.open("w", encoding="utf-8") as stderr:
         proc = subprocess.Popen(
-            [sys.executable, "-c", _GATEWAY_CHILD, repo_root, str(hermes_home), str(path)],
+            [sys.executable, "-c", _GATEWAY_CHILD, repo_root, str(akramcode_home), str(path)],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=stderr,
             text=True, encoding="utf-8", bufsize=1,
-            env={**os.environ, "HERMES_STATE_DB_GUARD_BYPASS": "1"},
+            env={**os.environ, "AKRAMCODE_STATE_DB_GUARD_BYPASS": "1"},
         )
         gw = GatewayWriter(proc, path, stderr_path)
         try:

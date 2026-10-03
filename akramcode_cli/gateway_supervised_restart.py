@@ -1,4 +1,4 @@
-"""``hermes gateway restart`` for a gateway whose supervisor Hermes did not install.
+"""``akramcode gateway restart`` for a gateway whose supervisor AkramCode did not install.
 
 A custom launchd agent / systemd unit / any KeepAlive-style manager running ``gateway run
 --external-supervisor`` owns the respawn. The manual fallback in ``_cmd_restart`` (SIGTERM, then a
@@ -33,10 +33,10 @@ def gateway_declares_external_supervisor(pid: int, home: Path | None = None) -> 
     if not pid or pid <= 1:
         return False
     from gateway.control_socket import identify_gateway
-    from gateway.status import _get_process_hermes_home, read_runtime_status
+    from gateway.status import _get_process_akramcode_home, read_runtime_status
     from akramcode_cli.gateway import _capture_gateway_argv
 
-    home = home or _get_process_hermes_home()
+    home = home or _get_process_akramcode_home()
     identity = identify_gateway(home) or {}
     if identity.get("pid") == pid and identity.get("supervisor") not in (None, "", "manual"):
         return True
@@ -98,6 +98,6 @@ def restart_externally_supervised_gateway(supervised_pid: int) -> None:
         "",
         "✗ Not stopping or foreground-running a supervisor-owned gateway.",
         "  Check the supervisor (it may be unloaded, wedged, or stopped retrying),",
-        "  then rerun once it is healthy: hermes gateway restart",
+        "  then rerun once it is healthy: akramcode gateway restart",
     )
     sys.exit(1)

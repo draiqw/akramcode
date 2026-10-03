@@ -188,7 +188,7 @@ class TestForumPostMatching:
                          thread_id="post_thread_456"),
         ]
         # A comment on the forum post should match the forum channel route, not the thread route
-        m = match_profile_route(routes, "discord", chat_id="post_thread_456", 
+        m = match_profile_route(routes, "discord", chat_id="post_thread_456",
                                  parent_chat_id="forum_channel_123")
         assert m is not None
         assert m.profile == "forum_profile"
@@ -209,7 +209,7 @@ class TestWhatsAppChatIdIdentityMatching:
         (mapping_dir / f"lid-mapping-{self.LID}_reverse.json").write_text(
             json.dumps(f"{self.PHONE}@s.whatsapp.net")
         )
-        monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
 
     def test_number_route_matches_jid_and_mapped_lid_forms(self, tmp_path, monkeypatch):
         self._write_lid_mapping(tmp_path, monkeypatch)

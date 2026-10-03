@@ -196,7 +196,7 @@ class GatewayGoalsMixin:
             task = self._heartbeat_poll_task = asyncio.create_task(_poll_loop())
             # PERMANENT once started (infinite loop) — tag it like a _spawn_supervised watcher so
             # _scale_to_zero_has_live_background_work() doesn't treat the gateway as busy forever.
-            task._hermes_supervised_watcher = True  # type: ignore[attr-defined]
+            task._akramcode_supervised_watcher = True  # type: ignore[attr-defined]
             _bg = getattr(self, "_background_tasks", None)
             if _bg is not None:
                 _bg.add(task)
@@ -246,7 +246,7 @@ class GatewayGoalsMixin:
         if session_key and hasattr(adapter, "register_post_delivery_callback"):
             try:
                 active = getattr(adapter, "_active_sessions", {}).get(session_key)
-                generation = getattr(active, "_hermes_run_generation", None) if active is not None else None
+                generation = getattr(active, "_akramcode_run_generation", None) if active is not None else None
                 adapter.register_post_delivery_callback(session_key, _deliver, generation=generation)
                 return
             except Exception as exc:
@@ -367,7 +367,7 @@ class GatewayGoalsMixin:
         if state is None or not state.awaiting_response:
             return
         # The --until judge is a sync aux-LLM call — keep it off the event loop, but carry the
-        # contextvars: a bare executor hop drops the profile HERMES_HOME override and secret scope,
+        # contextvars: a bare executor hop drops the profile AKRAMCODE_HOME override and secret scope,
         # so a served secondary's tick would be written into the DEFAULT profile's state.db.
         decision = await self._run_in_executor_with_context(mgr.complete_tick, final_response or "")
         msg = decision.get("message") or ""
@@ -425,7 +425,7 @@ class GatewayGoalsMixin:
             return
         # fire_tick()/complete_tick() are writes (BEGIN IMMEDIATE) taking the SessionDB writer lock; a slow
         # writer elsewhere holding it while the loop thread blocked froze the gateway until the watchdog
-        # fired. The context-preserving executor keeps the profile HERMES_HOME override under multiplex.
+        # fired. The context-preserving executor keeps the profile AKRAMCODE_HOME override under multiplex.
         wakeup = await self._run_in_executor_with_context(mgr.fire_tick)
         if not wakeup:
             return

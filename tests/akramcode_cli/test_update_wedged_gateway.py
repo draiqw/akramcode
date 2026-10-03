@@ -2,7 +2,7 @@
 
 A gateway whose event loop is stalled cannot process a graceful shutdown, so
 the updater's drain wait used to burn the full 180s budget ("Gateway PID X
-still running after 180.0s — restart may fail") and could deadlock `hermes
+still running after 180.0s — restart may fail") and could deadlock `akramcode
 update`. The fix probes the loop-liveness heartbeat file BEFORE draining and,
 only when the loop is provably dead, escalates SIGTERM → SIGKILL bounded to
 seconds. A busy-but-alive gateway (fresh heartbeat) must keep the full drain
@@ -48,7 +48,7 @@ _NEEDS_UNIX_SOCKETS = pytest.mark.skipif(
 def tmp_path():
     """Short-path override for this module (macOS AF_UNIX ~104-byte limit).
 
-    The loop-tick witness tests bind real UNIX sockets under HERMES_HOME.
+    The loop-tick witness tests bind real UNIX sockets under AKRAMCODE_HOME.
     pytest's default tmp_path nests deep enough on macOS that
     ``state/gateway.loop-tick.<pid>.sock`` exceeds the sockaddr_un limit and
     ``bind()`` raises ``OSError: AF_UNIX path too long``. A mkdtemp directly
@@ -188,10 +188,10 @@ def _launchd_harness(monkeypatch, tmp_path, pid):
     below, "escalate" by ``_escalate_wedged_gateway``, ``("drain", t)`` by
     the graceful drain wait, "kickstart" by the relaunch. The probe itself
     is the real ``probe_gateway_loop_liveness`` (home resolved through the
-    patched ``_process_hermes_home``).
+    patched ``_process_akramcode_home``).
     """
     events = []
-    monkeypatch.setattr(gateway_cli, "get_launchd_label", lambda: "ai.hermes.gateway")
+    monkeypatch.setattr(gateway_cli, "get_launchd_label", lambda: "ai.akramcode.gateway")
     monkeypatch.setattr(gateway_cli, "_launchd_domain", lambda: "gui/501")
     monkeypatch.setattr(gateway_cli, "_get_restart_drain_timeout", lambda: 180.0)
     monkeypatch.setattr("gateway.status.get_running_pid", lambda *a, **k: pid)
@@ -242,7 +242,7 @@ def _launchd_harness(monkeypatch, tmp_path, pid):
     )
     monkeypatch.setattr(gateway_cli, "_clear_launchd_unsupported_marker", lambda: None)
     monkeypatch.setattr(
-        "gateway.shutdown_watchdog._process_hermes_home", lambda: tmp_path
+        "gateway.shutdown_watchdog._process_akramcode_home", lambda: tmp_path
     )
     return events
 
@@ -396,7 +396,7 @@ class TestLaunchdRestartWedgedIntegration:
 
     def _setup(self, monkeypatch, liveness):
         events = []
-        monkeypatch.setattr(gateway_cli, "get_launchd_label", lambda: "ai.hermes.gateway")
+        monkeypatch.setattr(gateway_cli, "get_launchd_label", lambda: "ai.akramcode.gateway")
         monkeypatch.setattr(gateway_cli, "_launchd_domain", lambda: "gui/501")
         monkeypatch.setattr(gateway_cli, "_get_restart_drain_timeout", lambda: 180.0)
         # Wait budget covers after-turn deferral + drain + headroom (#77184).

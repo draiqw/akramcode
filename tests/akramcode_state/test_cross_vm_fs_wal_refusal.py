@@ -33,7 +33,7 @@ class TestDetectCrossVmFs:
         ("/data/agent", True),          # fuse.virtiofs bind mount
         ("/mnt/host/db", True),         # 9p bind mount
         ("/mnt/my share/db", True),     # octal-escaped mount point
-        ("/home/user/.hermes", False),  # ext4 root
+        ("/home/user/.akramcode", False),  # ext4 root
         ("/data/native/db", False),     # ext4 mounted over the virtiofs tree — longest prefix wins
         ("/datastore", False),          # sibling path sharing a prefix string, not a mount prefix
     ])
@@ -47,7 +47,7 @@ class TestDetectCrossVmFs:
     def test_ordinary_filesystems_never_flagged(self, tmp_path, fstype):
         # A false positive here would put every session on DELETE mode — the class bug this pins absent.
         mi = _mountinfo(tmp_path, [f"25 1 8:1 / / rw,relatime shared:1 - {fstype} /dev/sda1 rw"])
-        assert _detect_cross_vm_fs("/home/user/.hermes", mountinfo_path=mi) is False
+        assert _detect_cross_vm_fs("/home/user/.akramcode", mountinfo_path=mi) is False
 
     def test_missing_mountinfo_conservative_false(self, tmp_path):
         assert _detect_cross_vm_fs("/data", mountinfo_path=str(tmp_path / "nope")) is False

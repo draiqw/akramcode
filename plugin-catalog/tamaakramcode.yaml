@@ -1,0 +1,30 @@
+name: tamaakramcode
+repo: https://github.com/ahrazzle/TamaAkramCode
+subdir: plugins/tamaakramcode
+sha: d25f76fdf5d8032910ffbe1dca3ba00bf442061f
+description: >-
+  Grow a local TamaAkramCode pet from real AkramCode agent activity. Disclosure — hooks write a pet
+  ledger and sprite atlas under $AKRAMCODE_HOME only; the optional python -m tamaakramcode CLI
+  additionally reads/writes ~/.codex, ~/.petdex and ~/.evopet, runs an unauthenticated loopback
+  preview server (127.0.0.1:8765) and on macOS compiles a Swift overlay and installs a
+  RunAtLoad+KeepAlive LaunchAgent with no uninstall command. No network egress, no credential
+  reads.
+maintainer: ahrazzle
+tier: community
+category: general
+requires_akramcode: ">=0.21"
+docs_url: https://github.com/ahrazzle/TamaAkramCode
+version: "1.2.3"
+readme: true
+platforms:
+  - macos
+capabilities:
+  provides_tools: []
+  provides_hooks:
+    - on_session_start
+    - pre_llm_call
+    - post_tool_call
+    - post_api_request
+    - on_session_end
+  provides_middleware: []
+  requires_env: []

@@ -12,17 +12,17 @@ from pm.lock import Facts
 from pm.registry import get_package
 from pm.store import current_target
 
-store = Path('/opt/hermes/tools')
+store = Path('/opt/akramcode/tools')
 assert not list(store.glob('fetch-*')), 'completed download archives must not ship'
 fact = Facts(store / 'facts.json').get('python')
 expected = get_package('python').binary(store / fact['entry'], current_target())
 assert Path(sys._base_executable).resolve() == expected.resolve()
-import akram_core.hermes_yaml as yaml
-print('PM interpreter and application dependencies load as hermes')
+import akram_core.akramcode_yaml as yaml
+print('PM interpreter and application dependencies load as akramcode')
 """
     result = subprocess.run(
-        ["docker", "run", "--rm", "--network", "none", "--user", "hermes",
-         "--entrypoint", "/opt/hermes/.venv/bin/python", built_image, "-c", probe],
+        ["docker", "run", "--rm", "--network", "none", "--user", "akramcode",
+         "--entrypoint", "/opt/akramcode/.venv/bin/python", built_image, "-c", probe],
         capture_output=True, text=True, timeout=60,
     )
     assert result.returncode == 0, result.stdout + result.stderr
@@ -33,16 +33,16 @@ def test_dashboard_ships_generated_icon_without_build_environment(built_image: s
 from pathlib import Path
 from PIL import Image
 
-with Image.open('/opt/hermes/akramcode_cli/web_dist/favicon.ico') as image:
+with Image.open('/opt/akramcode/akramcode_cli/web_dist/favicon.ico') as image:
     image.load()
     assert image.width > 0 and image.height > 0
-assert not Path('/opt/hermes/node_modules/vite').exists()
-assert not Path('/opt/hermes/node_modules/esbuild').exists()
-assert Path('/opt/hermes/node_modules/typescript/bin/tsc').is_file()
+assert not Path('/opt/akramcode/node_modules/vite').exists()
+assert not Path('/opt/akramcode/node_modules/esbuild').exists()
+assert Path('/opt/akramcode/node_modules/typescript/bin/tsc').is_file()
 """
     result = subprocess.run(
-        ["docker", "run", "--rm", "--network", "none", "--user", "hermes",
-         "--entrypoint", "/opt/hermes/.venv/bin/python", built_image, "-c", probe],
+        ["docker", "run", "--rm", "--network", "none", "--user", "akramcode",
+         "--entrypoint", "/opt/akramcode/.venv/bin/python", built_image, "-c", probe],
         capture_output=True, text=True, timeout=60,
     )
     assert result.returncode == 0, result.stdout + result.stderr

@@ -1,6 +1,6 @@
 """Board→project scoping in kanban_db.
 
-A kanban board can be scoped to a first-class Hermes project so every task on
+A kanban board can be scoped to a first-class AkramCode project so every task on
 it anchors to that project (deterministic worktree + branch). Covers the
 metadata round-trip and the create-time inheritance.
 """
@@ -23,15 +23,15 @@ from akramcode_cli import projects_db as pdb
 
 @pytest.fixture
 def fresh_home(tmp_path, monkeypatch):
-    home = tmp_path / "hermes_home"
+    home = tmp_path / "akramcode_home"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    for var in ("HERMES_KANBAN_DB", "HERMES_KANBAN_WORKSPACES_ROOT", "HERMES_KANBAN_HOME", "HERMES_KANBAN_BOARD"):
+    for var in ("AKRAMCODE_KANBAN_DB", "AKRAMCODE_KANBAN_WORKSPACES_ROOT", "AKRAMCODE_KANBAN_HOME", "AKRAMCODE_KANBAN_BOARD"):
         monkeypatch.delenv(var, raising=False)
     try:
-        import hermes_constants
-        hermes_constants._cached_default_hermes_root = None  # type: ignore[attr-defined]
+        import akramcode_constants
+        akramcode_constants._cached_default_akramcode_root = None  # type: ignore[attr-defined]
     except Exception:
         pass
     kb._INITIALIZED_PATHS.clear()

@@ -58,7 +58,7 @@ def target_scope(profile: str):
     from tui_gateway.launch_profile_policy import launch_profile_runtime_scope
 
     home = server._profile_home(profile)  # None = the launch profile; raises for a missing one
-    scope = (launch_profile_runtime_scope(server._hermes_home) if home is None
+    scope = (launch_profile_runtime_scope(server._akramcode_home) if home is None
              else server._session_profile_runtime_scope({"profile_home": str(home)}))
     with scope:
         yield
@@ -161,7 +161,7 @@ class _Runner:
         if target.kind == "plugin":
             entry = self.installer.plugin_entry(target.name)
             if entry is None:
-                raise LookupError(f"'{target.name}' is not in the Hermes plugin catalog")
+                raise LookupError(f"'{target.name}' is not in the AkramCode plugin catalog")
             self.facts[target.name] = entry
             target.extra = _plugin_row(entry)
             target.required_env = [{"name": name, "required": False, "secret": True, "default": ""}
@@ -275,7 +275,7 @@ def target_declared_env(fact: Any) -> List[str]:
 
 
 def _plugin_row(entry: Any) -> Dict[str, Any]:
-    requirements = [f"Hermes {entry.requires_hermes}"] if entry.requires_hermes else []
+    requirements = [f"AkramCode {entry.requires_akramcode}"] if entry.requires_akramcode else []
     requirements += [f"{name} environment variable" for name in entry.capabilities.requires_env]
     from akramcode_cli.plugin_catalog_presence import presence
 

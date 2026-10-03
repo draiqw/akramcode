@@ -8,7 +8,7 @@ from contextlib import closing
 from pathlib import Path
 from typing import Any
 
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 from utils import load_yaml_file_readonly
 
 
@@ -100,7 +100,7 @@ def collect_runtime_readiness(
 ) -> dict[str, Any]:
     """Bounded readiness diagnostics, no runtime mutation.  Even authenticated, probes
     expose status and counts only: never config values, credentials, paths, payloads."""
-    home = get_hermes_home()
+    home = get_akramcode_home()
     runtime = runtime_status if isinstance(runtime_status, dict) else {}
     state_db_probe = _probe_state_db(home)
     checks = {

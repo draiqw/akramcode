@@ -99,7 +99,7 @@ def _policy_backend(policy: dict) -> str:
 
 def _bound_terminal_backend(profile_home) -> str:
     """Terminal backend of the profile a session/RPC is bound to. A named profile reads ITS policy: at
-    ``session.create`` the multiplex gateway has not rebound HERMES_HOME yet, so ``_effective_terminal_backend()``
+    ``session.create`` the multiplex gateway has not rebound AKRAMCODE_HOME yet, so ``_effective_terminal_backend()``
     would report the LAUNCH profile's backend, which must never leak into a named one."""
     return _policy_backend(_profile_terminal_policy(profile_home)) if profile_home else _effective_terminal_backend()
 
@@ -250,7 +250,7 @@ def _heal_dead_cwd(cwd: str) -> str:
 def _session_is_local_backend(session: dict | None) -> bool:
     """Whether THIS session's cwd can be stat'ed / git-probed here. A session bound to a named ssh profile never can,
     whatever the launch process runs (one multiplexed gateway serves many profiles), and a per-profile gateway
-    (``hermes -p x``) may set ``terminal.backend: ssh`` in config without ``TERMINAL_ENV``: an env-only check would
+    (``akramcode -p x``) may set ``terminal.backend: ssh`` in config without ``TERMINAL_ENV``: an env-only check would
     heal a live remote cwd to its nearest host ancestor (``/home``) and persist that."""
     if session and session.get("profile_home") and _bound_terminal_backend(session["profile_home"]) != "local":
         return False
@@ -363,8 +363,8 @@ def _register_session_cwd(session: dict | None) -> None:
 
         with contextlib.ExitStack() as stack:
             profile_home = session.get("profile_home")
-            if profile_home and hc.hermes_home_key(hc.get_hermes_home()) != hc.hermes_home_key(profile_home):
-                stack.callback(hc.reset_hermes_home_override, hc.set_hermes_home_override(str(profile_home)))
+            if profile_home and hc.akramcode_home_key(hc.get_akramcode_home()) != hc.akramcode_home_key(profile_home):
+                stack.callback(hc.reset_akramcode_home_override, hc.set_akramcode_home_override(str(profile_home)))
             register_task_env_overrides(session["session_key"], {"cwd": cwd, "cwd_source": cwd_source})
 
 

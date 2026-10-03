@@ -2,10 +2,10 @@
 
 Every child-process env in the codebase must be built through
 ``tools.environments.local.build_subprocess_env`` (or its sibling
-``hermes_subprocess_env`` / ``_sanitize_subprocess_env``, which the factory
+``akramcode_subprocess_env`` / ``_sanitize_subprocess_env``, which the factory
 wraps) so profile-home propagation and secret-scrubbing have a single owner.
 History: ~11 commits over 6 months each fixed one more spawn site that missed
-``HERMES_HOME`` or secret-scrub propagation.
+``AKRAMCODE_HOME`` or secret-scrub propagation.
 
 This test greps the source tree for ``os.environ.copy()`` or a ``{**os.environ, ...}``
 spread appearing within ``PROXIMITY_LINES`` lines of a spawn call (``Popen`` / ``subprocess.run`` /
@@ -25,7 +25,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 # Directories that make up the shipped source tree.
 SCAN_DIRS = ("agent", "akramcode_cli", "tools", "gateway", "cron", "tui_gateway", "plugins")
-SCAN_ROOT_FILES = ("cli.py", "hermes_constants.py")
+SCAN_ROOT_FILES = ("cli.py", "akramcode_constants.py")
 
 # How many lines around an `os.environ.copy()` we look for a spawn call.
 PROXIMITY_LINES = 20
@@ -42,7 +42,7 @@ COPY_RE = re.compile(r"\bos\.environ\.copy\(\)|\*\*os\.environ\b")
 # Adding to this list is a conscious decision: document WHY inline here.
 # ---------------------------------------------------------------------------
 ALLOWED_RAW_SPAWN_ENV_FILES = {
-    # THE owner module: _sanitize_subprocess_env / hermes_subprocess_env /
+    # THE owner module: _sanitize_subprocess_env / akramcode_subprocess_env /
     # build_subprocess_env legitimately snapshot os.environ — everything else
     # delegates to them.
     "tools/environments/local.py",
@@ -50,7 +50,7 @@ ALLOWED_RAW_SPAWN_ENV_FILES = {
     # only raw copy is the except-fallback for when the tools package itself
     # cannot be imported, so the user's typed command still runs.
     "akramcode_cli/bang_shell.py",
-    # These children are Hermes itself and need its full environment: the gateway respawn
+    # These children are AkramCode itself and need its full environment: the gateway respawn
     # watcher (generated script source), the launchd stderr-timestamp wrapper around the
     # gateway command, and the skills sync that seeds a new profile.
     "akramcode_cli/gateway.py",
@@ -59,16 +59,16 @@ ALLOWED_RAW_SPAWN_ENV_FILES = {
     # The compute host runs agent turns for the dashboard: Home Assistant tools, Modal/Daytona
     # backends and platform sends read keys that exist only in the process env (#65895).
     "tui_gateway/host_supervisor.py",
-    # apt/dnf/pacman run as root, through sudo (which resets the environment) or because Hermes
+    # apt/dnf/pacman run as root, through sudo (which resets the environment) or because AkramCode
     # already is root. A root child can read every process's environment anyway, and the scrub
-    # helpers would point TMPDIR into HERMES_HOME's scratch dir, leaving root-owned files there.
+    # helpers would point TMPDIR into AKRAMCODE_HOME's scratch dir, leaving root-owned files there.
     "tools/bot_desktop/install.py",
     # The docker/ssh CLIENT process: the user's own backend binary, never code the agent runs,
     # needing their real HOME for ~/.ssh and ~/.docker. Same as inheriting (``None``) plus the
     # forwarded values; what crosses into the sandbox is the backend's forward/passthrough policy.
     "tools/environments/remote_common.py",
     # Needing provider keys is not a reason to be here: such a child uses
-    # hermes_subprocess_env(inherit_credentials=True), which still drops bot/relay tokens.
+    # akramcode_subprocess_env(inherit_credentials=True), which still drops bot/relay tokens.
 }
 
 

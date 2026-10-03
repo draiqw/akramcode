@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 from akramcode_cli.config import cfg_get
 from akramcode_cli.plugin_capabilities import VALID_CAPABILITY_IDS
 from akramcode_cli.plugin_capabilities import parse_declared_capabilities as _parse_declared_capabilities
@@ -26,8 +26,8 @@ from akramcode_cli.relay_plugin_cutover import LEGACY_RELAY_PLUGIN_KEYS, RELAY_P
 
 logger = logging.getLogger("akramcode_cli.plugins")
 
-ENTRY_POINTS_GROUP = "hermes_agent.plugins"
-ENTRY_POINT_CAPABILITIES_GROUP = "hermes_agent.plugin_capabilities"
+ENTRY_POINTS_GROUP = "akramcode_agent.plugins"
+ENTRY_POINT_CAPABILITIES_GROUP = "akramcode_agent.plugin_capabilities"
 
 # Per-harness manifest directories plugin repos ship for OTHER agent harnesses (e.g. obra/superpowers keeps one
 # plugin.json per harness). Their plugin.json is not an Agent Plugins v1 manifest and can never validate, so
@@ -42,7 +42,7 @@ _FOREIGN_HARNESS_MANIFEST_DIRS = frozenset({
 # ``register()`` (threads, DB handles) for a profile the operator took out of the host (#123386).
 # A contextvar, not an env flag: it must not leak to other threads or outlive the read.
 _discovery_suppressed: contextvars.ContextVar[bool] = contextvars.ContextVar(
-    "hermes_plugin_discovery_suppressed", default=False)
+    "akramcode_plugin_discovery_suppressed", default=False)
 
 
 @contextlib.contextmanager
@@ -72,7 +72,7 @@ def _select_entry_point_group(entry_points: Any, group: str) -> list:
 def discover_entrypoint_manifests() -> List["PluginManifest"]:
     """Return metadata-only manifests for installed entry-point plugins. Kind comes from an import-free source
     scan (memory/model providers route to their own discovery). Capabilities come from the companion
-    ``hermes_agent.plugin_capabilities`` group (``<plugin-id>.<capability-id>`` entries pointing at the same
+    ``akramcode_agent.plugin_capabilities`` group (``<plugin-id>.<capability-id>`` entries pointing at the same
     object), so consent works without importing plugin code. Failures are isolated per entry point."""
     manifests: List[PluginManifest] = []
     try:
@@ -200,30 +200,30 @@ def collect_directory_manifests() -> List[PluginManifest]:
 
     # Excluded bundled top-level categories have their own discovery. ``platforms/`` is an ordinary category
     # dir: the recursion keys its adapters ``platforms/<dir>`` like every other category (``web/firecrawl``),
-    # which is the key `hermes plugins enable/disable` and the dashboard write (#27548); the manifest name
+    # which is the key `akramcode plugins enable/disable` and the dashboard write (#27548); the manifest name
     # (``photon-platform``) stays an accepted alias through ``gate_manifest``.
     repo_plugins = _origin.get_bundled_plugins_dir()
     logger.debug("Scanning bundled plugins: %s", repo_plugins)
     _scan("bundled (top-level)", repo_plugins, "bundled",
           {"memory", "context_engine", "model-providers", "cron_providers"})
-    user_dir = get_hermes_home() / "plugins"
+    user_dir = get_akramcode_home() / "plugins"
     logger.debug("Scanning user plugins: %s", user_dir)
     _scan("user", user_dir, "user")
-    if _origin._env_enabled("HERMES_ENABLE_PROJECT_PLUGINS"):
-        project_dir = Path.cwd() / ".hermes" / "plugins"
+    if _origin._env_enabled("AKRAMCODE_ENABLE_PROJECT_PLUGINS"):
+        project_dir = Path.cwd() / ".akramcode" / "plugins"
         logger.debug("Scanning project plugins: %s", project_dir)
         _scan("project", project_dir, "project")
     else:
-        logger.debug("Project plugins disabled (set HERMES_ENABLE_PROJECT_PLUGINS=1 to enable)")
+        logger.debug("Project plugins disabled (set AKRAMCODE_ENABLE_PROJECT_PLUGINS=1 to enable)")
     return manifests
 
 
 def resolve_manifest_winners(manifests: List[PluginManifest]) -> Dict[str, PluginManifest]:
     """Later sources win on key collision (project > user > bundled): a same-named copy under
-    ``~/.hermes/plugins/<name>`` is the documented way to override a bundled plugin, and is logged. A flat
+    ``~/.akramcode/plugins/<name>`` is the documented way to override a bundled plugin, and is logged. A flat
     user/project manifest that claims a bundled key from a *differently named* directory is an impostor, not
     an override (``impostor_dir/plugin.yaml`` with ``name: kanban``): it is skipped with a warning so
-    ``hermes plugins enable kanban`` never activates unrelated code under the bundled name."""
+    ``akramcode plugins enable kanban`` never activates unrelated code under the bundled name."""
     winners: Dict[str, PluginManifest] = {}
     for manifest in manifests:
         key = manifest_key(manifest)
@@ -269,10 +269,10 @@ def gate_manifest(
     # Relay lifecycle is core-owned; an old plugin copy would compete for its registries.
     if names & LEGACY_RELAY_PLUGIN_KEYS:
         error = (
-            "removed — Relay lifecycle is owned by Hermes core; configure a standard user or system Relay "
+            "removed — Relay lifecycle is owned by AkramCode core; configure a standard user or system Relay "
             f"plugins.toml, or use {RELAY_PLUGINS_CONFIG_ENV} for an explicit user-file override"
         )
-        return _placeholder(error, logging.WARNING, "Refusing to load removed Hermes Relay plugin '%s'; %s", error)
+        return _placeholder(error, logging.WARNING, "Refusing to load removed AkramCode Relay plugin '%s'; %s", error)
     if names & disabled:
         return _placeholder("disabled via config", logging.DEBUG, "Skipping disabled plugin '%s'")
     # Exclusive plugins (memory providers) have their own activation path; record only.
@@ -290,13 +290,13 @@ def gate_manifest(
         # Bundled backends auto-load; selection among them is ``<category>.provider`` config.
         if manifest.kind == "backend":
             return ManifestGate("load_now")
-        # Bundled platforms register LAZILY: eagerly importing ~20 heavy SDKs added seconds to every `hermes`
+        # Bundled platforms register LAZILY: eagerly importing ~20 heavy SDKs added seconds to every `akramcode`
         # invocation. A deferred loader keeps every platform available on first use.
         if manifest.kind == "platform":
             return ManifestGate("defer")
     if enabled is None or not names & enabled:
         return _placeholder(
-            f"not enabled in config (run `hermes plugins enable {lookup_key}` to activate)", logging.DEBUG,
+            f"not enabled in config (run `akramcode plugins enable {lookup_key}` to activate)", logging.DEBUG,
             "Skipping '%s' (not in plugins.enabled)",
         )
     if manifest.source != "bundled":
@@ -305,7 +305,7 @@ def gate_manifest(
         from akramcode_cli.plugins_cmd_catalog import installed_plugin_removal
         removed = installed_plugin_removal(manifest.name, manifest.path)
         if removed is not None:
-            error = f"removed from the Hermes plugin catalog: {removed.reason or 'no reason recorded'}"
-            return _placeholder(error, logging.WARNING, "Refusing to load plugin '%s' — %s; run `hermes plugins remove`",
+            error = f"removed from the AkramCode plugin catalog: {removed.reason or 'no reason recorded'}"
+            return _placeholder(error, logging.WARNING, "Refusing to load plugin '%s' — %s; run `akramcode plugins remove`",
                                 error)
     return ManifestGate("load")

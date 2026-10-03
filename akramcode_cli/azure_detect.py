@@ -84,7 +84,7 @@ def _authed_request(url: str, api_key: Any, token_provider, *, method: str = "GE
         if mode != "entra_id":
             req.add_header("api-key", token)
         req.add_header("Authorization", f"Bearer {token}")
-    req.add_header("User-Agent", "hermes-agent/azure-detect")
+    req.add_header("User-Agent", "akramcode-agent/azure-detect")
     return req
 
 

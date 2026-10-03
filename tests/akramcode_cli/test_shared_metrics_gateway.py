@@ -26,7 +26,7 @@ def marks(monkeypatch):
 
 
 def _install_platform_plugin(home, monkeypatch, *, dir_name, platform, catalog_name=None):
-    """A user plugin under $HERMES_HOME/plugins registering ``platform``; ``catalog_name`` writes the
+    """A user plugin under $AKRAMCODE_HOME/plugins registering ``platform``; ``catalog_name`` writes the
     installer-owned record a plugin-catalog install leaves (a URL install writes none)."""
     from gateway.platform_registry import PlatformEntry, platform_registry
 
@@ -37,7 +37,7 @@ def _install_platform_plugin(home, monkeypatch, *, dir_name, platform, catalog_n
             return None
     """), encoding="utf-8")
     # Anything inside the tree is the repo's to write: it must never prove a catalog install.
-    (plugin_dir / ".hermes-catalog.json").write_text(json.dumps({"catalog_name": "sendblue"}), encoding="utf-8")
+    (plugin_dir / ".akramcode-catalog.json").write_text(json.dumps({"catalog_name": "sendblue"}), encoding="utf-8")
     namespace = {}
     exec(compile((plugin_dir / "adapter.py").read_text(), str(plugin_dir / "adapter.py"), "exec"), namespace)
     if catalog_name:
@@ -53,8 +53,8 @@ def _install_platform_plugin(home, monkeypatch, *, dir_name, platform, catalog_n
 
 
 def test_platform_names_are_published_or_proven_by_the_installer_record(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    home = tmp_path / ".akramcode"
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     cleanup = [
         _install_platform_plugin(home, monkeypatch, dir_name="vk", platform="vk", catalog_name="vk-platform"),
         # A URL install claiming a catalog name everywhere it can (tree sidecar, manifest name) stays anonymous.
@@ -84,9 +84,9 @@ def test_every_gateway_row_is_contract_valid_and_disabled_config_records_nothing
     smg.record_cron_missed({"deliver": "telegram:-100123"})
     rows = marks()
     assert rows == [
-        ("hermes.platform.health", {"error_class": "network", "event": "connect_failed", "platform": "telegram"}),
-        ("hermes.platform.health", {"error_class": "auth", "event": "disconnect", "platform": "telegram"}),
-        ("hermes.cron.run", {"delivery_kind": "platform", "duration_bucket": "lt_1s", "outcome": "missed"}),
+        ("akramcode.platform.health", {"error_class": "network", "event": "connect_failed", "platform": "telegram"}),
+        ("akramcode.platform.health", {"error_class": "auth", "event": "disconnect", "platform": "telegram"}),
+        ("akramcode.cron.run", {"delivery_kind": "platform", "duration_bucket": "lt_1s", "outcome": "missed"}),
     ]
     assert all(contract.counter_dimensions_are_valid(name, dims) for name, dims in rows)
 
@@ -101,11 +101,11 @@ def test_every_gateway_adapter_platform_is_named_and_accepted_by_contract_and_sc
 
     from gateway.config import Platform
 
-    schema = json.loads((Path(contract.__file__).parent / "schemas/hermes.shared_metrics.v3.schema.json").read_text())
+    schema = json.loads((Path(contract.__file__).parent / "schemas/akramcode.shared_metrics.v3.schema.json").read_text())
     rows = {
-        "platform_health_counter": ("hermes.platform.health", {"error_class": "network", "event": "disconnect"}),
-        "platform_delivery_counter": ("hermes.platform.delivery", {"failure_class": "none", "outcome": "sent"}),
-        "reply_latency_counter": ("hermes.gateway.reply_latency", {"first_response_bucket": "lt_2s"}),
+        "platform_health_counter": ("akramcode.platform.health", {"error_class": "network", "event": "disconnect"}),
+        "platform_delivery_counter": ("akramcode.platform.delivery", {"failure_class": "none", "outcome": "sent"}),
+        "reply_latency_counter": ("akramcode.gateway.reply_latency", {"first_response_bucket": "lt_2s"}),
     }
     for member in Platform:  # relay and msgraph_webhook are gateway adapters with no setup-wizard entry
         name = contract.adapter_platform(member)

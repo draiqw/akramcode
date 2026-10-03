@@ -29,9 +29,9 @@ def _write_home(home, provider, env_file: dict, extra_var: str):
 
 @pytest.fixture
 def home(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     for var in ("DEEPSEEK_API_KEY", "DEEPSEEK_API_KEY_2", "OPENROUTER_API_KEY", "OPENROUTER_API_KEY_2"):
         monkeypatch.delenv(var, raising=False)
     return home

@@ -19,7 +19,7 @@ from akramcode_cli.backup import (
 
 
 def test_backup_lock_rejects_a_second_operation(tmp_path) -> None:
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
 
     with _backup_operation_lock(home):
@@ -54,7 +54,7 @@ def test_atomic_output_keeps_previous_file_after_failure(tmp_path) -> None:
 
 
 def test_quick_snapshot_is_published_with_manifest(tmp_path, monkeypatch) -> None:
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
     (home / "config.yaml").write_bytes(b"model: {}\n")
     published: list[tuple[Path, Path]] = []
@@ -74,7 +74,7 @@ def test_quick_snapshot_is_published_with_manifest(tmp_path, monkeypatch) -> Non
         real_replace(source, destination)
 
     monkeypatch.setattr(backup.os, "replace", replace)
-    snapshot_id = create_quick_snapshot(hermes_home=home)
+    snapshot_id = create_quick_snapshot(akramcode_home=home)
 
     assert snapshot_id is not None
     assert len(published) == 1
@@ -94,7 +94,7 @@ def test_quick_snapshot_tree_is_owner_only_under_permissive_umask(tmp_path) -> N
     pairing records, and cron data, so every published file must be 0600 and
     every directory 0700 regardless of the caller's umask or source modes.
     """
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
     (home / "config.yaml").write_text("model: {}\n", encoding="utf-8")
     with sqlite3.connect(home / "state.db") as conn:
@@ -102,7 +102,7 @@ def test_quick_snapshot_tree_is_owner_only_under_permissive_umask(tmp_path) -> N
 
     old_umask = os.umask(0o022)
     try:
-        snapshot_id = create_quick_snapshot(hermes_home=home)
+        snapshot_id = create_quick_snapshot(akramcode_home=home)
     finally:
         os.umask(old_umask)
 
@@ -119,16 +119,16 @@ def test_quick_snapshot_tree_is_owner_only_under_permissive_umask(tmp_path) -> N
 
 
 def test_quick_snapshot_listing_ignores_partial_directories(tmp_path) -> None:
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     partial = home / "state-snapshots" / ".unfinished.1.partial"
     partial.mkdir(parents=True)
     (partial / "manifest.json").write_text('{"id":"unfinished"}', encoding="utf-8")
 
-    assert list_quick_snapshots(hermes_home=home) == []
+    assert list_quick_snapshots(akramcode_home=home) == []
 
 
 def test_failed_automatic_backup_preserves_previous_archive(tmp_path, monkeypatch) -> None:
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
     (home / "state.db").write_bytes(b"not-a-database")
     archive = tmp_path / "automatic.zip"

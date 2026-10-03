@@ -32,7 +32,7 @@ _MARKER_NAME = ".tcc-anchor-source"
 
 _STORE_COMMON_MARKERS = ("cpython-", "-macos-")
 # Recognize both historical interpreter locations during upgrades.
-_STORE_ROOT_MARKERS = ("/uv/python/", "/.hermes-runtime/python/")
+_STORE_ROOT_MARKERS = ("/uv/python/", "/.akramcode-runtime/python/")
 
 _ALIAS_NAMES = ("python3", f"python3.{sys.version_info.minor}")
 _STORE_BIN_NAMES = (f"python3.{sys.version_info.minor}", "python3", "python")
@@ -349,7 +349,7 @@ def ensure_tcc_anchor(project_root: Path | None = None) -> Path | None:
 
 
 def tcc_anchor_state(project_root: Path | None = None) -> tuple[str, str]:
-    """Report the anchor state for ``hermes doctor`` as ``(status, detail)``.
+    """Report the anchor state for ``akramcode doctor`` as ``(status, detail)``.
 
     ``skip`` = not applicable; ``active`` = pinned at a stable real-file anchor; ``stale`` = pinned
     but the interpreter changed since the last copy; ``missing`` = uv-managed with no anchor.

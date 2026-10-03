@@ -1,8 +1,8 @@
-"""``hermes plugins validate`` — language-pack checks (``provides_locales``).
+"""``akramcode plugins validate`` — language-pack checks (``provides_locales``).
 
 For every declared id the pack must ship ``locales/<id>.yaml`` that parses and is text-only (a number,
 list or null leaf is an error: ``t()`` would silently drop it). Keys the English catalogs do not have
-are a WARNING naming them — a pack written against a newer or older Hermes still installs, it just
+are a WARNING naming them — a pack written against a newer or older AkramCode still installs, it just
 carries dead keys. Core keys come from the bundled ``locales/en.yaml``; TUI/Desktop keys from
 ``locales/_keys.tui.json`` / ``locales/_keys.desktop.json`` (exported by the TS packages' build
 scripts). When an export is absent the key check for that surface is skipped, never failed.
@@ -41,7 +41,7 @@ def reference_keys(surface: str) -> Optional[Set[str]]:
         data = json.loads(export.read_text(encoding="utf-8-sig"))
         keys = data.get("keys") if isinstance(data, dict) else data
         return {str(k) for k in keys} if isinstance(keys, list) else None
-    except Exception as exc:  # a broken reference is a Hermes bug, not the pack's
+    except Exception as exc:  # a broken reference is a AkramCode bug, not the pack's
         logger.debug("i18n reference keys for %s unavailable: %s", surface, exc)
         return None
 

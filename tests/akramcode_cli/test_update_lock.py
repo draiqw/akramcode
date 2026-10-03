@@ -1,12 +1,12 @@
 """Cross-process update mutual exclusion (``akramcode_cli.update_lock``).
 
-Three surfaces can start an update of one install tree: a terminal ``hermes
+Three surfaces can start an update of one install tree: a terminal ``akramcode
 update``, the dashboard's Update button (which spawns that same command
 detached), and the desktop's Update button (Tauri updater → install-mode
 bootstrap on its failure screen). Before the shared lock, two of them could run
 concurrently and rewrite source under a live interpreter — observed in the wild
 as an installer ``git checkout`` rewinding the checkout ~9k commits while a
-dashboard-spawned ``hermes update`` was mid-``npm install``, which then failed
+dashboard-spawned ``akramcode update`` was mid-``npm install``, which then failed
 against the rewound tree's manifests.
 
 These exercise the real marker file against a temp home — no mocks — because
@@ -45,7 +45,7 @@ DEAD_PID = 4294967294
 
 @pytest.fixture
 def marker(tmp_path):
-    return tmp_path / ".hermes-update-in-progress"
+    return tmp_path / ".akramcode-update-in-progress"
 
 
 @pytest.fixture
@@ -61,14 +61,14 @@ def _claim(marker, pid, started_at=None):
     marker.write_text(f"{pid}\n{int(time.time() if started_at is None else started_at)}\n", encoding="utf-8")
 
 
-def test_marker_path_follows_process_hermes_home(tmp_path, monkeypatch):
+def test_marker_path_follows_process_akramcode_home(tmp_path, monkeypatch):
     """The lock must land where the Rust updater and Electron gate look.
 
-    All three resolve the *process* HERMES_HOME; a profile-scoped path would
+    All three resolve the *process* AKRAMCODE_HOME; a profile-scoped path would
     put the lock somewhere the other two owners never read.
     """
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    assert update_marker_path() == tmp_path / ".hermes-update-in-progress"
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
+    assert update_marker_path() == tmp_path / ".akramcode-update-in-progress"
 
 
 def test_acquire_writes_pid_and_start_time(marker):
@@ -255,10 +255,10 @@ def test_unwritable_marker_location_does_not_block_the_update(tmp_path):
 
 
 class TestHandoffFromOrchestratingUpdater:
-    """The Tauri updater holds the marker, then spawns ``hermes update``.
+    """The Tauri updater holds the marker, then spawns ``akramcode update``.
 
     The regression: the child saw its own parent's live marker and exited 2,
-    so every GUI update failed with "Hermes is still running" and retrying
+    so every GUI update failed with "AkramCode is still running" and retrying
     just re-ran the same self-deadlock. The parent names its pid in
     HANDOFF_PID_ENV; a live holder matching it is our own orchestrator.
     """
@@ -313,7 +313,7 @@ class TestHandoffFromOrchestratingUpdater:
 class TestAncestryHandoff:
     """Staged updaters older than the HANDOFF_PID_ENV export never send it.
 
-    ``hermes-setup`` under ``~/.hermes`` is only refreshed by a full installer
+    ``akramcode-setup`` under ``~/.akramcode`` is only refreshed by a full installer
     run, so an updated checkout (new lock) driven by a pre-handoff staged
     updater (old parent) deadlocks on exit 2 forever unless the child also
     recognizes a live holder that is its own process ancestor.
@@ -341,13 +341,13 @@ class TestAncestryHandoff:
     def test_grandchild_adopts_orchestrator_marker_without_psutil(self, marker, tmp_path):
         """Regression: the desktop hand-off's grandchild refused its own orchestrator.
 
-        The posix shim (grandparent) holds the marker and spawns ``hermes update``
+        The posix shim (grandparent) holds the marker and spawns ``akramcode update``
         (direct child — adopts via getppid). An old-updater update into a PM tree
         then hands off again: ``_old_updater._run_child`` spawns
         ``_update_takeover.py`` as ``python -I -S -B``, where psutil cannot import
         (-S skips site-packages). The psutil-only ancestry walk returned False for
         the two-hops-up shim, and the takeover child refused with exit 2 —
-        "Another Hermes update is already running (PID <the shim itself>)" —
+        "Another AkramCode update is already running (PID <the shim itself>)" —
         observed live on a macOS rehearsal install, then again on Windows, where
         the stdlib walk had no /proc and no ps. Marked for every lane: the Windows
         lane only imports files carrying a platforms marker, which is how the

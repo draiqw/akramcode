@@ -16,10 +16,10 @@ def _plain(s: str) -> str:
 
 @pytest.fixture
 def cli_stub(monkeypatch):
-    from cli import HermesCLI
+    from cli import AkramCodeCLI
     import cli as climod
 
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = AkramCodeCLI.__new__(AkramCodeCLI)
     cli.show_reasoning = False
     cli.final_response_markdown = "raw"
     cli.show_timestamps = False
@@ -27,7 +27,7 @@ def cli_stub(monkeypatch):
     emitted = []
     monkeypatch.setattr(climod, "_cprint", lambda s: emitted.append(s))
     monkeypatch.setattr(climod, "_terminal_width_for_streaming", lambda: 74)
-    monkeypatch.setattr(HermesCLI, "_scrollback_box_width", lambda self: 74)
+    monkeypatch.setattr(AkramCodeCLI, "_scrollback_box_width", lambda self: 74)
     return cli, emitted
 
 

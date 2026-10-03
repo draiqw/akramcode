@@ -53,7 +53,7 @@ function uv {
     } finally { Remove-Item $env:UV_BUSY }
 }
 function Invoke-WebRequest { throw 'network access outside test boundary' }
-$installerArgs = @{ InstallDir = $InstallDir; HermesHome = $HomeDir }
+$installerArgs = @{ InstallDir = $InstallDir; AkramCodeHome = $HomeDir }
 if ($env:PROBE_SKIP_BROWSER) { $installerArgs.SkipBrowser = $true }
 . $Installer @installerArgs
 # Dot-sourcing defines Get-Uv, so override only that acquisition boundary.

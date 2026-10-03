@@ -1,11 +1,11 @@
 """Invariants for ``akramcode_cli.config_effective.load_user_config_effective`` — the one loader every
-defaults-free config reader (gateway runtime, TUI gateway, cron, ``hermes send`` bridge, doctor,
+defaults-free config reader (gateway runtime, TUI gateway, cron, ``akramcode send`` bridge, doctor,
 bootstrap modules) goes through."""
 import textwrap
 
 import pytest
 
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 
 @pytest.fixture
@@ -14,8 +14,8 @@ def homes(tmp_path, monkeypatch):
     home.mkdir()
     managed = tmp_path / "managed"
     managed.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_MANAGED_DIR", str(managed))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_MANAGED_DIR", str(managed))
     monkeypatch.setenv("FIXTURE_USER_KEY", "user-secret")
     monkeypatch.setenv("FIXTURE_MANAGED_URL", "https://managed.example")
     _reset_caches()

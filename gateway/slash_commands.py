@@ -123,12 +123,12 @@ def _restart_notify_payload(event: MessageEvent) -> dict:
     return data
 
 
-def _spawn_detached_update(hermes_cmd, output_path, exit_code_path) -> None:
-    """Spawn ``hermes update --gateway`` detached so it survives the gateway restart it may trigger.
+def _spawn_detached_update(akramcode_cmd, output_path, exit_code_path) -> None:
+    """Spawn ``akramcode update --gateway`` detached so it survives the gateway restart it may trigger.
     setsid is portable (works where ``systemd-run --user`` lacks a D-Bus session); ``--gateway``
     enables file-based IPC so interactive prompts are forwarded; PYTHONUNBUFFERED lets the gateway
     stream output live.  Windows has no setsid: an inline helper runs the updater as a module under
-    this interpreter (not venv\\Scripts\\hermes.exe — that shim holds its own file open, and the
+    this interpreter (not venv\\Scripts\\akramcode.exe — that shim holds its own file open, and the
     update must replace it), redirects both outputs to one file and writes the exit code."""
     import shutil
     import subprocess
@@ -139,9 +139,9 @@ def _spawn_detached_update(hermes_cmd, output_path, exit_code_path) -> None:
              sys.executable, "-m", "akramcode_cli.main", "update", "--gateway"],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **windows_detach_popen_kwargs())
         return
-    hermes_cmd_str = " ".join(shlex.quote(part) for part in hermes_cmd)
+    akramcode_cmd_str = " ".join(shlex.quote(part) for part in akramcode_cmd)
     update_cmd = (
-        f"PYTHONUNBUFFERED=1 {hermes_cmd_str} update --gateway"
+        f"PYTHONUNBUFFERED=1 {akramcode_cmd_str} update --gateway"
         f" > {shlex.quote(str(output_path))} 2>&1; "
         # Avoid `status=$?`: `status` is read-only in zsh and this template is reused in
         # macOS/zsh operator wrappers, so keep it zsh-safe even though bash runs it here.
@@ -280,7 +280,7 @@ class GatewaySlashCommandsMixin(
         return None
 
     def _typed_command_prefix_for(self, platform) -> str:
-        """The prefix users can always type to reach Hermes commands (adapter ``typed_command_prefix``,
+        """The prefix users can always type to reach AkramCode commands (adapter ``typed_command_prefix``,
         default "/"). Slack and Matrix use "!" because typed "/" is blocked/reserved there; their
         adapters rewrite "!command" to "/command"."""
         adapter = self.adapters.get(platform) if getattr(self, "adapters", None) else None
@@ -301,7 +301,7 @@ class GatewaySlashCommandsMixin(
         gateway the process-level profile is the multiplexer's own ("default" in every chat), so
         with ``multiplex_profiles`` on report ``source.profile`` and resolve home under that
         profile's runtime scope; when off the stamp is ignored, mirroring ``_run_agent``."""
-        from akramcode_constants import display_hermes_home
+        from akramcode_constants import display_akramcode_home
         source = getattr(event, "source", None)
         profile_name = display = ""
         if getattr(getattr(self, "config", None), "multiplex_profiles", False):
@@ -309,9 +309,9 @@ class GatewaySlashCommandsMixin(
             try:
                 from gateway.run import _profile_runtime_scope
                 with _profile_runtime_scope(self._resolve_profile_home_for_source(source)):
-                    display = display_hermes_home()
+                    display = display_akramcode_home()
             except Exception:
-                display = display_hermes_home()
+                display = display_akramcode_home()
 
         # Shared executor resolves process-level fallbacks; the multiplexed per-source overrides
         # (when any) ride in via options.
@@ -528,7 +528,7 @@ class GatewaySlashCommandsMixin(
 
     async def _handle_restart_command(self, event: MessageEvent) -> Union[str, EphemeralReply]:
         """Handle /restart command - drain active work, then restart the gateway."""
-        from gateway.run import _hermes_home
+        from gateway.run import _akramcode_home
         # Idempotency check: if the previous gateway process recorded this same /restart (platform +
         # update_id) and we see it *again*, it's a redelivery from PTB's graceful-shutdown get_updates
         # ACK failing on the way out. Ignoring it prevents a loop where every fresh gateway re-restarts.
@@ -545,7 +545,7 @@ class GatewaySlashCommandsMixin(
 
         async def _write_marker(name: str, build, label: str) -> None:
             try:
-                await asyncio.to_thread(atomic_json_write, _hermes_home / name, build(), indent=None)
+                await asyncio.to_thread(atomic_json_write, _akramcode_home / name, build(), indent=None)
             except Exception as e:
                 logger.debug("Failed to write restart %s: %s", label, e)
 
@@ -587,7 +587,7 @@ class GatewaySlashCommandsMixin(
         return EphemeralReply(t("gateway.restart.restarting"))
 
     async def _handle_version_command(self, event: MessageEvent) -> str:
-        """Handle /version — show the running Hermes Agent version."""
+        """Handle /version — show the running AkramCode Agent version."""
         return _execute("version").text
 
     def _catalog_options(self, event: MessageEvent) -> dict:
@@ -913,7 +913,7 @@ class GatewaySlashCommandsMixin(
             return t("gateway.skills.unknown_subcommand")
 
         # Chat bubbles can't hold a full skill diff — truncate and point at the pending JSON file
-        # (NOT `hermes skills diff <name>`, which diffs a bundled skill against its stock version).
+        # (NOT `akramcode skills diff <name>`, which diffs a bundled skill against its stock version).
         if sub == "diff" and len(out) > 3000:
             pending_id = args[1] if len(args) > 1 else "<id>"
             out = out[:3000] + t("gateway.skills.diff_truncated", pending_id=pending_id)
@@ -972,7 +972,7 @@ class GatewaySlashCommandsMixin(
             return f"{description}\n" + t("gateway.verbose.save_failed", error=e)
 
     async def _handle_busy_command(self, event: MessageEvent) -> Union[str, EphemeralReply]:
-        """Handle /busy — control what happens when messaging while Hermes is working."""
+        """Handle /busy — control what happens when messaging while AkramCode is working."""
         arg = event.get_command_args().strip().lower()
         if not arg or arg == "status":
             mode = self._effective_busy_input_mode(event.source)
@@ -1085,7 +1085,7 @@ class GatewaySlashCommandsMixin(
             from agent.skill_commands import reload_skills
 
             # _run_in_executor_with_context, not a bare hop: the rescan walks
-            # get_hermes_home()/skills, a contextvar override under multiplex.
+            # get_akramcode_home()/skills, a contextvar override under multiplex.
             result = await self._run_in_executor_with_context(reload_skills)
             added, removed = result.get("added", []), result.get("removed", [])  # [{"name", "description"}]
             total = result.get("total", 0)
@@ -1212,7 +1212,7 @@ class GatewaySlashCommandsMixin(
 
     async def _handle_debug_command(self, event: MessageEvent) -> str:
         """Handle /debug — upload ONLY the summary (system info + log tails), never full logs, to
-        protect privacy; ``hermes debug share`` from the CLI does full uploads."""
+        protect privacy; ``akramcode debug share`` from the CLI does full uploads."""
         from akramcode_cli.debug import (_GATEWAY_PRIVACY_NOTICE, _best_effort_sweep_expired_pastes,
                                       _capture_dump, _is_dpaste_url, _schedule_auto_delete,
                                       collect_debug_report, upload_to_pastebin)
@@ -1236,15 +1236,15 @@ class GatewaySlashCommandsMixin(
                               t("gateway.debug.share_hint")])
 
         # _run_in_executor_with_context, not a bare hop: this collects the profile's logs/config off
-        # ``get_hermes_home()`` and uploads them to a public paste. Losing the contextvar override
+        # ``get_akramcode_home()`` and uploads them to a public paste. Losing the contextvar override
         # would publish the DEFAULT profile's diagnostics from another profile's chat.
         return await self._run_in_executor_with_context(_collect_and_upload)
 
     async def _handle_update_command(self, event: MessageEvent) -> str:
-        """Handle /update — spawn ``hermes update`` detached (``setsid``) so it survives the gateway
+        """Handle /update — spawn ``akramcode update`` detached (``setsid``) so it survives the gateway
         restart it may trigger; marker files let this or the next gateway process notify the user."""
         import json
-        from gateway.run import _hermes_home, _resolve_hermes_bin
+        from gateway.run import _akramcode_home, _resolve_akramcode_bin
         from akramcode_cli.config import is_managed, format_managed_message
         # Block non-messaging platforms (API server, webhooks, ACP); plugin platforms with
         # allow_update_command=True are also allowed.
@@ -1264,7 +1264,7 @@ class GatewaySlashCommandsMixin(
 
         # Not a git-managed install (docker/nix/desktop-app/source): refuse
         # with the steward's own update mechanism instead of git-pulling a
-        # tree `hermes update` does not own.
+        # tree `akramcode update` does not own.
         try:
             from akramcode_cli.config import (
                 detect_install_method,
@@ -1282,12 +1282,12 @@ class GatewaySlashCommandsMixin(
 
         if not git_dir.exists():
             return t("gateway.update.not_git_repo")
-        hermes_cmd = _resolve_hermes_bin()
-        if not hermes_cmd:
-            return t("gateway.update.hermes_cmd_not_found")
-        pending_path = _hermes_home / ".update_pending.json"
-        output_path = _hermes_home / ".update_output.txt"
-        exit_code_path = _hermes_home / ".update_exit_code"
+        akramcode_cmd = _resolve_akramcode_bin()
+        if not akramcode_cmd:
+            return t("gateway.update.akramcode_cmd_not_found")
+        pending_path = _akramcode_home / ".update_pending.json"
+        output_path = _akramcode_home / ".update_output.txt"
+        exit_code_path = _akramcode_home / ".update_exit_code"
         pending = {
             "platform": src.platform.value, "chat_id": src.chat_id, "chat_type": src.chat_type,
             "user_id": src.user_id, "session_key": self._session_key_for_source(src),
@@ -1301,7 +1301,7 @@ class GatewaySlashCommandsMixin(
         _tmp_pending.replace(pending_path)
         exit_code_path.unlink(missing_ok=True)
         try:
-            _spawn_detached_update(hermes_cmd, output_path, exit_code_path)
+            _spawn_detached_update(akramcode_cmd, output_path, exit_code_path)
         except Exception as e:
             pending_path.unlink(missing_ok=True)
             exit_code_path.unlink(missing_ok=True)

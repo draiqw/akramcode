@@ -73,8 +73,8 @@ def test_finalize_settles_session_before_a_successor_can_take_over(tmp_path, mon
     from akramcode_cli import active_sessions
     from akramcode_state import SessionDB
 
-    home = tmp_path / ".hermes"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    home = tmp_path / ".akramcode"
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     db = SessionDB(db_path=tmp_path / "state.db")
     sid = "s1"
     db.create_session(sid, "cli")
@@ -177,7 +177,7 @@ def test_human_single_query_main_finalizes_after_query(monkeypatch):
         def _print_exit_summary(self, clear_screen=True):
             calls.append("summary")
 
-    monkeypatch.setattr(cli_mod, "HermesCLI", FakeCLI)
+    monkeypatch.setattr(cli_mod, "AkramCodeCLI", FakeCLI)
     monkeypatch.setattr(cli_mod.atexit, "register", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(
         cli_mod,
@@ -245,9 +245,9 @@ def test_quiet_single_query_main_finalizes_while_preserving_exit_code(monkeypatc
             calls.append(("init", kwargs))
             return True
 
-    monkeypatch.delenv("HERMES_KANBAN_TASK", raising=False)
-    monkeypatch.delenv("HERMES_KANBAN_GOAL_MODE", raising=False)
-    monkeypatch.setattr(cli_mod, "HermesCLI", FakeCLI)
+    monkeypatch.delenv("AKRAMCODE_KANBAN_TASK", raising=False)
+    monkeypatch.delenv("AKRAMCODE_KANBAN_GOAL_MODE", raising=False)
+    monkeypatch.setattr(cli_mod, "AkramCodeCLI", FakeCLI)
     monkeypatch.setattr(cli_mod.atexit, "register", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(
         cli_mod,

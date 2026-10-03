@@ -8,7 +8,7 @@ import threading
 import time
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from akramcode_cli.plugins import PluginContext, PluginManager, PluginManifest
 from tools import approval_context, approval_prompt
@@ -80,12 +80,12 @@ def test_force_reload_clears_transport_registry(monkeypatch):
 def test_transport_registry_is_manager_and_profile_isolated(monkeypatch, tmp_path):
     first = PluginManager()
     second = PluginManager()
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "profiles" / "work"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "profiles" / "work"))
     _context(first).register_approval_transport("phone", lambda request: None)
 
     assert first.get_approval_transport("phone") is not None
     assert second.get_approval_transport("phone") is None
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "profiles" / "personal"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "profiles" / "personal"))
     assert first.get_approval_transport("phone") is None
 
 
@@ -444,11 +444,11 @@ def test_explicit_builtin_fallback_uses_existing_surface(monkeypatch):
 def test_live_temp_home_fixture_plugin_routes_and_hardline_stays_core_owned(
     tmp_path, monkeypatch
 ):
-    """Real discovery + config + guard path under an isolated HERMES_HOME."""
+    """Real discovery + config + guard path under an isolated AKRAMCODE_HOME."""
     import akramcode_cli.plugins as plugins_module
     from tools import approval
 
-    home = tmp_path / "hermes-home"
+    home = tmp_path / "akramcode-home"
     plugin_dir = home / "plugins" / "fixture-approval"
     bundled = tmp_path / "empty-bundled"
     plugin_dir.mkdir(parents=True)
@@ -469,7 +469,7 @@ from pathlib import Path
 
 
 def present(request):
-    output = Path(os.environ["HERMES_HOME"]) / "transport-invocations.jsonl"
+    output = Path(os.environ["AKRAMCODE_HOME"]) / "transport-invocations.jsonl"
     with output.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps({
             "request_id": request.request_id,
@@ -498,34 +498,34 @@ def register(ctx):
             }
         )
     )
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.setenv("HERMES_BUNDLED_PLUGINS", str(bundled))
-    monkeypatch.delenv("HERMES_GATEWAY_SESSION", raising=False)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_BUNDLED_PLUGINS", str(bundled))
+    monkeypatch.delenv("AKRAMCODE_GATEWAY_SESSION", raising=False)
     monkeypatch.setattr(approval, "_YOLO_MODE_FROZEN", False)
     manager = PluginManager()
     monkeypatch.setattr(plugins_module, "_plugin_manager", manager)
-    token = approval_context.set_hermes_interactive_context(True)
+    token = approval_context.set_akramcode_interactive_context(True)
     approval.clear_session("local")
     approval._permanent_approved.clear()
     try:
         routed = approval.check_all_command_guards(
-            "rm -rf /tmp/hermes-approval-transport-fixture", "local"
+            "rm -rf /tmp/akramcode-approval-transport-fixture", "local"
         )
         manager.discover_and_load(force=True)
         reloaded = approval.check_all_command_guards(
-            "rm -rf /tmp/hermes-approval-transport-fixture-reloaded", "local"
+            "rm -rf /tmp/akramcode-approval-transport-fixture-reloaded", "local"
         )
-        gateway_token = approval_context.set_hermes_interactive_context(False)
-        monkeypatch.setenv("HERMES_GATEWAY_SESSION", "1")
+        gateway_token = approval_context.set_akramcode_interactive_context(False)
+        monkeypatch.setenv("AKRAMCODE_GATEWAY_SESSION", "1")
         try:
             gateway_routed = approval.check_all_command_guards(
-                "rm -rf /tmp/hermes-approval-transport-fixture-gateway", "local"
+                "rm -rf /tmp/akramcode-approval-transport-fixture-gateway", "local"
             )
         finally:
-            approval_context.reset_hermes_interactive_context(gateway_token)
+            approval_context.reset_akramcode_interactive_context(gateway_token)
         hardline = approval.check_all_command_guards("rm -rf /", "local")
     finally:
-        approval_context.reset_hermes_interactive_context(token)
+        approval_context.reset_akramcode_interactive_context(token)
 
     records = [
         json.loads(line)

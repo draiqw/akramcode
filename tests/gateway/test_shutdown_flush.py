@@ -222,18 +222,18 @@ def test_recover_skips_failing_payload_and_continues(tmp_path, monkeypatch):
 
 
 
-def test_get_flush_dir_uses_get_hermes_home(tmp_path, monkeypatch):
-    """Flush dir must use get_hermes_home(), not hardcoded Path.home()."""
+def test_get_flush_dir_uses_get_akramcode_home(tmp_path, monkeypatch):
+    """Flush dir must use get_akramcode_home(), not hardcoded Path.home()."""
     import gateway.shutdown_flush as mod
 
     captured = {}
 
-    def fake_get_hermes_home():
+    def fake_get_akramcode_home():
         captured["called"] = True
         return tmp_path
 
     monkeypatch.setattr(
-        "hermes_constants.get_hermes_home", fake_get_hermes_home
+        "akramcode_constants.get_akramcode_home", fake_get_akramcode_home
     )
     result = mod._get_flush_dir()
     assert captured.get("called") is True

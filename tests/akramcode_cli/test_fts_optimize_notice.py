@@ -7,7 +7,7 @@ from types import SimpleNamespace
 def test_update_notice_offers_v1_trigram_tool_calls_rebuild(tmp_path, monkeypatch, capsys):
     """A deployed v1 trigram projection still receives the opt-in notice."""
     from akramcode_cli import update_cmd
-    import hermes_constants
+    import akramcode_constants
     import akramcode_state
 
     db_path = tmp_path / "state.db"
@@ -32,7 +32,7 @@ def test_update_notice_offers_v1_trigram_tool_calls_rebuild(tmp_path, monkeypatc
             akramcode_state.SessionDB._db_needs_fts_storage_upgrade
         )
 
-    monkeypatch.setattr(hermes_constants, "get_hermes_home", lambda: tmp_path)
+    monkeypatch.setattr(akramcode_constants, "get_akramcode_home", lambda: tmp_path)
     monkeypatch.setattr(akramcode_state, "SessionDB", FakeSessionDB)
     # Report a large state.db without patching Path.stat globally: a
     # 1-arg lambda on the class breaks pathlib.exists(follow_symlinks=...)
@@ -48,5 +48,5 @@ def test_update_notice_offers_v1_trigram_tool_calls_rebuild(tmp_path, monkeypatc
 
     update_cmd._print_fts_optimize_available_notice()
 
-    assert "hermes sessions optimize-storage" in capsys.readouterr().out
+    assert "akramcode sessions optimize-storage" in capsys.readouterr().out
     conn.close()

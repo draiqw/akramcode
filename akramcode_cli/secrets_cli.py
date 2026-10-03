@@ -1,4 +1,4 @@
-"""CLI handlers for ``hermes secrets bitwarden ...``."""
+"""CLI handlers for ``akramcode secrets bitwarden ...``."""
 
 from __future__ import annotations
 
@@ -175,7 +175,7 @@ def cmd_setup(args: argparse.Namespace) -> int:
                 f"  [red]Non-interactive mode (no TTY) requires all setup flags.[/red]\n"
                 f"  Missing: {', '.join(missing)}\n\n"
                 "  Usage:\n"
-                "    hermes secrets bitwarden setup \\\n"
+                "    akramcode secrets bitwarden setup \\\n"
                 "      --access-token '0.xxx' \\\n"
                 "      --server-url 'https://vault.bitwarden.com' \\\n"
                 "      --project-id 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'")
@@ -219,10 +219,10 @@ def cmd_setup(args: argparse.Namespace) -> int:
     save_config(cfg)
     console.print()
     console.print("[green]✓ Bitwarden Secrets Manager is enabled.[/green]  "
-                  "Secrets will be pulled at the start of every Hermes process.")
-    console.print("  Status:  [cyan]hermes secrets bitwarden status[/cyan]\n"
-                  "  Refresh: [cyan]hermes secrets bitwarden sync[/cyan]\n"
-                  "  Disable: [cyan]hermes secrets bitwarden disable[/cyan]")
+                  "Secrets will be pulled at the start of every AkramCode process.")
+    console.print("  Status:  [cyan]akramcode secrets bitwarden status[/cyan]\n"
+                  "  Refresh: [cyan]akramcode secrets bitwarden sync[/cyan]\n"
+                  "  Disable: [cyan]akramcode secrets bitwarden disable[/cyan]")
     return 0
 
 
@@ -265,10 +265,10 @@ def cmd_status(args: argparse.Namespace) -> int:
     for message in validation_messages:
         console.print(message)
     if not enabled:
-        console.print("\n  Run [cyan]hermes secrets bitwarden setup[/cyan] to enable.")
+        console.print("\n  Run [cyan]akramcode secrets bitwarden setup[/cyan] to enable.")
         return 0
     if not token:
-        console.print(f"\n  [yellow]Enabled but {token_env} is not set — Hermes will skip BSM "
+        console.print(f"\n  [yellow]Enabled but {token_env} is not set — AkramCode will skip BSM "
                       "and warn on next startup.[/yellow]")
     if not project_id:
         console.print("\n  [yellow]Enabled but no project_id — nothing to fetch.[/yellow]")
@@ -307,7 +307,7 @@ def cmd_token(args: argparse.Namespace) -> int:
             console.print(
                 f"[yellow]Warning: configured project {project_id} is not visible "
                 "to this machine account.  Grant it access in the Bitwarden web "
-                "app or re-run `hermes secrets bitwarden setup` to pick a different project.[/yellow]")
+                "app or re-run `akramcode secrets bitwarden setup` to pick a different project.[/yellow]")
         return True
 
     return rotate_token(
@@ -323,7 +323,7 @@ def cmd_token(args: argparse.Namespace) -> int:
         save=save_env_value, env_path=get_env_path, clear_caches=bw.clear_caches,
         disabled_note=None if bw_cfg.get("enabled") else (
             "[yellow]Note: the Bitwarden integration is currently disabled — "
-            "run `hermes secrets bitwarden setup` (or set "
+            "run `akramcode secrets bitwarden setup` (or set "
             "secrets.bitwarden.enabled: true) to turn it on.[/yellow]"
         ))
 
@@ -372,7 +372,7 @@ def cmd_sync(args: argparse.Namespace) -> int:
     print_table(console, (("Name", {"style": "cyan"}), "Action"), rows, warnings)
     if not args.apply:
         console.print("\n  This was a dry-run — secrets are picked up automatically on the "
-                      "next [cyan]hermes[/cyan] invocation.  Re-run with [cyan]--apply[/cyan] "
+                      "next [cyan]akramcode[/cyan] invocation.  Re-run with [cyan]--apply[/cyan] "
                       "to export into the current shell instead.")
     else:
         console.print(f"\n  [green]Exported {applied} secret(s) into current process.[/green]")
@@ -383,7 +383,7 @@ def cmd_disable(args: argparse.Namespace) -> int:
     return disable_secret_source(
         "bitwarden",
         "[green]Disabled.[/green]  Bitwarden secrets will NOT be pulled on the next "
-        "Hermes invocation.\n"
+        "AkramCode invocation.\n"
         "  Your access token is left in .env — remove it manually if you also want "
         "to revoke the credential.")
 
@@ -427,7 +427,7 @@ _PROJECT_LIST_HINTS = (
     (("invalid_client", "400 bad request"),
      "  [yellow]'invalid_client' from the US identity endpoint usually "
      "means the token is for a different Bitwarden region.  Re-run "
-     "[cyan]hermes secrets bitwarden setup[/cyan] and pick EU or "
+     "[cyan]akramcode secrets bitwarden setup[/cyan] and pick EU or "
      "self-hosted at the region prompt, or set [cyan]secrets.bitwarden."
      "server_url[/cyan] in config.yaml.[/yellow]"),
     (("authorization", "invalid"),

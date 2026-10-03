@@ -440,7 +440,7 @@ class GatewayAgentCacheMixin:
         with suppress(Exception):
             interrupt_event = getattr(adapter, "_active_sessions", {}).get(session_key)
             if interrupt_event is not None:
-                interrupt_event._hermes_run_generation = int(generation)
+                interrupt_event._akramcode_run_generation = int(generation)
 
     def _interrupt_running_turn(
         self, session_key: str, *, interrupt_reason: str, invalidation_reason: str, tool_reason: str | None = None,
@@ -745,8 +745,8 @@ class GatewayAgentCacheMixin:
             from gateway.session import _slack_tools_loaded
             slack_tools = "1" if _slack_tools_loaded() else "0"
         try:
-            from akramcode_constants import display_hermes_home
-            home_display = str(display_hermes_home())
+            from akramcode_constants import display_akramcode_home
+            home_display = str(display_akramcode_home())
         except Exception:
             home_display = ""
         key_tuple = (
@@ -827,13 +827,13 @@ class GatewayAgentCacheMixin:
         And the LRU-cap eviction runs inside the REQUESTING turn, whose agent may belong to another
         profile — so "some scope is present" is not enough either. The owner comes from the session
         key: a named profile's home, else the DEFAULT profile (``agent:main:`` keys), which is the
-        root Hermes dir even when the gateway was launched under a named profile. Its scope is
+        root AkramCode dir even when the gateway was launched under a named profile. Its scope is
         entered unless the current one already is the owner's."""
         from agent.secret_scope import current_secret_scope, is_multiplex_active
         scope = nullcontext()
         if is_multiplex_active():
             from gateway.run import _profile_runtime_scope
-            from akramcode_constants import get_default_hermes_root, get_hermes_home, hermes_home_key
+            from akramcode_constants import get_default_akramcode_root, get_akramcode_home, akramcode_home_key
             owner = None
             store = getattr(self, "session_store", None)
             if session_key and store is not None:
@@ -842,8 +842,8 @@ class GatewayAgentCacheMixin:
                 except Exception:
                     logger.warning("Could not resolve the owning profile for %s; releasing under the default profile",
                                    session_key, exc_info=True)
-            owner_home = Path(owner) if owner else get_default_hermes_root()
-            if current_secret_scope() is None or hermes_home_key(get_hermes_home()) != hermes_home_key(owner_home):
+            owner_home = Path(owner) if owner else get_default_akramcode_root()
+            if current_secret_scope() is None or akramcode_home_key(get_akramcode_home()) != akramcode_home_key(owner_home):
                 scope = _profile_runtime_scope(owner_home)
         with scope:
             target(*args)

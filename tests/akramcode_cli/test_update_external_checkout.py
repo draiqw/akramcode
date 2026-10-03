@@ -88,13 +88,13 @@ def test_external_gateway_does_not_fail_matrix(capsys):
     failed = update_receipt.print_fleet_version_matrix([
         {
             "profile": "pinned", "pid": 42, "code_sha": "foreign",
-            "state": "external", "code_root": "/srv/hermes-pinned",
+            "state": "external", "code_root": "/srv/akramcode-pinned",
         }
     ])
     output = capsys.readouterr().out
     assert failed is False
     assert "separate checkout" in output
-    assert "/srv/hermes-pinned" in output
+    assert "/srv/akramcode-pinned" in output
 
 
 def test_collect_fleet_versions_classifies_separate_checkout_gateway(tmp_path, monkeypatch):
@@ -109,7 +109,7 @@ def test_collect_fleet_versions_classifies_separate_checkout_gateway(tmp_path, m
     home = tmp_path / "fleet_home"
     home.mkdir()
     (home / "gateway_state.json").write_text(json.dumps({
-        "gateway_state": "running", "kind": "hermes-gateway", "pid": 4242,
+        "gateway_state": "running", "kind": "akramcode-gateway", "pid": 4242,
         "argv": [str(pinned / "akramcode_cli" / "main.py"), "gateway", "run"],
         "code_sha": "f" * 40, "code_version": "0.0.1",
     }), encoding="utf-8")
@@ -117,7 +117,7 @@ def test_collect_fleet_versions_classifies_separate_checkout_gateway(tmp_path, m
         "akramcode_cli.build_info.get_code_identity",
         lambda refresh=False: {"sha": "a" * 40, "short_sha": "a" * 8, "version": "1.0", "source": "git"},
     )
-    monkeypatch.setattr("akramcode_cli.profiles._get_default_hermes_home", lambda: home)
+    monkeypatch.setattr("akramcode_cli.profiles._get_default_akramcode_home", lambda: home)
     monkeypatch.setattr("akramcode_cli.profiles._get_profiles_root", lambda: tmp_path / "no_profiles")
     monkeypatch.setattr(update_receipt, "_socket_identity", lambda _home: None)
     monkeypatch.setattr("gateway.status.live_gateway_pid_for_home", lambda _home: 4242)

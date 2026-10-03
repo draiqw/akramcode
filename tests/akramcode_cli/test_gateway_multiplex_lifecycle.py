@@ -8,13 +8,13 @@ import pytest
 @pytest.fixture
 def homes(tmp_path, monkeypatch):
     from akramcode_cli import profiles
-    root = tmp_path / '.hermes'
+    root = tmp_path / '.akramcode'
     secondary = root / 'profiles' / 'worker'
     secondary.mkdir(parents=True)
     (secondary / 'config.yaml').write_text('model: {default: worker-model}\n')
     (root / 'config.yaml').write_text('gateway: {multiplex_profiles: true}\n')
     monkeypatch.setattr(Path, 'home', lambda: tmp_path)
-    monkeypatch.setenv('HERMES_HOME', str(root))
+    monkeypatch.setenv('AKRAMCODE_HOME', str(root))
     monkeypatch.setattr(profiles, 'get_active_profile_name', lambda: 'default')
     return root, secondary
 
@@ -53,7 +53,7 @@ def test_cli_lifecycle_orders_marker_before_socket(homes, monkeypatch, capsys, v
     marker = secondary / 'gateway.parked'
     owner = SimpleNamespace(home=root, profile_label='default', profiles=('default', 'worker'),
                             describe=lambda: 'test host')
-    monkeypatch.setenv('HERMES_HOME', str(secondary))
+    monkeypatch.setenv('AKRAMCODE_HOME', str(secondary))
     monkeypatch.setattr(gw, '_current_profile_name', lambda: 'worker')
     monkeypatch.setattr(gw, '_refuse_from_inside_gateway', lambda *a: None)
     monkeypatch.setattr(gw, 'find_gateway_pids', lambda **kw: [])
@@ -100,7 +100,7 @@ def test_restart_after_stop_unparks_and_serves_the_profile(homes, monkeypatch, c
     marker.touch()
     owner = SimpleNamespace(home=root, profile_label='default', profiles=('default',),
                             describe=lambda: 'test host')
-    monkeypatch.setenv('HERMES_HOME', str(secondary))
+    monkeypatch.setenv('AKRAMCODE_HOME', str(secondary))
     monkeypatch.setattr(gw, '_current_profile_name', lambda: 'worker')
     monkeypatch.setattr(gw, '_refuse_from_inside_gateway', lambda *a: None)
     monkeypatch.setattr(gw, 'find_gateway_pids', lambda **kw: [])
@@ -129,7 +129,7 @@ def test_force_restart_keeps_parked_profile_gateway_ownership(homes, monkeypatch
     from akramcode_cli import gateway as gw
     _, secondary = homes
     (secondary / 'gateway.parked').touch()
-    monkeypatch.setenv('HERMES_HOME', str(secondary))
+    monkeypatch.setenv('AKRAMCODE_HOME', str(secondary))
     monkeypatch.setattr(gw, '_current_profile_name', lambda: 'worker')
 
     def host_restart(*args, **kwargs):
@@ -148,12 +148,12 @@ def test_parked_status_and_topology_keep_roster(homes, monkeypatch, capsys):
     from akramcode_cli.web_server_gateway import _collect_profile_gateway_topology
     root, secondary = homes
     (secondary / 'gateway.parked').touch()
-    monkeypatch.setenv('HERMES_HOME', str(secondary))
+    monkeypatch.setenv('AKRAMCODE_HOME', str(secondary))
     monkeypatch.setattr(gw, '_current_profile_name', lambda: 'worker')
     monkeypatch.setattr(profiles, 'get_active_profile_name', lambda: 'worker')
     monkeypatch.setattr(profiles, '_check_gateway_running', lambda home: False)
     gw._cmd_status(SimpleNamespace())
-    assert 'parked (hermes -p worker gateway start)' in capsys.readouterr().out
+    assert 'parked (akramcode -p worker gateway start)' in capsys.readouterr().out
     topology = _collect_profile_gateway_topology()
     assert topology['profiles'] == ['default', 'worker']
     assert topology['parked_profiles'] == ['worker']
@@ -200,7 +200,7 @@ def test_start_unparks_without_host_rendezvous(homes, monkeypatch, capsys, host_
     root, secondary = homes
     marker = secondary / 'gateway.parked'
     marker.touch()
-    monkeypatch.setenv('HERMES_HOME', str(secondary))
+    monkeypatch.setenv('AKRAMCODE_HOME', str(secondary))
     monkeypatch.setattr(gw, '_current_profile_name', lambda: 'worker')
     monkeypatch.setattr(gw, '_host_multiplexer_for_all_verb', lambda: None)
     monkeypatch.setattr(served, 'live_default_gateway_pid', lambda: 42 if host_running else None)
@@ -241,7 +241,7 @@ def test_parked_status_still_reports_a_forced_gateway(homes, monkeypatch, capsys
     from akramcode_cli import gateway as gw, profiles
     root, secondary = homes
     (secondary / 'gateway.parked').touch()
-    monkeypatch.setenv('HERMES_HOME', str(secondary))
+    monkeypatch.setenv('AKRAMCODE_HOME', str(secondary))
     monkeypatch.setattr(gw, '_current_profile_name', lambda: 'worker')
     monkeypatch.setattr(profiles, 'get_active_profile_name', lambda: 'worker')
     monkeypatch.setattr(gw, 'get_gateway_runtime_snapshot', lambda system=False: gw.GatewayRuntimeSnapshot(
@@ -250,5 +250,5 @@ def test_parked_status_still_reports_a_forced_gateway(homes, monkeypatch, capsys
     monkeypatch.setattr(gw, '_installed_service_kind_for', lambda _check: None)
     gw._cmd_status(SimpleNamespace())
     output = capsys.readouterr().out
-    assert 'parked (hermes -p worker gateway start)' in output
+    assert 'parked (akramcode -p worker gateway start)' in output
     assert 'Gateway is running (PID: 4242)' in output

@@ -62,7 +62,7 @@ def build_cli(data, out, tmp_path):
     return subprocess.run(
         [sys.executable, "-B", "-m", "scripts.build.agent", "--inputs", str(document), "--out", str(out)],
         cwd=tmp_path, env={"PATH": os.environ["PATH"], "HOME": str(home),
-                          "HERMES_HOME": str(home / ".hermes"), "PYTHONPATH": str(ROOT)},
+                          "AKRAMCODE_HOME": str(home / ".akramcode"), "PYTHONPATH": str(ROOT)},
         capture_output=True, text=True, timeout=30,
     )
 
@@ -83,7 +83,7 @@ def test_contained_cli_assembly_runs_after_move_and_preserves_prepared_state(tmp
     assert (out / "app/akramcode_cli/tui_dist/entry.js").is_file()
     assert json.loads((out / "app/akramcode_cli/tui_dist/package.json").read_text())["type"] == "module"
     assert (out / "app/akramcode_cli/web_dist/index.html").is_file()
-    assert not (tmp_path / "home/.hermes").exists()
+    assert not (tmp_path / "home/.akramcode").exists()
     moved = tmp_path / "relocated payload"
     out.rename(moved)
     (tmp_path / "entry.py").write_text("raise RuntimeError('cwd shadowed source')", encoding="utf-8")
@@ -105,28 +105,28 @@ def test_referenced_installed_code_uses_derived_command_map_without_copying(tmp_
     source = Path(data["code"])
     (source / "entry.py").write_text(
         "import json, os\nfrom pathlib import Path\n"
-        "def main():\n print(json.dumps([Path(os.environ['HERMES_BUNDLED_SKILLS'],'data').read_text(),"
-        "os.environ['HERMES_NODE']]))\n", encoding="utf-8")
+        "def main():\n print(json.dumps([Path(os.environ['AKRAMCODE_BUNDLED_SKILLS'],'data').read_text(),"
+        "os.environ['AKRAMCODE_NODE']]))\n", encoding="utf-8")
     bindir = tmp_path / "installed env/bin"
     bindir.mkdir(parents=True)
     command = bindir / "probe"
     command.write_text(f"#!{sys.executable}\nimport sys\nsys.path.insert(0, {str(source)!r})\nfrom entry import main\nmain()\n", encoding="utf-8")
     command.chmod(0o755)
-    data.update(placement="references", repo="share/hermes-agent", command_dir=str(bindir),
-                env={"HERMES_NODE": "/prepared/node"})
+    data.update(placement="references", repo="share/akramcode-agent", command_dir=str(bindir),
+                env={"AKRAMCODE_NODE": "/prepared/node"})
     before = {p: p.read_bytes() for p in source.rglob("*") if p.is_file()}
     result = build_cli(data, out, tmp_path)
     assert result.returncode == 0, result.stderr
     mapping = json.loads((out / "command-map.json").read_text())
     assert mapping["commands"] == {"probe": {
         "source": str(command), "destination": "bin/probe", "entry": "entry:main"}}
-    assert Path(mapping["env"]["HERMES_TUI_DIR"]).resolve() == Path(data["frontends"]["tui"])
-    assert Path(mapping["env"]["HERMES_WEB_DIST"]).resolve() == Path(data["frontends"]["web"])
-    assert mapping["env"]["HERMES_INSTALL_ROOT"] == str(out / "share/hermes-agent")
+    assert Path(mapping["env"]["AKRAMCODE_TUI_DIR"]).resolve() == Path(data["frontends"]["tui"])
+    assert Path(mapping["env"]["AKRAMCODE_WEB_DIST"]).resolve() == Path(data["frontends"]["web"])
+    assert mapping["env"]["AKRAMCODE_INSTALL_ROOT"] == str(out / "share/akramcode-agent")
     assert not list(out.rglob("entry.py"))
-    assert (out / "share/hermes-agent/skills").is_symlink()
+    assert (out / "share/akramcode-agent/skills").is_symlink()
     assert (out / "ui-tui").is_symlink()
-    assert (out / "share/hermes-agent/web_dist").is_symlink()
+    assert (out / "share/akramcode-agent/web_dist").is_symlink()
     assert not (out / "bin/probe").exists(), "Nix owns native makeWrapper"
     run = subprocess.run([mapping["commands"]["probe"]["source"]], cwd=tmp_path,
                          env={"PATH": os.environ["PATH"], "HOME": str(tmp_path / "home"),
@@ -139,7 +139,7 @@ def test_referenced_installed_code_uses_derived_command_map_without_copying(tmp_
 @pytest.mark.platforms("posix")
 def test_fixed_root_keeps_privilege_shim_and_resolves_venv_command_symlink(tmp_path):
     out, data = inputs_fixture(tmp_path)
-    # Docker source already occupies /opt/hermes; its bin/hermes belongs to s6.
+    # Docker source already occupies /opt/akramcode; its bin/akramcode belongs to s6.
     shutil.copytree(data["code"], out, dirs_exist_ok=True)
     data.update(placement="fixed", repo=".", code=str(out), project=str(out / "pyproject.toml"), bin_dir="libexec", python=sys.executable)
     bindir = out / "bin"
@@ -235,12 +235,12 @@ def test_payload_smoke_uses_relocated_manifest_commands(tmp_path):
     source = Path(data["code"])
     (source / "pyproject.toml").write_text(
         '[project]\nname="smoke-fixture"\nversion="1"\n'
-        '[project.scripts]\nhermes="entry:main"\n', encoding="utf-8")
+        '[project.scripts]\nakramcode="entry:main"\n', encoding="utf-8")
     (source / "entry.py").write_text(
         "import json, os, sys\nfrom pathlib import Path\n"
         "def main():\n"
         f" assert not Path({str(out)!r}).exists(), 'payload was not moved'\n"
-        " assert 'HERMES_PYTHON' not in os.environ\n"
+        " assert 'AKRAMCODE_PYTHON' not in os.environ\n"
         " assert not Path.cwd().is_relative_to(Path(__file__).parent)\n"
         " if sys.argv[1:] == ['tools', 'list']:\n"
         "  import dependency\n"
@@ -253,7 +253,7 @@ def test_payload_smoke_uses_relocated_manifest_commands(tmp_path):
     (harness / "run.py").write_text("print('harness ok')\n", encoding="utf-8")
     assert build_cli(data, out, tmp_path).returncode == 0
     shutil.rmtree(source)
-    env = dict(os.environ, PYTHONPATH="/foreign", PYTHONHOME="/foreign", HERMES_PYTHON="/foreign")
+    env = dict(os.environ, PYTHONPATH="/foreign", PYTHONHOME="/foreign", AKRAMCODE_PYTHON="/foreign")
     command = ["bash", str(ROOT / "scripts/smoke-payload.sh"), str(out)]
     result = subprocess.run(command, cwd=tmp_path, env=env, capture_output=True, text=True, timeout=30)
     assert result.returncode == 0, result.stdout + result.stderr
@@ -270,7 +270,7 @@ def test_payload_smoke_uses_relocated_manifest_commands(tmp_path):
     assert missing_dep.returncode != 0
     assert 'SMOKE OK' not in missing_dep.stdout
     # A broken published command cannot be rescued by importing raw Python.
-    (out / "libexec/hermes").unlink()
+    (out / "libexec/akramcode").unlink()
     failed = subprocess.run(command, cwd=tmp_path, env=env, capture_output=True, text=True, timeout=30)
     assert failed.returncode != 0
     assert "SMOKE OK" not in failed.stdout
@@ -279,9 +279,9 @@ def test_payload_smoke_uses_relocated_manifest_commands(tmp_path):
     manifest = json.loads((out / 'manifest.json').read_text())
     external = shutil.which('true')
     assert external
-    (out / 'libexec/hermes').symlink_to(external)
-    for path in (external, 'libexec/hermes'):
-        manifest['runtime']['commands']['hermes'] = path
+    (out / 'libexec/akramcode').symlink_to(external)
+    for path in (external, 'libexec/akramcode'):
+        manifest['runtime']['commands']['akramcode'] = path
         (out / 'manifest.json').write_text(json.dumps(manifest), encoding='utf-8')
         escaped = subprocess.run(command, cwd=tmp_path, env=env, capture_output=True, text=True, timeout=30)
         assert escaped.returncode != 0, escaped.stdout

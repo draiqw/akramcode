@@ -1,7 +1,7 @@
 """Recording loopback OAuth 2.0 authorization server for end-to-end tests.
 
 One real HTTP server on 127.0.0.1 that plays the vendor side of two OAuth
-flows Hermes drives but does not own:
+flows AkramCode drives but does not own:
 
 * **Refresh grant with single-use rotating refresh tokens.** Every successful
   ``grant_type=refresh_token`` spends the presented token and issues a fresh
@@ -308,7 +308,7 @@ def make_test_ca(directory: Path, hosts: Iterable[str]) -> TestCA:
     directory.mkdir(parents=True, exist_ok=True)
     now = _dt.datetime.now(_dt.timezone.utc)
     ca_key = ec.generate_private_key(ec.SECP256R1())
-    ca_name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "hermes e2e test CA")])
+    ca_name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "akramcode e2e test CA")])
     ca_cert = (
         x509.CertificateBuilder().subject_name(ca_name).issuer_name(ca_name)
         .public_key(ca_key.public_key()).serial_number(x509.random_serial_number())

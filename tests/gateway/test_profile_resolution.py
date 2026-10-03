@@ -61,41 +61,41 @@ def telegram_source():
 
 class TestResolutionOrder:
     """Tests that profile resolution follows the correct priority order."""
-    
+
     def test_source_profile_wins_over_routing(self, mock_runner, discord_source):
         """source.profile should be used even if routing would match."""
         discord_source.profile = "from-source"
-        
+
         with patch("akramcode_cli.profiles.get_active_profile_name", return_value="active"):
             with patch("akramcode_cli.profiles.get_profile_dir") as mock_get_dir:
                 with patch("akramcode_cli.profiles.profile_exists", return_value=True):
-                    mock_get_dir.return_value = Path("/hermes/profiles/from-source")
+                    mock_get_dir.return_value = Path("/akramcode/profiles/from-source")
                     result = mock_runner._resolve_profile_home_for_source(discord_source)
-                    
-                    assert result == Path("/hermes/profiles/from-source")
+
+                    assert result == Path("/akramcode/profiles/from-source")
                     mock_get_dir.assert_called_once_with("from-source")
-    
-    
-    
+
+
+
 
 
 class TestMissingProfileWarning:
     """Tests for warning when a profile doesn't exist on disk."""
-    
+
     def test_nonexistent_profile_warning(self, mock_runner, discord_source, caplog):
         """When source.profile points to a nonexistent profile, log a WARNING."""
         discord_source.profile = "nonexistent"
-        
+
         with patch("akramcode_cli.profiles.get_active_profile_name", return_value="active"):
             with patch("akramcode_cli.profiles.get_profile_dir") as mock_get_dir:
-                mock_get_dir.return_value = Path("/hermes/profiles/nonexistent")
+                mock_get_dir.return_value = Path("/akramcode/profiles/nonexistent")
                 with patch("akramcode_cli.profiles.profile_exists", return_value=False):
-                    with patch("hermes_constants.get_hermes_home", return_value=Path("/hermes")):
+                    with patch("akramcode_constants.get_akramcode_home", return_value=Path("/akramcode")):
                         with caplog.at_level(logging.WARNING):
                             result = mock_runner._resolve_profile_home_for_source(discord_source)
 
-                            # Should fall back to global HERMES_HOME
-                            assert result == Path("/hermes")
+                            # Should fall back to global AKRAMCODE_HOME
+                            assert result == Path("/akramcode")
 
                             # Should have logged a warning
                             assert len(caplog.records) == 1
@@ -103,35 +103,35 @@ class TestMissingProfileWarning:
                             assert "nonexistent" in caplog.records[0].message
                             assert "discord" in caplog.records[0].message
                             assert "123456" in caplog.records[0].message
-    
-    
-    
+
+
+
 
 
 class TestExceptionHandling:
     """Tests for exception handling in profile resolution."""
-    
+
     def test_get_profile_dir_exception_logs_warning(self, mock_runner, discord_source, caplog):
         """When get_profile_dir raises an exception, log a WARNING with context."""
         discord_source.profile = "bad-profile"
-        
+
         with patch("akramcode_cli.profiles.get_active_profile_name", return_value="active"):
             with patch("akramcode_cli.profiles.get_profile_dir", side_effect=ValueError("Invalid profile name")):
-                with patch("hermes_constants.get_hermes_home", return_value=Path("/hermes")):
+                with patch("akramcode_constants.get_akramcode_home", return_value=Path("/akramcode")):
                     with caplog.at_level(logging.WARNING):
                         result = mock_runner._resolve_profile_home_for_source(discord_source)
-                        
-                        # Should fall back to global HERMES_HOME
-                        assert result == Path("/hermes")
-                        
+
+                        # Should fall back to global AKRAMCODE_HOME
+                        assert result == Path("/akramcode")
+
                         # Should have logged a warning with exception info
                         assert len(caplog.records) == 1
                         assert caplog.records[0].levelname == "WARNING"
                         assert "bad-profile" in caplog.records[0].message
-    
 
 
-    
+
+
 
 
 class TestNonDiscordProfileRouting:

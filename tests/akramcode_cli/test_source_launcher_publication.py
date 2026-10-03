@@ -14,12 +14,12 @@ from pm.environments import install_state_dir, site_packages
 
 ROOT = Path(__file__).resolve().parents[2]
 BOOT_FILES = (
-    "akram_core.hermes_bootstrap.py", "hermes_constants.py", "akramcode_cli/__init__.py", "akramcode_cli/_launchers.py",
+    "akram_core.akramcode_bootstrap.py", "akramcode_constants.py", "akramcode_cli/__init__.py", "akramcode_cli/_launchers.py",
     "pm/environments.py", "pm/filesystem.py", "pm/paths.py", "akramcode_cli/runtime_state.py",
     "akramcode_cli/_early_recovery.py", "akramcode_cli/_parser.py",
     "akramcode_cli/venv_sync.py", "akramcode_cli/steward.py",
     "akramcode_cli/stderr_timestamp.py",
-    "scripts/hermes-gateway",
+    "scripts/akramcode-gateway",
 )
 
 
@@ -36,7 +36,7 @@ def fixture_tree(tmp_path, monkeypatch):
         "def main():\n"
         "    import selected_probe\n"
         "    print(json.dumps({'value': selected_probe.VALUE, 'argv': sys.argv[1:], "
-        "'home': os.environ.get('HERMES_HOME'), 'exe': sys.executable}))\n"
+        "'home': os.environ.get('AKRAMCODE_HOME'), 'exe': sys.executable}))\n"
         "    return 7\n"
         "if __name__ == '__main__':\n    sys.exit(main())\n"
     )
@@ -45,10 +45,10 @@ def fixture_tree(tmp_path, monkeypatch):
     # Windows resolves its default under LOCALAPPDATA, not HOME.
     if os.name == "nt":
         monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
-    home = tmp_path / ("hermes" if os.name == "nt" else ".hermes")
+    home = tmp_path / ("akramcode" if os.name == "nt" else ".akramcode")
     monkeypatch.setenv("HOME", str(tmp_path))
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    monkeypatch.delenv("HERMES_RUNTIME_DIR", raising=False)
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
+    monkeypatch.delenv("AKRAMCODE_RUNTIME_DIR", raising=False)
     store = home / "tools"
     store.mkdir(parents=True)
     interpreter = Path(sys._base_executable).resolve()
@@ -90,8 +90,8 @@ def test_source_launchers_boot_selected_generation_from_custom_home(tmp_path, mo
     for number in (1, 2):
         select_generation(repo, number, number)
         env = dict(os.environ)
-        env.pop("HERMES_HOME", None)
-        env.pop("HERMES_RUNTIME_DIR", None)
+        env.pop("AKRAMCODE_HOME", None)
+        env.pop("AKRAMCODE_RUNTIME_DIR", None)
         env["PYTHONHOME"] = str(tmp_path / "foreign-python")
         env["PYTHONPATH"] = str(tmp_path / "foreign-deps")
         for launcher in launchers:
@@ -116,16 +116,16 @@ def test_launcher_resolves_default_home_at_use_not_publication(tmp_path, monkeyp
     new_user_home = tmp_path / "second-user"
     new_user_home.mkdir()
     monkeypatch.setenv("HOME", str(new_user_home))
-    monkeypatch.setenv("HERMES_HOME", str(new_user_home / ".hermes"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(new_user_home / ".akramcode"))
     select_generation(repo, "second", "from-second-user")
     env = dict(os.environ)
-    env.pop("HERMES_HOME")
+    env.pop("AKRAMCODE_HOME")
     result = subprocess.run([str(launcher)], cwd=tmp_path, env=env,
                             capture_output=True, text=True, encoding="utf-8", timeout=30)
     assert result.returncode == 7, result.stdout + result.stderr
-    assert json.loads(result.stdout)["home"] == str(new_user_home / ".hermes")
+    assert json.loads(result.stdout)["home"] == str(new_user_home / ".akramcode")
     assert json.loads(result.stdout)["value"] == "from-second-user"
-    assert published_home != new_user_home / ".hermes"
+    assert published_home != new_user_home / ".akramcode"
 
 
 @pytest.mark.parametrize("publisher", [
@@ -139,7 +139,7 @@ def test_profile_publication_preserves_shared_launcher_default_home(tmp_path, mo
 
     repo, home, interpreter = fixture_tree(tmp_path, monkeypatch)
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_INSTALL_ROOT", str(repo))
+    monkeypatch.setenv("AKRAMCODE_INSTALL_ROOT", str(repo))
     profile = home / "profiles" / "coder"
     profile.mkdir(parents=True)
     (home / "active_profile").write_text("default\n", encoding="utf-8")
@@ -157,9 +157,9 @@ def test_profile_publication_preserves_shared_launcher_default_home(tmp_path, mo
 
     def assert_home(override, expected):
         env = dict(os.environ)
-        env.pop("HERMES_HOME", None)
+        env.pop("AKRAMCODE_HOME", None)
         if override is not None:
-            env["HERMES_HOME"] = str(override)
+            env["AKRAMCODE_HOME"] = str(override)
         for launcher in launchers:
             result = subprocess.run([str(launcher)], cwd=tmp_path, env=env,
                                     capture_output=True, text=True, encoding="utf-8", timeout=30)
@@ -170,7 +170,7 @@ def test_profile_publication_preserves_shared_launcher_default_home(tmp_path, mo
             assert Path(receipt["exe"]).samefile(interpreter)
 
     assert_home(None, home)
-    monkeypatch.setenv("HERMES_HOME", str(profile))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(profile))
     if publisher == "boot":
         # Keep the real per-profile boot gate and exposure step, not unrelated
         # migrations. A named profile's first boot republishes the shared files.
@@ -190,7 +190,7 @@ def test_profile_publication_preserves_shared_launcher_default_home(tmp_path, mo
     other_home = tmp_path / "explicit custom home"
     other_home.mkdir()
     # A custom home is its own dependency root: it sees only generations committed there.
-    monkeypatch.setenv("HERMES_HOME", str(other_home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(other_home))
     select_generation(repo, "shared", "ready")
     assert_home(other_home, other_home)
 
@@ -205,16 +205,16 @@ def test_posix_materializer_publishes_only_executable_shell_launchers(tmp_path, 
     assert {p.name for p in launchers} == set(_launchers.ENTRY_POINTS)
     assert all(os.access(p, os.X_OK) for p in launchers)
     assert set(out.iterdir()) == set(launchers)
-    local = repo / ".hermes" / "bin"
+    local = repo / ".akramcode" / "bin"
     assert {p.name for p in local.iterdir()} == set(_launchers.ENTRY_POINTS)
-    launcher = local / "hermes"
+    launcher = local / "akramcode"
     expected = launcher.read_bytes()
     launcher.write_bytes(b"\xef\xbb\xbf" + expected if corruption == "bom" else expected.replace(b"\n", b"\r\n"))
     assert _launchers.ensure_install_launchers(repo, out)
     # Shell executables need exact bytes: neither a BOM before #! nor CRLF is
     # interchangeable with the generated script, even if text decoding agrees.
     assert launcher.read_bytes() == expected
-    result = subprocess.run([str(out / "hermes"), "--print-runtime-command"],
+    result = subprocess.run([str(out / "akramcode"), "--print-runtime-command"],
                             capture_output=True, text=True, encoding="utf-8", timeout=30)
     assert result.returncode == 0, result.stderr
     assert Path(json.loads(result.stdout)[0]).samefile(_interpreter)
@@ -238,31 +238,31 @@ def test_materializer_cli_refuses_missing_store_without_publishing(tmp_path, mon
 
 
 @pytest.mark.platforms("posix")
-@pytest.mark.parametrize("legacy_hermes", ["venv-python", "venv-console-script"])
-def test_boot_migrates_legacy_conveniences_to_selected_runtime(tmp_path, monkeypatch, legacy_hermes):
+@pytest.mark.parametrize("legacy_akramcode", ["venv-python", "venv-console-script"])
+def test_boot_migrates_legacy_conveniences_to_selected_runtime(tmp_path, monkeypatch, legacy_akramcode):
     repo, home, interpreter = fixture_tree(tmp_path, monkeypatch)
     monkeypatch.setattr(Path, "home", lambda: home)
-    monkeypatch.setenv("HERMES_INSTALL_ROOT", str(repo))
+    monkeypatch.setenv("AKRAMCODE_INSTALL_ROOT", str(repo))
     select_generation(repo, 'current', 'migrated')
     out = home / ".local" / "bin"
     out.mkdir(parents=True)
     # Old venv and sibling-ACP wrappers, with an unrelated command sharing bin.
-    old_wrapper = (f'#!/bin/sh\nexec "{repo}/venv/bin/python" "{repo}/hermes" "$@"\n'
-                   if legacy_hermes == "venv-python" else
+    old_wrapper = (f'#!/bin/sh\nexec "{repo}/venv/bin/python" "{repo}/akramcode" "$@"\n'
+                   if legacy_akramcode == "venv-python" else
                    f'#!/usr/bin/env bash\nunset PYTHONPATH\nunset PYTHONHOME\n'
-                   f'exec "{repo}/venv/bin/hermes" "$@"\n')
-    (out / "hermes").write_text(old_wrapper, encoding="utf-8")
-    (out / "hermes-acp").write_text(
-        '#!/usr/bin/env bash\n# Hermes Agent — ACP launcher (written by `hermes update`).\n'
-        f'exec "{out}/hermes" acp "$@"\n', encoding="utf-8")
+                   f'exec "{repo}/venv/bin/akramcode" "$@"\n')
+    (out / "akramcode").write_text(old_wrapper, encoding="utf-8")
+    (out / "akramcode-acp").write_text(
+        '#!/usr/bin/env bash\n# AkramCode Agent — ACP launcher (written by `akramcode update`).\n'
+        f'exec "{out}/akramcode" acp "$@"\n', encoding="utf-8")
     # Mentions this install only in a comment and runs another checkout's venv.
-    foreign = f'#!/bin/sh\n# user note about {repo}/venv/bin/hermes\nexec "{tmp_path}/other/venv/bin/hermes" "$@"\n'
-    (out / "hermes-agent").write_text(foreign, encoding="utf-8")
+    foreign = f'#!/bin/sh\n# user note about {repo}/venv/bin/akramcode\nexec "{tmp_path}/other/venv/bin/akramcode" "$@"\n'
+    (out / "akramcode-agent").write_text(foreign, encoding="utf-8")
 
     result = _launchers.expose_cli()
     assert result["ok"], result
-    assert set(result["written"]) == {"hermes", "hermes-acp"}
-    for name in ("hermes", "hermes-acp"):
+    assert set(result["written"]) == {"akramcode", "akramcode-acp"}
+    for name in ("akramcode", "akramcode-acp"):
         run = subprocess.run([str(out / name), "quoted argument"], cwd=tmp_path,
                              capture_output=True, text=True, timeout=30, encoding="utf-8")
         assert run.returncode == 7, run.stderr
@@ -270,7 +270,7 @@ def test_boot_migrates_legacy_conveniences_to_selected_runtime(tmp_path, monkeyp
         assert receipt["value"] == "migrated"
         assert receipt["argv"] == ["quoted argument"]
         assert Path(receipt["exe"]).samefile(interpreter)
-    assert (out / "hermes-agent").read_text(encoding="utf-8-sig") == foreign
+    assert (out / "akramcode-agent").read_text(encoding="utf-8-sig") == foreign
     before = {p: p.stat().st_mtime_ns for p in out.iterdir()}
     assert _launchers.expose_cli()["written"] == []
     assert before == {p: p.stat().st_mtime_ns for p in out.iterdir()}
@@ -283,7 +283,7 @@ def _command_survives_generation_collection(tmp_path, monkeypatch, surface):
     out = tmp_path / "bin"
     out.mkdir()
     _launchers.ensure_install_launchers(repo, out)
-    launcher = next(path for path in out.iterdir() if path.stem == "hermes")
+    launcher = next(path for path in out.iterdir() if path.stem == "akramcode")
     args = ["café ' quoted", "", "$HOME; not a shell"]
     command = []
     for value in ("old", "new"):
@@ -291,7 +291,7 @@ def _command_survives_generation_collection(tmp_path, monkeypatch, surface):
         (selected.parent / ".lease-managed").touch()
         if value == "old":
             if surface == "legacy":
-                command = [sys.executable, "-I", str(repo / "scripts/hermes-gateway"), "--help"]
+                command = [sys.executable, "-I", str(repo / "scripts/akramcode-gateway"), "--help"]
                 args = ["gateway", "--help"]
             elif surface == "ssh":
                 from akramcode_cli.windows_ssh_runtime import _resolve_direct_command
@@ -359,17 +359,17 @@ def test_running_source_launcher_can_republish_itself(tmp_path, monkeypatch, lau
         "from akramcode_cli._launchers import ensure_install_launchers, ENTRY_POINTS\n"
         "def main():\n"
         "    root = Path(__file__).resolve().parents[1]\n"
-        "    written = ensure_install_launchers(root, root / '.hermes/bin')\n"
+        "    written = ensure_install_launchers(root, root / '.akramcode/bin')\n"
         "    print('published', len(written), len(ENTRY_POINTS), flush=True)\n"
         "    return 0 if len(written) == len(ENTRY_POINTS) else 1\n",
         encoding="utf-8",
     )
-    out = repo / ".hermes/bin"
+    out = repo / ".akramcode/bin"
     if launcher_form == "cmd":
         monkeypatch.setattr(_launchers, "_load_script_maker", lambda: None)
     launchers = _launchers.ensure_install_launchers(repo, out)
     assert len(launchers) == len(_launchers.ENTRY_POINTS)
-    command = next(Path(p) for p in launchers if Path(p).stem == "hermes")
+    command = next(Path(p) for p in launchers if Path(p).stem == "akramcode")
     assert command.suffix == (".cmd" if launcher_form == "cmd" else ".exe")
     result = subprocess.run([str(command)], cwd=tmp_path, capture_output=True,
                             text=True, encoding="utf-8", timeout=30)
@@ -383,7 +383,7 @@ def test_running_source_launcher_can_republish_itself(tmp_path, monkeypatch, lau
 @pytest.mark.platforms("windows")
 def test_repin_without_distlib_retires_stale_native_launcher(tmp_path, monkeypatch):
     repo, home, _interpreter = fixture_tree(tmp_path, monkeypatch)
-    local = repo / ".hermes/bin"
+    local = repo / ".akramcode/bin"
     original = Path(_launchers.ensure_install_launchers(repo, local)[0])
     assert original.suffix == ".exe"
     new_python = home / "tools" / "repinned" / "python.exe"
@@ -392,8 +392,8 @@ def test_repin_without_distlib_retires_stale_native_launcher(tmp_path, monkeypat
     (home / "tools/facts.json").write_text(
         json.dumps({"packages": {"python": {"entry": "repinned"}}}), encoding="utf-8")
     monkeypatch.setattr(_launchers, "_load_script_maker", lambda: None)
-    result = _launchers.stage_launcher("hermes", repo, local)
-    assert result == local / "hermes.cmd"
+    result = _launchers.stage_launcher("akramcode", repo, local)
+    assert result == local / "akramcode.cmd"
     assert not original.exists()  # cmd.exe must not run the old exe first
     assert result is not None and str(new_python) in result.read_text(encoding="utf-8-sig")
 
@@ -403,17 +403,17 @@ def test_windows_repair_upgrades_healthy_old_pm_external_launchers(tmp_path, mon
     from akramcode_cli._install_repair import ensure_windows_bin_launchers
 
     repo, home, interpreter = fixture_tree(tmp_path, monkeypatch)
-    managed = home / "hermes-agent"
+    managed = home / "akramcode-agent"
     shutil.move(repo, managed)
     external = home / "bin"
     external.mkdir()
     for name in _launchers.ENTRY_POINTS:
         (external / f"{name}.exe").write_bytes(b"old PM launcher without a venv binding")
     assert ensure_windows_bin_launchers(managed, user_path_entries=[])
-    local = managed / ".hermes" / "bin"
-    launcher = local / "hermes.exe"
+    local = managed / ".akramcode" / "bin"
+    launcher = local / "akramcode.exe"
     if not launcher.exists():
-        launcher = local / "hermes.cmd"
+        launcher = local / "akramcode.cmd"
     result = subprocess.run([str(launcher), "--print-runtime-command"], capture_output=True,
                             text=True, timeout=30, encoding="utf-8")
     assert result.returncode == 0, result.stderr
@@ -427,7 +427,7 @@ def test_dashboard_action_boots_selected_dependencies(tmp_path, monkeypatch):
     select_generation(repo, 'current', 'selected')
     monkeypatch.setattr(web_server, "PROJECT_ROOT", repo)
     monkeypatch.setattr(web_server_gateway, "_ACTION_LOG_DIR", home / "logs")
-    proc = web_server_gateway._spawn_hermes_action(["--version"], "gateway-restart")
+    proc = web_server_gateway._spawn_akramcode_action(["--version"], "gateway-restart")
     try:
         assert proc.wait(timeout=30) == 7
         log = (home / "logs" / web_server_gateway._ACTION_LOG_FILES["gateway-restart"]).read_text(encoding="utf-8-sig")
@@ -458,8 +458,8 @@ def test_pre_pm_base_dependencies_activate_only_at_boot(tmp_path, monkeypatch):
 
 
 def test_external_interpreter_keeps_its_owned_dependencies(tmp_path, monkeypatch):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
-    monkeypatch.setenv("HERMES_RUNTIME_DIR", str(tmp_path / "empty-store"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("AKRAMCODE_RUNTIME_DIR", str(tmp_path / "empty-store"))
     command = _launchers.runtime_command(ROOT, code="import ruamel.yaml; print('external-runtime-ready')")
     result = subprocess.run(command, cwd=tmp_path, capture_output=True, text=True, timeout=30, encoding="utf-8")
     assert result.returncode == 0, result.stderr
@@ -518,18 +518,18 @@ def test_sync_migrates_old_store_wrapper_before_python_collection(tmp_path, monk
         python.symlink_to(interpreter)
         (store / "facts.json").write_text(json.dumps({"schema": 1, "packages": {"python": {"entry": version}}}), encoding="utf-8")
         if version == "python-A":
-            _launchers.mint_launcher("hermes", repo, out, python, None)
+            _launchers.mint_launcher("akramcode", repo, out, python, None)
         else:
             if create:
                 publish_launchers(repo)
             else:
                 publish_launchers(repo, create=False)
-                assert set(out.iterdir()) == {out / "hermes"}
+                assert set(out.iterdir()) == {out / "akramcode"}
                 assert not (home / "bin").exists()
                 assert not (home / "config.yaml").exists()
                 assert not (home / "skills").exists()
     shutil.rmtree(store / "python-A")
-    result = subprocess.run([str(out / "hermes")], cwd=tmp_path,
+    result = subprocess.run([str(out / "akramcode")], cwd=tmp_path,
                             capture_output=True, text=True, timeout=30, encoding="utf-8")
     assert result.returncode == 7, result.stderr
     assert json.loads(result.stdout)["value"] == "ready"
@@ -547,6 +547,6 @@ def test_update_import_probe_uses_selected_dependencies(tmp_path, monkeypatch):
     (site / "selected_probe.py").write_text("VALUE = 'selected'\n", encoding="utf-8")
     (install_state_dir(repo) / "facts.json").write_text(
         json.dumps({"packages": {"venv": {"environment": str(selected)}}}), encoding="utf-8")
-    (repo / "hermes_integrity_probe.py").write_text("import selected_probe\n", encoding="utf-8")
-    monkeypatch.setattr(update_cmd, "_UPDATE_CRITICAL_MODULES", ("hermes_integrity_probe",))
+    (repo / "akramcode_integrity_probe.py").write_text("import selected_probe\n", encoding="utf-8")
+    monkeypatch.setattr(update_cmd, "_UPDATE_CRITICAL_MODULES", ("akramcode_integrity_probe",))
     assert update_cmd_validation._critical_module_import_failures(repo, report_runtime_errors=True) == {}

@@ -123,7 +123,7 @@ def test_run_conversation_acquires_then_reloads_latest_tip(monkeypatch, signal):
         "include_row_ids": True,
     }
     texts = [text or "" for _kind, text in status_events]
-    for notice in ("Another Hermes process", "Session is free"):
+    for notice in ("Another AkramCode process", "Session is free"):
         assert any(notice in text for text in texts) is (signal == "on_wait"), notice
 
 

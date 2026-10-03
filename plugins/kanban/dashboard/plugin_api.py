@@ -101,7 +101,7 @@ def _board_conn(board: Optional[str]) -> Iterator[tuple[Optional[str], sqlite3.C
 
 def _with_board_pinned(board: Optional[str], fn: Callable[[], Any]) -> Any:
     """Run ``fn`` with the board pinned context-locally, not via the process-global
-    ``HERMES_KANBAN_BOARD`` env var (concurrent requests for different boards would cross-write)."""
+    ``AKRAMCODE_KANBAN_BOARD`` env var (concurrent requests for different boards would cross-write)."""
     with kanban_db.scoped_current_board(_resolve_board(board) or kanban_db.DEFAULT_BOARD):
         return fn()
 
@@ -287,7 +287,7 @@ def get_board(
     workflow_template_id: Optional[str] = Query(None, description="Restrict to tasks using this workflow template id"),
     current_step_key: Optional[str] = Query(None, description="Restrict to tasks at this workflow step key")):
     """Full board grouped by status column; omitting ``board`` uses the active board
-    (``HERMES_KANBAN_BOARD`` env → on-disk ``current`` pointer → ``default``)."""
+    (``AKRAMCODE_KANBAN_BOARD`` env → on-disk ``current`` pointer → ``default``)."""
     with _board_conn(board) as (board, conn):
         tasks = kanban_db.list_tasks(
             conn, tenant=tenant, include_archived=include_archived,
@@ -432,12 +432,12 @@ def create_task(payload: CreateTaskBody, board: Optional[str] = Query(None)):
         # Dispatcher-presence warning so the UI can banner a ready+assigned task that would
         # otherwise sit idle (no gateway / dispatch_in_gateway=false); triage/todo are expected
         # to wait, unassigned tasks can't dispatch anyway. Probe the request's active home: the
-        # dashboard backend may run under a different HERMES_HOME than the board's profile.
+        # dashboard backend may run under a different AKRAMCODE_HOME than the board's profile.
         if task and task.status == "ready" and task.assignee:
             try:
                 from akramcode_cli.kanban import _check_dispatcher_presence
-                from hermes_constants import get_hermes_home
-                running, message = _check_dispatcher_presence(hermes_home=get_hermes_home())
+                from akramcode_constants import get_akramcode_home
+                running, message = _check_dispatcher_presence(akramcode_home=get_akramcode_home())
                 if not running and message:
                     body["warning"] = message
             except Exception:
@@ -526,7 +526,7 @@ class UpdateTaskBody(BaseModel):
     body: Optional[str] = None
     result: Optional[str] = None
     block_reason: Optional[str] = None
-    # Handoff fields forwarded to complete_task on -> 'done' (parity with ``hermes kanban complete``).
+    # Handoff fields forwarded to complete_task on -> 'done' (parity with ``akramcode kanban complete``).
     summary: Optional[str] = None
     metadata: Optional[dict] = None
     # In a PATCH ``None`` means "field not sent", so ``clear_*=True`` is the explicit clear signal.
@@ -872,7 +872,7 @@ def list_diagnostics(
     board: Optional[str] = _BOARD_Q,
     severity: Optional[str] = Query(None, description="Filter by severity: warning|error|critical")):
     """Tasks with an active diagnostic, highest severity first then most recent; also
-    consumed by ``hermes kanban diagnostics`` when the dashboard runs."""
+    consumed by ``akramcode kanban diagnostics`` when the dashboard runs."""
     with _board_conn(board) as (board, conn):
         diags_by_task = _compute_task_diagnostics(conn, task_ids=None)
         if severity and diags_by_task:
@@ -996,7 +996,7 @@ class ReclaimBody(BaseModel):
 @router.post("/tasks/{task_id}/reclaim")
 def reclaim_task_endpoint(task_id: str, payload: ReclaimBody, board: Optional[str] = Query(None)):
     """Release an active worker claim without waiting for the claim TTL
-    (``hermes kanban reclaim <task_id> --reason ...``)."""
+    (``akramcode kanban reclaim <task_id> --reason ...``)."""
     with _board_conn(board) as (board, conn):
         if not kanban_db.reclaim_task(conn, task_id, reason=payload.reason):
             raise _conflict(f"cannot reclaim {task_id}: not in a claimable state (not running, or unknown id)")
@@ -1012,7 +1012,7 @@ class SpecifyBody(BaseModel):
 
 @router.post("/tasks/{task_id}/specify")
 def specify_task_endpoint(task_id: str, payload: SpecifyBody, board: Optional[str] = Query(None)):
-    """Flesh out a triage task via the auxiliary LLM (``hermes kanban specify``). Non-OK is NOT
+    """Flesh out a triage task via the auxiliary LLM (``akramcode kanban specify``). Non-OK is NOT
     an HTTP error — the UI renders the reason inline. Sync ``def`` → runs in the threadpool."""
     outcome = _run_aux(board, "kanban_specify", "specify_task", task_id, payload.author)
     return {"ok": bool(outcome.ok), "task_id": outcome.task_id, "reason": outcome.reason, "new_title": outcome.new_title}
@@ -1027,7 +1027,7 @@ class ReassignBody(BaseModel):
 @router.post("/tasks/{task_id}/reassign")
 def reassign_task_endpoint(task_id: str, payload: ReassignBody, board: Optional[str] = Query(None)):
     """Reassign to another profile, optionally reclaiming first
-    (``hermes kanban reassign <task_id> <profile> [--reclaim]``)."""
+    (``akramcode kanban reassign <task_id> <profile> [--reclaim]``)."""
     with _board_conn(board) as (board, conn):
         ok = kanban_db.reassign_task(
             conn, task_id, payload.profile or None, reclaim_first=bool(payload.reclaim_first), reason=payload.reason)
@@ -1166,7 +1166,7 @@ def _configured_home_channels() -> list[dict]:
 
 
 def _active_profile_name() -> str:
-    """Current Hermes profile name for notify-sub ownership."""
+    """Current AkramCode profile name for notify-sub ownership."""
     try:
         from akramcode_cli.profiles import get_active_profile_name
         return get_active_profile_name() or "default"
@@ -1268,7 +1268,7 @@ def dispatch(dry_run: bool = Query(False), max_n: int = Query(8, alias="max"), b
 @router.get("/model-options")
 def model_options():
     """Providers + curated models for the override dropdown via ``inventory.build_models_payload``
-    (same substrate as the Models page) so it can't offer a pair Hermes rejects. Skips pricing
+    (same substrate as the Models page) so it can't offer a pair AkramCode rejects. Skips pricing
     and custom-provider probes: a slow/offline local endpoint must not hang the drawer."""
     try:
         from akramcode_cli.inventory import build_models_payload, load_picker_context
@@ -1560,8 +1560,8 @@ def update_profile_description(profile_name: str, payload: DescribeBody):
         from akramcode_cli import profiles as profiles_mod
         canon = profiles_mod.normalize_profile_name(profile_name)
         if canon == "default":
-            from hermes_constants import get_hermes_home  # type: ignore
-            profile_dir = Path(get_hermes_home())
+            from akramcode_constants import get_akramcode_home  # type: ignore
+            profile_dir = Path(get_akramcode_home())
         else:
             profile_dir = profiles_mod.get_profile_dir(canon)
         if not profile_dir.is_dir():
@@ -1573,7 +1573,7 @@ def update_profile_description(profile_name: str, payload: DescribeBody):
 
 @router.post("/profiles/{profile_name}/describe-auto")
 def auto_describe_profile(profile_name: str, payload: DescribeAutoBody):
-    """``hermes profile describe <name> --auto``: persist with ``description_auto: true``.
+    """``akramcode profile describe <name> --auto``: persist with ``description_auto: true``.
     Non-OK outcomes are NOT HTTP errors — the UI renders the reason inline."""
     with _errors_to_500("describer crashed"):
         from akramcode_cli import profile_describer
@@ -1589,7 +1589,7 @@ class DecomposeBody(BaseModel):
 
 @router.post("/tasks/{task_id}/decompose")
 def decompose_task_endpoint(task_id: str, payload: DecomposeBody, board: Optional[str] = Query(None)):
-    """Fan a triage task out into child tasks via the auxiliary LLM (``hermes kanban decompose``).
+    """Fan a triage task out into child tasks via the auxiliary LLM (``akramcode kanban decompose``).
     Non-OK is NOT an HTTP error. Sync ``def`` → runs in the threadpool."""
     outcome = _run_aux(board, "kanban_decompose", "decompose_task", task_id, payload.author)
     return {

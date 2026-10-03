@@ -13,7 +13,7 @@ the persisted value here is safe.
 
 from __future__ import annotations
 
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from akramcode_cli.auth import _update_config_for_provider
 from akramcode_cli.config import clear_model_endpoint_credentials, get_config_path

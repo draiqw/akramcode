@@ -1,7 +1,7 @@
-"""Doctor npm-audit remedy guidance — the fix must persist across `hermes update`.
+"""Doctor npm-audit remedy guidance — the fix must persist across `akramcode update`.
 
 Regression for #116774: `npm audit fix` on a managed install is reverted by the
-next `hermes update`, because `_run_npm_install_deterministic` runs `npm ci`
+next `akramcode update`, because `_run_npm_install_deterministic` runs `npm ci`
 against the COMMITTED root `package-lock.json` and restores the pinned
 (vulnerable) versions. The doctor's root-row remedy used to prescribe exactly
 that doomed local command (`run: cd <root> && npm audit fix --workspaces=false`),
@@ -38,7 +38,7 @@ def _run_audit_one(capsys, audit_extra, audit_stdout):
 
 def test_root_remedy_never_prescribes_local_audit_fix(capsys):
     """The root row must not tell users to run a mutating `npm audit fix`: the
-    next `hermes update` reinstalls from the committed lockfile and reverts it
+    next `akramcode update` reinstalls from the committed lockfile and reverts it
     (#116774)."""
     out, issues = _run_audit_one(capsys, ["--workspaces=false"], _audit_json(high=1, moderate=1))
     assert "run: cd" not in out

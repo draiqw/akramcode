@@ -15,7 +15,7 @@ def test_terminal_line_names_backend_reason_and_fix_commands():
     assert "Terminal tool disabled" in text
     assert "'docker'" in text
     assert "Docker daemon is not running" in text
-    assert "hermes doctor" in text and "hermes setup terminal" in text
+    assert "akramcode doctor" in text and "akramcode setup terminal" in text
     assert "TERMINAL_ENV" not in text
 
 
@@ -28,13 +28,13 @@ def test_web_collapses_env_dump_into_one_provider_sentence():
     lines = tool_availability_warning_lines([_WEB], terminal_reason=None, terminal_backend="local")
     text = "\n".join(lines)
     assert "EXA_API_KEY" not in text
-    assert "Web search is off" in text and "hermes setup tools" in text
+    assert "Web search is off" in text and "akramcode setup tools" in text
 
 
 def test_generic_toolset_lists_vars_and_setup_hint():
     lines = tool_availability_warning_lines([_RL], terminal_reason=None, terminal_backend="local")
     text = "\n".join(lines)
-    assert "rl" in text and "TINKER_API_KEY" in text and "hermes setup" in text
+    assert "rl" in text and "TINKER_API_KEY" in text and "akramcode setup" in text
 
 
 def test_nothing_to_report_returns_no_lines():
@@ -47,14 +47,14 @@ def test_nothing_to_report_returns_no_lines():
 
 
 class TestFilterToEnabledToolsets:
-    _BUNDLE = {"hermes-cli": ["terminal", "process_manage", "web_search", "read_file"],
+    _BUNDLE = {"akramcode-cli": ["terminal", "process_manage", "web_search", "read_file"],
                "terminal": ["terminal", "process_manage"]}
 
     def _resolve(self, name):
         return self._BUNDLE.get(name, [])
 
     def test_composite_bundle_keeps_terminal_notice_on_default_install(self):
-        kept = filter_to_enabled_toolsets([_TERMINAL, _WEB, _RL], ["hermes-cli"], self._resolve)
+        kept = filter_to_enabled_toolsets([_TERMINAL, _WEB, _RL], ["akramcode-cli"], self._resolve)
         assert [k["name"] for k in kept] == ["terminal", "web"]
 
     def test_direct_toolset_name_and_unknown_bundle(self):
@@ -67,4 +67,4 @@ class TestFilterToEnabledToolsets:
     def test_resolver_error_is_not_fatal(self):
         def boom(name):
             raise RuntimeError("registry not ready")
-        assert filter_to_enabled_toolsets([_TERMINAL], ["hermes-cli"], boom) == []
+        assert filter_to_enabled_toolsets([_TERMINAL], ["akramcode-cli"], boom) == []

@@ -37,7 +37,7 @@ def test_referenced_script_read_preserves_normal_script_behavior(tmp_path):
 
 def test_invalid_referenced_script_path_is_still_tolerated():
     text, unsafe = lifecycle_guard._read_referenced_script(
-        Path("/tmp/hermes\x00binary")
+        Path("/tmp/akramcode\x00binary")
     )
 
     assert text is None

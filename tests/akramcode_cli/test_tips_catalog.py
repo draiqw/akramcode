@@ -36,7 +36,7 @@ def test_pickers_follow_active_language_with_english_fallback(tmp_path, monkeypa
         "tips:\n  t001: 'first'\n  t002: 'second'\n  placeholder:\n    p01: 'ask'\n", encoding="utf-8")
     (tmp_path / "de.yaml").write_text("tips:\n  t001: 'erstens'\n", encoding="utf-8")
     monkeypatch.setattr(i18n, "_locales_dir", lambda: tmp_path)
-    monkeypatch.setenv("HERMES_LANGUAGE", "de")
+    monkeypatch.setenv("AKRAMCODE_LANGUAGE", "de")
     i18n.reset_language_cache()
     tips.reset_tips_cache()
     try:

@@ -1,4 +1,4 @@
-"""Native Spotify tools for Hermes (registered via plugins/spotify).
+"""Native Spotify tools for AkramCode (registered via plugins/spotify).
 
 Each tool routes ``args["action"]`` through a dict dispatch table; every entry
 has the signature ``(client, args, action) -> str`` and issues its Spotify Web

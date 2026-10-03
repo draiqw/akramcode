@@ -1,6 +1,6 @@
-"""Tests for ``hermes approvals suggest`` (akramcode_cli/approvals_suggest.py).
+"""Tests for ``akramcode approvals suggest`` (akramcode_cli/approvals_suggest.py).
 
-Approval history in Hermes is implied, not ledgered: the session DB
+Approval history in AkramCode is implied, not ledgered: the session DB
 (state.db) stores every assistant ``terminal`` tool call plus its paired
 ``role='tool'`` result. A dangerous-classified command whose result is not a
 BLOCKED/denied/pending marker ran with user consent. These tests build

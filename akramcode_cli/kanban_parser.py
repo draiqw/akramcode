@@ -1,4 +1,4 @@
-"""Argparse tree for ``hermes kanban …`` (``build_parser``).
+"""Argparse tree for ``akramcode kanban …`` (``build_parser``).
 
 The subcommand tree is declared as data — one ``_cmd(...)`` record per
 subcommand holding its ``add_parser`` kwargs and an ordered tuple of
@@ -69,7 +69,7 @@ def _triage_sweep_args(verb: str, Verb: str, noun: str):
         _arg("--all", dest="all_triage", action="store_true", help=f"{Verb} every task currently in the triage column"),
         _arg("--tenant", help="When used with --all, restrict the sweep to this tenant"),
         _arg("--author",
-             help=f"Author name recorded on the audit comment (default: $HERMES_PROFILE or '{noun}')"),
+             help=f"Author name recorded on the audit comment (default: $AKRAMCODE_PROFILE or '{noun}')"),
         _json_flag(help="Emit one JSON object per task on stdout"),
     )
 
@@ -140,13 +140,13 @@ _BOARD_SPECS = [
         _arg("--switch", action="store_true", help="Switch to the imported board afterwards"),
         _json_flag(),
     ], help="Import a board archive as a new board", description=(
-        "Import a .tar.gz produced by `hermes kanban boards export`. The board always lands as a "
+        "Import a .tar.gz produced by `akramcode kanban boards export`. The board always lands as a "
         "NEW board — the slug gains a numeric suffix if it is already taken — so an import can "
         "never overwrite or merge into a board you already have."
     )),
 ]
 
-# Top-level ``hermes kanban <action>`` records, in ``--help`` order.
+# Top-level ``akramcode kanban <action>`` records, in ``--help`` order.
 _SPECS = [
     _cmd("init", help="Create kanban.db if missing (idempotent)"),
     _cmd("boards", children=("boards_action", _BOARD_SPECS),
@@ -173,7 +173,7 @@ _SPECS = [
         _arg("--project",
              help="Link to a project (id or slug). Anchors the task's "
                   "worktree under the project's primary repo with a "
-                  "deterministic branch. See `hermes project list`."),
+                  "deterministic branch. See `akramcode project list`."),
         _TENANT,
         _PRIORITY,
         _arg("--triage", action="store_true",
@@ -232,7 +232,7 @@ _SPECS = [
         _json_flag(help="Emit JSON output"),
     ], help="Create a Kanban Swarm v1 graph (parallel workers → verifier → synthesizer)"),
     _cmd("list", [
-        _arg("--mine", action="store_true", help="Filter by $HERMES_PROFILE as assignee"),
+        _arg("--mine", action="store_true", help="Filter by $AKRAMCODE_PROFILE as assignee"),
         _arg("--assignee"),
         _arg("--status", choices=sorted(kb.VALID_STATUSES)),
         _arg("--tenant"),
@@ -280,7 +280,7 @@ _SPECS = [
     _cmd("comment", [
         _TASK_ID,
         _arg("text", nargs="+", help="Comment body"),
-        _arg("--author", help="Author name (default: $HERMES_PROFILE or 'user')"),
+        _arg("--author", help="Author name (default: $AKRAMCODE_PROFILE or 'user')"),
         _arg("--max-len", type=int, help="Trim the stored comment body to this many characters"),
     ], help="Append a comment"),
     _cmd("attach", [
@@ -288,7 +288,7 @@ _SPECS = [
         _arg("path", help="Path to the local file to attach"),
         _arg("--content-type", help="MIME type (default: guessed from the file extension)"),
         _arg("--name", help="Stored filename (default: the source file's basename)"),
-        _arg("--author", help="uploaded_by label (default: $HERMES_PROFILE or 'user')"),
+        _arg("--author", help="uploaded_by label (default: $AKRAMCODE_PROFILE or 'user')"),
     ], help="Attach a local file to a task"),
     _cmd("attachments", [_TASK_ID, _json_flag()], help="List a task's attachments"),
     _cmd("attach-rm", [_arg("attachment_id", type=int)], help="Delete an attachment by id"),
@@ -377,7 +377,7 @@ _SPECS = [
         # Escape hatch for hosts that truly cannot run the gateway; hidden from
         # --help so nobody casually keeps the double-dispatcher pattern alive.
         _arg("--force", action="store_true", help=argparse.SUPPRESS),
-    ], help="DEPRECATED — dispatcher now runs in the gateway. Use `hermes gateway start`."),
+    ], help="DEPRECATED — dispatcher now runs in the gateway. Use `akramcode gateway start`."),
     _cmd("watch", [
         _arg("--assignee", help="Only show events for tasks assigned to this profile"),
         _arg("--tenant", help="Only show events from tasks in this tenant"),
@@ -422,7 +422,7 @@ _SPECS = [
         _arg("--note", help="Optional short note attached to the heartbeat event"),
     ], help="Emit a heartbeat event for a running task (worker liveness signal)"),
     _cmd("assignees", [_json_flag()],
-         help="List known profiles + per-profile task counts (union of ~/.hermes/profiles/ and current assignees on the board)"),
+         help="List known profiles + per-profile task counts (union of ~/.akramcode/profiles/ and current assignees on the board)"),
     _cmd("context", [_TASK_ID],
          help="Print the full context a worker sees for a task (title + body + parent results + comments)."),
     _cmd("specify", _triage_sweep_args("specify", "Specify", "specifier"),
@@ -459,18 +459,18 @@ def build_parser(parent_subparsers: argparse._SubParsersAction) -> argparse.Argu
     kanban_parser = parent_subparsers.add_parser(
         "kanban",
         help="Multi-profile collaboration board (tasks, links, comments)",
-        description="Durable SQLite-backed task board shared across Hermes profiles. "
+        description="Durable SQLite-backed task board shared across AkramCode profiles. "
                     "Tasks are claimed atomically, can depend on other tasks, and "
                     "are executed by a named profile in an isolated workspace. "
-                    "See https://hermes-agent.nousresearch.com/docs/user-guide/features/kanban.",
+                    "See https://akramcode-agent.nousresearch.com/docs/user-guide/features/kanban.",
     )
     # --board scopes every subcommand to one board's DB; when omitted the
-    # resolution is HERMES_KANBAN_BOARD, then the persisted current-board
+    # resolution is AKRAMCODE_KANBAN_BOARD, then the persisted current-board
     # file, then "default" (kanban_db.get_current_board()).
     kanban_parser.add_argument("--board", default=None, metavar="<slug>",
                                help="Board slug to operate on. Defaults to the current board (set "
-                                    "via `hermes kanban boards switch <slug>` or the "
-                                    "HERMES_KANBAN_BOARD env var). Use `hermes kanban boards "
+                                    "via `akramcode kanban boards switch <slug>` or the "
+                                    "AKRAMCODE_KANBAN_BOARD env var). Use `akramcode kanban boards "
                                     "list` to see all boards.")
     _add_commands(kanban_parser.add_subparsers(dest="kanban_action"), _SPECS)
     kanban_parser.set_defaults(_kanban_parser=kanban_parser)

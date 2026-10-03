@@ -536,7 +536,7 @@ class TestAliasCacheIsProfileScoped:
         return home
 
     def _load(self, monkeypatch, home):
-        monkeypatch.setenv("HERMES_HOME", str(home))
+        monkeypatch.setenv("AKRAMCODE_HOME", str(home))
         import akramcode_cli.model_switch as ms
 
         ms._ensure_direct_aliases()
@@ -615,7 +615,7 @@ class TestAliasCacheIsProfileScoped:
 
 
 class TestOneShotUsesTheSameHostInvariant:
-    """`hermes chat -m <alias>` must not trust the alias's provider label.
+    """`akramcode chat -m <alias>` must not trust the alias's provider label.
 
     These exercise the REAL resolver — the leak lives inside
     resolve_runtime_provider's provider-specific branches, so stubbing it
@@ -718,12 +718,12 @@ class TestDirectAliasHostGating:
 
 
 # ---------------------------------------------------------------------------
-# hermes chat -m <alias> — the oneshot path
+# akramcode chat -m <alias> — the oneshot path
 # ---------------------------------------------------------------------------
 
 class TestOneshotPassesAliasCredential:
     def test_alias_api_key_is_passed_to_the_resolver(self, monkeypatch):
-        """``hermes chat -m theta`` must hand the alias's key to
+        """``akramcode chat -m theta`` must hand the alias's key to
         resolve_runtime_provider, not leave it to env fallbacks."""
         from akramcode_cli.model_switch import DirectAlias
         import akramcode_cli.model_switch as ms

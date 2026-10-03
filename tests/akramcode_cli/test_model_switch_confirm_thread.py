@@ -36,7 +36,7 @@ class _StubCLI:
     def _stage_and_swap_model(self, result, old_model):
         # Staging + in-place swap lives in a helper; run the real one on this stub.
         import cli as _cli_mod
-        return _cli_mod.HermesCLI._stage_and_swap_model(self, result, old_model)
+        return _cli_mod.AkramCodeCLI._stage_and_swap_model(self, result, old_model)
 
     model = "old/model"
     provider = "openrouter"
@@ -60,7 +60,7 @@ class _StubCLI:
     ):
         import cli as cli_mod
 
-        return cli_mod.HermesCLI._confirm_and_apply_cli_model_switch(
+        return cli_mod.AkramCodeCLI._confirm_and_apply_cli_model_switch(
             self, result, persist_global, one_turn, custom_provs
         )
 
@@ -125,7 +125,7 @@ def test_confirm_runs_off_main_thread_when_tui_present(monkeypatch):
     # recorder onto the instance so the worker thread hits it.
     monkeypatch.setattr(stub, "_confirm_expensive_model_switch", _confirm.__get__(stub))
 
-    cli_mod.HermesCLI._handle_model_switch(
+    cli_mod.AkramCodeCLI._handle_model_switch(
         stub, "/model claude-sonnet-4.6 --provider anthropic"
     )
 
@@ -157,7 +157,7 @@ def test_confirm_stays_synchronous_without_app(monkeypatch):
 
     monkeypatch.setattr(stub, "_confirm_expensive_model_switch", _confirm.__get__(stub))
 
-    cli_mod.HermesCLI._handle_model_switch(
+    cli_mod.AkramCodeCLI._handle_model_switch(
         stub, "/model claude-sonnet-4.6 --provider anthropic"
     )
 

@@ -1,7 +1,7 @@
 """Tests for parent→subparser flag propagation.
 
 When flags like --yolo, -w, -s exist on both the parent parser and the 'chat'
-subparser, placing the flag BEFORE the subcommand (e.g. 'hermes --yolo chat')
+subparser, placing the flag BEFORE the subcommand (e.g. 'akramcode --yolo chat')
 must not silently drop the flag value.
 
 Regression test for: argparse subparser default=False overwriting parent's
@@ -68,7 +68,7 @@ class TestAcceptHooksOnAgentSubparsers:
     position (before the subcommand, between group/subcommand, and
     after the leaf subcommand) for gateway/cron/mcp/acp.  Regression
     against prior behaviour where the flag only worked on the root
-    parser and `chat`, so `hermes gateway run --accept-hooks` failed
+    parser and `chat`, so `akramcode gateway run --accept-hooks` failed
     with `unrecognized arguments`."""
 
     ARGVS = [
@@ -101,7 +101,7 @@ import akramcode_cli.main as main_mod
 argvs = json.loads(sys.argv[1])
 results = []
 for argv in argvs:
-    sys.argv = ["hermes", *argv]
+    sys.argv = ["akramcode", *argv]
     out, err = io.StringIO(), io.StringIO()
     code = 0
     try:
@@ -117,7 +117,7 @@ print(json.dumps(results))
 """
 
     def test_accepted_at_every_position(self):
-        """Every `hermes <argv>` must exit 0 (help) rather than failing
+        """Every `akramcode <argv>` must exit 0 (help) rather than failing
         with `unrecognized arguments`."""
         import json
         import subprocess
@@ -143,7 +143,7 @@ class TestChatSubparserInheritedValueFlags:
     """Verify -t/--toolsets, -m/--model and --provider survive parent→chat
     subparser dispatch.
 
-    Regression test for #28780: `hermes -t web chat` silently dropped the
+    Regression test for #28780: `akramcode -t web chat` silently dropped the
     toolset because the chat subparser re-declared `-t/--toolsets` with
     `default=None`, which clobbered the top-level parser's value during
     subparser dispatch.
@@ -202,7 +202,7 @@ class TestChatSubparserInheritedValueFlags:
         assert not offenders, (
             "Chat subparser redeclares these top-level flags without "
             "default=argparse.SUPPRESS; they will silently clobber the "
-            "top-level value when used as `hermes <flag> <value> chat`:\n  "
+            "top-level value when used as `akramcode <flag> <value> chat`:\n  "
             + "\n  ".join(f"{opts} dest={dest} default={d!r}"
                           for opts, dest, d in offenders)
         )

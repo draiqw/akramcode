@@ -158,7 +158,7 @@ def publish_receipt(kind: str, env: dict[str, str], *, version: str, commit: str
     else:
         message = json.dumps(record, sort_keys=True, separators=(",", ":"))
         run([
-            "git", "-c", "user.name=Hermes Build Receipt",
+            "git", "-c", "user.name=AkramCode Build Receipt",
             "-c", "user.email=actions@users.noreply.github.com",
             "tag", "-a", tag, commit, "-m", message,
         ], repo)

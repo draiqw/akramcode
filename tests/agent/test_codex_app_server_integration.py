@@ -308,7 +308,7 @@ class TestRunConversationCodexPath:
     def test_gateway_terminal_cwd_seeds_codex_thread_cwd(self, monkeypatch, tmp_path):
         """Gateway sessions set TERMINAL_CWD without pinning agent.session_cwd.
         Codex app-server must still start in that configured workspace instead
-        of falling back to the Hermes daemon process cwd."""
+        of falling back to the AkramCode daemon process cwd."""
         from agent.transports.codex_app_server_session import (
             CodexAppServerSession, TurnResult,
         )
@@ -398,7 +398,7 @@ class TestRunConversationCodexPath:
     def test_approvals_mode_off_auto_approves_codex_server_requests(
         self, monkeypatch
     ):
-        """When the user disables Hermes approvals, codex app-server approval
+        """When the user disables AkramCode approvals, codex app-server approval
         requests should not fail closed just because no interactive callback is
         wired (the typical gateway path). Codex's own sandbox permission
         profile remains the filesystem boundary."""
@@ -457,7 +457,7 @@ class TestRunConversationCodexPath:
     def test_frozen_yolo_env_auto_approves_codex_server_requests(
         self, monkeypatch
     ):
-        """--yolo / HERMES_YOLO_MODE (frozen into _YOLO_MODE_FROZEN at import
+        """--yolo / AKRAMCODE_YOLO_MODE (frozen into _YOLO_MODE_FROZEN at import
         time — a prompt-injection-safe process-scoped bypass) should flow
         through to codex app-server routing so gateway/cron contexts do not
         fail closed when the user launched with yolo mode."""
@@ -743,7 +743,7 @@ class TestSessionRetirementOnRunAgent:
 
 class TestCodexToolProgressBridge:
     """#38835 / #33200: Codex app-server item notifications must surface as
-    Hermes tool-progress so gateways show verbose breadcrumbs on this route.
+    AkramCode tool-progress so gateways show verbose breadcrumbs on this route.
     The original item/started-only mapper was superseded by the full event
     bridge (make_codex_app_server_event_bridge); these tests pin the same
     mapping contract against the bridge helpers."""

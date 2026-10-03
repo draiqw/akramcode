@@ -1,16 +1,16 @@
 /**
- * Hermes desktop plugin template. Save as:
- *   <hermes home>/desktop-plugins/<id>/plugin.js   (folder name == id)
- * where <hermes home> is ~/.hermes by default, or ~/.hermes/profiles/<name>
- * when running a named profile (`hermes -p <name>`). Run `hermes doctor` (or
+ * AkramCode desktop plugin template. Save as:
+ *   <akramcode home>/desktop-plugins/<id>/plugin.js   (folder name == id)
+ * where <akramcode home> is ~/.akramcode by default, or ~/.akramcode/profiles/<name>
+ * when running a named profile (`akramcode -p <name>`). Run `akramcode doctor` (or
  * check the app's Settings → Plugins folder path) if unsure which is active.
  * Then run "Reload desktop plugins" from ⌘K in the desktop app.
  *
  * Plain ESM, loaded uncompiled — UI is jsx() calls, not JSX syntax.
- * Only these imports resolve: @hermes/plugin-sdk, react, react/jsx-runtime.
+ * Only these imports resolve: @akramcode/plugin-sdk, react, react/jsx-runtime.
  */
 
-import { cn, haptic, host, Tip, usePluginI18n, useValue } from '@hermes/plugin-sdk'
+import { cn, haptic, host, Tip, usePluginI18n, useValue } from '@akramcode/plugin-sdk'
 import { jsx, jsxs } from 'react/jsx-runtime'
 
 // Ship your OWN strings (never edit core en.ts). `usePluginI18n` resolves them

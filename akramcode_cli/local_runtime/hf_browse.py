@@ -36,7 +36,7 @@ def _get_json(url: str) -> object:
     hit = _CACHE.get(url)
     if hit and now - hit[0] < _CACHE_TTL_S:
         return hit[1]
-    req = urllib.request.Request(url, headers={"User-Agent": "hermes-local-models"})
+    req = urllib.request.Request(url, headers={"User-Agent": "akramcode-local-models"})
     with urllib.request.urlopen(req, timeout=_TIMEOUT_S) as r:
         data = json.load(r)
     if len(_CACHE) >= _CACHE_MAX:

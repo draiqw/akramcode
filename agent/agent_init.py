@@ -40,7 +40,7 @@ from agent.tool_guardrails import (
 from akramcode_cli.config import DEFAULT_CONFIG, cfg_get
 from akramcode_cli.route_identity import normalize_route_base_url
 from akramcode_cli.timeouts import get_provider_request_timeout
-from akramcode_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 from akramcode_state.ids import new_session_id
 from utils import base_url_host_matches, is_truthy_value
 
@@ -65,8 +65,8 @@ def _warn_memory_provider_unavailable(name: str, reason: str = "") -> None:
     logger.warning(
         "Memory provider %r is selected but reports unavailable — external memory "
         "is disabled for this session (built-in memory still works). Check the "
-        "provider's credentials/config with 'hermes memory status'. Note: "
-        "systemd/gateway services do not inherit ~/.hermes/.env automatically; set "
+        "provider's credentials/config with 'akramcode memory status'. Note: "
+        "systemd/gateway services do not inherit ~/.akramcode/.env automatically; set "
         "any required variables in the service environment.%s",
         name,
         f" {reason}" if reason else "",
@@ -83,8 +83,8 @@ def _provider_default_routes(provider: str) -> set[str]:
             routes.add(route)
 
     with suppress(Exception):
-        from akramcode_cli.providers import HERMES_OVERLAYS, get_provider
-        overlay = HERMES_OVERLAYS.get(provider)
+        from akramcode_cli.providers import AKRAMCODE_OVERLAYS, get_provider
+        overlay = AKRAMCODE_OVERLAYS.get(provider)
         provider_def = get_provider(provider, allow_network=False)
         add(getattr(overlay, "base_url_override", ""))
         add(getattr(provider_def, "base_url", ""))
@@ -179,7 +179,7 @@ def _build_codex_gpt5_autoraise_notice(
         f"ℹ Codex {model} caps context at {cap}, so auto-compaction was raised "
         f"to {to_pct}% (from {from_pct}%) to use more of the window before "
         f"summarizing.\n"
-        f"  Opt back out: hermes config set compression.codex_gpt55_autoraise false"
+        f"  Opt back out: akramcode config set compression.codex_gpt55_autoraise false"
     )
 
 
@@ -203,8 +203,8 @@ def _resolve_compression_threshold(
 
 
 def _codex_gpt55_autoraise_notice_marker():
-    """Per-profile marker path (``$HERMES_HOME`` is profile-scoped; not a config key)."""
-    return get_hermes_home() / ".codex_gpt55_autoraise_notice"
+    """Per-profile marker path (``$AKRAMCODE_HOME`` is profile-scoped; not a config key)."""
+    return get_akramcode_home() / ".codex_gpt55_autoraise_notice"
 
 
 def _codex_gpt55_autoraise_notice_state(autoraise: Dict[str, Any]) -> str:
@@ -576,7 +576,7 @@ _TURN_STATE: Dict[str, Any] = {
     # a stale rebuild instead of clobbering a newer one.
     "_tool_snapshot_generation": 0,
     "_rate_limit_state": None,  # from x-ratelimit-* headers; read by /usage
-    # Credits tracking (dev-only, HERMES_DEV_CREDITS) from x-nous-credits-* headers; session
+    # Credits tracking (dev-only, AKRAMCODE_DEV_CREDITS) from x-nous-credits-* headers; session
     # start is latched on the first header so cumulative spend can be reported.
     "_credits_state": None,
     "_credits_session_start_micros": None,
@@ -701,10 +701,10 @@ def _setup_logging(agent):
     # don't duplicate handlers.
     from akram_core.akramcode_logging import setup_logging, setup_verbose_logging
     # The ACTIVE home, not run_agent's import-time freeze: a Desktop serve backend builds agents
-    # for several profiles inside set_hermes_home_override(), and the frozen launch home made
+    # for several profiles inside set_akramcode_home_override(), and the frozen launch home made
     # setup_logging() see a home it already served, so it never adopted the profile and every
     # profile's records landed in the launch profile's agent.log (#125974).
-    setup_logging(hermes_home=get_hermes_home())
+    setup_logging(akramcode_home=get_akramcode_home())
 
     if agent.verbose_logging:
         setup_verbose_logging()
@@ -843,7 +843,7 @@ def _routed_client_kwargs(agent, fallback_model, _provider_timeout) -> Optional[
         agent.provider or "auto", model=agent.model, raw_codex=True)
     if _routed_client is not None:
         from akramcode_cli.providers import is_actual_route, normalize_provider
-        effective_provider = getattr(_routed_client, "_hermes_aux_effective_provider", "")
+        effective_provider = getattr(_routed_client, "_akramcode_aux_effective_provider", "")
         if is_actual_route(effective_provider):
             agent.provider = normalize_provider(effective_provider)
         return _client_kwargs_from_routed(_routed_client, _provider_timeout)
@@ -933,8 +933,8 @@ def _routed_client_kwargs(agent, fallback_model, _provider_timeout) -> Optional[
     from agent.auxiliary_unavailable import ProviderNotConfiguredError
     _sel = profile_cli_selector()
     raise ProviderNotConfiguredError(
-        "No LLM provider configured. Run `hermes model` to "
-        "select a provider, or run `hermes setup` for first-time "
+        "No LLM provider configured. Run `akramcode model` to "
+        "select a provider, or run `akramcode setup` for first-time "
         "configuration."
     )
 
@@ -1049,7 +1049,7 @@ _HOST_DEFAULT_HEADERS: List[tuple[str, Callable[[Any, str], Dict[str, str]]]] = 
     ("api.kimi.com", lambda _k, _b: {"User-Agent": "claude-code/0.1.0"}),
     ("portal.qwen.ai", _lazy_headers("agent.client_lifecycle", "_qwen_portal_headers")),
     ("chatgpt.com", _lazy_headers("agent.codex_headers", "codex_cloudflare_headers", pass_key=True)),
-    ("x.ai", _lazy_headers("tools.xai_http", "hermes_xai_default_headers")),
+    ("x.ai", _lazy_headers("tools.xai_http", "akramcode_xai_default_headers")),
 ]
 
 
@@ -1109,7 +1109,7 @@ def _init_fallback_chain(agent, fallback_model):
 
 
 def _load_tools(agent, enabled_toolsets, disabled_toolsets):
-    # A multiplexed gateway may have switched HERMES_HOME since model_tools was imported;
+    # A multiplexed gateway may have switched AKRAMCODE_HOME since model_tools was imported;
     # make sure this profile's plugins are discovered before the tool snapshot.
     try:
         from akramcode_cli.plugins import discover_plugins
@@ -1191,7 +1191,7 @@ def _publish_session_id(session_id: str) -> None:
         except Exception:
             delegated_child = False
         if not delegated_child:
-            os.environ["HERMES_SESSION_ID"] = session_id
+            os.environ["AKRAMCODE_SESSION_ID"] = session_id
 
 
 def _init_session_state(agent, session_id, session_db, parent_session_id, reasoning_config, max_tokens,
@@ -1200,8 +1200,8 @@ def _init_session_state(agent, session_id, session_db, parent_session_id, reason
     agent.session_id = session_id or new_session_id(agent.session_start)
     _publish_session_id(agent.session_id)
 
-    # ~/.hermes/sessions/ — kept unconditionally for request_dump_*.json debug breadcrumbs.
-    agent.logs_dir = get_hermes_home() / "sessions"
+    # ~/.akramcode/sessions/ — kept unconditionally for request_dump_*.json debug breadcrumbs.
+    agent.logs_dir = get_akramcode_home() / "sessions"
     agent.logs_dir.mkdir(parents=True, exist_ok=True)
     _set_defaults(agent, _SESSION_STATE)
 
@@ -1220,7 +1220,7 @@ def _init_session_state(agent, session_id, session_db, parent_session_id, reason
         "reasoning_config": reasoning_config,
         "max_tokens": max_tokens,
     }
-    # Process-scoped --yolo is persisted so `hermes --resume` restores the bypass
+    # Process-scoped --yolo is persisted so `akramcode --resume` restores the bypass
     # (SessionDB.session_yolo_enabled); session-scoped /yolo toggles persist separately.
     with suppress(Exception):
         from tools.approval import _YOLO_MODE_FROZEN
@@ -1276,7 +1276,7 @@ def _memory_provider_init_kwargs(agent, platform) -> Dict[str, Any]:
     kwargs = {
         "session_id": agent.session_id,
         "platform": platform or "cli",
-        "hermes_home": str(get_hermes_home()),
+        "akramcode_home": str(get_akramcode_home()),
         # platform="cron" (scheduler) / "subagent" (delegate_task) → providers skip writes (MemoryProvider.initialize).
         "agent_context": platform if platform in ("cron", "subagent") else "primary",
     }
@@ -1304,7 +1304,7 @@ def _memory_provider_init_kwargs(agent, platform) -> Dict[str, Any]:
     with suppress(Exception):
         from akramcode_cli.profiles import get_active_profile_name
         kwargs["agent_identity"] = get_active_profile_name()
-        kwargs["agent_workspace"] = "hermes"
+        kwargs["agent_workspace"] = "akramcode"
     return kwargs
 
 
@@ -1504,10 +1504,10 @@ def _compression_threshold(agent, cfg: Dict[str, Any]) -> tuple[float, bool]:
 def _compression_codex_settings(cfg: Dict[str, Any]) -> tuple[str, bool, Optional[int]]:
     """``codex_app_server_auto`` / ``codex_responses_native`` / ``codex_responses_compact_threshold``."""
     app_server_auto = str(cfg.get("codex_app_server_auto", "native") or "native").lower()
-    if app_server_auto not in {"native", "hermes", "off"}:
+    if app_server_auto not in {"native", "akramcode", "off"}:
         _ra().logger.warning(
             "Invalid compression.codex_app_server_auto=%r; using 'native'. "
-            "Valid values are: native, hermes, off.",
+            "Valid values are: native, akramcode, off.",
             app_server_auto,
         )
         app_server_auto = "native"
@@ -2090,27 +2090,27 @@ def _enforce_minimum_context(agent):
         raise ValueError(
             f"Model {agent.model} has a context window of {_ctx:,} tokens, "
             f"which is below the minimum {MINIMUM_CONTEXT_LENGTH:,} required "
-            f"by Hermes Agent.  {remedy}"
+            f"by AkramCode Agent.  {remedy}"
         )
 
 
-def _warn_nonagentic_hermes_model(agent):
-    # Nous Hermes 3/4 are chat models, not tool-call-tuned. cli.py show_banner() already
+def _warn_nonagentic_akramcode_model(agent):
+    # Nous AkramCode 3/4 are chat models, not tool-call-tuned. cli.py show_banner() already
     # warns on the CLI, so skip platform=="cli"; non-quiet non-CLI surfaces still get it.
     if agent.quiet_mode or (agent.platform or "cli") == "cli":
         return
     with suppress(Exception):
-        from akramcode_cli.model_switch import _check_hermes_model_warning
-        _hermes_warn = _check_hermes_model_warning(agent.model or "")
-        if _hermes_warn:
+        from akramcode_cli.model_switch import _check_akramcode_model_warning
+        _akramcode_warn = _check_akramcode_model_warning(agent.model or "")
+        if _akramcode_warn:
             _user_msg = (
-                "⚠ Nous Research Hermes 3 & 4 models are NOT agentic — they "
+                "⚠ Nous Research AkramCode 3 & 4 models are NOT agentic — they "
                 "lack reliable tool-calling for agent workflows (delegation, "
                 "cron, proactive tools). Consider an agentic model instead "
                 "(Claude, GPT, Gemini, Qwen-Coder, etc.)."
             )
             agent._emit_warning(_user_msg)
-            _ra().logger.warning(_hermes_warn)
+            _ra().logger.warning(_akramcode_warn)
 
 
 def _inject_context_engine_tools(agent):
@@ -2156,7 +2156,7 @@ def _inject_context_engine_tools(agent):
     if agent.context_compressor:
         try:
             agent.context_compressor.on_session_start(
-                agent.session_id, hermes_home=str(get_hermes_home()),
+                agent.session_id, akramcode_home=str(get_akramcode_home()),
                 platform=agent.platform or "cli", model=agent.model,
                 context_length=getattr(agent.context_compressor, "context_length", 0),
                 conversation_id=getattr(agent, "_gateway_session_key", None),
@@ -2499,7 +2499,7 @@ def init_agent(
     _build_context_engine(agent, _agent_cfg, cs, _custom_providers, _effective_context_length, session_db)
     _configure_ollama_num_ctx(agent, _model_cfg, _config_context_length)
     _enforce_minimum_context(agent)
-    _warn_nonagentic_hermes_model(agent)
+    _warn_nonagentic_akramcode_model(agent)
     _inject_context_engine_tools(agent)
     _init_usage_state(agent)
     _clamp_compressor_to_ollama_num_ctx(agent)

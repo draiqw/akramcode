@@ -7,17 +7,17 @@ persistence flows exclusively through persist_personality().
 import os
 import pytest
 from unittest.mock import MagicMock, patch
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 # ── CLI tests ──────────────────────────────────────────────────────────────
 
 class TestCLIPersonalityNone:
 
     def _make_cli(self, personalities=None):
-        from cli import HermesCLI
+        from cli import AkramCodeCLI
         from akramcode_cli.personality import available_personalities
 
-        cli = HermesCLI.__new__(HermesCLI)
+        cli = AkramCodeCLI.__new__(AkramCodeCLI)
         user = personalities or {
             "helpful": "You are helpful.",
             "concise": "You are concise.",
@@ -94,11 +94,11 @@ class TestGatewayPersonalityNone:
 
     def _gateway_env(self, tmp_path):
         # The gateway reads via _load_gateway_config (rooted at
-        # gateway.run._hermes_home) and persists via persist_personality
-        # (rooted at HERMES_HOME) — point both at the same tmp dir.
+        # gateway.run._akramcode_home) and persists via persist_personality
+        # (rooted at AKRAMCODE_HOME) — point both at the same tmp dir.
         return (
-            patch("gateway.run._hermes_home", tmp_path),
-            patch.dict(os.environ, {"HERMES_HOME": str(tmp_path)}),
+            patch("gateway.run._akramcode_home", tmp_path),
+            patch.dict(os.environ, {"AKRAMCODE_HOME": str(tmp_path)}),
         )
 
     @pytest.mark.asyncio
@@ -154,10 +154,10 @@ class TestPersonalityDictFormat:
     """Test dict-format custom personalities with description, tone, style."""
 
     def _make_cli(self, personalities):
-        from cli import HermesCLI
+        from cli import AkramCodeCLI
         from akramcode_cli.personality import available_personalities
 
-        cli = HermesCLI.__new__(HermesCLI)
+        cli = AkramCodeCLI.__new__(AkramCodeCLI)
         cli.config = {"agent": {"personalities": personalities}}
         cli.personalities = available_personalities(cli.config)
         cli.system_prompt = ""

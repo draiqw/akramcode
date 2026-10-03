@@ -241,7 +241,7 @@ def main() -> int:
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
     tmp = Path(tempfile.mkdtemp(prefix="ab-native-"))
-    os.environ["HERMES_HOME"] = str(tmp / "home")
+    os.environ["AKRAMCODE_HOME"] = str(tmp / "home")
     (tmp / "home").mkdir(parents=True)
     import subprocess
 

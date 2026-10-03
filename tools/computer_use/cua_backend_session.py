@@ -70,7 +70,7 @@ class _AsyncBridge:
 # is never replayed; the caller decides after taking fresh state.
 _UNKNOWN_OUTCOME_MESSAGES = {
     "transport_outcome_unknown": (
-        "cua-driver transport failed during {name}; the action outcome is unknown, so Hermes "
+        "cua-driver transport failed during {name}; the action outcome is unknown, so AkramCode "
         "did not replay it. Take fresh state before deciding whether to act again."),
     "timeout_outcome_unknown": (
         "cua-driver MCP call {name} timed out; the action outcome is unknown and may still have "
@@ -231,7 +231,7 @@ class _CuaDriverSession:
                 (daemon.proxy_invocation(), daemon.child_env()) if daemon is not None
                 else _cb.sandbox_mcp_invocation() or (_driver._resolve_mcp_invocation(driver_cmd), _cb.cua_driver_child_env()))
             _t_manifest = _time.monotonic()
-            # Telemetry policy first (default: disabled), then strip Hermes secrets.
+            # Telemetry policy first (default: disabled), then strip AkramCode secrets.
             params = StdioServerParameters(command=command, args=args, env=_sanitize_subprocess_env(child_env))
             async with stdio_client(params) as (read, write):
                 self._startup_phase = "mcp-initialize"
@@ -303,11 +303,11 @@ class _CuaDriverSession:
             self._signal_shutdown_locked()
             # Surface which startup phase wedged (issue #57025) — "doctor passes but the wrapper times out"
             # reports are undiagnosable from a bare "never reached ready".
-            from akramcode_constants import display_hermes_home
+            from akramcode_constants import display_akramcode_home
             raise RuntimeError(
                 f"cua-driver session never reached ready (timeout 30s; stuck in phase: "
-                f"{getattr(self, '_startup_phase', 'unknown')}). Run `hermes computer-use doctor` and check "
-                f"{display_hermes_home()}/logs/agent.log for the phase timings.")
+                f"{getattr(self, '_startup_phase', 'unknown')}). Run `akramcode computer-use doctor` and check "
+                f"{display_akramcode_home()}/logs/agent.log for the phase timings.")
         if self._setup_error is not None:
             raise RuntimeError(f"cua-driver session setup failed: {self._setup_error}") from self._setup_error
         self._transport_generation += 1

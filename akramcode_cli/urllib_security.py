@@ -79,7 +79,7 @@ class _CrossOriginRequestSanitizer(urllib.request.BaseHandler):
 
 
 def _resolved_https_context() -> ssl.SSLContext | None:
-    """TLS context for Hermes-owned urllib openers.
+    """TLS context for AkramCode-owned urllib openers.
 
     None means "use urllib's default", which — with the OS trust store
     installed process-wide — already verifies against the platform's
@@ -96,7 +96,7 @@ def _secure_opener_from_installed_policy(original_url: str, *, ssl_context=None)
 
     When ``ssl_context`` is provided, the cloned HTTPS handler is replaced with
     one bound to that context so per-provider TLS settings (``ssl_ca_cert`` /
-    ``ssl_verify``) apply to this request. When it is None, Hermes-owned
+    ``ssl_verify``) apply to this request. When it is None, AkramCode-owned
     openers verify against the OS trust store; an application-installed
     opener's TLS policy is preserved unchanged.
     """
@@ -120,7 +120,7 @@ def _secure_opener_from_installed_policy(original_url: str, *, ssl_context=None)
     secured = urllib.request.build_opener(*handlers)
     # OpenerDirector injects addheaders after request processors (bypassing the
     # sanitizer on redirects), so carry them on the initial request instead.
-    secured._hermes_initial_addheaders = list(getattr(installed, "addheaders", ()))
+    secured._akramcode_initial_addheaders = list(getattr(installed, "addheaders", ()))
     secured.addheaders = []
     return secured
 
@@ -147,7 +147,7 @@ def open_credentialed_url(
     """
     if opener_factory is None:
         opener = _secure_opener_from_installed_policy(request.full_url, ssl_context=ssl_context)
-        for name, value in getattr(opener, "_hermes_initial_addheaders", ()):
+        for name, value in getattr(opener, "_akramcode_initial_addheaders", ()):
             if not request.has_header(name):
                 request.add_header(name, value)
     else:

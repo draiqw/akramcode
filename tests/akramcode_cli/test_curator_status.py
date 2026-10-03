@@ -1,4 +1,4 @@
-"""Tests for `hermes curator status` output.
+"""Tests for `akramcode curator status` output.
 
 Covers:
 - y0shualee's "least recently active" semantic (view/patch/use all count as activity).
@@ -18,17 +18,17 @@ import pytest
 
 @pytest.fixture
 def curator_status_env(tmp_path, monkeypatch):
-    """Isolated HERMES_HOME with real agent-created skills on disk."""
-    home = tmp_path / ".hermes"
+    """Isolated AKRAMCODE_HOME with real agent-created skills on disk."""
+    home = tmp_path / ".akramcode"
     skills = home / "skills"
     skills.mkdir(parents=True)
     (home / "logs").mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
     import importlib
-    import hermes_constants
-    importlib.reload(hermes_constants)
+    import akramcode_constants
+    importlib.reload(akramcode_constants)
     from tools import skill_usage
     importlib.reload(skill_usage)
     from agent import curator
@@ -45,7 +45,7 @@ def curator_status_env(tmp_path, monkeypatch):
             "description: test\n"
             "version: 1.0.0\n"
             "metadata:\n"
-            "  hermes:\n"
+            "  akramcode:\n"
             "    agent_created: true\n"
             "---\n"
             f"# {name}\n"

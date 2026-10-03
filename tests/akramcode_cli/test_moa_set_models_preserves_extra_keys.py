@@ -89,14 +89,14 @@ def test_moa_save_writes_only_the_moa_section(tmp_path, monkeypatch):
 
     ``load_config()`` is a default-expanded snapshot; saving it whole after a chain was written
     out-of-band (or was simply stale) rewrote ``fallback_providers`` too. Real config pipeline,
-    temp HERMES_HOME.
+    temp AKRAMCODE_HOME.
     """
-    import akram_core.hermes_yaml as yaml
+    import akram_core.akramcode_yaml as yaml
     from akramcode_cli.config import get_config_path, load_config, read_raw_config
 
-    home = tmp_path / ".hermes"
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     get_config_path().write_text(yaml.safe_dump({"model": {"default": "m1", "provider": "custom"}}), encoding="utf-8")
     stale = load_config()                       # snapshot BEFORE the chain exists
     stale["fallback_providers"] = []            # what the default-expanded snapshot carries

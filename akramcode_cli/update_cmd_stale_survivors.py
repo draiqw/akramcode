@@ -59,7 +59,7 @@ def signal_stale_fleet_survivors(fleet: list, restart, drain_budget: float) -> l
             print(f"  ⚠ {label}: could not be signalled ({exc}) — restart it by hand")
     if manual:
         print(f"  → Stopped {len(manual)} manual gateway process(es) that had no supervisor to respawn them")
-        print("    Restart manually: hermes gateway run")
+        print("    Restart manually: akramcode gateway run")
         if len(manual) > 1:
-            print("    (or: hermes -p <profile> gateway run  for each profile)")
+            print("    (or: akramcode -p <profile> gateway run  for each profile)")
     return signalled

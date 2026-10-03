@@ -8,7 +8,7 @@ import math
 from copy import deepcopy
 from typing import Any
 
-MOA_MARKER_PREFIX = "__HERMES_MOA_TURN_V1__"
+MOA_MARKER_PREFIX = "__AKRAMCODE_MOA_TURN_V1__"
 DEFAULT_MOA_PRESET_NAME = "default"
 
 DEFAULT_MOA_REFERENCE_MODELS: list[dict[str, str]] = [
@@ -287,7 +287,7 @@ def resolve_moa_preset(config: Any, name: str | None = None) -> dict[str, Any]:
         available = ", ".join(cfg["presets"]) or "(none)"
         raise MoAPresetNotFoundError(
             f"MoA preset '{preset_name}' was not found. Available presets: "
-            f"{available}. Run `hermes moa list`.")
+            f"{available}. Run `akramcode moa list`.")
     return deepcopy(preset)
 
 

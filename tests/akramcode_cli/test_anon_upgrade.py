@@ -1,4 +1,4 @@
-"""``hermes auth upgrade``: the free tier signs into a Nous account, keeping its connectors.
+"""``akramcode auth upgrade``: the free tier signs into a Nous account, keeping its connectors.
 
 Driven through a fake portal covering the device-code endpoints plus the promotion intent/status
 surface, so the wire contract (both codes in the intent, status-driven outcome, token grant
@@ -87,7 +87,7 @@ class FakePortal:
                 return httpx.Response(400, json={"error": "invalid_grant"})
             self.token_grants += 1
             return httpx.Response(200, json={
-                "access_token": _jwt(sub="nas_user:9", client_id="hermes-cli", account_tier="free"),
+                "access_token": _jwt(sub="nas_user:9", client_id="akramcode-cli", account_tier="free"),
                 "refresh_token": REFRESH_TOKEN, "token_type": "Bearer", "expires_in": 900,
                 "scope": "inference:invoke", "inference_base_url": INFERENCE})
         return httpx.Response(500, json={"error": f"unexpected {path}"})
@@ -96,10 +96,10 @@ class FakePortal:
 @pytest.fixture
 def portal(monkeypatch, tmp_path):
     fake = FakePortal()
-    monkeypatch.setenv("HERMES_PORTAL_BASE_URL", PORTAL)
-    monkeypatch.setenv("HERMES_ANON_API_SECRET", "test-secret")
-    monkeypatch.setenv("HERMES_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
-    monkeypatch.setenv("HERMES_GUEST_ONBOARDING", "1")
+    monkeypatch.setenv("AKRAMCODE_PORTAL_BASE_URL", PORTAL)
+    monkeypatch.setenv("AKRAMCODE_ANON_API_SECRET", "test-secret")
+    monkeypatch.setenv("AKRAMCODE_SHARED_AUTH_DIR", str(tmp_path / "shared-store"))
+    monkeypatch.setenv("AKRAMCODE_GUEST_ONBOARDING", "1")
     for var in ("OPENROUTER_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "NOUS_API_KEY"):
         monkeypatch.delenv(var, raising=False)
     from akramcode_cli import auth_nous
@@ -239,4 +239,4 @@ class TestSignInCompletionSettlesTheModel:
         assert model_cfg["base_url"] == INFERENCE.rstrip("/")
         out = capsys.readouterr().out
         assert "Default model is now" not in out
-        assert "run `hermes model` to pick one" in out
+        assert "run `akramcode model` to pick one" in out

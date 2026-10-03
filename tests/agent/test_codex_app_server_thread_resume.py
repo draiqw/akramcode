@@ -1,7 +1,7 @@
 """#100531 — the codex app-server thread survives an AIAgent rebuild (API-server restart, per-request agents).
 
 ``CodexAppServerSession`` keeps the codex thread id in memory only, so every new ``AIAgent`` for the same
-Hermes session used to ``thread/start`` an empty thread while Hermes' own transcript continued. The runtime
+AkramCode session used to ``thread/start`` an empty thread while AkramCode' own transcript continued. The runtime
 now publishes ``codex_thread_id`` into the session row's ``model_config`` once the turn's projected rows are
 durable, the next agent for that session issues ``thread/resume`` for it, and a stored id codex cannot hand
 back fails closed: fresh thread, binding dropped, one status-rail notice.

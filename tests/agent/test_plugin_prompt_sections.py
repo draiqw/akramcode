@@ -171,7 +171,7 @@ def test_fresh_process_resume_restores_identical_full_prompt_without_callback(tm
     for phase in ("first", "resume"):
         env = os.environ.copy()
         env.update(
-            HERMES_HOME=str(tmp_path / "hermes-home"),
+            AKRAMCODE_HOME=str(tmp_path / "akramcode-home"),
             TEST_DB=str(db_path),
             TEST_CALLS=str(calls_path),
             TEST_PHASE=phase,

@@ -1,8 +1,8 @@
-"""`hermes profile install` / `hermes profile update` against a real distribution with cron jobs.
+"""`akramcode profile install` / `akramcode profile update` against a real distribution with cron jobs.
 
-A distribution author schedules jobs with the real CLI (``hermes -p author cron create``) and
+A distribution author schedules jobs with the real CLI (``akramcode -p author cron create``) and
 publishes the profile directory; a user installs it, schedules a job of their own, and later
-pulls the author's next version with ``hermes profile update``. Every step is a fresh sandboxed
+pulls the author's next version with ``akramcode profile update``. Every step is a fresh sandboxed
 CLI process over a fake HOME; the assertions read the cron store the scheduler itself reads
 (``cron/jobs.json``) and the CLI's own ``cron list``.
 
@@ -39,7 +39,7 @@ class World:
         self.env = H.isolated_env(root, pythonpath=H.WORKTREE)
         (root / "tmp").mkdir(exist_ok=True)
         self.env["TMPDIR"] = str(root / "tmp")
-        self.hermes_home = Path(self.env["HERMES_HOME"])
+        self.akramcode_home = Path(self.env["AKRAMCODE_HOME"])
         self.src = root / "dist-src"
         self.log: list[str] = []
         self.after_install: list[dict] = []
@@ -54,7 +54,7 @@ class World:
 
     @property
     def installed(self) -> Path:
-        return self.hermes_home / "profiles" / "shipped-bot"
+        return self.akramcode_home / "profiles" / "shipped-bot"
 
 
 def _by_name(jobs: list[dict]) -> dict[str, dict]:
@@ -85,7 +85,7 @@ def world(tmp_path_factory) -> World:
     w.cli("profile", "create", "author", "--no-alias")
     w.cli("-p", "author", "cron", "create", "--name", "weekly-digest", "0 9 * * 1", "write the weekly digest v1")
     w.cli("-p", "author", "cron", "create", "--name", "retired-job", "0 8 * * *", "a job the author retires in v2")
-    author = w.hermes_home / "profiles" / "author"
+    author = w.akramcode_home / "profiles" / "author"
     assert set(_by_name(I.cron_jobs(author))) == {"weekly-digest", "retired-job"}
     w.src.mkdir()
     shutil.copytree(author / "cron", w.src / "cron", ignore=shutil.ignore_patterns("*.lock", "output", "*.db*"))

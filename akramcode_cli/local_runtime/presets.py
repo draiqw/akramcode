@@ -248,7 +248,7 @@ def render_presets(entries: list[PresetEntry]) -> str:
     sections: list[str] = []
     for entry in entries:
         # INI comments preserve non-flag facts atomically with the launch policy.
-        sections.append("# hermes-decision: " + json.dumps({
+        sections.append("# akramcode-decision: " + json.dumps({
             "model_id": entry.model_id, "window": entry.window,
             "spilled": entry.spilled, "refusal": entry.refusal}) + "\n")
         if entry.keys is not None:
@@ -273,8 +273,8 @@ def read_preset_decisions(preset_path: Path | None = None) -> dict[str, PresetEn
         parser.read_string(text)
         recorded = {}
         for line in text.splitlines():
-            if line.startswith("# hermes-decision: "):
-                fact = json.loads(line.removeprefix("# hermes-decision: "))
+            if line.startswith("# akramcode-decision: "):
+                fact = json.loads(line.removeprefix("# akramcode-decision: "))
                 recorded[fact["model_id"]] = fact
                 if fact.get("refusal"):
                     out[fact["model_id"]] = PresetEntry(**fact)

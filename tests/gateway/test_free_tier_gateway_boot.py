@@ -1,8 +1,8 @@
 """The messaging gateway is a boot owner of the Nous free tier.
 
 Rung 5 made every demand-time site a read (provider resolution, ``/login``, the connector token), so a
-process that never runs the bootstrap can never have an identity. `cmd_chat` and `hermes serve` run it;
-this file pins that `hermes gateway run` does too, and does it BEFORE any adapter connects, so a fast
+process that never runs the bootstrap can never have an identity. `cmd_chat` and `akramcode serve` run it;
+this file pins that `akramcode gateway run` does too, and does it BEFORE any adapter connects, so a fast
 first DM cannot arrive with nothing to resolve.
 """
 
@@ -14,7 +14,7 @@ import gateway.run_startup as run_startup
 
 @pytest.mark.asyncio
 async def test_gateway_boot_runs_the_free_tier_bootstrap_before_any_adapter_connects(monkeypatch, tmp_path):
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path))
     order: list[str] = []
 
     def fake_bootstrap() -> None:

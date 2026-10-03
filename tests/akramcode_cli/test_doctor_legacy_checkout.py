@@ -1,4 +1,4 @@
-"""Tests for the legacy-desktop-checkout report in hermes doctor."""
+"""Tests for the legacy-desktop-checkout report in akramcode doctor."""
 
 import json
 import subprocess
@@ -27,12 +27,12 @@ def embedded_context(tmp_path, monkeypatch):
     (bundle / "install-stamp.json").write_text(
         json.dumps({"commit": "a" * 40, "distribution": "desktop-app", "updateMechanism": "electron-updater"})
     )
-    import akramcode_cli.main as hermes_main
+    import akramcode_cli.main as akramcode_main
 
-    monkeypatch.setattr(hermes_main, "PROJECT_ROOT", bundle)
+    monkeypatch.setattr(akramcode_main, "PROJECT_ROOT", bundle)
 
-    home = tmp_path / ".hermes"
-    checkout = home / "hermes-agent"
+    home = tmp_path / ".akramcode"
+    checkout = home / "akramcode-agent"
     checkout.mkdir(parents=True)
     _git(checkout, "init", "-b", "main")
     _git(checkout, "config", "user.email", "test@example.com")
@@ -40,7 +40,7 @@ def embedded_context(tmp_path, monkeypatch):
     (checkout / "f.txt").write_text("x\n")
     _git(checkout, "add", ".")
     _git(checkout, "commit", "-m", "initial")
-    monkeypatch.setattr(doctor, "HERMES_HOME", home)
+    monkeypatch.setattr(doctor, "AKRAMCODE_HOME", home)
     return checkout
 
 
@@ -96,8 +96,8 @@ class TestLegacyDesktopCheckout:
     def test_silent_when_running_from_a_git_checkout(self, embedded_context, monkeypatch, capsys):
         # A git-managed install (dev tree or ejected) is not embedded; the
         # checkout at the managed root might BE the running tree.
-        import akramcode_cli.main as hermes_main
+        import akramcode_cli.main as akramcode_main
 
-        monkeypatch.setattr(hermes_main, "PROJECT_ROOT", embedded_context)
+        monkeypatch.setattr(akramcode_main, "PROJECT_ROOT", embedded_context)
         check_legacy_desktop_checkout()
         assert capsys.readouterr().out == ""

@@ -9,8 +9,8 @@ from akramcode_cli import skills_hub as cli_hub
 from akramcode_cli.subcommands.skills import build_skills_parser
 from tools.skills_hub_github import GitHubAuth, GitHubSource, _tap_cache_key, github_provider_for
 from tools.skills_hub_models import SkillMeta, _cache_metas, _skill_meta_to_dict
-from tools.skills_hub_official import HermesIndexSource
-from tools.skills_hub_search import _hermes_index_cache_file, parallel_search_sources
+from tools.skills_hub_official import AkramCodeIndexSource
+from tools.skills_hub_search import _akramcode_index_cache_file, parallel_search_sources
 
 
 @pytest.fixture(params=["index", "github"])
@@ -28,10 +28,10 @@ def catalog(request, monkeypatch):
     wanted = [entry("NVIDIA/skills", "NVIDIA", f"gpu-target-{i}") for i in range(3)]
     auth = GitHubAuth()
     if request.param == "index":
-        path = _hermes_index_cache_file()
+        path = _akramcode_index_cache_file()
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps({"skills": [_skill_meta_to_dict(m) for m in others + wanted]}), encoding="utf-8")
-        source = HermesIndexSource(auth)
+        source = AkramCodeIndexSource(auth)
     else:
         source = GitHubSource(auth)
         for tap in source.taps:
@@ -45,7 +45,7 @@ def catalog(request, monkeypatch):
 
 def test_cli_provider_search_finds_matches_beyond_global_window(catalog, capsys):
     source, others, wanted = catalog
-    parser = argparse.ArgumentParser(prog="hermes")
+    parser = argparse.ArgumentParser(prog="akramcode")
     build_skills_parser(parser.add_subparsers(dest="command"), cmd_skills=cli_hub.skills_command)
 
     for query in ("gpu", ""):

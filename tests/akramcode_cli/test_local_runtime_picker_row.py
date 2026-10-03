@@ -10,10 +10,10 @@ import pytest
 
 
 @pytest.fixture
-def hermes_home(tmp_path, monkeypatch):
-    home = tmp_path / ".hermes"
+def akramcode_home(tmp_path, monkeypatch):
+    home = tmp_path / ".akramcode"
     home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     return home
 
 
@@ -24,16 +24,16 @@ def _stage(home, *names):
         (mdir / f"{name}.gguf").write_bytes(b"GGUF" + b"\x00" * 64)
 
 
-def test_no_staged_models_no_row(hermes_home):
+def test_no_staged_models_no_row(akramcode_home):
     from akramcode_cli.inventory import _local_runtime_row, load_picker_context
 
     assert _local_runtime_row(load_picker_context()) is None
 
 
-def test_staged_models_make_a_selectable_row(hermes_home):
+def test_staged_models_make_a_selectable_row(akramcode_home):
     from akramcode_cli.inventory import _local_runtime_row, load_picker_context
 
-    _stage(hermes_home, "Qwen3-4B-Instruct-2507-UD-Q8_K_XL", "Some-Other-Model")
+    _stage(akramcode_home, "Qwen3-4B-Instruct-2507-UD-Q8_K_XL", "Some-Other-Model")
     row = _local_runtime_row(load_picker_context())
     assert row is not None
     assert row["slug"] == "llamacpp"
@@ -42,20 +42,20 @@ def test_staged_models_make_a_selectable_row(hermes_home):
     assert row["total_models"] == 2
 
 
-def test_row_marks_current_when_config_points_at_llamacpp(hermes_home):
+def test_row_marks_current_when_config_points_at_llamacpp(akramcode_home):
     from akramcode_cli.inventory import _local_runtime_row, load_picker_context
 
-    _stage(hermes_home, "M")
+    _stage(akramcode_home, "M")
     ctx = load_picker_context().with_overrides(current_provider="llamacpp")
     row = _local_runtime_row(ctx)
     assert row is not None and row["is_current"] is True
 
 
-def test_full_payload_includes_local_row(hermes_home):
+def test_full_payload_includes_local_row(akramcode_home):
     """Through the REAL payload builder — the shape the desktop picker eats."""
     from akramcode_cli.inventory import build_models_payload, load_picker_context
 
-    _stage(hermes_home, "Local-Model-X")
+    _stage(akramcode_home, "Local-Model-X")
     payload = build_models_payload(
         load_picker_context(),
         probe_custom_providers=False,
@@ -67,7 +67,7 @@ def test_full_payload_includes_local_row(hermes_home):
     assert row["models"] == ["Local-Model-X"]
 
 
-def test_explicit_only_filter_keeps_local_row_on_any_profile(hermes_home):
+def test_explicit_only_filter_keeps_local_row_on_any_profile(akramcode_home):
     """The desktop dropdown requests explicit_only=True, and the local row
     has no config credential by design (credential is reachability). The
     filter must treat staged models as explicit configuration — otherwise
@@ -75,7 +75,7 @@ def test_explicit_only_filter_keeps_local_row_on_any_profile(hermes_home):
     and every other profile's dropdown silently loses local models."""
     from akramcode_cli.inventory import _filter_explicit_provider_rows, _local_runtime_row, load_picker_context
 
-    _stage(hermes_home, "Qwen3.8-27B-UD-Q5_K_XL")
+    _stage(akramcode_home, "Qwen3.8-27B-UD-Q5_K_XL")
     ctx = load_picker_context()
     row = _local_runtime_row(ctx)
     assert row is not None

@@ -11,7 +11,7 @@ runtime resolver then makes of it.
 
 import os
 
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 import akramcode_cli.runtime_provider as rp
 from akramcode_cli.model_setup_flows_bedrock import _model_flow_bedrock_api_key
@@ -34,10 +34,10 @@ def _run_wizard(monkeypatch, selected="openai.gpt-5.6-terra"):
 
     _model_flow_bedrock_api_key({}, REGION)
 
-    from hermes_constants import get_hermes_home
+    from akramcode_constants import get_akramcode_home
 
-    return get_hermes_home(), yaml.safe_load(
-        (get_hermes_home() / "config.yaml").read_text(encoding="utf-8")
+    return get_akramcode_home(), yaml.safe_load(
+        (get_akramcode_home() / "config.yaml").read_text(encoding="utf-8")
     )
 
 

@@ -10,7 +10,7 @@ import os
 from unittest.mock import Mock, patch
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 import tui_gateway.server as server
 
@@ -22,11 +22,11 @@ def homes(tmp_path, monkeypatch):
         home.mkdir(parents=True)
         (home / "config.yaml").write_text(yaml.safe_dump({"model": {"default": model}}), encoding="utf-8")
         (home / ".env").write_text("", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(launch))
-    for seed in ("HERMES_MODEL", "HERMES_INFERENCE_MODEL"):
+    monkeypatch.setenv("AKRAMCODE_HOME", str(launch))
+    for seed in ("AKRAMCODE_MODEL", "AKRAMCODE_INFERENCE_MODEL"):
         monkeypatch.delenv(seed, raising=False)
     monkeypatch.setenv("GLM_API_KEY", "launch-own-key")
-    monkeypatch.setattr(server, "_hermes_home", launch)
+    monkeypatch.setattr(server, "_akramcode_home", launch)
     monkeypatch.setattr(server, "_cfg_cache", None)
     monkeypatch.setattr(server, "_cfg_sig", None)
     monkeypatch.setattr(server, "_cfg_path", None)

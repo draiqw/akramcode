@@ -11,7 +11,7 @@ from contextlib import suppress
 from pathlib import Path
 from typing import Any, Callable
 
-from hermes_constants import get_hermes_home
+from akramcode_constants import get_akramcode_home
 
 logger = logging.getLogger(__name__)
 
@@ -22,13 +22,13 @@ _RETENTION_DAYS = 30
 class DiscordRecoveryStore:
     """Small profile-scoped SQLite ledger for completed Discord messages."""
 
-    def __init__(self, hermes_home: Path | None = None) -> None:
+    def __init__(self, akramcode_home: Path | None = None) -> None:
         self._lock = threading.Lock()
         self._initialized = False
-        self._hermes_home = Path(hermes_home or get_hermes_home())
+        self._akramcode_home = Path(akramcode_home or get_akramcode_home())
 
     def path(self) -> Path:
-        directory = self._hermes_home / "gateway"
+        directory = self._akramcode_home / "gateway"
         directory.mkdir(parents=True, exist_ok=True)
         return directory / _DB_FILENAME
 

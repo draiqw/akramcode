@@ -1,4 +1,4 @@
-"""``hermes cron`` subcommand parser."""
+"""``akramcode cron`` subcommand parser."""
 
 from __future__ import annotations
 
@@ -33,13 +33,13 @@ def build_cron_parser(subparsers, *, cmd_cron: Callable) -> None:
     cron_create.add_argument("--failure-deliver", dest="failure_deliver",
         help="Override target for FAILURE notices only (same grammar as "
             "--deliver). 'local' suppresses failure notices entirely; run "
-            "state stays visible in `hermes cron list`. Omit = failures "
+            "state stays visible in `akramcode cron list`. Omit = failures "
             "follow --deliver.")
     cron_create.add_argument("--repeat", type=int, help="Optional repeat count")
     cron_create.add_argument("--skill", dest="skills", action="append",
         help="Attach a skill. Repeat to add multiple skills.")
     cron_create.add_argument("--script",
-        help="Path to a script under ~/.hermes/scripts/. Default mode: "
+        help="Path to a script under ~/.akramcode/scripts/. Default mode: "
             "script stdout is injected into the agent's prompt each run. "
             "With --no-agent: the script IS the job and its stdout is "
             "delivered verbatim. .sh/.bash files run via bash, everything "
@@ -50,7 +50,7 @@ def build_cron_parser(subparsers, *, cmd_cron: Callable) -> None:
             "pattern (memory alerts, disk alerts, CI pings).")
     cron_create.add_argument("--monitor-script", dest="monitor_script",
         help="Monitor mode: path to a cheap source script under "
-            "~/.hermes/scripts/ that runs each tick BEFORE the agent. "
+            "~/.akramcode/scripts/ that runs each tick BEFORE the agent. "
             "Unchanged output (exact-bytes hash) suppresses the agent run "
             "entirely; changed output injects a MONITOR CHANGE DETECTED "
             "diff into the prompt. Script output must be stable (no "
@@ -66,10 +66,10 @@ def build_cron_parser(subparsers, *, cmd_cron: Callable) -> None:
     cron_create.add_argument("--model",
         help="Pin this job to a specific inference model (user-owned; the "
             "agent's cronjob tool cannot set this). Omit to follow "
-            "cron.model, then the main agent model (`hermes model`), at fire time.")
+            "cron.model, then the main agent model (`akramcode model`), at fire time.")
     cron_create.add_argument("--pin", dest="pinned", action="store_true", default=None,
         help="Lock the CURRENT main agent model (and its provider) onto this job so later "
-            "`hermes model` changes never touch it. Ignored when --model is given.")
+            "`akramcode model` changes never touch it. Ignored when --model is given.")
     cron_create.add_argument("--provider", dest="model_provider",
         help="Inference provider paired with --model (e.g. 'openrouter', 'nous').")
     cron_create.add_argument("--reasoning-effort", dest="reasoning_effort",
@@ -79,8 +79,8 @@ def build_cron_parser(subparsers, *, cmd_cron: Callable) -> None:
             "clamped by the provider at request time. Omit to follow config.")
     cron_create.add_argument("--interpreter",
         help="Absolute or ~ path to a Python in your own venv (e.g. ~/venvs/report/bin/python) "
-            "for a .py --script / --monitor-script, so it can import packages Hermes does not "
-            "ship. .sh/.bash still run under bash. Omit to use Hermes' Python.")
+            "for a .py --script / --monitor-script, so it can import packages AkramCode does not "
+            "ship. .sh/.bash still run under bash. Omit to use AkramCode' Python.")
     cron_create.add_argument(
         "--continuity", dest="continuity", action="store_const", const=True, default=None,
         help="Each run wakes up with the job's own previous output injected "
@@ -110,7 +110,7 @@ def build_cron_parser(subparsers, *, cmd_cron: Callable) -> None:
         help="Remove a specific attached skill. Repeatable.")
     _flag(cron_edit, "--clear-skills", help="Remove all attached skills from the job")
     cron_edit.add_argument("--script",
-        help="Path to a script under ~/.hermes/scripts/. Pass empty string to clear. "
+        help="Path to a script under ~/.akramcode/scripts/. Pass empty string to clear. "
             "With --no-agent the script IS the job; otherwise its stdout is "
             "injected into the agent's prompt each run.")
     cron_edit.add_argument(
@@ -126,7 +126,7 @@ def build_cron_parser(subparsers, *, cmd_cron: Callable) -> None:
     cron_edit.add_argument("--no-continuity", dest="continuity", action="store_const", const=False,
         help=("Turn off run-to-run continuity (other context_from job refs are preserved)."))
     cron_edit.add_argument("--monitor-script", dest="monitor_script",
-        help="Set/replace the monitor source script (see `hermes cron create "
+        help="Set/replace the monitor source script (see `akramcode cron create "
             "--monitor-script`). Pass empty string to clear.")
     cron_edit.add_argument("--monitor-url", dest="monitor_url",
         help=("Set/replace the monitor source URL. Pass empty string to clear."))
@@ -150,7 +150,7 @@ def build_cron_parser(subparsers, *, cmd_cron: Callable) -> None:
             "the pin and follow config resolution.")
     cron_edit.add_argument("--interpreter",
         help="Absolute or ~ path to a Python for a .py script / monitor script. "
-            "Pass empty string to clear (back to Hermes' Python).")
+            "Pass empty string to clear (back to AkramCode' Python).")
 
     # lifecycle actions
     cron_pause = cron_subparsers.add_parser("pause", help="Pause a scheduled job")

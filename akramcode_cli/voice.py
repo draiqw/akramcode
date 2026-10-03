@@ -29,12 +29,12 @@ _VOICE_NAMED_KEYS = {
 
 # ``useInputHandlers()`` intercepts ctrl+c/d/l (interrupt/quit/clear) before the voice check, so
 # such a binding would be advertised but never fire (same blocklist as the TUI parser). On macOS
-# the CLI's copy/exit/clear bindings also claim ``a-c``/``a-d``/``a-l`` (hermes-ink reports Alt as
+# the CLI's copy/exit/clear bindings also claim ``a-c``/``a-d``/``a-l`` (akramcode-ink reports Alt as
 # ``key.meta``), mirroring the TUI's darwin-only reservation — alt is reserved on darwin only.
 _VOICE_RESERVED_CHARS = frozenset({"c", "d", "l"})
 
 # On macOS the classic CLI's prompt_toolkit bindings for copy / exit / clear also claim ``a-c`` / ``a-d`` /
-# ``a-l`` via the action-modifier lookup, and hermes-ink reports Alt as ``key.meta`` on many terminals.
+# ``a-l`` via the action-modifier lookup, and akramcode-ink reports Alt as ``key.meta`` on many terminals.
 # Mirror the TUI parser's darwin-only reservation so ``option+c`` etc. don't bind Alt+C in the CLI while the
 # TUI silently falls back to Ctrl+B (Copilot round-14 on #19835).
 _DEFAULT_PT_KEY = "c-b"
@@ -61,7 +61,7 @@ def normalize_voice_record_key_for_prompt_toolkit(raw: Any) -> str:
     bare-char / multi-modifier / reserved ``ctrl+c|d|l`` / ``super``-family → the documented default
     ``c-b``; named keys collapse to canonical spelling (``ctrl+return`` → ``c-enter``). Exactly one
     modifier: multi-modifier chords bind different shortcuts in prompt_toolkit (a-c-r) and
-    hermes-ink rejects them; a bare key is refused by the TUI parser.
+    akramcode-ink rejects them; a bare key is refused by the TUI parser.
 
     * ``super`` / ``win`` / ``windows`` → ``c-b`` (TUI-only modifiers — prompt_toolkit has no super mod; the
     CLI binding site is expected to warn when this fallback fires so users see the cross-runtime split,
@@ -116,10 +116,10 @@ logger = logging.getLogger(__name__)
 
 
 def _debug(msg: str) -> None:
-    """HERMES_VOICE_DEBUG=1 breadcrumb on stderr (the TUI gateway shows it as a gateway.stderr
+    """AKRAMCODE_VOICE_DEBUG=1 breadcrumb on stderr (the TUI gateway shows it as a gateway.stderr
     Activity line). Broken pipes are swallowed: this fires from background threads where a dead
     stderr must not kill the gateway — the stdin/stdout command pipe is what matters."""
-    if os.environ.get("HERMES_VOICE_DEBUG", "").strip() == "1":
+    if os.environ.get("AKRAMCODE_VOICE_DEBUG", "").strip() == "1":
         with contextlib.suppress(BrokenPipeError, OSError):
             print(f"[voice] {msg}", file=sys.stderr, flush=True)
 
@@ -604,8 +604,8 @@ def _speak_whole_file(text: str) -> None:
 
     # Pre-chosen MP3 path so we can play MP3 even when text_to_speech_tool auto-converts to OGG
     # for messaging platforms (afplay's OGG is flaky).
-    os.makedirs(os.path.join(tempfile.gettempdir(), "hermes_voice"), exist_ok=True)
-    mp3_path = os.path.join(tempfile.gettempdir(), "hermes_voice", f"tts_{time.strftime('%Y%m%d_%H%M%S')}.mp3")
+    os.makedirs(os.path.join(tempfile.gettempdir(), "akramcode_voice"), exist_ok=True)
+    mp3_path = os.path.join(tempfile.gettempdir(), "akramcode_voice", f"tts_{time.strftime('%Y%m%d_%H%M%S')}.mp3")
     _debug(f"speak_text: synthesizing {len(tts_text)} chars -> {mp3_path}")
     raw_result = text_to_speech_tool(text=tts_text, output_path=mp3_path)
     try:

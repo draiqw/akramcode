@@ -1,4 +1,4 @@
-"""``hermes doctor`` dead-IPv6 probe (#114265 secondary finding 1).
+"""``akramcode doctor`` dead-IPv6 probe (#114265 secondary finding 1).
 
 An advertised-but-blackholed IPv6 route stalls every serial connect for the full timeout;
 the racer hides most of it, but nothing told the user that ``network.force_ipv4`` exists.

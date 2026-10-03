@@ -1,4 +1,4 @@
-"""A dead-stalled network fetch ends `hermes update` with an error, never a hang (#93759, #95777).
+"""A dead-stalled network fetch ends `akramcode update` with an error, never a hang (#93759, #95777).
 
 `_git_run(network=True)` bounds the wait; a `TimeoutExpired` becomes a failed
 CompletedProcess whose stderr names the stall, so every caller's existing

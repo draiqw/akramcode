@@ -107,17 +107,17 @@ class _TrackingMixin:
     ProgrammingError) would leave the FD open while the byte-probe guard thinks nothing is live.
     """
 
-    _hermes_tracked_path: str | None = None
+    _akramcode_tracked_path: str | None = None
 
     def close(self) -> None:  # type: ignore[misc]
         with _live_lock:
-            path = getattr(self, "_hermes_tracked_path", None)
+            path = getattr(self, "_akramcode_tracked_path", None)
             # Close first; untrack only once the descriptor is actually gone. Untracking before a failing
             # close (e.g. cross-thread ProgrammingError) leaves the FD open while the byte-probe guard
             # thinks nothing is live — see #75629.
             super().close()  # type: ignore[misc]
             if path is not None:
-                self._hermes_tracked_path = None
+                self._akramcode_tracked_path = None
                 untrack_connection(path)
 
 
@@ -165,7 +165,7 @@ def connect_tracked(
                 # simulating FTS5-less runtimes do this). Retag the instance's class so close()
                 # still releases the registry entry rather than silently losing probe safety.
                 conn = _retrofit_tracking(conn, resolved)
-            conn._hermes_tracked_path = resolved
+            conn._akramcode_tracked_path = resolved
             _track_key(resolved)
             return conn
         except Exception:

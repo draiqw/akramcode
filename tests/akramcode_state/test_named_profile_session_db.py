@@ -12,7 +12,7 @@ These tests pin the fail-closed contract: an unopenable profile store raises a
 clear error (no agent turn), and NO path — deferred build or the
 ``_init_session`` cwd hydration — touches the launch ``state.db`` instead.
 
-#88532 made SessionStore follow HERMES_HOME; this covers the TUI/agent
+#88532 made SessionStore follow AKRAMCODE_HOME; this covers the TUI/agent
 SessionDB handle. Related to #87723 and #89789.
 """
 
@@ -31,11 +31,11 @@ from akramcode_state import SessionDB
 
 @pytest.fixture
 def homes(tmp_path, monkeypatch):
-    root = tmp_path / "hermes"
+    root = tmp_path / "akramcode"
     profile = root / "profiles" / "worker"
     root.mkdir(parents=True)
     profile.mkdir(parents=True)
-    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(root))
     monkeypatch.setattr(akramcode_state, "DEFAULT_DB_PATH", akramcode_state._IMPORT_DEFAULT_DB_PATH)
     return root, profile
 
@@ -212,13 +212,13 @@ def test_init_session_skips_launch_db_when_profile_store_unopenable(homes, monke
 
 
 def _stub_rebuild_env(monkeypatch, server, launch) -> list[str]:
-    """Neutralize the rebuild's side paths; returns the HERMES_HOME seen by each _make_agent call."""
+    """Neutralize the rebuild's side paths; returns the AKRAMCODE_HOME seen by each _make_agent call."""
     homes_seen: list[str] = []
 
     def fake_make_agent(_sid, _key, *, session_db=None, **_kw):
-        from hermes_constants import get_hermes_home
+        from akramcode_constants import get_akramcode_home
 
-        homes_seen.append(str(get_hermes_home()))
+        homes_seen.append(str(get_akramcode_home()))
         return SimpleNamespace(_session_db=session_db, _owns_session_db=False)
 
     monkeypatch.setattr(server, "_get_db", lambda: launch)
@@ -234,9 +234,9 @@ def test_bot_capability_rebuild_stays_on_the_profile_store(homes, monkeypatch):
     """A Bot Chat capability refresh must not migrate the session onto the launch profile.
 
     ``_sync_bot_capabilities`` swaps in a fresh agent for a LIVE session at turn start. It used to call
-    ``_make_agent`` with neither the session's ``state.db`` handle nor its HERMES_HOME, so the replacement
+    ``_make_agent`` with neither the session's ``state.db`` handle nor its AKRAMCODE_HOME, so the replacement
     agent bound the launch ``_get_db()`` handle and built its prompt/skills from the launch profile: every
-    later turn of a named-profile bot appended to ``~/.hermes/state.db`` under the same session id while the
+    later turn of a named-profile bot appended to ``~/.akramcode/state.db`` under the same session id while the
     desktop replayed ``profiles/<bot>/state.db`` and showed a stale transcript (#104079).
     """
     root, profile = homes

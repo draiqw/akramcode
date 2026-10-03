@@ -107,10 +107,10 @@ def _capture_update(monkeypatch, results) -> tuple[str, list[tuple[str, str, boo
 
 
 def test_do_list_platform_env_is_ignored(three_source_env, monkeypatch):
-    """`hermes skills list` reads the active profile's config via
-    HERMES_HOME (swapped by -p), so it must NOT pass a platform arg to
+    """`akramcode skills list` reads the active profile's config via
+    AKRAMCODE_HOME (swapped by -p), so it must NOT pass a platform arg to
     ``get_disabled_skill_names`` — otherwise per-platform overrides
-    would silently leak in from HERMES_PLATFORM env."""
+    would silently leak in from AKRAMCODE_PLATFORM env."""
     from agent import skill_utils
 
     seen = {}
@@ -318,8 +318,8 @@ def test_inspect_reuses_one_ssrf_safe_client_for_metadata_and_bundle(monkeypatch
     class Source:
         def inspect(self, _identifier):
             hub._guarded_http_get("https://example.com/metadata")
-            # The Hermes-index fetch must ride the same pool (no cache → real GET).
-            assert search._load_hermes_index() == {"skills": []}
+            # The AkramCode-index fetch must ride the same pool (no cache → real GET).
+            assert search._load_akramcode_index() == {"skills": []}
             return SkillMeta("example", "metadata", "test", "example/id", "community")
 
         def fetch(self, _identifier):
@@ -336,7 +336,7 @@ def test_inspect_reuses_one_ssrf_safe_client_for_metadata_and_bundle(monkeypatch
     monkeypatch.setattr(hub, "create_ssrf_safe_client", create_client, raising=False)
     monkeypatch.setattr(hub, "is_safe_url", lambda _url: True)
     monkeypatch.setattr(hub, "check_website_access", lambda _url: None)
-    monkeypatch.setattr(search, "_hermes_index_cache_file", lambda: tmp_path / "hermes-index.json")
+    monkeypatch.setattr(search, "_akramcode_index_cache_file", lambda: tmp_path / "akramcode-index.json")
     monkeypatch.setattr(search.httpx, "get", lambda *_a, **_k: pytest.fail("index fetch bypassed the pool"))
 
     result = cli_hub.inspect_skill("example/id")
@@ -444,7 +444,7 @@ def _install_mocks(monkeypatch, tmp_path, source_factory, category_hint=""):
 
 
 # ---------------------------------------------------------------------------
-# Regression: full identifier must be recoverable from `hermes skills search`
+# Regression: full identifier must be recoverable from `akramcode skills search`
 # even when the slug is too long to fit the terminal width (issue #33674).
 # ---------------------------------------------------------------------------
 

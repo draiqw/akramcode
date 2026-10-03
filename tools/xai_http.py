@@ -33,8 +33,8 @@ def has_xai_credentials() -> bool:
     if (get_secret("XAI_API_KEY", "") or "").strip():
         return True
     try:
-        from akramcode_constants import get_hermes_home
-        auth_path = get_hermes_home() / "auth.json"
+        from akramcode_constants import get_akramcode_home
+        auth_path = get_akramcode_home() / "auth.json"
         if not auth_path.exists():
             return False
         store = json.loads(auth_path.read_text(encoding="utf-8-sig"))
@@ -49,18 +49,18 @@ def has_xai_credentials() -> bool:
         return False
 
 
-def hermes_xai_user_agent() -> str:
-    """Return a stable Hermes-specific User-Agent for xAI HTTP calls."""
+def akramcode_xai_user_agent() -> str:
+    """Return a stable AkramCode-specific User-Agent for xAI HTTP calls."""
     try:
         from akramcode_cli.version_info import get_version_info
-        return f"Hermes-Agent/{get_version_info().base_version}"
+        return f"AkramCode-Agent/{get_version_info().base_version}"
     except Exception:
-        return "Hermes-Agent/unknown"
+        return "AkramCode-Agent/unknown"
 
 
-def hermes_xai_default_headers() -> Dict[str, str]:
+def akramcode_xai_default_headers() -> Dict[str, str]:
     """Default headers for OpenAI-SDK and raw HTTP clients talking to xAI (replaces the SDK User-Agent)."""
-    return {"User-Agent": hermes_xai_user_agent()}
+    return {"User-Agent": akramcode_xai_user_agent()}
 
 
 _TRUE_WORDS = {"1", "true", "yes", "on", "enabled"}
@@ -141,13 +141,13 @@ def xai_storage_notice_text(section_name: str) -> str:
 
 
 def maybe_mark_xai_storage_notice_seen(section_name: str) -> Optional[str]:
-    """Return the storage notice once per Hermes home, then mark it seen."""
+    """Return the storage notice once per AkramCode home, then mark it seen."""
     notice = xai_storage_notice_text(section_name)
     if not notice:
         return None
     try:
-        from akramcode_constants import get_hermes_home
-        marker_dir = get_hermes_home() / "state"
+        from akramcode_constants import get_akramcode_home
+        marker_dir = get_akramcode_home() / "state"
         marker_dir.mkdir(parents=True, exist_ok=True)
         marker = marker_dir / f"{section_name}_xai_storage_notice_seen"
         if marker.exists():
@@ -169,9 +169,9 @@ def _resolve_explicit_xai_api_key() -> str:
 
 
 def _xai_base_url_override() -> str:
-    """``HERMES_XAI_BASE_URL`` then ``XAI_BASE_URL``, stripped; '' when unset."""
+    """``AKRAMCODE_XAI_BASE_URL`` then ``XAI_BASE_URL``, stripped; '' when unset."""
     from akramcode_cli.config import get_env_value
-    return str(get_env_value("HERMES_XAI_BASE_URL") or get_env_value("XAI_BASE_URL") or "").strip().rstrip("/")
+    return str(get_env_value("AKRAMCODE_XAI_BASE_URL") or get_env_value("XAI_BASE_URL") or "").strip().rstrip("/")
 
 
 def resolve_xai_http_credentials(
@@ -179,21 +179,21 @@ def resolve_xai_http_credentials(
 ) -> Dict[str, str]:
     """Resolve bearer credentials for direct xAI HTTP endpoints.
 
-    Default order: Hermes-managed xAI OAuth, then ``XAI_API_KEY`` (via ``get_env_value`` so
-    ``~/.hermes/.env`` keys count). ``prefer_api_key=True`` inverts that for API-metered
+    Default order: AkramCode-managed xAI OAuth, then ``XAI_API_KEY`` (via ``get_env_value`` so
+    ``~/.akramcode/.env`` keys count). ``prefer_api_key=True`` inverts that for API-metered
     endpoints where the subscription OAuth bearer authorizes but misbehaves (x_search answers
-    without citations, TTS 403s). Both branches honor ``HERMES_XAI_BASE_URL``/``XAI_BASE_URL``
+    without citations, TTS 403s). Both branches honor ``AKRAMCODE_XAI_BASE_URL``/``XAI_BASE_URL``
     behind the same origin-pinning validation. ``force_refresh=True`` forces an OAuth refresh;
     pass the rejected bearer as ``api_key_hint`` so a multi-account pool refreshes the issuing
     entry, not whichever its strategy selects first.
 
-    Prefers Hermes-managed xAI OAuth credentials when available, then falls back to ``XAI_API_KEY`` resolved
-    via ``akramcode_cli.config.get_env_value`` so keys stored in ``~/.hermes/.env`` (the standard Hermes
+    Prefers AkramCode-managed xAI OAuth credentials when available, then falls back to ``XAI_API_KEY`` resolved
+    via ``akramcode_cli.config.get_env_value`` so keys stored in ``~/.akramcode/.env`` (the standard AkramCode
     location) are honored — not just ones already exported into ``os.environ``. This keeps direct xAI
     endpoints (images, TTS, STT, etc.) aligned with the main runtime auth model and preserves the regression
     contract from PR #17140 / #17163.
     The key is read through :func:`tools.tool_backend_helpers.resolve_provider_secret` so profile secret
-    scoping is identical to the fallback branch, and the base URL honors ``HERMES_XAI_BASE_URL`` /
+    scoping is identical to the fallback branch, and the base URL honors ``AKRAMCODE_XAI_BASE_URL`` /
     ``XAI_BASE_URL`` behind the same origin-pinning validation as the OAuth branch. See #87045, #88040.
     """
     import akramcode_cli.auth as auth_mod

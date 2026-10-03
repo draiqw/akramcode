@@ -1,4 +1,4 @@
-"""``hermes doctor`` connectivity probe for Azure Foundry Anthropic-style endpoints (#66756).
+"""``akramcode doctor`` connectivity probe for Azure Foundry Anthropic-style endpoints (#66756).
 
 The ``/anthropic`` route on Foundry has no ``GET /models``; a working deployment answered the generic
 Bearer ``/models`` probe with HTTP 404. The probe must follow the runtime protocol instead:

@@ -5,9 +5,9 @@ from utils import file_signature
 
 
 def _make_cli(tmp_path, mcp_servers=None, extra_config=None):
-    """Create a minimal HermesCLI instance with mocked config."""
+    """Create a minimal AkramCodeCLI instance with mocked config."""
     import cli as cli_mod
-    obj = object.__new__(cli_mod.HermesCLI)
+    obj = object.__new__(cli_mod.AkramCodeCLI)
     cfg = {"mcp_servers": mcp_servers or {}}
     if extra_config:
         cfg.update(extra_config)
@@ -35,7 +35,7 @@ class TestMCPConfigWatch:
 
     def test_new_mcp_server_triggers_reload(self, tmp_path):
         """Adding a new MCP server to config triggers auto-reload."""
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
         obj, cfg_file = _make_cli(tmp_path, mcp_servers={})
 
         # Simulate user adding a new MCP server to config.yaml
@@ -49,7 +49,7 @@ class TestMCPConfigWatch:
 
     def test_removed_mcp_server_triggers_reload(self, tmp_path):
         """Removing an MCP server from config triggers auto-reload."""
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
         obj, cfg_file = _make_cli(tmp_path, mcp_servers={"github": {"url": "https://mcp.github.com"}})
 
         # Simulate user removing the server
@@ -76,7 +76,7 @@ class TestMCPConfigWatch:
         flipping the toggle and editing mcp_servers in one edit behaves
         correctly.
         """
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
         obj, cfg_file = _make_cli(
             tmp_path,
             mcp_servers={},
@@ -101,7 +101,7 @@ class TestMCPConfigWatch:
         """After an opted-out change, the watcher must not re-notify every
         tick: the snapshot is updated so the same content compares equal on
         the next pass."""
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
         obj, cfg_file = _make_cli(tmp_path, mcp_servers={})
 
         cfg_file.write_text(yaml.safe_dump({
@@ -127,7 +127,7 @@ class TestMCPConfigWatch:
 
         A config that sets ONLY ``auxiliary.mcp.auto_reload_on_config_change:
         false`` must NOT disable the reload."""
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
         obj, cfg_file = _make_cli(
             tmp_path,
             mcp_servers={},
@@ -158,7 +158,7 @@ class TestMCPConfigWatch:
         save_config_value('agent.reasoning_effort', ...) from /reasoning)
         fired a full MCP reconnect.
         """
-        import akram_core.hermes_yaml as yaml
+        import akram_core.akramcode_yaml as yaml
         monkeypatch.setenv("MCP_GH_API_KEY", "sekrit-token")
 
         raw_servers = {
@@ -202,12 +202,12 @@ def test_tui_init_run_state_seeds_config_sig_when_config_exists(monkeypatch):
     import cli as cli_mod
 
     # Bare object: skip the tool-callback / security wiring at the end of the init.
-    monkeypatch.setenv("HERMES_DEFER_AGENT_STARTUP", "1")
+    monkeypatch.setenv("AKRAMCODE_DEFER_AGENT_STARTUP", "1")
     cfg_file = get_config_path()
     cfg_file.parent.mkdir(parents=True, exist_ok=True)
     cfg_file.write_text("mcp_servers: {}\n")
 
-    obj = object.__new__(cli_mod.HermesCLI)
+    obj = object.__new__(cli_mod.AkramCodeCLI)
     obj.config = {"mcp_servers": {}}
     obj._tui_init_run_state()
 

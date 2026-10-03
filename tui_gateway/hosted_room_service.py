@@ -39,7 +39,7 @@ _RETRYABLE_STATUSES = ("indeterminate", "deferred")
 
 def _hosted_room_turn_timeout_seconds() -> float:
     try:
-        agent_timeout = float(os.getenv("HERMES_AGENT_TIMEOUT", "1800"))
+        agent_timeout = float(os.getenv("AKRAMCODE_AGENT_TIMEOUT", "1800"))
     except (TypeError, ValueError):
         agent_timeout = 0.0
     return (agent_timeout if agent_timeout > 0 else 1800.0) + _HOSTED_ROOM_TERMINAL_GRACE_SECONDS
@@ -128,7 +128,7 @@ class HostedRoomService:
 
         profiles, profiles_dir = {"default"}, self.root / "profiles"
         if profiles_dir.is_dir():
-            # ``profiles/.deleted/`` is the tombstone dir `hermes profile delete` leaves behind, not a
+            # ``profiles/.deleted/`` is the tombstone dir `akramcode profile delete` leaves behind, not a
             # profile: feeding it to validate_roster failed plan_next_task on every cycle (#106847).
             # Marker-less dirs (cron/log side-effect shells) are not profiles either.
             profiles.update(

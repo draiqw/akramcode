@@ -93,8 +93,8 @@ _PY_SKIP = ("docs/", "website/") + _FRONTEND
 # Python lane — otherwise dropping a redirect URI goes green here and breaks
 # every CIMD login on main.
 # docs/ and website/scripts/ are asserted about the same way. The docs
-# tree generates llms.txt — the index every LLM (Hermes included, via the
-# hermes-agent skill) reads to learn what Hermes can do — and
+# tree generates llms.txt — the index every LLM (AkramCode included, via the
+# akramcode-agent skill) reads to learn what AkramCode can do — and
 # tests/website/test_generate_llms_txt.py holds every page to appearing in it.
 # Skipping Python on a docs-only PR is how the index drifted to 53% coverage.
 _PY_RELEVANT_SITE = (
@@ -142,7 +142,7 @@ _MCP_CATALOG_FILES = {"akramcode_cli/mcp_catalog.py"}
 # (the .rs/Cargo files are the ``rust`` lane's job). Changes here get the
 # bootstrap-installer.yml lane — a real sandboxed install + stamp check.
 _BOOTSTRAP_PATHS = ("apps/bootstrap-installer/",)
-_BOOTSTRAP_FILES = {"scripts/install.sh", "setup-hermes.sh"}
+_BOOTSTRAP_FILES = {"scripts/install.sh", "setup-akramcode.sh"}
 # Windows desktop-update hand-off (scripts/desktop-update/windows.ps1 + the
 # Electron side that launches it) and the pytest files that spawn it.
 # tests/_fixtures/ holds the conftest's platform gating, so it re-arms the lane too.
@@ -155,7 +155,7 @@ _DESKTOP_UPDATER_FILES = {
     "pyproject.toml",
 }
 
-# Rust crates — currently just the Tauri bootstrap installer (Hermes-Setup).
+# Rust crates — currently just the Tauri bootstrap installer (AkramCode-Setup).
 # These live under ``apps/``, so before this lane existed a ``.rs`` edit matched
 # ``frontend`` and nothing more: the TypeScript matrix built, cargo never ran,
 # and the crate's unit tests had never executed in CI at all.
@@ -206,7 +206,7 @@ _E2E_LANES: dict[str, tuple[str, ...]] = {
         "tests/compat/",
         "pm/",
         "scripts/install.",
-        "setup-hermes.sh",
+        "setup-akramcode.sh",
         "akramcode_cli/update_",
         "akramcode_cli/_update_",
         "akramcode_cli/old_updater",
@@ -278,7 +278,7 @@ def _py_irrelevant(p: str) -> bool:
 def _py_test_only(p: str) -> bool:
     """Is ``p`` inside the test suite (never shipped / imported by the product)?
 
-    Product jobs (Desktop E2E's ``hermes serve`` backend, the Docker image)
+    Product jobs (Desktop E2E's ``akramcode serve`` backend, the Docker image)
     run installed code — nothing under ``tests/`` is packaged or importable
     there. scripts/run_tests.sh and scripts/run_tests_parallel.py are deliberately
     NOT test-only: they are runner infrastructure, and a bad edit there can
@@ -356,7 +356,7 @@ def classify(files: list[str], run_e2e: bool = False) -> dict[str, bool]:
     deps = any(f == "pyproject.toml" for f in files)
     npm_lock = any(f.split("/")[-1] == "package-lock.json" for f in files)
     docker_meta = any(f.startswith(_DOCKER_META) for f in files)
-    
+
     ret = {
         "python": python,
         "python_prod": python_prod,

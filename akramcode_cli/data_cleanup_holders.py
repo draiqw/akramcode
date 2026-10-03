@@ -23,7 +23,7 @@ def _drain_manual_gateway(home: Path) -> None:
         if get_running_pid_identity_strict(home / "gateway.pid") is not None:
             raise RuntimeError(f"gateway has no usable control socket for {home}; stop it through its owner and retry")
         return
-    if not identity.get("hermes_home") or Path(identity["hermes_home"]).resolve() != home:
+    if not identity.get("akramcode_home") or Path(identity["akramcode_home"]).resolve() != home:
         raise RuntimeError(f"gateway control identity does not match {home}")
     owner = identity.get("supervisor")
     if owner != "manual":
@@ -51,10 +51,10 @@ def _drain_manual_gateway(home: Path) -> None:
 
 
 def _refuse_backend_writers(home: Path) -> None:
-    from akramcode_constants import get_default_hermes_root
+    from akramcode_constants import get_default_akramcode_root
     from akramcode_cli.process_identity import LEDGER_FILENAME, _pid_alive_matches, _read_ledger
 
-    root = get_default_hermes_root(home=home).resolve()
+    root = get_default_akramcode_root(home=home).resolve()
     rows = _read_ledger(root / LEDGER_FILENAME)
     if rows is None:
         raise RuntimeError(f"cannot read backend ownership: {root / LEDGER_FILENAME}")
@@ -102,11 +102,11 @@ def _refuse_cron_writers(home: Path) -> None:
 
 
 def _refuse_multiplexer(home: Path) -> None:
-    from akramcode_constants import get_default_hermes_root
+    from akramcode_constants import get_default_akramcode_root
     from gateway.control_socket import identify_gateway
     from gateway.status import get_running_pid_identity_strict
 
-    root = get_default_hermes_root(home=home).resolve()
+    root = get_default_akramcode_root(home=home).resolve()
     if home == root:
         return
     identity = identify_gateway(root)

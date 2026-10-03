@@ -115,7 +115,7 @@ def oauth_fixture(mode="success"):
 
 
 def run_cli(repo, mode):
-    with tempfile.TemporaryDirectory(prefix="hermes-device-wire-") as directory, oauth_fixture(mode) as (base, wire):
+    with tempfile.TemporaryDirectory(prefix="akramcode-device-wire-") as directory, oauth_fixture(mode) as (base, wire):
         home = Path(directory)
         oauth = {"flow": "device", "cimd": False, "scope": "fixture.read", "timeout": 15}
         if mode == "preregistered":
@@ -132,8 +132,8 @@ def run_cli(repo, mode):
             for filename, value in previous.items():
                 (token_dir / filename).write_text(value)
         env = {key: value for key, value in os.environ.items()
-               if not key.startswith("HERMES_") and not any(part in key for part in ("API_KEY", "TOKEN", "SECRET"))}
-        env.update(HOME=str(home), HERMES_HOME=str(home), PYTHONPATH=str(repo), PYTHONDONTWRITEBYTECODE="1")
+               if not key.startswith("AKRAMCODE_") and not any(part in key for part in ("API_KEY", "TOKEN", "SECRET"))}
+        env.update(HOME=str(home), AKRAMCODE_HOME=str(home), PYTHONPATH=str(repo), PYTHONDONTWRITEBYTECODE="1")
         command = ["reauth", "fixture"] if mode == "preregistered" else ["login", "fixture", "--flow", "device"]
         argv = [sys.executable, "-m", "akramcode_cli.main", "mcp", *command]
         if mode == "persistence":

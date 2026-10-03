@@ -4,7 +4,7 @@ from akramcode_cli.web_server import _SESSION_TOKEN, app
 from fastapi.testclient import TestClient
 
 client = TestClient(app)
-HEADERS = {"X-Hermes-Session-Token": _SESSION_TOKEN}
+HEADERS = {"X-AkramCode-Session-Token": _SESSION_TOKEN}
 
 
 def test_expired_claude_code_token_is_not_connected(monkeypatch):
@@ -55,7 +55,7 @@ def test_disconnect_is_not_success_when_nothing_was_cleared(monkeypatch):
 def test_disconnect_failure_does_not_echo_the_store_error(monkeypatch):
     from akramcode_cli import auth as auth_mod
 
-    secret = "auth store is read-only: /secret/hermes-home"
+    secret = "auth store is read-only: /secret/akramcode-home"
 
     def fail_clear(_provider):
         raise OSError(secret)

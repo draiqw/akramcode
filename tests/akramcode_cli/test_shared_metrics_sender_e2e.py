@@ -107,21 +107,21 @@ def _endpoint(server):
 
 def _add(store, package_id, day="2026-08-26", metrics=1):
     payload = {
-        "schema_version": "hermes.shared_metrics.v2",
+        "schema_version": "akramcode.shared_metrics.v2",
         "package_id": package_id,
         "install_id": INSTALL_ID,
         "generated_at": f"{day}T01:00:00Z",
         "period_start": f"{day}T00:00:00Z",
         "period_end": f"{day}T23:59:59Z",
         "resource": {
-            "hermes_version": "0.20.5",
+            "akramcode_version": "0.20.5",
             "os_family": "macos",
             "architecture": "arm64",
             "install_method": "git",
         },
         "metrics": [
             {
-                "name": f"hermes.metric.{i}",
+                "name": f"akramcode.metric.{i}",
                 "type": "counter",
                 "dimensions": {"outcome": "ok"},
                 "value": i,

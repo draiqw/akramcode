@@ -433,7 +433,7 @@ class TestResolutionOrder:
 
 
 # ---------------------------------------------------------------------------
-# hermes tools picker: tier variant rows
+# akramcode tools picker: tier variant rows
 # ---------------------------------------------------------------------------
 
 

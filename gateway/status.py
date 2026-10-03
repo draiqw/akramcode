@@ -1,4 +1,4 @@
-"""Gateway runtime status helpers: PID/lock/marker files under ``{HERMES_HOME}`` (one set per
+"""Gateway runtime status helpers: PID/lock/marker files under ``{AKRAMCODE_HOME}`` (one set per
 home/profile) that tell whether the gateway daemon is running."""
 
 import asyncio
@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, NamedTuple, Optional
 
-from akramcode_constants import _get_platform_default_hermes_home, get_hermes_home, get_process_hermes_home
+from akramcode_constants import _get_platform_default_akramcode_home, get_akramcode_home, get_process_akramcode_home
 from akramcode_cli._subprocess_compat import pid_exists_stdlib
 from utils import atomic_json_write
 
@@ -30,7 +30,7 @@ if sys.platform == "win32":
 else:
     import fcntl
 
-_GATEWAY_KIND = "hermes-gateway"
+_GATEWAY_KIND = "akramcode-gateway"
 _RUNTIME_STATUS_FILE = "gateway_state.json"
 _LOCKS_DIRNAME = "gateway-locks"
 _IS_WINDOWS = sys.platform == "win32"
@@ -201,7 +201,7 @@ def record_start_and_check_storm(
     """Record this start; :class:`StormInfo` when > ``max_starts`` landed in ``window_s``.
     Best-effort: a broken ``gateway-starts.log`` ledger is logged and swallowed, never fatal."""
     try:
-        path = get_hermes_home() / "gateway-starts.log"
+        path = get_akramcode_home() / "gateway-starts.log"
         path.parent.mkdir(parents=True, exist_ok=True)
         now = datetime.now(timezone.utc).timestamp()
         existing: list[float] = []
@@ -230,37 +230,37 @@ def record_start_and_check_storm(
         return None
 
 
-def _get_process_hermes_home() -> Path:
-    """Launch-home HERMES_HOME for identity files (PID, lock, status, markers):
-    ``get_hermes_home()`` honors the per-session ``_HERMES_HOME_OVERRIDE`` and would misroute
+def _get_process_akramcode_home() -> Path:
+    """Launch-home AKRAMCODE_HOME for identity files (PID, lock, status, markers):
+    ``get_akramcode_home()`` honors the per-session ``_AKRAMCODE_HOME_OVERRIDE`` and would misroute
     them."""
-    return get_process_hermes_home()
+    return get_process_akramcode_home()
 
 
-def _canonical_hermes_home(path: Path | str) -> Path:
-    """Stable absolute HERMES_HOME path for persisted identity data."""
+def _canonical_akramcode_home(path: Path | str) -> Path:
+    """Stable absolute AKRAMCODE_HOME path for persisted identity data."""
     return Path(path).expanduser().resolve(strict=False)
 
 
-def _same_hermes_home(left: Path | str, right: Path | str) -> bool:
-    """Compare HERMES_HOME paths with the host platform's case semantics."""
-    left_c = os.path.normcase(str(_canonical_hermes_home(left)))
-    return left_c == os.path.normcase(str(_canonical_hermes_home(right)))
+def _same_akramcode_home(left: Path | str, right: Path | str) -> bool:
+    """Compare AKRAMCODE_HOME paths with the host platform's case semantics."""
+    left_c = os.path.normcase(str(_canonical_akramcode_home(left)))
+    return left_c == os.path.normcase(str(_canonical_akramcode_home(right)))
 
 
 def recorded_gateway_home_conflicts(
     record: Optional[dict[str, Any]], *, expected_home: Optional[Path | str] = None
 ) -> bool:
-    """True when a persisted gateway record names a DIFFERENT HERMES_HOME (cross-profile kill guard:
+    """True when a persisted gateway record names a DIFFERENT AKRAMCODE_HOME (cross-profile kill guard:
     profile B's stop must never SIGTERM profile A). ``expected_home`` overrides the comparison base.
-    Legacy records without ``hermes_home`` prove nothing -> False; a comparison failure fails
+    Legacy records without ``akramcode_home`` prove nothing -> False; a comparison failure fails
     closed -> True."""
-    recorded_home = record.get("hermes_home") if isinstance(record, dict) else None
+    recorded_home = record.get("akramcode_home") if isinstance(record, dict) else None
     if not isinstance(recorded_home, str) or not recorded_home.strip():
         return False
     try:
-        base = expected_home if expected_home is not None else _get_process_hermes_home()
-        return not _same_hermes_home(recorded_home, base)
+        base = expected_home if expected_home is not None else _get_process_akramcode_home()
+        return not _same_akramcode_home(recorded_home, base)
     except Exception:
         return True
 
@@ -273,34 +273,34 @@ _PROFILE_LABEL_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
 def _profile_label_for_home(home: Path | str) -> Optional[str]:
     """Best-effort label: ``<root>/profiles/<name>`` -> name, root home -> "default", else None."""
     try:
-        canonical = _canonical_hermes_home(home)
+        canonical = _canonical_akramcode_home(home)
     except Exception:
         return None
     if canonical.parent.name == "profiles" and _PROFILE_LABEL_RE.match(canonical.name):
         return canonical.name
     import akramcode_constants
-    default_homes = (akramcode_constants.get_default_hermes_root, _get_platform_default_hermes_home)
+    default_homes = (akramcode_constants.get_default_akramcode_root, _get_platform_default_akramcode_home)
     for default_home in default_homes:
         with contextlib.suppress(Exception):
-            if _same_hermes_home(canonical, default_home()):
+            if _same_akramcode_home(canonical, default_home()):
                 return "default"
     return None
 
 
 def scoped_lock_owner_label(record: Optional[dict[str, Any]]) -> Optional[str]:
     """Profile label of a scoped-lock owner (None: PID-only wording): the validated ``profile``
-    field stamped by :func:`acquire_scoped_lock`, else inferred from ``hermes_home`` (old locks)."""
+    field stamped by :func:`acquire_scoped_lock`, else inferred from ``akramcode_home`` (old locks)."""
     if not isinstance(record, dict):
         return None
     profile = record.get("profile")
     if isinstance(profile, str) and _PROFILE_LABEL_RE.match(profile.strip()):
         return profile.strip()
-    home = record.get("hermes_home")
+    home = record.get("akramcode_home")
     return _profile_label_for_home(home) if isinstance(home, str) and home.strip() else None
 
 
 def _get_pid_path() -> Path:
-    return _get_process_hermes_home() / "gateway.pid"
+    return _get_process_akramcode_home() / "gateway.pid"
 
 
 def _get_gateway_lock_path(pid_path: Optional[Path] = None) -> Path:
@@ -308,26 +308,26 @@ def _get_gateway_lock_path(pid_path: Optional[Path] = None) -> Path:
 
 
 def _get_runtime_status_path() -> Path:
-    return _get_process_hermes_home() / _RUNTIME_STATUS_FILE
+    return _get_process_akramcode_home() / _RUNTIME_STATUS_FILE
 
 
 def _get_lock_dir() -> Path:
-    """Cross-profile rendezvous dir for machine-local locks; ``HERMES_GATEWAY_LOCK_DIR`` overrides.
+    """Cross-profile rendezvous dir for machine-local locks; ``AKRAMCODE_GATEWAY_LOCK_DIR`` overrides.
 
     Scope is the **OS user**, not the kernel host: separate users have separate ``$HOME``s,
-    separate ``~/.hermes`` profile roots and separate credentials, so "one gateway per host"
+    separate ``~/.akramcode`` profile roots and separate credentials, so "one gateway per host"
     means "one per host per OS user". Holds the token-scoped locks (:func:`acquire_scoped_lock`)
     and the host-role lock + rendezvous record (``gateway/host_rendezvous.py``); the per-home
-    ``gateway.pid``/``gateway.lock`` above deliberately stay under each profile's HERMES_HOME.
+    ``gateway.pid``/``gateway.lock`` above deliberately stay under each profile's AKRAMCODE_HOME.
     """
-    override = os.getenv("HERMES_GATEWAY_LOCK_DIR")
+    override = os.getenv("AKRAMCODE_GATEWAY_LOCK_DIR")
     if override:
         return Path(override)
     # XDG spec: a relative $XDG_STATE_HOME is INVALID and must be ignored. Honouring one made the
     # lock dir CWD-relative, so two serves started from different directories shared no singleton.
     state_home_env = os.getenv("XDG_STATE_HOME") or ""
     state_home = Path(state_home_env) if os.path.isabs(state_home_env) else Path.home() / ".local" / "state"
-    return state_home / "hermes" / _LOCKS_DIRNAME
+    return state_home / "akramcode" / _LOCKS_DIRNAME
 
 
 def _utc_now_iso() -> str:
@@ -375,11 +375,11 @@ def retained_gateway_state(runtime: Any) -> str:
     ``"startup_failed"`` (or a watchdog-stamped ``"degraded"``) only while the operator still
     wants it running, else ``"stopped"``.
 
-    ``hermes gateway stop`` keeps the last ``startup_failed`` + ``exit_reason`` on disk for
+    ``akramcode gateway stop`` keeps the last ``startup_failed`` + ``exit_reason`` on disk for
     diagnostics and records the durable stop intent as ``desired_state``; a profile the operator
     stopped is "stopped", not a current failure. A watchdog exit (``degraded`` + an exit_reason in
     ``WATCHDOG_EXIT_REASONS``) is the same kind of current failure as ``startup_failed`` and is kept
-    under the same rule, so the dashboard agrees with ``hermes gateway status``. Any other retained
+    under the same rule, so the dashboard agrees with ``akramcode gateway status``. Any other retained
     state of a dead process (``running``, ``starting``, missing) is just "stopped". Shared by
     ``/api/status`` and ``/api/messaging/platforms`` so the sidebar strip and the Channels page
     cannot disagree."""
@@ -589,7 +589,7 @@ def command_line_runs_inline_source(tokens: list[str]) -> bool:
     return inline_source_flag_index(tokens) is not None
 
 
-# Hermes' own inline bootstraps hand control to a Hermes entry point IN this process, so the argv
+# AkramCode' own inline bootstraps hand control to a AkramCode entry point IN this process, so the argv
 # they run with is this process's own identity; every other ``-c`` program keeps its trailing argv
 # as data (#107002). Each pattern is one emitted source shape, anchored at both ends so a program
 # merely CARRYING a bootstrap command line (the restart watcher's respawn argv) never matches.
@@ -635,7 +635,7 @@ def _bootstrap_entry(source: str, argv: list[str]) -> list[str] | None:
 
 def inline_bootstrap_argv(tokens: list[str]) -> list[str] | None:
     """*tokens* as the equivalent ``python -m <module> <argv…>`` when this interpreter's ``-c`` source
-    is a Hermes bootstrap running an entry point in-process; None for any other inline source.
+    is a AkramCode bootstrap running an entry point in-process; None for any other inline source.
 
     Command lines usually arrive space-joined (``/proc``, psutil, ``ps``), which splits the source
     across tokens; the shortest token run that ends in a recognised tail is the source, whatever
@@ -653,9 +653,9 @@ def inline_bootstrap_argv(tokens: list[str]) -> list[str] | None:
 
 
 def _gateway_command_subcommand(command: str | None) -> str | None:
-    """Hermes gateway lifecycle subcommand from a command line, or None. No loose substring matches
+    """AkramCode gateway lifecycle subcommand from a command line, or None. No loose substring matches
     (``"gateway" in cmdline`` also matched ``gateway status`` / ``python -m tui_gateway``): needs a
-    Hermes entrypoint plus the ``gateway`` subcommand, or a gateway-dedicated entrypoint. Tokenizes
+    AkramCode entrypoint plus the ``gateway`` subcommand, or a gateway-dedicated entrypoint. Tokenizes
     quote-aware (Windows paths with spaces); ``--profile``/``-p`` selectors are stripped anywhere in
     argv since ``_apply_profile_override`` removes them before argparse."""
     if not command:
@@ -674,7 +674,7 @@ def _gateway_command_subcommand(command: str | None) -> str | None:
     # the inline source will spawn later, not to this process (#107002). Case-preserving tokens:
     # the operand-taking ``-X``/``-W``/``-Q`` must not be conflated with ``-q``/``-b``.
     if command_line_runs_inline_source(cased_tokens):
-        # …unless the source is a Hermes bootstrap running the entry point in THIS process (store
+        # …unless the source is a AkramCode bootstrap running the entry point in THIS process (store
         # launcher, launcher script, venv_sync re-entry): then its argv is this process's (#124318).
         cased_tokens = inline_bootstrap_argv(cased_tokens)
         if cased_tokens is None:
@@ -688,17 +688,17 @@ def _gateway_command_subcommand(command: str | None) -> str | None:
     # Gateway-dedicated entrypoints carry no subcommand to inspect.
     if any(t == "gateway/run.py" or t.endswith("/gateway/run.py") for t in tokens):
         return "run"
-    # Atomic Hermes' bundled desktop runner shares HERMES_HOME with the CLI; without this,
+    # Atomic AkramCode' bundled desktop runner shares AKRAMCODE_HOME with the CLI; without this,
     # `gateway run --replace` does not recognise it as a running gateway, skips the
     # terminate-and-scoped-lock-handoff path, and collides with its still-held scoped locks
     # (e.g. the Discord bot-token lock). See #22418.
     if any(b == "desktop-gateway.py" for b in basenames):
         return "run"
-    if any(b in ("hermes-gateway", "hermes-gateway.exe") for b in basenames):
+    if any(b in ("akramcode-gateway", "akramcode-gateway.exe") for b in basenames):
         return "run"
     joined = " ".join(tokens)
     if "akramcode_cli.main" not in joined and "akramcode_cli/main.py" not in joined and not any(
-        b in ("hermes", "hermes.exe") for b in basenames
+        b in ("akramcode", "akramcode.exe") for b in basenames
     ):
         return None
     # Drop --profile X / -p X / --profile=X / -p=X (consumes a VALUE of "gateway" too).
@@ -713,7 +713,7 @@ def _gateway_command_subcommand(command: str | None) -> str | None:
             filtered.append(token)
     for i, token in enumerate(filtered):
         if token == "gateway":
-            # Bare `hermes gateway` defaults to `run`.
+            # Bare `akramcode gateway` defaults to `run`.
             return filtered[i + 1] if i + 1 < len(filtered) else "run"
     return None
 
@@ -760,12 +760,12 @@ def looks_like_gateway_command_line(command: str | None) -> bool:
 def looks_like_gateway_runtime_command_line(command: str | None) -> bool:
     """True for command lines that can host the runtime (``run`` or ``restart``: without a service
     manager the manual restart fallback runs ``run_gateway()`` in-process). For validating
-    Hermes-owned records / cleanup scans only; ``looks_like_gateway_command_line`` stays strict."""
+    AkramCode-owned records / cleanup scans only; ``looks_like_gateway_command_line`` stays strict."""
     return _gateway_command_subcommand(command) in {"run", "restart"}
 
 
 def _looks_like_gateway_process(pid: int) -> bool:
-    """True when the live PID still looks like the Hermes gateway."""
+    """True when the live PID still looks like the AkramCode gateway."""
     cmdline = _read_process_cmdline(pid)
     return bool(cmdline) and looks_like_gateway_command_line(cmdline)
 
@@ -795,54 +795,54 @@ def profile_flag_value(command: str) -> Optional[str]:
     return None
 
 
-_HERMES_HOME_ASSIGNMENT_RE = re.compile(r"(?:^|\s)hermes_home=(?:\"([^\"]*)\"|'([^']*)'|(\S+))")
+_AKRAMCODE_HOME_ASSIGNMENT_RE = re.compile(r"(?:^|\s)akramcode_home=(?:\"([^\"]*)\"|'([^']*)'|(\S+))")
 
 
-def hermes_home_assignments(command: str) -> list[str]:
-    """Values of every ``HERMES_HOME=<value>`` assignment in ``command`` (the caller lowercases
+def akramcode_home_assignments(command: str) -> list[str]:
+    """Values of every ``AKRAMCODE_HOME=<value>`` assignment in ``command`` (the caller lowercases
     and normalizes separators). Values are token-bounded, quotes stripped: the substring test
-    this replaces let ``HERMES_HOME=/root/profiles/ops`` claim a ``/root/profiles/ops2`` gateway.
-    The name is token-bounded too (``FOO=hermes_home=/x`` is not an assignment), and a trailing
-    separator on the value is stripped -- ``HERMES_HOME=/root/.hermes/`` (systemd ``Environment=``
-    or a shell wrapper spelling) is the same home as ``/root/.hermes``; callers strip the profile
+    this replaces let ``AKRAMCODE_HOME=/root/profiles/ops`` claim a ``/root/profiles/ops2`` gateway.
+    The name is token-bounded too (``FOO=akramcode_home=/x`` is not an assignment), and a trailing
+    separator on the value is stripped -- ``AKRAMCODE_HOME=/root/.akramcode/`` (systemd ``Environment=``
+    or a shell wrapper spelling) is the same home as ``/root/.akramcode``; callers strip the profile
     home the same way."""
     return [
         next(g for g in m.groups() if g is not None).rstrip("/")
-        for m in _HERMES_HOME_ASSIGNMENT_RE.finditer(command)
+        for m in _AKRAMCODE_HOME_ASSIGNMENT_RE.finditer(command)
     ]
 
 
-def command_line_names_hermes_home(command_lc: str, home_lc: str) -> bool:
-    """True when ``command_lc`` carries ``HERMES_HOME=<home_lc>`` (both lowercased, ``/``-separated,
+def command_line_names_akramcode_home(command_lc: str, home_lc: str) -> bool:
+    """True when ``command_lc`` carries ``AKRAMCODE_HOME=<home_lc>`` (both lowercased, ``/``-separated,
     no trailing separator). Argv reaches us space-joined, so an unquoted value with a space in it
-    (``HERMES_HOME=C:/Users/John Doe/.hermes``) is cut at the space by the token parser; a
+    (``AKRAMCODE_HOME=C:/Users/John Doe/.akramcode``) is cut at the space by the token parser; a
     token-bounded literal match of the whole home recovers that spelling."""
-    if home_lc in hermes_home_assignments(command_lc):
+    if home_lc in akramcode_home_assignments(command_lc):
         return True
-    return re.search(rf"(?:^|\s)hermes_home={re.escape(home_lc)}/?(?=\s|$)", command_lc) is not None
+    return re.search(rf"(?:^|\s)akramcode_home={re.escape(home_lc)}/?(?=\s|$)", command_lc) is not None
 
 
 def _command_line_belongs_to_profile(command: str, profile_home: Path) -> bool:
     """True when a gateway command line belongs to ``profile_home`` (mirrors
     ``akramcode_cli.gateway._matches_current_profile``): a stale state file can record a PID recycled
     onto ANOTHER profile's live gateway. Named profiles carry ``-p``/``--profile <name>`` or
-    ``HERMES_HOME=`` on argv; the default gateway runs bare. Separators normalized."""
+    ``AKRAMCODE_HOME=`` on argv; the default gateway runs bare. Separators normalized."""
     command_lc = command.lower().replace("\\", "/")
     profile_name = _profile_name_for_home(profile_home)
     home_lc = str(profile_home).lower().replace("\\", "/").rstrip("/")
     if profile_name is not None and profile_name != "default":
         if profile_flag_value(command_lc) == profile_name.lower():
             return True
-        return command_line_names_hermes_home(command_lc, home_lc)
+        return command_line_names_akramcode_home(command_lc, home_lc)
     # Default profile: accept unless argv names ANOTHER profile (any spelling the CLI pre-parser
     # accepts, ``--profile=ops`` included -- a substring test let that gateway pass as the default's)
-    # or a conflicting explicit HERMES_HOME= (its absence is not disqualifying -- HERMES_HOME usually
+    # or a conflicting explicit AKRAMCODE_HOME= (its absence is not disqualifying -- AKRAMCODE_HOME usually
     # arrives via the env). ``--profile default`` names this profile: a hand-written launchd plist
     # mirrors the named-profile service shape, and rejecting it reported a live default gateway
     # as stopped (#100817).
     if profile_flag_value(command_lc) not in (None, "default"):
         return False
-    return not hermes_home_assignments(command_lc) or command_line_names_hermes_home(command_lc, home_lc)
+    return not akramcode_home_assignments(command_lc) or command_line_names_akramcode_home(command_lc, home_lc)
 
 
 def _host_gateway_serves_home(pid: int, profile_home: Path) -> bool:
@@ -882,7 +882,7 @@ def _record_matches_live_gateway_pid(
 def _record_argv() -> list[str]:
     """``sys.argv`` with the inline-source placeholder replaced by the entry point this process runs.
 
-    The published launcher script (``_launchers._launcher_script``: the POSIX ``bin/hermes`` shell
+    The published launcher script (``_launchers._launcher_script``: the POSIX ``bin/akramcode`` shell
     launcher and the Windows ``.cmd``) imports ``akramcode_cli.main`` inside ``python -I -c <script>``,
     so ``sys.argv`` is ``["-c", "gateway", "run"]`` — a record the argv matcher can never accept
     once the live command line is unreadable (Windows/EACCES fallback in
@@ -901,7 +901,7 @@ def _build_pid_record() -> dict:
         "start_time": _get_process_start_time(os.getpid()),
         # Scoped locks are machine-global; the owner's home lets a cross-profile
         # --replace place its takeover marker where the target will read it.
-        "hermes_home": str(_canonical_hermes_home(_get_process_hermes_home())),
+        "akramcode_home": str(_canonical_akramcode_home(_get_process_akramcode_home())),
     }
 
 
@@ -910,7 +910,7 @@ def _get_code_identity_fields() -> dict[str, Any]:
     Lazy import keeps ``gateway.status`` free of ``akramcode_cli`` at import time. Never raises.
 
     A gateway keeps serving the module versions it imported at startup, so stamping the identity into
-    ``gateway_state.json`` lets `hermes update` (and the dashboard) prove whether a running gateway actually
+    ``gateway_state.json`` lets `akramcode update` (and the dashboard) prove whether a running gateway actually
     picked up new code after the restart phase — instead of assuming it did (#88654, #69754). Never raises;
     degrades to absent fields.
     """
@@ -924,12 +924,12 @@ def _get_code_identity_fields() -> dict[str, Any]:
 
 
 def _pid_record_belongs_to_current_profile(record: Optional[dict[str, Any]]) -> bool:
-    """True when the record's ``hermes_home`` matches the current process (legacy records: True);
-    another HERMES_HOME's record must be ignored or the default gateway assumes its identity."""
+    """True when the record's ``akramcode_home`` matches the current process (legacy records: True);
+    another AKRAMCODE_HOME's record must be ignored or the default gateway assumes its identity."""
     if not isinstance(record, dict):
         return False
-    record_home = record.get("hermes_home")
-    return not record_home or _same_hermes_home(record_home, _get_process_hermes_home())
+    record_home = record.get("akramcode_home")
+    return not record_home or _same_akramcode_home(record_home, _get_process_akramcode_home())
 
 
 def _build_runtime_status_record() -> dict[str, Any]:
@@ -1410,7 +1410,7 @@ class GatewayLiveness:
 
 
 def profile_name_for_home(profile_home: Path) -> Optional[str]:
-    """Profile id of any Hermes home: ``<root>/profiles/<name>`` → ``<name>``, the default root →
+    """Profile id of any AkramCode home: ``<root>/profiles/<name>`` → ``<name>``, the default root →
     ``"default"``, anything else → None. Multiplex-only makes ``default`` an ordinary served
     profile, so reporting surfaces need a name for it too."""
     home = Path(profile_home)
@@ -1418,8 +1418,8 @@ def profile_name_for_home(profile_home: Path) -> Optional[str]:
     if named:
         return named
     try:
-        from akramcode_constants import get_default_hermes_root
-        if home.resolve() == Path(get_default_hermes_root()).resolve():
+        from akramcode_constants import get_default_akramcode_root
+        if home.resolve() == Path(get_default_akramcode_root()).resolve():
             return "default"
     except Exception:
         return None
@@ -1434,7 +1434,7 @@ def multiplexer_liveness_for_profile(profile_dir: Path) -> Optional[tuple[int, d
     resolving from the host rendezvous record (``gateway/host_topology.py``) is what lets it be
     reported as SERVED rather than only as owner. A served profile owns no
     ``gateway.pid``/``gateway_state.json`` (#97120), so every PID-file rung of the dashboard ladder
-    reports it stopped while ``hermes -p X status`` says running — the two must agree.
+    reports it stopped while ``akramcode -p X status`` says running — the two must agree.
     """
     name = profile_name_for_home(Path(profile_dir))
     if not name:
@@ -1442,16 +1442,16 @@ def multiplexer_liveness_for_profile(profile_dir: Path) -> Optional[tuple[int, d
     from gateway.host_topology import host_gateway_topology
     from akramcode_cli.gateway import named_profile_served_by_running_multiplexer
     from akramcode_cli.gateway_multiplex_served import live_default_gateway_pid
-    from akramcode_constants import get_default_hermes_root
+    from akramcode_constants import get_default_akramcode_root
     # The roster is matched by NAME, and the multiplexer only serves ``<default root>/profiles/<name>``:
     # a profile directory copied to another root (sandbox, restore-from-backup) keeps the name but is
     # not the home being served, so it must not borrow the multiplexer's PID.
-    if name != "default" and not _same_hermes_home(profile_dir, get_default_hermes_root() / "profiles" / name):
+    if name != "default" and not _same_akramcode_home(profile_dir, get_default_akramcode_root() / "profiles" / name):
         return None
     topology = host_gateway_topology()
     # The multiplexer's record lives in the home that LAUNCHED it; a named-hosted multiplexer leaves
     # a possibly stale standalone record at the default root, which must not be projected.
-    launch_home = get_default_hermes_root()
+    launch_home = get_default_akramcode_root()
     if topology is not None and topology.serves(name):
         pid: Optional[int] = topology.pid
         launch_home = topology.home or launch_home
@@ -1576,11 +1576,11 @@ def resolve_gateway_liveness(
             running=True, pid=runtime_pid, source="runtime_status", health_body=health_body
         )
     # (4) A named profile served by the live default multiplexer: no identity files of its own, but
-    # the multiplexer IS its gateway (mirrors `hermes -p X status` / `gateway list`). Unscoped, the
+    # the multiplexer IS its gateway (mirrors `akramcode -p X status` / `gateway list`). Unscoped, the
     # question is about the process's OWN home — which is a named profile inside a pooled
-    # `hermes --profile X serve` (the Desktop's per-profile backend answers its REST without
+    # `akramcode --profile X serve` (the Desktop's per-profile backend answers its REST without
     # `?profile=`), so it takes the same rung instead of reporting the served profile stopped.
-    own_home = profile_dir if scoped else _get_process_hermes_home()
+    own_home = profile_dir if scoped else _get_process_akramcode_home()
     served = guarded(multiplexer_liveness_for_profile, own_home)
     if served is not None:
         mux_pid, mux_runtime = served
@@ -1607,7 +1607,7 @@ def get_runtime_status_running_pid(
     pid = _live_pid_from_record(payload)
     if pid is None:
         return None
-    # The record's hermes_home must match the home asked about (this process unscoped) so a stale
+    # The record's akramcode_home must match the home asked about (this process unscoped) so a stale
     # or copied record cannot lend another home's gateway identity; legacy records without the
     # stamp prove nothing either way and fall through to the live command-line check.
     if expected_home is None and not _pid_record_belongs_to_current_profile(payload):
@@ -1689,8 +1689,8 @@ def acquire_scoped_lock(
         "metadata": metadata or {}, "updated_at": _utc_now_iso(),
     }
     # Profile label for cross-profile conflict diagnostics ("token already in use (PID 559)" alone
-    # does not say WHICH profile). Omitted when not inferable; readers fall back to hermes_home.
-    profile = _profile_label_for_home(_get_process_hermes_home())
+    # does not say WHICH profile). Omitted when not inferable; readers fall back to akramcode_home.
+    profile = _profile_label_for_home(_get_process_akramcode_home())
     if profile:
         record["profile"] = profile
     existing = _read_json_file(lock_path)
@@ -1764,21 +1764,21 @@ def release_all_scoped_locks(
 # exits 0. Unlinked once consumed, so a stale one can grief at most one future shutdown on
 # the same PID, within _TAKEOVER_MARKER_TTL_S.
 # When a new gateway starts with ``--replace``, it SIGTERMs the existing gateway so it can take over the bot
-# token. ``hermes.service`` + ``hermes- gateway.service``). See #5646.
+# token. ``akramcode.service`` + ``akramcode- gateway.service``). See #5646.
 _TAKEOVER_MARKER_FILENAME = ".gateway-takeover.json"
 _TAKEOVER_MARKER_TTL_S = 60  # Marker older than this is treated as stale
 _PLANNED_STOP_MARKER_FILENAME = ".gateway-planned-stop.json"
 _PLANNED_STOP_MARKER_TTL_S = 60
 
 
-def _get_takeover_marker_path(hermes_home: Optional[Path] = None) -> Path:
-    """Takeover marker path; ``hermes_home`` is given only for a verified cross-home handoff."""
-    home = _canonical_hermes_home(hermes_home or _get_process_hermes_home())
+def _get_takeover_marker_path(akramcode_home: Optional[Path] = None) -> Path:
+    """Takeover marker path; ``akramcode_home`` is given only for a verified cross-home handoff."""
+    home = _canonical_akramcode_home(akramcode_home or _get_process_akramcode_home())
     return home / _TAKEOVER_MARKER_FILENAME
 
 
 def _get_planned_stop_marker_path() -> Path:
-    return _get_process_hermes_home() / _PLANNED_STOP_MARKER_FILENAME
+    return _get_process_akramcode_home() / _PLANNED_STOP_MARKER_FILENAME
 
 
 def _marker_is_stale(written_at: str, ttl_s: int) -> bool:
@@ -1807,7 +1807,7 @@ def _pid_marker_names_self(target_pid: int, target_start_time: Any) -> bool:
     times known -> must match; either unknown -> PID equality decides (bounded by the marker TTL):
     ``_get_process_start_time`` is None without /proc (macOS, native Windows -- where the
     planned-stop watcher matters most) and requiring a match there would misclassify a legitimate
-    ``hermes gateway stop`` as an unexpected exit revived by the service manager."""
+    ``akramcode gateway stop`` as an unexpected exit revived by the service manager."""
     if target_pid != os.getpid():
         return False
     our_start_time = _get_process_start_time(target_pid)
@@ -1820,17 +1820,17 @@ def _consume_pid_marker_for_self(path: Path, *, ttl_s: int) -> bool:
         return False
     record, target_pid, target_start_time = parsed
     # Cross-profile guard: new markers name the verified TARGET home, which permits a deliberate
-    # cross-HERMES_HOME --replace while ignoring a marker accidentally written into another
+    # cross-AKRAMCODE_HOME --replace while ignoring a marker accidentally written into another
     # profile's directory. Legacy markers have no target field: keep the same-replacer-home rule.
     # See #29092.
-    our_home = _get_process_hermes_home()
-    target_home = record.get("target_hermes_home")
+    our_home = _get_process_akramcode_home()
+    target_home = record.get("target_akramcode_home")
     if target_home is not None:
-        if not isinstance(target_home, str) or not _same_hermes_home(target_home, our_home):
+        if not isinstance(target_home, str) or not _same_akramcode_home(target_home, our_home):
             return False
     else:
-        replacer_home = record.get("replacer_hermes_home")
-        if replacer_home is not None and not _same_hermes_home(replacer_home, our_home):
+        replacer_home = record.get("replacer_akramcode_home")
+        if replacer_home is not None and not _same_akramcode_home(replacer_home, our_home):
             return False
     matches = _pid_marker_names_self(target_pid, target_start_time)
     _unlink_quietly(path)
@@ -1845,13 +1845,13 @@ def write_takeover_marker(
     passes ``target_home`` + validated ``target_start_time`` so the marker lands in the target's
     home; such callers must fail closed on False (the target's supervisor could revive it)."""
     try:
-        marker_home = _canonical_hermes_home(target_home or _get_process_hermes_home())
+        marker_home = _canonical_akramcode_home(target_home or _get_process_akramcode_home())
         if target_start_time is _UNSET:
             target_start_time = _get_process_start_time(target_pid)
         return _write_marker(_get_takeover_marker_path(marker_home), {
             "target_pid": target_pid, "target_start_time": target_start_time,
-            "target_hermes_home": str(marker_home), "replacer_pid": os.getpid(),
-            "replacer_hermes_home": str(_canonical_hermes_home(_get_process_hermes_home())),
+            "target_akramcode_home": str(marker_home), "replacer_pid": os.getpid(),
+            "replacer_akramcode_home": str(_canonical_akramcode_home(_get_process_akramcode_home())),
             "written_at": _utc_now_iso(),
         })
     except OSError:
@@ -1885,7 +1885,7 @@ def _validated_scoped_lock_gateway_owner(record: dict[str, Any]) -> Optional[tup
         return None
     owner_pid = _pid_from_record(record)
     owner_start_time = record.get("start_time")
-    raw_home = record.get("hermes_home")
+    raw_home = record.get("akramcode_home")
     if (
         owner_pid is None or owner_pid <= 0 or owner_pid == os.getpid()
         or not isinstance(owner_start_time, int) or isinstance(owner_start_time, bool)
@@ -1893,7 +1893,7 @@ def _validated_scoped_lock_gateway_owner(record: dict[str, Any]) -> Optional[tup
         or not Path(raw_home).expanduser().is_absolute()
     ):
         return None
-    target_home = _canonical_hermes_home(raw_home)
+    target_home = _canonical_akramcode_home(raw_home)
     if _scoped_lock_owner_state(owner_pid, owner_start_time) != "same":
         return None
     live_cmdline = _read_process_cmdline(owner_pid)
@@ -1901,13 +1901,13 @@ def _validated_scoped_lock_gateway_owner(record: dict[str, Any]) -> Optional[tup
         return None
     # The target home's own PID record must corroborate the claim.
     pid_record = _read_json_file(target_home / "gateway.pid") or {}
-    pid_record_home = pid_record.get("hermes_home")
+    pid_record_home = pid_record.get("akramcode_home")
     if (
         not _record_looks_like_gateway(pid_record)
         or _pid_from_record(pid_record) != owner_pid
         or pid_record.get("start_time") != owner_start_time
         or not isinstance(pid_record_home, str)
-        or not _same_hermes_home(pid_record_home, target_home)
+        or not _same_akramcode_home(pid_record_home, target_home)
     ):
         return None
     return owner_pid, owner_start_time, target_home

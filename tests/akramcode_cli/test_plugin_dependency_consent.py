@@ -4,7 +4,7 @@ import os
 import subprocess
 
 import pytest
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from akramcode_cli import plugins_cmd
 from tests.pm.test_plugin_survival_contract import admission_env  # noqa: F401

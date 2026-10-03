@@ -1,4 +1,4 @@
-"""Truthful outcome of ``hermes update`` when the git transport fails.
+"""Truthful outcome of ``akramcode update`` when the git transport fails.
 
 The origin is a real smart-HTTP ``git http-backend``; faults are injected at the HTTP layer, where
 GitHub's own failures happen: 429 rate limiting, 5xx on the ref advertisement or the fetch, a
@@ -67,7 +67,7 @@ def test_transport_failure_is_reported_as_failure(w, fault):
     w.srv.clear_faults()
     assert armed.fired, f"the {fault} fault never fired; the cell exercised nothing:\n{w.diag(cp, mark)}"
     _assert_failed_truthfully(w, cp, before, mark)
-    assert "diverged" not in G.output(cp) and not w.refs("refs/hermes-update-backups"), (
+    assert "diverged" not in G.output(cp) and not w.refs("refs/akramcode-update-backups"), (
         f"a transport failure claims local history diverged (and writes a rescue ref):\n{w.diag(cp, mark)}")
 
 

@@ -1,8 +1,8 @@
-"""Regression tests for the parked-branch guard in ``hermes update``.
+"""Regression tests for the parked-branch guard in ``akramcode update``.
 
 Live incident (2026-08-17, Teknium's Linux box): the source checkout was
 parked on a stale feature branch (``claude-code-inspired/local-terminal-
-memory-limit``, days behind main) left there by earlier tooling. ``hermes
+memory-limit``, days behind main) left there by earlier tooling. ``akramcode
 update`` autostashed, refreshed lazy backends, synced skills and printed
 "✓ Code updated!" / "✓ Update complete!" — while the checkout stayed on the
 stale branch with none of main's new code. Two sessions burned time on
@@ -25,7 +25,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from akramcode_cli import main as hermes_main
+from akramcode_cli import main as akramcode_main
 import akramcode_cli.main_web_build as main_web_build
 import akramcode_cli.main_install_repair as main_install_repair
 from akramcode_cli import update_cmd
@@ -82,9 +82,9 @@ def repo_pair(tmp_path):
 @pytest.fixture(autouse=True)
 def _no_config(monkeypatch):
     """Isolate the guard from the machine's real config.yaml."""
-    import akramcode_cli.config as hermes_config
+    import akramcode_cli.config as akramcode_config
 
-    monkeypatch.setattr(hermes_config, "load_config", lambda: {})
+    monkeypatch.setattr(akramcode_config, "load_config", lambda: {})
 
 
 # ---------------------------------------------------------------------------
@@ -152,10 +152,10 @@ def test_equivalent_cherry_picked_commit_is_still_safe(repo_pair):
 def test_config_opt_out_blocks_auto_switch(repo_pair, monkeypatch):
     """updates.auto_switch_parked_branch: false disables auto-switch even
     when the branch is clean and merged."""
-    import akramcode_cli.config as hermes_config
+    import akramcode_cli.config as akramcode_config
 
     monkeypatch.setattr(
-        hermes_config,
+        akramcode_config,
         "load_config",
         lambda: {"updates": {"auto_switch_parked_branch": False}},
     )
@@ -192,7 +192,7 @@ def test_branch_head_suffix_empty_on_non_repo(tmp_path):
 def test_print_update_completion_carries_branch_and_sha(
     repo_pair, monkeypatch, capsys
 ):
-    monkeypatch.setattr(hermes_main, "PROJECT_ROOT", repo_pair)
+    monkeypatch.setattr(akramcode_main, "PROJECT_ROOT", repo_pair)
     update_cmd._print_update_completion("✓ Update complete!")
     out = capsys.readouterr().out
     short = _git(repo_pair, "rev-parse", "--short", "HEAD").stdout.strip()
@@ -211,25 +211,25 @@ def _patch_update_flow(monkeypatch, repo, run_real_git=True):
     keeps REAL subprocess.run so the git plumbing runs against the fixture
     repo (the whole point of these regressions).
     """
-    monkeypatch.setattr(hermes_main, "PROJECT_ROOT", repo)
-    monkeypatch.setattr(hermes_main, "_resolve_update_branch", lambda args: "main")
-    monkeypatch.setattr(hermes_main, "_is_windows", lambda: False)
+    monkeypatch.setattr(akramcode_main, "PROJECT_ROOT", repo)
+    monkeypatch.setattr(akramcode_main, "_resolve_update_branch", lambda args: "main")
+    monkeypatch.setattr(akramcode_main, "_is_windows", lambda: False)
     monkeypatch.setattr(main_install_repair, "_is_windows", lambda: False)
     monkeypatch.setattr(
-        hermes_main, "_get_origin_url",
-        lambda *a, **k: "https://github.com/NousResearch/hermes-agent.git",
+        akramcode_main, "_get_origin_url",
+        lambda *a, **k: "https://github.com/NousResearch/akramcode-agent.git",
     )
     monkeypatch.setattr(update_cmd, "_is_fork", lambda *a, **k: False)
     monkeypatch.setattr(update_cmd, "_discard_lockfile_churn", lambda *a, **k: None)
     monkeypatch.setattr(update_cmd, "_discard_lockfile_churn", lambda *a, **k: None)
     monkeypatch.setattr(update_cmd, "_normalize_managed_eol", lambda *a, **k: None)
-    monkeypatch.setattr(hermes_main, "_clear_bytecode_cache", lambda *a, **k: 0)
-    monkeypatch.setattr(hermes_main, "_record_bytecode_fingerprint", lambda *a, **k: None)
+    monkeypatch.setattr(akramcode_main, "_clear_bytecode_cache", lambda *a, **k: 0)
+    monkeypatch.setattr(akramcode_main, "_record_bytecode_fingerprint", lambda *a, **k: None)
     monkeypatch.setattr(main_web_build, "_record_bytecode_fingerprint", lambda *a, **k: None)
-    monkeypatch.setattr(hermes_main, "_run_pre_update_backup", lambda *a, **k: None)
-    monkeypatch.setattr(hermes_main, "_pause_windows_gateways_for_update", lambda: None)
+    monkeypatch.setattr(akramcode_main, "_run_pre_update_backup", lambda *a, **k: None)
+    monkeypatch.setattr(akramcode_main, "_pause_windows_gateways_for_update", lambda: None)
     monkeypatch.setattr(
-        hermes_main, "_resume_windows_gateways_after_update", lambda *a, **k: None
+        akramcode_main, "_resume_windows_gateways_after_update", lambda *a, **k: None
     )
 
 
@@ -303,7 +303,7 @@ def test_update_skips_and_warns_on_dirty_parked_branch(
     args = SimpleNamespace(branch=None, yes=False, force=False, force_venv=False)
 
     with pytest.raises(SystemExit) as exc_info:
-        hermes_main.cmd_update(args)
+        akramcode_main.cmd_update(args)
 
     assert exc_info.value.code == 1
     out = capsys.readouterr().out
@@ -343,7 +343,7 @@ def test_update_switches_unmerged_parked_branch_with_kept_notice(
     args = SimpleNamespace(branch=None, yes=False, force=False, force_venv=False)
 
     with pytest.raises(_StopFlow):
-        hermes_main.cmd_update(args)
+        akramcode_main.cmd_update(args)
 
     out = capsys.readouterr().out
     assert "CODE UPDATE SKIPPED" not in out
@@ -370,10 +370,10 @@ def test_update_updates_unmerged_branch_in_place_when_configured(
     origin/<target> instead of switched away from. The running code must
     advance (origin/main's files arrive) AND the local commits must survive,
     with the checkout never moving."""
-    import akramcode_cli.config as hermes_config
+    import akramcode_cli.config as akramcode_config
 
     monkeypatch.setattr(
-        hermes_config,
+        akramcode_config,
         "load_config",
         lambda: {"updates": {"parked_branch_strategy": "update_in_place"}},
     )
@@ -394,7 +394,7 @@ def test_update_updates_unmerged_branch_in_place_when_configured(
     args = SimpleNamespace(branch=None, yes=False, force=False, force_venv=False)
 
     with pytest.raises(_StopFlow):
-        hermes_main.cmd_update(args)
+        akramcode_main.cmd_update(args)
 
     out = capsys.readouterr().out
     assert "CODE UPDATE SKIPPED" not in out
@@ -422,10 +422,10 @@ def test_switch_branch_flag_overrides_in_place_strategy(
     in its history (#89507 review). The branch tip must be byte-identical
     afterwards, while the checkout ends up on the updated target.
     """
-    import akramcode_cli.config as hermes_config
+    import akramcode_cli.config as akramcode_config
 
     monkeypatch.setattr(
-        hermes_config,
+        akramcode_config,
         "load_config",
         lambda: {"updates": {"parked_branch_strategy": "update_in_place"}},
     )
@@ -451,7 +451,7 @@ def test_switch_branch_flag_overrides_in_place_strategy(
     )
 
     with pytest.raises(_StopFlow):
-        hermes_main.cmd_update(args)
+        akramcode_main.cmd_update(args)
 
     out = capsys.readouterr().out
     assert "CODE UPDATE SKIPPED" not in out
@@ -488,7 +488,7 @@ def test_update_auto_switches_clean_merged_parked_branch(
     args = SimpleNamespace(branch=None, yes=False, force=False, force_venv=False)
 
     with pytest.raises(_StopFlow):
-        hermes_main.cmd_update(args)
+        akramcode_main.cmd_update(args)
 
     out = capsys.readouterr().out
     assert "CODE UPDATE SKIPPED" not in out
@@ -537,7 +537,7 @@ def test_update_up_to_date_path_does_not_repark_merged_branch(tmp_path, monkeypa
     args = SimpleNamespace(branch=None, yes=False, force=False, force_venv=False)
 
     with pytest.raises(_StopFlow):
-        hermes_main.cmd_update(args)
+        akramcode_main.cmd_update(args)
 
     # The regression: old code ran `git checkout old-feature` here.
     assert (
@@ -562,7 +562,7 @@ def test_update_on_main_fast_path_unchanged(repo_pair, monkeypatch, capsys):
     args = SimpleNamespace(branch=None, yes=False, force=False, force_venv=False)
 
     with pytest.raises(_StopFlow):
-        hermes_main.cmd_update(args)
+        akramcode_main.cmd_update(args)
 
     out = capsys.readouterr().out
     assert "parked on" not in out

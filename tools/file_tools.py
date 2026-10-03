@@ -69,7 +69,7 @@ def _truncate_to_char_budget(content: str, max_chars: int) -> tuple[str, int, bo
     ``next_offset`` instead of rejecting the read. If not even the first line
     fits it is clamped mid-line so the read is never empty and the cursor advances.
 
-    Ported in spirit from nearai/ironclaw#5029 (dual line/byte cap on ``read_file``). Where hermes
+    Ported in spirit from nearai/ironclaw#5029 (dual line/byte cap on ``read_file``). Where akramcode
     previously hard-rejected an oversized read (forcing the model to guess a smaller ``limit`` and burn a
     round-trip returning nothing), this trims the content to the last *complete line* that fits within
     ``max_chars`` and reports how many lines were kept so the caller can offer a ``next_offset``
@@ -607,7 +607,7 @@ def read_file_tool(path: str, offset: int = 1, limit: int = DEFAULT_READ_LIMIT, 
 
     Guard order: NT/device-namespace prefix (raw string, no resolution) →
     device-path blocklist (no I/O) → stat-based special-file guard (host only)
-    → Hermes internal denylist → document extraction → binary-extension guard
+    → AkramCode internal denylist → document extraction → binary-extension guard
     → negative-result cache → dedup stub → real read.
     """
     try:
@@ -641,7 +641,7 @@ def read_file_tool(path: str, offset: int = 1, limit: int = DEFAULT_READ_LIMIT, 
                         "attempted. Use terminal utilities if you need to "
                         "interact with it.")})
 
-        # Hermes internal denylist (prompt injection via catalog metadata,
+        # AkramCode internal denylist (prompt injection via catalog metadata,
         # credential stores). Runs BEFORE document extraction so a
         # protected SQLite store (state.db) cannot be read through the extractor. Pass the RESOLVED path: the denylist's own
         # resolve() uses the process cwd and would miss a relative "auth.json".
@@ -1318,7 +1318,7 @@ def _handle_write_file(args, **kw):
             "write_file: missing required field 'content'. The tool call included a "
             "path but no content argument — this is almost always a dropped-arg bug "
             "under context pressure. Re-emit the tool call with the full content "
-            "payload, or use execute_code with hermes_tools.write_file() for very "
+            "payload, or use execute_code with akramcode_tools.write_file() for very "
             "large files."
         )
     if not isinstance(args["content"], str):

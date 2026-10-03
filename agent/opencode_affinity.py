@@ -11,7 +11,7 @@ Two sources, one merge point:
   a ``tool_result`` as a new conversation and replay the whole history upstream (#86241, #104449).
 
 The value only has to be opaque and consistent per conversation, so it is derived the same way as
-the other affinity hints Hermes already sends (OpenRouter's sticky ``session_id``, xAI's
+the other affinity hints AkramCode already sends (OpenRouter's sticky ``session_id``, xAI's
 ``x-grok-conv-id``): the host-declared routing scope first (a host that names its own conversation,
 #96811), then the ambient conversation ROOT (stable across compaction rotation and delegate trees),
 then the physical session id — normalized through ``_cache_scope_from_session_id`` so cron fires of

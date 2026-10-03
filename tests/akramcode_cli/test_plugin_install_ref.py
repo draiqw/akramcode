@@ -12,7 +12,7 @@ from tests.akramcode_cli.plugin_worker_support import (
     isolated_python as isolated_python,
     plugin_world as plugin_world,
 )
-import akram_core.hermes_yaml as yaml
+import akram_core.akramcode_yaml as yaml
 
 from akramcode_cli.subcommands.plugins import build_plugins_parser
 
@@ -118,7 +118,7 @@ def test_exact_ref_installs_old_commit_and_normalizes_uppercase(monkeypatch, tmp
 
     repo, old_sha, new_sha = _plugin_repo(tmp_path)
     home = tmp_path / "home"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
 
     target, _manifest, name = _install_plugin_core(
         repo.as_uri(), force=False, ref=old_sha.upper()
@@ -139,7 +139,7 @@ def test_invalid_ref_is_rejected_before_any_install_state(monkeypatch, tmp_path,
 
     repo, _old_sha, _new_sha = _plugin_repo(tmp_path)
     home = tmp_path / "home"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
 
     with pytest.raises(PluginOperationError, match="40-character commit SHA"):
         _install_plugin_core(repo.as_uri(), force=False, ref=ref)
@@ -167,7 +167,7 @@ def test_subdir_pin_records_source_identity_and_installs_requested_tree(
     (plugin / "value.txt").write_text("new", encoding="utf-8")
     _git(repo, "commit", "-qam", "new")
     home = tmp_path / "home"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     identifier = f"{repo.as_uri()}#extensions/demo"
 
     target, _manifest, _name = _install_plugin_core(
@@ -189,7 +189,7 @@ def test_clone_timeout_applies_to_every_network_step_of_a_pinned_install(monkeyp
     home = tmp_path / "home"
     home.mkdir(exist_ok=True)
     (home / "config.yaml").write_text("plugins:\n  clone_timeout_seconds: 137\n", encoding="utf-8")
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     run_git = plugins_cmd._run_plugin_git
     calls = []
 
@@ -213,7 +213,7 @@ def test_subdir_install_downloads_only_that_subdirectory(monkeypatch, tmp_path, 
     from akramcode_cli.plugins_cmd import _install_plugin_core
 
     repo = tmp_path / "monorepo"
-    plugin = repo / "integrations" / "hermes"
+    plugin = repo / "integrations" / "akramcode"
     plugin.mkdir(parents=True)
     _git(repo, "init", "-q")
     _git(repo, "config", "user.email", "fixture@example.com")
@@ -225,7 +225,7 @@ def test_subdir_install_downloads_only_that_subdirectory(monkeypatch, tmp_path, 
     _git(repo, "commit", "-qm", "init")
     sha = _git(repo, "rev-parse", "HEAD")
     unrelated_blob = _git(repo, "rev-parse", "HEAD:unrelated.bin")
-    monkeypatch.setenv("HERMES_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(tmp_path / "home"))
     seen = {}
 
     def inspect_clone(_manifest, tree):
@@ -234,7 +234,7 @@ def test_subdir_install_downloads_only_that_subdirectory(monkeypatch, tmp_path, 
         seen["missing"] = _git(clone, "rev-list", "--objects", "--missing=print", "HEAD")
 
     target, _manifest, _name = _install_plugin_core(
-        f"{repo.as_uri()}#integrations/hermes", force=False,
+        f"{repo.as_uri()}#integrations/akramcode", force=False,
         ref=sha if pinned else None, before_swap=inspect_clone)
 
     assert (target / "plugin.yaml").is_file()
@@ -247,14 +247,14 @@ def test_clone_timeout_uses_active_profile_and_bounds_invalid_values(monkeypatch
 
     home = tmp_path / "home"
     home.mkdir(exist_ok=True)
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     config = home / "config.yaml"
     config.write_text("plugins:\n  clone_timeout_seconds: 137\n", encoding="utf-8")
     assert _clone_timeout_seconds() == 137
 
     other = tmp_path / "other"
     other.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(other))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(other))
     assert _clone_timeout_seconds() == 300
     other_config = other / "config.yaml"
     other_config.write_text("plugins:\n  clone_timeout_seconds: 0\n", encoding="utf-8")
@@ -270,7 +270,7 @@ def test_force_reinstall_does_not_drift_pin_without_explicit_new_ref(
 
     repo, old_sha, new_sha = _plugin_repo(tmp_path)
     home = tmp_path / "home"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     _install_plugin_core(repo.as_uri(), force=False, ref=old_sha)
 
     target, _manifest, _name = _install_plugin_core(repo.as_uri(), force=True)
@@ -289,7 +289,7 @@ def test_unpinned_install_and_force_reinstall_keep_tracking_head(monkeypatch, tm
 
     repo, _old_sha, first_head = _plugin_repo(tmp_path)
     home = tmp_path / "home"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
 
     target, _manifest, _name = _install_plugin_core(repo.as_uri(), force=False)
     assert _git(target, "rev-parse", "HEAD") == first_head
@@ -308,14 +308,14 @@ def test_metadata_is_profile_local_and_read_from_disk_each_time(monkeypatch, tmp
     repo, old_sha, _new_sha = _plugin_repo(tmp_path)
     home_a = tmp_path / "profile-a"
     home_b = tmp_path / "profile-b"
-    monkeypatch.setenv("HERMES_HOME", str(home_a))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home_a))
     _install_plugin_core(repo.as_uri(), force=False, ref=old_sha)
     assert _read_install_metadata()["demo"]["revision"] == old_sha
 
-    monkeypatch.setenv("HERMES_HOME", str(home_b))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home_b))
     assert _read_install_metadata() == {}
 
-    monkeypatch.setenv("HERMES_HOME", str(home_a))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home_a))
     assert _read_install_metadata()["demo"]["source"] == repo.as_uri()
 
 
@@ -324,7 +324,7 @@ def test_pinned_plugin_update_refuses_to_drift(monkeypatch, tmp_path, capsys):
 
     repo, old_sha, _new_sha = _plugin_repo(tmp_path)
     home = tmp_path / "home"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     _install_plugin_core(repo.as_uri(), force=False, ref=old_sha)
 
     with pytest.raises(SystemExit) as exc:
@@ -343,7 +343,7 @@ def test_dashboard_update_also_refuses_to_drift_pin(monkeypatch, tmp_path):
 
     repo, old_sha, _new_sha = _plugin_repo(tmp_path)
     home = tmp_path / "home"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     _install_plugin_core(repo.as_uri(), force=False, ref=old_sha)
 
     result = dashboard_update_user_plugin("demo")
@@ -360,7 +360,7 @@ def test_failed_force_reinstall_keeps_existing_plugin_and_metadata(
 
     repo, old_sha, _new_sha = _plugin_repo(tmp_path)
     home = tmp_path / "home"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     target, _manifest, _name = _install_plugin_core(
         repo.as_uri(), force=False, ref=old_sha
     )
@@ -395,7 +395,7 @@ def test_metadata_write_failure_rolls_back_new_install(monkeypatch, tmp_path, is
 
     repo, old_sha, _new_sha = _plugin_repo(tmp_path)
     home = tmp_path / "home"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     metadata = home / "plugins" / ".install-metadata.json"
     # The PM worker process publishes the plugin; fail its metadata write there.
     worker_toolchain(client, monkeypatch, isolated_python,
@@ -419,7 +419,7 @@ def test_metadata_write_failure_rolls_back_removal(monkeypatch, tmp_path):
 
     repo, old_sha, _new_sha = _plugin_repo(tmp_path)
     home = tmp_path / "home"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     target, _manifest, _name = _install_plugin_core(
         repo.as_uri(), force=False, ref=old_sha
     )
@@ -444,7 +444,7 @@ def test_reinstall_after_manual_directory_removal_retains_pin(monkeypatch, tmp_p
 
     repo, old_sha, _new_sha = _plugin_repo(tmp_path)
     home = tmp_path / "home"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
     target, _manifest, _name = _install_plugin_core(
         repo.as_uri(), force=False, ref=old_sha
     )
@@ -475,7 +475,7 @@ def test_annotated_tag_pin_installs_at_its_commit(monkeypatch, tmp_path):
     assert _git(repo, "cat-file", "-t", tag_object_sha) == "tag"
 
     home = tmp_path / "home"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
 
     target, _manifest, _name = _install_plugin_core(
         repo.as_uri(), force=False, ref=tag_object_sha
@@ -518,7 +518,7 @@ def test_install_refuses_a_non_https_update_url(monkeypatch, tmp_path, update_ur
         yaml.safe_dump({"name": "demo", "version": "1.0.0", "update_url": update_url}), encoding="utf-8")
     _commit(repo, "feed", "feed")
     home = tmp_path / "home"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
 
     with pytest.raises(PluginOperationError, match="https://"):
         _install_plugin_core(repo.as_uri(), force=False)
@@ -536,7 +536,7 @@ def test_install_saves_an_https_update_url_tag(monkeypatch, tmp_path):
         encoding="utf-8")
     sha = _commit(repo, "feed", "feed")
     home = tmp_path / "home"
-    monkeypatch.setenv("HERMES_HOME", str(home))
+    monkeypatch.setenv("AKRAMCODE_HOME", str(home))
 
     _install_plugin_core(repo.as_uri(), force=False)
 
