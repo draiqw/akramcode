@@ -1,7 +1,7 @@
 """Activation guard for repository scripts.
 
 Every script in this checkout assumes it runs under the PM-activated
-environment (``source ./activate`` on POSIX, ``. .\\activate.ps1`` on Windows),
+environment (``source ./activate`` on macOS/Linux),
 which is what puts the pinned interpreter and its dependency tree on
 ``PATH``/``PYTHONPATH``. A script run with a bare system Python instead fails
 much later with a confusing ``ModuleNotFoundError``. Call
@@ -48,7 +48,6 @@ Two constraints worth knowing: the line is 83 bytes (a shebang must stay under
 127), and ``/usr/bin/env -S`` is GNU and newer-BSD — verify it if an older
 macOS or BSD is a target. macOS's stock bash 3.2 compares whole seconds, so an
 input rewritten within the same second as its recorded mtime goes unnoticed
-there. Windows keeps using ``python scripts\\foo.py`` with the guard.
 """
 
 from __future__ import annotations
@@ -58,18 +57,11 @@ import sys
 
 ACTIVATION_ENV_VAR = "__AKRAMCODE_ACTIVATED"
 POSIX_COMMAND = "source ./activate"
-WINDOWS_COMMAND = ". .\\activate.ps1"
 
 
 def activation_command() -> str:
     """The exact command that activates this checkout in the caller's shell."""
-    if os.name != "nt":
-        return POSIX_COMMAND
-    # A bash-family shell on Windows (Git Bash, MSYS, WSL interop) sources the
-    # POSIX script; only a native host gets the PowerShell one.
-    if os.environ.get("MSYSTEM") or os.path.basename(os.environ.get("SHELL", "")) in {"bash", "sh", "zsh"}:
-        return POSIX_COMMAND
-    return WINDOWS_COMMAND
+    return POSIX_COMMAND
 
 
 def require_activation() -> None:

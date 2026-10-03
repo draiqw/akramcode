@@ -28,7 +28,7 @@ runs:
         git -C "$source" fetch --depth=1 -- origin "$_AKRAMCODE_REF"
         git -C "$source" checkout --detach FETCH_HEAD
         printf 'source=%s\n' "$source" >> "$GITHUB_OUTPUT"
-        if [ "$RUNNER_OS" = Windows ]; then bootstrap=python; else bootstrap=python3; fi
+        bootstrap=python3
         "$bootstrap" -S "$source/scripts/ci/setup_toolchain.py" prepare \
           --toolchain python --home "$source/.build/pm"
 
@@ -38,7 +38,7 @@ runs:
         _SOURCE: ${{ steps.source.outputs.source }}
       run: |
         set -euo pipefail
-        if [ "$RUNNER_OS" = Windows ]; then bootstrap=python; else bootstrap=python3; fi
+        bootstrap=python3
         "$bootstrap" -S "$_SOURCE/scripts/ci/setup_toolchain.py" install \
           --toolchain python --home "$_SOURCE/.build/pm"
 

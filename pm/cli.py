@@ -10,7 +10,6 @@ import sys
 import time
 from pathlib import Path
 
-from pm import termux_libs
 from pm.install import _facts, _lockfile, _store, ensure, stage_only
 from pm.operations import lock_project
 from pm.package import InstallError
@@ -629,21 +628,13 @@ def _refresh_npm_lock() -> int:
 
 
 def cmd_update(args) -> int:
-    """`akramcode pm update [names...] [--check] [--target T] [--uv] [--npm] [--termux]`.
+    """`akramcode pm update [names...] [--check] [--target T] [--uv] [--npm]`.
 
     Resolve each package's latest via its own latest_versions() hook,
     intersect across targets, and (real mode) re-pin the lockfile + install
     the changed ones. --check is dry-run: hits upstream indexes, writes
     nothing. --uv / --npm also refresh uv.lock (+sync venv) / package-lock.
-    --termux is its own repair pass: it repins only the pool archives the
-    rolling termux-main pool has retired under our pins.
     """
-    if args.termux:
-        ignored = [name for name, given in (("names", args.names), ("--target", args.target),
-                                            ("--uv", args.uv), ("--npm", args.npm)) if given]
-        if ignored:
-            print(f"::warning::--termux repairs the termux pool pins only; ignoring {', '.join(ignored)}")
-        return _termux_pass(check=args.check)
     lockfile = _lockfile()
     names = args.names or [n for n in lockfile.names() if not get_package(n).internal or n == "uv"]
     if args.target and not args.check:
@@ -676,36 +667,6 @@ def cmd_update(args) -> int:
         return _refresh_npm_lock()
     return 0
 
-
-def _termux_pass(*, check: bool) -> int:
-    """Repin the pool archives Termux has retired under our pins.
-
-    The bionic lock rows and the runtime-lib table have no shared version axis
-    to resolve (each pins what its own supplier ships), so this is a repair,
-    not an update: only rows whose archive is gone are touched.
-    """
-    table = termux_libs.load_table()
-    lockfile = _lockfile()
-    total = len(termux_libs.pins(table, lockfile))
-    stale = termux_libs.retired(table, lockfile, termux_libs.index())
-    if not stale:
-        print(f"termux pins: {total} rows still served by the pool")
-        return 0
-    unresolved = [entry for entry in stale if entry.replacement is None]
-    width = max(len(entry.pin.name) for entry in stale)
-    for entry in stale:
-        if entry.replacement is None:
-            print(f"{entry.pin.name:<{width}}  {entry.pin.version}: the pool no longer carries it")
-        else:
-            print(f"{entry.pin.name:<{width}}  {entry.pin.version} → {entry.replacement.version}")
-    if check:
-        return 1
-    applied = termux_libs.repair(table, lockfile, stale)
-    if applied:
-        termux_libs.save_table(table)
-        lockfile.save()
-        print(f"✓ {applied} termux pins repinned; restage the bionic payload to pick them up")
-    return 1 if unresolved else 0
 
 
 @reuse_index_responses()
@@ -841,9 +802,6 @@ def main(argv=None) -> int:
     p.add_argument("--target", help="resolve for a different target instead of this machine (e.g. win32-arm64)")
     p.add_argument("--uv", action="store_true", help="also refresh uv.lock + venv (uv update + sync)")
     p.add_argument("--npm", action="store_true", help="also refresh package-lock.json (npm update)")
-    p.add_argument("--termux", action="store_true",
-                   help="repin the termux pool archives the pool has retired (the runtime-lib "
-                        "table + the bionic lock rows); --check reports without writing")
     p.set_defaults(func=cmd_update)
 
     args = parser.parse_args(argv)

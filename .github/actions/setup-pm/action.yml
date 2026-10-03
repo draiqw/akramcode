@@ -104,9 +104,7 @@ runs:
         _PM_PACKAGES: ${{ inputs.packages }}
       run: |
         set -euo pipefail
-        # Windows provides python, not necessarily python3. The host resolver
-        # in PM still selects ARM64 when this bootstrap Python runs under x64.
-        if [ "$RUNNER_OS" = Windows ]; then bootstrap=python; else bootstrap=python3; fi
+        bootstrap=python3
         "$bootstrap" -S "$_PM_ACTION/../../../scripts/ci/setup_toolchain.py" prepare \
           --toolchain "$_PM_TOOLCHAIN" --extras "$_PM_EXTRAS" --packages "$_PM_PACKAGES" --home "$RUNNER_TEMP/setup-pm"
 

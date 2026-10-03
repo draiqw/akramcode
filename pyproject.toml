@@ -34,7 +34,6 @@ dependencies = [
   "PyJWT[crypto]==2.13.0; python_version >= '3.14'",
   "urllib3>=2.7.0,<3; python_version >= '3.14'",
   "cryptography==50.0.1; python_version >= '3.14'",
-  "tzdata==2025.3; sys_platform == 'win32' and python_version >= '3.14'",
   "psutil==7.2.2; sys_platform != 'android' and python_version >= '3.14'",
   "psutil @ git+https://github.com/giampaolo/psutil.git@380bd2b59c67b0e1b04bbf3a90b11744f4f96644 ; sys_platform == 'android' and python_version >= '3.14'",
   "websockets==15.0.1; python_version >= '3.14'",
@@ -45,22 +44,15 @@ dependencies = [
   "httptools>=0.6.3,<0.9; python_version >= '3.14'",
   "watchfiles>=0.20,<2; python_version >= '3.14'",
   "python-multipart>=0.0.9,<1; python_version >= '3.14'",
-  "ptyprocess>=0.7.0,<1; sys_platform != 'win32' and python_version >= '3.14'",
-  "pywinpty>=3.0.5,<4; sys_platform == 'win32' and python_version >= '3.14'",
-  "pywin32>=306,<312; sys_platform == 'win32' and python_version >= '3.14'",
-  "winrt-windows-applicationmodel>=3.2.1,<4; sys_platform == 'win32' and python_version >= '3.14'",
-  "winrt-windows-foundation>=3.2.1,<4; sys_platform == 'win32' and python_version >= '3.14'",
-  "winrt-windows-foundation-collections>=3.2.1,<4; sys_platform == 'win32' and python_version >= '3.14'",
-  "winrt-windows-services-store>=3.2.1,<4; sys_platform == 'win32' and python_version >= '3.14'",
+  "ptyprocess>=0.7.0,<1; python_version >= '3.14'",
   "Pillow==12.3.0; python_version >= '3.14'",
   "pillow-heif>=1.4.0,<2; python_version >= '3.14'",
   "resvg-py==0.4.0; python_version >= '3.14'",
-  "concurrent-log-handler==0.9.29; sys_platform == 'win32' and python_version >= '3.14'",
-  "nemo-relay>=0.9,<0.10; ((sys_platform == 'darwin' and platform_machine == 'arm64') or (sys_platform == 'linux' and platform_machine == 'x86_64' and 'android' not in platform_release) or (sys_platform == 'linux' and platform_machine == 'aarch64' and 'android' not in platform_release) or (sys_platform == 'win32' and platform_machine == 'AMD64') or (sys_platform == 'win32' and platform_machine == 'ARM64')) and python_version >= '3.14'",]
+  "nemo-relay>=0.9,<0.10; ((sys_platform == 'darwin' and platform_machine == 'arm64') or (sys_platform == 'linux' and platform_machine == 'x86_64' and 'android' not in platform_release) or (sys_platform == 'linux' and platform_machine == 'aarch64' and 'android' not in platform_release)) and python_version >= '3.14'",]
 
 [project.optional-dependencies]
 uvloop = [
-  "uvloop>=0.15.1,<0.24; sys_platform != 'win32' and sys_platform != 'cygwin' and sys_platform != 'android' and platform_python_implementation != 'PyPy'",
+  "uvloop>=0.15.1,<0.24; sys_platform != 'android' and platform_python_implementation != 'PyPy'",
 ]
 anthropic = ["anthropic==0.87.0"]
 exa = ["exa-py==2.10.2"]
@@ -71,12 +63,12 @@ fal = ["fal-client==0.13.1"]
 edge-tts = ["edge-tts==7.2.7"]
 neutts = ["neutts[all]==1.4.1; python_version < '3.14'"]
 kittentts = [
-  "kittentts @ https://github.com/KittenML/KittenTTS/releases/download/0.8.1/kittentts-0.8.1-py3-none-any.whl ; (platform_machine != 'ARM64' or sys_platform != 'win32') and (platform_machine != 'x86_64' or sys_platform != 'darwin')",
-  "misaki[en] @ git+https://github.com/NousResearch/misaki.git@f03fd2be7346952a83d3d4845c217fc7667f322d ; (platform_machine != 'ARM64' or sys_platform != 'win32') and (platform_machine != 'x86_64' or sys_platform != 'darwin')",
-  "soundfile==0.14.0; (platform_machine != 'ARM64' or sys_platform != 'win32') and (platform_machine != 'x86_64' or sys_platform != 'darwin')",
+  "kittentts @ https://github.com/KittenML/KittenTTS/releases/download/0.8.1/kittentts-0.8.1-py3-none-any.whl ; (platform_machine != 'x86_64' or sys_platform != 'darwin')",
+  "misaki[en] @ git+https://github.com/NousResearch/misaki.git@f03fd2be7346952a83d3d4845c217fc7667f322d ; (platform_machine != 'x86_64' or sys_platform != 'darwin')",
+  "soundfile==0.14.0; (platform_machine != 'x86_64' or sys_platform != 'darwin')",
 ]
 piper = [
-  "piper-tts==1.8.0; (platform_machine != 'ARM64' or sys_platform != 'win32') and (platform_machine != 'x86_64' or sys_platform != 'darwin')",
+  "piper-tts==1.8.0; (platform_machine != 'x86_64' or sys_platform != 'darwin')",
 ]
 modal = ["modal==1.5.5"]
 daytona = ["daytona==0.155.0"]
@@ -105,12 +97,12 @@ matrix = [
 wecom = ["defusedxml==0.7.1"]
 tts-premium = ["elevenlabs==1.59.0"]
 voice = [
-  "faster-whisper==1.2.1; (platform_machine != 'ARM64' or sys_platform != 'win32') and (platform_machine != 'x86_64' or platform_system != 'Darwin')",
+  "faster-whisper==1.2.1; (platform_machine != 'x86_64' or platform_system != 'Darwin')",
   "sounddevice==0.5.5",
   "numpy==2.4.3",
 ]
 wake = [
-  "pyopen-wakeword==1.1.0; (platform_machine != 'ARM64' or sys_platform != 'win32') and (platform_machine != 'x86_64' or sys_platform != 'darwin')",
+  "pyopen-wakeword==1.1.0; (platform_machine != 'x86_64' or sys_platform != 'darwin')",
   "sherpa-onnx==1.13.8",
   "sherpa-onnx-core==1.13.8",
   "sentencepiece==0.2.2",
@@ -123,12 +115,12 @@ honcho = ["honcho-ai==2.2.0"]
 telegram = ["python-telegram-bot[webhooks]==22.8"]
 discord = ["discord.py[voice]==2.7.1"]
 stt-whisper = [
-  "faster-whisper==1.2.1; (platform_machine != 'ARM64' or sys_platform != 'win32') and (platform_machine != 'x86_64' or platform_system != 'Darwin')",
+  "faster-whisper==1.2.1; (platform_machine != 'x86_64' or platform_system != 'Darwin')",
 ]
 audio-io = ["sounddevice==0.5.5", "numpy==2.4.3"]
 silk = ["pilk==0.2.4"]
 wake-openwakeword = [
-  "pyopen-wakeword==1.1.0; (platform_machine != 'ARM64' or sys_platform != 'win32') and (platform_machine != 'x86_64' or sys_platform != 'darwin')",
+  "pyopen-wakeword==1.1.0; (platform_machine != 'x86_64' or sys_platform != 'darwin')",
 ]
 wake-sherpa = [
   "sherpa-onnx==1.13.8",
@@ -138,13 +130,13 @@ wake-sherpa = [
 ]
 wake-porcupine = ["pvporcupine==4.0.3"]
 google-chat = [
-  "google-cloud-pubsub==2.39.2; platform_machine != 'ARM64' or sys_platform != 'win32'",
+  "google-cloud-pubsub==2.39.2",
 ]
 doc-extract = ["firecrawl-anydoc==0.2.4"]
 trace-upload = ["huggingface-hub==1.24.0"]
 supermemory = ["supermemory==3.50.0"]
 mem0 = [
-  "mem0ai==2.0.10; platform_machine != 'ARM64' or sys_platform != 'win32'",
+  "mem0ai==2.0.10",
 ]
 vision = []
 pty = []
@@ -239,7 +231,7 @@ dev = [
   "setuptools==83.0.0",
 ]
 test = [
-  "distlib==0.4.3; sys_platform == 'win32'",
+  "distlib==0.4.3",
   "anthropic==0.87.0",
 ]
 
@@ -258,13 +250,13 @@ opt-in-extras = ["kittentts"]
 
 [tool.akramcode.extras-platforms]
 matrix = "sys_platform == 'linux'"
-google-chat = "platform_machine != 'ARM64' or sys_platform != 'win32'"
-mem0 = "platform_machine != 'ARM64' or sys_platform != 'win32'"
-wake-openwakeword = "(platform_machine != 'ARM64' or sys_platform != 'win32') and (platform_machine != 'x86_64' or sys_platform != 'darwin')"
-stt-whisper = "(platform_machine != 'ARM64' or sys_platform != 'win32') and (platform_machine != 'x86_64' or platform_system != 'Darwin')"
+google-chat = "true"
+mem0 = "true"
+wake-openwakeword = "(platform_machine != 'x86_64' or sys_platform != 'darwin')"
+stt-whisper = "(platform_machine != 'x86_64' or platform_system != 'Darwin')"
 neutts = "python_version < '3.14'"
-kittentts = "(platform_machine != 'ARM64' or sys_platform != 'win32') and (platform_machine != 'x86_64' or sys_platform != 'darwin')"
-piper = "(platform_machine != 'ARM64' or sys_platform != 'win32') and (platform_machine != 'x86_64' or sys_platform != 'darwin')"
+kittentts = "(platform_machine != 'x86_64' or sys_platform != 'darwin')"
+piper = "(platform_machine != 'x86_64' or sys_platform != 'darwin')"
 
 [tool.uv]
 default-groups = []
@@ -431,7 +423,7 @@ markers = [
   "requires_wal: needs the runtime to actually enable SQLite WAL mode (skipped where AkramCode falls back to journal_mode=DELETE)",
   "no_isolate: opt out of per-file subprocess isolation (tests share mutable module-level state)",
   "ssh: marks tests requiring a reachable SSH server (skipped in normal CI)",
-  "platforms(*specs, arch=None, arch_negate=False): run only on hosts matching at least one spec — linux/macos/windows/posix/any, 'not X' negation, optional arch filter",
+  "platforms(*specs, arch=None, arch_negate=False): run only on hosts matching at least one spec — linux/macos/posix/any, 'not X' negation, optional arch filter",
 ]
 addopts = "-m 'not integration and not live'"
 

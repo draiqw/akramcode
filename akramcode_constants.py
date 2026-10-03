@@ -51,19 +51,11 @@ def _expand_akramcode_home(path: str) -> Path:
 def _get_platform_default_akramcode_home() -> Path:
     """Return the platform default with the literal data-directory suffix."""
     suffix = os.environ.get("AKRAMCODE_DATA_DIR_SUFFIX", "")
-    if sys.platform == "win32":
-        local_appdata = os.environ.get("LOCALAPPDATA", "").strip()
-        base = Path(local_appdata) if local_appdata else Path.home() / "AppData" / "Local"
-        return base / ("akramcode" + suffix)
     return Path.home() / (".akramcode" + suffix)
 
 
 def _legacy_platform_home() -> Path:
     """Return the pre-akramcode data directory for one-time migration."""
-    if sys.platform == "win32":
-        local_appdata = os.environ.get("LOCALAPPDATA", "").strip()
-        base = Path(local_appdata) if local_appdata else Path.home() / "AppData" / "Local"
-        return base / "akramcode"
     return Path.home() / ".akramcode"
 
 
@@ -457,28 +449,19 @@ def get_akramcode_dir(new_subpath: str, old_name: str, *, home: Path | None = No
 def iter_akramcode_node_dirs(home: Path | None = None) -> list[Path]:
     """Historical layout for old-updater diagnostics, never runtime selection."""
     node_dir = (home or get_akramcode_home()) / "node"
-    return [node_dir, node_dir / "bin"] if sys.platform == "win32" else [node_dir / "bin", node_dir]
-
-
-_WINDOWS_NODE_SHIMS = {
-    "npm": ["npm.cmd", "npm.exe", "npm"], "npx": ["npx.cmd", "npx.exe", "npx"], "node": ["node.exe", "node"],
-}
+    return [node_dir / "bin", node_dir]
 
 
 def _candidate_node_command_names(command: str) -> list[str]:
     base = Path(command).name
-    if sys.platform != "win32" or "." in base:
-        return [base]
-    # Prefer npm.cmd: PowerShell may block npm.ps1 by policy; CreateProcess cannot launch a bare .ps1.
-    return _WINDOWS_NODE_SHIMS.get(base.lower(), [f"{base}.cmd", f"{base}.exe", base])
+    return [base]
 
 def _run_version_probe(argv: list[str], **kwargs):
     """Run a hidden ``--version`` probe; ``None`` when it cannot run."""
     import subprocess
     try:
-        from akramcode_cli._subprocess_compat import windows_hide_flags
         return subprocess.run(
-            argv, capture_output=True, timeout=10, creationflags=windows_hide_flags(), **kwargs
+            argv, capture_output=True, timeout=10, **kwargs
         )
     except (OSError, subprocess.TimeoutExpired, ValueError):
         return None
@@ -505,7 +488,7 @@ def node_tool_runnable(path: str | None) -> bool:
     """True only when *path* is a Node/npm/npx binary that actually runs (``--version`` probe)."""
     if not path:
         return False
-    present = Path(path).is_file() if sys.platform == "win32" else _is_executable_file(path)
+    present = _is_executable_file(path)
     return present and _version_probe_ok(path)
 
 
@@ -525,8 +508,6 @@ def find_node_executable(command: str) -> str | None:
     """
     command = str(command)
     if any(sep in command for sep in ("/", "\\")):
-        if sys.platform == "win32":
-            return command if Path(command).is_file() else None
         return shutil.which(command)
     base = command.lower()
     for suffix in (".cmd", ".exe", ".ps1"):
@@ -545,15 +526,7 @@ def find_node_executable(command: str) -> str | None:
             if candidate.is_file():
                 return str(candidate)
         return None
-    if sys.platform != "win32":
-        return shutil.which(command)
-    directories = [d for d in os.environ.get("PATH", "").split(os.pathsep) if d]
-    for name in _candidate_node_command_names(command):
-        for directory in directories:
-            candidate = Path(directory) / name
-            if candidate.is_file():
-                return str(candidate)
-    return None
+    return shutil.which(command)
 
 
 def with_akramcode_node_path(env: dict[str, str] | None = None) -> dict[str, str]:

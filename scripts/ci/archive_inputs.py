@@ -22,8 +22,6 @@ from pm.lock import SCHEMA
 from pm.store import ALL_TARGETS, Store
 from scripts.releases import r2
 
-TERMUX_TARGET = "linux-arm64-bionic"
-
 
 @dataclass(frozen=True)
 class InputPin:
@@ -85,11 +83,6 @@ def pinned_inputs(repo: Path, *, target: str | None = None, packages: set[str] |
                 if isinstance(row, dict) and isinstance(row.get("url"), str) and row["url"].startswith("docker://"):
                     continue  # OCI digests belong to the container registry, not HTTP archives.
                 pins.append(_pin(label, row, "tool"))
-    if packages is None and target in (None, TERMUX_TARGET):
-        table = json.loads((repo / "pm" / "termux_runtime_libs.json").read_text(encoding="utf-8-sig"))
-        pins.extend(_pin(name, row, "library") for name, row in table["libs"].items())
-        if table.get("licenses") is not None:
-            pins.append(_pin("termux-licenses", table["licenses"], "license"))
     if not pins:
         raise ValueError("No pinned HTTP inputs selected")
     return pins
@@ -150,8 +143,6 @@ def _download_upstream(pin: InputPin, local: Path) -> str:
 
 def stage_inputs(pins: list[InputPin], *, archive: Archive, store: Store | None = None, payload: Path | None = None) -> int:
     """Archive all unique digests concurrently; optionally seed the stagers' inputs."""
-    from scripts.termux.stage_runtime_libs import download_path
-
     groups: dict[str, list[InputPin]] = {}
     for pin in pins:
         groups.setdefault(pin.sha256, []).append(pin)

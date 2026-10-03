@@ -13,7 +13,7 @@ inputs:
 
 outputs:
   python:
-    description: Run Python tests / ruff / ty / windows-footguns.
+    description: Run Python tests / ruff / ty.
     value: ${{ steps.classify.outputs.python }}
   python_prod:
     description: Python changes outside tests/.
@@ -61,7 +61,7 @@ outputs:
     description: Run the bootstrap installer lane (install.sh sandbox + stamp verification).
     value: ${{ steps.classify.outputs.bootstrap }}
   desktop_updater:
-    description: Run the Windows desktop-update hand-off (windows.ps1) integration tests.
+    description: Run desktop update integration tests.
     value: ${{ steps.classify.outputs.desktop_updater }}
   rust:
     description: Run `cargo test` for the Tauri bootstrap installer.
