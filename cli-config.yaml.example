@@ -517,6 +517,24 @@ terminal:
 #   daytona_image: "nousresearch/hermes-sandbox:desktop"
 #   container_disk: 10240          # Daytona max is 10GB per sandbox
 
+# -----------------------------------------------------------------------------
+# OPTION 7: Alibaba OpenSandbox
+# Requires the OpenSandbox server to be reachable from this machine and the
+# optional dependency: install AkramCode with the `opensandbox` extra.
+# -----------------------------------------------------------------------------
+# terminal:
+#   backend: "opensandbox"
+#   cwd: "/workspace"
+#   opensandbox_server_url: "http://127.0.0.1:8080"
+#   opensandbox_api_key: "${SANDBOX_SERVER_API_KEY}"  # Keep the actual key in ~/.hermes/.env
+#   opensandbox_image: "akramcode-sandbox:latest"
+#   opensandbox_persistent: true
+#   opensandbox_ttl_minutes: 30
+#   opensandbox_egress_mode: "packages"  # none, packages, allowlist, or full
+#   container_cpu: 1
+#   container_memory: 5120  # MiB
+#   container_disk: 51200   # MiB
+
 #
 # --- Container resource limits (docker, singularity, modal, daytona -- ignored for local/ssh) ---
 # These settings apply to all container backends. They control the resources

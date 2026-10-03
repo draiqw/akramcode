@@ -2158,6 +2158,12 @@ def write_platform_config_field(
 # except ``backend`` (historically ``TERMINAL_ENV``).
 TERMINAL_CONFIG_ENV_MAP = {
     "backend": "TERMINAL_ENV",
+    "opensandbox_server_url": "SANDBOX_SERVER_URL",
+    "opensandbox_api_key": "SANDBOX_SERVER_API_KEY",
+    "opensandbox_ttl_minutes": "AGENT_SANDBOX_TTL_MINUTES",
+    "opensandbox_egress_mode": "SANDBOX_EGRESS_MODE",
+    "opensandbox_image": "TERMINAL_OPENSANDBOX_IMAGE",
+    "opensandbox_persistent": "TERMINAL_OPENSANDBOX_PERSISTENT",
     **{
         key: f"TERMINAL_{key.upper()}"
         for key in (

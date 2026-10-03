@@ -552,6 +552,7 @@ _IMAGE_KEY_BY_BACKEND = {
     "singularity": "singularity_image",
     "modal": "modal_image",
     "daytona": "daytona_image",
+    "opensandbox": "opensandbox_image",
 }
 
 
@@ -750,6 +751,12 @@ def _get_env_config() -> Dict[str, Any]:
         "daytona_image": _tenv("TERMINAL_DAYTONA_IMAGE", default_image),
         "vercel_runtime": _tenv("TERMINAL_VERCEL_RUNTIME", "").strip(),
         "vercel_image": _tenv("TERMINAL_VERCEL_IMAGE", "").strip(),
+        "opensandbox_server_url": _tenv("SANDBOX_SERVER_URL", "").strip(),
+        "opensandbox_api_key": _tenv("SANDBOX_SERVER_API_KEY", ""),
+        "opensandbox_image": _tenv("TERMINAL_OPENSANDBOX_IMAGE", "").strip(),
+        "opensandbox_persistent": _tenv_bool("TERMINAL_OPENSANDBOX_PERSISTENT", "true"),
+        "opensandbox_ttl_minutes": _parse_env_var("AGENT_SANDBOX_TTL_MINUTES", "30"),
+        "opensandbox_egress_mode": _tenv("SANDBOX_EGRESS_MODE", "packages").strip(),
         "cwd": cwd,
         "host_cwd": host_cwd,
         "docker_mount_cwd_to_workspace": mount_docker_cwd,

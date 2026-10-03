@@ -51,7 +51,7 @@ def terminal_backend_unavailable_reason() -> Optional[str]:
 
 _VERCEL_SANDBOX_DEFAULT_CWD = "/vercel/sandbox"
 _SUPPORTED_VERCEL_RUNTIMES = ("node24", "node22", "python3.13")
-_BUILTIN_BACKENDS = "local, docker, singularity, modal, daytona, vercel_sandbox, ssh"
+_BUILTIN_BACKENDS = "local, docker, singularity, modal, daytona, vercel_sandbox, opensandbox, ssh"
 
 # Config -> kwargs shapers, driven by (out_key, config_key, default) tables. The container table's
 # (key, default) literal is intentionally greppable; tools/terminal_tool.py keeps its own for the AST test.
@@ -62,6 +62,8 @@ _RESOURCE_KEYS = (("cpu", "container_cpu", 1), ("memory", "container_memory", 51
 _CONTAINER_KEYS = (
     ("container_cpu", 1), ("container_memory", 5120), ("container_disk", 51200),
     ("container_persistent", True), ("modal_mode", "auto"), ("vercel_runtime", ""), ("vercel_image", ""),
+    ("opensandbox_server_url", ""), ("opensandbox_api_key", ""), ("opensandbox_image", ""),
+    ("opensandbox_persistent", True), ("opensandbox_ttl_minutes", 30), ("opensandbox_egress_mode", "packages"),
     ("docker_volumes", []), ("docker_mount_cwd_to_workspace", False), ("docker_forward_env", []),
     ("docker_env", {}), ("docker_run_as_host_user", False), ("docker_extra_args", []),
     ("docker_shm_size", "1g"), ("docker_network", True), ("docker_persist_across_processes", True),
@@ -176,6 +178,29 @@ def _build_modal_env(*, image, cwd, timeout, cc, task_id, **_):
                persistent_filesystem=res["persistent_filesystem"], task_id=task_id)
 
 
+def _build_opensandbox_env(*, image, cwd, timeout, cc, task_id, **_):
+    cls = importlib.import_module("tools.environments.opensandbox").OpenSandboxEnvironment
+    sandbox_image = cc.get("opensandbox_image") or image
+    kwargs = {
+        "image": sandbox_image,
+        "cwd": cwd,
+        "timeout": timeout,
+        "task_id": task_id,
+        "server_url": cc.get("opensandbox_server_url") or None,
+        "api_key": cc.get("opensandbox_api_key") or None,
+        "persistent": cc.get("opensandbox_persistent", True),
+        "ttl_minutes": cc.get("opensandbox_ttl_minutes", 30),
+        "egress_mode": cc.get("opensandbox_egress_mode", "packages"),
+        "cpu": cc.get("container_cpu", 1),
+        "memory": cc.get("container_memory", 5120),
+        "disk": cc.get("container_disk", 51200),
+    }
+    accepted = inspect.signature(cls).parameters
+    if not any(p.kind is inspect.Parameter.VAR_KEYWORD for p in accepted.values()):
+        kwargs = {key: value for key, value in kwargs.items() if key in accepted}
+    return cls(**kwargs)
+
+
 # env_type -> (class getter, takes image, extra kwargs from (cc, resource kwargs)). SDK-backed modules
 # (daytona/vercel) are imported lazily so they are only required when that backend is selected.
 _SANDBOX_ROWS = {
@@ -232,7 +257,7 @@ def _build_plugin_env(*, env_type, image, cwd, timeout, cc, task_id, **_):
 # Built-in backend -> builder. Anything else is looked up in the plugin registry.
 _ENV_BUILDERS = {"local": _build_local_env, "docker": _build_docker_env, "singularity": _build_singularity_env,
                  "modal": _build_modal_env, "daytona": _build_daytona_env, "vercel_sandbox": _build_vercel_env,
-                 "ssh": _build_ssh_env}
+                 "opensandbox": _build_opensandbox_env, "ssh": _build_ssh_env}
 
 
 def _create_environment(env_type: str, image: str, cwd: str, timeout: int,
@@ -311,6 +336,14 @@ def _daytona_post(config: Dict[str, Any]) -> bool:
     return get_secret("DAYTONA_API_KEY") is not None
 
 
+def _opensandbox_pre(config: Dict[str, Any]) -> bool:
+    if not config.get("opensandbox_server_url"):
+        return _reject("OpenSandbox requires terminal.opensandbox_server_url to point to a reachable server")
+    if config.get("opensandbox_egress_mode", "packages") not in {"none", "packages", "allowlist", "full"}:
+        return _reject("OpenSandbox egress mode must be one of: none, packages, allowlist, full")
+    return True
+
+
 _BACKEND_SPECS: Dict[str, Dict[str, Any]] = {
     "local": {},
     "docker": {"binary": (lambda: importlib.import_module("tools.environments.docker").find_docker(), "version",
@@ -320,6 +353,10 @@ _BACKEND_SPECS: Dict[str, Dict[str, Any]] = {
     "modal": {"pre": _modal_pre,
               "module": ("modal", "modal is required for direct modal terminal backend. Run hermes setup terminal and select Modal.")},
     "vercel_sandbox": {"pre": _check_vercel},
+    "opensandbox": {
+        "pre": _opensandbox_pre,
+        "module": ("opensandbox", "OpenSandbox requires the optional dependency: install AkramCode with the 'opensandbox' extra."),
+    },
     "daytona": {"post": _daytona_post},
 }
 
