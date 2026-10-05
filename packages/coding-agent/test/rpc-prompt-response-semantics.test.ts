@@ -62,7 +62,7 @@ function createAssistantMessage(text: string): AssistantMessage {
 		role: "assistant",
 		content: [{ type: "text", text }],
 		api: "anthropic-messages",
-		provider: "anthropic",
+		provider: "openrouter",
 		model: "claude-sonnet-4-5",
 		usage: {
 			input: 0,
@@ -108,7 +108,7 @@ async function createRuntimeHost(options: {
 	const tempDir = join(tmpdir(), `akramcode-rpc-prompt-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 	mkdirSync(tempDir, { recursive: true });
 
-	const model = options.model ?? getModel("anthropic", "claude-sonnet-4-5");
+	const model = options.model ?? getModel("openrouter", "anthropic/claude-sonnet-4.5");
 	if (!model) {
 		throw new Error("Test model not found");
 	}
@@ -137,7 +137,7 @@ async function createRuntimeHost(options: {
 	const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
 	const modelRegistry = await createInMemoryModelRegistry(authStorage);
 	if (options.withAuth) {
-		await authStorage.modify("anthropic", async () => ({ type: "api_key", key: "test-key" }));
+		await authStorage.modify("openrouter", async () => ({ type: "api_key", key: "test-key" }));
 	}
 
 	const session = new AgentSession({

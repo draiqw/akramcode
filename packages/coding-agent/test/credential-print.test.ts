@@ -24,22 +24,6 @@ describe("credential print commands", () => {
 		await expect(resolveCredentialForPrint(args, runtime, "api_key")).resolves.toBe("test-api-key");
 	});
 
-	test("prints bearer tokens resolved from an Authorization header", async () => {
-		const runtime = await createRuntime(
-			AuthStorage.inMemory({
-				"kimi-coding": {
-					type: "oauth",
-					access: "header-test-token",
-					refresh: "test-refresh-token",
-					expires: Date.now() + 60 * 60 * 1000,
-				},
-			}),
-		);
-		const args = parseArgs(["--provider", "kimi-coding"]);
-
-		await expect(resolveCredentialForPrint(args, runtime, "bearer_token")).resolves.toBe("header-test-token");
-	});
-
 	test("refreshes an expired OAuth token before printing it", async () => {
 		const storage = AuthStorage.inMemory({
 			"openai-codex": {

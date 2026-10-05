@@ -47,7 +47,7 @@ function createAssistantMessage(text: string): AssistantMessage {
 		role: "assistant",
 		content: [{ type: "text", text }],
 		api: "anthropic-messages",
-		provider: "anthropic",
+		provider: "openrouter",
 		model: "mock",
 		usage: {
 			input: 0,
@@ -83,7 +83,7 @@ describe("AgentSession concurrent prompt guard", () => {
 	});
 
 	async function createSession() {
-		const model = getModel("anthropic", "claude-sonnet-4-5")!;
+		const model = getModel("openrouter", "anthropic/claude-sonnet-4.5")!;
 		let abortSignal: AbortSignal | undefined;
 
 		// Use a stream function that responds to abort
@@ -117,7 +117,7 @@ describe("AgentSession concurrent prompt guard", () => {
 		const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
 		const modelRegistry = await createModelRegistry(authStorage, tempDir);
 		// Set a runtime API key so validation passes
-		await authStorage.modify("anthropic", async () => ({ type: "api_key", key: "test-key" }));
+		await authStorage.modify("openrouter", async () => ({ type: "api_key", key: "test-key" }));
 
 		session = new AgentSession({
 			agent,
@@ -186,7 +186,7 @@ describe("AgentSession concurrent prompt guard", () => {
 	});
 
 	it("should queue extension-origin steering messages while streaming", async () => {
-		const model = getModel("anthropic", "claude-sonnet-4-5")!;
+		const model = getModel("openrouter", "anthropic/claude-sonnet-4.5")!;
 		let abortSignal: AbortSignal | undefined;
 		let sawSteeringMessage = false;
 		let lastInputSource: string | undefined;
@@ -241,7 +241,7 @@ describe("AgentSession concurrent prompt guard", () => {
 		const settingsManager = SettingsManager.create(tempDir, tempDir);
 		const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
 		const modelRegistry = await createModelRegistry(authStorage, tempDir);
-		await authStorage.modify("anthropic", async () => ({ type: "api_key", key: "test-key" }));
+		await authStorage.modify("openrouter", async () => ({ type: "api_key", key: "test-key" }));
 
 		const extensionsResult = await createTestExtensionsResult([
 			(akramcode) => {
@@ -297,7 +297,7 @@ describe("AgentSession concurrent prompt guard", () => {
 
 	it("should allow prompt() after previous completes", async () => {
 		// Create session with a stream that completes immediately
-		const model = getModel("anthropic", "claude-sonnet-4-5")!;
+		const model = getModel("openrouter", "anthropic/claude-sonnet-4.5")!;
 		const agent = new Agent({
 			getApiKey: () => "test-key",
 			initialState: {
@@ -319,7 +319,7 @@ describe("AgentSession concurrent prompt guard", () => {
 		const settingsManager = SettingsManager.create(tempDir, tempDir);
 		const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
 		const modelRegistry = await createModelRegistry(authStorage, tempDir);
-		await authStorage.modify("anthropic", async () => ({ type: "api_key", key: "test-key" }));
+		await authStorage.modify("openrouter", async () => ({ type: "api_key", key: "test-key" }));
 
 		session = new AgentSession({
 			agent,
@@ -341,7 +341,7 @@ describe("AgentSession concurrent prompt guard", () => {
 	});
 
 	it("should wait for queued agent events before emitting tool_call", async () => {
-		const model = getModel("anthropic", "claude-sonnet-4-5")!;
+		const model = getModel("openrouter", "anthropic/claude-sonnet-4.5")!;
 		const tool = {
 			name: "dummy",
 			description: "Dummy tool",
@@ -375,7 +375,7 @@ describe("AgentSession concurrent prompt guard", () => {
 							role: "assistant",
 							content: [{ type: "text", text: "done" }],
 							api: "anthropic-messages",
-							provider: "anthropic",
+							provider: "openrouter",
 							model: "mock",
 							usage: {
 								input: 1,
@@ -400,7 +400,7 @@ describe("AgentSession concurrent prompt guard", () => {
 							{ type: "toolCall", id: "toolu_2", name: "dummy", arguments: { q: "y" } },
 						],
 						api: "anthropic-messages",
-						provider: "anthropic",
+						provider: "openrouter",
 						model: "mock",
 						usage: {
 							input: 1,
@@ -425,7 +425,7 @@ describe("AgentSession concurrent prompt guard", () => {
 		const settingsManager = SettingsManager.create(tempDir, tempDir);
 		const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
 		const modelRegistry = await createModelRegistry(authStorage, tempDir);
-		await authStorage.modify("anthropic", async () => ({ type: "api_key", key: "test-key" }));
+		await authStorage.modify("openrouter", async () => ({ type: "api_key", key: "test-key" }));
 
 		session = new AgentSession({
 			agent,
@@ -489,7 +489,7 @@ describe("AgentSession concurrent prompt guard", () => {
 	});
 
 	it("should persist message_end events in order with slow extension handlers", async () => {
-		const model = getModel("anthropic", "claude-sonnet-4-5")!;
+		const model = getModel("openrouter", "anthropic/claude-sonnet-4.5")!;
 		const tool = {
 			name: "dummy",
 			description: "Dummy tool",
@@ -524,7 +524,7 @@ describe("AgentSession concurrent prompt guard", () => {
 							role: "assistant",
 							content: [{ type: "text", text: "done" }],
 							api: "anthropic-messages",
-							provider: "anthropic",
+							provider: "openrouter",
 							model: "mock",
 							usage: {
 								input: 1,
@@ -549,7 +549,7 @@ describe("AgentSession concurrent prompt guard", () => {
 							{ type: "toolCall", id: "toolu_1", name: "dummy", arguments: { q: "x" } },
 						],
 						api: "anthropic-messages",
-						provider: "anthropic",
+						provider: "openrouter",
 						model: "mock",
 						usage: {
 							input: 1,
@@ -574,7 +574,7 @@ describe("AgentSession concurrent prompt guard", () => {
 		const settingsManager = SettingsManager.create(tempDir, tempDir);
 		const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
 		const modelRegistry = await createModelRegistry(authStorage, tempDir);
-		await authStorage.modify("anthropic", async () => ({ type: "api_key", key: "test-key" }));
+		await authStorage.modify("openrouter", async () => ({ type: "api_key", key: "test-key" }));
 
 		session = new AgentSession({
 			agent,

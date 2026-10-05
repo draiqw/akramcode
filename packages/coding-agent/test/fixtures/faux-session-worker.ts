@@ -14,7 +14,7 @@ if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(
 	const role = consumeInternalProcessRole();
 	if (role !== "session-worker") throw new Error("Faux Session worker requires a session-worker invocation");
 	void runSessionWorkerWithHarness(process.argv.slice(2), async (databasePath, options) => {
-		if (options.provider !== "anthropic" || options.model !== "claude-sonnet-4-5") {
+		if (options.provider !== "openrouter" || options.model !== "anthropic/claude-sonnet-4.5") {
 			throw new Error(`Unexpected faux worker model: ${options.provider}/${options.model}`);
 		}
 		const faux = fauxProvider();

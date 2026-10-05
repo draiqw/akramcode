@@ -29,7 +29,7 @@ import { createCodingTools } from "../src/index.ts";
  * API key for authenticated tests. Tests using this should be wrapped in
  * describe.skipIf(!API_KEY)
  */
-export const API_KEY = process.env.ANTHROPIC_OAUTH_TOKEN || process.env.ANTHROPIC_API_KEY;
+export const API_KEY = process.env.OPENROUTER_API_KEY;
 
 // ============================================================================
 // OAuth API key resolution from ~/.akramcode/agent/auth.json
@@ -137,7 +137,7 @@ export function assistantMsg(text: string) {
 		role: "assistant" as const,
 		content: [{ type: "text" as const, text }],
 		api: "anthropic-messages" as const,
-		provider: "anthropic",
+		provider: "openrouter",
 		model: "test",
 		usage: {
 			input: 1,
@@ -254,7 +254,7 @@ export async function createTestSession(options: TestSessionOptions = {}): Promi
 	const tempDir = join(tmpdir(), `akramcode-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 	mkdirSync(tempDir, { recursive: true });
 
-	const model = getModel("anthropic", "claude-sonnet-4-5")!;
+	const model = getModel("openrouter", "anthropic/claude-sonnet-4.5")!;
 	const agent = new Agent({
 		getApiKey: () => API_KEY,
 		initialState: {

@@ -82,30 +82,9 @@ describe("Anthropic forceAdaptiveThinking compat override", () => {
 		expect(payload.output_config).toEqual({ effort: "medium" });
 	});
 
-	it("uses adaptive thinking with native xhigh effort for Claude Fable 5", async () => {
-		const payload = await capturePayload(getModel("anthropic", "claude-fable-5"), { reasoning: "xhigh" });
-
-		expect(payload.thinking).toEqual({ type: "adaptive", display: "summarized" });
-		expect(payload.output_config).toEqual({ effort: "xhigh" });
-	});
-
-	it.each([
-		["kimi-for-coding", "medium", "medium"],
-		["k3", "max", "max"],
-		["kimi-for-coding-highspeed", "medium", "medium"],
-	] as const)(
-		"uses adaptive thinking effort without a token budget for Kimi Coding %s",
-		async (modelId, reasoning, effort) => {
-			const payload = await capturePayload(getModel("kimi-coding", modelId), { reasoning });
-
-			expect(payload.thinking).toEqual({ type: "adaptive", display: "summarized" });
-			expect(payload.output_config).toEqual({ effort });
-		},
-	);
-
 	it("allows built-in adaptive models to opt out with compat.forceAdaptiveThinking false", async () => {
 		const model: Model<"anthropic-messages"> = {
-			...getModel("anthropic", "claude-opus-4-8"),
+			...getModel("openrouter", "anthropic/claude-opus-4.8"),
 			compat: { forceAdaptiveThinking: false },
 		};
 		const payload = await capturePayload(model, { reasoning: "medium" });

@@ -77,7 +77,7 @@ describe("strict built-in tools", () => {
 				const { session } = await createAgentSession({
 					cwd,
 					agentDir,
-					model: getModel("anthropic", "claude-sonnet-4-5"),
+					model: getModel("openrouter", "anthropic/claude-sonnet-4.5"),
 					settingsManager,
 					sessionManager: SessionManager.inMemory(cwd),
 					resourceLoader,

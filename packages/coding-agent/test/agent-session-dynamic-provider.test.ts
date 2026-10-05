@@ -13,9 +13,9 @@ import { SessionManager } from "../src/core/session-manager.ts";
 import { SettingsManager } from "../src/core/settings-manager.ts";
 
 function nativeAnthropicProvider(baseUrl: string): Provider {
-	const model = { ...getModel("anthropic", "claude-sonnet-4-5")!, baseUrl };
+	const model = { ...getModel("openrouter", "anthropic/claude-sonnet-4.5")!, baseUrl };
 	return {
-		id: "anthropic",
+		id: "openrouter",
 		name: "Native Anthropic",
 		baseUrl,
 		auth: {
@@ -54,7 +54,7 @@ describe("AgentSession dynamic provider registration", () => {
 		const settingsManager = SettingsManager.create(tempDir, agentDir);
 		const sessionManager = SessionManager.inMemory();
 		const authStorage = AuthStorage.create(join(agentDir, "auth.json"));
-		await authStorage.modify("anthropic", async () => ({ type: "api_key", key: "test-key" }));
+		await authStorage.modify("openrouter", async () => ({ type: "api_key", key: "test-key" }));
 		const modelRuntime = await ModelRuntime.create({
 			credentials: authStorage,
 			modelsPath: join(agentDir, "models.json"),
@@ -70,7 +70,7 @@ describe("AgentSession dynamic provider registration", () => {
 		const { session } = await createAgentSession({
 			cwd: tempDir,
 			agentDir,
-			model: getModel("anthropic", "claude-sonnet-4-5")!,
+			model: getModel("openrouter", "anthropic/claude-sonnet-4.5")!,
 			settingsManager,
 			sessionManager,
 			modelRuntime,
@@ -95,7 +95,7 @@ describe("AgentSession dynamic provider registration", () => {
 	it("applies top-level registerProvider overrides to the active model", async () => {
 		const session = await createSession([
 			(akramcode) => {
-				akramcode.registerProvider("anthropic", { baseUrl: "http://localhost:8080/top-level" });
+				akramcode.registerProvider("openrouter", { baseUrl: "http://localhost:8080/top-level" });
 			},
 		]);
 
@@ -109,7 +109,7 @@ describe("AgentSession dynamic provider registration", () => {
 		const session = await createSession([
 			(akramcode) => {
 				akramcode.on("session_start", () => {
-					akramcode.registerProvider("anthropic", { baseUrl: "http://localhost:8080/session-start" });
+					akramcode.registerProvider("openrouter", { baseUrl: "http://localhost:8080/session-start" });
 				});
 			},
 		]);
@@ -141,7 +141,7 @@ describe("AgentSession dynamic provider registration", () => {
 				akramcode.registerCommand("use-proxy", {
 					description: "Use proxy",
 					handler: async () => {
-						akramcode.registerProvider("anthropic", { baseUrl: "http://localhost:8080/command" });
+						akramcode.registerProvider("openrouter", { baseUrl: "http://localhost:8080/command" });
 					},
 				});
 			},

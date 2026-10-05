@@ -171,24 +171,6 @@ describe("openai-completions prompt caching", () => {
 		expect(headers["x-session-affinity"]).toBe("session-affinity");
 	});
 
-	it.each(["accounts/fireworks/models/glm-5p3", "accounts/fireworks/routers/glm-5p3-fast"] as const)(
-		"sends Fireworks session affinity for %s",
-		async (modelId) => {
-			const model = getModel("fireworks", modelId);
-			const { headers } = await captureRequest({ sessionId: "fireworks-session" }, model);
-
-			expect(headers["x-session-affinity"]).toBe("fireworks-session");
-		},
-	);
-
-	it("sends Baseten session affinity for built-in catalog models", async () => {
-		const model = getModel("baseten", "zai-org/GLM-5.2");
-		const { headers } = await captureRequest({ sessionId: "baseten-catalog-session" }, model);
-
-		expect(headers["x-session-affinity"]).toBe("baseten-catalog-session");
-		expect(headers["x-client-request-id"]).toBe("baseten-catalog-session");
-	});
-
 	it("uses OpenAI no-session format when configured", async () => {
 		const model = createModel({
 			compat: { sendSessionAffinityHeaders: true, sessionAffinityFormat: "openai-nosession" },

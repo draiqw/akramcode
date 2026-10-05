@@ -3429,6 +3429,11 @@ async function generateModels() {
 	}
 	applyAnthropicAllowedFallbackModelMetadata(allModels.filter(isAnthropicFallbackMetadataModel));
 
+	// Only these providers ship in the built-in catalog; anything else is reached
+	// through a user-defined provider (models.json or an extension).
+	const keptProviders = new Set(["deepseek", "openai", "openai-codex", "openrouter", "radius"]);
+	allModels.splice(0, allModels.length, ...allModels.filter((model) => keptProviders.has(model.provider)));
+
 	// Keep chat and image catalogs separate so one upstream ID can expose both
 	// operations with different API implementations.
 	type ProviderCatalog = {
@@ -3451,9 +3456,7 @@ async function generateModels() {
 		...modelsDevClassifierModels,
 		...openRouterCatalog.classifiers,
 		...aiGatewayCatalog.classifiers,
-		...OPENCODE_CLASSIFIER_MODELS,
-		...CLOUDFLARE_WORKERS_AI_CLASSIFIER_MODELS,
-	];
+	].filter((model) => keptProviders.has(model.provider));
 	for (const model of classifierModels) {
 		providers[model.provider] ??= { chat: {}, image: {}, classifier: {} };
 		providers[model.provider].classifier[model.id] ??= model;
@@ -3569,7 +3572,7 @@ async function generateModels() {
 				const generatedShardFiles = new Set<string>();
 				for (const providerId of sortedProviderIds) {
 					let output = generatedHeader;
-					output += `import values from "@akramcode/ai/scripts/data/${providerId}.json" with { type: "json" };\n`;
+					output += `import values from "./data/${providerId}.json" with { type: "json" };\n`;
 					output += `import { flattenChatModelCatalog, flattenClassifierModelCatalog, flattenImageModelCatalog, type ChatModelCatalog, type ClassifierModelCatalog, type ImageModelCatalog } from "@akramcode/ai/model-catalog";\n\n`;
 					output += `export const ${catalogConstName(providerId)}: ChatModelCatalog<typeof values, ${JSON.stringify(providerId)}> =\n`;
 					output += `\tflattenChatModelCatalog(${JSON.stringify(providerId)}, values);\n\n`;
@@ -3587,7 +3590,7 @@ async function generateModels() {
 
 				let output = generatedHeader;
 				for (const providerId of sortedProviderIds) {
-					output += `import { ${classifierCatalogConstName(providerId)}, ${imageCatalogConstName(providerId)}, ${catalogConstName(providerId)} } from "@akramcode/ai/scripts/providers/${providerId}.models";\n`;
+					output += `import { ${classifierCatalogConstName(providerId)}, ${imageCatalogConstName(providerId)}, ${catalogConstName(providerId)} } from "./providers/${providerId}.models.ts";\n`;
 				}
 				output += `\nexport const MODELS: {\n`;
 				for (const providerId of sortedProviderIds) {

@@ -15,7 +15,7 @@ import { getUsageCostBreakdown } from "../src/core/usage-totals.ts";
 import { createInMemoryModelRegistry, getModelRuntime } from "./model-runtime-test-utils.ts";
 import { createTestResourceLoader } from "./utilities.ts";
 
-const model = getModel("anthropic", "claude-sonnet-4-5")!;
+const model = getModel("openrouter", "anthropic/claude-sonnet-4.5")!;
 
 function createUsage(totalTokens: number): Usage {
 	return {
@@ -71,7 +71,7 @@ async function createSession() {
 	const settingsManager = SettingsManager.inMemory();
 	const sessionManager = SessionManager.inMemory();
 	const authStorage = AuthStorage.inMemory();
-	await authStorage.modify("anthropic", async () => ({ type: "api_key", key: "test-key" }));
+	await authStorage.modify("openrouter", async () => ({ type: "api_key", key: "test-key" }));
 	const session = new AgentSession({
 		agent: new Agent({
 			getApiKey: () => "test-key",
@@ -214,7 +214,7 @@ describe("AgentSession.getSessionStats", () => {
 		try {
 			sessionManager.appendUsage(
 				"cache_warm",
-				"anthropic",
+				"openrouter",
 				model.id,
 				{
 					input: 2,
@@ -234,7 +234,7 @@ describe("AgentSession.getSessionStats", () => {
 			expect(stats.totalMessages).toBe(0);
 			expect(sessionManager.buildSessionContext().messages).toEqual([]);
 			expect(getUsageCostBreakdown(sessionManager.getEntries())).toEqual([
-				{ key: `anthropic/${model.id}`, cost: 0.01, tokens: 100 },
+				{ key: `${model.provider}/${model.id}`, cost: 0.01, tokens: 100 },
 			]);
 		} finally {
 			session.dispose();

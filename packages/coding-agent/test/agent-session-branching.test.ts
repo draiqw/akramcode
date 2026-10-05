@@ -45,10 +45,10 @@ describe.skipIf(!API_KEY)("AgentSession forking", () => {
 	});
 
 	async function createSession(noSession: boolean = false) {
-		const model = getModel("anthropic", "claude-sonnet-4-5")!;
+		const model = getModel("openrouter", "anthropic/claude-sonnet-4.5")!;
 		sessionManager = noSession ? SessionManager.inMemory(tempDir) : SessionManager.create(tempDir);
 		const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
-		await authStorage.modify("anthropic", async () => ({ type: "api_key", key: API_KEY! }));
+		await authStorage.modify("openrouter", async () => ({ type: "api_key", key: API_KEY! }));
 
 		const servicesOptions = {
 			agentDir: tempDir,

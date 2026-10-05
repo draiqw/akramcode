@@ -46,7 +46,7 @@ describe.skipIf(!API_KEY)("AgentSession compaction e2e", () => {
 	});
 
 	async function createSession(inMemory = false) {
-		const model = getModel("anthropic", "claude-sonnet-4-5")!;
+		const model = getModel("openrouter", "anthropic/claude-sonnet-4.5")!;
 		const agent = new Agent({
 			getApiKey: () => API_KEY,
 			streamFn: streamSimple,

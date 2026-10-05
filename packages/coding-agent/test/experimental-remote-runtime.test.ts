@@ -31,7 +31,7 @@ const clients = new Set<Client>();
 const directories = new Set<string>();
 const fauxWorkerEntryUrl = new URL("fixtures/faux-session-worker.ts", import.meta.url);
 const realSpawnInternalProcess = processRuntime.spawnInternalProcess;
-const sessionWorkerModel = { provider: "anthropic", model: "claude-sonnet-4-5" } as const;
+const sessionWorkerModel = { provider: "openrouter", model: "anthropic/claude-sonnet-4.5" } as const;
 const SecondPluginService = defineService<{ read(context: Context): Promise<string> }>("test.second-plugin");
 let agentDir: string;
 
@@ -115,13 +115,13 @@ describe("experimental durable server composition", () => {
 	test("rejects a provider without a model", async () => {
 		const directory = await mkdtemp(join("/tmp", "pes-"));
 		directories.add(directory);
-		await expect(startServer({ directory, provider: "anthropic" })).rejects.toThrow("provider requires a model");
+		await expect(startServer({ directory, provider: "openrouter" })).rejects.toThrow("provider requires a model");
 	});
 
 	test("preserves an existing Session model when the server default changes", async () => {
 		await writeFile(
 			join(agentDir, "settings.json"),
-			JSON.stringify({ defaultProvider: "anthropic", defaultModel: "claude-opus-4-6" }),
+			JSON.stringify({ defaultProvider: "openrouter", defaultModel: "anthropic/claude-opus-4.6" }),
 		);
 		const directory = await mkdtemp(join("/tmp", "pes-"));
 		directories.add(directory);
@@ -140,14 +140,14 @@ describe("experimental durable server composition", () => {
 		clients.delete(secondClient);
 		await expect.poll(() => second.workerPids.has("demo-1")).toBe(false);
 		const state = await readExperimentalSessionState(second.sessionDir, "demo-1");
-		expect(state.model).toEqual({ provider: "anthropic", modelId: "claude-opus-4-6" });
+		expect(state.model).toEqual({ provider: "openrouter", modelId: "anthropic/claude-opus-4.6" });
 	});
 
 	test("rejects model options when discovery selects an existing server", async () => {
 		const { directory } = await makeServer();
-		await expect(runClient({ command: "client", model: "anthropic/claude-opus-4-6" }, { directory })).rejects.toThrow(
-			"Model selection is only valid when automatically activating a new server",
-		);
+		await expect(
+			runClient({ command: "client", model: "openrouter/anthropic/claude-opus-4.6" }, { directory }),
+		).rejects.toThrow("Model selection is only valid when automatically activating a new server");
 	});
 
 	test("rechecks an auto-discovered server after a version mismatch", async () => {
@@ -366,8 +366,8 @@ describe("experimental durable server composition", () => {
 		expect(firstServices.attachment.value).toEqual({ status: "attached", sessionId: "demo-1" });
 		expect(secondServices.attachment.value).toEqual({ status: "attached", sessionId: "demo-1" });
 		expect(firstModels.state.value?.configuration.model).toEqual({
-			provider: "anthropic",
-			modelId: "claude-sonnet-4-5",
+			provider: "openrouter",
+			modelId: "anthropic/claude-sonnet-4.5",
 		});
 		expect(secondModels.state.value).toEqual(firstModels.state.value);
 		const previousThinking = firstModels.state.value!.configuration.thinkingLevel;
@@ -439,7 +439,7 @@ describe("experimental durable server composition", () => {
 		const firstServices = createSessionServiceBinding(firstClient, { services: [Models] });
 		const firstModels = firstServices.use(Models);
 		await firstServices.ready(BACKGROUND_CONTEXT);
-		await firstModels.select({ provider: "anthropic", modelId: "claude-opus-4-6" }, BACKGROUND_CONTEXT);
+		await firstModels.select({ provider: "openrouter", modelId: "anthropic/claude-opus-4.6" }, BACKGROUND_CONTEXT);
 		await firstServices.dispose(BACKGROUND_CONTEXT);
 		await firstClient.dispose();
 		clients.delete(firstClient);
@@ -450,8 +450,8 @@ describe("experimental durable server composition", () => {
 		const secondModels = secondServices.use(Models);
 		await secondServices.ready(BACKGROUND_CONTEXT);
 		expect(secondModels.state.value?.configuration.model).toEqual({
-			provider: "anthropic",
-			modelId: "claude-opus-4-6",
+			provider: "openrouter",
+			modelId: "anthropic/claude-opus-4.6",
 		});
 		await secondServices.dispose(BACKGROUND_CONTEXT);
 	});
@@ -469,8 +469,8 @@ describe("experimental durable server composition", () => {
 
 			expect(server.session.attachment.value).toEqual({ status: "attached", sessionId: "demo-1" });
 			expect(server.models.state.value?.configuration.model).toEqual({
-				provider: "anthropic",
-				modelId: "claude-sonnet-4-5",
+				provider: "openrouter",
+				modelId: "anthropic/claude-sonnet-4.5",
 			});
 		} finally {
 			await clientRuntime.dispose();
@@ -515,8 +515,8 @@ describe("experimental durable server composition", () => {
 			await services.whenAttached("demo-1", BACKGROUND_CONTEXT);
 			expect(services.attachment.value).toEqual({ status: "attached", sessionId: "demo-1" });
 			expect(models.state.value?.configuration.model).toEqual({
-				provider: "anthropic",
-				modelId: "claude-sonnet-4-5",
+				provider: "openrouter",
+				modelId: "anthropic/claude-sonnet-4.5",
 			});
 		} finally {
 			releaseDelay();

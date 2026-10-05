@@ -21,19 +21,17 @@ test("publishes explicit per-type and total model counts", (t) => {
 	const chatModels = Array.from({ length: 500 }, (_, index) => ({
 		type: "chat",
 		id: `chat-${index}`,
-		provider: "anthropic",
+		provider: "openai",
 	}));
 	const allModels = {
-		anthropic: chatModels,
-		openai: [],
+		openai: chatModels,
 		openrouter: [
 			{ type: "image", id: "shared", provider: "openrouter" },
 			{ type: "classifier", id: "shared", provider: "openrouter" },
 		],
 	};
 	const models = {
-		anthropic: Object.fromEntries(chatModels.map((model) => [model.id, model])),
-		openai: {},
+		openai: Object.fromEntries(chatModels.map((model) => [model.id, model])),
 		openrouter: {},
 	};
 	const providerIds = Object.keys(allModels).sort();

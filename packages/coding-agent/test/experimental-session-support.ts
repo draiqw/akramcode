@@ -22,7 +22,7 @@ export async function createExperimentalSessions(
 
 export async function configureExperimentalWorkerModel(agentDir: string): Promise<void> {
 	await mkdir(agentDir, { recursive: true });
-	await writeFile(join(agentDir, "auth.json"), JSON.stringify({ anthropic: { type: "api_key", key: "test-key" } }), {
+	await writeFile(join(agentDir, "auth.json"), JSON.stringify({ openrouter: { type: "api_key", key: "test-key" } }), {
 		mode: 0o600,
 	});
 }

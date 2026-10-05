@@ -310,15 +310,4 @@ describe("ModelRuntime image generation", () => {
 		expect(chatAuth?.auth.headers).toMatchObject({ "X-Title": "akramcode", "X-Chat-Only": "yes" });
 		expect(imageAuth?.auth.headers).toEqual({ "X-Title": "akramcode" });
 	});
-
-	it("does not add image generation or classification to composed chat-only providers", async () => {
-		const runtime = await createRuntime({
-			providers: { anthropic: { headers: { "X-Title": "akramcode" } } },
-		});
-		const provider = runtime.getProvider("anthropic")!;
-		expect(provider.generateImages).toBeUndefined();
-		expect(provider.classify).toBeUndefined();
-		expect(runtime.getProvider("openrouter")?.generateImages).toBeDefined();
-		expect(runtime.getProvider("typesafe")?.classify).toBeDefined();
-	});
 });

@@ -9,12 +9,7 @@ import type {
 } from "@akramcode/ai/types";
 import { AssistantMessageEventStream } from "@akramcode/ai/utils/event-stream";
 import { describe, expect, it } from "vitest";
-import {
-	builtinModels,
-	getAllBuiltinModels,
-	getBuiltinClassifierModel,
-	getBuiltinClassifierModels,
-} from "../src/providers/all.ts";
+import { builtinModels, getBuiltinClassifierModels } from "../src/providers/all.ts";
 
 function classifierModel(provider: string, id: string): ClassifierModel<ClassifierApi> {
 	return {
@@ -116,57 +111,6 @@ describe("Models with classifier models", () => {
 		const result = await models.classify(chat as unknown as ClassifierModel<ClassifierApi>, context);
 		expect(result.stopReason).toBe("error");
 		expect(result.errorMessage).toContain("is not a classifier model");
-	});
-
-	it("exposes Jev only through classifier catalog accessors", () => {
-		const jev = getBuiltinClassifierModel("typesafe", "jev-latest");
-		expect(jev).toMatchObject({
-			type: "classifier",
-			api: "typesafe-system-one",
-			provider: "typesafe",
-			contextWindow: 64000,
-		});
-		expect(getBuiltinClassifierModels("typesafe")).toEqual([jev]);
-		expect(getAllBuiltinModels("typesafe")).toEqual([jev]);
-
-		const models = builtinModels();
-		expect(models.getModel("typesafe", "jev-latest")).toBeUndefined();
-		expect(models.getModelOfType("classifier", "typesafe", "jev-latest")).toEqual(jev);
-	});
-
-	it.each([
-		["vercel-ai-gateway", "typesafe-ai/jev", "https://ai-gateway.vercel.sh/typesafe/v1/systemone"],
-		["opencode", "jev-1.13", "https://opencode.ai/zen/v1/systemone"],
-		["opencode", "jev-1.13-free", "https://opencode.ai/zen/v1/systemone"],
-	])("routes %s Jev (%s) to its TypeSafe-compatible endpoint", async (provider, id, url) => {
-		const models = builtinModels();
-		const jev = models.getModelOfType("classifier", provider, id);
-		if (!jev) throw new Error(`missing ${provider} Jev model`);
-		expect(jev).toMatchObject({ api: "typesafe-system-one", contextWindow: 32000 });
-		expect(models.getModel(provider, id)).toBeUndefined();
-
-		const requests: Array<{ url: string; body: Record<string, unknown>; authorization: string | null }> = [];
-		const result = await models.classify(jev, context, {
-			apiKey: "secret",
-			fetch: async (input, init) => {
-				requests.push({
-					url: String(input),
-					body: JSON.parse(String(init?.body)) as Record<string, unknown>,
-					authorization: new Headers(init?.headers).get("authorization"),
-				});
-				return Response.json({ model: id, answers: { approved: { type: "noul", noul: 0.8 } } });
-			},
-		});
-
-		expect(requests).toEqual([
-			{
-				url,
-				body: expect.objectContaining({ model: id, state: context.state }),
-				authorization: "Bearer secret",
-			},
-		]);
-		expect(result.stopReason).toBe("stop");
-		expect(result.answers.approved).toEqual({ type: "bool", probability: 0.8 });
 	});
 
 	it("routes OpenRouter classifier models through the System One API", () => {
