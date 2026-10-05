@@ -15,7 +15,19 @@ const PREFIX = "enc:v1:";
 const KEY_BYTES = 32;
 const NONCE_BYTES = 12;
 const TAG_BYTES = 16;
-const SECRET_FIELDS = ["key", "access", "refresh"] as const;
+/** auth.json: key/access/refresh. mcp-auth.json (nested): OAuth tokens, client secret, PKCE verifier. */
+const SECRET_FIELDS = new Set([
+	"key",
+	"access",
+	"refresh",
+	"access_token",
+	"refresh_token",
+	"id_token",
+	"client_secret",
+	"codeVerifier",
+]);
+/** Every string inside these objects is a secret (provider environment such as cloud keys). */
+const SECRET_MAPS = new Set(["env"]);
 
 function parseKey(raw: string, source: string): Buffer {
 	const text = raw.trim();
@@ -75,19 +87,21 @@ function mapSecrets(text: string, transform: (value: string) => string | undefin
 	}
 	if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return text;
 	let changed = false;
-	for (const credential of Object.values(parsed as Json)) {
-		if (typeof credential !== "object" || credential === null) continue;
-		const record = credential as Json;
-		for (const field of SECRET_FIELDS) {
-			const value = record[field];
-			if (typeof value !== "string") continue;
-			const next = transform(value);
-			if (next !== undefined && next !== value) {
-				record[field] = next;
-				changed = true;
+	const walk = (node: Json, allStrings: boolean): void => {
+		for (const [field, value] of Object.entries(node)) {
+			if (typeof value === "string") {
+				if (!allStrings && !SECRET_FIELDS.has(field)) continue;
+				const next = transform(value);
+				if (next !== undefined && next !== value) {
+					node[field] = next;
+					changed = true;
+				}
+			} else if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+				walk(value as Json, allStrings || SECRET_MAPS.has(field));
 			}
 		}
-	}
+	};
+	walk(parsed as Json, false);
 	return changed ? JSON.stringify(parsed, null, 2) : text;
 }
 

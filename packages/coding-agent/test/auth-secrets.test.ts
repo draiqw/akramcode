@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, readFileSync, statSync, writeFileSync } from "
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { SECRETS_KEY_ENV } from "../src/core/auth-secrets.ts";
+import { decryptAuthText, encryptAuthText, SECRETS_KEY_ENV } from "../src/core/auth-secrets.ts";
 import { AuthStorage, readStoredCredential } from "../src/core/auth-storage.ts";
 
 function tempAuth(): { dir: string; authPath: string } {
@@ -85,5 +85,23 @@ describe("auth.json secret encryption", () => {
 		expect(await AuthStorage.create(authPath).read("openai")).toBeUndefined();
 		expect(warn).toHaveBeenCalledWith(expect.stringMatching(/could not be decrypted/), "AuthSecretsWarning");
 		warn.mockRestore();
+	});
+
+	it("encrypts nested OAuth tokens and provider env values", () => {
+		const dir = mkdtempSync(join(tmpdir(), "akramcode-sec-"));
+		const path = join(dir, "mcp-auth.json");
+		vi.stubEnv(SECRETS_KEY_ENV, randomBytes(32).toString("base64"));
+		const plain = JSON.stringify({
+			server: {
+				tokens: { access_token: "AT", refresh_token: "RT", token_type: "Bearer" },
+				clientInformation: { client_id: "cid", client_secret: "CS" },
+				codeVerifier: "CV",
+			},
+			p: { type: "api_key", env: { AWS_SECRET: "S3", OTHER: "x" } },
+		});
+		const stored = encryptAuthText(plain, path);
+		for (const secret of ["AT", "RT", "CS", "CV", "S3"]) expect(stored).not.toContain(`"${secret}"`);
+		expect(stored).toContain("cid");
+		expect(JSON.parse(decryptAuthText(stored, path))).toEqual(JSON.parse(plain));
 	});
 });
