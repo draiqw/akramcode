@@ -1,9 +1,9 @@
-import { defineFacet } from "@earendil-works/chord";
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
+import { defineFacet } from "@akramcode/chord";
+import { BACKGROUND_CONTEXT } from "@akramcode/chord/context";
 import { ExampleFacetService } from "./contract.ts";
 
 export default defineFacet({
-	id: "@earendil-works/pi-example-plugin/session",
+	id: "@akramcode/example-plugin/session",
 	setup(env) {
 		const workerActivations = env.replicatedState({ count: 0 });
 		env.provide(ExampleFacetService, {

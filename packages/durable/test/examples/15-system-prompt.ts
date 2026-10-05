@@ -1,9 +1,10 @@
 // System prompt sections and per-conversation instructions.
 // Run from packages/durable:
 //   node --conditions=source --experimental-strip-types test/examples/15-system-prompt.ts
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
-import { createModels } from "@earendil-works/pi-ai/models";
-import { fauxAssistantMessage, fauxProvider } from "@earendil-works/pi-ai/providers/faux";
+
+import { createModels } from "@akramcode/ai/models";
+import { fauxAssistantMessage, fauxProvider } from "@akramcode/ai/providers/faux";
+import { BACKGROUND_CONTEXT } from "@akramcode/chord/context";
 import { NodeExecutionEnv } from "../../src/env/node.ts";
 import {
 	type Conversation,
@@ -25,7 +26,7 @@ faux.setResponses([fauxAssistantMessage("Done."), fauxAssistantMessage("Done."),
 // Pico stores no prompt state. Before each model request, the sections of the
 // conversation's selected extensions render the desired prompt, and only the
 // difference to what the model already saw is appended to the transcript as a
-// `pi.system` entry.
+// `akramcode.system` entry.
 const Coding = defineExtension({
 	name: "coding",
 	sections: [

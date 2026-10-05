@@ -1,12 +1,12 @@
 /**
- * pi-messages API implementation.
+ * akramcode-messages API implementation.
  *
- * Streams pi's own message protocol directly to a backend: the request is a
+ * Streams akramcode's own message protocol directly to a backend: the request is a
  * single POST of `{ model, context, options }` to `<baseUrl>/messages`, the
  * response is an SSE stream of serialized assistant-message events plus a
  * terminal `done`/`error` event. This is the wire protocol spoken by the
  * Radius gateway, but any backend implementing it can be used, e.g. via a
- * models.json custom provider with `"api": "pi-messages"`.
+ * models.json custom provider with `"api": "akramcode-messages"`.
  */
 
 import type {
@@ -30,18 +30,18 @@ import { headersToRecord, providerHeadersToRecord } from "../utils/headers.ts";
 import { parseStreamingJson } from "../utils/json-parse.ts";
 import { getProviderEnvValue } from "../utils/provider-env.ts";
 
-export interface PiMessagesOptions extends StreamOptions {
+export interface AkramCodeMessagesOptions extends StreamOptions {
 	reasoning?: ThinkingLevel;
 	toolChoice?: "auto" | "none" | "required" | { type: "function"; function: { name: string } };
 	/** Ask the backend for debug metadata (e.g. routing response headers). */
 	debug?: boolean;
 }
 
-type PiMessagesUsage = AssistantMessage["usage"];
-type PiMessagesStopReason = AssistantMessage["stopReason"];
+type AkramCodeMessagesUsage = AssistantMessage["usage"];
+type AkramCodeMessagesStopReason = AssistantMessage["stopReason"];
 
 /** Impact summary of a server-side message rewrite (e.g. a gateway policy). */
-export type PiMessagesRewriteImpact = {
+export type AkramCodeMessagesRewriteImpact = {
 	policyId: string;
 	policyVersion: number;
 	changed: boolean;
@@ -50,8 +50,8 @@ export type PiMessagesRewriteImpact = {
 	systemPromptChanged: boolean;
 };
 
-/** Serialized assistant-message event as sent by a pi-messages backend. */
-export type PiMessagesEvent =
+/** Serialized assistant-message event as sent by a akramcode-messages backend. */
+export type AkramCodeMessagesEvent =
 	| { type: "start" }
 	| { type: "text_start"; contentIndex: number }
 	| { type: "text_delta"; contentIndex: number; delta: string }
@@ -70,23 +70,23 @@ export type PiMessagesEvent =
 	| { type: "toolcall_end"; contentIndex: number; toolCall: ToolCall }
 	| {
 			type: "done";
-			reason: Extract<PiMessagesStopReason, "stop" | "length" | "toolUse">;
-			usage: PiMessagesUsage;
+			reason: Extract<AkramCodeMessagesStopReason, "stop" | "length" | "toolUse">;
+			usage: AkramCodeMessagesUsage;
 			responseId?: string;
 			providerThinkingLevel?: string;
-			rewrite?: PiMessagesRewriteImpact;
+			rewrite?: AkramCodeMessagesRewriteImpact;
 	  }
 	| {
 			type: "error";
-			reason: Extract<PiMessagesStopReason, "aborted" | "error">;
-			usage: PiMessagesUsage;
+			reason: Extract<AkramCodeMessagesStopReason, "aborted" | "error">;
+			usage: AkramCodeMessagesUsage;
 			errorMessage?: string;
 			responseId?: string;
 			providerThinkingLevel?: string;
-			rewrite?: PiMessagesRewriteImpact;
+			rewrite?: AkramCodeMessagesRewriteImpact;
 	  };
 
-type PiMessagesErrorBody = {
+type AkramCodeMessagesErrorBody = {
 	error?: {
 		message?: unknown;
 		code?: unknown;
@@ -95,21 +95,21 @@ type PiMessagesErrorBody = {
 	};
 };
 
-export class PiMessagesResponseError extends Error {
+export class AkramCodeMessagesResponseError extends Error {
 	code?: string;
 	readonly diagnosticDetails: JsonObject;
 
 	constructor(message: string, code: string | undefined, diagnosticDetails: JsonObject) {
 		super(message);
-		this.name = "PiMessagesResponseError";
+		this.name = "AkramCodeMessagesResponseError";
 		this.code = code;
 		this.diagnosticDetails = diagnosticDetails;
 	}
 }
 
-function parsePiMessagesErrorBody(body: string): PiMessagesErrorBody | undefined {
+function parseAkramCodeMessagesErrorBody(body: string): AkramCodeMessagesErrorBody | undefined {
 	try {
-		const parsed = JSON.parse(body) as PiMessagesErrorBody | null;
+		const parsed = JSON.parse(body) as AkramCodeMessagesErrorBody | null;
 		const error = parsed?.error;
 		return parsed && typeof error === "object" && error !== null && !Array.isArray(error) ? parsed : undefined;
 	} catch {
@@ -122,10 +122,10 @@ function truncateDiagnosticString(value: string): string {
 	return value.length > maxLength ? `${value.slice(0, maxLength)}…` : value;
 }
 
-function formatPiMessagesResponseError(
+function formatAkramCodeMessagesResponseError(
 	response: Response,
 	body: string,
-	errorBody: PiMessagesErrorBody | undefined,
+	errorBody: AkramCodeMessagesErrorBody | undefined,
 ): string {
 	const message = typeof errorBody?.error?.message === "string" ? errorBody.error.message : undefined;
 	const code = typeof errorBody?.error?.code === "string" ? errorBody.error.code : undefined;
@@ -134,15 +134,15 @@ function formatPiMessagesResponseError(
 	return `${response.status} ${response.statusText}: ${suffix}${codeSuffix}`;
 }
 
-function createPiMessagesResponseError(
-	model: Model<"pi-messages">,
+function createAkramCodeMessagesResponseError(
+	model: Model<"akramcode-messages">,
 	url: URL,
 	response: Response,
 	body: string,
-): PiMessagesResponseError {
-	const errorBody = parsePiMessagesErrorBody(body);
+): AkramCodeMessagesResponseError {
+	const errorBody = parseAkramCodeMessagesErrorBody(body);
 	const code = typeof errorBody?.error?.code === "string" ? errorBody.error.code : undefined;
-	return new PiMessagesResponseError(formatPiMessagesResponseError(response, body, errorBody), code, {
+	return new AkramCodeMessagesResponseError(formatAkramCodeMessagesResponseError(response, body, errorBody), code, {
 		version: 1,
 		provider: model.provider,
 		model: model.id,
@@ -155,7 +155,7 @@ function createPiMessagesResponseError(
 	});
 }
 
-function createEmptyUsage(): PiMessagesUsage {
+function createEmptyUsage(): AkramCodeMessagesUsage {
 	return {
 		input: 0,
 		output: 0,
@@ -166,7 +166,7 @@ function createEmptyUsage(): PiMessagesUsage {
 	};
 }
 
-function appendRewriteDiagnostic(message: AssistantMessage, rewrite: PiMessagesRewriteImpact | undefined): void {
+function appendRewriteDiagnostic(message: AssistantMessage, rewrite: AkramCodeMessagesRewriteImpact | undefined): void {
 	if (!rewrite) {
 		return;
 	}
@@ -177,7 +177,7 @@ function appendRewriteDiagnostic(message: AssistantMessage, rewrite: PiMessagesR
 	});
 }
 
-function createEventConverter(model: Model<"pi-messages">) {
+function createEventConverter(model: Model<"akramcode-messages">) {
 	const partial: AssistantMessage = {
 		role: "assistant",
 		content: [],
@@ -190,7 +190,7 @@ function createEventConverter(model: Model<"pi-messages">) {
 	};
 	const toolJson = new Map<number, string>();
 
-	return (event: PiMessagesEvent): AssistantMessageEvent => {
+	return (event: AkramCodeMessagesEvent): AssistantMessageEvent => {
 		switch (event.type) {
 			case "done":
 				Object.assign(partial, {
@@ -273,7 +273,9 @@ function createEventConverter(model: Model<"pi-messages">) {
 	};
 }
 
-async function* readPiMessagesEvents(stream: ReadableStream<Uint8Array>): AsyncGenerator<PiMessagesEvent> {
+async function* readAkramCodeMessagesEvents(
+	stream: ReadableStream<Uint8Array>,
+): AsyncGenerator<AkramCodeMessagesEvent> {
 	const decoder = new TextDecoder();
 	const reader = stream.getReader();
 	let buffer = "";
@@ -286,7 +288,7 @@ async function* readPiMessagesEvents(stream: ReadableStream<Uint8Array>): AsyncG
 
 			let split = buffer.indexOf("\n\n");
 			while (split !== -1) {
-				const event = parsePiMessagesEvent(buffer.slice(0, split));
+				const event = parseAkramCodeMessagesEvent(buffer.slice(0, split));
 				if (event) {
 					yield event;
 				}
@@ -300,7 +302,7 @@ async function* readPiMessagesEvents(stream: ReadableStream<Uint8Array>): AsyncG
 		}
 
 		if (buffer.trim()) {
-			const event = parsePiMessagesEvent(buffer);
+			const event = parseAkramCodeMessagesEvent(buffer);
 			if (event) {
 				yield event;
 			}
@@ -310,17 +312,17 @@ async function* readPiMessagesEvents(stream: ReadableStream<Uint8Array>): AsyncG
 	}
 }
 
-function parsePiMessagesEvent(raw: string): PiMessagesEvent | undefined {
+function parseAkramCodeMessagesEvent(raw: string): AkramCodeMessagesEvent | undefined {
 	const data = raw
 		.split("\n")
 		.find((line) => line.startsWith("data:"))
 		?.slice(5)
 		.trim();
 
-	return data && data !== "[DONE]" ? (JSON.parse(data) as PiMessagesEvent) : undefined;
+	return data && data !== "[DONE]" ? (JSON.parse(data) as AkramCodeMessagesEvent) : undefined;
 }
 
-function createErrorEvent(model: Model<"pi-messages">, error: unknown, aborted: boolean): AssistantMessageEvent {
+function createErrorEvent(model: Model<"akramcode-messages">, error: unknown, aborted: boolean): AssistantMessageEvent {
 	const reason = aborted ? "aborted" : "error";
 	const assistantMessage: AssistantMessage = {
 		role: "assistant",
@@ -334,7 +336,7 @@ function createErrorEvent(model: Model<"pi-messages">, error: unknown, aborted: 
 		timestamp: Date.now(),
 	};
 
-	if (!aborted && error instanceof PiMessagesResponseError) {
+	if (!aborted && error instanceof AkramCodeMessagesResponseError) {
 		appendAssistantMessageDiagnostic(
 			assistantMessage,
 			createAssistantMessageDiagnostic("pi_messages_response_failure", error, error.diagnosticDetails),
@@ -349,13 +351,13 @@ function resolveCacheRetention(cacheRetention?: CacheRetention, env?: ProviderEn
 		return cacheRetention;
 	}
 	// Backend defaults apply when unset; only the legacy env opt-in is mapped.
-	return getProviderEnvValue("PI_CACHE_RETENTION", env) === "long" ? "long" : undefined;
+	return getProviderEnvValue("AKRAMCODE_CACHE_RETENTION", env) === "long" ? "long" : undefined;
 }
 
-export const stream: StreamFunction<"pi-messages", PiMessagesOptions> = (
-	model: Model<"pi-messages">,
+export const stream: StreamFunction<"akramcode-messages", AkramCodeMessagesOptions> = (
+	model: Model<"akramcode-messages">,
 	context: TranscriptContext,
-	options?: PiMessagesOptions,
+	options?: AkramCodeMessagesOptions,
 ): AssistantMessageEventStream => {
 	const eventStream = new AssistantMessageEventStream();
 	const convertEvent = createEventConverter(model);
@@ -405,15 +407,15 @@ export const stream: StreamFunction<"pi-messages", PiMessagesOptions> = (
 
 			if (!response.ok) {
 				const body = await response.text();
-				throw createPiMessagesResponseError(model, url, response, body);
+				throw createAkramCodeMessagesResponseError(model, url, response, body);
 			}
 			if (!response.body) {
 				throw new Error(`${model.provider} response has no body`);
 			}
 
-			for await (const piEvent of readPiMessagesEvents(response.body)) {
-				await options?.onProviderStreamEvent?.(piEvent, model);
-				const event = convertEvent(piEvent);
+			for await (const akramCodeEvent of readAkramCodeMessagesEvents(response.body)) {
+				await options?.onProviderStreamEvent?.(akramCodeEvent, model);
+				const event = convertEvent(akramCodeEvent);
 				eventStream.push(event);
 				if (event.type === "done" || event.type === "error") {
 					return;
@@ -429,12 +431,12 @@ export const stream: StreamFunction<"pi-messages", PiMessagesOptions> = (
 	return eventStream;
 };
 
-export const streamSimple: StreamFunction<"pi-messages", SimpleStreamOptions> = (
-	model: Model<"pi-messages">,
+export const streamSimple: StreamFunction<"akramcode-messages", SimpleStreamOptions> = (
+	model: Model<"akramcode-messages">,
 	context: TranscriptContext,
 	options?: SimpleStreamOptions,
 ): AssistantMessageEventStream => {
-	const extra = options as PiMessagesOptions | undefined;
+	const extra = options as AkramCodeMessagesOptions | undefined;
 	return stream(model, context, {
 		...options,
 		reasoning: options?.reasoning,

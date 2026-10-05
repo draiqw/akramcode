@@ -193,7 +193,7 @@ export function isFocusable(component: Component | null): component is Component
  * Components emit this at the cursor position when focused.
  * TUI finds and strips this marker, then positions the hardware cursor there.
  */
-export const CURSOR_MARKER = "\x1b_pi:c\x07";
+export const CURSOR_MARKER = "\x1b_akramcode:c\x07";
 
 export { visibleWidth };
 
@@ -481,7 +481,7 @@ export interface TUI extends Component {
 	}): Promise<TerminalColors>;
 }
 
-export const VIEWPORT_TUI = Symbol.for("@earendil-works/pi-tui/viewport");
+export const VIEWPORT_TUI = Symbol.for("@akramcode/tui/viewport");
 
 export interface ViewportTUI extends TUI {
 	readonly [VIEWPORT_TUI]: true;

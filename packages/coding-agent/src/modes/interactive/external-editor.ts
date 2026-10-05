@@ -12,7 +12,7 @@ export interface ExternalEditorOptions {
 export type ExternalEditorResult = { status: "complete"; content: string } | { status: "failed" };
 
 export async function editInExternalEditor(options: ExternalEditorOptions): Promise<ExternalEditorResult> {
-	const directory = mkdtempSync(join(tmpdir(), "pi-editor-"));
+	const directory = mkdtempSync(join(tmpdir(), "akramcode-editor-"));
 	const filePath = join(directory, "prompt.md");
 	try {
 		writeFileSync(filePath, options.content, "utf-8");

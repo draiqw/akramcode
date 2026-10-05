@@ -56,7 +56,7 @@ describe("git-merge-and-resolve example", () => {
 	});
 
 	function createTempDir() {
-		tempDir = mkdtempSync(join(tmpdir(), "pi-merge-test-"));
+		tempDir = mkdtempSync(join(tmpdir(), "akramcode-merge-test-"));
 		return tempDir;
 	}
 

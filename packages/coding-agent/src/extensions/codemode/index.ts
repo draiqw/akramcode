@@ -19,24 +19,24 @@ export interface CodemodeExtensionOptions {
 	models?: boolean;
 }
 
-function readMode(pi: ExtensionAPI): CodemodeMode {
-	return pi.getSettings().codemode?.mode === "only" ? "only" : "on";
+function readMode(akramcode: ExtensionAPI): CodemodeMode {
+	return akramcode.getSettings().codemode?.mode === "only" ? "only" : "on";
 }
 
-function readInlineBudget(pi: ExtensionAPI): number | undefined {
-	const budget = pi.getSettings().codemode?.inlineBudget;
+function readInlineBudget(akramcode: ExtensionAPI): number | undefined {
+	const budget = akramcode.getSettings().codemode?.inlineBudget;
 	return typeof budget === "number" && Number.isFinite(budget) && budget >= 0 ? budget : undefined;
 }
 
 export function createCodemodeExtension(options: CodemodeExtensionOptions = {}): ExtensionFactory {
-	return (pi) => {
-		pi.registerTool({
+	return (akramcode) => {
+		akramcode.registerTool({
 			...createCodemodeToolDefinition({
-				appendEntry: (customType, data) => pi.appendEntry(customType, data),
+				appendEntry: (customType, data) => akramcode.appendEntry(customType, data),
 				models: options.models ?? true,
-				getToolNamespace: (name) => pi.getAllTools().find((tool) => tool.name === name)?.namespace,
-				getMode: () => options.mode ?? readMode(pi),
-				getInlineBudget: () => options.inlineBudget ?? readInlineBudget(pi),
+				getToolNamespace: (name) => akramcode.getAllTools().find((tool) => tool.name === name)?.namespace,
+				getMode: () => options.mode ?? readMode(akramcode),
+				getInlineBudget: () => options.inlineBudget ?? readInlineBudget(akramcode),
 			}),
 			defaultActive: false,
 		});

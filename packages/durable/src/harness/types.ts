@@ -1,4 +1,3 @@
-import type { AttachedReplicatedState, Context, JsonValue } from "@earendil-works/chord";
 import type {
 	AssistantMessage,
 	CacheRetention,
@@ -13,7 +12,8 @@ import type {
 	TSchema,
 	Usage,
 	UserMessage,
-} from "@earendil-works/pi-ai";
+} from "@akramcode/ai";
+import type { AttachedReplicatedState, Context, JsonValue } from "@akramcode/chord";
 import type { ExecutionEnv } from "../env/index.ts";
 import type {
 	ConversationId,
@@ -43,7 +43,7 @@ import type { TaskGraph, TaskGraphWatch } from "./task-graph.ts";
 import type { UsageState } from "./usage.ts";
 import type { ConversationView } from "./view.ts";
 
-/** Provider and model ID resolved through pi-ai `Models`. */
+/** Provider and model ID resolved through akramcode-ai `Models`. */
 export type ModelRef = {
 	readonly provider: string;
 	readonly modelId: string;
@@ -148,7 +148,7 @@ export type ToolExecutionResult<TDetails extends JsonValue = JsonValue> = {
 	readonly details?: TDetails;
 	/** Added after those recorded through `api.diagnostic()`. */
 	readonly diagnostics?: readonly ToolDiagnostic[];
-	/** Spend of the execution itself, such as a model call; stored on the result and in `pi.usage.tools`. */
+	/** Spend of the execution itself, such as a model call; stored on the result and in `akramcode.usage.tools`. */
 	readonly usage?: Usage;
 	readonly control?: ToolControl;
 };
@@ -195,7 +195,7 @@ export interface ToolExecutionApi<TDetails extends JsonValue = JsonValue> extend
 }
 
 /**
- * Executable tool registered in a registry. Only pi-ai `Tool` fields enter the transcript. `args` are typed by
+ * Executable tool registered in a registry. Only akramcode-ai `Tool` fields enter the transcript. `args` are typed by
  * `parameters`, which the Harness validates them against before `execute()`; `defineTool()` infers both generics.
  */
 export type ToolRegistration<
@@ -307,7 +307,7 @@ export type AgentState = {
 	cwd?: string;
 };
 
-/** A change to `pi.agent`: a given field replaces the stored one, `null` clears it, `undefined` changes nothing. */
+/** A change to `akramcode.agent`: a given field replaces the stored one, `null` clears it, `undefined` changes nothing. */
 export type AgentChange = {
 	readonly model?: ModelRef | null;
 	readonly thinkingLevel?: ModelThinkingLevel | null;
@@ -346,7 +346,7 @@ export type ConversationCreateOptions = {
 	readonly init?: ConversationInit;
 };
 
-/** Curated pi-ai request options; absent fields use pi-ai defaults. */
+/** Curated akramcode-ai request options; absent fields use akramcode-ai defaults. */
 export type ConversationStreamOptions = {
 	transport?: Transport;
 	timeoutMs?: number;
@@ -359,7 +359,7 @@ export type ConversationStreamOptions = {
 	deferred?: boolean | { window?: "15m" | "1h" | "24h" };
 };
 
-/** Durable generation attempt retries; the JSON shape of pi-ai `RetryPolicy`. */
+/** Durable generation attempt retries; the JSON shape of akramcode-ai `RetryPolicy`. */
 export type ConversationRetryPolicy = {
 	enabled: boolean;
 	maxRetries: number;
@@ -421,7 +421,7 @@ export type EnvTarget = {
 };
 
 export type HarnessOptions<Tool extends ToolRegistration = ToolRegistration> = {
-	/** pi-ai model access used by generation. */
+	/** akramcode-ai model access used by generation. */
 	readonly models: Models;
 	readonly registry: RegistryReader<Tool>;
 	readonly settings?: HarnessSettings;
@@ -429,7 +429,7 @@ export type HarnessOptions<Tool extends ToolRegistration = ToolRegistration> = {
 	readonly env?: (target: EnvTarget, context: Context) => ExecutionEnv | undefined | Promise<ExecutionEnv | undefined>;
 	/**
 	 * Runs in every commit that creates or forks a conversation, raw `tx.createConversation()` included, after the
-	 * built-in `pi.*` documents and before the conveniences apply `agent` and run `init`. A fork already has its copies.
+	 * built-in `akramcode.*` documents and before the conveniences apply `agent` and run `init`. A fork already has its copies.
 	 * Table reads throw `ReadAfterWrite`, as in `init`; a throw fails the creating commit.
 	 */
 	readonly conversationCreated?: (tx: Tx, conversation: ConversationRecord) => void | Promise<void>;
@@ -491,11 +491,11 @@ export interface Conversation {
 
 	/**
 	 * Durably admit user input or a passive entry write. A busy conversation, or one with queued items, queues it in
-	 * `pi.inbox`; `whenBusy: "reject"` rejects with `ConversationBusy` instead and writes nothing.
+	 * `akramcode.inbox`; `whenBusy: "reject"` rejects with `ConversationBusy` instead and writes nothing.
 	 */
 	submit(submission: SubmissionDraft, context: Context): Promise<Submission>;
 	/**
-	 * Admit a write of a `pi.reset` entry that starts a new context, carrying `handoff` as a user message when given.
+	 * Admit a write of a `akramcode.reset` entry that starts a new context, carrying `handoff` as a user message when given.
 	 * Resolves after admission; while busy, it is placed at the next boundary.
 	 */
 	reset(handoff: string | undefined, context: Context): Promise<void>;
@@ -571,7 +571,7 @@ export interface Harness extends Session {
 	waitForTask<R>(id: TaskId<R>, context: Context): Promise<SettledTask<R>>;
 	/** Resolve when the ordinary ownership scope of every ownerless conversation has no live non-background task. */
 	waitForIdle(context: Context): Promise<void>;
-	/** Session total: every conversation's `pi.usage` summed. */
+	/** Session total: every conversation's `akramcode.usage` summed. */
 	usage(context: Context): Promise<UsageState>;
 	/** Every live task with its owner edge, status, and owned conversations (spec §9.5), as a disposable Chord state. */
 	taskGraph(context: Context): Promise<AttachedReplicatedState<TaskGraph>>;

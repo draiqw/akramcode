@@ -1,4 +1,4 @@
-import { encodeCbor, encodeClientMessage, encodeFrame, PROTOCOL_VERSION } from "@earendil-works/pi-protocol";
+import { encodeCbor, encodeClientMessage, encodeFrame, PROTOCOL_VERSION } from "@akramcode/protocol";
 import { afterEach, expect, test } from "vitest";
 import type { ByteConnection, ByteConnectionHandler } from "../src/connection.ts";
 import { Server } from "../src/server.ts";
@@ -54,7 +54,7 @@ test("requires hello as the first message", async () => {
 		type: "request",
 		id: "request-1",
 		target: { serverId: "00000000-0000-4000-8000-000000000001" },
-		call: { serviceId: "pi.session-directory", member: "list", args: [] },
+		call: { serviceId: "akramcode.session-directory", member: "list", args: [] },
 	});
 	await expect(client.next((message) => message.type === "hello_error")).resolves.toMatchObject({
 		type: "hello_error",
@@ -87,7 +87,7 @@ test("accepts fragmented hello and request frames", async () => {
 		type: "request" as const,
 		id: "request-1",
 		target: { serverId: "00000000-0000-4000-8000-000000000001" },
-		call: { serviceId: "pi.session-directory" as const, member: "list" as const, args: [] as [] },
+		call: { serviceId: "akramcode.session-directory" as const, member: "list" as const, args: [] as [] },
 	};
 	const frame = encodeClientMessage(request);
 	await client.sendFragmentedMessage(request, Math.floor(frame.byteLength / 2));
@@ -126,7 +126,7 @@ test("processes a hello and request coalesced in one byte chunk", async () => {
 		type: "request",
 		id: "request-1",
 		target: { serverId: "00000000-0000-4000-8000-000000000001" },
-		call: { serviceId: "pi.session-directory", member: "list", args: [] },
+		call: { serviceId: "akramcode.session-directory", member: "list", args: [] },
 	});
 	const wire = new Uint8Array(hello.byteLength + request.byteLength);
 	wire.set(hello);

@@ -10,10 +10,10 @@ import {
 	replicatedState,
 	type Service,
 	type ServiceCatalogueEntry,
-} from "@earendil-works/chord";
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
-import { type Client, createClientServiceTransport } from "@earendil-works/pi-client";
-import type { SessionTarget } from "@earendil-works/pi-protocol";
+} from "@akramcode/chord";
+import { BACKGROUND_CONTEXT } from "@akramcode/chord/context";
+import { type Client, createClientServiceTransport } from "@akramcode/client";
+import type { SessionTarget } from "@akramcode/protocol";
 
 export type ServerConnectionState =
 	| { status: "connecting"; attempt: number }

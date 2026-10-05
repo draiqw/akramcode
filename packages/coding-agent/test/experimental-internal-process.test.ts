@@ -26,7 +26,7 @@ afterEach(async () => {
 describe.skipIf(process.platform === "win32")("experimental internal process launcher", () => {
 	test("starts the coordinator through the current runtime", async () => {
 		// Keep Unix socket paths below macOS's short sun_path limit.
-		const directory = await mkdtemp(join(tmpdir(), "pi-ip-"));
+		const directory = await mkdtemp(join(tmpdir(), "akramcode-ip-"));
 		directories.add(directory);
 		const publicPath = join(directory, "p.sock");
 		const controlPath = join(directory, "c.sock");
@@ -38,7 +38,7 @@ describe.skipIf(process.platform === "win32")("experimental internal process lau
 	});
 
 	test("waits for a failed activation child to terminate", async () => {
-		const directory = await mkdtemp(join(tmpdir(), "pi-ip-stop-"));
+		const directory = await mkdtemp(join(tmpdir(), "akramcode-ip-stop-"));
 		directories.add(directory);
 		const child = spawnInternalProcess("coordinator", [join(directory, "p.sock"), join(directory, "c.sock")]);
 		children.add(child);

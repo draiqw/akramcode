@@ -1,5 +1,5 @@
-import type { AttachedReplicatedState, Context, JsonValue } from "@earendil-works/chord";
-import { withAbortSignal, withoutAbortSignal } from "@earendil-works/chord/context";
+import type { AttachedReplicatedState, Context, JsonValue } from "@akramcode/chord";
+import { withAbortSignal, withoutAbortSignal } from "@akramcode/chord/context";
 import { ResetEntry } from "../entries.ts";
 import type { ExecutionEnv } from "../env/index.ts";
 import { SessionImpl } from "../session/session.ts";
@@ -209,7 +209,7 @@ class HarnessImpl<Tool extends ToolRegistration> extends SessionImpl implements 
 		};
 	}
 
-	/** Resolve a conversation's committed `pi.agent` against `snapshot`, or the current one, and the current settings. */
+	/** Resolve a conversation's committed `akramcode.agent` against `snapshot`, or the current one, and the current settings. */
 	async resolveAgent(
 		id: ConversationId,
 		snapshot: RegistrySnapshot<Tool> | undefined,
@@ -280,7 +280,7 @@ class HarnessImpl<Tool extends ToolRegistration> extends SessionImpl implements 
 		return this.#tasks.waitForIdle(undefined, context);
 	}
 
-	/** Sum every conversation's committed `pi.usage`. Each document is read at its own point; totals only grow. */
+	/** Sum every conversation's committed `akramcode.usage`. Each document is read at its own point; totals only grow. */
 	async usage(context: Context): Promise<UsageState> {
 		const conversations = await this.readOnLine(() =>
 			scanAll((cursor) => this.#storage.scanConversations({}, SCAN_PAGE_SIZE, cursor, context)),
@@ -348,8 +348,8 @@ class HarnessImpl<Tool extends ToolRegistration> extends SessionImpl implements 
 	}
 
 	/**
-	 * The built-in creation hook, in every commit that creates or forks a conversation: empty `pi.live`, `pi.inbox`, and
-	 * `pi.usage`, the conversation's `pi.agent` (see `createAgent()`), then `HarnessOptions.conversationCreated`.
+	 * The built-in creation hook, in every commit that creates or forks a conversation: empty `akramcode.live`, `akramcode.inbox`, and
+	 * `akramcode.usage`, the conversation's `akramcode.agent` (see `createAgent()`), then `HarnessOptions.conversationCreated`.
 	 */
 	protected override async conversationCreated(tx: Transaction, record: ConversationRecord): Promise<void> {
 		await tx.doc(LiveDoc, record.id);

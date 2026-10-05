@@ -37,11 +37,11 @@ import type {
 	ToolCall,
 	ToolResultMessage,
 } from "../types.ts";
+import { getAkramCodeUserAgent } from "../utils/akramcode-user-agent.ts";
 import { appendAssistantMessageDiagnostic } from "../utils/diagnostics.ts";
 import { AssistantMessageEventStream } from "../utils/event-stream.ts";
 import { headersToRecord } from "../utils/headers.ts";
 import { parseJsonWithRepair, parseStreamingJson } from "../utils/json-parse.ts";
-import { getPiUserAgent } from "../utils/pi-user-agent.ts";
 import { getProviderEnvValue } from "../utils/provider-env.ts";
 import { retryProviderRequest } from "../utils/provider-retry.ts";
 import { sanitizeSurrogates } from "../utils/sanitize-unicode.ts";
@@ -64,13 +64,13 @@ import { transformMessages } from "./transform-messages.ts";
 
 /**
  * Resolve cache retention preference.
- * Defaults to "short" and uses PI_CACHE_RETENTION for backward compatibility.
+ * Defaults to "short" and uses AKRAMCODE_CACHE_RETENTION for backward compatibility.
  */
 function resolveCacheRetention(cacheRetention?: CacheRetention, env?: ProviderEnv): CacheRetention {
 	if (cacheRetention) {
 		return cacheRetention;
 	}
-	if (getProviderEnvValue("PI_CACHE_RETENTION", env) === "long") {
+	if (getProviderEnvValue("AKRAMCODE_CACHE_RETENTION", env) === "long") {
 		return "long";
 	}
 	return "short";
@@ -301,7 +301,7 @@ function mergeHeaders(...headerSources: (ProviderHeaders | undefined)[]): Provid
 }
 
 function mergeClientHeaders(...headerSources: (ProviderHeaders | undefined)[]): ProviderHeaders {
-	return mergeHeaders({ "User-Agent": getPiUserAgent() }, ...headerSources);
+	return mergeHeaders({ "User-Agent": getAkramCodeUserAgent() }, ...headerSources);
 }
 
 function hasHeader(headers: ProviderHeaders | undefined, name: string): boolean {
@@ -330,9 +330,9 @@ function assertRequestAuth(provider: string, apiKey: string | undefined, headers
  * Anthropic SDK client that never runs the SDK's own credential chain
  * (ANTHROPIC_PROFILE config files, federation env vars). Without this, every
  * client built with `apiKey: null, authToken: null` for header-owned auth would
- * also resolve and exchange SDK credentials behind pi's auth resolver.
+ * also resolve and exchange SDK credentials behind akramcode's auth resolver.
  */
-class PiAnthropic extends Anthropic {
+class AkramCodeAnthropic extends Anthropic {
 	protected override _shouldResolveDefaultCredentials(): boolean {
 		return false;
 	}
@@ -370,7 +370,7 @@ function getAnthropicFederation(
 }
 
 /**
- * The SDK caches the federated access token per client, but pi creates a client
+ * The SDK caches the federated access token per client, but akramcode creates a client
  * per request. Keep one client for the current federation config and fetch, and
  * clone it per request with `withOptions()`, which shares the token cache.
  */
@@ -990,7 +990,7 @@ function createClient(
 ): { client: Anthropic; isOAuthToken: boolean } {
 	// Copilot: Bearer auth.
 	if (model.provider === "github-copilot") {
-		const client = new PiAnthropic({
+		const client = new AkramCodeAnthropic({
 			apiKey: null,
 			authToken: apiKey ?? null,
 			baseURL: model.baseUrl,
@@ -1012,7 +1012,7 @@ function createClient(
 
 	// OAuth: Bearer auth, Claude Code identity headers
 	if (apiKey && isOAuthToken(apiKey)) {
-		const client = new PiAnthropic({
+		const client = new AkramCodeAnthropic({
 			apiKey: null,
 			authToken: apiKey,
 			baseURL: model.baseUrl,
@@ -1052,7 +1052,7 @@ function createClient(
 	if (federation) {
 		const key = JSON.stringify([model.baseUrl, federation]);
 		if (federationClient?.key !== key || federationClient.fetch !== fetch) {
-			const client = new PiAnthropic({
+			const client = new AkramCodeAnthropic({
 				apiKey: null,
 				authToken: null,
 				config: federation,
@@ -1065,7 +1065,7 @@ function createClient(
 		return { client: federationClient.client.withOptions({ defaultHeaders }), isOAuthToken: false };
 	}
 
-	const client = new PiAnthropic({
+	const client = new AkramCodeAnthropic({
 		apiKey: apiKey ?? null,
 		authToken: null,
 		baseURL: model.baseUrl,

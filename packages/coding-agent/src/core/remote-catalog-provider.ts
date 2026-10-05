@@ -5,10 +5,10 @@ import {
 	type ModelsStoreEntry,
 	type ModelType,
 	type Provider,
-} from "@earendil-works/pi-ai";
+} from "@akramcode/ai";
 import { VERSION } from "../config.ts";
+import { getAkramCodeUserAgent } from "../utils/akramcode-user-agent.ts";
 import { fetchWithRetry } from "../utils/management-http.ts";
-import { getPiUserAgent } from "../utils/pi-user-agent.ts";
 
 const DEFAULT_CATALOG_BASE_URL = "https://pi.dev";
 const REMOTE_CATALOG_ATTEMPT_TIMEOUT_MS = 4_000;
@@ -105,7 +105,7 @@ export function withRemoteCatalog(
 				{
 					headers: {
 						accept: "application/json",
-						"User-Agent": getPiUserAgent(VERSION),
+						"User-Agent": getAkramCodeUserAgent(VERSION),
 						...(validator ? { "if-none-match": validator } : {}),
 					},
 					signal: context.signal,

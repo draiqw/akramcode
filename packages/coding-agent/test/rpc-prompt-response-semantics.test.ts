@@ -1,14 +1,14 @@
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Agent } from "@earendil-works/pi-agent-core";
+import { Agent } from "@akramcode/agent-core";
 import {
 	type AssistantMessage,
 	type AssistantMessageEvent,
 	EventStream,
 	getModel,
 	type Model,
-} from "@earendil-works/pi-ai/compat";
+} from "@akramcode/ai/compat";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AgentSession } from "../src/core/agent-session.ts";
 import type { AgentSessionRuntime } from "../src/core/agent-session-runtime.ts";
@@ -105,7 +105,7 @@ async function createRuntimeHost(options: {
 	runtimeHost: AgentSessionRuntime;
 	cleanup: () => Promise<void>;
 }> {
-	const tempDir = join(tmpdir(), `pi-rpc-prompt-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+	const tempDir = join(tmpdir(), `akramcode-rpc-prompt-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 	mkdirSync(tempDir, { recursive: true });
 
 	const model = options.model ?? getModel("anthropic", "claude-sonnet-4-5");
@@ -261,9 +261,9 @@ describe("RPC prompt response semantics", () => {
 			withAuth: false,
 			responseDelayMs: 0,
 			extensionsResult: await createTestExtensionsResult([
-				(pi) => {
-					pi.registerCommand("handled", { handler: async () => {} });
-					pi.on("input", (event) => {
+				(akramcode) => {
+					akramcode.registerCommand("handled", { handler: async () => {} });
+					akramcode.on("input", (event) => {
 						if (event.text === "handled input") return { action: "handled" };
 					});
 				},
@@ -333,10 +333,10 @@ describe("RPC prompt response semantics", () => {
 				withAuth: true,
 				responseDelayMs: 500,
 				extensionsResult: await createTestExtensionsResult([
-					(pi) => {
-						pi.on("input", (event) => {
+					(akramcode) => {
+						akramcode.on("input", (event) => {
 							if (event.text === "A" && event.source === "rpc") {
-								pi.sendUserMessage("B", { deliverAs: type === "steer" ? "steer" : "followUp" });
+								akramcode.sendUserMessage("B", { deliverAs: type === "steer" ? "steer" : "followUp" });
 								return { action: "handled" };
 							}
 						});
@@ -379,8 +379,8 @@ describe("RPC prompt response semantics", () => {
 			withAuth: false,
 			responseDelayMs: 0,
 			extensionsResult: await createTestExtensionsResult([
-				(pi) => {
-					pi.on("input", (event) => {
+				(akramcode) => {
+					akramcode.on("input", (event) => {
 						if (event.text === "A") return { action: "transform", text: "B" };
 					});
 				},

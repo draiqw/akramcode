@@ -4,7 +4,7 @@ import { access, chmod, type FileHandle, open, realpath, symlink } from "node:fs
 import { homedir, tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { BACKGROUND_CONTEXT, withAbortSignal } from "@earendil-works/chord/context";
+import { BACKGROUND_CONTEXT, withAbortSignal } from "@akramcode/chord/context";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { FileError, getOrThrow, type ShellExecOptions } from "../src/env/index.ts";
 import { NodeExecutionEnv } from "../src/env/node.ts";
@@ -13,7 +13,7 @@ const tempDirs: string[] = [];
 const chmodRestorePaths: string[] = [];
 
 function createTempDir(): string {
-	const dir = join(tmpdir(), `pi-durable-env-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+	const dir = join(tmpdir(), `akramcode-durable-env-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 	mkdirSync(dir, { recursive: true });
 	tempDirs.push(dir);
 	return dir;
@@ -110,7 +110,7 @@ class FailingSpillExecutionEnv extends NodeExecutionEnv {
 		options: Parameters<NodeExecutionEnv["createTempFile"]>[0],
 		context: Parameters<NodeExecutionEnv["createTempFile"]>[1],
 	) {
-		if (options?.prefix === "pi-output-") {
+		if (options?.prefix === "akramcode-output-") {
 			return { ok: true as const, value: join(this.cwd, "missing", "spill.log") };
 		}
 		return super.createTempFile(options, context);
@@ -167,8 +167,8 @@ describe("NodeExecutionEnv filesystem", () => {
 	it("expands home-relative paths and file URLs", async () => {
 		const root = createTempDir();
 		const env = new NodeExecutionEnv({ cwd: root });
-		expect(getOrThrow(await env.absolutePath("~/pi-node-env-test", BACKGROUND_CONTEXT))).toBe(
-			join(homedir(), "pi-node-env-test"),
+		expect(getOrThrow(await env.absolutePath("~/akramcode-node-env-test", BACKGROUND_CONTEXT))).toBe(
+			join(homedir(), "akramcode-node-env-test"),
 		);
 		const filePath = join(root, "file with spaces.txt");
 		expect(getOrThrow(await env.absolutePath(pathToFileURL(filePath).href, BACKGROUND_CONTEXT))).toBe(filePath);
@@ -582,10 +582,10 @@ describe("NodeExecutionEnv shell", () => {
 
 	it.each([
 		["a missing override preserves the base value", undefined, "x:/stale/parent.jsonl"],
-		["an empty override shadows the base value", { PI_SESSION_FILE: "" }, "x:"],
+		["an empty override shadows the base value", { AKRAMCODE_SESSION_FILE: "" }, "x:"],
 		[
 			"a string override replaces the base value",
-			{ PI_SESSION_FILE: "/sessions/current.jsonl" },
+			{ AKRAMCODE_SESSION_FILE: "/sessions/current.jsonl" },
 			"x:/sessions/current.jsonl",
 		],
 	] as const)(
@@ -595,14 +595,14 @@ describe("NodeExecutionEnv shell", () => {
 			const env = new NodeExecutionEnv({
 				cwd: root,
 				shellEnv: {
-					PI_SESSION_FILE: "/stale/parent.jsonl",
-					PI_CODING_AGENT: "true",
-					PI_NODE_ENV_PRESERVED_TEST: "preserved",
+					AKRAMCODE_SESSION_FILE: "/stale/parent.jsonl",
+					AKRAMCODE_CODING_AGENT: "true",
+					AKRAMCODE_NODE_ENV_PRESERVED_TEST: "preserved",
 				},
 			});
 			const collected = await collectShellOutput(
 				env,
-				`printf '%s:%s|%s|%s' "\${PI_SESSION_FILE+x}" "\${PI_SESSION_FILE-}" "$PI_CODING_AGENT" "$PI_NODE_ENV_PRESERVED_TEST"`,
+				`printf '%s:%s|%s|%s' "\${AKRAMCODE_SESSION_FILE+x}" "\${AKRAMCODE_SESSION_FILE-}" "$AKRAMCODE_CODING_AGENT" "$AKRAMCODE_NODE_ENV_PRESERVED_TEST"`,
 				{ env: overrides },
 				BACKGROUND_CONTEXT,
 			);
@@ -613,9 +613,9 @@ describe("NodeExecutionEnv shell", () => {
 
 	it("can replace rather than inherit the default shell environment", async () => {
 		const root = createTempDir();
-		const inheritedKey = "PI_NODE_ENV_INHERITED_TEST";
-		const configuredKey = "PI_NODE_ENV_CONFIGURED_TEST";
-		const explicitKey = "PI_NODE_ENV_EXPLICIT_TEST";
+		const inheritedKey = "AKRAMCODE_NODE_ENV_INHERITED_TEST";
+		const configuredKey = "AKRAMCODE_NODE_ENV_CONFIGURED_TEST";
+		const explicitKey = "AKRAMCODE_NODE_ENV_EXPLICIT_TEST";
 		const previousInherited = process.env[inheritedKey];
 		process.env[inheritedKey] = "host";
 		try {

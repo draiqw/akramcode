@@ -9,8 +9,8 @@ import {
 	McpAuthRequiredError,
 	McpHttpError,
 	McpSessionExpiredError,
-} from "@earendil-works/pi-mcp";
-import { createInMemoryTransportPair, type InMemoryTransport } from "@earendil-works/pi-mcp/testing";
+} from "@akramcode/mcp";
+import { createInMemoryTransportPair, type InMemoryTransport } from "@akramcode/mcp/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import { InMemoryAuthStorageBackend } from "../src/core/auth-storage.ts";
 import { truncateMiddle } from "../src/core/tools/truncate.ts";
@@ -35,14 +35,14 @@ describe("MCP config", () => {
 	});
 
 	function setup(global: unknown, project: unknown) {
-		const root = mkdtempSync(join(tmpdir(), "pi-mcp-config-"));
+		const root = mkdtempSync(join(tmpdir(), "akramcode-mcp-config-"));
 		dirs.push(root);
 		const agentDir = join(root, "agent");
 		const cwd = join(root, "project");
 		mkdirSync(agentDir, { recursive: true });
-		mkdirSync(join(cwd, ".pi"), { recursive: true });
+		mkdirSync(join(cwd, ".akramcode"), { recursive: true });
 		writeFileSync(join(agentDir, "mcp.json"), JSON.stringify(global));
-		writeFileSync(join(cwd, ".pi", "mcp.json"), JSON.stringify(project));
+		writeFileSync(join(cwd, ".akramcode", "mcp.json"), JSON.stringify(project));
 		return { agentDir, cwd };
 	}
 
@@ -429,7 +429,7 @@ describe("MCP connections", () => {
 	it.skipIf(process.platform === "win32")(
 		"expands ~ in the command, arguments, and cwd of stdio servers",
 		async () => {
-			const home = mkdtempSync(join(tmpdir(), "pi-mcp-home-"));
+			const home = mkdtempSync(join(tmpdir(), "akramcode-mcp-home-"));
 			const previousHome = process.env.HOME;
 			process.env.HOME = home;
 			mkdirSync(join(home, "work"));
@@ -605,7 +605,7 @@ for await (const line of createInterface({ input: process.stdin })) {
 	});
 
 	it("appends server log messages to the log file", async () => {
-		const dir = mkdtempSync(join(tmpdir(), "pi-mcp-log-"));
+		const dir = mkdtempSync(join(tmpdir(), "akramcode-mcp-log-"));
 		try {
 			const path = join(dir, "mcp.log");
 			const { connection } = connect(

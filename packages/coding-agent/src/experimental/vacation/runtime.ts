@@ -1,6 +1,6 @@
-import type { AttachedReplicatedState } from "@earendil-works/chord";
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
-import { clampThinkingLevel, getSupportedThinkingLevels, type ModelThinkingLevel } from "@earendil-works/pi-ai";
+import { clampThinkingLevel, getSupportedThinkingLevels, type ModelThinkingLevel } from "@akramcode/ai";
+import type { AttachedReplicatedState } from "@akramcode/chord";
+import { BACKGROUND_CONTEXT } from "@akramcode/chord/context";
 import {
 	type AgentState,
 	type Conversation,
@@ -13,8 +13,8 @@ import {
 	ROOT_CONVERSATION_ID,
 	type Submission,
 	type TaskGraph,
-} from "@earendil-works/pi-durable";
-import { openNodeSqliteStorage } from "@earendil-works/pi-durable/storage/sqlite/node";
+} from "@akramcode/durable";
+import { openNodeSqliteStorage } from "@akramcode/durable/storage/sqlite/node";
 import { ModelRuntime } from "../../core/model-runtime.ts";
 import { SettingsManager } from "../../core/settings-manager.ts";
 import {
@@ -85,14 +85,14 @@ export interface OpenDurableOptions {
 export interface OpenDurableResult {
 	readonly view: DurableViewSource;
 	readonly controller: DurableController;
-	/** pi's settings, for the TUI's theme and terminal capabilities. */
+	/** akramcode's settings, for the TUI's theme and terminal capabilities. */
 	readonly settings: SettingsManager;
 	close(): Promise<void>;
 }
 
 /** The agent document of a view; absent while the conversation has none. */
 export function agentOf(view: ConversationView): AgentState {
-	return (view.docs["pi.agent"] ?? {}) as AgentState;
+	return (view.docs["akramcode.agent"] ?? {}) as AgentState;
 }
 
 /** A subagent's task: the oldest user message of its conversation. The main conversation needs no title. */
@@ -103,7 +103,7 @@ async function firstInput(harness: Harness, id: ConversationId): Promise<{ title
 	let cursor: Cursor | undefined;
 	do {
 		const page = await conversation.entries({}, 256, cursor, context);
-		first = page.items.findLast((entry) => entry.kind === "pi.user") ?? first;
+		first = page.items.findLast((entry) => entry.kind === "akramcode.user") ?? first;
 		cursor = page.next;
 	} while (cursor !== undefined);
 	return titleOf(first);
@@ -203,7 +203,7 @@ export async function openDurable(options: OpenDurableOptions = {}): Promise<Ope
 			for (const change of publication.changes) {
 				if (change.type === "conversation") {
 					conversations = [...conversations, { id: change.value.id, label: label(change.value.id) }];
-				} else if (change.type === "entry" && change.value.kind === "pi.user") {
+				} else if (change.type === "entry" && change.value.kind === "akramcode.user") {
 					const id = change.value.conversationId;
 					conversations = conversations.map((summary) =>
 						summary.id === id && summary.title === undefined ? { ...summary, ...titleOf(change.value) } : summary,

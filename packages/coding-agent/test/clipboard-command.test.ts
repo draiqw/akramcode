@@ -8,7 +8,7 @@ describe("clipboard commands", () => {
 		).toEqual(Buffer.from([0, 255, 10]));
 		expect(await runClipboardCommand(process.execPath, ["-e", ""])).toEqual(Buffer.alloc(0));
 		expect(await runClipboardCommand(process.execPath, ["-e", "process.exit(1)"])).toBeUndefined();
-		expect(await runClipboardCommand("pi-clipboard-command-does-not-exist", [])).toBeUndefined();
+		expect(await runClipboardCommand("akramcode-clipboard-command-does-not-exist", [])).toBeUndefined();
 	});
 	test("sends Unicode input to clipboard writers", async () => {
 		const script =

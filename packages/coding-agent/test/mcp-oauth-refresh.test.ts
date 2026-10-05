@@ -1,7 +1,7 @@
 import { mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { type OAuthChallenge, OAuthIssuerMismatchError } from "@earendil-works/pi-mcp/oauth";
+import { type OAuthChallenge, OAuthIssuerMismatchError } from "@akramcode/mcp/oauth";
 import { afterEach, describe, expect, it } from "vitest";
 import { InMemoryAuthStorageBackend } from "../src/core/auth-storage.ts";
 import {
@@ -22,9 +22,9 @@ describe("MCP OAuth refresh", () => {
 	async function signedIn() {
 		const server = await startOAuthMcpServer();
 		cleanups.push(server.close);
-		const lockDir = mkdtempSync(join(tmpdir(), "pi-mcp-refresh-"));
+		const lockDir = mkdtempSync(join(tmpdir(), "akramcode-mcp-refresh-"));
 		cleanups.push(() => rmSync(lockDir, { recursive: true, force: true }));
-		// Stores sharing the credential file and lock directory stand in for separate pi processes.
+		// Stores sharing the credential file and lock directory stand in for separate akramcode processes.
 		const backend = new InMemoryAuthStorageBackend();
 		const process = () => {
 			const store = new McpOAuthCredentialStore(backend, lockDir).forServer("test", server.url);

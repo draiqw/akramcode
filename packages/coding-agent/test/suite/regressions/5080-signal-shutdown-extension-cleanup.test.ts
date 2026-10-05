@@ -41,13 +41,13 @@ function createSessionManager(options: { sessionFile?: string } = {}): SessionMa
 		isPersisted: () => options.sessionFile !== undefined,
 		getSessionFile: () => options.sessionFile,
 		getSessionId: () => "test-session",
-		getSessionDir: () => "/tmp/pi-sessions",
+		getSessionDir: () => "/tmp/akramcode-sessions",
 		usesDefaultSessionDir: () => true,
 	} as unknown as SessionManager;
 }
 
 function createTempFile(): string {
-	const dir = mkdtempSync(join(tmpdir(), "pi-shutdown-resume-hint-"));
+	const dir = mkdtempSync(join(tmpdir(), "akramcode-shutdown-resume-hint-"));
 	tempDirs.push(dir);
 	const file = join(dir, "session.jsonl");
 	writeFileSync(file, "\n");

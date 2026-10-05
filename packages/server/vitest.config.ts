@@ -5,7 +5,7 @@ const src = (path: string): string => fileURLToPath(new URL(path, import.meta.ur
 
 /**
  * Exact matches for bare specifiers, plus one rule per package for subpath exports such as
- * `@earendil-works/pi-ai/utils/uuid`. A prefix alias would rewrite those onto `index.ts/utils/uuid`.
+ * `@akramcode/ai/utils/uuid`. A prefix alias would rewrite those onto `index.ts/utils/uuid`.
  */
 export default defineConfig({
 	test: {
@@ -16,12 +16,12 @@ export default defineConfig({
 	resolve: {
 		conditions: ["source"],
 		alias: [
-			{ find: /^@earendil-works\/pi-agent-core$/, replacement: src("../agent/src/index.ts") },
-			{ find: /^@earendil-works\/pi-agent-core\/(.+)$/, replacement: `${src("../agent/src/")}$1.ts` },
-			{ find: /^@earendil-works\/pi-ai$/, replacement: src("../ai/src/index.ts") },
-			{ find: /^@earendil-works\/pi-ai\/(.+)$/, replacement: `${src("../ai/src/")}$1.ts` },
-			{ find: /^@earendil-works\/pi-telemetry$/, replacement: src("../telemetry/src/index.ts") },
-			{ find: /^@earendil-works\/pi-protocol$/, replacement: src("../protocol/src/index.ts") },
+			{ find: /^@earendil-works\/akramcode-agent-core$/, replacement: src("../agent/src/index.ts") },
+			{ find: /^@earendil-works\/akramcode-agent-core\/(.+)$/, replacement: `${src("../agent/src/")}$1.ts` },
+			{ find: /^@earendil-works\/akramcode-ai$/, replacement: src("../ai/src/index.ts") },
+			{ find: /^@earendil-works\/akramcode-ai\/(.+)$/, replacement: `${src("../ai/src/")}$1.ts` },
+			{ find: /^@earendil-works\/akramcode-telemetry$/, replacement: src("../telemetry/src/index.ts") },
+			{ find: /^@earendil-works\/akramcode-protocol$/, replacement: src("../protocol/src/index.ts") },
 		],
 	},
 	ssr: { resolve: { conditions: ["source"] } },

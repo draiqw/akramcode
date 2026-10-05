@@ -1,6 +1,6 @@
-import { type AttachedReplicatedState, type Context, type JsonValue, replicatedState } from "@earendil-works/chord";
-import { withoutAbortSignal } from "@earendil-works/chord/context";
-import { applyImmutable, type NonEmptyPath, type Op, type Path } from "@earendil-works/chord/delta";
+import { type AttachedReplicatedState, type Context, type JsonValue, replicatedState } from "@akramcode/chord";
+import { withoutAbortSignal } from "@akramcode/chord/context";
+import { applyImmutable, type NonEmptyPath, type Op, type Path } from "@akramcode/chord/delta";
 import { CommittedStateSource, CommittedWatch } from "../session/observation.ts";
 import type { SessionImpl } from "../session/session.ts";
 import type {
@@ -26,7 +26,7 @@ export type ConversationView = {
 	readonly conversation: ConversationRecord;
 	/** Raw active entries, as `ContextView.entries`: the head marker, then the non-head entries from its head. */
 	readonly entries: readonly EntryRecord[];
-	/** `pi.agent`, `pi.live`, `pi.inbox`, and `pi.usage`, keyed by kind; absent documents are absent. */
+	/** `akramcode.agent`, `akramcode.live`, `akramcode.inbox`, and `akramcode.usage`, keyed by kind; absent documents are absent. */
 	readonly docs: Readonly<Record<string, JsonObject>>;
 };
 

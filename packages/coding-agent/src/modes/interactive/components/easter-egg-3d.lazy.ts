@@ -1,4 +1,4 @@
-import { type TUI, TuiAltScreen } from "@earendil-works/pi-tui";
+import { type TUI, TuiAltScreen } from "@akramcode/tui";
 import type { EasterEgg3d } from "./easter-egg-3d.ts";
 
 /**
@@ -16,9 +16,9 @@ function playEasterEgg3d(tui: TUI, egg: EasterEgg3d): boolean {
 	return true;
 }
 
-/** Plays the 3D pi logo, lifting off the header logo whose top-left cell is at `column`, `row`. */
-export function playPiLogo3d(tui: TUI, column: number, row: number): void {
-	playEasterEgg3d(tui, { kind: "pi-logo", column, row });
+/** Plays the 3D akramcode logo, lifting off the header logo whose top-left cell is at `column`, `row`. */
+export function playAkramCodeLogo3d(tui: TUI, column: number, row: number): void {
+	playEasterEgg3d(tui, { kind: "akramcode-logo", column, row });
 }
 
 /** Plays the 3D Armin. Returns false when it cannot play, so the caller can fall back to the inline version. */

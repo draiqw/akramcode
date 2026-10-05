@@ -10,9 +10,9 @@ import {
 	type RemoteServiceEndpoint,
 	type ServiceCall,
 	type ServiceProviderUpdate,
-} from "@earendil-works/chord";
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
-import type { Conversation, Harness } from "@earendil-works/pi-durable";
+} from "@akramcode/chord";
+import { BACKGROUND_CONTEXT } from "@akramcode/chord/context";
+import type { Conversation, Harness } from "@akramcode/durable";
 import type { ModelRuntime } from "../../core/model-runtime.ts";
 import type { SettingsManager } from "../../core/settings-manager.ts";
 import { AgentController } from "./agent-controller.ts";
@@ -57,14 +57,14 @@ export async function createSessionWorkerServices(options: {
 	publish(scope: WorkerServiceScope, subscriptionId: string, update: ServiceProviderUpdate): Promise<void>;
 }): Promise<SessionWorkerServices> {
 	const agentControllerRuntimeFacet = defineFacet({
-		id: "@pi/agent-controller-runtime",
+		id: "@akramcode/agent-controller-runtime",
 		setup(env) {
 			env.provide(AgentController, createAgentController(options.harness, options.conversation));
 		},
 	});
 	let reloadPlugins = (): Promise<void> => Promise.reject(new Error("Session plugins are not ready"));
 	const pluginRuntimeFacet = defineFacet({
-		id: "@pi/session-plugins-runtime",
+		id: "@akramcode/session-plugins-runtime",
 		setup(env) {
 			env.provide(SessionPlugins, { reload: () => reloadPlugins() });
 		},

@@ -1,4 +1,4 @@
-import { defineExtension, type PromptInput, section } from "@earendil-works/pi-durable";
+import { defineExtension, type PromptInput, section } from "@akramcode/durable";
 import { getAgentDir } from "../../config.ts";
 import { loadProjectContextFiles } from "../../core/resource-loader.ts";
 import type { SettingsManager } from "../../core/settings-manager.ts";
@@ -16,14 +16,14 @@ const CONTRIBUTIONS = {
 	write: writeToolSystemPromptContribution,
 };
 
-/** pi's section order; `buildSystemPromptSections()` omits the ones without content. */
+/** akramcode's section order; `buildSystemPromptSections()` omits the ones without content. */
 const KEYS = ["preamble", "tools", "rules", "docs", "project_context", "skills", "cwd"] as const;
 
 /**
- * pi's system prompt as one extension: the sections of `buildSystemPromptSections()` for the request's tools and the
- * conversation's directory. Context files and skills load once per directory, like pi at startup.
+ * akramcode's system prompt as one extension: the sections of `buildSystemPromptSections()` for the request's tools and the
+ * conversation's directory. Context files and skills load once per directory, like akramcode at startup.
  */
-export function createPiPrompt(settings: SettingsManager, fallbackCwd: string) {
+export function createAkramCodePrompt(settings: SettingsManager, fallbackCwd: string) {
 	const resources = new Map<string, { contextFiles: { path: string; content: string }[]; skills: Skill[] }>();
 	const load = (cwd: string) => {
 		let found = resources.get(cwd);
@@ -67,7 +67,7 @@ export function createPiPrompt(settings: SettingsManager, fallbackCwd: string) {
 		});
 	};
 	return defineExtension({
-		name: "pi-prompt",
+		name: "akramcode-prompt",
 		// The built sections carry their own tags.
 		sections: KEYS.map((key) => section(key, (input) => build(input)[key], { tag: false })),
 	});

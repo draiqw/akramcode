@@ -1,4 +1,3 @@
-import { type Context, copyJson, type Draft, type JsonValue } from "@earendil-works/chord";
 import type {
 	Api,
 	AssistantMessage,
@@ -8,10 +7,11 @@ import type {
 	ModelThinkingLevel,
 	SimpleStreamOptions,
 	ToolCall,
-} from "@earendil-works/pi-ai";
-import { isContextOverflow } from "@earendil-works/pi-ai/utils/overflow";
-import { isRetryableAssistantError, retryDelayMs } from "@earendil-works/pi-ai/utils/retry";
-import { getCurrentTools } from "@earendil-works/pi-ai/utils/transcript";
+} from "@akramcode/ai";
+import { isContextOverflow } from "@akramcode/ai/utils/overflow";
+import { isRetryableAssistantError, retryDelayMs } from "@akramcode/ai/utils/retry";
+import { getCurrentTools } from "@akramcode/ai/utils/transcript";
+import { type Context, copyJson, type Draft, type JsonValue } from "@akramcode/chord";
 import { AssistantEntry, ResetEntry, SystemEntry, UserEntry } from "../entries.ts";
 import type { ExecutionEnv } from "../env/index.ts";
 import { defineTask } from "../tasks.ts";
@@ -110,15 +110,15 @@ const DEFAULT_POLL_AFTER_MS = 5000;
 
 /**
  * Built-in generation task: prepares the positional system prompt and tool loadout, requests or polls the model,
- * retries, and classifies the response. The run's inputs live in `pi.live.run`.
+ * retries, and classifies the response. The run's inputs live in `akramcode.live.run`.
  */
 export const GenerationTask = defineTask<GenerationInput, GenerationCheckpoint, GenerationResult, GenerationHooks>({
-	name: "pi.generation",
+	name: "akramcode.generation",
 	version: 1,
 	initial: () => ({ phase: "prepare", attempt: 1 }),
 	phases: {
 		/**
-		 * Render the system prompt and tool loadout and append the positional `pi.system` entries they need, then move to
+		 * Render the system prompt and tool loadout and append the positional `akramcode.system` entries they need, then move to
 		 * `request`. The agent and settings resolved here are fixed for this request. Only the Harness writes to a busy
 		 * conversation, so the transcript read here is still the tail at the commit.
 		 */
@@ -398,7 +398,7 @@ async function streamResponse(
 	try {
 		const events = runtime.models.streamSimple(model, { messages: [...messages] }, options);
 		for await (const event of events) {
-			// A partial without content, such as pi-ai's opening `start` event, shows nothing; a deferred response
+			// A partial without content, such as akramcode-ai's opening `start` event, shows nothing; a deferred response
 			// never gets past it, so it never leaves a partial.
 			if (event.type === "done" || event.type === "error" || event.partial.content.length === 0) continue;
 			pending = event.partial;
@@ -644,7 +644,7 @@ async function finishToolRound(
 }
 
 /**
- * Append a provider result and add its usage to `pi.usage` in the same commit.
+ * Append a provider result and add its usage to `akramcode.usage` in the same commit.
  * REMINDER: every built-in writer of assistant entries goes through here, so the usage ledger stays complete.
  */
 async function appendAssistant(
@@ -656,7 +656,7 @@ async function appendAssistant(
 	return tx.appendEntry(AssistantEntry, conversationId, { model: [message] });
 }
 
-/** Start a run for `inputs`, placed input submissions: a new generation takes `pi.live.run`. */
+/** Start a run for `inputs`, placed input submissions: a new generation takes `akramcode.live.run`. */
 export async function startRun(
 	tx: Tx,
 	conversationId: ConversationId,

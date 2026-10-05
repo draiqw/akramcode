@@ -12,8 +12,8 @@
 import { createHash } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { oauthErrorHtml, oauthSuccessHtml } from "@earendil-works/pi-ai/utils/oauth-page";
-import type { AuthProvider, McpFetch } from "@earendil-works/pi-mcp";
+import { oauthErrorHtml, oauthSuccessHtml } from "@akramcode/ai/utils/oauth-page";
+import type { AuthProvider, McpFetch } from "@akramcode/mcp";
 import {
 	authorizeMcp,
 	McpOAuthAuthorizationRequiredError,
@@ -27,7 +27,7 @@ import {
 	type OAuthClientInformationMixed,
 	parseWwwAuthenticate,
 	stepUpScope,
-} from "@earendil-works/pi-mcp/oauth";
+} from "@akramcode/mcp/oauth";
 import lockfile from "proper-lockfile";
 import { APP_NAME, getAgentDir } from "../../config.ts";
 import { type AuthStorageBackend, FileAuthStorageBackend } from "../../core/auth-storage.ts";

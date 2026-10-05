@@ -19,14 +19,14 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 /** Workspace package name -> its source root, so cross-package imports are followed. */
 const WORKSPACE = {
-	"@earendil-works/chord": "packages/chord/src",
-	"@earendil-works/pi-ai": "packages/ai/src",
-	"@earendil-works/pi-durable": "packages/durable/src",
-	"@earendil-works/pi-agent-core": "packages/agent/src",
-	"@earendil-works/pi-codemode": "packages/codemode/src",
-	"@earendil-works/pi-telemetry": "packages/telemetry/src",
-	"@earendil-works/pi-mcp": "packages/mcp/src",
-	"@earendil-works/pi-tui": "packages/tui/src",
+	"@akramcode/chord": "packages/chord/src",
+	"@akramcode/ai": "packages/ai/src",
+	"@akramcode/durable": "packages/durable/src",
+	"@akramcode/agent-core": "packages/agent/src",
+	"@akramcode/codemode": "packages/codemode/src",
+	"@akramcode/telemetry": "packages/telemetry/src",
+	"@akramcode/mcp": "packages/mcp/src",
+	"@akramcode/tui": "packages/tui/src",
 };
 
 /**
@@ -43,7 +43,7 @@ const BUDGETS = {
 	},
 	"packages/durable": {
 		".": {
-			// The built-in tool task validates arguments with pi-ai's TypeBox-based validation, so TypeBox is allowed.
+			// The built-in tool task validates arguments with akramcode-ai's TypeBox-based validation, so TypeBox is allowed.
 			maxFiles: 60,
 			forbid: ["packages/ai/src/index.ts", "packages/ai/src/utils/typebox-helpers.ts"],
 		},

@@ -22,8 +22,8 @@ describe("issue #9178: tree navigation during manual compaction", () => {
 		harness = await createHarness({
 			settings: { compaction: { keepRecentTokens: 1 } },
 			extensionFactories: [
-				(pi) => {
-					pi.on("session_before_compact", async (event) => {
+				(akramcode) => {
+					akramcode.on("session_before_compact", async (event) => {
 						compactionStarted.resolve();
 						await compactionReleased.promise;
 						return {
@@ -71,8 +71,8 @@ describe("issue #9178: tree navigation during manual compaction", () => {
 		const navigationReleased = createDeferred();
 		harness = await createHarness({
 			extensionFactories: [
-				(pi) => {
-					pi.on("session_before_tree", async () => {
+				(akramcode) => {
+					akramcode.on("session_before_tree", async () => {
 						navigationStarted.resolve();
 						await navigationReleased.promise;
 					});

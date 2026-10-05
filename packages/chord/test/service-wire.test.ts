@@ -27,18 +27,18 @@ describe("service wire protocol", () => {
 		expect(decodeServiceControlCall(createServiceCatalogueCall())).toEqual({ type: "catalogue" });
 		expect(
 			parseServiceCatalogue([
-				{ serviceId: "pi.models", mode: "singleton" },
-				{ serviceId: "pi.dialogs", mode: "keyed" },
+				{ serviceId: "akramcode.models", mode: "singleton" },
+				{ serviceId: "akramcode.dialogs", mode: "keyed" },
 			]),
 		).toEqual([
-			{ serviceId: "pi.models", mode: "singleton" },
-			{ serviceId: "pi.dialogs", mode: "keyed" },
+			{ serviceId: "akramcode.models", mode: "singleton" },
+			{ serviceId: "akramcode.dialogs", mode: "keyed" },
 		]);
-		const subscribe = createServiceSubscribeCall("subscription-1", "pi.models", "singleton");
+		const subscribe = createServiceSubscribeCall("subscription-1", "akramcode.models", "singleton");
 		expect(decodeServiceControlCall(subscribe)).toEqual({
 			type: "subscribe",
 			subscriptionId: "subscription-1",
-			serviceId: "pi.models",
+			serviceId: "akramcode.models",
 			mode: "singleton",
 		});
 		expect(decodeServiceControlCall(createServiceUnsubscribeCall("subscription-1"))).toEqual({
@@ -47,7 +47,7 @@ describe("service wire protocol", () => {
 		});
 		expect(
 			parseServiceCall({
-				serviceId: "pi.question-dialog",
+				serviceId: "akramcode.question-dialog",
 				instance: { key: "invocation-1", generation: 2 },
 				member: "submit",
 				args: [{ outcome: "selected", index: 0 }],
@@ -56,10 +56,10 @@ describe("service wire protocol", () => {
 	});
 
 	test("rejects malformed service values", () => {
-		expect(() => parseServiceCall({ serviceId: "pi.models", member: "list", args: [], extra: true })).toThrow(
+		expect(() => parseServiceCall({ serviceId: "akramcode.models", member: "list", args: [], extra: true })).toThrow(
 			"Invalid service call",
 		);
-		expect(() => parseServiceCatalogue([{ serviceId: "pi.models", mode: "unknown" }])).toThrow(
+		expect(() => parseServiceCatalogue([{ serviceId: "akramcode.models", mode: "unknown" }])).toThrow(
 			"Invalid service catalogue",
 		);
 		expect(() => parseServiceProviderUpdate({ type: "state", member: "state", sequence: 0, ops: [] })).toThrow(
@@ -72,7 +72,7 @@ describe("service wire protocol", () => {
 
 	test("validates decoded and wire snapshots and updates", () => {
 		const snapshot: ServiceSubscriptionSnapshot = {
-			serviceId: "pi.models",
+			serviceId: "akramcode.models",
 			mode: "singleton",
 			instances: [
 				{
@@ -99,7 +99,7 @@ describe("service wire protocol", () => {
 		const enc = createServiceStateEncoder();
 		const dec = createServiceStateDecoder();
 		const snapshot: ServiceSubscriptionSnapshot = {
-			serviceId: "pi.models",
+			serviceId: "akramcode.models",
 			mode: "singleton",
 			instances: [
 				{
@@ -138,7 +138,7 @@ describe("service wire protocol", () => {
 		const enc = createServiceStateEncoder();
 		const dec = createServiceStateDecoder();
 		const snapshot: ServiceSubscriptionSnapshot = {
-			serviceId: "pi.states",
+			serviceId: "akramcode.states",
 			mode: "singleton",
 			instances: [{ members: [{ name: "state", kind: "state", sequence: 0, ops: [["r", { before: 0 }]] }] }],
 		};
@@ -187,7 +187,7 @@ describe("service wire protocol", () => {
 
 	test("isolates operation dictionaries between states and subscriptions", () => {
 		const snapshot: ServiceSubscriptionSnapshot = {
-			serviceId: "pi.states",
+			serviceId: "akramcode.states",
 			mode: "singleton",
 			instances: [
 				{
@@ -254,7 +254,7 @@ describe("service wire protocol", () => {
 		const enc = createServiceStateEncoder();
 		const dec = createServiceStateDecoder();
 		const snapshot: ServiceSubscriptionSnapshot = {
-			serviceId: "pi.dialogs",
+			serviceId: "akramcode.dialogs",
 			mode: "keyed",
 			instances: [],
 		};

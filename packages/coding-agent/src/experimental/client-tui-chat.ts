@@ -1,6 +1,6 @@
-import type { AssistantMessage, ToolResultMessage, UserMessage } from "@earendil-works/pi-ai";
-import type { ConversationView, EntryRecord, InboxState, LiveState } from "@earendil-works/pi-durable";
-import { Container, Spacer, Text, TruncatedText, type TUI } from "@earendil-works/pi-tui";
+import type { AssistantMessage, ToolResultMessage, UserMessage } from "@akramcode/ai";
+import type { ConversationView, EntryRecord, InboxState, LiveState } from "@akramcode/durable";
+import { Container, Spacer, Text, TruncatedText, type TUI } from "@akramcode/tui";
 import { createAllToolRenderers } from "../core/tools/renderers/index.ts";
 import { AssistantMessageComponent } from "../modes/interactive/components/assistant-message.ts";
 import { type StatusIndicator, WorkingStatusIndicator } from "../modes/interactive/components/status-indicator.ts";
@@ -8,9 +8,9 @@ import { ToolExecutionComponent, type ToolRenderers } from "../modes/interactive
 import { UserMessageComponent } from "../modes/interactive/components/user-message.ts";
 import { theme } from "../modes/interactive/theme/theme.ts";
 
-/** The `pi.live` document of a view: the active run, the streaming answer, and running tools. */
+/** The `akramcode.live` document of a view: the active run, the streaming answer, and running tools. */
 export function liveOf(view: ConversationView): LiveState {
-	return (view.docs["pi.live"] ?? {}) as LiveState;
+	return (view.docs["akramcode.live"] ?? {}) as LiveState;
 }
 
 function userText(content: UserMessage["content"]): string {
@@ -66,7 +66,7 @@ export class ExperimentalChatView {
 				);
 			}
 		}
-		this.#syncQueue((view.docs["pi.inbox"] ?? { items: [] }) as InboxState);
+		this.#syncQueue((view.docs["akramcode.inbox"] ?? { items: [] }) as InboxState);
 		this.#syncStatus(live);
 		this.transcript.invalidate();
 		this.pendingMessages.invalidate();
@@ -153,10 +153,10 @@ export class ExperimentalChatView {
 
 	#addEntry(entry: EntryRecord): void {
 		const message = entry.model?.[0];
-		if (entry.kind === "pi.user" && message?.role === "user") {
+		if (entry.kind === "akramcode.user" && message?.role === "user") {
 			this.transcript.addChild(new Spacer(1));
 			this.transcript.addChild(new UserMessageComponent(userText(message.content)));
-		} else if (entry.kind === "pi.assistant" && message?.role === "assistant") {
+		} else if (entry.kind === "akramcode.assistant" && message?.role === "assistant") {
 			const component = this.#streaming ?? new AssistantMessageComponent();
 			if (this.#streaming === undefined) this.transcript.addChild(component);
 			this.#streaming = undefined;
@@ -175,13 +175,13 @@ export class ExperimentalChatView {
 				}
 			}
 			this.#streamingCalls.clear();
-		} else if (entry.kind === "pi.tool-result" && message?.role === "toolResult") {
+		} else if (entry.kind === "akramcode.tool-result" && message?.role === "toolResult") {
 			const result = message as ToolResultMessage;
 			this.#tool(result.toolName, result.toolCallId).updateResult(result);
-		} else if (entry.kind === "pi.compaction") {
+		} else if (entry.kind === "akramcode.compaction") {
 			this.#addText(theme.fg("muted", "[compaction]"));
 			if (message?.role === "user") this.#addText(userText(message.content));
-		} else if (entry.kind === "pi.reset") {
+		} else if (entry.kind === "akramcode.reset") {
 			this.#addText(theme.fg("muted", "[new context]"));
 		}
 	}

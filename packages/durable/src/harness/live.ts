@@ -1,5 +1,5 @@
-import type { Draft, JsonRepresentation, JsonValue } from "@earendil-works/chord";
-import type { AssistantMessage } from "@earendil-works/pi-ai";
+import type { AssistantMessage } from "@akramcode/ai";
+import type { Draft, JsonRepresentation, JsonValue } from "@akramcode/chord";
 import { defineDoc } from "../documents.ts";
 import type { Transaction } from "../session/transaction.ts";
 import type { EntryId, SubmissionId, SubmissionSettlement, TaskId, TaskRecord, Tx } from "../types.ts";
@@ -61,7 +61,7 @@ export type LiveState = {
 };
 
 export const LiveDoc = defineDoc<LiveState>({
-	kind: "pi.live",
+	kind: "akramcode.live",
 	version: 1,
 	scope: "conversation",
 	history: "latest",
@@ -75,10 +75,10 @@ export const LiveDoc = defineDoc<LiveState>({
 		value.generation === undefined && !(value.tools ?? []).some((slot) => slot.status === "running"),
 });
 
-/** Built-in task kinds that can own `pi.live.run`. */
-const RUN_TASK_KINDS: ReadonlySet<string> = new Set(["pi.generation"]);
-const TOOL_TASK_KIND = "pi.tool";
-const COMPACTION_TASK_KIND = "pi.compaction";
+/** Built-in task kinds that can own `akramcode.live.run`. */
+const RUN_TASK_KINDS: ReadonlySet<string> = new Set(["akramcode.generation"]);
+const TOOL_TASK_KIND = "akramcode.tool";
+const COMPACTION_TASK_KIND = "akramcode.compaction";
 
 /**
  * End the run owned by `taskId`: settle each of its inputs and remove `run`. Always removes `generation` and `tools`,
@@ -138,10 +138,10 @@ export function clearProgress(slot: Draft<ToolSlot>): void {
  * Harness cleanup for a terminal outcome the scheduler writes itself (`faulted` or `orphaned`). A run task ends its
  * run; a tool task's slot is marked done without an entry, and context derivation synthesizes the missing result; a
  * compaction task's status is removed.
- * Ignores other kinds so it never creates `pi.live` elsewhere. The scheduler calls this without knowing task kinds;
+ * Ignores other kinds so it never creates `akramcode.live` elsewhere. The scheduler calls this without knowing task kinds;
  * the Harness passes it in (spec §5.4).
  * REMINDER: a committed generation partial becomes an aborted assistant entry here, exactly as in the generation abort
- * handler, so the transcript keeps what the model produced and `pi.usage` counts its spend. The scheduler's commit has
+ * handler, so the transcript keeps what the model produced and `akramcode.usage` counts its spend. The scheduler's commit has
  * no task scope, so that entry has no `byTaskId`. Faults come from task bugs
  * or malformed provider data (a non-JSON value in a response), or a commit the Storage rejected without effect; an
  * uncertain storage failure poisons the Session instead and writes no outcome.

@@ -1,4 +1,4 @@
-import { type Context, copyJson, type JsonRepresentation } from "@earendil-works/chord";
+import { type Context, copyJson, type JsonRepresentation } from "@akramcode/chord";
 import { UserEntry } from "../entries.ts";
 import { ConversationBusy } from "../errors.ts";
 import type { SessionImpl } from "../session/session.ts";
@@ -140,7 +140,7 @@ function isSettled(record: SubmissionRecord): record is SettledSubmissionRecord 
 
 /**
  * Admit a submission inside a commit (spec §6); `Conversation.submit()` and conversation-owned compactions share it. A
- * known request ID returns its existing submission without writing. A busy conversation queues it in `pi.inbox`, or
+ * known request ID returns its existing submission without writing. A busy conversation queues it in `akramcode.inbox`, or
  * rejects `whenBusy: "reject"` input with `ConversationBusy`. An idle conversation with queued items queues it behind
  * them and runs a final boundary. Otherwise idle input places a user entry and starts a run, and an idle write appends
  * its entry and settles `done`, or `stale` when its head reaches before the active range.

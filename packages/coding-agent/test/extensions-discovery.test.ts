@@ -12,7 +12,7 @@ describe("extensions discovery", () => {
 	let extensionsDir: string;
 
 	beforeEach(() => {
-		tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "pi-ext-test-"));
+		tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "akramcode-ext-test-"));
 		extensionsDir = path.join(tempDir, "extensions");
 		fs.mkdirSync(extensionsDir);
 	});
@@ -22,15 +22,15 @@ describe("extensions discovery", () => {
 	});
 
 	const extensionCode = `
-		export default function(pi) {
-			pi.registerCommand("test", { handler: async () => {} });
+		export default function(akramcode) {
+			akramcode.registerCommand("test", { handler: async () => {} });
 		}
 	`;
 
 	const extensionCodeWithTool = (toolName: string) => `
 		import { Type } from "typebox";
-		export default function(pi) {
-			pi.registerTool({
+		export default function(akramcode) {
+			akramcode.registerTool({
 				name: "${toolName}",
 				label: "${toolName}",
 				description: "Test tool",
@@ -51,14 +51,14 @@ describe("extensions discovery", () => {
 		expect(result.extensions.map((e) => path.basename(e.path)).sort()).toEqual(["bar.ts", "foo.ts"]);
 	});
 
-	it("loads the coding-agent entrypoint without rewriting pi-ai provider subpaths", async () => {
+	it("loads the coding-agent entrypoint without rewriting akramcode-ai provider subpaths", async () => {
 		fs.writeFileSync(
 			path.join(extensionsDir, "coding-agent-import.ts"),
 			`
-				import { getAgentDir } from "@earendil-works/pi-coding-agent";
+				import { getAgentDir } from "@akramcode/coding-agent";
 				void getAgentDir;
-				export default function(pi) {
-					pi.registerCommand("test", { handler: async () => {} });
+				export default function(akramcode) {
+					akramcode.registerCommand("test", { handler: async () => {} });
 				}
 			`,
 		);
@@ -71,27 +71,27 @@ describe("extensions discovery", () => {
 
 	it("does not infer package ownership from ancestor manifests", async () => {
 		// Regression for #9863.
-		const dependencyDir = path.join(tempDir, "node_modules", "@earendil-works", "pi-coding-agent");
+		const dependencyDir = path.join(tempDir, "node_modules", "@earendil-works", "akramcode-coding-agent");
 		fs.mkdirSync(dependencyDir, { recursive: true });
 		fs.writeFileSync(
 			path.join(tempDir, "package.json"),
 			JSON.stringify({
 				name: "application",
 				type: "module",
-				dependencies: { "@earendil-works/pi-coding-agent": "1.0.0" },
+				dependencies: { "@akramcode/coding-agent": "1.0.0" },
 			}),
 		);
 		fs.writeFileSync(
 			path.join(dependencyDir, "package.json"),
-			JSON.stringify({ name: "@earendil-works/pi-coding-agent", type: "module", exports: "./index.js" }),
+			JSON.stringify({ name: "@akramcode/coding-agent", type: "module", exports: "./index.js" }),
 		);
 		fs.writeFileSync(path.join(dependencyDir, "index.js"), "export const physicalDependency = true;");
 		fs.writeFileSync(
 			path.join(extensionsDir, "compiled-esm-extension.js"),
 			`
-				import { physicalDependency } from "@earendil-works/pi-coding-agent";
-				export default function(pi) {
-					if (physicalDependency) pi.registerCommand("physical-dependency", { handler: async () => {} });
+				import { physicalDependency } from "@akramcode/coding-agent";
+				export default function(akramcode) {
+					if (physicalDependency) akramcode.registerCommand("physical-dependency", { handler: async () => {} });
 				}
 			`,
 		);
@@ -104,14 +104,14 @@ describe("extensions discovery", () => {
 		expect(result.warnings).toEqual([]);
 	});
 
-	it("keeps the type-only pi-ai OAuth compatibility barrel resolvable", async () => {
+	it("keeps the type-only akramcode-ai OAuth compatibility barrel resolvable", async () => {
 		fs.writeFileSync(
 			path.join(extensionsDir, "oauth-import.ts"),
 			`
-				import * as oauth from "@earendil-works/pi-ai/oauth";
+				import * as oauth from "@akramcode/ai/oauth";
 				void oauth;
-				export default function(pi) {
-					pi.registerCommand("test", { handler: async () => {} });
+				export default function(akramcode) {
+					akramcode.registerCommand("test", { handler: async () => {} });
 				}
 			`,
 		);
@@ -170,7 +170,7 @@ describe("extensions discovery", () => {
 		expect(result.extensions[0].path).toContain("index.ts");
 	});
 
-	it("discovers subdirectory with package.json pi field", async () => {
+	it("discovers subdirectory with package.json akramcode field", async () => {
 		const subdir = path.join(extensionsDir, "my-package");
 		const srcDir = path.join(subdir, "src");
 		fs.mkdirSync(subdir);
@@ -180,7 +180,7 @@ describe("extensions discovery", () => {
 			path.join(subdir, "package.json"),
 			JSON.stringify({
 				name: "my-package",
-				pi: {
+				akramcode: {
 					extensions: ["./src/main.ts"],
 				},
 			}),
@@ -194,7 +194,7 @@ describe("extensions discovery", () => {
 		expect(result.extensions[0].path).toContain("main.ts");
 	});
 
-	it("keeps package.json pi extension entries with leading tilde package-relative", async () => {
+	it("keeps package.json akramcode extension entries with leading tilde package-relative", async () => {
 		const subdir = path.join(extensionsDir, "tilde-package");
 		const directExtensionPath = path.join(subdir, "~entry.ts");
 		const slashExtensionPath = path.join(subdir, "~", "entry.ts");
@@ -205,7 +205,7 @@ describe("extensions discovery", () => {
 			path.join(subdir, "package.json"),
 			JSON.stringify({
 				name: "tilde-package",
-				pi: {
+				akramcode: {
 					extensions: ["~entry.ts", "~/entry.ts"],
 				},
 			}),
@@ -228,7 +228,7 @@ describe("extensions discovery", () => {
 			path.join(subdir, "package.json"),
 			JSON.stringify({
 				name: "my-package",
-				pi: {
+				akramcode: {
 					extensions: ["./ext1.ts", "./ext2.ts"],
 				},
 			}),
@@ -240,7 +240,7 @@ describe("extensions discovery", () => {
 		expect(result.extensions).toHaveLength(2);
 	});
 
-	it("package.json with pi field takes precedence over index.ts", async () => {
+	it("package.json with akramcode field takes precedence over index.ts", async () => {
 		const subdir = path.join(extensionsDir, "my-package");
 		fs.mkdirSync(subdir);
 		fs.writeFileSync(path.join(subdir, "index.ts"), extensionCodeWithTool("from-index"));
@@ -249,7 +249,7 @@ describe("extensions discovery", () => {
 			path.join(subdir, "package.json"),
 			JSON.stringify({
 				name: "my-package",
-				pi: {
+				akramcode: {
 					extensions: ["./custom.ts"],
 				},
 			}),
@@ -265,7 +265,7 @@ describe("extensions discovery", () => {
 		expect(result.extensions[0].tools.has("from-index")).toBe(false);
 	});
 
-	it("ignores package.json without pi field, falls back to index.ts", async () => {
+	it("ignores package.json without akramcode field, falls back to index.ts", async () => {
 		const subdir = path.join(extensionsDir, "my-package");
 		fs.mkdirSync(subdir);
 		fs.writeFileSync(path.join(subdir, "index.ts"), extensionCode);
@@ -323,7 +323,10 @@ describe("extensions discovery", () => {
 		const subdir2 = path.join(extensionsDir, "with-manifest");
 		fs.mkdirSync(subdir2);
 		fs.writeFileSync(path.join(subdir2, "entry.ts"), extensionCode);
-		fs.writeFileSync(path.join(subdir2, "package.json"), JSON.stringify({ pi: { extensions: ["./entry.ts"] } }));
+		fs.writeFileSync(
+			path.join(subdir2, "package.json"),
+			JSON.stringify({ akramcode: { extensions: ["./entry.ts"] } }),
+		);
 
 		const result = await discoverAndLoadExtensions([], tempDir, tempDir);
 
@@ -338,7 +341,7 @@ describe("extensions discovery", () => {
 		fs.writeFileSync(
 			path.join(subdir, "package.json"),
 			JSON.stringify({
-				pi: {
+				akramcode: {
 					extensions: ["./exists.ts", "./missing.ts"],
 				},
 			}),
@@ -408,14 +411,14 @@ describe("extensions discovery", () => {
 
 	it("registers message and entry renderers", async () => {
 		const extCode = `
-			export default function(pi) {
-				pi.registerMarkdownTransformer((markdown) => {
+			export default function(akramcode) {
+				akramcode.registerMarkdownTransformer((markdown) => {
 					return markdown;
 				});
-				pi.registerMessageRenderer("my-custom-type", (message, options, theme) => {
+				akramcode.registerMessageRenderer("my-custom-type", (message, options, theme) => {
 					return null; // Use default rendering
 				});
-				pi.registerEntryRenderer("my-entry-type", (entry, options, theme) => {
+				akramcode.registerEntryRenderer("my-entry-type", (entry, options, theme) => {
 					return null;
 				});
 			}
@@ -433,7 +436,7 @@ describe("extensions discovery", () => {
 
 	it("reports error when extension throws during initialization", async () => {
 		const extCode = `
-			export default function(pi) {
+			export default function(akramcode) {
 				throw new Error("Initialization failed!");
 			}
 		`;
@@ -448,8 +451,8 @@ describe("extensions discovery", () => {
 
 	it("reports error when extension has no default export", async () => {
 		const extCode = `
-			export function notDefault(pi) {
-				pi.registerCommand("test", { handler: async () => {} });
+			export function notDefault(akramcode) {
+				akramcode.registerCommand("test", { handler: async () => {} });
 			}
 		`;
 		fs.writeFileSync(path.join(extensionsDir, "no-default.ts"), extCode);
@@ -482,10 +485,10 @@ describe("extensions discovery", () => {
 
 	it("loads extension with event handlers", async () => {
 		const extCode = `
-			export default function(pi) {
-				pi.on("agent_start", async () => {});
-				pi.on("tool_call", async (event) => undefined);
-				pi.on("agent_end", async () => {});
+			export default function(akramcode) {
+				akramcode.on("agent_start", async () => {});
+				akramcode.on("tool_call", async (event) => undefined);
+				akramcode.on("agent_end", async () => {});
 			}
 		`;
 		fs.writeFileSync(path.join(extensionsDir, "with-handlers.ts"), extCode);
@@ -501,8 +504,8 @@ describe("extensions discovery", () => {
 
 	it("loads extension with shortcuts", async () => {
 		const extCode = `
-			export default function(pi) {
-				pi.registerShortcut("ctrl+t", {
+			export default function(akramcode) {
+				akramcode.registerShortcut("ctrl+t", {
 					description: "Test shortcut",
 					handler: async (ctx) => {},
 				});
@@ -519,8 +522,8 @@ describe("extensions discovery", () => {
 
 	it("loads extension with flags", async () => {
 		const extCode = `
-			export default function(pi) {
-				pi.registerFlag("my-flag", {
+			export default function(akramcode) {
+				akramcode.registerFlag("my-flag", {
 					description: "My custom flag",
 					handler: async (value) => {},
 				});

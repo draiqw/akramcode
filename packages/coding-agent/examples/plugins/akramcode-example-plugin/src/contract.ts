@@ -1,4 +1,4 @@
-import { type Context, defineService, type ReplicatedState } from "@earendil-works/chord";
+import { type Context, defineService, type ReplicatedState } from "@akramcode/chord";
 
 export interface ExampleFacetReply {
 	readonly message: string;
@@ -10,4 +10,4 @@ export interface ExampleFacetService {
 	greet(input: { readonly name: string }, context: Context): Promise<ExampleFacetReply>;
 }
 
-export const ExampleFacetService = defineService<ExampleFacetService>("pi.example-plugin.greeting");
+export const ExampleFacetService = defineService<ExampleFacetService>("akramcode.example-plugin.greeting");

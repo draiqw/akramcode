@@ -22,10 +22,10 @@ import type {
 	ToolCall,
 	TranscriptContext,
 } from "../types.ts";
+import { getAkramCodeUserAgent } from "../utils/akramcode-user-agent.ts";
 import { formatProviderError, normalizeProviderError } from "../utils/error-body.ts";
 import { AssistantMessageEventStream } from "../utils/event-stream.ts";
 import { providerHeadersToRecord } from "../utils/headers.ts";
-import { getPiUserAgent } from "../utils/pi-user-agent.ts";
 import { getProviderEnvValue } from "../utils/provider-env.ts";
 import { sanitizeSurrogates } from "../utils/sanitize-unicode.ts";
 import { getSystemMessageText } from "../utils/text.ts";
@@ -396,7 +396,11 @@ function buildHttpOptions(model: Model<"google-vertex">, optionsHeaders?: Provid
 		}
 	}
 
-	const headers = providerHeadersToRecord({ "User-Agent": getPiUserAgent(), ...model.headers, ...optionsHeaders });
+	const headers = providerHeadersToRecord({
+		"User-Agent": getAkramCodeUserAgent(),
+		...model.headers,
+		...optionsHeaders,
+	});
 	if (headers) {
 		httpOptions.headers = headers;
 	}

@@ -106,7 +106,7 @@ never reclaimed and default no-fsync behavior matches the specification.
 
 ## 6–7. Tracker transaction core, definitions, and typed access
 
-**Prerequisite:** `@earendil-works/chord/delta` exports the canonical
+**Prerequisite:** `@akramcode/chord/delta` exports the canonical
 Astra-immutable-optimized `track`, `Tracker`, `Change`, and `Prepared`, and its
 draft placements reject values that are not strict JSON.
 Experimental variants under other Delta directories are not Pico APIs.
@@ -277,7 +277,7 @@ Cross-cutting constraints for these milestones:
   Record that concrete protocol in the normative specification when the kind
   lands. Do not add temporary built-in kinds or later replace a fake schema.
 - Keep all visible progress durable. Tests may use faux models and fake effects,
-  but production code must use pi-ai's exported `Models` interface and the real
+  but production code must use akramcode-ai's exported `Models` interface and the real
   task chain; do not add a Pico model adapter or production fake successor.
 - Prepare every loaded `ConversationView` revision from the complete candidate
   Session commit before Storage admission. Never rebuild a view by subscribing
@@ -389,8 +389,8 @@ Implement the smallest real input-to-answer vertical path. Extend Package 14's
 `orphaned` settlement to mark affected input submissions unanswered and clear
 matching run control in the same commit, through the Harness hook for
 scheduler-written outcomes (§5.4); the scheduler learns nothing about turns or
-task kinds. Implement the final `pi.live` document (§8.2) with `run` and
-`generation`, the built-in entry kinds (§8.1), and the `pi.generation` task
+task kinds. Implement the final `akramcode.live` document (§8.2) with `run` and
+`generation`, the built-in entry kinds (§8.1), and the `akramcode.generation` task
 (§8.3). The inbox document is defined in Package 17 with its first writer. Add
 input `Submission` admission, request-ID deduplication, reacquisition and
 waiting, idle placement, active-turn ownership, successful answer settlement,
@@ -420,7 +420,7 @@ request intent, durable throttled partials, attempts/retry classification,
 deferred handle polling/cancellation, assistant entry settlement, and input-
 submission completion.
 
-Call pi-ai only through its exported `Models` methods: `getModel()`,
+Call akramcode-ai only through its exported `Models` methods: `getModel()`,
 `streamSimple()`, `fetchDeferred()`, and `cancelDeferred()`. The test double must
 implement that same interface; production code gets no adapter. A missing configured model produces
 the durable `no_model` failure. All progress exposed to observers is committed
@@ -452,27 +452,27 @@ Neither side uses a production fake successor.
   round commit (offered check against the committed context through `cutoff`,
   unaffected by `beforeRequest`; `tool_unavailable`
   results for calls not offered, parallel or `after`-chained sequential tool
-  tasks, post-tools, `pi.live.tools`, run handed to post-tools);
+  tasks, post-tools, `akramcode.live.tools`, run handed to post-tools);
   `beforeRequest`, `afterResponse`, and `onYield` continuations.
-- `pi.tool` (§8.4): input `{ assistant, callId }`, resolve/validate/
+- `akramcode.tool` (§8.4): input `{ assistant, callId }`, resolve/validate/
   `beforeTool`/validate/intent/execute/`afterTool`/result in one `call` handler,
   recovery-only `execute` with the stored/current replay rule, bounded output and
-  details in the `pi.live.tools` slot, the terminal commit as final flush,
+  details in the `akramcode.live.tools` slot, the terminal commit as final flush,
   diagnostics (`api.diagnostic()`, result diagnostics, Harness truncation and
-  error codes, the `<harness>` block, `pi.tool-result` `data: { diagnostics }`),
+  error codes, the `<harness>` block, `akramcode.tool-result` `data: { diagnostics }`),
   and the abort handler.
-- `pi.post-tools` (§8.5): `afterTools`, `addTools`, all-results `terminate`, the
+- `akramcode.post-tools` (§8.5): `afterTools`, `addTools`, all-results `terminate`, the
   `postTools`/`final` boundaries (no inbox placement until Package 17), and the
   next generation. The `handoff` control moves to Package 17 with `reset()`,
   which defines the headed entry both write.
-- `pi.live.tools` and the checkpoint rule (§8.2); the scheduler cleanup hook for
-  `pi.post-tools` (ends the run) and `pi.tool` (marks the slot `done`).
+- `akramcode.live.tools` and the checkpoint rule (§8.2); the scheduler cleanup hook for
+  `akramcode.post-tools` (ends the run) and `akramcode.tool` (marks the slot `done`).
 - Surface: `ToolExecutionApi` without `conversation()`, which the `src` type
   drops until Package 18 adds it with `ConversationHandle`; `api.env` and `HarnessOptions.env`,
   `ToolRegistration.executionMode`, the `toolExecution` configuration field with
   its getter/setter, `TaskRuntime.getTask()` and `entry()`, `HookApi`, and the
   exported `GenerationTask`, `ToolTask`, and `PostToolsTask` tokens.
-- `@earendil-works/pi-durable/tools`: copy `read`, `bash`, `edit`, and `write`
+- `@akramcode/durable/tools`: copy `read`, `bash`, `edit`, and `write`
   with their helpers from `packages/agent/src/harness/tools` and adapt them to
   `ToolRegistration` (`api.env`, `api.output`, `api.details`). Image reading in
   `read` is deferred; note it where the tool rejects or skips images. The env
@@ -501,11 +501,11 @@ positional tool-history cases. Also test the ported tools against
 `NodeExecutionEnv`, and a wrapper supplying a different `api.env`.
 
 Document in the durable README that the package root loads TypeBox through the
-tool task's argument validation (pi-ai `validateToolArguments()`): about 23 MB of
+tool task's argument validation (akramcode-ai `validateToolArguments()`): about 23 MB of
 peak RSS unbundled, about 4 MB in a tree-shaken bundle.
 
 Tool output benchmark (`test/*.bench.ts`, memory, SQLite, and JSONL): drive the
-real tool task, adaptive throttle, and `pi.live` commits with low (a line every
+real tool task, adaptive throttle, and `akramcode.live` commits with low (a line every
 few seconds), normal (a compiler or test run), and high (continuous `cat` of a
 large file) output rates, head and tail retention, one tool and several parallel
 tools, over one long round. Report commits, operation bytes written, stored
@@ -520,14 +520,14 @@ object records a full set.
 
 Throughput target: a plain `cat` of a 1 GiB file of unique lines through the
 ported bash tool and the real Harness path (env capture and spill, `api.output`,
-throttled `pi.live` commits, result entry) completes in about 0.4 s, like the
+throttled `akramcode.live` commits, result entry) completes in about 0.4 s, like the
 mini coding agent. Also drive `api.output()` directly with the same 1 GiB in
 64 KiB chunks: accepting a chunk must not cost work proportional to the
 retained window.
 
 ## 17. Live UI and product state
 
-Complete submissions and the inbox (§6): the `pi.inbox` document created by the
+Complete submissions and the inbox (§6): the `akramcode.inbox` document created by the
 built-in setup; busy `steer`/`followUp`/`reject`; queued writes; admission to an
 idle conversation with a non-empty inbox (queue, then a final boundary in the
 same commit); withdrawal removing the item; `tx.placeSubmission()`; ordered
@@ -540,10 +540,10 @@ failure, a run task's abort, fault, and orphan leave the inbox alone.
 Successful inputs still require an answer; writes settle on placement and never
 start generation by themselves.
 
-Define the `pi.reset` entry (§8.1), written by `Conversation.reset(handoff)`
+Define the `akramcode.reset` entry (§8.1), written by `Conversation.reset(handoff)`
 through a write submission and by the post-tools `handoff` control.
 
-Usage (§8.6): the `pi.usage` document created by the built-in setup, updated in
+Usage (§8.6): the `akramcode.usage` document created by the built-in setup, updated in
 the same commit as every assistant entry (`appendAssistant()`) and every tool
 result with `usage` (`ToolExecutionResult.usage`, `appendToolResult()`), and
 `Harness.usage()` summing every conversation's document.
@@ -566,8 +566,8 @@ interleaved queue selection under both queue modes, writes placed before user
 items, stale head writes, a reset at each boundary, handoff, `onYield` with and
 without queued items, compact positional removal of large payloads, withdrawal,
 reopen waits, queued items surviving a failed run and drained by the next
-submission, and orphan/fault cleanup. Test minimal Chord deltas for `pi.inbox`
-and `pi.usage` changes. Test one view revision per touching commit; atomic
+submission, and orphan/fault cleanup. Test minimal Chord deltas for `akramcode.inbox`
+and `akramcode.usage` changes. Test one view revision per touching commit; atomic
 entry/document publication; fork-aware active entries and head cuts; mounted
 create/retire; empty-batch suppression; stable paths; structural sharing; watch
 overflow; and dropping the mount. Test the event translation of every
@@ -605,7 +605,7 @@ background supervisor recovery before and after submission admission.
 
 ## 19. Structured concurrency
 
-Implement spec §5.5 and its consequences, replacing `after` and `pi.post-tools`.
+Implement spec §5.5 and its consequences, replacing `after` and `akramcode.post-tools`.
 No backward compatibility.
 
 - Ownership: `TaskOptions.ownership` is required (`{ kind: "conversation" }` or
@@ -642,7 +642,7 @@ No backward compatibility.
   `tools` phase that runs the old post-tools body (§8.5); sequential rounds
   create one tool at a time from `pending`; the next generation is
   conversation-owned; the generation abort handler appends `aborted` results for
-  unstarted calls. Remove `pi.post-tools`, `PostToolsTask`, `PostToolsHooks`
+  unstarted calls. Remove `akramcode.post-tools`, `PostToolsTask`, `PostToolsHooks`
   (`afterTools` moves to `GenerationHooks`). Tool tasks that own conversations
   hold `completing` after their result entry. Events: `turn_end` when a
   generation's outcome is committed (hold or terminal, whichever first).
@@ -685,17 +685,17 @@ conversation concurrently (§7.4 preparation does not recheck the transcript): a
 blocking compaction appends while its generation holds the run and waits for it;
 every other compaction places its summary through a write submission.
 
-- Task: `pi.compaction` (`CompactionTask`, `CompactionHooks`, `CompactionInput`,
+- Task: `akramcode.compaction` (`CompactionTask`, `CompactionHooks`, `CompactionInput`,
   `CompactionCheckpoint`, `CompactionResult`, `CompactionReason`) with phases
   `select`, `summarize`, `retry`, the abort handler, and the `beforeCompact`
   hook. Register it with the built-ins. `CompactionEntry` token for
-  `pi.compaction` with `data: { reason }`.
+  `akramcode.compaction` with `data: { reason }`.
 - `ContextView.contributions`: each active entry's contribution after all
   in-range edits (including edits on older in-range markers). Range selection is one pure function over those
   contributions and `keepRecentTokens`, shared by the generation's checks and
   `select`; the summarized messages are the prefix contributions ordered by
   §2.1 rules 7–8. The generation's size estimate (§8.3) uses the newest
-  assistant appended after the head marker, not pi-ai's timestamp heuristic. Port the coding agent's serializer, summarization
+  assistant appended after the head marker, not akramcode-ai's timestamp heuristic. Port the coding agent's serializer, summarization
   system prompt, and structured prompt (one prompt, with a line about carrying an
   earlier summary forward) into `src/harness/compaction.ts`; do not import from
   coding-agent.
@@ -706,7 +706,7 @@ every other compaction places its summary through a write submission.
   behavior. No new stale logic.
 - Config: `CompactionPolicy`, `DEFAULT_COMPACTION_POLICY`,
   `ConversationConfigState.compaction`, `getCompaction`/`setCompaction`.
-- Live: `pi.live.compactions` (`CompactionStatus[]`, task ID order, key removed
+- Live: `akramcode.live.compactions` (`CompactionStatus[]`, task ID order, key removed
   when empty), added in the creating commit and removed in the outcome commit
   (also at a `completing` hold);
   `settleSchedulerOutcome` removes it for faulted/orphaned compactions.
@@ -717,7 +717,7 @@ every other compaction places its summary through a write submission.
 - `Conversation.compact()` admits the manual task (conversation-owned, not
   background) with its status in one commit and returns its ID.
 - Usage: every classified summarization response adds its usage to
-  `pi.usage.models`.
+  `akramcode.usage.models`.
 - Events: `compaction_start`/`compaction_end`, snapshot `compactions`, batch
   order per §9.4.
 - Docs: README (compaction, policy, events), CHANGELOG, and a new product-style
@@ -727,7 +727,7 @@ every other compaction places its summary through a write submission.
   model context before and after).
 
 Not in v1 (note only): a cache-friendly summary request that resends the
-agent's exact last request plus one summarization user message with pi-ai
+agent's exact last request plus one summarization user message with akramcode-ai
 `toolChoice: "none"`, so the prefix including tool declarations is a cache hit.
 It fits background compaction well below the window; overflow and a context
 without room for the prompt and summary keep the serialized request.
@@ -750,7 +750,7 @@ updates):
 - Summary entry: kind, wrapped text, `head` = first kept, `data.reason`; model
   context after placement is `[summary, kept...]` followed by a full system
   baseline on the next preparation; raw history unchanged and still scannable via
-  `entries()`; `pi.usage.models` includes every attempt, including failed,
+  `entries()`; `akramcode.usage.models` includes every attempt, including failed,
   retried, and stale ones; declines and hook-supplied summaries add none.
 - Outcomes: nothing to compact (`{}`), `beforeCompact` decline (`{}`) and
   supplied summary (no model call), first decision wins, hook throw reported and
@@ -802,7 +802,7 @@ updates):
   assistant finishing while a summary is queued; raw order `assistant(call),
   user, toolResult, assistant` never cuts at that user; edits carried by an
   older in-range marker and a kept entry replacing a summarized one are reflected
-  in the summarized messages and the hook's `messages`; kept `pi.system` deltas
+  in the summarized messages and the hook's `messages`; kept `akramcode.system` deltas
   get omit edits in the next single baseline; compaction in a fork whose cut
   falls on a parent entry (head, stale checks, view mount).
 - Interactions: a summary queued before a reset in the same boundary (both
@@ -828,15 +828,15 @@ Implement the design agreed with Mario, now specified in `spec.md` (§2.2,
 §5.1/§5.4 runtime surface, §6 queue modes, §7.1–§7.5, §8 where tasks read the
 agent and settings, §9.3/§9.4 view mount and events, §12 footguns): extensions
 installed by name replace keys, positions, `batch()`, wrappers-by-key, hook
-scopes, and public conversation setups; the rewindable `pi.agent` document
+scopes, and public conversation setups; the rewindable `akramcode.agent` document
 (model, thinking level, extension and tool selection, `instructions`, `cwd`)
-replaces `pi.conversation.config` and its getters and setters; run policies
+replaces `akramcode.conversation.config` and its getters and setters; run policies
 become Harness-wide live `HarnessSettings`; the environment is built per call
 by one host `env` function. The `Tool` generic stays. `CodingTools` bundles
 read, write, edit, and bash; grep, find, and ls are not ported.
 
 Implement in parts, each with tests: registry and extensions (install/replace,
-uninstall, catalogue views, task-name collisions, wrapper failures); `pi.agent`,
+uninstall, catalogue views, task-name collisions, wrapper failures); `akramcode.agent`,
 `configure()`, and resolution (selection arrays and `add`/`remove`, same-name
 replacement, wrappers, uninstalled names, `addTools`); settings resolution and
 every reader (generation request options and retry, compaction thresholds, tool

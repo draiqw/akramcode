@@ -7,9 +7,9 @@ import {
 	type FacetLoader,
 	type JsonValue,
 	type LoadedFacets,
-} from "@earendil-works/chord";
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
-import type { AgentState, ConversationView } from "@earendil-works/pi-durable";
+} from "@akramcode/chord";
+import { BACKGROUND_CONTEXT } from "@akramcode/chord/context";
+import type { AgentState, ConversationView } from "@akramcode/durable";
 import {
 	CombinedAutocompleteProvider,
 	type Component,
@@ -19,7 +19,7 @@ import {
 	setKeybindings,
 	Text,
 	type TUI,
-} from "@earendil-works/pi-tui";
+} from "@akramcode/tui";
 import type { ClientCommand } from "../cli/experimental/commands/client.ts";
 import { getAgentDir } from "../config.ts";
 import { KeybindingsManager } from "../core/keybindings.ts";
@@ -265,7 +265,7 @@ export class ExperimentalClientTui implements Component {
 			return operation;
 		};
 		const presentationBridgeFacet = defineFacet({
-			id: "@pi/presentation-bridge",
+			id: "@akramcode/presentation-bridge",
 			setup: (env) => {
 				env.provide(PresentationUI, {
 					select: (title, items, selectedValue) =>
@@ -624,7 +624,7 @@ export class ExperimentalClientTui implements Component {
 	#footer(): string {
 		const view = this.#conversationView();
 		if (!view) return "/model · /thinking · /compact · /reload";
-		const agent = (view.docs["pi.agent"] ?? {}) as AgentState;
+		const agent = (view.docs["akramcode.agent"] ?? {}) as AgentState;
 		const model = agent.model === undefined ? "no model" : `${agent.model.provider}/${agent.model.modelId}`;
 		return `${model} · thinking:${agent.thinkingLevel ?? "off"} · ${view.entries.length} entries · /model · /thinking · /compact · /reload`;
 	}

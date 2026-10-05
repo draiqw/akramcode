@@ -8,9 +8,9 @@ import {
 	type Provider,
 	type ProviderStreamOptions,
 	type RefreshModelsContext,
-} from "@earendil-works/pi-ai";
-import { llamaCppClassifyApi } from "@earendil-works/pi-ai/api/llama-cpp-classify.lazy";
-import { stream, streamSimple } from "@earendil-works/pi-ai/compat";
+} from "@akramcode/ai";
+import { llamaCppClassifyApi } from "@akramcode/ai/api/llama-cpp-classify.lazy";
+import { stream, streamSimple } from "@akramcode/ai/compat";
 import {
 	LlamaClient,
 	type LlamaModelInfo,
@@ -77,7 +77,7 @@ function contextWindowOf(model: LlamaModelInfo, cachedContextWindow?: number): n
 }
 
 /** The same llama.cpp model used as a classifier: answers are read from next-token label probabilities. */
-function toPiClassifierModel(
+function toAkramCodeClassifierModel(
 	model: LlamaModelInfo,
 	serverUrl: string,
 	cachedContextWindow?: number,
@@ -95,7 +95,7 @@ function toPiClassifierModel(
 	};
 }
 
-function toPiModel(
+function toAkramCodeModel(
 	model: LlamaModelInfo,
 	serverUrl: string,
 	props?: LlamaServerProps,
@@ -145,8 +145,8 @@ export function createLlamaProvider(): LlamaProviderController {
 		options: { routerAutoload?: boolean } = {},
 	): void => {
 		const selectable = catalog.filter((model) => modelIsSelectable(model, options.routerAutoload === true));
-		models = selectable.map((model) => toPiModel(model, serverUrl));
-		classifiers = selectable.map((model) => toPiClassifierModel(model, serverUrl));
+		models = selectable.map((model) => toAkramCodeModel(model, serverUrl));
+		classifiers = selectable.map((model) => toAkramCodeClassifierModel(model, serverUrl));
 	};
 
 	const provider: Provider<"openai-completions"> = {
@@ -240,13 +240,14 @@ export function createLlamaProvider(): LlamaProviderController {
 					// Only loaded models expose their template without side effects. Unloaded autoload presets
 					// would need to be loaded, while querying sleeping models may wake them. Those models remain
 					// unclassified until they are loaded or woken and a later catalog refresh discovers them.
-					if (model.status.value !== "loaded") return toPiModel(model, serverUrl, undefined, cachedContextWindow);
+					if (model.status.value !== "loaded")
+						return toAkramCodeModel(model, serverUrl, undefined, cachedContextWindow);
 					const props = await client.props({ model: model.id, signal: context.signal });
-					return toPiModel(model, serverUrl, props, cachedContextWindow);
+					return toAkramCodeModel(model, serverUrl, props, cachedContextWindow);
 				}),
 			);
 			const refreshedClassifiers = selectable.map((model) =>
-				toPiClassifierModel(model, serverUrl, cachedContextWindows.get(model.id)),
+				toAkramCodeClassifierModel(model, serverUrl, cachedContextWindows.get(model.id)),
 			);
 			if (context.signal.aborted) return;
 			await context.publish({

@@ -1145,7 +1145,7 @@ function applyThinkingLevelMetadata(model: Model<any>): void {
 		// Mercury 2 in instant mode (reasoning_effort: "none") disables tool calling.
 		// Mark "off" unsupported so the openai-completions provider omits the reasoning param
 		// instead of defaulting to {reasoning:{effort:"none"}} (see openai-completions.ts:575).
-		// Pi's low/medium/high pass through verbatim; OpenRouter normalizes to Mercury's vocabulary.
+		// AkramCode's low/medium/high pass through verbatim; OpenRouter normalizes to Mercury's vocabulary.
 		mergeThinkingLevelMap(model, { off: null });
 	}
 	if (model.provider === "openrouter" && model.id === "z-ai/glm-5.2") {
@@ -1326,7 +1326,7 @@ async function fetchOpenRouterModels(): Promise<OpenRouterCatalog> {
 	}
 }
 
-async function fetchRadiusModels(): Promise<Model<"pi-messages">[]> {
+async function fetchRadiusModels(): Promise<Model<"akramcode-messages">[]> {
 	try {
 		console.log("Fetching models from Radius API...");
 		const config = await loadRadiusGatewayConfig(DEFAULT_RADIUS_GATEWAY);
@@ -1639,7 +1639,7 @@ function processGoogleModels(data: ModelsDevCatalog): Model<Api>[] {
 						: model;
 			const thinkingLevelMap = getGoogleThinkingLevelMap(modelId, source.reasoning_options ?? []);
 			// models.dev reports Vertex cache_read/cache_write values for Gemini 2.5 Flash that
-			// do not match the official Gemini API standard pricing table. pi only accounts
+			// do not match the official Gemini API standard pricing table. akramcode only accounts
 			// cachedContentTokenCount as cacheRead.
 			const cacheRead = modelId === "gemini-2.5-flash" ? 0.03 : source.cost?.cache_read || 0;
 
@@ -2589,7 +2589,7 @@ async function loadModelsDevData(): Promise<Model<any>[]> {
 		// Process Alibaba Cloud Model Studio Token Plan models. International and
 		// China use separate endpoints and API keys (sk-sp- prefix). The Individual
 		// provider reuses the international source and endpoint with a narrower catalog.
-		// models.dev keys are "alibaba-token-plan[-cn]"; pi exposes them as
+		// models.dev keys are "alibaba-token-plan[-cn]"; akramcode exposes them as
 		// "qwen-token-plan[-cn]" plus the Individual catalog view.
 		const qwenTokenPlanCompat: OpenAICompletionsCompat = {
 			thinkingFormat: "qwen",

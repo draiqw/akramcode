@@ -1,5 +1,5 @@
-import type { Context, JsonValue } from "@earendil-works/chord";
-import { apply, type Op } from "@earendil-works/chord/delta";
+import type { Context, JsonValue } from "@akramcode/chord";
+import { apply, type Op } from "@akramcode/chord/delta";
 import { StorageRejected } from "../../errors.ts";
 import { idFromNumber, seqFromNumber } from "../../ids.ts";
 import type {

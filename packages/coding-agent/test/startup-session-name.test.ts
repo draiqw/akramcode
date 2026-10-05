@@ -18,7 +18,7 @@ afterEach(() => {
 });
 
 function createTempDir(): string {
-	const dir = mkdtempSync(join(tmpdir(), "pi-startup-session-name-"));
+	const dir = mkdtempSync(join(tmpdir(), "akramcode-startup-session-name-"));
 	tempDirs.push(dir);
 	return dir;
 }
@@ -73,7 +73,7 @@ async function runCli(args: string[], dirs: CliDirs): Promise<CliResult> {
 		env: {
 			...process.env,
 			[ENV_AGENT_DIR]: dirs.agentDir,
-			PI_OFFLINE: "1",
+			AKRAMCODE_OFFLINE: "1",
 		},
 		stdio: ["ignore", "ignore", "pipe"],
 	});

@@ -6,9 +6,9 @@
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
-import { createModels } from "@earendil-works/pi-ai/models";
-import { fauxAssistantMessage, fauxProvider, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
+import { createModels } from "@akramcode/ai/models";
+import { fauxAssistantMessage, fauxProvider, fauxToolCall } from "@akramcode/ai/providers/faux";
+import { BACKGROUND_CONTEXT } from "@akramcode/chord/context";
 import { NodeExecutionEnv } from "../../src/env/node.ts";
 import { createRegistry, defineDoc, Harness, MemoryStorage } from "../../src/index.ts";
 import { CodingTools } from "../../src/tools/index.ts";
@@ -56,7 +56,7 @@ const harness = await Harness.open(
 // Each user's conversation gets a fresh sandbox in the creating commit.
 const model = { provider: "faux", modelId: "faux-1" };
 async function conversationFor(user: string) {
-	const path = await mkdtemp(join(tmpdir(), `pi-durable-sandbox-${user}-`));
+	const path = await mkdtemp(join(tmpdir(), `akramcode-durable-sandbox-${user}-`));
 	const conversation = await harness.createConversation(
 		{
 			ownership: { kind: "ownerless" },

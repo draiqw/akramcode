@@ -109,7 +109,7 @@ const assistantMarkdown = [
 ].join("\n");
 
 const header = new Container();
-header.addChild(new Text("pi benchmark\nheader line", 0, 0));
+header.addChild(new Text("akramcode benchmark\nheader line", 0, 0));
 const resources = new Container();
 resources.addChild(new Text("resource", 0, 0));
 const chat = new Container();
@@ -133,7 +133,7 @@ const root = new VStack([
 	{ component: dock, basis: "auto", minSize: 1 },
 ]);
 const terminal = new NullTerminal();
-const tui = new TuiAltScreen(terminal, false, "/tmp/pi-tui-bench");
+const tui = new TuiAltScreen(terminal, false, "/tmp/akramcode-tui-bench");
 tui.setLayoutRoot(root);
 tui.start();
 tui.renderNow();

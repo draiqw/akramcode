@@ -20,7 +20,7 @@ afterEach(() => {
 function generateFireworksModels(
 	options: Record<string, ModelsDevReasoningOption[] | undefined>,
 ): Record<string, Model<Api>> {
-	const root = mkdtempSync(join(tmpdir(), "pi-fireworks-generation-"));
+	const root = mkdtempSync(join(tmpdir(), "akramcode-fireworks-generation-"));
 	temporaryRoots.push(root);
 	const preloadPath = join(root, "mock-catalog.mjs");
 	const outputPath = join(root, "catalog");

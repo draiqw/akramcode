@@ -4,12 +4,13 @@
 // Uses OpenAI when OPENAI_API_KEY is set, and a scripted faux model otherwise.
 // Run from packages/durable:
 //   node --conditions=source --experimental-strip-types test/examples/22-subagent-foreground.ts
-import type { Context } from "@earendil-works/chord";
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
-import { type AssistantMessage, type FauxResponseStep, Type } from "@earendil-works/pi-ai";
-import { createModels } from "@earendil-works/pi-ai/models";
-import { fauxAssistantMessage, fauxProvider, fauxText, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
-import { openaiProvider } from "@earendil-works/pi-ai/providers/openai";
+
+import { type AssistantMessage, type FauxResponseStep, Type } from "@akramcode/ai";
+import { createModels } from "@akramcode/ai/models";
+import { fauxAssistantMessage, fauxProvider, fauxText, fauxToolCall } from "@akramcode/ai/providers/faux";
+import { openaiProvider } from "@akramcode/ai/providers/openai";
+import type { Context } from "@akramcode/chord";
+import { BACKGROUND_CONTEXT } from "@akramcode/chord/context";
 import {
 	type AgentEvent,
 	AssistantEntry,
@@ -102,7 +103,7 @@ const root = await harness.root(context, { agent: { model } });
 // ─── UI: the parent's events, with each subagent's events indented under its call ───
 
 const print = (indent: string, event: AgentEvent): void => {
-	if (event.type === "message_end" && event.entry.kind === "pi.assistant") {
+	if (event.type === "message_end" && event.entry.kind === "akramcode.assistant") {
 		const message = event.entry.model?.[0] as AssistantMessage;
 		const text = message.content.flatMap((c) => (c.type === "text" ? [c.text] : [])).join("");
 		if (text !== "") console.log(`${indent}assistant: ${text}`);

@@ -1,5 +1,5 @@
 import { resolve } from "node:path";
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
+import { BACKGROUND_CONTEXT } from "@akramcode/chord/context";
 import type { ClientCommand } from "../cli/experimental/commands/client.ts";
 import { activateBuiltinClientServices, openClientRuntime } from "./client-runtime.ts";
 import type { SessionAddress } from "./services/sessions.ts";
@@ -13,7 +13,7 @@ export type ClientResult =
 	| { readonly kind: "prompted"; readonly serverId: string; readonly sessionId: string; readonly text: string };
 
 export interface RunClientOptions {
-	/** Directory searched when --connect is omitted. Defaults to PI_SERVER_DIR or ~/.pi/server. */
+	/** Directory searched when --connect is omitted. Defaults to AKRAMCODE_SERVER_DIR or ~/.akramcode/server. */
 	readonly directory?: string;
 }
 

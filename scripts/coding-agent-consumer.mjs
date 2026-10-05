@@ -7,8 +7,8 @@ import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { getPublicWorkspacePackages } from "./release-packages.mjs";
 
-const codingAgentName = "@earendil-works/pi-coding-agent";
-const developmentPackages = new Set(["pi-client", "pi-protocol", "pi-server"].map((name) => `@earendil-works/${name}`));
+const codingAgentName = "@akramcode/coding-agent";
+const developmentPackages = new Set(["akramcode-client", "akramcode-protocol", "akramcode-server"].map((name) => `@akramcode/${name}`));
 
 function run(command, args, options = {}) {
 	console.log(`$ ${[command, ...args].join(" ")}`);
@@ -92,9 +92,9 @@ export function smokeTestCodingAgentConsumer(directory, runtime = process.execPa
 		LOCALAPPDATA: home,
 		XDG_CONFIG_HOME: home,
 		XDG_CACHE_HOME: home,
-		PI_CODING_AGENT_DIR: join(home, ".pi", "agent"),
-		PI_OFFLINE: "1",
-		PI_TELEMETRY: "0",
+		AKRAMCODE_CODING_AGENT_DIR: join(home, ".akramcode", "agent"),
+		AKRAMCODE_OFFLINE: "1",
+		AKRAMCODE_TELEMETRY: "0",
 	};
 	for (const name of ["SystemRoot", "SYSTEMROOT", "WINDIR", "COMSPEC", "PATHEXT"]) {
 		if (process.env[name]) env[name] = process.env[name];
@@ -105,15 +105,15 @@ import { createAgentSession, SessionManager, ModelRuntime } from "${codingAgentN
 assert.equal(typeof createAgentSession, "function");
 assert.equal(typeof SessionManager.inMemory, "function");
 assert.equal(typeof ModelRuntime.create, "function");
-for (const name of ["pi-client", "pi-protocol", "pi-server"]) {
-  assert.throws(() => import.meta.resolve("@earendil-works/" + name), /Cannot find|cannot find/, name + " must not be installed");
+for (const name of ["akramcode-client", "akramcode-protocol", "akramcode-server"]) {
+  assert.throws(() => import.meta.resolve("@akramcode/" + name), /Cannot find|cannot find/, name + " must not be installed");
 }
 for (const subpath of ["/client", "/experimental/plugin"]) {
   assert.throws(() => import.meta.resolve("${codingAgentName}" + subpath), /not exported|not defined|Cannot find|cannot find/);
 }
 `);
 		run(runtime, [entry], { cwd: directory, env, timeout: 30_000 });
-		for (const cli of new Set([manifest.bin.pi, "dist/cli.js"])) {
+		for (const cli of new Set([manifest.bin.akramcode, "dist/cli.js"])) {
 			const output = run(runtime, [join(packageDir, cli), "--version"], { cwd: directory, env, timeout: 30_000 });
 			if (output.trim() !== manifest.version) throw new Error(`Unexpected version from ${cli}: ${output}`);
 		}
@@ -126,7 +126,7 @@ for (const subpath of ["/client", "/experimental/plugin"]) {
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
 	if (process.argv.length !== 2) throw new Error("Usage: node scripts/coding-agent-consumer.mjs");
-	const root = mkdtempSync(join(tmpdir(), "pi-package-consumer-"));
+	const root = mkdtempSync(join(tmpdir(), "akramcode-package-consumer-"));
 	try {
 		const tarballs = packReleasePackages(getPublicWorkspacePackages(), join(root, "tarballs"));
 		const directory = join(root, "consumer");

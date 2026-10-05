@@ -1,5 +1,5 @@
-import { type Context, defineService, type ReplicatedState } from "@earendil-works/chord";
-import type { ModelThinkingLevel } from "@earendil-works/pi-ai";
+import type { ModelThinkingLevel } from "@akramcode/ai";
+import { type Context, defineService, type ReplicatedState } from "@akramcode/chord";
 
 export interface ModelRef {
 	provider: string;
@@ -32,4 +32,4 @@ export interface Models {
 	selectThinking(level: ModelThinkingLevel, context: Context): Promise<void>;
 }
 
-export const Models = defineService<Models>("pi.models");
+export const Models = defineService<Models>("akramcode.models");

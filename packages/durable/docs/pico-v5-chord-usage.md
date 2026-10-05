@@ -35,12 +35,12 @@ conversation object and `Entry`/`Task` are typed definitions. The imports:
 import {
   createFacetHost, createRemoteServiceBinding, defineFacet, defineService,
   type Context, type Facet, type FacetHost, type RemoteServiceTransport, type ReplicatedState,
-} from "@earendil-works/chord";
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
+} from "@akramcode/chord";
+import { BACKGROUND_CONTEXT } from "@akramcode/chord/context";
 import {
   type ConversationId, defineDoc, defineDocFamily, type DocumentObserver,
   type Harness, type Session, type TaskId, type TaskRuntime,
-} from "@earendil-works/pi-durable";
+} from "@akramcode/durable";
 ```
 
 A `Harness` is a `Session`, so every function below also takes an open Harness.
@@ -340,10 +340,10 @@ illustrative path mapping is:
 
 ```text
 document ["s", ["generation", "message"], value]
- -> view ["s", ["docs", "pi.live", "generation", "message"], value]
+ -> view ["s", ["docs", "akramcode.live", "generation", "message"], value]
 ```
 
-`pi.live` is specified in `spec.md` section 8.2.
+`akramcode.live` is specified in `spec.md` section 8.2.
 The mount publishes one batch per complete Session commit: entry/head changes and
 changed mounted documents together, without a tracker or semantic projection.
 Third-party documents are **not automatically mounted**; use their own Chord

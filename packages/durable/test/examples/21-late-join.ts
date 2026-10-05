@@ -2,10 +2,11 @@
 // view or the snapshot event, and then only what changes after that.
 // Run from packages/durable:
 //   node --conditions=source --experimental-strip-types test/examples/21-late-join.ts
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
-import { Type } from "@earendil-works/pi-ai";
-import { createModels } from "@earendil-works/pi-ai/models";
-import { fauxAssistantMessage, fauxProvider, fauxText, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
+
+import { Type } from "@akramcode/ai";
+import { createModels } from "@akramcode/ai/models";
+import { fauxAssistantMessage, fauxProvider, fauxText, fauxToolCall } from "@akramcode/ai/providers/faux";
+import { BACKGROUND_CONTEXT } from "@akramcode/chord/context";
 import {
 	type AgentEvent,
 	createRegistry,
@@ -57,14 +58,14 @@ await pause(500);
 
 // Structural client: the view holds the committed transcript and documents, including the running tool's output.
 const view = await root.viewState(context);
-const live = view.value.docs["pi.live"] as LiveState;
+const live = view.value.docs["akramcode.live"] as LiveState;
 console.log(
 	"view entries:",
 	view.value.entries.map((entry) => entry.kind),
 );
 console.log("view tool slot:", live.tools?.[0]?.status, JSON.stringify(live.tools?.[0]?.output));
 view.subscribe((value) => {
-	const slot = (value.docs["pi.live"] as LiveState).tools?.[0];
+	const slot = (value.docs["akramcode.live"] as LiveState).tools?.[0];
 	if (slot?.status === "running") console.log("view output now:", JSON.stringify(slot.output));
 });
 

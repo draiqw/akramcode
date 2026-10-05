@@ -15,7 +15,7 @@ afterEach(() => {
 });
 
 function runEntry(entry: string, experimental: boolean) {
-	const directory = mkdtempSync(join(tmpdir(), "pi-cli-boundary-"));
+	const directory = mkdtempSync(join(tmpdir(), "akramcode-cli-boundary-"));
 	tempDirs.push(directory);
 	return spawnSync(
 		process.execPath,
@@ -36,9 +36,9 @@ function runEntry(entry: string, experimental: boolean) {
 				...process.env,
 				HOME: directory,
 				USERPROFILE: directory,
-				PI_CODING_AGENT_DIR: join(directory, "agent"),
-				PI_OFFLINE: "1",
-				PI_EXPERIMENTAL: experimental ? "1" : "0",
+				AKRAMCODE_CODING_AGENT_DIR: join(directory, "agent"),
+				AKRAMCODE_OFFLINE: "1",
+				AKRAMCODE_EXPERIMENTAL: experimental ? "1" : "0",
 			},
 		},
 	);

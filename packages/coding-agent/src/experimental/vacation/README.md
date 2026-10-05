@@ -1,10 +1,10 @@
 # vacation
 
-A durable vacation planning agent with a TUI, built on `@earendil-works/pi-durable`. It is a copy of the durable coding
-agent in [`../durable`](../durable) with the coding tools and pi's coding prompt replaced by a vacation planner. It only
-looks like a coding agent because it reuses pi's interactive TUI components.
+A durable vacation planning agent with a TUI, built on `@akramcode/durable`. It is a copy of the durable coding
+agent in [`../durable`](../durable) with the coding tools and akramcode's coding prompt replaced by a vacation planner. It only
+looks like a coding agent because it reuses akramcode's interactive TUI components.
 
-From a pi checkout, after `npm install` and `npm run build`:
+From a akramcode checkout, after `npm install` and `npm run build`:
 
 ```bash
 node packages/coding-agent/src/experimental/vacation/main.ts
@@ -17,9 +17,9 @@ Without a build, preload the source resolver so the workspace packages load from
 node --import ./packages/coding-agent/src/experimental/source-resolver.ts packages/coding-agent/src/experimental/vacation/main.ts
 ```
 
-A new session starts with pi's default model and thinking level from `settings.json`. `--continue` opens the newest
+A new session starts with akramcode's default model and thinking level from `settings.json`. `--continue` opens the newest
 session for the current directory. Sessions live under
-`~/.pi/agent/experimental/vacation-sessions/<cwd-hash>/<session>/session.sqlite`. Log in with pi itself; credentials are
+`~/.akramcode/agent/experimental/vacation-sessions/<cwd-hash>/<session>/session.sqlite`. Log in with akramcode itself; credentials are
 shared.
 
 ## What it shows
@@ -50,4 +50,4 @@ shared.
 | `sessions.ts` | session directories and the lock |
 | `harness-setup.ts` | HTTP setup, settings, the registry, the initial model |
 | `runtime.ts` | Harness and the plain `DurableView` and `DurableController` |
-| `tui.ts` | rendering with pi's interactive components |
+| `tui.ts` | rendering with akramcode's interactive components |

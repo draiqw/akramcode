@@ -1,13 +1,7 @@
-import { type Context, defineFacet, type Facet, type MutableReplicatedState } from "@earendil-works/chord";
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
-import { clampThinkingLevel, getSupportedThinkingLevels, type ModelThinkingLevel } from "@earendil-works/pi-ai";
-import {
-	AgentDoc,
-	type AgentState,
-	type Conversation,
-	type DocumentState,
-	type Harness,
-} from "@earendil-works/pi-durable";
+import { clampThinkingLevel, getSupportedThinkingLevels, type ModelThinkingLevel } from "@akramcode/ai";
+import { type Context, defineFacet, type Facet, type MutableReplicatedState } from "@akramcode/chord";
+import { BACKGROUND_CONTEXT } from "@akramcode/chord/context";
+import { AgentDoc, type AgentState, type Conversation, type DocumentState, type Harness } from "@akramcode/durable";
 import type { ModelRuntime } from "../../core/model-runtime.ts";
 import type { SettingsManager } from "../../core/settings-manager.ts";
 import { Models, type Models as ModelsService, type ModelsState } from "./models.ts";
@@ -20,7 +14,7 @@ export interface ModelsServiceRuntime {
 }
 
 /**
- * The Models service over one conversation. `agent` is the conversation's replicated `pi.agent` document: its
+ * The Models service over one conversation. `agent` is the conversation's replicated `akramcode.agent` document: its
  * configuration follows every change, also those made by other clients.
  */
 export function createModelsService(
@@ -146,7 +140,7 @@ export async function createModelsServiceFacet(options: {
 	const agent = await options.harness.documentState(AgentDoc, options.conversation.id, options.context);
 	if (agent === undefined) throw new Error(`Conversation ${options.conversation.id} has no agent document`);
 	return defineFacet({
-		id: "@pi/models",
+		id: "@akramcode/models",
 		setup(env) {
 			env.own(() => agent.dispose());
 			const runtime = createModelsService(

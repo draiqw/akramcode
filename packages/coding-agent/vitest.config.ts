@@ -9,7 +9,7 @@ export default mergeConfig(
 			environment: "node",
 			testTimeout: 30000,
 			// Tests run offline by default; opt in with allowNetwork() from test/test-network-env.ts.
-			env: { PI_OFFLINE: "1" },
+			env: { AKRAMCODE_OFFLINE: "1" },
 			unstubEnvs: true,
 			reporters: process.env.GITHUB_ACTIONS ? ["dot", "github-actions"] : ["dot"],
 			silent: "passed-only",
@@ -21,12 +21,12 @@ export default mergeConfig(
 		},
 		resolve: {
 			alias: [
-				{ find: /^@earendil-works\/pi-ai$/, replacement: workspaceSourcePaths.aiIndex },
-				{ find: /^@earendil-works\/pi-agent-core$/, replacement: workspaceSourcePaths.agentIndex },
-				{ find: /^@mariozechner\/pi-ai$/, replacement: workspaceSourcePaths.aiIndex },
-				{ find: /^@mariozechner\/pi-ai\/oauth$/, replacement: workspaceSourcePaths.aiOAuth },
-				{ find: /^@mariozechner\/pi-agent-core$/, replacement: workspaceSourcePaths.agentIndex },
-				{ find: /^@mariozechner\/pi-tui$/, replacement: workspaceSourcePaths.tuiIndex },
+				{ find: /^@earendil-works\/akramcode-ai$/, replacement: workspaceSourcePaths.aiIndex },
+				{ find: /^@earendil-works\/akramcode-agent-core$/, replacement: workspaceSourcePaths.agentIndex },
+				{ find: /^@mariozechner\/akramcode-ai$/, replacement: workspaceSourcePaths.aiIndex },
+				{ find: /^@mariozechner\/akramcode-ai\/oauth$/, replacement: workspaceSourcePaths.aiOAuth },
+				{ find: /^@mariozechner\/akramcode-agent-core$/, replacement: workspaceSourcePaths.agentIndex },
+				{ find: /^@mariozechner\/akramcode-tui$/, replacement: workspaceSourcePaths.tuiIndex },
 			],
 		},
 	}),

@@ -26,8 +26,8 @@ import {
 	type ResourceTemplate,
 	StdioTransport,
 	StreamableHttpTransport,
-} from "@earendil-works/pi-mcp";
-import { McpOAuthAuthorizationRequiredError, type OAuthChallenge } from "@earendil-works/pi-mcp/oauth";
+} from "@akramcode/mcp";
+import { McpOAuthAuthorizationRequiredError, type OAuthChallenge } from "@akramcode/mcp/oauth";
 import { VERSION } from "../../config.ts";
 import { resolveConfigValueOrThrow, resolveHeadersOrThrow } from "../../core/resolve-config-value.ts";
 import type { McpServerEntry } from "./config.ts";
@@ -135,7 +135,7 @@ function listTemplates(client: McpClient, options: McpRequestOptions = {}): Prom
 }
 
 /**
- * Resources and templates at connect time, for the counts in `/mcp` and `pi mcp list`. A server
+ * Resources and templates at connect time, for the counts in `/mcp` and `akramcode mcp list`. A server
  * whose lists fail still connects: the resource tools list and read its resources on demand.
  */
 async function fetchResources(
@@ -185,7 +185,7 @@ export class McpServerConnection implements McpToolCaller, McpResourceServer {
 		cwd: string;
 		createTransport: McpTransportFactory;
 		credentials: McpOAuthCredentialStore;
-		/** The current token of a pi provider, for servers with `auth.provider`. */
+		/** The current token of a akramcode provider, for servers with `auth.provider`. */
 		providerToken?: (provider: string) => Promise<string | undefined>;
 		onTools: (connection: McpServerConnection) => void;
 		/** Called when `state`, `error`, or `tools` change. */
@@ -370,7 +370,7 @@ export class McpServerConnection implements McpToolCaller, McpResourceServer {
 
 	private async connectOnce(): Promise<McpClient> {
 		const client = new McpClient({
-			name: "pi",
+			name: "akramcode",
 			version: VERSION,
 			requestTimeoutMs: this.timeoutMs,
 			roots: [{ uri: pathToFileURL(this.cwd).href, name: basename(this.cwd) }],

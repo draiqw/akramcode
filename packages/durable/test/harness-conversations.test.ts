@@ -1,7 +1,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createModels } from "@earendil-works/pi-ai";
+import { createModels } from "@akramcode/ai";
 import {
 	AgentDoc,
 	type Conversation,
@@ -18,7 +18,7 @@ import {
 	LiveDoc,
 	MemoryStorage,
 	ROOT_CONVERSATION_ID,
-} from "@earendil-works/pi-durable";
+} from "@akramcode/durable";
 import { afterEach, describe, expect, it } from "vitest";
 import { openNodeSqliteStorage } from "../src/storage/sqlite/node.ts";
 import { addTool, openHarness, tool, user } from "./harness-support.ts";
@@ -27,7 +27,7 @@ import { ControlledStorage, context } from "./session-support.ts";
 const directories = new Set<string>();
 
 async function sqlitePath(): Promise<string> {
-	const directory = await mkdtemp(join(tmpdir(), "pi-durable-harness-"));
+	const directory = await mkdtemp(join(tmpdir(), "akramcode-durable-harness-"));
 	directories.add(directory);
 	return join(directory, "session.sqlite");
 }
@@ -81,7 +81,7 @@ describe("Harness root and conversations", () => {
 		});
 		expect(root.id).toBe(ROOT_CONVERSATION_ID);
 		expect(storage.commits).toHaveLength(1);
-		// Conversation, pi.live, pi.inbox, pi.usage, pi.agent, and the init note.
+		// Conversation, akramcode.live, akramcode.inbox, akramcode.usage, akramcode.agent, and the init note.
 		expect(storage.commits[0]!.map((write) => write.type)).toEqual([
 			"conversation",
 			"document.create",

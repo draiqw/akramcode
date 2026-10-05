@@ -3,19 +3,19 @@
  *
  * Demonstrates the project_trust event. Install globally or pass via -e:
  *
- *   mkdir -p ~/.pi/agent/extensions
- *   cp packages/coding-agent/examples/extensions/project-trust.ts ~/.pi/agent/extensions/
+ *   mkdir -p ~/.akramcode/agent/extensions
+ *   cp packages/coding-agent/examples/extensions/project-trust.ts ~/.akramcode/agent/extensions/
  *
  * Or:
  *
- *   pi -e packages/coding-agent/examples/extensions/project-trust.ts
+ *   akramcode -e packages/coding-agent/examples/extensions/project-trust.ts
  *
- * Try it in a project containing .pi, AGENTS.md/CLAUDE.md, or .agents/skills.
+ * Try it in a project containing .akramcode, AGENTS.md/CLAUDE.md, or .agents/skills.
  */
 
-import type { ExtensionAPI, ProjectTrustEventResult } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ProjectTrustEventResult } from "@akramcode/coding-agent";
 
-export default function (pi: ExtensionAPI) {
+export default function (akramcode: ExtensionAPI) {
 	let loadCount = 0;
 	loadCount++;
 
@@ -23,7 +23,7 @@ export default function (pi: ExtensionAPI) {
 	// { trusted: "yes" } or { trusted: "no" } wins and suppresses the built-in
 	// trust prompt. Return { trusted: "undecided" } to let another handler or the
 	// built-in flow decide.
-	pi.on("project_trust", async (event, ctx): Promise<ProjectTrustEventResult> => {
+	akramcode.on("project_trust", async (event, ctx): Promise<ProjectTrustEventResult> => {
 		ctx.ui.notify(`project_trust fired for ${event.cwd} (mode: ${ctx.mode}, load: ${loadCount})`, "info");
 
 		if (!ctx.hasUI) {
@@ -58,7 +58,7 @@ export default function (pi: ExtensionAPI) {
 		return { trusted: "undecided" };
 	});
 
-	pi.on("session_start", (_event, ctx) => {
+	akramcode.on("session_start", (_event, ctx) => {
 		ctx.ui.notify(`project-trust example loaded after trust resolution in ${ctx.cwd}`, "info");
 	});
 }

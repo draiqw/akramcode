@@ -1,4 +1,3 @@
-import type { Draft } from "@earendil-works/chord";
 import {
 	type AssistantMessage,
 	type FauxResponseStep,
@@ -7,7 +6,8 @@ import {
 	fauxThinking,
 	fauxToolCall,
 	Type,
-} from "@earendil-works/pi-ai";
+} from "@akramcode/ai";
+import type { Draft } from "@akramcode/chord";
 import {
 	AgentDoc,
 	type AgentEvent,
@@ -22,7 +22,7 @@ import {
 	type SnapshotEvent,
 	UsageDoc,
 	watchEvents,
-} from "@earendil-works/pi-durable";
+} from "@akramcode/durable";
 import { describe, expect, it } from "vitest";
 import { type ChatSetup, chatSetup, openChat, textOf, waitFor } from "./chat-support.ts";
 import { addTool } from "./harness-support.ts";
@@ -96,7 +96,7 @@ function partialsOf(harness: Harness): AssistantMessage[] {
 	harness.subscribeCommits((publication) => {
 		for (const change of documentChanges(publication)) {
 			const message = (change.value as LiveState | null)?.generation?.message as AssistantMessage | undefined;
-			if (change.record.kind === "pi.live" && message !== undefined) partials.push(message);
+			if (change.record.kind === "akramcode.live" && message !== undefined) partials.push(message);
 		}
 	});
 	return partials;
@@ -114,7 +114,7 @@ describe("agent events", () => {
 		harness.subscribeCommits((publication) => {
 			for (const change of documentChanges(publication)) {
 				const message = (change.value as LiveState | null)?.generation?.message as AssistantMessage | undefined;
-				if (change.record.kind === "pi.live" && message !== undefined) partials.push(textOf(message) ?? "");
+				if (change.record.kind === "akramcode.live" && message !== undefined) partials.push(textOf(message) ?? "");
 			}
 		});
 		const submission = await root.submit({ type: "input", content: "hi" }, context);
@@ -193,7 +193,11 @@ describe("agent events", () => {
 		const tool = events().filter((event) => event.type.startsWith("tool_execution"));
 		expect(tool[0]).toEqual({ type: "tool_execution_start", toolCallId: "c1", toolName: "print", args: { n: 1 } });
 		const end = tool.at(-1)!;
-		expect(end).toMatchObject({ type: "tool_execution_end", toolCallId: "c1", entry: { kind: "pi.tool-result" } });
+		expect(end).toMatchObject({
+			type: "tool_execution_end",
+			toolCallId: "c1",
+			entry: { kind: "akramcode.tool-result" },
+		});
 		// As in the coding agent, the tool ends directly before its result message.
 		const all = events();
 		const endIndex = all.indexOf(end);
@@ -283,7 +287,7 @@ describe("agent events", () => {
 		let current: AssistantMessage | undefined;
 		// The streamed tool-calling message, up to its end; the short final answer commits no partial.
 		for (const event of events()) {
-			if (event.type === "message_end" && event.entry?.kind === "pi.assistant") break;
+			if (event.type === "message_end" && event.entry?.kind === "akramcode.assistant") break;
 			if (event.type === "message_start" && event.message.role === "assistant") current = event.message;
 			else if (event.type === "message_update") current = applyChanges(current!, event.changes);
 			else continue;
@@ -330,7 +334,7 @@ describe("agent events", () => {
 		harness.subscribeCommits((publication) => {
 			for (const change of documentChanges(publication)) {
 				const output = (change.value as LiveState | null)?.tools?.[0]?.output;
-				if (change.record.kind === "pi.live" && output !== undefined && output !== outputs.at(-1)) {
+				if (change.record.kind === "akramcode.live" && output !== undefined && output !== outputs.at(-1)) {
 					outputs.push(output);
 				}
 			}
@@ -429,10 +433,10 @@ describe("agent events", () => {
 		);
 		const ghostEnd = round.indexOf("tool_execution_end");
 		expect(round.slice(ghostEnd - 1, ghostEnd + 3)).toEqual([
-			"end:pi.assistant",
+			"end:akramcode.assistant",
 			"tool_execution_end",
 			"start:toolResult",
-			"end:pi.tool-result",
+			"end:akramcode.tool-result",
 		]);
 		const tool = events().filter((event) => event.type.startsWith("tool_execution"));
 		expect(tool.map((event) => [event.type, "toolCallId" in event && event.toolCallId, "entry" in event])).toEqual([
@@ -604,7 +608,7 @@ describe("agent events", () => {
 		await submission.wait(context);
 		await drained();
 		const assistantEnds = events().filter(
-			(event) => event.type === "message_end" && event.entry?.kind === "pi.assistant",
+			(event) => event.type === "message_end" && event.entry?.kind === "akramcode.assistant",
 		);
 		expect(assistantEnds).toHaveLength(1);
 		expect(

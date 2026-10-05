@@ -1,4 +1,4 @@
-import type { Context, JsonValue, ServiceCall } from "@earendil-works/chord";
+import type { Context, JsonValue, ServiceCall } from "@akramcode/chord";
 import { SessionNotFoundError } from "../errors.ts";
 import type { RoutedServerServiceHost, RoutedSessionHandle, ServerHost, SessionMetadata } from "../types.ts";
 
@@ -119,7 +119,7 @@ export function createTestServerServices(): RoutedServerServiceHost {
 				async invokeService(call, _publish, context) {
 					if (
 						call.instance === undefined &&
-						call.serviceId === "pi.session-management" &&
+						call.serviceId === "akramcode.session-management" &&
 						call.member === "attach" &&
 						call.args.length === 1 &&
 						typeof call.args[0] === "string"
@@ -129,7 +129,7 @@ export function createTestServerServices(): RoutedServerServiceHost {
 					}
 					if (
 						call.instance === undefined &&
-						call.serviceId === "pi.session-management" &&
+						call.serviceId === "akramcode.session-management" &&
 						call.member === "detach" &&
 						call.args.length === 0
 					) {

@@ -1,27 +1,21 @@
-import type { Context } from "@earendil-works/chord";
-import type { ModelThinkingLevel } from "@earendil-works/pi-ai";
-import {
-	createRegistry,
-	type EnvTarget,
-	type HarnessSettings,
-	type ModelRef,
-	type Registry,
-} from "@earendil-works/pi-durable";
-import { NodeExecutionEnv } from "@earendil-works/pi-durable/env/node";
-import { CodingTools } from "@earendil-works/pi-durable/tools";
+import type { ModelThinkingLevel } from "@akramcode/ai";
+import type { Context } from "@akramcode/chord";
+import { createRegistry, type EnvTarget, type HarnessSettings, type ModelRef, type Registry } from "@akramcode/durable";
+import { NodeExecutionEnv } from "@akramcode/durable/env/node";
+import { CodingTools } from "@akramcode/durable/tools";
 import { applyHttpProxySettings, configureHttpDispatcher } from "../../core/http-dispatcher.ts";
 import { findInitialModel, resolveCliModel } from "../../core/model-resolver.ts";
 import type { ModelRuntime } from "../../core/model-runtime.ts";
 import type { SettingsManager } from "../../core/settings-manager.ts";
-import { createPiPrompt } from "./prompt.ts";
+import { createAkramCodePrompt } from "./prompt.ts";
 
-/** pi's HTTP setup: proxy, idle timeouts, and one undici for fetch. Without it, some provider streams break off. */
+/** akramcode's HTTP setup: proxy, idle timeouts, and one undici for fetch. Without it, some provider streams break off. */
 export function configureHarnessHttp(settingsManager: SettingsManager): void {
 	applyHttpProxySettings(settingsManager.getGlobalSettings().httpProxy);
 	configureHttpDispatcher(settingsManager.getHttpIdleTimeoutMs());
 }
 
-/** Harness settings read at every use from pi's settings as loaded at startup. */
+/** Harness settings read at every use from akramcode's settings as loaded at startup. */
 export function createHarnessSettings(settingsManager: SettingsManager): HarnessSettings {
 	return {
 		get stream() {
@@ -48,11 +42,11 @@ export function createHarnessSettings(settingsManager: SettingsManager): Harness
 	};
 }
 
-/** A registry with pi's coding tools and system prompt. */
+/** A registry with akramcode's coding tools and system prompt. */
 export function createCodingRegistry(settingsManager: SettingsManager, cwd: string): Registry {
 	const registry = createRegistry();
 	registry.install(CodingTools);
-	registry.install(createPiPrompt(settingsManager, cwd));
+	registry.install(createAkramCodePrompt(settingsManager, cwd));
 	return registry;
 }
 
@@ -87,7 +81,7 @@ export interface InitialModel {
 	readonly fallbackMessage?: string;
 }
 
-/** The model a new root conversation starts with: an explicit `--provider`/`--model`, or pi's default resolution. */
+/** The model a new root conversation starts with: an explicit `--provider`/`--model`, or akramcode's default resolution. */
 export async function findInitialAgentModel(
 	settingsManager: SettingsManager,
 	modelRuntime: ModelRuntime,

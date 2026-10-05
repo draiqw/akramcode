@@ -10,8 +10,8 @@ import type { ExtensionFactory } from "../../core/extensions/types.ts";
 import { createToolSearchToolDefinition } from "./tool.ts";
 
 export function createToolSearchExtension(): ExtensionFactory {
-	return (pi) => {
-		pi.registerTool({ ...createToolSearchToolDefinition({ tools: pi }), defaultActive: false });
+	return (akramcode) => {
+		akramcode.registerTool({ ...createToolSearchToolDefinition({ tools: akramcode }), defaultActive: false });
 	};
 }
 

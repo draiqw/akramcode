@@ -1,6 +1,6 @@
-import type { Context } from "@earendil-works/chord";
-import { withCancel } from "@earendil-works/chord/context";
-import { createModels, Type } from "@earendil-works/pi-ai";
+import { createModels, Type } from "@akramcode/ai";
+import type { Context } from "@akramcode/chord";
+import { withCancel } from "@akramcode/chord/context";
 import {
 	type Conversation,
 	createRegistry,
@@ -16,7 +16,7 @@ import {
 	StorageRejected,
 	type TaskId,
 	type TaskRuntime,
-} from "@earendil-works/pi-durable";
+} from "@akramcode/durable";
 import { describe, expect, it } from "vitest";
 import { addHooks, addTask, addTool, user } from "./harness-support.ts";
 import { ControlledStorage, context, flush } from "./session-support.ts";

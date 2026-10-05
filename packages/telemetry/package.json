@@ -1,7 +1,7 @@
 {
-	"name": "@earendil-works/pi-telemetry",
+	"name": "@akramcode/telemetry",
 	"version": "1.0.0",
-	"description": "Vendor-neutral telemetry contracts and typed schema utilities for pi",
+	"description": "Vendor-neutral telemetry contracts and typed schema utilities for akramcode",
 	"type": "module",
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",

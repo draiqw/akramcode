@@ -1,6 +1,6 @@
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
-import { InMemoryCredentialStore } from "@earendil-works/pi-ai";
+import { InMemoryCredentialStore } from "@akramcode/ai";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import {
 	getModelCatalogProviderKey,
@@ -39,8 +39,8 @@ const index: ModelCatalogIndex = {
 	schemaVersion: 1,
 	defaultRevision: mixedApiRevision,
 	catalogs: [
-		{ minimumPiVersion: "0.80.7", revision: legacyRevision },
-		{ minimumPiVersion: "0.85.0", revision: mixedApiRevision },
+		{ minimumAkramCodeVersion: "0.80.7", revision: legacyRevision },
+		{ minimumAkramCodeVersion: "0.85.0", revision: mixedApiRevision },
 	],
 };
 
@@ -68,7 +68,7 @@ function startCatalogServer(requests: string[]): Promise<Server> {
 		} else {
 			const catalog = selectModelCatalog(
 				parseModelCatalogIndex(objects.get(MODEL_CATALOG_INDEX_KEY)),
-				catalogRequest.piVersion,
+				catalogRequest.akramCodeVersion,
 			);
 			const body = catalog
 				? (objects.get(getModelCatalogProviderKey(catalog.revision, provider, catalogRequest.representation)) ??
@@ -81,7 +81,7 @@ function startCatalogServer(requests: string[]): Promise<Server> {
 					.writeHead(200, {
 						"content-type": "application/json",
 						"last-modified": lastModified,
-						"x-pi-model-catalog-revision": catalog.revision,
+						"x-akramcode-model-catalog-revision": catalog.revision,
 					})
 					.end(JSON.stringify(body));
 			}
@@ -120,7 +120,7 @@ describe("model catalog protocol with the current client", () => {
 		expect([...refresh.errors]).toEqual([]);
 
 		const catalogUrl = "/api/models/providers/openrouter?types=chat%2Cimage%2Cclassifier";
-		expect(requests).toEqual([catalogUrl, `${catalogUrl}&pi-version=${VERSION}`]);
+		expect(requests).toEqual([catalogUrl, `${catalogUrl}&akramcode-version=${VERSION}`]);
 
 		const expectedModel =
 			selectModelCatalog(index, VERSION)?.revision === legacyRevision ? legacyModel : mixedApiModel;

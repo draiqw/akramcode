@@ -1,8 +1,8 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AgentTool } from "@earendil-works/pi-agent-core";
-import { fauxAssistantMessage, fauxToolCall, type Model } from "@earendil-works/pi-ai";
+import type { AgentTool } from "@akramcode/agent-core";
+import { fauxAssistantMessage, fauxToolCall, type Model } from "@akramcode/ai";
 import { Type } from "typebox";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ExtensionAPI, InputEvent } from "../../src/core/extensions/index.ts";
@@ -165,10 +165,10 @@ describe("AgentSession prompt characterization", () => {
 		const harness = await createHarness({
 			models: [{ id: "wide" }, { id: "strict" }],
 			extensionFactories: [
-				(pi) => {
-					pi.on("before_agent_start", async () => {
+				(akramcode) => {
+					akramcode.on("before_agent_start", async () => {
 						if (!strictModel) throw new Error("Expected strict model");
-						await pi.setModel(strictModel);
+						await akramcode.setModel(strictModel);
 					});
 				},
 			],
@@ -198,7 +198,7 @@ describe("AgentSession prompt characterization", () => {
 	});
 
 	it("expands skill commands before sending the prompt", async () => {
-		const tempDir = join(tmpdir(), `pi-skill-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+		const tempDir = join(tmpdir(), `akramcode-skill-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 		mkdirSync(tempDir, { recursive: true });
 		tempDirs.push(tempDir);
 		const skillPath = join(tempDir, "test-skill.md");
@@ -314,8 +314,8 @@ describe("AgentSession prompt characterization", () => {
 		const commandRuns: string[] = [];
 		const harness = await createHarness({
 			extensionFactories: [
-				(pi) => {
-					pi.registerCommand("testcmd", {
+				(akramcode) => {
+					akramcode.registerCommand("testcmd", {
 						description: "Test command",
 						handler: async (args) => {
 							commandRuns.push(args);
@@ -342,9 +342,9 @@ describe("AgentSession prompt characterization", () => {
 		});
 		const harness = await createHarness({
 			extensionFactories: [
-				(pi) => {
-					extensionApi = pi;
-					pi.registerCommand("testcmd", {
+				(akramcode) => {
+					extensionApi = akramcode;
+					akramcode.registerCommand("testcmd", {
 						description: "Test command",
 						handler: async (args) => {
 							resolveCommandRun(args);
@@ -379,8 +379,8 @@ describe("AgentSession prompt characterization", () => {
 		const inputEvents: InputEvent[] = [];
 		const harness = await createHarness({
 			extensionFactories: [
-				(pi) => {
-					pi.on("input", (event) => {
+				(akramcode) => {
+					akramcode.on("input", (event) => {
 						inputEvents.push(event);
 					});
 				},
@@ -417,8 +417,8 @@ describe("AgentSession prompt characterization", () => {
 		const harness = await createHarness({
 			tools: [waitTool],
 			extensionFactories: [
-				(pi) => {
-					pi.on("input", (event) => {
+				(akramcode) => {
+					akramcode.on("input", (event) => {
 						inputEvents.push(event);
 					});
 				},
@@ -506,8 +506,8 @@ describe("AgentSession prompt characterization", () => {
 		const harness = await createHarness({
 			settings: { compaction: { keepRecentTokens: 1 } },
 			extensionFactories: [
-				(pi) => {
-					pi.on("session_before_compact", async (event) => {
+				(akramcode) => {
+					akramcode.on("session_before_compact", async (event) => {
 						markCompactionStarted();
 						await compactionReleased;
 						return {

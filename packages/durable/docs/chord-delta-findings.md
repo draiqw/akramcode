@@ -341,7 +341,7 @@ source but does not provide a Git revision from which to restore it. Historical
 raw outputs were left in `/tmp/chord-graph-prototype/` (`full.json`,
 `traversal-final.json`, `retention-before.json`, `retention-final.json`, and
 `baseline-traversal.json`). Matched-baseline data was in
-`/tmp/pi-copy-cost.QAlME4/`; clone-only samples in `/tmp/chord-clone-compare.jsonl`.
+`/tmp/akramcode-copy-cost.QAlME4/`; clone-only samples in `/tmp/chord-clone-compare.jsonl`.
 These are optional local artifacts, not durable dependencies of this document.
 
 ## Requirements for a future attempt

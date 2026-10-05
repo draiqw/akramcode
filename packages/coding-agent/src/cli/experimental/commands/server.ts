@@ -1,4 +1,4 @@
-import { isServerId, type ServerId } from "@earendil-works/pi-protocol";
+import { isServerId, type ServerId } from "@akramcode/protocol";
 import { Command, stringOption, valueOption } from "../command.ts";
 import {
 	type AuthInput,

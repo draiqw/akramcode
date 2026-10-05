@@ -1,7 +1,7 @@
-import { createFacetHost, defineFacet } from "@earendil-works/chord";
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
-import { fauxAssistantMessage } from "@earendil-works/pi-ai";
-import type { InboxState, LiveState } from "@earendil-works/pi-durable";
+import { fauxAssistantMessage } from "@akramcode/ai";
+import { createFacetHost, defineFacet } from "@akramcode/chord";
+import { BACKGROUND_CONTEXT } from "@akramcode/chord/context";
+import type { InboxState, LiveState } from "@akramcode/durable";
 import { describe, expect, test } from "vitest";
 import { AgentController } from "../src/experimental/services/agent-controller.ts";
 import { createAgentController } from "../src/experimental/services/agent-controller-provider.ts";
@@ -60,7 +60,7 @@ describe("AgentController service", () => {
 			expect(followUp).toEqual({ accepted: true, entryId: expect.any(String), error: null });
 			const inbox = await conversation.viewState(BACKGROUND_CONTEXT);
 			try {
-				expect((inbox.value.docs["pi.inbox"] as InboxState).items.map((item) => item.mode)).toEqual([
+				expect((inbox.value.docs["akramcode.inbox"] as InboxState).items.map((item) => item.mode)).toEqual([
 					"steer",
 					"followUp",
 				]);
@@ -83,7 +83,7 @@ describe("AgentController service", () => {
 			await controller.abort(BACKGROUND_CONTEXT);
 			const view = await conversation.viewState(BACKGROUND_CONTEXT);
 			try {
-				expect((view.value.docs["pi.live"] as LiveState | undefined)?.run).toBeUndefined();
+				expect((view.value.docs["akramcode.live"] as LiveState | undefined)?.run).toBeUndefined();
 			} finally {
 				view.dispose();
 			}

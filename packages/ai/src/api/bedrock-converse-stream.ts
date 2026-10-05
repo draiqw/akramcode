@@ -152,7 +152,7 @@ export const stream: StreamFunction<"bedrock-converse-stream", BedrockOptions> =
 
 		const blocks = output.content as Block[];
 
-		// A profile explicitly configured through pi's auth flow (the `profile`
+		// A profile explicitly configured through akramcode's auth flow (the `profile`
 		// option or scoped `AWS_PROFILE` on the stored credential's env) must win
 		// over ambient AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY. The SDK default
 		// chain already prefers a configured profile over env keys, but only when
@@ -488,7 +488,7 @@ function addCustomHeadersMiddleware(client: BedrockRuntimeClient, headers: Recor
 		}
 		return next(args);
 	};
-	client.middlewareStack.add(middleware, { step: "build", name: "pi-ai-custom-headers", priority: "low" });
+	client.middlewareStack.add(middleware, { step: "build", name: "akramcode-ai-custom-headers", priority: "low" });
 }
 
 function isSmithyHttpResponse(response: unknown): response is HttpResponse {
@@ -523,7 +523,7 @@ function addResponseHeadersMiddleware(
 		}
 		return result;
 	};
-	client.middlewareStack.add(middleware, { step: "deserialize", name: "pi-ai-response-headers" });
+	client.middlewareStack.add(middleware, { step: "deserialize", name: "akramcode-ai-response-headers" });
 }
 
 export const streamSimple: StreamFunction<"bedrock-converse-stream", SimpleStreamOptions> = (
@@ -811,13 +811,13 @@ function mapThinkingLevelToEffort(
 
 /**
  * Resolve cache retention preference.
- * Defaults to "short" and uses PI_CACHE_RETENTION for backward compatibility.
+ * Defaults to "short" and uses AKRAMCODE_CACHE_RETENTION for backward compatibility.
  */
 function resolveCacheRetention(cacheRetention?: CacheRetention, env?: ProviderEnv): CacheRetention {
 	if (cacheRetention) {
 		return cacheRetention;
 	}
-	if (getProviderEnvValue("PI_CACHE_RETENTION", env) === "long") {
+	if (getProviderEnvValue("AKRAMCODE_CACHE_RETENTION", env) === "long") {
 		return "long";
 	}
 	return "short";

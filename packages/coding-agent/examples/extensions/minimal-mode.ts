@@ -11,12 +11,12 @@
  * - Minimal: Shows only tool call, no output (this extension's collapsed mode)
  *
  * Usage:
- *   pi -e ./minimal-mode.ts
+ *   akramcode -e ./minimal-mode.ts
  *
  * Then use ctrl+o to toggle between minimal (collapsed) and full (expanded) views.
  */
 
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI } from "@akramcode/coding-agent";
 import {
 	createBashToolDefinition,
 	createEditToolDefinition,
@@ -25,8 +25,8 @@ import {
 	createLsToolDefinition,
 	createReadToolDefinition,
 	createWriteToolDefinition,
-} from "@earendil-works/pi-coding-agent";
-import { Text } from "@earendil-works/pi-tui";
+} from "@akramcode/coding-agent";
+import { Text } from "@akramcode/tui";
 import { homedir } from "os";
 
 /**
@@ -52,13 +52,13 @@ function createBuiltInTools(cwd: string) {
 	};
 }
 
-export default function (pi: ExtensionAPI) {
+export default function (akramcode: ExtensionAPI) {
 	const tools = createBuiltInTools(process.cwd());
 
 	// =========================================================================
 	// Read Tool
 	// =========================================================================
-	pi.registerTool({
+	akramcode.registerTool({
 		...tools.read,
 
 		renderCall(args, theme, _context) {
@@ -96,7 +96,7 @@ export default function (pi: ExtensionAPI) {
 	// =========================================================================
 	// Bash Tool
 	// =========================================================================
-	pi.registerTool({
+	akramcode.registerTool({
 		...tools.bash,
 
 		renderCall(args, theme, _context) {
@@ -136,7 +136,7 @@ export default function (pi: ExtensionAPI) {
 	// =========================================================================
 	// Write Tool
 	// =========================================================================
-	pi.registerTool({
+	akramcode.registerTool({
 		...tools.write,
 
 		renderCall(args, theme, _context) {
@@ -169,7 +169,7 @@ export default function (pi: ExtensionAPI) {
 	// =========================================================================
 	// Edit Tool
 	// =========================================================================
-	pi.registerTool({
+	akramcode.registerTool({
 		...tools.edit,
 		renderShell: "default",
 
@@ -206,7 +206,7 @@ export default function (pi: ExtensionAPI) {
 	// =========================================================================
 	// Find Tool
 	// =========================================================================
-	pi.registerTool({
+	akramcode.registerTool({
 		...tools.find,
 
 		renderCall(args, theme, _context) {
@@ -255,7 +255,7 @@ export default function (pi: ExtensionAPI) {
 	// =========================================================================
 	// Grep Tool
 	// =========================================================================
-	pi.registerTool({
+	akramcode.registerTool({
 		...tools.grep,
 
 		renderCall(args, theme, _context) {
@@ -308,7 +308,7 @@ export default function (pi: ExtensionAPI) {
 	// =========================================================================
 	// Ls Tool
 	// =========================================================================
-	pi.registerTool({
+	akramcode.registerTool({
 		...tools.ls,
 
 		renderCall(args, theme, _context) {

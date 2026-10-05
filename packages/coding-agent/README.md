@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://pi.dev">
-    <img alt="Pi logo" src="https://pi.dev/logo-auto.svg" width="128">
+    <img alt="AkramCode logo" src="https://pi.dev/logo-auto.svg" width="128">
   </a>
 </p>
 <p align="center">
@@ -10,21 +10,21 @@
 
 > New issues and PRs from new contributors are closed automatically. Maintainers review closed submissions daily. See [CONTRIBUTING.md](https://github.com/earendil-works/pi/blob/main/CONTRIBUTING.md).
 
-# Pi
+# AkramCode
 
-Pi is a minimal, extensible AI agent for the terminal. Adapt Pi to your workflow, not the other way around.
+AkramCode is a minimal, extensible AI agent for the terminal. Adapt AkramCode to your workflow, not the other way around.
 
-Ask Pi to create the prompt templates, skills, extensions, and themes you need, or install a Pi package. Use Pi directly, automate it in print, JSON, or RPC mode, or build applications with the TypeScript SDK.
+Ask AkramCode to create the prompt templates, skills, extensions, and themes you need, or install a AkramCode package. Use AkramCode directly, automate it in print, JSON, or RPC mode, or build applications with the TypeScript SDK.
 
 ## Getting started
 
 Install the command-line interface with npm:
 
 ```bash
-npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+npm install -g --ignore-scripts @akramcode/coding-agent
 ```
 
-This requires Node.js 22.19 or newer. Pi does not require dependency lifecycle scripts for a normal npm installation.
+This requires Node.js 22.19 or newer. AkramCode does not require dependency lifecycle scripts for a normal npm installation.
 
 On macOS or Linux, you can instead use the installer:
 
@@ -32,29 +32,29 @@ On macOS or Linux, you can instead use the installer:
 curl -fsSL https://pi.dev/install.sh | sh
 ```
 
-Start Pi in the directory where you want it to work:
+Start AkramCode in the directory where you want it to work:
 
 ```bash
 cd /path/to/project
-pi
+akramcode
 ```
 
-For a built-in AI provider, run `/login` inside Pi to connect a subscription or API key. Then give Pi a task.
+For a built-in AI provider, run `/login` inside AkramCode to connect a subscription or API key. Then give AkramCode a task.
 
 See the [documentation](docs/index.md) for full setup and usage instructions.
 
 ## Development
 
-Clone the repository, install its dependencies, and run Pi from source:
+Clone the repository, install its dependencies, and run AkramCode from source:
 
 ```bash
 git clone https://github.com/earendil-works/pi
-cd pi
+cd akramcode
 npm install --ignore-scripts
-./pi-test.sh
+./akramcode-test.sh
 ```
 
-`pi-test.sh` can be called from any directory and preserves the caller's working directory.
+`akramcode-test.sh` can be called from any directory and preserves the caller's working directory.
 
 Before submitting changes, run:
 

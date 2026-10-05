@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
-# Thin launcher: runs Pi from source.
+# Thin launcher: runs AkramCode from source.
 set -euo pipefail
-exec "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/pi-test.sh" "$@"
+exec "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/akramcode-test.sh" "$@"

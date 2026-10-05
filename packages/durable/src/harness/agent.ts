@@ -1,4 +1,4 @@
-import { copyJson, type Draft } from "@earendil-works/chord";
+import { copyJson, type Draft } from "@akramcode/chord";
 import { defineDoc } from "../documents.ts";
 import type { ConversationId, ConversationRecord, Tx } from "../types.ts";
 import type {
@@ -34,7 +34,7 @@ export const INSTRUCTIONS_KEY = "instructions";
 
 /** Built-in agent document; rewindable so forks start from the agent at their fork entry. */
 export const AgentDoc = defineDoc<AgentState>({
-	kind: "pi.agent",
+	kind: "akramcode.agent",
 	version: 1,
 	scope: "conversation",
 	history: "rewindable",
@@ -57,7 +57,7 @@ export function resolveSettings(settings: HarnessSettings | undefined): Settings
 	};
 }
 
-/** Apply one change to `pi.agent`: a given field replaces the stored one, `null` clears it, `undefined` changes nothing. */
+/** Apply one change to `akramcode.agent`: a given field replaces the stored one, `null` clears it, `undefined` changes nothing. */
 export async function configure(tx: Tx, conversationId: ConversationId, change: AgentChange): Promise<void> {
 	const state = await tx.doc(AgentDoc, conversationId);
 	applyChange(state, change);
@@ -119,7 +119,7 @@ function names(items: readonly { readonly name: string }[]): string[] {
 }
 
 /**
- * Built-in part of every Harness commit that creates or forks a conversation, for `pi.agent`: a fork keeps its `asOf`
+ * Built-in part of every Harness commit that creates or forks a conversation, for `akramcode.agent`: a fork keeps its `asOf`
  * copy; a new task-owned conversation copies the stored agent of its owner task's conversation; a new ownerless one
  * starts empty.
  */

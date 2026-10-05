@@ -1,4 +1,4 @@
-import { type Context, defineService } from "@earendil-works/chord";
+import { type Context, defineService } from "@akramcode/chord";
 
 export interface AgentPromptImage {
 	type: "image";
@@ -54,4 +54,4 @@ export interface AgentController {
 	waitForPrompt(operationId: string, context: Context): Promise<AgentPromptResult>;
 }
 
-export const AgentController = defineService<AgentController>("pi.agent-controller");
+export const AgentController = defineService<AgentController>("akramcode.agent-controller");

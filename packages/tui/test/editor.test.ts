@@ -2240,7 +2240,7 @@ describe("Editor component", () => {
 		});
 
 		it("completes Chinese path prefixes after whitespace or CJK punctuation with Tab", async (t) => {
-			const baseDir = mkdtempSync(join(tmpdir(), "pi-editor-autocomplete-"));
+			const baseDir = mkdtempSync(join(tmpdir(), "akramcode-editor-autocomplete-"));
 			t.after(() => rmSync(baseDir, { recursive: true, force: true }));
 			mkdirSync(join(baseDir, "文档"));
 			writeFileSync(join(baseDir, "文档", "说明.md"), "text");
@@ -2515,7 +2515,7 @@ describe("Editor component", () => {
 		});
 
 		it("re-queries the autocomplete picker when the cursor moves back into the command name", async () => {
-			// Regression for earendil-works/pi#5496: arrowing left out of a slash
+			// Regression for earendil-works/akramcode#5496: arrowing left out of a slash
 			// command's argument region must re-query the picker, not leave the
 			// stale argument list showing. Before the fix, moveCursor() never
 			// called updateAutocomplete(), so `/cmd ` (argument menu) + Left kept

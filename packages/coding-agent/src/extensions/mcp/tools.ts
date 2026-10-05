@@ -1,7 +1,7 @@
 /**
- * Adapts MCP tools to pi tool definitions.
+ * Adapts MCP tools to akramcode tool definitions.
  *
- * Results map onto pi's model-facing content (text and images). Text over 20KB keeps its start and
+ * Results map onto akramcode's model-facing content (text and images). Text over 20KB keeps its start and
  * end with the middle cut out, like Codex does, and the full text is saved to a temp file the model
  * can read. Binary resources other than images are saved to temp files too, and resource links name
  * the `read_mcp_resource` tool. Codemode scripts receive the whole `CallToolResult` without `_meta`
@@ -14,16 +14,16 @@ import { createHash, randomBytes } from "node:crypto";
 import { writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AgentToolResult } from "@earendil-works/pi-agent-core";
-import type { ImageContent, JsonValue, TextContent } from "@earendil-works/pi-ai";
+import type { AgentToolResult } from "@akramcode/agent-core";
+import type { ImageContent, JsonValue, TextContent } from "@akramcode/ai";
 import {
 	type CallToolResult,
 	type ContentBlock,
 	type McpRequestOptions,
 	type Tool as McpTool,
 	toLlmContent,
-} from "@earendil-works/pi-mcp";
-import { Container, Spacer, Text } from "@earendil-works/pi-tui";
+} from "@akramcode/mcp";
+import { Container, Spacer, Text } from "@akramcode/tui";
 import type { TSchema } from "typebox";
 import type { ToolAnnotations, ToolDefinition, ToolExposure, ToolNamespace } from "../../core/extensions/types.ts";
 import { formatToolCallWithArgs, getTextOutput, replaceTabs } from "../../core/tools/render-utils.ts";
@@ -63,7 +63,7 @@ export interface McpToolDetails {
 export type McpOutputSaver = (data: string | Uint8Array, extension: string) => Promise<string>;
 
 export async function saveToTempFile(data: string | Uint8Array, extension: string): Promise<string> {
-	const path = join(tmpdir(), `pi-mcp-${randomBytes(8).toString("hex")}${extension}`);
+	const path = join(tmpdir(), `akramcode-mcp-${randomBytes(8).toString("hex")}${extension}`);
 	// Results can carry private data, so only the user may read the file.
 	await writeFile(path, data, { mode: 0o600 });
 	return path;

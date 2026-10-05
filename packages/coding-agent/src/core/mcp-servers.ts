@@ -1,5 +1,5 @@
 /**
- * MCP server configuration and the servers extensions register with `pi.registerMcpServer()`.
+ * MCP server configuration and the servers extensions register with `akramcode.registerMcpServer()`.
  *
  * The core only validates and stores registrations. The MCP extension (built in, or another
  * extension that handles `mcp_servers_change`) connects them next to the servers from `mcp.json`.
@@ -54,7 +54,7 @@ export interface McpStdioServerConfig extends McpServerConfigBase {
 
 /** OAuth client settings for servers that do not support dynamic client registration. */
 export interface McpOAuthConfig {
-	/** Pre-registered client id. Without it, pi registers a client with the authorization server. */
+	/** Pre-registered client id. Without it, akramcode registers a client with the authorization server. */
 	clientId?: string;
 	/** May reference environment variables (`${NAME}`) or commands (`!cmd`). */
 	clientSecret?: string;
@@ -73,7 +73,7 @@ export interface McpOAuthConfig {
 	scope?: string;
 	/**
 	 * `client_name` sent with dynamic client registration, for servers that only accept known clients.
-	 * Default: `pi`.
+	 * Default: `akramcode`.
 	 */
 	clientName?: string;
 	/**
@@ -86,7 +86,7 @@ export interface McpOAuthConfig {
 
 const LOOPBACK_HOSTS = ["localhost", "127.0.0.1", "[::1]"];
 
-/** Whether a redirect URI can be served by pi's loopback callback server. */
+/** Whether a redirect URI can be served by akramcode's loopback callback server. */
 export function isLoopbackRedirectUri(value: string): boolean {
 	if (!URL.canParse(value)) return false;
 	const url = new URL(value);
@@ -100,7 +100,7 @@ export interface McpHttpServerConfig extends McpServerConfigBase {
 	headers?: Record<string, string>;
 	oauth?: McpOAuthConfig;
 	/**
-	 * Send the token of a pi provider (`/login <provider>`) instead of using OAuth. Not allowed in project
+	 * Send the token of a akramcode provider (`/login <provider>`) instead of using OAuth. Not allowed in project
 	 * `mcp.json` files, and requires https except on loopback hosts, since it sends the credential to `url`.
 	 */
 	auth?: { provider: string };
@@ -261,7 +261,7 @@ export function validateMcpServerConfig(name: string, raw: unknown): McpServerCo
 	return `server "${name}" needs either "command" (stdio) or "url" (streamable HTTP)`;
 }
 
-/** A server an extension registered with `pi.registerMcpServer()`. */
+/** A server an extension registered with `akramcode.registerMcpServer()`. */
 export interface RegisteredMcpServer {
 	name: string;
 	config: McpServerConfig;

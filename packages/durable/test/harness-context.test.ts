@@ -1,5 +1,5 @@
-import type { Message } from "@earendil-works/pi-ai";
-import { type EntryDraft, type EntryId, type EntryRecord, MemoryStorage } from "@earendil-works/pi-durable";
+import type { Message } from "@akramcode/ai";
+import { type EntryDraft, type EntryId, type EntryRecord, MemoryStorage } from "@akramcode/durable";
 import { describe, expect, it } from "vitest";
 import { assistant, describeMessage, openHarness, system, toolResult, user } from "./harness-support.ts";
 import { context } from "./session-support.ts";
@@ -85,11 +85,11 @@ describe("conversation context", () => {
 
 	it("keeps positional system messages and orders tool results by call order", async () => {
 		const { root, message, append } = await setup();
-		await message(system({ preamble: "You help." }), "pi.system");
+		await message(system({ preamble: "You help." }), "akramcode.system");
 		await message(user("run tools"));
 		await message(assistant("calling", { calls: ["b", "a"] }));
 		await message(toolResult("a"));
-		await append({ kind: "pi.system", model: [system({ cwd: "/repo" })] });
+		await append({ kind: "akramcode.system", model: [system({ cwd: "/repo" })] });
 		await message(toolResult("b"));
 		await message(toolResult("zz"));
 		await message(assistant("done"));

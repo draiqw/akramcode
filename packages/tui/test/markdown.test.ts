@@ -839,8 +839,8 @@ after`,
 \[
 A=
 \begin{pmatrix}
-\pi & 0\\
-0 & \frac{1}{\pi}
+\akramcode & 0\\
+0 & \frac{1}{\akramcode}
 \end{pmatrix}.
 \]`,
 				0,

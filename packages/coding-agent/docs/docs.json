@@ -12,8 +12,8 @@
           "path": "quickstart.md"
         },
         {
-          "title": "How Pi Works",
-          "path": "how-pi-works.md"
+          "title": "How AkramCode Works",
+          "path": "how-akramcode-works.md"
         }
       ]
     },
@@ -21,10 +21,10 @@
       "title": "Guides",
       "items": [
         {
-          "title": "Run Pi",
+          "title": "Run AkramCode",
           "items": [
             {
-              "title": "Use Pi in the Terminal",
+              "title": "Use AkramCode in the Terminal",
               "path": "usage.md"
             },
             {
@@ -36,11 +36,11 @@
               "path": "sessions.md"
             },
             {
-              "title": "Run Pi Safely",
+              "title": "Run AkramCode Safely",
               "path": "security.md"
             },
             {
-              "title": "Isolate Pi",
+              "title": "Isolate AkramCode",
               "path": "containerization.md"
             },
             {
@@ -56,24 +56,24 @@
               "path": "shell-aliases.md"
             },
             {
-              "title": "Run Pi in tmux",
+              "title": "Run AkramCode in tmux",
               "path": "tmux.md"
             },
             {
-              "title": "Run Pi on Windows",
+              "title": "Run AkramCode on Windows",
               "path": "windows.md"
             },
             {
-              "title": "Run Pi on Android",
+              "title": "Run AkramCode on Android",
               "path": "termux.md"
             }
           ]
         },
         {
-          "title": "Customize Pi",
+          "title": "Customize AkramCode",
           "items": [
             {
-              "title": "Configure Pi",
+              "title": "Configure AkramCode",
               "path": "configuration.md"
             },
             {
@@ -89,7 +89,7 @@
               "path": "themes.md"
             },
             {
-              "title": "Use Pi Packages",
+              "title": "Use AkramCode Packages",
               "path": "packages.md"
             },
             {
@@ -99,7 +99,7 @@
           ]
         },
         {
-          "title": "Build on Pi",
+          "title": "Build on AkramCode",
           "items": [
             {
               "title": "Build Extensions",

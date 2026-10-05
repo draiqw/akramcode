@@ -2,9 +2,9 @@ import { mkdtemp, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import type { Context, JsonValue } from "@earendil-works/chord";
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
-import { registerStorageConformance } from "@earendil-works/pi-durable/testing";
+import type { Context, JsonValue } from "@akramcode/chord";
+import { BACKGROUND_CONTEXT } from "@akramcode/chord/context";
+import { registerStorageConformance } from "@akramcode/durable/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import { idFromNumber } from "../src/ids.ts";
 import type { SqliteStorage } from "../src/storage/sqlite/index.ts";
@@ -36,7 +36,7 @@ afterEach(async () => {
 });
 
 async function createSqliteStorage(options: { readonly walAutoCheckpointPages?: number } = {}) {
-	const directory = await mkdtemp(join(tmpdir(), "pi-durable-sqlite-"));
+	const directory = await mkdtemp(join(tmpdir(), "akramcode-durable-sqlite-"));
 	tempDirectories.add(directory);
 	const path = join(directory, "storage.sqlite");
 	const storage = await openNodeSqliteStorage(path, options);
@@ -115,7 +115,7 @@ registerStorageConformance({ describe, expect, it }, "SqliteStorage", async (use
 );
 
 registerStorageConformance({ describe, expect, it }, "SqliteStorage across reopen", async (use) => {
-	const directory = await mkdtemp(join(tmpdir(), "pi-durable-sqlite-conformance-"));
+	const directory = await mkdtemp(join(tmpdir(), "akramcode-durable-sqlite-conformance-"));
 	const path = join(directory, "storage.sqlite");
 	const created = await openNodeSqliteStorage(path);
 	await created.close(context);
