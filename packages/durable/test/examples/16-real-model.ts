@@ -3,8 +3,8 @@
 //   node --conditions=source --experimental-strip-types test/examples/16-real-model.ts
 
 import { createModels } from "@akramcode/ai/models";
-import { openaiProvider } from "@akramcode/ai/providers/openai";
 import { BACKGROUND_CONTEXT } from "@akramcode/chord/context";
+import { openaiProvider } from "@akramcode/providers/providers/openai";
 import {
 	AssistantEntry,
 	createRegistry,

@@ -1,10 +1,5 @@
-import {
-	fauxAssistantMessage,
-	fauxToolCall,
-	getCurrentSystemPrompt,
-	getCurrentTools,
-	type TranscriptContext,
-} from "@akramcode/ai";
+import { getCurrentSystemPrompt, getCurrentTools, type TranscriptContext } from "@akramcode/ai";
+import { fauxAssistantMessage, fauxToolCall } from "@akramcode/providers";
 import { Type } from "typebox";
 import { describe, expect, it } from "vitest";
 import type { ExtensionAPI, ExtensionFactory } from "../../../src/index.ts";

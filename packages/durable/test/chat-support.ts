@@ -1,12 +1,4 @@
-import {
-	createModels,
-	type FauxProviderHandle,
-	type FauxResponseStep,
-	fauxProvider,
-	type Message,
-	type Models,
-	type RegisterFauxProviderOptions,
-} from "@akramcode/ai";
+import { createModels, type Message, type Models } from "@akramcode/ai";
 import type { Context } from "@akramcode/chord";
 import {
 	type Conversation,
@@ -19,6 +11,12 @@ import {
 	type Storage,
 	type ToolRegistration,
 } from "@akramcode/durable";
+import {
+	type FauxProviderHandle,
+	type FauxResponseStep,
+	fauxProvider,
+	type RegisterFauxProviderOptions,
+} from "@akramcode/providers";
 import type { ExecutionEnv } from "../src/env/index.ts";
 import { context } from "./session-support.ts";
 

@@ -7,7 +7,7 @@ import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Agent } from "@akramcode/agent-core";
-import { getModel, streamSimple } from "@akramcode/ai/compat";
+import { getModel, streamSimple } from "@akramcode/providers/compat";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { AgentSession } from "../src/core/agent-session.ts";
 import { AuthStorage } from "../src/core/auth-storage.ts";

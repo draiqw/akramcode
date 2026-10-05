@@ -1,10 +1,11 @@
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createModels, fauxAssistantMessage, fauxProvider } from "@akramcode/ai";
+import { createModels } from "@akramcode/ai";
 import { createStaticFacetLoader, defineFacet } from "@akramcode/chord";
 import { BACKGROUND_CONTEXT } from "@akramcode/chord/context";
 import { createRegistry, Harness } from "@akramcode/durable";
 import { openNodeSqliteStorage } from "@akramcode/durable/storage/sqlite/node";
+import { fauxAssistantMessage, fauxProvider } from "@akramcode/providers";
 import { consumeInternalProcessRole } from "../../src/experimental/process.ts";
 import { runSessionWorkerWithHarness } from "../../src/experimental/session-worker.ts";
 import { KeyedProbe } from "./keyed-service.ts";

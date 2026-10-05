@@ -1,12 +1,6 @@
 import type { AgentTool, ThinkingLevel } from "@akramcode/agent-core";
-import {
-	fauxAssistantMessage,
-	fauxToolCall,
-	getCurrentSystemPrompt,
-	type JsonObject,
-	type Model,
-	type Usage,
-} from "@akramcode/ai";
+import { getCurrentSystemPrompt, type JsonObject, type Model, type Usage } from "@akramcode/ai";
+import { fauxAssistantMessage, fauxToolCall } from "@akramcode/providers";
 import { Type } from "typebox";
 import { afterEach, describe, expect, it } from "vitest";
 import type { BuildSystemPromptOptions, ExtensionAPI } from "../../src/index.ts";

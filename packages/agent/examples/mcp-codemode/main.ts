@@ -9,8 +9,8 @@
 
 import { Agent } from "@akramcode/agent-core";
 import { createModels } from "@akramcode/ai";
-import { anthropicProvider } from "@akramcode/ai/providers/anthropic";
 import { McpClient, StdioTransport } from "@akramcode/mcp";
+import { anthropicProvider } from "@akramcode/providers/providers/anthropic";
 import { createCodemodeTool, createMcpTools, createNestedToolRunner } from "./tools.ts";
 
 const [command, ...args] = process.argv.slice(2);

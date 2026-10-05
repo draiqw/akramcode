@@ -56,7 +56,6 @@ import {
 	type SimpleStreamOptions,
 	type StreamOptions,
 } from "@akramcode/ai";
-import * as builtinProviderCatalog from "@akramcode/ai/providers/all";
 import {
 	assertChatModel,
 	assertClassifierModel,
@@ -64,6 +63,7 @@ import {
 	classifierErrorResult,
 	imageErrorResult,
 } from "@akramcode/ai/utils/model-operations";
+import * as builtinProviderCatalog from "@akramcode/providers/providers/all";
 import { getAgentDir } from "../config.ts";
 import { operationSignal, raceWithAbortSignal } from "../utils/abort.ts";
 import { AuthStorage as DefaultAuthStorage } from "./auth-storage.ts";

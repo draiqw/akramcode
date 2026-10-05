@@ -1,26 +1,9 @@
 export type { Static, TSchema } from "typebox";
 export { Type } from "typebox";
-export type {
-	AkramCodeMessagesEvent,
-	AkramCodeMessagesOptions,
-	AkramCodeMessagesRewriteImpact,
-} from "./api/akramcode-messages.ts";
-// Core only, side-effect free: no generated catalogs, no provider factories,
-// no api-registry, no OAuth implementations, no compat. Provider factories
-// live under "@akramcode/ai/providers/*", API implementations under
-// "@akramcode/ai/api/*", the old global API under
-// "@akramcode/ai/compat".
-export type { AnthropicEffort, AnthropicOptions, AnthropicThinkingDisplay } from "./api/anthropic-messages.ts";
-export type { AzureOpenAIResponsesOptions } from "./api/azure-openai-responses.ts";
-export type { BedrockOptions, BedrockThinkingDisplay } from "./api/bedrock-converse-stream.ts";
-export type { GoogleOptions } from "./api/google-generative-ai.ts";
-export type { GoogleApiThinkingLevel, ResolvedGoogleThinkingLevel } from "./api/google-shared.ts";
-export type { GoogleVertexOptions } from "./api/google-vertex.ts";
+// Core only, side-effect free: types, the model registry, auth contracts and
+// utilities. Provider factories, API implementations, OAuth and the generated
+// catalogs live in @akramcode/providers.
 export * from "./api/lazy.ts";
-export type { MistralOptions } from "./api/mistral-conversations.ts";
-export type { OpenAICodexResponsesOptions, OpenAICodexWebSocketDebugStats } from "./api/openai-codex-responses.ts";
-export type { OpenAICompletionsOptions } from "./api/openai-completions.ts";
-export type { OpenAIResponsesOptions } from "./api/openai-responses.ts";
 export * from "./auth/context.ts";
 export * from "./auth/credential-store.ts";
 export * from "./auth/helpers.ts";
@@ -35,7 +18,6 @@ export type {
 } from "./compat/extension-oauth-types.ts";
 export * from "./models.ts";
 export * from "./models-store.ts";
-export * from "./providers/faux.ts";
 export * from "./session-resources.ts";
 export * from "./types.ts";
 export * from "./utils/assistant-message-frame.ts";

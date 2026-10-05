@@ -7,7 +7,7 @@ import {
 	normalizeContext,
 	type Usage,
 } from "@akramcode/ai";
-import { getBuiltinModel } from "@akramcode/ai/providers/all";
+import { getBuiltinModel } from "@akramcode/providers/providers/all";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AuthStorage } from "../src/core/auth-storage.ts";
 import {

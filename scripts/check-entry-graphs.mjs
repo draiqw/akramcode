@@ -21,6 +21,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const WORKSPACE = {
 	"@akramcode/chord": "packages/chord/src",
 	"@akramcode/ai": "packages/ai/src",
+	"@akramcode/providers": "packages/providers/src",
 	"@akramcode/durable": "packages/durable/src",
 	"@akramcode/agent-core": "packages/agent/src",
 	"@akramcode/codemode": "packages/codemode/src",

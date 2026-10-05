@@ -5,8 +5,8 @@
 
 import { Type } from "@akramcode/ai";
 import { createModels } from "@akramcode/ai/models";
-import { fauxAssistantMessage, fauxProvider, fauxText, fauxToolCall } from "@akramcode/ai/providers/faux";
 import { BACKGROUND_CONTEXT } from "@akramcode/chord/context";
+import { fauxAssistantMessage, fauxProvider, fauxText, fauxToolCall } from "@akramcode/providers/providers/faux";
 import {
 	type AgentEvent,
 	createRegistry,

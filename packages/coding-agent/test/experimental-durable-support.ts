@@ -1,6 +1,7 @@
-import { createModels, type FauxProviderHandle, type FauxResponseStep, fauxProvider } from "@akramcode/ai";
+import { createModels } from "@akramcode/ai";
 import { BACKGROUND_CONTEXT } from "@akramcode/chord/context";
 import { type Conversation, createRegistry, Harness, MemoryStorage } from "@akramcode/durable";
+import { type FauxProviderHandle, type FauxResponseStep, fauxProvider } from "@akramcode/providers";
 
 export interface FauxConversation {
 	readonly faux: FauxProviderHandle;

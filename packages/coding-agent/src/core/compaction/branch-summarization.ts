@@ -8,7 +8,7 @@
 import type { AgentMessage, StreamFn } from "@akramcode/agent-core";
 import type { RetryCallbacks, RetryPolicy } from "@akramcode/ai";
 import { contentText, normalizeContext } from "@akramcode/ai";
-import type { Model, SimpleStreamOptions, Usage } from "@akramcode/ai/compat";
+import type { Model, SimpleStreamOptions, Usage } from "@akramcode/providers/compat";
 import {
 	convertToLlm,
 	createBranchSummaryMessage,

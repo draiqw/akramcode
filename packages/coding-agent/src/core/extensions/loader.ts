@@ -90,20 +90,20 @@ function getAliases(): Record<string, string> {
 	// Extensions resolve the akramcode-ai root to the compat entrypoint (a strict
 	// superset of the core entrypoint): existing extensions using the old
 	// global API keep working at runtime until compat is removed.
-	const akramCodeAiCompatEntry = resolveWorkspaceOrImport("ai/dist/compat.js", "@akramcode/ai/compat");
-	const akramCodeAiOauthEntry = resolveWorkspaceOrImport("ai/dist/oauth.js", "@akramcode/ai/oauth");
+	const akramCodeAiCompatEntry = resolveWorkspaceOrImport("ai/dist/compat.js", "@akramcode/providers/compat");
+	const akramCodeAiOauthEntry = resolveWorkspaceOrImport("ai/dist/oauth.js", "@akramcode/providers/oauth");
 	const akramCodeAiProvidersEntry = resolveWorkspaceOrImport(
 		"ai/dist/providers/all.js",
-		"@akramcode/ai/providers/all",
+		"@akramcode/providers/providers/all",
 	);
 
 	_aliases = {
 		"@akramcode/coding-agent": akramCodeCodingAgentEntry,
 		"@akramcode/agent-core": akramCodeAgentCoreEntry,
 		"@akramcode/tui": akramCodeTuiEntry,
-		"@akramcode/ai/providers/all": akramCodeAiProvidersEntry,
-		"@akramcode/ai/compat": akramCodeAiCompatEntry,
-		"@akramcode/ai/oauth": akramCodeAiOauthEntry,
+		"@akramcode/providers/providers/all": akramCodeAiProvidersEntry,
+		"@akramcode/providers/compat": akramCodeAiCompatEntry,
+		"@akramcode/providers/oauth": akramCodeAiOauthEntry,
 		"@akramcode/ai": akramCodeAiCompatEntry,
 		"@mariozechner/pi-coding-agent": akramCodeCodingAgentEntry,
 		"@mariozechner/pi-agent-core": akramCodeAgentCoreEntry,

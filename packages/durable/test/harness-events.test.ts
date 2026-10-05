@@ -1,12 +1,4 @@
-import {
-	type AssistantMessage,
-	type FauxResponseStep,
-	fauxAssistantMessage,
-	fauxText,
-	fauxThinking,
-	fauxToolCall,
-	Type,
-} from "@akramcode/ai";
+import { type AssistantMessage, Type } from "@akramcode/ai";
 import type { Draft } from "@akramcode/chord";
 import {
 	AgentDoc,
@@ -23,6 +15,13 @@ import {
 	UsageDoc,
 	watchEvents,
 } from "@akramcode/durable";
+import {
+	type FauxResponseStep,
+	fauxAssistantMessage,
+	fauxText,
+	fauxThinking,
+	fauxToolCall,
+} from "@akramcode/providers";
 import { describe, expect, it } from "vitest";
 import { type ChatSetup, chatSetup, openChat, textOf, waitFor } from "./chat-support.ts";
 import { addTool } from "./harness-support.ts";

@@ -7,8 +7,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ToolResultMessage } from "@akramcode/ai";
 import { createModels } from "@akramcode/ai/models";
-import { fauxAssistantMessage, fauxProvider, fauxToolCall } from "@akramcode/ai/providers/faux";
 import { BACKGROUND_CONTEXT } from "@akramcode/chord/context";
+import { fauxAssistantMessage, fauxProvider, fauxToolCall } from "@akramcode/providers/providers/faux";
 import { NodeExecutionEnv } from "../../src/env/node.ts";
 import {
 	createRegistry,

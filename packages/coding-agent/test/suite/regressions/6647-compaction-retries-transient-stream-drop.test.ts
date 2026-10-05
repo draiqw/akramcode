@@ -1,5 +1,6 @@
 import type { StreamFn } from "@akramcode/agent-core";
-import { type AssistantMessage, createAssistantMessageEventStream, fauxAssistantMessage } from "@akramcode/ai";
+import { type AssistantMessage, createAssistantMessageEventStream } from "@akramcode/ai";
+import { fauxAssistantMessage } from "@akramcode/providers";
 import { afterEach, describe, expect, it } from "vitest";
 import { createHarness, type Harness } from "../harness.ts";
 

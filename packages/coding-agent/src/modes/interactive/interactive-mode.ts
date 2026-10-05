@@ -16,7 +16,7 @@ import {
 	type Message,
 	type Model,
 	type Usage,
-} from "@akramcode/ai/compat";
+} from "@akramcode/providers/compat";
 import type {
 	AutocompleteItem,
 	AutocompleteProvider,

@@ -1,5 +1,6 @@
 import type { AgentMessage } from "@akramcode/agent-core";
-import { fauxAssistantMessage, getCurrentSystemPrompt, getCurrentTools, type TranscriptContext } from "@akramcode/ai";
+import { getCurrentSystemPrompt, getCurrentTools, type TranscriptContext } from "@akramcode/ai";
+import { fauxAssistantMessage } from "@akramcode/providers";
 import { afterEach, describe, expect, it } from "vitest";
 import type { ExtensionFactory } from "../../../src/index.ts";
 import { createHarness, type Harness } from "../harness.ts";

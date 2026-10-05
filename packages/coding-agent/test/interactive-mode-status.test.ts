@@ -794,8 +794,9 @@ describe("InteractiveMode.showLoadedResources", () => {
 		});
 
 		expect(normalizeRenderedOutput(fakeThis.loadedResourcesContainer)).toMatchInlineSnapshot(`
-"[Extensions]
-  @scope/akramcode-scoped, answer.ts, cli-extension.ts, HazAT/akramcode-interactive-subagents, HazAT/akramcode-interactive-subagents:subagents, local-index, akramcode-markdown-preview, user-index"`);
+			"[Extensions]
+			  @scope/akramcode-scoped, akramcode-markdown-preview, answer.ts, cli-extension.ts, HazAT/pi-interactive-subagents, HazAT/pi-interactive-subagents:subagents, local-index, user-index"
+		`);
 	});
 
 	test("adds more parent folders until local extension labels are unique", () => {

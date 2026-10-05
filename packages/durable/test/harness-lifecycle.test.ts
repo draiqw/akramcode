@@ -1,7 +1,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createModels, fauxAssistantMessage, fauxText, fauxToolCall, Type } from "@akramcode/ai";
+import { createModels, Type } from "@akramcode/ai";
 import type { Context, JsonValue } from "@akramcode/chord";
 import {
 	type Conversation,
@@ -16,6 +16,7 @@ import {
 	type Storage,
 	type TaskId,
 } from "@akramcode/durable";
+import { fauxAssistantMessage, fauxText, fauxToolCall } from "@akramcode/providers";
 import { describe, expect, it } from "vitest";
 import type { SessionImpl } from "../src/session/session.ts";
 import { openNodeSqliteStorage } from "../src/storage/sqlite/node.ts";

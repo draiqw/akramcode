@@ -22,8 +22,8 @@ import type {
 	SystemMessage,
 	TranscriptContext,
 	Usage,
-} from "@akramcode/ai/compat";
-import { completeSimple } from "@akramcode/ai/compat";
+} from "@akramcode/providers/compat";
+import { completeSimple } from "@akramcode/providers/compat";
 import { convertToLlm } from "../messages.ts";
 import {
 	buildSessionProjection,

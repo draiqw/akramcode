@@ -12,6 +12,7 @@
 	},
 	"devDependencies": {
 		"@akramcode/ai": "^1.0.0",
+		"@akramcode/providers": "^1.0.0",
 		"@akramcode/coding-agent": "^1.0.0",
 		"@types/node": "22.19.19",
 		"@vitest-evals/core": "0.15.0",

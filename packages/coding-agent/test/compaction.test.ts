@@ -1,6 +1,6 @@
 import type { AgentMessage } from "@akramcode/agent-core";
-import type { AssistantMessage, Usage } from "@akramcode/ai/compat";
-import { getModel } from "@akramcode/ai/compat";
+import type { AssistantMessage, Usage } from "@akramcode/providers/compat";
+import { getModel } from "@akramcode/providers/compat";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { beforeEach, describe, expect, it } from "vitest";

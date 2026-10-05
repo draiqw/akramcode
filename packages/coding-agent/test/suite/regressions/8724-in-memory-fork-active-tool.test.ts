@@ -1,5 +1,5 @@
 import type { AgentTool, AgentToolResult } from "@akramcode/agent-core";
-import { fauxAssistantMessage, fauxToolCall } from "@akramcode/ai";
+import { fauxAssistantMessage, fauxToolCall } from "@akramcode/providers";
 import { Type } from "typebox";
 import { afterEach, describe, expect, it } from "vitest";
 import {

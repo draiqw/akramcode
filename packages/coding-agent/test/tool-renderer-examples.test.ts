@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { getModel } from "@akramcode/ai/compat";
+import { getModel } from "@akramcode/providers/compat";
 import type { TUI } from "@akramcode/tui";
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { ToolDefinition } from "../src/core/extensions/types.ts";

@@ -1,4 +1,5 @@
-import { type AssistantMessage, fauxAssistantMessage } from "@akramcode/ai";
+import type { AssistantMessage } from "@akramcode/ai";
+import { fauxAssistantMessage } from "@akramcode/providers";
 import { describe, expect, test, vi } from "vitest";
 import { formatCrashExtensionHint, InteractiveMode } from "../src/modes/interactive/interactive-mode.ts";
 

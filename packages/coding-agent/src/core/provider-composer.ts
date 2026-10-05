@@ -25,8 +25,8 @@ import {
 	type StreamOptions,
 	type TranscriptContext,
 } from "@akramcode/ai";
-import { getApiProvider } from "@akramcode/ai/compat";
 import { classifierErrorResult, imageErrorResult } from "@akramcode/ai/utils/model-operations";
+import { getApiProvider } from "@akramcode/providers/compat";
 import type { ModelConfig, ModelsJsonModel, ModelsJsonModelOverride, ModelsJsonProvider } from "./model-config.ts";
 import {
 	clearConfigValueCache,

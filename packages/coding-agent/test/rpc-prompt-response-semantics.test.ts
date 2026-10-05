@@ -8,7 +8,7 @@ import {
 	EventStream,
 	getModel,
 	type Model,
-} from "@akramcode/ai/compat";
+} from "@akramcode/providers/compat";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AgentSession } from "../src/core/agent-session.ts";
 import type { AgentSessionRuntime } from "../src/core/agent-session-runtime.ts";

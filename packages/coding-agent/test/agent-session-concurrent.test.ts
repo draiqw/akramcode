@@ -14,7 +14,7 @@ import {
 	getModel,
 	type ImageContent,
 	type TextContent,
-} from "@akramcode/ai/compat";
+} from "@akramcode/providers/compat";
 import { Type } from "typebox";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { AgentSession } from "../src/core/agent-session.ts";

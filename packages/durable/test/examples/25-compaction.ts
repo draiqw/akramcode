@@ -4,8 +4,8 @@
 
 import type { AssistantMessage, Message, TranscriptContext } from "@akramcode/ai";
 import { createModels } from "@akramcode/ai/models";
-import { fauxAssistantMessage, fauxProvider } from "@akramcode/ai/providers/faux";
 import { BACKGROUND_CONTEXT } from "@akramcode/chord/context";
+import { fauxAssistantMessage, fauxProvider } from "@akramcode/providers/providers/faux";
 import {
 	CompactionEntry,
 	type Conversation,

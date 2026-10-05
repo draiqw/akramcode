@@ -110,7 +110,7 @@ You build a `Models` collection of providers and stream through it. The quickest
 
 ```typescript
 import { Type, type Context, type Tool } from '@akramcode/ai';
-import { builtinModels } from '@akramcode/ai/providers/all';
+import { builtinModels } from '@akramcode/providers/providers/all';
 
 // A Models collection with every built-in provider registered
 const models = builtinModels();
@@ -245,10 +245,10 @@ Providers internally share **API implementations** (the wire protocols): Anthrop
 For apps that only need specific providers, there is one factory per built-in provider, each a subpath import that pulls only that provider's catalog:
 
 ```typescript
-import { anthropicProvider } from '@akramcode/ai/providers/anthropic';
-import { openaiProvider } from '@akramcode/ai/providers/openai';
-import { openrouterProvider } from '@akramcode/ai/providers/openrouter';
-import { amazonBedrockProvider } from '@akramcode/ai/providers/amazon-bedrock';
+import { anthropicProvider } from '@akramcode/providers/providers/anthropic';
+import { openaiProvider } from '@akramcode/providers/providers/openai';
+import { openrouterProvider } from '@akramcode/providers/providers/openrouter';
+import { amazonBedrockProvider } from '@akramcode/providers/providers/amazon-bedrock';
 // ...one module per provider in the Supported Providers list
 
 const models = createModels();
@@ -263,7 +263,7 @@ Provider factories import their model catalog and a lazy API wrapper. They do no
 For apps that want everything (as in Quick Start):
 
 ```typescript
-import { builtinModels } from '@akramcode/ai/providers/all';
+import { builtinModels } from '@akramcode/providers/providers/all';
 
 const models = builtinModels(); // a Models collection with every built-in provider registered
 ```
@@ -341,7 +341,7 @@ import {
   getBuiltinModel,
   getBuiltinModels,
   getBuiltinProviders,
-} from '@akramcode/ai/providers/all';
+} from '@akramcode/providers/providers/all';
 
 const model = getBuiltinModel('openai', 'gpt-4o-mini'); // typed Model<'openai-responses'>
 const radius = getBuiltinModel('radius', 'balanced');   // typed Model<'akramcode-messages'>
@@ -794,7 +794,7 @@ Image models live in the same `Models` collection and on the same `Provider` as 
 ### Basic Image Generation
 
 ```typescript
-import { builtinModels } from '@akramcode/ai/providers/all';
+import { builtinModels } from '@akramcode/providers/providers/all';
 
 const models = builtinModels();
 
@@ -846,7 +846,7 @@ models.setProvider(pixels);
 The old global API (`getImageModel()` / `getImageModels()` / `getImageProviders()` / `generateImages()`) remains available on the [compat entrypoint](#migrating-from-the-old-global-api):
 
 ```typescript
-import { getImageModel, generateImages } from '@akramcode/ai/compat';
+import { getImageModel, generateImages } from '@akramcode/providers/compat';
 
 const model = getImageModel('openrouter', 'google/gemini-2.5-flash-image');
 const result = await generateImages(model, {
@@ -901,7 +901,7 @@ Classifier models consume structured JSON state and answer one or more typed que
 | `opencode` | `jev-1.13`, `jev-1.13-free` | `OPENCODE_API_KEY` |
 
 ```typescript
-import { builtinModels } from '@akramcode/ai/providers/all';
+import { builtinModels } from '@akramcode/providers/providers/all';
 
 const models = builtinModels();
 const model = models.getModelOfType('classifier', 'typesafe', 'jev-latest')!;
@@ -944,7 +944,7 @@ The `llama-cpp-classify` API turns a chat model served by llama.cpp's `llama-ser
 
 ```typescript
 import { createProvider } from '@akramcode/ai';
-import { llamaCppClassifyApi } from '@akramcode/ai/api/llama-cpp-classify.lazy';
+import { llamaCppClassifyApi } from '@akramcode/providers/api/llama-cpp-classify.lazy';
 
 const provider = createProvider({
   id: 'local-llama',
@@ -1214,7 +1214,7 @@ Callbacks are awaited in stream order, so slow callbacks delay stream consumptio
 
 ```typescript
 import { createModels, createProvider, envApiKeyAuth, type Model } from '@akramcode/ai';
-import { openAICompletionsApi } from '@akramcode/ai/api/openai-completions.lazy';
+import { openAICompletionsApi } from '@akramcode/providers/api/openai-completions.lazy';
 
 const ollamaModel: Model<'openai-completions'> = {
   id: 'llama-3.1-8b',
@@ -1259,8 +1259,8 @@ const proxy = createProvider({
 Mixed-API providers pass a map keyed by `model.api`; each model dispatches to its API's implementation:
 
 ```typescript
-import { anthropicMessagesApi } from '@akramcode/ai/api/anthropic-messages.lazy';
-import { openAIResponsesApi } from '@akramcode/ai/api/openai-responses.lazy';
+import { anthropicMessagesApi } from '@akramcode/providers/api/anthropic-messages.lazy';
+import { openAIResponsesApi } from '@akramcode/providers/api/openai-responses.lazy';
 
 const gateway = createProvider({
   id: 'my-gateway',
@@ -1354,7 +1354,7 @@ The API implementations are importable on their own. Each module exports exactly
 
 ```typescript
 import { normalizeContext } from '@akramcode/ai';
-import { stream } from '@akramcode/ai/api/anthropic-messages';
+import { stream } from '@akramcode/providers/api/anthropic-messages';
 
 const s = stream(claudeModel, normalizeContext(context), {
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -1377,7 +1377,7 @@ Built-in API implementations live under `./api/<api-id>`:
 | `mistral-conversations` | `MistralOptions` |
 | `bedrock-converse-stream` | `BedrockOptions` |
 
-Importing an implementation module loads its SDK. The `./api/<id>.lazy` wrappers (used by the provider factories) defer that load to the first request when the runtime or bundler supports dynamic import chunking. Legacy raw API subpaths from older releases (`./anthropic`, `./google`, `./mistral`, `./openai-completions`, ...) were removed; use `@akramcode/ai/api/<api-id>`.
+Importing an implementation module loads its SDK. The `./api/<id>.lazy` wrappers (used by the provider factories) defer that load to the first request when the runtime or bundler supports dynamic import chunking. Legacy raw API subpaths from older releases (`./anthropic`, `./google`, `./mistral`, `./openai-completions`, ...) were removed; use `@akramcode/providers/api/<api-id>`.
 
 ### OpenAI Compatibility Settings
 
@@ -1432,14 +1432,8 @@ If `compat` is not set, the library falls back to URL-based detection. If `compa
 `fauxProvider()` builds an in-memory provider with scripted responses for tests and demos:
 
 ```typescript
-import {
-  createModels,
-  fauxAssistantMessage,
-  fauxProvider,
-  fauxText,
-  fauxThinking,
-  fauxToolCall,
-} from '@akramcode/ai';
+import { createModels } from '@akramcode/ai';
+import { fauxAssistantMessage, fauxProvider, fauxText, fauxThinking, fauxToolCall } from '@akramcode/providers';
 
 const faux = fauxProvider({
   tokensPerSecond: 50 // optional
@@ -1527,9 +1521,9 @@ When messages from one provider are sent to a different provider, the library au
 
 ```typescript
 import { createModels, type Context } from '@akramcode/ai';
-import { anthropicProvider } from '@akramcode/ai/providers/anthropic';
-import { openaiProvider } from '@akramcode/ai/providers/openai';
-import { googleProvider } from '@akramcode/ai/providers/google';
+import { anthropicProvider } from '@akramcode/providers/providers/anthropic';
+import { openaiProvider } from '@akramcode/providers/providers/openai';
+import { googleProvider } from '@akramcode/providers/providers/google';
 
 const models = createModels();
 models.setProvider(anthropicProvider());
@@ -1630,7 +1624,7 @@ The library supports browser environments. The core entrypoint and provider fact
 
 ```typescript
 import { createModels } from '@akramcode/ai';
-import { anthropicProvider } from '@akramcode/ai/providers/anthropic';
+import { anthropicProvider } from '@akramcode/providers/providers/anthropic';
 
 const models = createModels();
 models.setProvider(anthropicProvider());
@@ -1657,7 +1651,7 @@ For small bundles and low-overhead unbundled scripts, import the model runtime a
 
 ```typescript
 import { createModels } from '@akramcode/ai/models';
-import { openaiProvider } from '@akramcode/ai/providers/openai';
+import { openaiProvider } from '@akramcode/providers/providers/openai';
 
 const models = createModels();
 models.setProvider(openaiProvider());
@@ -1667,13 +1661,13 @@ Rules:
 
 - `@akramcode/ai/models` exports the model runtime (`createModels`, `createProvider`, model helpers, and their types) without TypeBox, built-in catalogs, or SDK implementations. Other types can still use `import type` from the root.
 - `@akramcode/ai` is the core entrypoint and does not import built-in catalogs, real provider factories, or SDK implementations, but it eagerly imports TypeBox and schema validation. Unbundled Node scripts do not tree-shake its unused exports; prefer `./models`, `./providers/faux`, and specific `./utils/*` subpaths when those are all you need.
-- `@akramcode/ai/providers/<provider>` imports that provider's catalog and lazy API wrapper only.
-- `@akramcode/ai/providers/all` imports every built-in provider factory and all catalogs. Use it only when you want the full built-in set.
+- `@akramcode/providers/providers/<provider>` imports that provider's catalog and lazy API wrapper only.
+- `@akramcode/providers/providers/all` imports every built-in provider factory and all catalogs. Use it only when you want the full built-in set.
 - With code splitting, provider SDKs stay in lazy chunks and load on first request.
 - Without code splitting, bundlers fold reachable lazy API implementations into the single bundle. A single-provider bundle then includes that provider's SDK; `providers/all` includes all statically visible SDKs. Bedrock is the exception: its AWS SDK implementation is loaded through a bundler-opaque Node-only import.
-- Importing `@akramcode/ai/api/<api-id>` directly loads that API implementation and its SDK immediately.
+- Importing `@akramcode/providers/api/<api-id>` directly loads that API implementation and its SDK immediately.
 
-Avoid `@akramcode/ai/compat` in new bundled apps; it preserves the old global API and imports the full built-in catalog surface.
+Avoid `@akramcode/providers/compat` in new bundled apps; it preserves the old global API and imports the full built-in catalog surface.
 
 For single-file Node ESM bundles, some SDK dependencies may still use dynamic CommonJS `require()` internally. If you see errors such as `Dynamic require of "child_process" is not supported`, add a Node `require` shim to the bundle. With esbuild:
 
@@ -1689,7 +1683,7 @@ Bedrock is Node-only. Add it like any other provider:
 
 ```typescript
 import { createModels } from '@akramcode/ai';
-import { amazonBedrockProvider } from '@akramcode/ai/providers/amazon-bedrock';
+import { amazonBedrockProvider } from '@akramcode/providers/providers/amazon-bedrock';
 
 const models = createModels();
 models.setProvider(amazonBedrockProvider());
@@ -1698,8 +1692,8 @@ models.setProvider(amazonBedrockProvider());
 In normal Node package usage and code-split bundles, Bedrock loads its AWS SDK implementation lazily. For a standalone single-file bundle that must include Bedrock support, register the implementation module explicitly:
 
 ```typescript
-import { setBedrockProviderModule } from '@akramcode/ai/api/bedrock-converse-stream.lazy';
-import { bedrockProviderModule } from '@akramcode/ai/bedrock-provider';
+import { setBedrockProviderModule } from '@akramcode/providers/api/bedrock-converse-stream.lazy';
+import { bedrockProviderModule } from '@akramcode/providers/bedrock-provider';
 
 setBedrockProviderModule(bedrockProviderModule);
 ```
@@ -1739,7 +1733,7 @@ Each of these providers carries an `OAuthAuth` on `provider.auth.oauth` with thr
 
 ```typescript
 import { createModels } from '@akramcode/ai';
-import { anthropicProvider } from '@akramcode/ai/providers/anthropic';
+import { anthropicProvider } from '@akramcode/providers/providers/anthropic';
 
 const models = createModels({ credentials: myStore }); // persistent CredentialStore
 models.setProvider(anthropicProvider());
@@ -1807,7 +1801,7 @@ Credentials are saved to `auth.json` in the current directory.
 
 ### Programmatic OAuth
 
-Built-in login and refresh flows are private provider implementations. Use provider-owned `OAuthAuth`, which composes with `CredentialStore` and gets locked auto-refresh through `Models`. The `@akramcode/ai/oauth` entry point retains only type declarations required by coding-agent extension OAuth compatibility.
+Built-in login and refresh flows are private provider implementations. Use provider-owned `OAuthAuth`, which composes with `CredentialStore` and gets locked auto-refresh through `Models`. The `@akramcode/providers/oauth` entry point retains only type declarations required by coding-agent extension OAuth compatibility.
 
 Provider notes:
 
@@ -1826,7 +1820,7 @@ Older versions exposed a global API: `stream()`/`complete()` dispatching on `mod
 import { getModel, complete } from '@akramcode/ai';
 
 // After (verbatim behavior, one import-path change)
-import { getModel, complete } from '@akramcode/ai/compat';
+import { getModel, complete } from '@akramcode/providers/compat';
 ```
 
 Compat is a strict superset of the root entrypoint, so a file can switch its import path wholesale. It will be removed in a future release; migrate to `createModels()` + provider factories:
@@ -1838,7 +1832,7 @@ Compat is a strict superset of the root entrypoint, so a file can switch its imp
 | `stream(model, ctx, opts)` (env-key injection) | `models.stream(model, ctx, opts)` (provider auth resolution) |
 | `registerApiProvider({ api, stream, streamSimple })` | `createProvider({ id, auth, models, api })` + `models.setProvider()` |
 | `getEnvApiKey('openai')` | `await models.getAuth(model.provider)` |
-| `streamAnthropic(model, ctx, opts)` | `stream` from `@akramcode/ai/api/anthropic-messages`, or a provider in a collection |
+| `streamAnthropic(model, ctx, opts)` | `stream` from `@akramcode/providers/api/anthropic-messages`, or a provider in a collection |
 | `registerFauxProvider()` | `fauxProvider()` + `models.setProvider()` |
 | `getImageModel('openrouter', id)` / `generateImages(model, ctx, { apiKey })` | `models.getModelOfType('image', 'openrouter', id)` / `models.generateImages(model, ctx)` |
 

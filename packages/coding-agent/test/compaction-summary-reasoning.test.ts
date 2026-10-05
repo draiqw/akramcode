@@ -13,8 +13,8 @@ const { completeSimpleMock } = vi.hoisted(() => ({
 	completeSimpleMock: vi.fn(),
 }));
 
-vi.mock("@akramcode/ai/compat", async (importOriginal) => {
-	const actual = await importOriginal<typeof import("@akramcode/ai/compat")>();
+vi.mock("@akramcode/providers/compat", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("@akramcode/providers/compat")>();
 	return {
 		...actual,
 		completeSimple: completeSimpleMock,

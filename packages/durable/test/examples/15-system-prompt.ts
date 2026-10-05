@@ -3,8 +3,8 @@
 //   node --conditions=source --experimental-strip-types test/examples/15-system-prompt.ts
 
 import { createModels } from "@akramcode/ai/models";
-import { fauxAssistantMessage, fauxProvider } from "@akramcode/ai/providers/faux";
 import { BACKGROUND_CONTEXT } from "@akramcode/chord/context";
+import { fauxAssistantMessage, fauxProvider } from "@akramcode/providers/providers/faux";
 import { NodeExecutionEnv } from "../../src/env/node.ts";
 import {
 	type Conversation,

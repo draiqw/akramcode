@@ -1,4 +1,4 @@
-import { fauxAssistantMessage, fauxText, fauxToolCall, Type } from "@akramcode/ai";
+import { Type } from "@akramcode/ai";
 import type { Op } from "@akramcode/chord/delta";
 import {
 	type CommitPublication,
@@ -10,6 +10,7 @@ import {
 	type ToolExecutionApi,
 	type ToolRegistration,
 } from "@akramcode/durable";
+import { fauxAssistantMessage, fauxText, fauxToolCall } from "@akramcode/providers";
 import { describe, expect, it } from "vitest";
 import { chatSetup, openChat, waitFor } from "./chat-support.ts";
 import { addTool } from "./harness-support.ts";

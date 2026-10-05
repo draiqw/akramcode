@@ -1,6 +1,6 @@
 import type { AgentTool } from "@akramcode/agent-core";
-import { fauxAssistantMessage, fauxToolCall } from "@akramcode/ai";
 import type { ExtensionAPI, InputEvent } from "@akramcode/coding-agent";
+import { fauxAssistantMessage, fauxToolCall } from "@akramcode/providers";
 import { Type } from "typebox";
 import { afterEach, describe, expect, it } from "vitest";
 import { createHarness, getAssistantTexts, getMessageText, getUserTexts, type Harness } from "./harness.ts";

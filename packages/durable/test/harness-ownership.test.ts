@@ -1,7 +1,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { type AssistantMessage, fauxAssistantMessage, fauxText, fauxToolCall, Type } from "@akramcode/ai";
+import { type AssistantMessage, Type } from "@akramcode/ai";
 import {
 	type Conversation,
 	type ConversationHandle,
@@ -20,6 +20,7 @@ import {
 	type Submission,
 	type TaskId,
 } from "@akramcode/durable";
+import { fauxAssistantMessage, fauxText, fauxToolCall } from "@akramcode/providers";
 import { afterEach, describe, expect, it } from "vitest";
 import { openNodeSqliteStorage } from "../src/storage/sqlite/node.ts";
 import { chatSetup, openChat } from "./chat-support.ts";

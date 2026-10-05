@@ -1,4 +1,4 @@
-import { fauxAssistantMessage, fauxToolCall } from "@akramcode/ai";
+import { fauxAssistantMessage, fauxToolCall } from "@akramcode/providers";
 import { afterEach, describe, expect, it } from "vitest";
 import { toJsonEvent } from "../../../src/modes/json-event.ts";
 import { createHarness, type Harness } from "../harness.ts";

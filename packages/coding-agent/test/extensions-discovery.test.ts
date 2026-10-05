@@ -71,7 +71,7 @@ describe("extensions discovery", () => {
 
 	it("does not infer package ownership from ancestor manifests", async () => {
 		// Regression for #9863.
-		const dependencyDir = path.join(tempDir, "node_modules", "@akramcode", "akramcode-coding-agent");
+		const dependencyDir = path.join(tempDir, "node_modules", "@akramcode", "coding-agent");
 		fs.mkdirSync(dependencyDir, { recursive: true });
 		fs.writeFileSync(
 			path.join(tempDir, "package.json"),
@@ -108,7 +108,7 @@ describe("extensions discovery", () => {
 		fs.writeFileSync(
 			path.join(extensionsDir, "oauth-import.ts"),
 			`
-				import * as oauth from "@akramcode/ai/oauth";
+				import * as oauth from "@akramcode/providers/oauth";
 				void oauth;
 				export default function(akramcode) {
 					akramcode.registerCommand("test", { handler: async () => {} });

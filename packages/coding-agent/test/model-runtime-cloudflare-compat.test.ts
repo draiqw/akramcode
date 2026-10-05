@@ -1,4 +1,4 @@
-import { complete, resetApiProviders } from "@akramcode/ai/compat";
+import { complete, resetApiProviders } from "@akramcode/providers/compat";
 import { describe, expect, it } from "vitest";
 import { AuthStorage } from "../src/core/auth-storage.ts";
 import { ModelRegistry } from "../src/core/model-registry.ts";

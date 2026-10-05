@@ -5,9 +5,9 @@
 
 import type { AssistantMessage } from "@akramcode/ai";
 import { createModels } from "@akramcode/ai/models";
-import { fauxAssistantMessage, fauxProvider, fauxText, fauxToolCall } from "@akramcode/ai/providers/faux";
-import { openaiProvider } from "@akramcode/ai/providers/openai";
 import { BACKGROUND_CONTEXT } from "@akramcode/chord/context";
+import { fauxAssistantMessage, fauxProvider, fauxText, fauxToolCall } from "@akramcode/providers/providers/faux";
+import { openaiProvider } from "@akramcode/providers/providers/openai";
 import { NodeExecutionEnv } from "../../src/env/node.ts";
 import { AssistantEntry, createRegistry, defineExtension, Harness, MemoryStorage, section } from "../../src/index.ts";
 import { createBashTool, createReadTool } from "../../src/tools/index.ts";

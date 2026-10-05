@@ -1,6 +1,6 @@
 import { Client } from "@akramcode/client";
 import { createAssistantMessageEventStream, Type } from "@akramcode/ai";
-import { complete, getModel, getProviders, streamSimple } from "@akramcode/ai/compat";
+import { complete, getModel, getProviders, streamSimple } from "@akramcode/providers/compat";
 import { Agent, streamProxy } from "@akramcode/agent-core";
 import { decodeCbor, encodeCbor, PROTOCOL_VERSION } from "@akramcode/protocol";
 

@@ -42,7 +42,7 @@ import type {
 	TextContent,
 	ToolResultMessage,
 	Usage,
-} from "@akramcode/ai/compat";
+} from "@akramcode/providers/compat";
 import {
 	clampThinkingLevel,
 	cleanupSessionResources,
@@ -54,7 +54,7 @@ import {
 	type RetryCallbacks,
 	resetApiProviders,
 	streamSimple,
-} from "@akramcode/ai/compat";
+} from "@akramcode/providers/compat";
 import { getThemeByName, theme } from "../modes/interactive/theme/theme.ts";
 import { stripFrontmatter } from "../utils/frontmatter.ts";
 import { processImage } from "../utils/image-process.ts";

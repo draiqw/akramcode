@@ -6,7 +6,7 @@ import {
 	getModel,
 	toToolDeclaration,
 	type UserMessage,
-} from "@akramcode/ai/compat";
+} from "@akramcode/providers/compat";
 import { Type } from "typebox";
 import { describe, expect, it } from "vitest";
 import {

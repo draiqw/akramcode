@@ -22,11 +22,11 @@ import {
 	type Model,
 	type SimpleStreamOptions,
 	Type,
-} from "@akramcode/ai/compat";
+} from "@akramcode/providers/compat";
 import {
 	getOpenAICodexWebSocketDebugStats,
 	streamSimple as streamSimpleOpenAICodexResponses,
-} from "../../ai/src/api/openai-codex-responses.ts";
+} from "../../providers/src/api/openai-codex-responses.ts";
 import { AuthStorage } from "../src/core/auth-storage.ts";
 import { createExtensionRuntime } from "../src/core/extensions/loader.ts";
 import type { ToolDefinition } from "../src/core/extensions/types.ts";

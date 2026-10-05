@@ -1,6 +1,5 @@
 import { createHash } from "node:crypto";
 import { resolve } from "node:path";
-import { fauxAssistantMessage } from "@akramcode/ai";
 import {
 	createRemoteServiceBinding,
 	type MutableReplicatedState,
@@ -14,6 +13,7 @@ import {
 	FACET_BUNDLE_ARTIFACT_FORMAT_VERSION,
 	type FacetBundleArtifact,
 } from "@akramcode/chord/node";
+import { fauxAssistantMessage } from "@akramcode/providers";
 import { ProcessTerminal, TuiMainScreen } from "@akramcode/tui";
 import { beforeAll, describe, expect, test, vi } from "vitest";
 import { type ClientTuiServer, ExperimentalClientTui } from "../src/experimental/client-tui.ts";

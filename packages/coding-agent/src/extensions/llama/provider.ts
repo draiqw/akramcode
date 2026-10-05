@@ -9,8 +9,8 @@ import {
 	type ProviderStreamOptions,
 	type RefreshModelsContext,
 } from "@akramcode/ai";
-import { llamaCppClassifyApi } from "@akramcode/ai/api/llama-cpp-classify.lazy";
-import { stream, streamSimple } from "@akramcode/ai/compat";
+import { llamaCppClassifyApi } from "@akramcode/providers/api/llama-cpp-classify.lazy";
+import { stream, streamSimple } from "@akramcode/providers/compat";
 import {
 	LlamaClient,
 	type LlamaModelInfo,

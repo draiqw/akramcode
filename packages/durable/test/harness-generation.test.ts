@@ -1,11 +1,4 @@
-import {
-	type AssistantMessage,
-	fauxAssistantMessage,
-	type Message,
-	type Models,
-	type SimpleStreamOptions,
-	type SystemMessage,
-} from "@akramcode/ai";
+import type { AssistantMessage, Message, Models, SimpleStreamOptions, SystemMessage } from "@akramcode/ai";
 import {
 	AssistantEntry,
 	type CommitPublication,
@@ -24,6 +17,7 @@ import {
 	UserEntry,
 	wrapSection,
 } from "@akramcode/durable";
+import { fauxAssistantMessage } from "@akramcode/providers";
 import { describe, expect, it } from "vitest";
 import { resolveSettings } from "../src/harness/agent.ts";
 import type { SessionImpl } from "../src/session/session.ts";

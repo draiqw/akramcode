@@ -1,7 +1,7 @@
-import { fauxAssistantMessage, fauxToolCall } from "@akramcode/ai";
-import type { SystemMessage, ToolResultMessage } from "@akramcode/ai/compat";
 import { type JsonRpcRequest, LATEST_PROTOCOL_VERSION } from "@akramcode/mcp";
 import { createInMemoryTransportPair } from "@akramcode/mcp/testing";
+import { fauxAssistantMessage, fauxToolCall } from "@akramcode/providers";
+import type { SystemMessage, ToolResultMessage } from "@akramcode/providers/compat";
 import { Type } from "typebox";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ExtensionAPI, ExtensionFactory } from "../../src/core/extensions/types.ts";

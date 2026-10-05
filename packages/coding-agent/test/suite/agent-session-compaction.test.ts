@@ -2,14 +2,13 @@ import type { AgentMessage, AgentTool } from "@akramcode/agent-core";
 import {
 	type AssistantMessage,
 	createAssistantMessageEventStream,
-	fauxAssistantMessage,
-	fauxToolCall,
 	getCurrentSystemPrompt,
 	getCurrentTools,
 	type Model,
 	type SimpleStreamOptions,
 	type TranscriptContext,
 } from "@akramcode/ai";
+import { fauxAssistantMessage, fauxToolCall } from "@akramcode/providers";
 import { Type } from "typebox";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { estimateTokens } from "../../src/core/compaction/index.ts";

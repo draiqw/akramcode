@@ -1,4 +1,4 @@
-import { type AssistantMessage, type FauxResponseStep, fauxAssistantMessage, fauxText } from "@akramcode/ai";
+import type { AssistantMessage } from "@akramcode/ai";
 import { applyImmutable, type Op } from "@akramcode/chord/delta";
 import {
 	AgentDoc,
@@ -11,6 +11,7 @@ import {
 	MemoryStorage,
 	UsageDoc,
 } from "@akramcode/durable";
+import { type FauxResponseStep, fauxAssistantMessage, fauxText } from "@akramcode/providers";
 import { describe, expect, it } from "vitest";
 import { allEntries, chatSetup, openChat, waitFor } from "./chat-support.ts";
 import { context } from "./session-support.ts";

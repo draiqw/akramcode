@@ -1,4 +1,4 @@
-import { fauxAssistantMessage } from "@akramcode/ai";
+import { fauxAssistantMessage } from "@akramcode/providers";
 import { describe, expect, it } from "vitest";
 import { createHarness } from "../harness.ts";
 

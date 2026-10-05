@@ -1,5 +1,5 @@
 import type { AgentTool } from "@akramcode/agent-core";
-import { type FauxResponseStep, fauxAssistantMessage, fauxToolCall } from "@akramcode/ai";
+import { type FauxResponseStep, fauxAssistantMessage, fauxToolCall } from "@akramcode/providers";
 import { Type } from "typebox";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ExtensionContext } from "../../src/core/extensions/index.ts";

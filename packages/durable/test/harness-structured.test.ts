@@ -1,7 +1,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { fauxAssistantMessage, fauxText, fauxToolCall, type Models, type ToolResultMessage, Type } from "@akramcode/ai";
+import { type Models, type ToolResultMessage, Type } from "@akramcode/ai";
 import type { Context, JsonValue } from "@akramcode/chord";
 import {
 	type AgentEvent,
@@ -28,6 +28,7 @@ import {
 	type Tx,
 	watchEvents,
 } from "@akramcode/durable";
+import { fauxAssistantMessage, fauxText, fauxToolCall } from "@akramcode/providers";
 import { afterEach, describe, expect, it } from "vitest";
 import { openNodeSqliteStorage } from "../src/storage/sqlite/node.ts";
 import { allEntries, chatSetup, openChat, waitFor } from "./chat-support.ts";

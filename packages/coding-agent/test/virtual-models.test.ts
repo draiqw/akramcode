@@ -1,14 +1,8 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-	type AssistantMessage,
-	fauxAssistantMessage,
-	fauxProvider,
-	getSupportedThinkingLevels,
-	InMemoryModelsStore,
-	type Model,
-} from "@akramcode/ai";
+import { type AssistantMessage, getSupportedThinkingLevels, InMemoryModelsStore, type Model } from "@akramcode/ai";
+import { fauxAssistantMessage, fauxProvider } from "@akramcode/providers";
 import { afterEach, beforeEach, describe, expect, it, onTestFinished } from "vitest";
 import { AuthStorage } from "../src/core/auth-storage.ts";
 import { ModelRuntime } from "../src/core/model-runtime.ts";

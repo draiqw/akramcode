@@ -1,4 +1,4 @@
-import { DEFAULT_RADIUS_GATEWAY, normalizeRadiusGatewayUrl } from "@akramcode/ai/providers/radius-config";
+import { DEFAULT_RADIUS_GATEWAY, normalizeRadiusGatewayUrl } from "@akramcode/providers/providers/radius-config";
 
 export const RADIUS_PROVIDER_ID = "radius";
 export const ENV_RADIUS_GATEWAY = "AKRAMCODE_RADIUS_GATEWAY";

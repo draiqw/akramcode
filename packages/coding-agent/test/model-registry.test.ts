@@ -2,8 +2,8 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { normalizeContext } from "@akramcode/ai";
-import type { AnthropicMessagesCompat, Api, Model, OpenAICompletionsCompat } from "@akramcode/ai/compat";
-import { getApiProvider, getModels, getSupportedThinkingLevels } from "@akramcode/ai/compat";
+import type { AnthropicMessagesCompat, Api, Model, OpenAICompletionsCompat } from "@akramcode/providers/compat";
+import { getApiProvider, getModels, getSupportedThinkingLevels } from "@akramcode/providers/compat";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { AuthStorage } from "../src/core/auth-storage.ts";
 import type { ModelsJsonProvider } from "../src/core/model-config.ts";

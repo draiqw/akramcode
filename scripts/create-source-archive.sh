@@ -79,7 +79,7 @@ fi
 mkdir -p "$(dirname "$output")"
 output="$(cd "$(dirname "$output")" && pwd)/$(basename "$output")"
 
-model_data_dir="packages/ai/src/providers/data"
+model_data_dir="packages/providers/src/providers/data"
 if [[ ! -f "${model_data_dir}/.manifest.json" ]]; then
     echo "Generated model data is missing. Run npm run hydrate:model-data first." >&2
     exit 1
@@ -117,8 +117,8 @@ required_paths=(
     "package.json"
     "package-lock.json"
     "scripts/build-binaries.sh"
-    "packages/ai/src/models.generated.ts"
-    "packages/ai/src/providers/data/.manifest.json"
+    "packages/providers/src/models.generated.ts"
+    "packages/providers/src/providers/data/.manifest.json"
     "packages/tui/native/napi.h"
     "packages/tui/native/clipboard.h"
     "packages/tui/native/darwin/src/darwin-platform.m"
@@ -154,7 +154,7 @@ if grep -Eq '(^|/)node_modules/|(^|/)packages/coding-agent/binaries/' "$manifest
 fi
 
 tar -xzf "$temporary_archive" -C "$validation_root"
-node "${validation_root}/${archive_root}/packages/ai/scripts/check-model-data.ts"
+node "${validation_root}/${archive_root}/packages/providers/scripts/check-model-data.ts"
 
 mv "$temporary_archive" "$output"
 trap 'rm -f "$temporary_index" "$manifest"; rm -rf "$validation_root"' EXIT

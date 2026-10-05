@@ -12,6 +12,7 @@ const packages = [
 	{ directory: "packages/codemode", name: "@akramcode/codemode" },
 	{ directory: "packages/mcp", name: "@akramcode/mcp" },
 	{ directory: "packages/ai", name: "@akramcode/ai" },
+	{ directory: "packages/providers", name: "@akramcode/providers" },
 	{ directory: "packages/durable", name: "@akramcode/durable" },
 	{ directory: "packages/tui", name: "@akramcode/tui" },
 	{ directory: "packages/agent", name: "@akramcode/agent-core" },
@@ -187,7 +188,7 @@ const options = parseArgs();
 const repoRoot = process.cwd();
 const rootPackageJson = readPackageJson(repoRoot);
 
-if (rootPackageJson.name !== "pi-monorepo") {
+if (rootPackageJson.name !== "akramcode-monorepo") {
 	throw new Error("Run this script from the repository root");
 }
 
@@ -208,7 +209,7 @@ if (!options.skipCheck) {
 
 for (const pkg of packages) {
 	run("npm", ["run", "clean"], { cwd: pkg.directory });
-	run("npm", ["run", pkg.directory === "packages/ai" ? "build:offline" : "build"], { cwd: pkg.directory });
+	run("npm", ["run", pkg.directory === "packages/providers" ? "build:offline" : "build"], { cwd: pkg.directory });
 }
 
 if (!options.skipTest) {

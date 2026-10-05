@@ -4,8 +4,8 @@
 
 import { Type } from "@akramcode/ai";
 import { createModels } from "@akramcode/ai/models";
-import { fauxAssistantMessage, fauxProvider, fauxToolCall } from "@akramcode/ai/providers/faux";
 import { BACKGROUND_CONTEXT } from "@akramcode/chord/context";
+import { fauxAssistantMessage, fauxProvider, fauxToolCall } from "@akramcode/providers/providers/faux";
 import {
 	createRegistry,
 	defineDoc,

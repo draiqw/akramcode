@@ -3,8 +3,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
 	type AssistantMessage,
-	fauxAssistantMessage,
-	fauxToolCall,
 	type Message,
 	type SimpleStreamOptions,
 	type TranscriptContext,
@@ -29,6 +27,7 @@ import {
 	UsageDoc,
 	watchEvents,
 } from "@akramcode/durable";
+import { fauxAssistantMessage, fauxToolCall } from "@akramcode/providers";
 import { afterEach, describe, expect, it } from "vitest";
 import { selectCut, serializeConversation } from "../src/harness/compaction.ts";
 import { orderToolResults } from "../src/harness/context.ts";

@@ -1,5 +1,6 @@
-import { type AssistantMessage, fauxAssistantMessage, fauxProvider } from "@akramcode/ai";
-import { getApiProvider } from "@akramcode/ai/compat";
+import type { AssistantMessage } from "@akramcode/ai";
+import { fauxAssistantMessage, fauxProvider } from "@akramcode/providers";
+import { getApiProvider } from "@akramcode/providers/compat";
 import { expect, it } from "vitest";
 import { createHarness } from "../harness.ts";
 

@@ -3,7 +3,7 @@ import * as crypto from "node:crypto";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { DEFAULT_RADIUS_GATEWAY } from "@akramcode/ai/providers/radius-config";
+import { DEFAULT_RADIUS_GATEWAY } from "@akramcode/providers/providers/radius-config";
 import { type Container, type EditorComponent, hyperlink, type TUI } from "@akramcode/tui";
 import { getAuthCredential } from "../../cli/auth-command.ts";
 import { getShareViewerUrl } from "../../config.ts";

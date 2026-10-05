@@ -1,17 +1,15 @@
-import { fileURLToPath } from "node:url";
-import { defineConfig } from "vitest/config";
+import { defineConfig, mergeConfig } from "vitest/config";
+import baseConfig from "../../vitest.base.ts";
 
-const telemetrySrcIndex = fileURLToPath(new URL("../telemetry/src/index.ts", import.meta.url));
-
-export default defineConfig({
-	test: {
-		globals: true,
-		environment: "node",
-		testTimeout: 30000, // 30 seconds for API calls
-		reporters: process.env.GITHUB_ACTIONS ? ["dot", "github-actions"] : ["dot"],
-		silent: "passed-only",
-	},
-	resolve: {
-		alias: [{ find: /^@akramcode\/telemetry$/, replacement: telemetrySrcIndex }],
-	},
-});
+export default mergeConfig(
+	baseConfig,
+	defineConfig({
+		test: {
+			globals: true,
+			environment: "node",
+			testTimeout: 30000, // 30 seconds for API calls
+			reporters: process.env.GITHUB_ACTIONS ? ["dot", "github-actions"] : ["dot"],
+			silent: "passed-only",
+		},
+	}),
+);

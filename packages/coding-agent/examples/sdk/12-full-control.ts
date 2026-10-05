@@ -4,7 +4,6 @@
  * Replace everything - no discovery, explicit configuration.
  */
 
-import { getModel } from "@akramcode/ai/compat";
 import {
 	createAgentSession,
 	createExtensionRuntime,
@@ -13,6 +12,7 @@ import {
 	SessionManager,
 	SettingsManager,
 } from "@akramcode/coding-agent";
+import { getModel } from "@akramcode/providers/compat";
 
 const modelRuntime = await ModelRuntime.create({
 	authPath: "/tmp/my-agent/auth.json",

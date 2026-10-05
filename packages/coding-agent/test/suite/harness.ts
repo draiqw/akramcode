@@ -14,8 +14,8 @@ import type {
 	FauxResponseStep,
 	Model,
 	ToolResultMessage,
-} from "@akramcode/ai/compat";
-import { registerFauxProvider, streamSimple } from "@akramcode/ai/compat";
+} from "@akramcode/providers/compat";
+import { registerFauxProvider, streamSimple } from "@akramcode/providers/compat";
 import { AgentSession, type AgentSessionEvent } from "../../src/core/agent-session.ts";
 import { AuthStorage } from "../../src/core/auth-storage.ts";
 import type { ExtensionRunner, ExtensionUIContext } from "../../src/core/extensions/index.ts";

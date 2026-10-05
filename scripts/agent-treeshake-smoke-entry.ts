@@ -1,6 +1,6 @@
 import { Agent } from "@akramcode/agent-core";
 import { createModels } from "@akramcode/ai";
-import { anthropicProvider } from "@akramcode/ai/providers/anthropic";
+import { anthropicProvider } from "@akramcode/providers/providers/anthropic";
 
 const models = createModels();
 models.setProvider(anthropicProvider());

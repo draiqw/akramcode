@@ -1,7 +1,7 @@
-import { fauxAssistantMessage } from "@akramcode/ai";
 import { createFacetHost, defineFacet } from "@akramcode/chord";
 import { BACKGROUND_CONTEXT } from "@akramcode/chord/context";
 import type { ConversationView } from "@akramcode/durable";
+import { fauxAssistantMessage } from "@akramcode/providers";
 import { describe, expect, test } from "vitest";
 import { Transcript } from "../src/experimental/services/transcript.ts";
 import { createTranscriptServiceFacet } from "../src/experimental/services/transcript-provider.ts";

@@ -1,4 +1,4 @@
-import type { ToolResultMessage } from "@akramcode/ai/compat";
+import type { ToolResultMessage } from "@akramcode/providers/compat";
 import { describe, expect, it } from "vitest";
 import { computeFileLists, createFileOps, extractFileOpsFromMessage } from "../src/core/compaction/utils.ts";
 

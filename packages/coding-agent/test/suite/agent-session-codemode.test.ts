@@ -4,15 +4,14 @@ import {
 	type AssistantImages,
 	type ClassifierModel,
 	type ClassifierResult,
-	fauxAssistantMessage,
-	fauxToolCall,
 	getCurrentSystemPrompt,
 	getCurrentTools,
 	type ImageModel,
 	type ImagesContext,
 	type TranscriptContext,
 } from "@akramcode/ai";
-import type { ToolResultMessage, Usage } from "@akramcode/ai/compat";
+import { fauxAssistantMessage, fauxToolCall } from "@akramcode/providers";
+import type { ToolResultMessage, Usage } from "@akramcode/providers/compat";
 import { Type } from "typebox";
 import { afterEach, describe, expect, it } from "vitest";
 import type { ExtensionAPI } from "../../src/core/extensions/types.ts";

@@ -8,11 +8,12 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { type AssistantMessage, type FauxResponseStep, Type } from "@akramcode/ai";
+import { type AssistantMessage, Type } from "@akramcode/ai";
 import { createModels } from "@akramcode/ai/models";
-import { fauxAssistantMessage, fauxProvider, fauxText, fauxToolCall } from "@akramcode/ai/providers/faux";
-import { openaiProvider } from "@akramcode/ai/providers/openai";
 import { BACKGROUND_CONTEXT } from "@akramcode/chord/context";
+import type { FauxResponseStep } from "@akramcode/providers";
+import { fauxAssistantMessage, fauxProvider, fauxText, fauxToolCall } from "@akramcode/providers/providers/faux";
+import { openaiProvider } from "@akramcode/providers/providers/openai";
 import {
 	type AgentEvent,
 	AssistantEntry,

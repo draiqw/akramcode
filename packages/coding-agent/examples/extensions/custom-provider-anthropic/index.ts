@@ -157,7 +157,7 @@ async function refreshAnthropicToken(credentials: OAuthCredentials, signal: Abor
 }
 
 // =============================================================================
-// Streaming Implementation (simplified from packages/ai/src/api/anthropic-messages.ts)
+// Streaming Implementation (simplified from packages/providers/src/api/anthropic-messages.ts)
 // =============================================================================
 
 // Claude Code tool names for OAuth stealth mode

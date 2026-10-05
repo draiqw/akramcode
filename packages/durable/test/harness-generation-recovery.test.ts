@@ -1,8 +1,9 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { type AssistantMessage, createModels, fauxAssistantMessage, type Message } from "@akramcode/ai";
+import { type AssistantMessage, createModels, type Message } from "@akramcode/ai";
 import { AssistantEntry, type Harness, LiveDoc, type TaskId } from "@akramcode/durable";
+import { fauxAssistantMessage } from "@akramcode/providers";
 import { afterEach, describe, expect, it } from "vitest";
 import { openNodeSqliteStorage } from "../src/storage/sqlite/node.ts";
 import { allEntries, type ChatSetup, chatSetup, openChat, textOf, unanswered, waitFor } from "./chat-support.ts";

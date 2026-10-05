@@ -1,4 +1,4 @@
-import { fauxAssistantMessage } from "@akramcode/ai";
+import { fauxAssistantMessage } from "@akramcode/providers";
 import { Container, Text } from "@akramcode/tui";
 import { describe, expect, it, vi } from "vitest";
 import type { AgentSessionEvent } from "../../../src/core/agent-session.ts";

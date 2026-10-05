@@ -46,7 +46,7 @@ npm install @akramcode/durable @akramcode/ai @akramcode/chord
 ```typescript
 import { BACKGROUND_CONTEXT } from "@akramcode/chord/context";
 import { createModels } from "@akramcode/ai/models";
-import { openaiProvider } from "@akramcode/ai/providers/openai";
+import { openaiProvider } from "@akramcode/providers/providers/openai";
 import { AssistantEntry, createRegistry, Harness, MemoryStorage } from "@akramcode/durable";
 
 const context = BACKGROUND_CONTEXT;

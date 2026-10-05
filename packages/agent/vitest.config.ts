@@ -3,7 +3,7 @@ import { defineConfig } from "vitest/config";
 
 const telemetrySrcIndex = fileURLToPath(new URL("../telemetry/src/index.ts", import.meta.url));
 const aiSrcIndex = fileURLToPath(new URL("../ai/src/index.ts", import.meta.url));
-const aiSrcCompat = fileURLToPath(new URL("../ai/src/compat.ts", import.meta.url));
+const aiSrcCompat = fileURLToPath(new URL("../providers/src/compat.ts", import.meta.url));
 const agentSrcIndex = fileURLToPath(new URL("./src/index.ts", import.meta.url));
 
 export default defineConfig({
@@ -20,7 +20,7 @@ export default defineConfig({
 			{ find: /^@akramcode\/telemetry$/, replacement: telemetrySrcIndex },
 			{ find: /^@akramcode\/agent-core$/, replacement: agentSrcIndex },
 			{ find: /^@akramcode\/ai$/, replacement: aiSrcIndex },
-			{ find: /^@akramcode\/ai\/compat$/, replacement: aiSrcCompat },
+			{ find: /^@akramcode\/providers\/compat$/, replacement: aiSrcCompat },
 		],
 	},
 	ssr: { resolve: { conditions: ["source"] } },

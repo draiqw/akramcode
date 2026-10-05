@@ -2,10 +2,10 @@
 // Run from packages/durable:
 //   node --conditions=source --experimental-strip-types test/examples/20-inbox.ts
 
-import type { FauxResponseStep } from "@akramcode/ai";
 import { createModels } from "@akramcode/ai/models";
-import { fauxAssistantMessage, fauxProvider } from "@akramcode/ai/providers/faux";
 import { BACKGROUND_CONTEXT } from "@akramcode/chord/context";
+import type { FauxResponseStep } from "@akramcode/providers";
+import { fauxAssistantMessage, fauxProvider } from "@akramcode/providers/providers/faux";
 import { createRegistry, Harness, InboxDoc, MemoryStorage, type Submission } from "../../src/index.ts";
 
 const context = BACKGROUND_CONTEXT;

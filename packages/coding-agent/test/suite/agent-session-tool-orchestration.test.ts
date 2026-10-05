@@ -1,5 +1,6 @@
-import { fauxAssistantMessage, fauxToolCall, getCurrentTools, type TranscriptContext } from "@akramcode/ai";
-import type { ToolResultMessage } from "@akramcode/ai/compat";
+import { getCurrentTools, type TranscriptContext } from "@akramcode/ai";
+import { fauxAssistantMessage, fauxToolCall } from "@akramcode/providers";
+import type { ToolResultMessage } from "@akramcode/providers/compat";
 import { Type } from "typebox";
 import { afterEach, describe, expect, it } from "vitest";
 import type { ExtensionAPI } from "../../src/core/extensions/types.ts";

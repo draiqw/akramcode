@@ -1,7 +1,7 @@
 import * as os from "node:os";
 import type { AgentMessage, StreamFn, ThinkingLevel } from "@akramcode/agent-core";
 import { contentText, normalizeContext, type RetryPolicy, uuidv7 } from "@akramcode/ai";
-import type { Api, Model, Provider, SimpleStreamOptions } from "@akramcode/ai/compat";
+import type { Api, Model, Provider, SimpleStreamOptions } from "@akramcode/providers/compat";
 import { VERSION } from "../config.ts";
 import { getAkramCodeUserAgent } from "../utils/akramcode-user-agent.ts";
 import { writeZipArchive } from "../utils/zip.ts";

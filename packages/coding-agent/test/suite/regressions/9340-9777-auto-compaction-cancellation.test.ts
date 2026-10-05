@@ -1,4 +1,5 @@
-import { type AssistantMessage, fauxAssistantMessage } from "@akramcode/ai";
+import type { AssistantMessage } from "@akramcode/ai";
+import { fauxAssistantMessage } from "@akramcode/providers";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createHarness, type Harness } from "../harness.ts";
 

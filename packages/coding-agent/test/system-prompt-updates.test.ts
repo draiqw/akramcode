@@ -3,14 +3,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AgentTool } from "@akramcode/agent-core";
 import {
-	fauxAssistantMessage,
-	fauxToolCall,
 	getCurrentSystemMessage,
 	getCurrentSystemPrompt,
 	getSystemMessageText,
 	type TranscriptContext,
 } from "@akramcode/ai";
-import { getModel } from "@akramcode/ai/compat";
+import { fauxAssistantMessage, fauxToolCall } from "@akramcode/providers";
+import { getModel } from "@akramcode/providers/compat";
 import { Type } from "typebox";
 import { describe, expect, test } from "vitest";
 import { createAgentSession } from "../src/core/sdk.ts";

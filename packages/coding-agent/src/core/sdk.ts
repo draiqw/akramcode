@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import { Agent, type AgentMessage, setDefaultStreamFn, type ThinkingLevel } from "@akramcode/agent-core";
 import type { ModelsSimpleStreamOptions } from "@akramcode/ai";
-import { clampThinkingLevel, type Message, type Model, streamSimple } from "@akramcode/ai/compat";
+import { clampThinkingLevel, type Message, type Model, streamSimple } from "@akramcode/providers/compat";
 import { getAgentDir } from "../config.ts";
 import { resolvePath } from "../utils/paths.ts";
 import { AgentSession } from "./agent-session.ts";

@@ -1,7 +1,7 @@
 import * as bundledAkramCodeAgentCore from "@akramcode/agent-core";
-import * as bundledAkramCodeAiCompat from "@akramcode/ai/compat";
-import * as bundledAkramCodeAiOauth from "@akramcode/ai/oauth";
-import * as bundledAkramCodeAiProviders from "@akramcode/ai/providers/all";
+import * as bundledAkramCodeAiCompat from "@akramcode/providers/compat";
+import * as bundledAkramCodeAiOauth from "@akramcode/providers/oauth";
+import * as bundledAkramCodeAiProviders from "@akramcode/providers/providers/all";
 import * as bundledAkramCodeTui from "@akramcode/tui";
 import * as bundledTypebox from "typebox";
 import * as bundledTypeboxCompile from "typebox/compile";
@@ -24,9 +24,9 @@ export const VIRTUAL_MODULES: Record<string, unknown> = {
 	// superset of the core entrypoint): existing extensions using the old
 	// global API keep working at runtime until compat is removed.
 	"@akramcode/ai": bundledAkramCodeAiCompat,
-	"@akramcode/ai/compat": bundledAkramCodeAiCompat,
-	"@akramcode/ai/oauth": bundledAkramCodeAiOauth,
-	"@akramcode/ai/providers/all": bundledAkramCodeAiProviders,
+	"@akramcode/providers/compat": bundledAkramCodeAiCompat,
+	"@akramcode/providers/oauth": bundledAkramCodeAiOauth,
+	"@akramcode/providers/providers/all": bundledAkramCodeAiProviders,
 	"@akramcode/coding-agent": bundledAkramCodeCodingAgent,
 	"@mariozechner/pi-agent-core": bundledAkramCodeAgentCore,
 	"@mariozechner/pi-tui": bundledAkramCodeTui,

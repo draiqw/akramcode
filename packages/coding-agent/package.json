@@ -52,6 +52,7 @@
 		"@akramcode/chord": "^1.0.0",
 		"@akramcode/agent-core": "^1.0.0",
 		"@akramcode/ai": "^1.0.0",
+		"@akramcode/providers": "^1.0.0",
 		"@akramcode/codemode": "^1.0.0",
 		"@akramcode/mcp": "^1.0.0",
 		"@akramcode/tui": "^1.0.0",

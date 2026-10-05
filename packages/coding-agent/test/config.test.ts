@@ -358,7 +358,7 @@ describe("detectInstallMethod", () => {
 		const binDir = join(temp, "bin");
 		const root = join(temp, "Library", "pnpm", "global", "v11");
 		const packageName = "@akramcode/coding-agent";
-		const globalPackageDir = join(root, "11e9a", "node_modules", "@akramcode", "akramcode-coding-agent");
+		const globalPackageDir = join(root, "11e9a", "node_modules", "@akramcode", "coding-agent");
 		const storePackageDir = join(
 			temp,
 			"Library",

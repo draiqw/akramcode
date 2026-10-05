@@ -1,12 +1,6 @@
 import type { AgentTool } from "@akramcode/agent-core";
-import {
-	type AssistantMessage,
-	type ClassifierModel,
-	createProvider,
-	fauxAssistantMessage,
-	fauxProvider,
-	fauxToolCall,
-} from "@akramcode/ai";
+import { type AssistantMessage, type ClassifierModel, createProvider } from "@akramcode/ai";
+import { fauxAssistantMessage, fauxProvider, fauxToolCall } from "@akramcode/providers";
 import { Type } from "typebox";
 import { afterEach, describe, expect, it } from "vitest";
 import jevRouter from "../examples/extensions/jev-router.ts";
