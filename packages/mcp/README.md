@@ -53,7 +53,7 @@ const tools: AgentTool[] = (await client.listTools()).map((tool) => ({
 }));
 ```
 
-The [mcp-codemode example](https://github.com/earendil-works/pi/tree/main/packages/agent/examples/mcp-codemode) also forwards progress, passes `structuredContent` through, and lets `@akramcode/codemode` scripts call the tools.
+The [mcp-codemode example](https://github.com/draiqw/akramcode/tree/main/packages/agent/examples/mcp-codemode) also forwards progress, passes `structuredContent` through, and lets `@akramcode/codemode` scripts call the tools.
 
 ### OAuth
 

@@ -1,14 +1,4 @@
-<p align="center">
-  <a href="https://pi.dev">
-    <img alt="AkramCode logo" src="https://pi.dev/logo-auto.svg" width="128">
-  </a>
-</p>
-<p align="center">
-  <a href="https://discord.com/invite/3cU7Bz4UPx"><img alt="Discord" src="https://img.shields.io/badge/discord-community-5865F2?style=flat-square&logo=discord&logoColor=white" /></a>
-  <a href="https://www.npmjs.com/package/@earendil-works/pi-coding-agent"><img alt="npm" src="https://img.shields.io/npm/v/@earendil-works/pi-coding-agent?style=flat-square&logo=npm&logoColor=white" /></a>
-</p>
-
-> New issues and PRs from new contributors are closed automatically. Maintainers review closed submissions daily. See [CONTRIBUTING.md](https://github.com/earendil-works/pi/blob/main/CONTRIBUTING.md).
+> New issues and PRs from new contributors are closed automatically. Maintainers review closed submissions daily. See [CONTRIBUTING.md](https://github.com/draiqw/akramcode/blob/main/CONTRIBUTING.md).
 
 # AkramCode
 
@@ -29,7 +19,8 @@ This requires Node.js 22.19 or newer. AkramCode does not require dependency life
 On macOS or Linux, you can instead use the installer:
 
 ```bash
-curl -fsSL https://pi.dev/install.sh | sh
+gh release download --repo draiqw/akramcode -p 'akramcode-*.tar.gz'
+tar xzf akramcode-*.tar.gz && ./akramcode/akramcode --version
 ```
 
 Start AkramCode in the directory where you want it to work:
@@ -48,7 +39,7 @@ See the [documentation](docs/index.md) for full setup and usage instructions.
 Clone the repository, install its dependencies, and run AkramCode from source:
 
 ```bash
-git clone https://github.com/earendil-works/pi
+git clone https://github.com/draiqw/akramcode
 cd akramcode
 npm install --ignore-scripts
 ./akramcode-test.sh
@@ -63,7 +54,7 @@ npm run check
 ./test.sh
 ```
 
-Read [CONTRIBUTING.md](https://github.com/earendil-works/pi/blob/main/CONTRIBUTING.md) before opening an issue or pull request. It defines the contribution gate, issue quality bar, and required checks. Read [AGENTS.md](https://github.com/earendil-works/pi/blob/main/AGENTS.md) for repository-specific implementation, testing, dependency, and release rules.
+Read [CONTRIBUTING.md](https://github.com/draiqw/akramcode/blob/main/CONTRIBUTING.md) before opening an issue or pull request. It defines the contribution gate, issue quality bar, and required checks. Read [AGENTS.md](https://github.com/draiqw/akramcode/blob/main/AGENTS.md) for repository-specific implementation, testing, dependency, and release rules.
 
 ## License
 

@@ -4,10 +4,11 @@ AkramCode runs in your terminal and works with files on your machine. To use it,
 
 ## 1. Install AkramCode
 
-On macOS or Linux, you can use the installer:
+Download a release binary (macOS arm64):
 
 ```bash
-curl -fsSL https://pi.dev/install.sh | sh
+gh release download --repo draiqw/akramcode -p 'akramcode-*.tar.gz'
+tar xzf akramcode-*.tar.gz && ./akramcode/akramcode --version
 ```
 
 Alternatively, install AkramCode from npm. This requires Node.js 22.19 or newer:
@@ -111,10 +112,6 @@ If you installed AkramCode with npm, run:
 npm uninstall -g @akramcode/coding-agent
 ```
 
-If you used the installer, run it again and choose **Uninstall AkramCode**:
-
-```bash
-curl -fsSL https://pi.dev/install.sh | sh
-```
+If you used the release binary, delete the extracted `akramcode` directory.
 
 Neither method removes configuration, credentials, sessions, or installed AkramCode packages from `~/.akramcode/agent/`.

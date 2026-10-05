@@ -2,7 +2,8 @@ import { compare, valid } from "semver";
 import { getAkramCodeUserAgent } from "./akramcode-user-agent.ts";
 import { fetchWithRetry } from "./management-http.ts";
 
-const LATEST_VERSION_URL = "https://pi.dev/api/latest-version";
+/** No default endpoint: update checks stay off until AKRAMCODE_VERSION_CHECK_URL points at a JSON `{ version }` API. */
+const VERSION_CHECK_URL_ENV = "AKRAMCODE_VERSION_CHECK_URL";
 const DEFAULT_VERSION_CHECK_TIMEOUT_MS = 10000;
 
 export interface LatestAkramCodeRelease {
@@ -53,9 +54,11 @@ export async function getLatestAkramCodeRelease(
 	options: { timeoutMs?: number; retry?: boolean } = {},
 ): Promise<LatestAkramCodeRelease | undefined> {
 	if (process.env.AKRAMCODE_OFFLINE) return undefined;
+	const versionCheckUrl = process.env[VERSION_CHECK_URL_ENV]?.trim();
+	if (!versionCheckUrl) return undefined;
 
 	const response = await fetchWithRetry(
-		LATEST_VERSION_URL,
+		versionCheckUrl,
 		{
 			headers: {
 				"User-Agent": getAkramCodeUserAgent(currentVersion),

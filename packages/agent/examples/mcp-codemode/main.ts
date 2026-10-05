@@ -1,7 +1,7 @@
 /**
  * An Agent with the tools of an MCP server plus a codemode tool that calls them from JavaScript.
  *
- *   ANTHROPIC_API_KEY=... node packages/agent/examples/mcp-codemode/main.ts \
+ *   OPENAI_API_KEY=... node packages/agent/examples/mcp-codemode/main.ts \
  *     npx -y @modelcontextprotocol/server-filesystem .
  *
  * The arguments are the command that starts a stdio MCP server.
@@ -10,7 +10,7 @@
 import { Agent } from "@akramcode/agent-core";
 import { createModels } from "@akramcode/ai";
 import { McpClient, StdioTransport } from "@akramcode/mcp";
-import { anthropicProvider } from "@akramcode/providers/providers/anthropic";
+import { openaiProvider } from "@akramcode/providers/providers/openai";
 import { createCodemodeTool, createMcpTools, createNestedToolRunner } from "./tools.ts";
 
 const [command, ...args] = process.argv.slice(2);
@@ -20,8 +20,8 @@ if (!command) {
 }
 
 const models = createModels();
-models.setProvider(anthropicProvider());
-const model = models.getModel("anthropic", "claude-sonnet-4-6");
+models.setProvider(openaiProvider());
+const model = models.getModel("openai", "gpt-5.5");
 if (!model) throw new Error("Model not found");
 
 const client = new McpClient({ name: "akramcode-agent-example", version: "1.0.0" });

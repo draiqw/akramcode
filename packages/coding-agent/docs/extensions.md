@@ -85,7 +85,7 @@ Automatic retries, recovery, compaction, or queued work can continue afterward.
 | Add terminal rendering | Renderer registration and `ctx.ui` |
 | Communicate with another extension | `akramcode.events` |
 
-Use the exported declarations in [`extensions/types.ts`](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/src/core/extensions/types.ts) for exact event, context, tool, and result types.
+Use the exported declarations in [`extensions/types.ts`](https://github.com/draiqw/akramcode/blob/main/packages/coding-agent/src/core/extensions/types.ts) for exact event, context, tool, and result types.
 
 ## Follow the extension contracts
 

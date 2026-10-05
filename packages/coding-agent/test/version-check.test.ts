@@ -13,10 +13,12 @@ const originalSkipVersionCheck = process.env.AKRAMCODE_SKIP_VERSION_CHECK;
 
 beforeEach(() => {
 	allowNetwork();
+	vi.stubEnv("AKRAMCODE_VERSION_CHECK_URL", "https://updates.example.test/api/latest-version");
 });
 
 afterEach(() => {
 	vi.unstubAllGlobals();
+	vi.unstubAllEnvs();
 	if (originalSkipVersionCheck === undefined) {
 		delete process.env.AKRAMCODE_SKIP_VERSION_CHECK;
 	} else {
@@ -25,6 +27,14 @@ afterEach(() => {
 });
 
 describe("version checks", () => {
+	it("makes no request when no version check URL is configured", async () => {
+		vi.stubEnv("AKRAMCODE_VERSION_CHECK_URL", "");
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+		await expect(getLatestAkramCodeRelease("1.0.0")).resolves.toBeUndefined();
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
 	it("compares package versions", () => {
 		expect(comparePackageVersions("0.70.6", "0.70.5")).toBeGreaterThan(0);
 		expect(comparePackageVersions("0.70.5", "0.70.5")).toBe(0);
@@ -42,13 +52,13 @@ describe("version checks", () => {
 		await expect(checkForNewAkramCodeVersion("1.2.2")).resolves.toEqual({ version: "1.2.3" });
 	});
 
-	it("uses the pi.dev version check api with a akramcode user agent", async () => {
+	it("uses the configured version check api with a akramcode user agent", async () => {
 		const fetchMock = vi.fn(async () => Response.json({ version: "1.2.4" }));
 		vi.stubGlobal("fetch", fetchMock);
 
 		await expect(getLatestAkramCodeVersion("1.2.3")).resolves.toBe("1.2.4");
 		expect(fetchMock).toHaveBeenCalledWith(
-			"https://pi.dev/api/latest-version",
+			"https://updates.example.test/api/latest-version",
 			expect.objectContaining({
 				headers: expect.objectContaining({
 					"User-Agent": expect.stringMatching(/^akramcode\/1\.2\.3 /),

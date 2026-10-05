@@ -43,7 +43,7 @@ function getDefaultAttributionHeaders(
 
 	if (isOpenRouterModel(model)) {
 		return {
-			"HTTP-Referer": "https://pi.dev",
+			"HTTP-Referer": "https://github.com/draiqw/akramcode",
 			"X-OpenRouter-Title": "akramcode",
 			"X-OpenRouter-Categories": "cli-agent",
 		};

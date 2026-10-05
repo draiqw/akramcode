@@ -35,7 +35,7 @@ type TaskOutcomeError = { message: string; detail?: JsonValue };
 ```
 
 Pico5 targets the transcript `SystemMessage` contract from akramcode-ai PR
-[#9548](https://github.com/earendil-works/pi/pull/9548). `Message` includes that
+[#9548](https://github.com/draiqw/akramcode/pull/9548). `Message` includes that
 type once the PR lands.
 
 The core rule is:
