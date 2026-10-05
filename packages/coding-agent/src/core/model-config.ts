@@ -187,6 +187,7 @@ const ProviderCompatSchema = Type.Union([
 
 const ModelDefinitionSchema = Type.Object({
 	id: Type.String({ minLength: 1 }),
+	enabled: Type.Optional(Type.Boolean()),
 	name: Type.Optional(Type.String({ minLength: 1 })),
 	api: Type.Optional(Type.String({ minLength: 1 })),
 	baseUrl: Type.Optional(Type.String({ minLength: 1 })),
@@ -204,6 +205,7 @@ const ModelDefinitionSchema = Type.Object({
 });
 
 const ModelOverrideSchema = Type.Object({
+	enabled: Type.Optional(Type.Boolean()),
 	name: Type.Optional(Type.String({ minLength: 1 })),
 	reasoning: Type.Optional(Type.Boolean()),
 	thinkingLevelMap: Type.Optional(ThinkingLevelMapSchema),
@@ -227,6 +229,7 @@ const ModelOverrideSchema = Type.Object({
 });
 
 const ProviderConfigSchema = Type.Object({
+	enabled: Type.Optional(Type.Boolean()),
 	name: Type.Optional(Type.String({ minLength: 1 })),
 	baseUrl: Type.Optional(Type.String({ minLength: 1 })),
 	apiKey: Type.Optional(Type.String({ minLength: 1 })),

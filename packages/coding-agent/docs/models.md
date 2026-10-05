@@ -65,6 +65,40 @@ The dummy key makes the model available to AkramCode; local servers usually igno
 
 Opening `/model` reloads the file. A `models` entry adds or replaces a model with the same ID on that provider. Use `modelOverrides` to change metadata for an existing built-in or extension-provided model without replacing the provider's model list. Unknown override IDs are ignored.
 
+### One file for the whole registry
+
+`models.json` is the single place to describe providers and models. No database is involved: the file is read on startup and whenever `/model` opens. It can switch built-in providers and models on or off, add your own, set prices, and point at keys without storing them in the file.
+
+```json
+{
+  "providers": {
+    "openrouter": { "enabled": false },
+    "openai": {
+      "apiKey": "$OPENAI_API_KEY",
+      "modelOverrides": {
+        "gpt-5": { "enabled": false },
+        "gpt-5-mini": { "cost": { "input": 0.25, "output": 2 } }
+      }
+    },
+    "local": {
+      "name": "Local server",
+      "baseUrl": "http://localhost:8000/v1",
+      "api": "openai-completions",
+      "apiKey": "local",
+      "models": [
+        { "id": "qwen3-coder", "contextWindow": 131072, "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 } },
+        { "id": "old-model", "enabled": false }
+      ]
+    }
+  }
+}
+```
+
+- `enabled: false` on a provider removes it from `/login`, `/model` and `--list-models`, built-in or custom. `enabled: true` changes nothing.
+- `enabled: false` on a `models` entry or in `modelOverrides` hides that model.
+- `modelOverrides` changes metadata such as `cost`, `contextWindow` or `name` of an existing built-in model without replacing the provider's model list.
+- `apiKey` accepts a literal value, `$NAME` or `${NAME}` environment interpolation, or a leading `!command`. Prefer the last two so the file holds no secrets.
+
 ### Describe model input and caching
 
 Use `inputLimits.images.resize` to control how AkramCode encodes new image attachments, `read` results, and tool-result images before storing them in conversation history:

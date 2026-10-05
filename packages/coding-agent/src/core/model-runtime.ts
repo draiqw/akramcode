@@ -300,7 +300,13 @@ export class ModelRuntime implements Models {
 	private composeProvider(providerId: string): Provider | undefined {
 		const base = this.nativeExtensionProviders.get(providerId) ?? this.builtins.get(providerId);
 		const extension = this.extensionProviders.get(providerId);
-		if (!this.config.getProvider(providerId) && !extension) {
+		// models.json `enabled: false` removes a provider, built-in or not, from the registry.
+		if (this.config.getProvider(providerId)?.enabled === false) {
+			this.compositionErrors.delete(providerId);
+			return undefined;
+		}
+		const overlay = this.config.getProvider(providerId);
+		if (!(overlay && Object.keys(overlay).some((key) => key !== "enabled")) && !extension) {
 			// No overlays: use the builtin untouched so its auth/login/stream behavior is exact.
 			this.compositionErrors.delete(providerId);
 			return base;

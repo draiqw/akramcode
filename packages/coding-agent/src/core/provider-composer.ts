@@ -520,6 +520,14 @@ export function validateExtensionProvider(
 }
 
 /** Compose built-in, models.json, and extension layers without reading credentials. */
+/** `enabled: false` on a models.json model entry or override hides the model. */
+function isModelDisabled(config: ModelsJsonProvider | undefined, modelId: string): boolean {
+	return (
+		config?.modelOverrides?.[modelId]?.enabled === false ||
+		config?.models?.some((model) => model.id === modelId && model.enabled === false) === true
+	);
+}
+
 export function composeModelProvider(
 	providerId: string,
 	base: Provider | undefined,
@@ -549,10 +557,12 @@ export function composeModelProvider(
 				...models.filter((model) => !isModelType(model, "chat")),
 			];
 		}
-		return models.map((model) => {
-			const override = config?.modelOverrides?.[model.id];
-			return override && isModelType(model, "chat") ? applyModelOverride(model, override) : model;
-		});
+		return models
+			.filter((model) => !isModelDisabled(config, model.id))
+			.map((model) => {
+				const override = config?.modelOverrides?.[model.id];
+				return override && isModelType(model, "chat") ? applyModelOverride(model, override) : model;
+			});
 	};
 	// Validate eagerly so registration/reload reports structural errors immediately.
 	getAllModels();
