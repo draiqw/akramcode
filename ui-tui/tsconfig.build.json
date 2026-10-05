@@ -1,8 +1,0 @@
-{
-  "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "paths": {
-      "@akramcode/ink": ["src/types/akramcode-ink.d.ts"]
-    }
-  }
-}

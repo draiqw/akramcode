@@ -1,11 +1,5 @@
-#!/usr/bin/env python3
-"""
-AkramCode Agent CLI launcher.
-
-This wrapper should behave like the installed `akramcode` command, including
-subcommands such as `gateway`, `cron`, and `doctor`.
-"""
-
-if __name__ == "__main__":
-    from akramcode_cli.main import main
-    main()
+#!/usr/bin/env bash
+# Thin launcher: runs the vendored Pi coding agent from source.
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "$ROOT/vendor/pi/pi-test.sh" "$@"
