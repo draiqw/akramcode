@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { getPublicWorkspacePackages } from "./release-packages.mjs";
 
 const codingAgentName = "@akramcode/coding-agent";
-const developmentPackages = new Set(["akramcode-client", "akramcode-protocol", "akramcode-server"].map((name) => `@akramcode/${name}`));
+const developmentPackages = new Set(["client", "protocol", "server"].map((name) => `@akramcode/${name}`));
 
 function run(command, args, options = {}) {
 	console.log(`$ ${[command, ...args].join(" ")}`);
@@ -105,7 +105,7 @@ import { createAgentSession, SessionManager, ModelRuntime } from "${codingAgentN
 assert.equal(typeof createAgentSession, "function");
 assert.equal(typeof SessionManager.inMemory, "function");
 assert.equal(typeof ModelRuntime.create, "function");
-for (const name of ["akramcode-client", "akramcode-protocol", "akramcode-server"]) {
+for (const name of ["client", "protocol", "server"]) {
   assert.throws(() => import.meta.resolve("@akramcode/" + name), /Cannot find|cannot find/, name + " must not be installed");
 }
 for (const subpath of ["/client", "/experimental/plugin"]) {

@@ -53,7 +53,7 @@ function createNpmPrefixInstall(template = "akramcode-prefix-"): { prefix: strin
 	const prefix = mkdtempSync(join(tmpdir(), template));
 	const root = join(prefix, "lib", "node_modules");
 	const scopeDir = join(root, "@akramcode");
-	const packageDir = join(scopeDir, "akramcode-coding-agent");
+	const packageDir = join(scopeDir, "coding-agent");
 	mkdirSync(packageDir, { recursive: true });
 	tempDir = prefix;
 	process.env.AKRAMCODE_PACKAGE_DIR = packageDir;
@@ -110,7 +110,7 @@ function createBunGlobalInstall(): { packageDir: string } {
 	const bunBin = join(prefix, "bin");
 	const root = join(prefix, "install", "global", "node_modules");
 	const scopeDir = join(root, "@akramcode");
-	const packageDir = join(scopeDir, "akramcode-coding-agent");
+	const packageDir = join(scopeDir, "coding-agent");
 	mkdirSync(packageDir, { recursive: true });
 	mkdirSync(bunBin, { recursive: true });
 	writeFileSync(join(bunBin, process.platform === "win32" ? "bun.cmd" : "bun"), createFakeBunScript(bunBin));
@@ -367,7 +367,7 @@ describe("detectInstallMethod", () => {
 			"v11",
 			"links",
 			"@akramcode",
-			"akramcode-coding-agent",
+			"coding-agent",
 			"0.75.0",
 			"hash",
 			"node_modules",

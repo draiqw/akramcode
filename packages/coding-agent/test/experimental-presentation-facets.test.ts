@@ -40,7 +40,7 @@ describe("server-selected presentation facets", () => {
 	});
 
 	test("restores plugin package selections for later server generations", async () => {
-		const directory = await mkdtemp("/tmp/akramcode-presentation-profile-");
+		const directory = await mkdtemp("/tmp/akramcode-pres-profile-");
 		directories.add(directory);
 		const serverId = randomUUID();
 		const packagePaths = [join(directory, "first-plugin"), join(directory, "second-plugin")];
@@ -51,7 +51,7 @@ describe("server-selected presentation facets", () => {
 	});
 
 	test("builds conventional plugin entries into the server-owned plugin cache", async () => {
-		const directory = await mkdtemp("/tmp/akramcode-presentation-package-");
+		const directory = await mkdtemp("/tmp/akramcode-pres-package-");
 		directories.add(directory);
 		const serverId = randomUUID();
 		const packagePath = join(directory, "akramcode-example-plugin");
