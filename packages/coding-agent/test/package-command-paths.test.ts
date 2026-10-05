@@ -137,6 +137,9 @@ if (process.platform !== "win32") fs.chmodSync(akramCodePath, 0o755);
 	beforeEach(() => {
 		allowNetwork();
 		tempDir = join(tmpdir(), `akramcode-package-commands-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+		// Keep the real ~/.agents (user skills) out of resolved paths.
+		vi.stubEnv("HOME", tempDir);
+		vi.stubEnv("USERPROFILE", tempDir);
 		agentDir = join(tempDir, "agent");
 		projectDir = join(tempDir, "project");
 		packageDir = join(tempDir, "local-package");

@@ -724,7 +724,7 @@ describe("experimental durable server composition", () => {
 	test("retires an unclaimed idle worker after replacement demand expires", async () => {
 		const directory = await mkdtemp(join("/tmp", "akramcode-orphan-worker-"));
 		directories.add(directory);
-		vi.stubEnv("__PI_SESSION_WORKER_ORPHAN_DEMAND_GRACE_MS", "50");
+		vi.stubEnv("__AKRAMCODE_SESSION_WORKER_ORPHAN_DEMAND_GRACE_MS", "50");
 		const first = await startServer({ ...sessionWorkerModel, directory });
 		servers.add(first);
 		await attachClient(first, "demo-1");

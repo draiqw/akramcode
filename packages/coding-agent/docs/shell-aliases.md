@@ -33,7 +33,7 @@ On Windows, use forward slashes or escape backslashes:
 }
 ```
 
-Run `/reload` after changing the setting. See [Run AkramCode on Windows](windows.md) for the native Windows defaults.
+Run `/reload` after changing the setting.
 
 ## Run setup before every Bash command
 

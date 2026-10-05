@@ -202,7 +202,7 @@ const INLINE_TOOLS_BETA = "inline-tools-2026-09-15";
  * activated and the model cannot see it.
  */
 const DEFERRED_TOOL_PLACEHOLDER: BetaTool = {
-	name: "__pi_deferred_placeholder__",
+	name: "__akramcode_deferred_placeholder__",
 	description: "Reserved placeholder. Never available. Never call this.",
 	input_schema: { type: "object", properties: {}, required: [] },
 	defer_loading: true,

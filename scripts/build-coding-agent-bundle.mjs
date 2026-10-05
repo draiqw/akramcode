@@ -13,7 +13,7 @@ const aiDistDir = join(repoRoot, "packages", "providers", "dist");
 const codingAgentDistDir = join(codingAgentDir, "dist");
 const bundleDir = join(codingAgentDistDir, "bundle");
 const banner = {
-	js: 'import { createRequire as __piCreateRequire } from "node:module"; const require = __piCreateRequire(import.meta.url);',
+	js: 'import { createRequire as __akramCodeCreateRequire } from "node:module"; const require = __akramCodeCreateRequire(import.meta.url);',
 };
 const allowedExternalPackages = new Set([
 	"@akramcode/chord",

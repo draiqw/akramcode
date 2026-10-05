@@ -58,14 +58,6 @@
             {
               "title": "Run AkramCode in tmux",
               "path": "tmux.md"
-            },
-            {
-              "title": "Run AkramCode on Windows",
-              "path": "windows.md"
-            },
-            {
-              "title": "Run AkramCode on Android",
-              "path": "termux.md"
             }
           ]
         },

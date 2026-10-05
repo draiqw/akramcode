@@ -275,7 +275,7 @@ Project skill`,
 			const projectExtDir = join(cwd, ".akramcode", "extensions");
 			mkdirSync(userExtDir, { recursive: true });
 			mkdirSync(projectExtDir, { recursive: true });
-			const loadCountKey = `__piTrustPreloadCount_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+			const loadCountKey = `__akramCodeTrustPreloadCount_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 			const globalState = globalThis as typeof globalThis & Record<string, number | undefined>;
 
 			writeFileSync(

@@ -2,8 +2,6 @@
 
 AkramCode runs in your terminal and works with files on your machine. To use it, you need access to a model through a supported provider. This can be a subscription, an API key, or a local model.
 
-For native Windows setup, read [Windows Setup](windows.md). For Android, read [Termux Setup](termux.md).
-
 ## 1. Install AkramCode
 
 On macOS or Linux, you can use the installer:
