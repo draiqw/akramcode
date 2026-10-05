@@ -94,7 +94,7 @@ Unified LLM API with provider collections, automatic auth resolution, token and 
 - **Meta** (Model API, uses OpenAI Responses-compatible API)
 - **Qwen Token Plan** (separate Individual and existing catalogs, with a separate China provider)
 - **Xiaomi MiMo** (defaults to API billing endpoint, with separate Token Plan providers for `cn`/`ams`/`sgp` regions)
-- **Any OpenAI-compatible API**: Ollama, vLLM, LM Studio, etc.
+- **Any OpenAI-compatible API**: vLLM, LM Studio, etc.
 
 ## Installation
 
@@ -1216,12 +1216,12 @@ Callbacks are awaited in stream order, so slow callbacks delay stream consumptio
 import { createModels, createProvider, envApiKeyAuth, type Model } from '@akramcode/ai';
 import { openAICompletionsApi } from '@akramcode/providers/api/openai-completions.lazy';
 
-const ollamaModel: Model<'openai-completions'> = {
+const localModel: Model<'openai-completions'> = {
   id: 'llama-3.1-8b',
-  name: 'Llama 3.1 8B (Ollama)',
+  name: 'Llama 3.1 8B (local)',
   api: 'openai-completions',
-  provider: 'ollama',
-  baseUrl: 'http://localhost:11434/v1',
+  provider: 'local',
+  baseUrl: 'http://localhost:8000/v1',
   reasoning: false,
   input: ['text'],
   cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
@@ -1229,20 +1229,20 @@ const ollamaModel: Model<'openai-completions'> = {
   maxTokens: 32000
 };
 
-const ollama = createProvider({
-  id: 'ollama',
-  name: 'Ollama',
-  baseUrl: 'http://localhost:11434/v1',
+const localServer = createProvider({
+  id: 'local',
+  name: 'Local server',
+  baseUrl: 'http://localhost:8000/v1',
   // Every provider declares auth; keyless local servers resolve as configured with no key.
-  auth: { apiKey: { name: 'Ollama', resolve: async () => ({ auth: {} }) } },
-  models: [ollamaModel],
+  auth: { apiKey: { name: 'Local server', resolve: async () => ({ auth: {} }) } },
+  models: [localModel],
   api: openAICompletionsApi(),
 });
 
 const models = createModels();
-models.setProvider(ollama);
+models.setProvider(localServer);
 
-await models.complete(models.getModel('ollama', 'llama-3.1-8b')!, context);
+await models.complete(models.getModel('local', 'llama-3.1-8b')!, context);
 ```
 
 For providers with real keys, `envApiKeyAuth(displayName, envVars)` gives the standard behavior (stored credential wins, then the first set env var):
@@ -1318,17 +1318,17 @@ Use `models.refresh({ providers: ['openrouter'] })` to restrict work to selected
 
 Custom models can carry `headers` (e.g. proxies behind bot detection) and `compat` flags. `Models.getAuth(model)` includes those model headers, and stream methods merge them before explicit request headers and `transformHeaders`. See [OpenAI Compatibility Settings](#openai-compatibility-settings).
 
-Some OpenAI-compatible servers do not understand the `developer` role used for reasoning-capable models. For those providers, set `compat.supportsDeveloperRole` to `false` so the system prompt is sent as a `system` message instead. If the server also does not support `reasoning_effort`, set `compat.supportsReasoningEffort` to `false` too. This commonly applies to Ollama, vLLM, SGLang, and similar OpenAI-compatible servers.
+Some OpenAI-compatible servers do not understand the `developer` role used for reasoning-capable models. For those providers, set `compat.supportsDeveloperRole` to `false` so the system prompt is sent as a `system` message instead. If the server also does not support `reasoning_effort`, set `compat.supportsReasoningEffort` to `false` too. This commonly applies to vLLM, SGLang, and similar OpenAI-compatible servers.
 
 Use model-level `thinkingLevelMap` to describe model-specific thinking controls. Keys are akramcode thinking levels (`off`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`). Missing standard levels through `high` use provider defaults; `xhigh` and `max` are opt-in and require a non-null map entry. String values are sent to the provider, `null` marks a level unsupported, and maps may skip levels.
 
 ```typescript
-const ollamaReasoningModel: Model<'openai-completions'> = {
+const localReasoningModel: Model<'openai-completions'> = {
   id: 'gpt-oss:20b',
-  name: 'GPT-OSS 20B (Ollama)',
+  name: 'GPT-OSS 20B (local)',
   api: 'openai-completions',
-  provider: 'ollama',
-  baseUrl: 'http://localhost:11434/v1',
+  provider: 'local',
+  baseUrl: 'http://localhost:8000/v1',
   reasoning: true,
   input: ['text'],
   cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { AssistantMessage } from "../src/types.ts";
 import { isContextOverflow, isRecoverableLength } from "../src/utils/overflow.ts";
 
-function createErrorMessage(errorMessage: string, provider = "ollama"): AssistantMessage {
+function createErrorMessage(errorMessage: string, provider = "openai"): AssistantMessage {
 	return {
 		role: "assistant",
 		content: [],
@@ -30,11 +30,6 @@ function createErrorMessage(errorMessage: string, provider = "ollama"): Assistan
 }
 
 describe("isContextOverflow", () => {
-	it("detects explicit Ollama prompt-too-long errors", () => {
-		const message = createErrorMessage("400 `prompt too long; exceeded max context length by 100918 tokens`");
-		expect(isContextOverflow(message, 32768)).toBe(true);
-	});
-
 	it("detects z.ai prompt-too-long errors", () => {
 		// Regression for #9805.
 		const message = createErrorMessage('400 {"code":"1261","message":"Prompt too long"}', "zai");
@@ -87,7 +82,7 @@ describe("isContextOverflow", () => {
 		expect(isContextOverflow(commaMessage, 256000)).toBe(true);
 	});
 
-	it("does not treat generic non-overflow Ollama errors as overflow", () => {
+	it("does not treat generic non-overflow server errors as overflow", () => {
 		const message = createErrorMessage("500 `model runner crashed unexpectedly`");
 		expect(isContextOverflow(message, 32768)).toBe(false);
 	});

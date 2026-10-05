@@ -40,19 +40,19 @@ AkramCode integrates directly with the llama.cpp router. The router discovers GG
 
 Follow [Local Models with llama.cpp](llama-cpp.md) for server startup, model layout, downloads, and connection troubleshooting.
 
-For Ollama, LM Studio, vLLM, SGLang, and other compatible servers, [configure a compatible endpoint](#configure-a-compatible-endpoint) in `models.json`.
+For LM Studio, vLLM, SGLang, and other compatible servers, [configure a compatible endpoint](#configure-a-compatible-endpoint) in `models.json`.
 
 ## Configure a compatible endpoint
 
-Use [`models.json`](configuration.md#agent-directory) when an endpoint speaks an API AkramCode already supports. This includes most Ollama, LM Studio, vLLM, SGLang, and proxy deployments.
+Use [`models.json`](configuration.md#agent-directory) when an endpoint speaks an API AkramCode already supports. This includes most LM Studio, vLLM, SGLang, and proxy deployments.
 
 ```json
 {
   "providers": {
-    "ollama": {
-      "baseUrl": "http://localhost:11434/v1",
+    "local": {
+      "baseUrl": "http://localhost:8000/v1",
       "api": "openai-completions",
-      "apiKey": "ollama",
+      "apiKey": "local",
       "models": [
         { "id": "qwen2.5-coder:7b" }
       ]
@@ -61,7 +61,7 @@ Use [`models.json`](configuration.md#agent-directory) when an endpoint speaks an
 }
 ```
 
-The dummy key makes the model available to AkramCode; Ollama ignores it. For an authenticated endpoint, `apiKey` and header values can use `$NAME` or `${NAME}` environment interpolation, a literal value, or a leading `!command`. Commands in `models.json` run at request time and are not cached by AkramCode.
+The dummy key makes the model available to AkramCode; local servers usually ignore it. For an authenticated endpoint, `apiKey` and header values can use `$NAME` or `${NAME}` environment interpolation, a literal value, or a leading `!command`. Commands in `models.json` run at request time and are not cached by AkramCode.
 
 Opening `/model` reloads the file. A `models` entry adds or replaces a model with the same ID on that provider. Use `modelOverrides` to change metadata for an existing built-in or extension-provided model without replacing the provider's model list. Unknown override IDs are ignored.
 

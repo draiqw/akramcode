@@ -32,7 +32,6 @@ import type { AssistantMessage } from "../types.ts";
  *   with output=0 (no room left to generate). Detected via stopReason "length" + zero output +
  *   input filling the context window.
  * - DashScope/Qwen: "Range of input length should be [1, X]" (HTTP 400 invalid_parameter_error)
- * - Ollama: Some deployments truncate silently, others return errors like "prompt too long; exceeded max context length by X tokens"
  */
 const OVERFLOW_PATTERNS = [
 	/prompt (?:is )?too long/i, // Anthropic and z.ai token overflow
@@ -55,7 +54,6 @@ const OVERFLOW_PATTERNS = [
 	/too large for model with \d+ maximum context length/i, // Mistral
 	/prompt has [\d,]+ tokens?, but the configured context size is [\d,]+ tokens?/i, // DS4 server
 	/model_context_window_exceeded/i, // z.ai non-standard finish_reason surfaced as error text
-	/prompt too long; exceeded (?:max )?context length/i, // Ollama explicit overflow error
 	/range of input length should be/i, // DashScope / Qwen Token Plan
 	/context[_ ]length[_ ]exceeded/i, // Generic fallback
 	/too many tokens/i, // Generic fallback
@@ -115,9 +113,6 @@ const NON_OVERFLOW_PATTERNS = [
  *   sometimes returns rate limit errors. Pass contextWindow param to detect silent overflow.
  * - Xiaomi MiMo: Truncates input to fit contextWindow then returns stopReason "length" with
  *   output=0. Pass contextWindow param to detect via the "filled context + zero output" signal.
- * - Ollama: May truncate input silently for some setups, but may also return explicit
- *   overflow errors that match the patterns above. Silent truncation still cannot be
- *   detected here because we do not know the expected token count.
  *
  * ## Custom Providers
  *
