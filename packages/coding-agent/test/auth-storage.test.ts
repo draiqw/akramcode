@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { type CredentialStore, createModels, type Provider } from "@akramcode/ai";
 import lockfile from "proper-lockfile";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { decryptAuthText } from "../src/core/auth-secrets.ts";
 import { AuthStorage, FileAuthStorageBackend } from "../src/core/auth-storage.ts";
 
 describe("AuthStorage", () => {
@@ -19,6 +20,11 @@ describe("AuthStorage", () => {
 		if (existsSync(tempDir)) rmSync(tempDir, { recursive: true });
 		vi.restoreAllMocks();
 	});
+
+	/** auth.json as the user would see it after decryption (secrets are encrypted on disk). */
+	function readAuthJson(): unknown {
+		return JSON.parse(decryptAuthText(readFileSync(authJsonPath, "utf8"), authJsonPath));
+	}
 
 	function writeAuthJson(data: Record<string, unknown>): void {
 		writeFileSync(authJsonPath, JSON.stringify(data));
@@ -165,7 +171,7 @@ describe("AuthStorage", () => {
 
 		await storage.modify("anthropic", async () => ({ type: "api_key", key: "new" }));
 
-		expect(JSON.parse(readFileSync(authJsonPath, "utf8"))).toEqual({
+		expect(readAuthJson()).toEqual({
 			anthropic: { type: "api_key", key: "new" },
 			openai: { type: "api_key", key: "external" },
 		});
@@ -186,7 +192,7 @@ describe("AuthStorage", () => {
 			first.modify("anthropic", async () => ({ type: "api_key", key: "anthropic-key" })),
 			second.modify("openai", async () => ({ type: "api_key", key: "openai-key" })),
 		]);
-		expect(JSON.parse(readFileSync(authJsonPath, "utf8"))).toEqual({
+		expect(readAuthJson()).toEqual({
 			anthropic: { type: "api_key", key: "anthropic-key" },
 			openai: { type: "api_key", key: "openai-key" },
 		});
@@ -230,13 +236,13 @@ describe("AuthStorage", () => {
 		await expect(storage.modify("openai", async () => ({ type: "api_key", key: "new" }))).rejects.toThrow(
 			"lock unavailable",
 		);
-		expect(JSON.parse(readFileSync(authJsonPath, "utf8"))).toEqual({
+		expect(readAuthJson()).toEqual({
 			anthropic: { type: "api_key", key: "stored" },
 		});
 
 		lockSpy.mockRestore();
 		await storage.modify("openai", async () => ({ type: "api_key", key: "new" }));
-		expect(JSON.parse(readFileSync(authJsonPath, "utf8"))).toEqual({
+		expect(readAuthJson()).toEqual({
 			anthropic: { type: "api_key", key: "stored" },
 			openai: { type: "api_key", key: "new" },
 		});
@@ -272,7 +278,7 @@ describe("AuthStorage", () => {
 
 		await expect(backend.withLockAsync(update)).rejects.toThrow(compromised);
 		expect(update).not.toHaveBeenCalled();
-		expect(JSON.parse(readFileSync(authJsonPath, "utf8"))).toEqual({
+		expect(readAuthJson()).toEqual({
 			anthropic: { type: "api_key", key: "stored" },
 		});
 	});
@@ -306,7 +312,7 @@ describe("AuthStorage", () => {
 		await release();
 		await new Promise((resolve) => setTimeout(resolve, 150));
 		expect(update).not.toHaveBeenCalled();
-		expect(JSON.parse(readFileSync(authJsonPath, "utf8"))).toEqual({
+		expect(readAuthJson()).toEqual({
 			anthropic: { type: "api_key", key: "stored" },
 		});
 	});
@@ -365,7 +371,7 @@ describe("AuthStorage", () => {
 		await expect(pending).rejects.toMatchObject({ name: "AbortError" });
 		await competing;
 		expect(competingMutation).toHaveBeenCalledTimes(1);
-		expect(JSON.parse(readFileSync(authJsonPath, "utf8"))).toEqual({
+		expect(readAuthJson()).toEqual({
 			google: { type: "api_key", key: "committed" },
 		});
 	});

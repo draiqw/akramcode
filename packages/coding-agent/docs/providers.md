@@ -38,6 +38,16 @@ export OPENAI_API_KEY=sk-...
 akramcode
 ```
 
+## How stored credentials are protected
+
+Literal API keys and OAuth tokens in `auth.json` are encrypted with AES-256-GCM. A file that ends up in a backup, a synced dotfiles repository or a pasted log shows `enc:v1:...` instead of the secret.
+
+- The key is read from `AKRAMCODE_SECRETS_KEY` (32 bytes, base64 or hex). Without it, AkramCode creates `secrets.key` next to `auth.json` with owner-only permissions on first write.
+- Keep `secrets.key` out of anything that also holds `auth.json`. Without the matching key the credentials cannot be read and AkramCode shows a warning; log in again or restore the key.
+- Existing plaintext files keep working and are encrypted the next time AkramCode writes the file.
+- `$NAME` and `!command` values are references, not secrets, and stay readable.
+- This does not protect against someone who can read both files, or who runs code as your user.
+
 ## Load an API key from a command
 
 To use a secret manager without writing the resolved key to disk, set a provider's `key` in `auth.json` to a command prefixed with `!`:

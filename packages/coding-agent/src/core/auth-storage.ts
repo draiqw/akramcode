@@ -12,6 +12,7 @@ import { getAgentDir } from "../config.ts";
 import { raceWithAbortSignal } from "../utils/abort.ts";
 import { getFileRevision, normalizePath } from "../utils/paths.ts";
 import { stripBom } from "../utils/text.ts";
+import { decryptAuthText, encryptAuthText } from "./auth-secrets.ts";
 import { isCommandConfigValue, resolveConfigValue } from "./resolve-config-value.ts";
 
 type AuthStorageData = Record<string, Credential>;
@@ -100,10 +101,12 @@ export class FileAuthStorageBackend implements AuthStorageBackend {
 		let release: (() => void) | undefined;
 		try {
 			release = this.acquireLockSyncWithRetry(this.authPath);
-			const current = existsSync(this.authPath) ? readFileSync(this.authPath, "utf-8") : undefined;
+			const current = existsSync(this.authPath)
+				? decryptAuthText(readFileSync(this.authPath, "utf-8"), this.authPath)
+				: undefined;
 			const { result, next } = fn(current);
 			if (next !== undefined) {
-				writeFileSync(this.authPath, next, AUTH_FILE_WRITE_OPTIONS);
+				writeFileSync(this.authPath, encryptAuthText(next, this.authPath), AUTH_FILE_WRITE_OPTIONS);
 			}
 			return result;
 		} finally {
@@ -179,12 +182,14 @@ export class FileAuthStorageBackend implements AuthStorageBackend {
 
 			throwIfCompromised();
 			options?.signal?.throwIfAborted();
-			const current = existsSync(this.authPath) ? readFileSync(this.authPath, "utf-8") : undefined;
+			const current = existsSync(this.authPath)
+				? decryptAuthText(readFileSync(this.authPath, "utf-8"), this.authPath)
+				: undefined;
 			const { result, next } = await fn(current);
 			throwIfCompromised();
 			options?.signal?.throwIfAborted();
 			if (next !== undefined) {
-				writeFileSync(this.authPath, next, AUTH_FILE_WRITE_OPTIONS);
+				writeFileSync(this.authPath, encryptAuthText(next, this.authPath), AUTH_FILE_WRITE_OPTIONS);
 			}
 			throwIfCompromised();
 			return result;
@@ -213,7 +218,7 @@ export class ReadOnlyAuthStorage implements CredentialStore {
 
 		let parsed: unknown;
 		try {
-			parsed = JSON.parse(stripBom(readFileSync(this.authPath, "utf-8")));
+			parsed = JSON.parse(decryptAuthText(stripBom(readFileSync(this.authPath, "utf-8")), this.authPath));
 		} catch (error) {
 			if ((error as NodeJS.ErrnoException).code === "ENOENT") {
 				this.data = {};
@@ -498,7 +503,10 @@ export function readStoredCredential(
 	authPath: string = join(getAgentDir(), "auth.json"),
 ): Credential | undefined {
 	try {
-		const data = JSON.parse(stripBom(readFileSync(normalizePath(authPath), "utf-8"))) as AuthStorageData;
+		const resolvedPath = normalizePath(authPath);
+		const data = JSON.parse(
+			decryptAuthText(stripBom(readFileSync(resolvedPath, "utf-8")), resolvedPath),
+		) as AuthStorageData;
 		return data[providerId];
 	} catch {
 		return undefined;
