@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Thin launcher: runs the vendored Pi coding agent from source.
+# Thin launcher: runs Pi from source.
 set -euo pipefail
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec "$ROOT/vendor/pi/pi-test.sh" "$@"
+exec "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/pi-test.sh" "$@"
