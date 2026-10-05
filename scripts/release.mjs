@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Release script for akramcode-mono
+ * Release script for pi-mono
  *
  * Usage:
  *   node scripts/release.mjs <major|minor|patch>

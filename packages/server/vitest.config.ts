@@ -16,12 +16,12 @@ export default defineConfig({
 	resolve: {
 		conditions: ["source"],
 		alias: [
-			{ find: /^@earendil-works\/akramcode-agent-core$/, replacement: src("../agent/src/index.ts") },
-			{ find: /^@earendil-works\/akramcode-agent-core\/(.+)$/, replacement: `${src("../agent/src/")}$1.ts` },
-			{ find: /^@earendil-works\/akramcode-ai$/, replacement: src("../ai/src/index.ts") },
-			{ find: /^@earendil-works\/akramcode-ai\/(.+)$/, replacement: `${src("../ai/src/")}$1.ts` },
-			{ find: /^@earendil-works\/akramcode-telemetry$/, replacement: src("../telemetry/src/index.ts") },
-			{ find: /^@earendil-works\/akramcode-protocol$/, replacement: src("../protocol/src/index.ts") },
+			{ find: /^@akramcode\/agent-core$/, replacement: src("../agent/src/index.ts") },
+			{ find: /^@akramcode\/agent-core\/(.+)$/, replacement: `${src("../agent/src/")}$1.ts` },
+			{ find: /^@akramcode\/ai$/, replacement: src("../ai/src/index.ts") },
+			{ find: /^@akramcode\/ai\/(.+)$/, replacement: `${src("../ai/src/")}$1.ts` },
+			{ find: /^@akramcode\/telemetry$/, replacement: src("../telemetry/src/index.ts") },
+			{ find: /^@akramcode\/protocol$/, replacement: src("../protocol/src/index.ts") },
 		],
 	},
 	ssr: { resolve: { conditions: ["source"] } },

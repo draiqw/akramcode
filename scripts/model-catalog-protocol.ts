@@ -4,7 +4,7 @@
  * This file is copied verbatim into two repositories. Change both copies in
  * the same pair of pull requests and keep them byte for byte identical:
  *
- *   earendil-works/akramcode      scripts/model-catalog-protocol.ts
+ *   earendil-works/pi      scripts/model-catalog-protocol.ts
  *   earendil-works/pi.dev  src/shared/models/protocol.ts
  *
  * akramcode uses it to publish catalog revisions and to test clients against the

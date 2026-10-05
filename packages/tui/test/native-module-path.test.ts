@@ -6,7 +6,7 @@ import { getNativeModuleCandidates } from "../src/native-module-path.ts";
 
 describe("getNativeModuleCandidates", () => {
 	it("resolves native helpers from the installed TUI package when the module is bundled elsewhere", () => {
-		const packageRoot = resolve("virtual", "node_modules", "@earendil-works", "akramcode-tui");
+		const packageRoot = resolve("virtual", "node_modules", "@akramcode", "akramcode-tui");
 		const bundledModule = resolve("virtual", "akramcode-coding-agent", "dist", "bundle", "chunks", "chunk.js");
 		const nativePath = join("native", "win32", "prebuilds", "win32-arm64", "win32-platform.node");
 

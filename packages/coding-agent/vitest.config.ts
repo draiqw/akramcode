@@ -21,8 +21,8 @@ export default mergeConfig(
 		},
 		resolve: {
 			alias: [
-				{ find: /^@earendil-works\/akramcode-ai$/, replacement: workspaceSourcePaths.aiIndex },
-				{ find: /^@earendil-works\/akramcode-agent-core$/, replacement: workspaceSourcePaths.agentIndex },
+				{ find: /^@akramcode\/ai$/, replacement: workspaceSourcePaths.aiIndex },
+				{ find: /^@akramcode\/agent-core$/, replacement: workspaceSourcePaths.agentIndex },
 				{ find: /^@mariozechner\/akramcode-ai$/, replacement: workspaceSourcePaths.aiIndex },
 				{ find: /^@mariozechner\/akramcode-ai\/oauth$/, replacement: workspaceSourcePaths.aiOAuth },
 				{ find: /^@mariozechner\/akramcode-agent-core$/, replacement: workspaceSourcePaths.agentIndex },

@@ -140,7 +140,7 @@ describe("Anthropic raw SSE parsing", () => {
 	});
 
 	it("keeps signed thinking replayable when a proxy relabels the model", async () => {
-		// Regression test for earendil-works/akramcode#9188.
+		// Regression test for earendil-works/pi#9188.
 		const model = getModel("anthropic", "claude-opus-5");
 		const responseModel = "kimi-for-coding";
 		const initialContext = normalizeContext({

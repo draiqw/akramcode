@@ -52,7 +52,7 @@ afterEach(() => {
 function createNpmPrefixInstall(template = "akramcode-prefix-"): { prefix: string; packageDir: string } {
 	const prefix = mkdtempSync(join(tmpdir(), template));
 	const root = join(prefix, "lib", "node_modules");
-	const scopeDir = join(root, "@earendil-works");
+	const scopeDir = join(root, "@akramcode");
 	const packageDir = join(scopeDir, "akramcode-coding-agent");
 	mkdirSync(packageDir, { recursive: true });
 	tempDir = prefix;
@@ -109,7 +109,7 @@ function createBunGlobalInstall(): { packageDir: string } {
 	const prefix = join(temp, ".bun");
 	const bunBin = join(prefix, "bin");
 	const root = join(prefix, "install", "global", "node_modules");
-	const scopeDir = join(root, "@earendil-works");
+	const scopeDir = join(root, "@akramcode");
 	const packageDir = join(scopeDir, "akramcode-coding-agent");
 	mkdirSync(packageDir, { recursive: true });
 	mkdirSync(bunBin, { recursive: true });
@@ -162,7 +162,7 @@ describe("findNodePackageDir", () => {
 describe("detectInstallMethod", () => {
 	test("detects pnpm from Windows .pnpm install paths", () => {
 		setExecPath(
-			"C:\\Users\\Admin\\Documents\\pnpm-repository\\global\\5\\.pnpm\\@earendil-works+akramcode-coding-agent@0.67.68\\node_modules\\@earendil-works\\akramcode-coding-agent\\dist\\cli.js",
+			"C:\\Users\\Admin\\Documents\\pnpm-repository\\global\\5\\.pnpm\\@akramcode+coding-agent@0.67.68\\node_modules\\@akramcode\\coding-agent\\dist\\cli.js",
 		);
 
 		expect(detectInstallMethod()).toBe("pnpm");
@@ -304,7 +304,7 @@ describe("detectInstallMethod", () => {
 	});
 
 	test("does not infer Windows npm custom prefixes from package paths", () => {
-		const packageDir = "C:\\Users\\Admin\\npm prefix\\node_modules\\@earendil-works\\akramcode-coding-agent";
+		const packageDir = "C:\\Users\\Admin\\npm prefix\\node_modules\\@akramcode\\coding-agent";
 		process.env.AKRAMCODE_PACKAGE_DIR = packageDir;
 		setExecPath(`${packageDir}\\dist\\cli.js`);
 
@@ -358,7 +358,7 @@ describe("detectInstallMethod", () => {
 		const binDir = join(temp, "bin");
 		const root = join(temp, "Library", "pnpm", "global", "v11");
 		const packageName = "@akramcode/coding-agent";
-		const globalPackageDir = join(root, "11e9a", "node_modules", "@earendil-works", "akramcode-coding-agent");
+		const globalPackageDir = join(root, "11e9a", "node_modules", "@akramcode", "akramcode-coding-agent");
 		const storePackageDir = join(
 			temp,
 			"Library",
@@ -366,12 +366,12 @@ describe("detectInstallMethod", () => {
 			"store",
 			"v11",
 			"links",
-			"@earendil-works",
+			"@akramcode",
 			"akramcode-coding-agent",
 			"0.75.0",
 			"hash",
 			"node_modules",
-			"@earendil-works",
+			"@akramcode",
 			"akramcode-coding-agent",
 		);
 		mkdirSync(globalPackageDir, { recursive: true });

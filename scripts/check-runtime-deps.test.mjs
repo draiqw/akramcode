@@ -30,7 +30,7 @@ test("rejects undeclared imports even when the workspace package exists", async 
 		"packages/server/package.json": JSON.stringify({ name: "@akramcode/server", version: "1.0.0" }),
 	});
 	assert.equal(result.status, 1);
-	assert.match(result.stderr, /src[\\/]index\.ts:1: @earendil-works\/akramcode-server\/unix is not declared/);
+	assert.match(result.stderr, /src[\\/]index\.ts:1: @akramcode\/server\/unix is not declared/);
 });
 
 test("accepts runtime declarations, builtins, self imports, relative imports, and erased types", async (t) => {

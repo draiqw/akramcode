@@ -86,7 +86,7 @@ test("installs only coding-agent directly and uses overrides only for declared r
 // #9132: smoke-test the public SDK, not just a bundled CLI that hides missing imports.
 test("fails when the SDK imports an undeclared server despite a working CLI", (t) => {
 	const directory = createFixture(t, { importServer: true });
-	assert.throws(() => smokeTestCodingAgentConsumer(directory), /Cannot find package '@earendil-works\/akramcode-server'/);
+	assert.throws(() => smokeTestCodingAgentConsumer(directory), /Cannot find package '@akramcode\/server'/);
 });
 
 test("fails if a development-only dependency is added back to the published dependency tree", (t) => {

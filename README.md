@@ -99,11 +99,11 @@ For the full explanation, see [this post on X](https://x.com/badlogicgames/statu
 
 To publish sessions, use [`badlogic/pi-share-hf`](https://github.com/badlogic/pi-share-hf). Read its README.md for setup instructions. All you need is a Hugging Face account, the Hugging Face CLI, and `akramcode-share-hf`.
 
-You can also watch [this video](https://x.com/badlogicgames/status/2041151967695634619), where I show how I publish my `akramcode-mono` sessions.
+You can also watch [this video](https://x.com/badlogicgames/status/2041151967695634619), where I show how I publish my `pi-mono` sessions.
 
-I regularly publish my own `akramcode-mono` work sessions here:
+I regularly publish my own `pi-mono` work sessions here:
 
-- [badlogicgames/akramcode-mono on Hugging Face](https://huggingface.co/datasets/badlogicgames/pi-mono)
+- [badlogicgames/pi-mono on Hugging Face](https://huggingface.co/datasets/badlogicgames/pi-mono)
 
 ## License
 

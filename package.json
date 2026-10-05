@@ -1,5 +1,5 @@
 {
-	"name": "akramcode-monorepo",
+	"name": "pi-monorepo",
 	"private": true,
 	"type": "module",
 	"workspaces": [

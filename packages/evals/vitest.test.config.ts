@@ -8,7 +8,7 @@ export default mergeConfig(
 			include: ["test/**/*.test.ts"],
 		},
 		resolve: {
-			alias: [{ find: /^@earendil-works\/akramcode-coding-agent$/, replacement: workspaceSourcePaths.codingAgentIndex }],
+			alias: [{ find: /^@akramcode\/coding-agent$/, replacement: workspaceSourcePaths.codingAgentIndex }],
 		},
 	}),
 );

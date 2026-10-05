@@ -11,8 +11,8 @@ export default defineConfig({
 	resolve: {
 		conditions: ["source"],
 		alias: [
-			{ find: /^@earendil-works\/akramcode-durable$/, replacement: durableSrcIndex },
-			{ find: /^@earendil-works\/akramcode-durable\/testing$/, replacement: durableSrcTesting },
+			{ find: /^@akramcode\/durable$/, replacement: durableSrcIndex },
+			{ find: /^@akramcode\/durable\/testing$/, replacement: durableSrcTesting },
 		],
 	},
 	ssr: { resolve: { conditions: ["source"] } },

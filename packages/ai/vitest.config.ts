@@ -12,6 +12,6 @@ export default defineConfig({
 		silent: "passed-only",
 	},
 	resolve: {
-		alias: [{ find: /^@earendil-works\/akramcode-telemetry$/, replacement: telemetrySrcIndex }],
+		alias: [{ find: /^@akramcode\/telemetry$/, replacement: telemetrySrcIndex }],
 	},
 });

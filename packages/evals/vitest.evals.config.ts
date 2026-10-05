@@ -38,7 +38,7 @@ const localConfig = mergeConfig(
 	baseConfig,
 	defineConfig({
 		resolve: {
-			alias: [{ find: /^@earendil-works\/akramcode-coding-agent$/, replacement: workspaceSourcePaths.codingAgentIndex }],
+			alias: [{ find: /^@akramcode\/coding-agent$/, replacement: workspaceSourcePaths.codingAgentIndex }],
 		},
 	}),
 );

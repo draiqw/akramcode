@@ -17,10 +17,10 @@ export default defineConfig({
 	resolve: {
 		conditions: ["source"],
 		alias: [
-			{ find: /^@earendil-works\/akramcode-telemetry$/, replacement: telemetrySrcIndex },
-			{ find: /^@earendil-works\/akramcode-agent-core$/, replacement: agentSrcIndex },
-			{ find: /^@earendil-works\/akramcode-ai$/, replacement: aiSrcIndex },
-			{ find: /^@earendil-works\/akramcode-ai\/compat$/, replacement: aiSrcCompat },
+			{ find: /^@akramcode\/telemetry$/, replacement: telemetrySrcIndex },
+			{ find: /^@akramcode\/agent-core$/, replacement: agentSrcIndex },
+			{ find: /^@akramcode\/ai$/, replacement: aiSrcIndex },
+			{ find: /^@akramcode\/ai\/compat$/, replacement: aiSrcCompat },
 		],
 	},
 	ssr: { resolve: { conditions: ["source"] } },
