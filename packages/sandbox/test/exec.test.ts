@@ -45,7 +45,7 @@ describe("sandbox bash operations", () => {
 		expect(result).toEqual({ exitCode: 2 });
 	});
 
-	it("forwards only AKRAMCODE_ variables", async () => {
+	it("forwards only the documented session variables", async () => {
 		let seen = "";
 		const h = host(async (command) => {
 			seen = command;

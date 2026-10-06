@@ -32,7 +32,7 @@ describe("shell helpers", () => {
 		expect(shellQuote("it's")).toBe(`'it'\\''s'`);
 	});
 
-	it("forwards only AKRAMCODE_ variables", () => {
+	it("forwards only the documented session variables", () => {
 		const script = withForwardedEnv("ls", {
 			PATH: "/bin",
 			AKRAMCODE_SESSION_ID: "a b",

@@ -73,6 +73,6 @@ The `sandbox` block is read from user settings only (`~/.akramcode/agent/setting
 ## Limits
 
 - `grep` does not reach files in `volume` mode; use `rg` or `grep` through `bash`. In `mount` mode `grep` and `find` read the host files.
-- `bash` sees only `AKRAMCODE_*` variables of your environment. Credentials and `PATH` of the host are not forwarded.
+- `bash` receives only `AKRAMCODE_SESSION_ID`, `AKRAMCODE_PROVIDER`, `AKRAMCODE_MODEL` and `AKRAMCODE_REASONING_LEVEL`. Credentials, `AKRAMCODE_SECRETS_KEY`, `PATH` and the rest of the host environment are not forwarded.
 - Snapshots and checkpoints are not used. The gVisor checkpoint backend of the fork needs a Linux host with gVisor, which macOS does not provide.
 - The sandbox image decides which tools exist inside. `python:3.12-slim` has no `git` or `rg`.
