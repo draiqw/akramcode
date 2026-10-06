@@ -157,8 +157,7 @@ function trimPartialClosingFences(tokens: readonly Token[]): void {
 		return;
 	}
 
-	// Trim streamed partial closing fences so code blocks do not shrink/flicker
-	// when the final fence character arrives. See https://github.com/earendil-works/pi/issues/5825.
+	// See docs/adr/tui/components-markdown.md#streamed-code-block-fence-trimming
 	const marker = /^(`{3,}|~{3,})/.exec(token.raw)?.[1];
 	const lastLine = token.raw.split("\n").pop();
 	if (!marker || !lastLine || lastLine.length >= marker.length || lastLine !== marker[0]?.repeat(lastLine.length)) {
@@ -246,9 +245,7 @@ export class Markdown implements Component {
 	private cachedText?: string;
 	private cachedWidth?: number;
 	private cachedLines?: string[];
-	// Parsed tokens depend only on the source, so they survive theme and width invalidation. Held weakly: a token tree is
-	// about ten times the size of its source, and every message of a long transcript keeps a Markdown component. The
-	// tokens survive a burst of re-renders, such as a theme preview, and are collected afterwards.
+	// See docs/adr/tui/components-markdown.md#weak-reference-caching-for-parsed-tokens
 	private cachedTokens?: WeakRef<{ source: string; tokens: Token[] }>;
 
 	constructor(
@@ -391,7 +388,7 @@ export class Markdown implements Component {
 
 		let styled = text;
 
-		// Apply foreground color (NOT background - that's applied at padding stage)
+		// See docs/adr/tui/components-markdown.md#layered-background-and-padding-application
 		if (this.defaultTextStyle.color) {
 			styled = this.defaultTextStyle.color(styled);
 		}
@@ -577,9 +574,7 @@ export class Markdown implements Component {
 				// Calculate available width for quote content (subtract border "│ " = 2 chars)
 				const quoteContentWidth = Math.max(1, width - 2);
 
-				// Blockquotes contain block-level tokens (paragraph, list, code, etc.), so render
-				// children with renderToken() instead of renderInlineTokens().
-				// Default message style should not apply inside blockquotes.
+				// See docs/adr/tui/components-markdown.md#blockquote-rendering-with-separate-token-stream
 				const quoteInlineStyleContext: InlineStyleContext = {
 					applyText: (text: string) => text,
 					stylePrefix: quoteStylePrefix,
@@ -594,7 +589,7 @@ export class Markdown implements Component {
 					);
 				}
 
-				// Avoid rendering an extra empty quote line before the outer blockquote spacing.
+				// See docs/adr/tui/components-markdown.md#empty-quote-line-removal
 				while (renderedQuoteLines.length > 0 && renderedQuoteLines[renderedQuoteLines.length - 1] === "") {
 					renderedQuoteLines.pop();
 				}
@@ -704,10 +699,7 @@ export class Markdown implements Component {
 						// so we always show only the link text regardless of whether it matches href.
 						result += hyperlink(styledLink, token.href) + stylePrefix;
 					} else {
-						// Fallback: print URL in parentheses when text differs from href.
-						// Compare raw token.text (not styled) against href for the equality check.
-						// For mailto: links strip the prefix (autolinked emails use text="foo@bar.com"
-						// but href="mailto:foo@bar.com").
+						// See docs/adr/tui/components-markdown.md#link-fallback-url-display-logic
 						const hrefForComparison = token.href.startsWith("mailto:") ? token.href.slice(7) : token.href;
 						if (token.text === token.href || token.text === hrefForComparison) {
 							result += styledLink + stylePrefix;

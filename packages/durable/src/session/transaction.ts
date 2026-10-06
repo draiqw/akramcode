@@ -74,7 +74,7 @@ function applySubmissionChange(current: SubmissionRecord, change: SubmissionChan
 	if (change.status === "done" && current.status !== "placed") {
 		throw new Error(`Submission ${current.id} is not a placed input`);
 	}
-	// Queued and placed records carry no answer, reason, or detail; an unanswered input keeps its entry.
+	// See docs/adr/durable/session-transaction.md#submission-record-fields
 	return { ...current, ...change } as SubmissionRecord;
 }
 
@@ -362,7 +362,7 @@ export class Transaction implements Tx {
 			const id = await this.#host.storage.mintId<EntryId>();
 			this.#assertOpen();
 			const { head, ...rest } = value;
-			// Undefined `head` and `byTaskId` are omitted by the copy.
+			// See docs/adr/durable/session-transaction.md#undefined-field-omission
 			const record = copyJson(
 				{
 					...rest,
@@ -387,7 +387,7 @@ export class Transaction implements Tx {
 			const ownership = options.ownership;
 			let owner: AnyTaskRecord | undefined;
 			if (ownership.kind === "task") {
-				// Validated again against the owner's final candidate during assembly.
+				// See docs/adr/durable/session-transaction.md#deferred-owner-validation
 				owner = await this.#currentTask(ownership.taskId);
 				this.#assertOpen();
 				if (owner === undefined) throw new Error(`Task owner ${ownership.taskId} does not exist`);
@@ -529,7 +529,7 @@ export class Transaction implements Tx {
 			};
 			this.#documents.push(docEntry);
 			this.#latestDocumentByAddress.set(docEntry.addressId, docEntry);
-			// Capture retirement before awaiting so a pending old acquisition and its replacement stay distinct.
+			// See docs/adr/durable/session-transaction.md#retirement-capture-timing
 			docEntry.draftPromise = this.#track(this.#acquire(docEntry, seed, latest?.retireOnCommit === true));
 			return docEntry.draftPromise;
 		} catch (error) {
@@ -564,7 +564,7 @@ export class Transaction implements Tx {
 				return Promise.resolve();
 			}
 			if (latest?.draftPromise !== undefined) {
-				// Retirement of an acquired draft persists its final content before retirement.
+				// See docs/adr/durable/session-transaction.md#draft-retirement-persistence
 				latest.retireOnCommit = true;
 				return this.#track(latest.draftPromise.then(() => undefined));
 			}
@@ -677,7 +677,7 @@ export class Transaction implements Tx {
 			throw new Error("Session commit callback settled before its pending Tx operations");
 		}
 		try {
-			// Synchronously prepare every open change; this revokes every draft.
+			// See docs/adr/durable/session-transaction.md#synchronous-preparation-and-draft-revocation
 			for (const document of this.#documents) {
 				if (document.change !== undefined) document.prepared = document.change.prepare();
 			}
@@ -703,7 +703,7 @@ export class Transaction implements Tx {
 			const change = plan.change;
 			if (change !== undefined) {
 				const { tracker, prepared, loaded, version } = change;
-				// A new incarnation is adopted unless it retires in the same commit; a loaded one only when it changed.
+				// See docs/adr/durable/session-transaction.md#adoption-conditions
 				if (loaded === undefined ? !plan.retire : prepared.ops.length > 0) tracker.adopt(prepared);
 				else prepared.abort();
 				if (loaded !== undefined) {
@@ -769,7 +769,7 @@ export class Transaction implements Tx {
 			}
 		}
 
-		// Terminal settlement retires every task document, including ones created by this transaction.
+		// See docs/adr/durable/session-transaction.md#terminal-document-retirement
 		const terminalTaskIds = new Set<TaskId>();
 		for (const task of this.#tasksById.values()) {
 			if (task.write?.record.state.status === "terminal") terminalTaskIds.add(task.write.record.id);
@@ -802,7 +802,7 @@ export class Transaction implements Tx {
 			}
 		}
 
-		// Resolve publication ownership before Storage admission so adoption remains synchronous.
+		// See docs/adr/durable/session-transaction.md#pre-admission-publication-resolution
 		for (const plan of plans) {
 			if (!publishes(plan)) continue;
 			const scope = plan.record.scope;
@@ -830,7 +830,7 @@ export class Transaction implements Tx {
 		}
 		for (const plan of plans) {
 			const change = plan.change;
-			// Checkpoint predicates run last, after every validation.
+			// See docs/adr/durable/session-transaction.md#checkpoint-ordering
 			if (plan.content?.type === "document.change" && plan.content.content.kind === "delta" && change?.loaded) {
 				const { prepared, version } = change;
 				const info = { deltasSinceBase: change.loaded.deltasSinceBase };
@@ -995,7 +995,7 @@ function planDocument(document: DocumentEntry): DocumentPlan | undefined {
 			const prepared = document.prepared!;
 			const version = definition.version;
 			const id = loaded.record.id;
-			// A version change stores a base even without operations; otherwise only a change stores a delta.
+			// See docs/adr/durable/session-transaction.md#version-change-base-requirement
 			const content =
 				loaded.storedVersion < version
 					? ({ type: "document.change", id, content: { version, kind: "base", value: prepared.value } } as const)

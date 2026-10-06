@@ -169,8 +169,7 @@ export class OutputAccumulator {
 			const tail = Buffer.alloc(tailBytes);
 			await file.read(head, 0, headBytes, 0);
 			await file.read(tail, 0, tailBytes, size - tailBytes);
-			// Cut at character boundaries: streaming decode holds back an incomplete trailing sequence,
-			// and the tail skips leading continuation bytes.
+			// See docs/adr/coding-agent/core-tools-output-accumulator.md#character-boundary-alignment-in-utf-8-truncation
 			const headText = new TextDecoder().decode(head, { stream: true });
 			let tailStart = 0;
 			while (tailStart < tail.length && (tail[tailStart] & 0xc0) === 0x80) tailStart++;

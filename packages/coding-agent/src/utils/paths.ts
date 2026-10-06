@@ -49,7 +49,7 @@ export function getFileRevision(path: string): string | undefined {
  */
 export function isLocalPath(value: string): boolean {
 	const trimmed = value.trim();
-	// Known non-local prefixes. file: URLs are local paths and are intentionally resolved by resolvePath().
+	// See docs/adr/coding-agent/utils-paths.md#file-url-path-classification
 	if (
 		trimmed.startsWith("npm:") ||
 		trimmed.startsWith("git:") ||

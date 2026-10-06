@@ -525,10 +525,7 @@ let _lastEventType: KeyEventType = "press";
  * Only meaningful when Kitty keyboard protocol with flag 2 is active.
  */
 export function isKeyRelease(data: string): boolean {
-	// Don't treat bracketed paste content as key release, even if it contains
-	// patterns like ":3F" (e.g., bluetooth MAC addresses like "90:62:3F:A5").
-	// Terminal.ts re-wraps paste content with bracketed paste markers before
-	// passing to TUI, so pasted data will always contain \x1b[200~.
+	// See docs/adr/tui/keys.md#bracketed-paste-detection
 	if (data.includes("\x1b[200~")) {
 		return false;
 	}
@@ -555,8 +552,7 @@ export function isKeyRelease(data: string): boolean {
  * Only meaningful when Kitty keyboard protocol with flag 2 is active.
  */
 export function isKeyRepeat(data: string): boolean {
-	// Don't treat bracketed paste content as key repeat, even if it contains
-	// patterns like ":2F". See isKeyRelease() for details.
+	// See docs/adr/tui/keys.md#bracketed-paste-detection
 	if (data.includes("\x1b[200~")) {
 		return false;
 	}
@@ -671,18 +667,7 @@ function matchesKittySequence(data: string, expectedCodepoint: number, expectedM
 	// Primary match: codepoint matches directly after normalizing functional keys
 	if (normalizedCodepoint === normalizedExpectedCodepoint) return true;
 
-	// Alternate match: use base layout key for non-Latin keyboard layouts.
-	// This allows Ctrl+С (Cyrillic) to match Ctrl+c (Latin) when terminal reports
-	// the base layout key (the key in standard PC-101 layout).
-	//
-	// Only fall back to base layout key when the codepoint is NOT already a
-	// recognized Latin letter (a-z) or symbol (e.g., /, -, [, ;, etc.).
-	// When the codepoint is a recognized key, it is authoritative regardless
-	// of physical key position. This prevents remapped layouts (Dvorak, Colemak,
-	// xremap, etc.) from causing false matches: both letters and symbols move
-	// to different physical positions, so Ctrl+K could falsely match Ctrl+V
-	// (letter remapping) and Ctrl+/ could falsely match Ctrl+[ (symbol remapping)
-	// if the base layout key were always considered.
+	// See docs/adr/tui/keys.md#base-layout-key-fallback
 	if (parsed.baseLayoutKey !== undefined && parsed.baseLayoutKey === expectedCodepoint) {
 		const cp = normalizedCodepoint;
 		const isLatinLetter = cp >= 97 && cp <= 122; // a-z
@@ -752,7 +737,7 @@ function rawCtrlChar(key: string): string | null {
 	if ((code >= 97 && code <= 122) || char === "[" || char === "\\" || char === "]" || char === "_") {
 		return String.fromCharCode(code & 0x1f);
 	}
-	// Handle - as _ (same physical key on US keyboards)
+	// See docs/adr/tui/keys.md#minus-as-underscore-mapping
 	if (char === "-") {
 		return String.fromCharCode(31); // Same as Ctrl+_
 	}
@@ -889,9 +874,7 @@ export function matchesKey(data: string, keyId: KeyId): boolean {
 				if (matchesModifyOtherKeys(data, CODEPOINTS.enter, MODIFIERS.shift)) {
 					return true;
 				}
-				// When Kitty protocol is active, legacy sequences are custom terminal mappings
-				// \x1b\r = Kitty's "map shift+enter send_text all \e\r"
-				// \n = Ghostty's "keybind = shift+enter=text:\n"
+				// See docs/adr/tui/keys.md#kitty-protocol-custom-mappings
 				if (_kittyProtocolActive) {
 					return data === "\x1b\r" || data === "\n";
 				}
@@ -909,8 +892,7 @@ export function matchesKey(data: string, keyId: KeyId): boolean {
 				if (matchesModifyOtherKeys(data, CODEPOINTS.enter, MODIFIERS.alt)) {
 					return true;
 				}
-				// \x1b\r is alt+enter only in legacy mode (no Kitty protocol)
-				// When Kitty protocol is active, alt+enter comes as CSI u sequence
+				// See docs/adr/tui/keys.md#altenter-mode-awareness
 				if (!_kittyProtocolActive) {
 					return data === "\x1b\r";
 				}
@@ -942,9 +924,7 @@ export function matchesKey(data: string, keyId: KeyId): boolean {
 				);
 			}
 			if (modifier === MODIFIERS.ctrl) {
-				// Legacy raw 0x08 is ambiguous: it can be Ctrl+Backspace on Windows
-				// Terminal or plain Backspace on other terminals, while also
-				// overlapping with Ctrl+H.
+				// See docs/adr/tui/keys.md#raw-backspace-ambiguity
 				if (matchesRawBackspace(data, MODIFIERS.ctrl)) return true;
 				return (
 					matchesKittySequence(data, CODEPOINTS.backspace, MODIFIERS.ctrl) ||
@@ -1213,11 +1193,7 @@ function formatParsedKey(codepoint: number, modifier: number, baseLayoutKey?: nu
 	const normalizedCodepoint = normalizeKittyFunctionalCodepoint(codepoint);
 	const identityCodepoint = normalizeShiftedLetterIdentityCodepoint(normalizedCodepoint, modifier);
 
-	// Use base layout key only when codepoint is not a recognized Latin
-	// letter (a-z), digit (0-9), or symbol (/, -, [, ;, etc.). For those,
-	// the codepoint is authoritative regardless of physical key position.
-	// This prevents remapped layouts (Dvorak, Colemak, xremap, etc.) from
-	// reporting the wrong key name based on the QWERTY physical position.
+	// See docs/adr/tui/keys.md#non-latin-letter-codepoint-handling
 	const isLatinLetter = identityCodepoint >= 97 && identityCodepoint <= 122; // a-z
 	const isDigit = identityCodepoint >= 48 && identityCodepoint <= 57; // 0-9
 	const isKnownSymbol = SYMBOL_KEYS.has(String.fromCharCode(identityCodepoint));

@@ -54,14 +54,13 @@ async function main(data: WorkerData): Promise<void> {
 	const vm = await QuickJS.create({
 		wasm: data.wasm,
 		memoryLimit: data.memoryLimitBytes,
-		// Without a guard, deep recursion overflows the wasm stack and traps instead of throwing a
-		// catchable RangeError.
+		// See docs/adr/codemode/runtime/worker.md#quickjs-stack-guard
 		maxStackSize: MAX_STACK_SIZE,
 		interruptHandler: () => Atomics.load(interrupt, 0) !== 0,
 		wasi: discardOutput,
 	});
 
-	// Called from the prelude with primitives only.
+	// See docs/adr/codemode/runtime/worker.md#bridge-function-primitives
 	const bridge = vm.newFunction("bridge", (kind, a, b, c) => {
 		switch (kind.toString()) {
 			case "call":
@@ -99,7 +98,7 @@ async function main(data: WorkerData): Promise<void> {
 		return vm.undefined;
 	});
 
-	// The VM lives until the host terminates the worker, so these handles are never disposed.
+	// See docs/adr/codemode/runtime/worker.md#vm-lifetime-management
 	const api = vm.withScope((scope) =>
 		scope.escape(
 			vm.callFunction(
@@ -139,8 +138,7 @@ async function main(data: WorkerData): Promise<void> {
 		}
 	});
 
-	// The prefix shares the first line with the script so reported line numbers
-	// match the script as written.
+	// See docs/adr/codemode/runtime/worker.md#script-line-number-preservation
 	let fn: JSValueHandle;
 	try {
 		fn = vm.evalCode(`(async (tools, console) => {${data.code}\n})`, "codemode.js");

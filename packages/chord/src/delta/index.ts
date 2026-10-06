@@ -88,14 +88,7 @@ export function overlap(a: string, b: string, scan: number, probe = 64, maxCandi
 	if (a.length === 0 || b.length === 0 || scan === 0) return 0;
 	const tail = a.length > scan ? a.slice(a.length - scan) : a;
 
-	// A probe of length h can only find overlaps of at least h — the head must
-	// actually occur in `a`. So try a long head first (few candidates, and it
-	// catches the large overlaps a rolling window produces), then fall back to one
-	// character, which finds any overlap at the cost of more candidates.
-	//
-	// Candidates are bounded because repetitive output — a build log, or any run of
-	// one character — makes a long head match at thousands of positions. Giving up
-	// returns 0, which emits a set: larger, never wrong.
+	// See docs/adr/chord/delta-index.md#overlap-algorithm-strategy
 	for (const h of [Math.min(probe, b.length), 1]) {
 		const head = b.slice(0, h);
 		let tried = 0;
@@ -131,8 +124,7 @@ export { type Change, type Prepared, type Tracker, track } from "./tracker.ts";
 export const RESERVED_SEGMENTS: ReadonlySet<string> = new Set(["__proto__", "constructor", "prototype"]);
 
 export class UnsafePathError extends Error {
-	// Not a parameter property: Node's --experimental-strip-types rejects those,
-	// and these files are meant to run under it directly.
+	// See docs/adr/chord/delta-index.md#nodes-experimental-strip-types-constraint
 	readonly segment: Seg;
 	constructor(segment: Seg) {
 		super(`unsafe path segment: ${String(segment)}`);
@@ -216,8 +208,7 @@ export function assertValidWireOp(op: unknown): asserts op is WireOp {
 			if (!Number.isInteger(r) || r < 0) throw new TypeError("bad path id");
 			return;
 		}
-		// A string is not a path. Unchecked, `"a".slice(0, -1)` is `""`, so it
-		// resolves to the ROOT and writes there — a path that is not a path, accepted.
+		// See docs/adr/chord/delta-index.md#string-path-safety-issue
 		if (!Array.isArray(r)) throw new TypeError("path is not an array");
 		assertSafePath(r as Path);
 	};
@@ -333,13 +324,7 @@ function applyOps<T>(target: T | undefined, ops: readonly Op[]): T {
 	for (const op of ops) {
 		assertValidOp(op);
 		if (op[0] === "r") {
-			// Adopted, not copied. The consumer owns the batch it was handed.
-			//
-			// Fanning one batch out to several consumers in-process therefore makes
-			// their replicas alias each other. That is an ownership rule, not a
-			// defect: copy the batch at the fan-out point, or let each consumer
-			// decode its own. A batch that crosses a real boundary is already
-			// distinct, because serialisation produces fresh objects.
+			// See docs/adr/chord/delta-index.md#ownership-semantics-for-operation-batches
 			root = op[1];
 			continue;
 		}
@@ -372,8 +357,7 @@ function applyOps<T>(target: T | undefined, ops: readonly Op[]): T {
 			if (typeof key !== "number") throw new UnsafePathError(key);
 			assertIndexInRange(parent, key);
 		}
-		// defineProperty rather than assignment: a setter inherited from the prototype
-		// chain would otherwise run on write.
+		// See docs/adr/chord/delta-index.md#defineproperty-for-write-protection
 		const write = (value: JsonValue) => {
 			Object.defineProperty(parent, key, { value, writable: true, enumerable: true, configurable: true });
 		};
@@ -486,8 +470,7 @@ function resolveValue(root: JsonValue, path: Path): JsonValue {
 	for (const seg of path) {
 		if (!isObj(node)) throw new PathError(path);
 		if (Array.isArray(node) && typeof seg !== "number") throw new UnsafePathError(seg);
-		// Own properties only: an inherited getter must not run, and a walk must not
-		// escape the value into the prototype chain.
+		// See docs/adr/chord/delta-index.md#own-properties-safety-constraint
 		if (!Object.hasOwn(node, seg as PropertyKey)) throw new PathError(path);
 		node = (node as Record<Seg, JsonValue>)[seg]!;
 	}
@@ -528,19 +511,13 @@ export function encoder(): Encoder {
 
 	return {
 		encode(ops) {
-			// Arity omission is scoped to a batch. Letting it span batches would make
-			// a batch's first op depend on the previous batch's last one, so a reader
-			// that skips or reorders a batch decodes into the wrong path. Ids are the
-			// only cross-batch state, and the dictionary makes those explicit.
+			// See docs/adr/chord/delta-index.md#arity-omission-scope
 			previous = undefined;
 			const out: WireOp[] = [];
 			for (const op of ops) {
 				if (op[0] === "r") {
 					out.push(op);
-					// A base batch is a RECOVERY POINT: a reader replays from the last one
-					// with a fresh decoder. So everything after it must be self-contained.
-					// Keeping ids across a replacement emits references to definitions the
-					// reader never saw — recovery fails with an unresolvable path id.
+					// See docs/adr/chord/delta-index.md#recovery-point-after-replacement
 					seen.clear();
 					ids.clear();
 					nextId = 0;

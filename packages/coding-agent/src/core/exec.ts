@@ -86,8 +86,7 @@ export async function execCommand(
 			stderr += data.toString();
 		});
 
-		// Wait for process termination without hanging on inherited stdio handles
-		// held open by detached descendants.
+		// See docs/adr/coding-agent/core-exec.md#process-termination-without-hanging
 		waitForChildProcess(proc)
 			.then((code) => {
 				if (timeoutId) clearTimeout(timeoutId);

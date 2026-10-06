@@ -60,11 +60,11 @@ export class Text implements Component {
 		// Replace tabs with 3 spaces
 		const normalizedText = this.text.replace(/\t/g, "   ");
 
-		// Reduce margins when necessary so content and padding fit within the available width.
+		// See docs/adr/tui/components-text.md#flexible-margin-reduction-under-width-constraints
 		const paddingX = Math.min(this.paddingX, Math.max(0, Math.floor((width - 1) / 2)));
 		const contentWidth = Math.max(1, width - paddingX * 2);
 
-		// Wrap text (this preserves ANSI codes but does NOT pad)
+		// See docs/adr/tui/components-text.md#separated-text-wrapping-and-padding-stages
 		const wrappedLines = wrapTextWithAnsi(normalizedText, contentWidth);
 
 		// Add margins and background to each line

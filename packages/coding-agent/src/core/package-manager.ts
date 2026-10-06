@@ -968,8 +968,7 @@ export class DefaultPackageManager implements PackageManager {
 
 		this.addAutoDiscoveredResources(accumulator, globalSettings, projectSettings, globalBaseDir, projectBaseDir);
 
-		// Built-in extensions are enabled unless the user `extensions` setting excludes them, for example
-		// with `-builtin:mcp`. A matching `+`, `-`, or `!` entry in the project setting overrides that.
+		// See docs/adr/coding-agent/core-package-manager.md#built-in-extension-loading-defaults
 		for (const name of this.builtinExtensions) {
 			const path = `${BUILTIN_PATH_PREFIX}${name}`;
 			const projectEnabled = applyAutoloadDisabledPatterns(
@@ -1844,10 +1843,7 @@ export class DefaultPackageManager implements PackageManager {
 
 	private getNpmInstallArgs(specs: string[], installRoot: string): string[] {
 		const packageManagerName = this.getPackageManagerName();
-		// Extension packages run inside akramcode and resolve akramcode APIs through loader aliases/virtual modules.
-		// Disable peer dependency resolution for managed installs (npm's --legacy-peer-deps, and
-		// equivalent bun/pnpm settings) so package managers do not install or solve host-provided
-		// @akramcode/* peers. Stale auto-installed akramcode peers can otherwise block updates.
+		// See docs/adr/coding-agent/core-package-manager.md#managed-install-peer-dependency-handling
 		if (packageManagerName === "bun") {
 			return ["install", ...specs, "--cwd", installRoot, "--omit=peer"];
 		}
@@ -1973,8 +1969,7 @@ export class DefaultPackageManager implements PackageManager {
 	}
 
 	private async cleanAndInstallGitDependencies(targetDir: string, markerPath: string): Promise<void> {
-		// Clean untracked files (extensions should be pristine). If this fails after
-		// deleting dependencies, repair them so the existing extension still loads.
+		// See docs/adr/coding-agent/core-package-manager.md#git-dependency-preservation
 		try {
 			await this.runCommand("git", ["clean", "-fdx"], { cwd: targetDir });
 		} catch (error) {
@@ -1990,7 +1985,7 @@ export class DefaultPackageManager implements PackageManager {
 	}
 
 	private async ensureGitRef(targetDir: string, fetchArgs: string[], ref: string): Promise<void> {
-		// Fetch only the ref we will reset to, avoiding unrelated branch/tag noise.
+		// See docs/adr/coding-agent/core-package-manager.md#selective-git-fetching
 		await this.runCommand("git", fetchArgs, { cwd: targetDir });
 
 		const localHead = await this.runCommandCapture("git", ["rev-parse", "HEAD"], {
@@ -2026,7 +2021,7 @@ export class DefaultPackageManager implements PackageManager {
 				await this.updateGit(source, "temporary");
 			});
 		} catch {
-			// Keep cached temporary checkout if refresh fails.
+			// See docs/adr/coding-agent/core-package-manager.md#temporary-git-checkout-caching
 		}
 	}
 
@@ -2153,7 +2148,7 @@ export class DefaultPackageManager implements PackageManager {
 
 	private getGitInstallPath(source: GitSource, scope: SourceScope): string {
 		if (scope === "temporary") {
-			// Include the ref in the hash so each pinned ref gets its own checkout.
+			// See docs/adr/coding-agent/core-package-manager.md#pinned-ref-hash-inclusion
 			return this.getTemporaryDir(`git-${source.host}`, source.path, source.ref);
 		}
 		const installRoot = this.getGitInstallRoot(scope);

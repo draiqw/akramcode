@@ -146,9 +146,7 @@ async function resolveStoredOAuth(
 		}
 		if (post?.type !== "oauth") return undefined; // logged out meanwhile
 		credential = post;
-		// The normal five-minute window triggers a refresh but does not impose a
-		// provider contract. Explicit callers (such as bearer-token export) do
-		// require the requested minimum after the refresh.
+		// See docs/adr/ai/auth-resolve.md#oauth-refresh-window-contract
 		if (minOAuthValidityMs !== undefined && expiresSoon(credential)) {
 			throw new ModelsError("oauth", `OAuth refresh returned a token that expires too soon for ${providerId}`);
 		}

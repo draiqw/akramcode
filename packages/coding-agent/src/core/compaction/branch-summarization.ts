@@ -197,9 +197,7 @@ export function prepareBranchEntries(entries: SessionEntry[], tokenBudget: numbe
 	const fileOps = createFileOps();
 	let totalTokens = 0;
 
-	// First pass: collect file ops from ALL entries (even if they don't fit in token budget)
-	// This ensures we capture cumulative file tracking from nested branch summaries
-	// Only extract from akramcode-generated summaries (fromHook !== true), not extension-generated ones
+	// See docs/adr/coding-agent/core-compaction-branch-summarization.md#two-pass-file-operations-collection
 	for (const entry of entries) {
 		if (entry.type === "branch_summary" && !entry.fromHook && entry.details) {
 			const details = entry.details as BranchSummaryDetails;
@@ -207,7 +205,7 @@ export function prepareBranchEntries(entries: SessionEntry[], tokenBudget: numbe
 				for (const f of details.readFiles) fileOps.read.add(f);
 			}
 			if (Array.isArray(details.modifiedFiles)) {
-				// Modified files go into both edited and written for proper deduplication
+				// See docs/adr/coding-agent/core-compaction-branch-summarization.md#two-pass-file-operations-collection
 				for (const f of details.modifiedFiles) {
 					fileOps.edited.add(f);
 				}
@@ -228,7 +226,7 @@ export function prepareBranchEntries(entries: SessionEntry[], tokenBudget: numbe
 
 		// Check budget before adding
 		if (tokenBudget > 0 && totalTokens + tokens > tokenBudget) {
-			// If this is a summary entry, try to fit it anyway as it's important context
+			// See docs/adr/coding-agent/core-compaction-branch-summarization.md#summary-entry-token-budget-override
 			if (entry.type === "compaction" || entry.type === "branch_summary") {
 				if (totalTokens < tokenBudget * 0.9) {
 					messages.unshift(message);

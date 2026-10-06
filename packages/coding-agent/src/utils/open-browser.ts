@@ -15,9 +15,7 @@ export function openBrowser(target: string): void {
 				? ["rundll32", ["url.dll,FileProtocolHandler", target]]
 				: ["xdg-open", [target]];
 
-	// spawn reports launcher failures (for example, missing xdg-open) via an
-	// error event. Browser launch is best-effort: callers still present the target
-	// to the user, so keep the launcher failure from becoming a process crash.
+	// See docs/adr/coding-agent/utils-open-browser.md#best-effort-launcher-error-handling
 	spawn(cmd, args, { stdio: "ignore", detached: true })
 		.on("error", () => {})
 		.unref();

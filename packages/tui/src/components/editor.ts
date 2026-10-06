@@ -50,7 +50,7 @@ function segmentWithMarkers(
 	baseSegmenter: Intl.Segmenter,
 	validIds: Set<number>,
 ): Iterable<Intl.SegmentData> {
-	// Fast path: no paste markers in the text or no valid IDs.
+	// See docs/adr/tui/components-editor.md#paste-marker-segmentation
 	if (validIds.size === 0 || !text.includes("[paste #")) {
 		return baseSegmenter.segment(text);
 	}
@@ -136,8 +136,7 @@ export function wordWrapLine(line: string, maxWidth: number, preSegmented?: Intl
 	let currentWidth = 0;
 	let chunkStart = 0;
 
-	// Wrap opportunity: the position after the last whitespace before a non-whitespace
-	// grapheme, i.e. where a line break is allowed.
+	// See docs/adr/tui/components-editor.md#wrap-opportunity-concept
 	let wrapOppIndex = -1;
 	let wrapOppWidth = 0;
 
@@ -170,11 +169,7 @@ export function wordWrapLine(line: string, maxWidth: number, preSegmented?: Intl
 		}
 
 		if (gWidth > maxWidth) {
-			// Single atomic segment wider than maxWidth (e.g. paste marker
-			// in a narrow terminal). Re-wrap it at grapheme granularity.
-
-			// The segment remains logically atomic for cursor
-			// movement / editing — the split is purely visual for word-wrap layout.
+			// See docs/adr/tui/components-editor.md#atomic-segment-visual-wrapping
 			const subChunks = wordWrapLine(grapheme, maxWidth);
 			for (let j = 0; j < subChunks.length - 1; j++) {
 				const sc = subChunks[j]!;
@@ -251,9 +246,8 @@ const SLASH_COMMAND_SELECT_LIST_LAYOUT: SelectListLayoutOptions = {
 
 const ATTACHMENT_AUTOCOMPLETE_DEBOUNCE_MS = 20;
 const DEFAULT_AUTOCOMPLETE_TRIGGER_CHARACTERS = ["@", "#"];
-// Unquoted completions end at whitespace or CJK punctuation; quoted paths may contain either.
+// See docs/adr/tui/components-editor.md#autocomplete-trigger-boundaries
 const unquotedAutocompleteSuffixRegex = new RegExp(`(?:(?!${autocompleteSeparatorRegex.source}).)*`, "u");
-// Trigger tokens may be wrapped in prose, e.g. "(@src/foo" or "`@src/foo".
 const autocompleteTokenStartSource = `${autocompleteBoundaryRegex.source}[([{<\`]*`;
 
 function escapeCharacterClass(value: string): string {
@@ -307,7 +301,7 @@ export class Editor implements Component, Focusable {
 	private theme: EditorTheme;
 	private paddingX: number = 0;
 
-	// Store last render geometry for cursor navigation and mouse hit-testing.
+	// See docs/adr/tui/components-editor.md#render-geometry-caching
 	private lastWidth: number = 80;
 	private renderedVisibleLineCount = 1;
 	private renderedAutocompleteHeight = 0;
@@ -333,34 +327,30 @@ export class Editor implements Component, Focusable {
 	private autocompleteStartToken: number = 0;
 	private autocompleteRequestId: number = 0;
 
-	// Paste tracking for large pastes
+	// See docs/adr/tui/components-editor.md#large-paste-tracking
 	private pastes: Map<number, string> = new Map();
 	private pasteCounter: number = 0;
 
-	// Bracketed paste mode buffering
+	// See docs/adr/tui/components-editor.md#bracketed-paste-buffering
 	private pasteBuffer: string = "";
 	private isInPaste: boolean = false;
 
-	// Prompt history for up/down navigation
+	// See docs/adr/tui/components-editor.md#history-navigation-state
 	private history: string[] = [];
 	private historyIndex: number = -1; // -1 = not browsing, 0 = most recent, 1 = older, etc.
 	private historyDraft: EditorState | null = null;
 
-	// Kill ring for Emacs-style kill/yank operations
+	// See docs/adr/tui/components-editor.md#kill-ring-for-emacs-operations
 	private killRing = new KillRing();
 	private lastAction: "kill" | "yank" | "type-word" | null = null;
 
 	// Character jump mode
 	private jumpMode: "forward" | "backward" | null = null;
 
-	// Preferred visual column for vertical cursor movement (sticky column)
+	// See docs/adr/tui/components-editor.md#cursor-snapping-from-atomic-segments
 	private preferredVisualCol: number | null = null;
 
-	// When the cursor is snapped to the start of an atomic segment, e.g. a
-	// paste marker, cursorCol no longer reflects where the cursor would have
-	// landed. This field stores the pre-snap cursorCol so that the next
-	// vertical move can resolve it to a visual column on whatever VL it belongs
-	// to.
+	// See docs/adr/tui/components-editor.md#cursor-snapping-from-atomic-segments
 	private snappedFromCursorCol: number | null = null;
 
 	// Undo support
@@ -522,8 +512,7 @@ export class Editor implements Component, Focusable {
 		const paddingX = Math.min(this.paddingX, maxPadding);
 		const contentWidth = Math.max(1, width - paddingX * 2);
 
-		// Layout width: with padding the cursor can overflow into it,
-		// without padding we reserve 1 column for the cursor.
+		// See docs/adr/tui/components-editor.md#layout-width-with-padding
 		const layoutWidth = Math.max(1, contentWidth - (paddingX ? 0 : 1));
 
 		// Store for cursor navigation (must match wrapping width)
@@ -532,7 +521,7 @@ export class Editor implements Component, Focusable {
 		// Layout the text
 		const layoutLines = this.layoutText(layoutWidth);
 
-		// Calculate max visible lines: 30% of terminal height, minimum 5 lines
+		// See docs/adr/tui/components-editor.md#maximum-visible-lines
 		const terminalRows = this.tui.terminal.rows;
 		const maxVisibleLines = Math.max(5, Math.floor(terminalRows * 0.3));
 
@@ -563,9 +552,7 @@ export class Editor implements Component, Focusable {
 		result.push(this.renderTopBorder(width, this.scrollOffset));
 
 		// Render each visible layout line
-		// Emit hardware cursor marker when focused so TUI can position the
-		// hardware cursor for IME candidate-window placement even while
-		// autocomplete (e.g. slash-command menu) is visible.
+		// See docs/adr/tui/components-editor.md#hardware-cursor-marker-for-ime
 		const emitCursorMarker = this.focused;
 
 		for (const layoutLine of visibleLines) {
@@ -578,7 +565,7 @@ export class Editor implements Component, Focusable {
 				const before = displayText.slice(0, layoutLine.cursorPos);
 				const after = displayText.slice(layoutLine.cursorPos);
 
-				// Hardware cursor marker (zero-width, emitted before fake cursor for IME positioning)
+				// See docs/adr/tui/components-editor.md#hardware-cursor-position
 				const marker = emitCursorMarker ? CURSOR_MARKER : "";
 
 				if (after.length > 0) {
@@ -606,7 +593,7 @@ export class Editor implements Component, Focusable {
 			const padding = " ".repeat(Math.max(0, contentWidth - lineVisibleWidth));
 			const lineRightPadding = cursorInPadding ? rightPadding.slice(1) : rightPadding;
 
-			// Render the line (no side borders, just horizontal lines above and below)
+			// See docs/adr/tui/components-editor.md#no-side-borders-design
 			result.push(`${leftPadding}${displayText}${padding}${lineRightPadding}`);
 		}
 
@@ -650,10 +637,7 @@ export class Editor implements Component, Focusable {
 			return result ? { ...result, focus: true } : undefined;
 		}
 
-		// Leave press/drag/release unhandled so the renderer's screen-level text
-		// selection can run over the editor rows (drag to select, release to copy).
-		// The renderer synthesizes a click when press and release land on the same
-		// cell without movement, which is the gesture that positions the cursor.
+		// See docs/adr/tui/components-editor.md#mouse-event-handling-architecture
 		if (event.type !== "click" || event.button !== "left") return undefined;
 		if (event.y <= 0 || event.y > this.renderedVisibleLineCount) return { handled: true, focus: true };
 
@@ -1200,11 +1184,7 @@ export class Editor implements Component, Focusable {
 	private insertCharacter(char: string, skipUndoCoalescing?: boolean): void {
 		this.exitHistoryBrowsing();
 
-		// Undo coalescing (fish-style):
-		// - Consecutive word chars coalesce into one undo unit
-		// - Space captures state before itself (so undo removes space+following word together)
-		// - Each space is separately undoable
-		// Skip coalescing when called from atomic operations (e.g., handlePaste)
+		// See docs/adr/tui/components-editor.md#undo-coalescing-strategy
 		if (!skipUndoCoalescing) {
 			if (isWhitespaceChar(char) || this.lastAction !== "type-word") {
 				this.pushUndoSnapshot();
@@ -1263,11 +1243,7 @@ export class Editor implements Component, Focusable {
 
 		this.pushUndoSnapshot();
 
-		// Some terminals (e.g. tmux popups with extended-keys-format=csi-u) re-encode
-		// control bytes inside bracketed paste as CSI-u Ctrl+<letter> sequences
-		// (ESC [ <codepoint> ; 5 u). Decode those back to their literal byte so the
-		// per-char filter below preserves newlines instead of stripping ESC and
-		// leaking the printable tail (e.g. "[106;5u") into the editor.
+		// See docs/adr/tui/components-editor.md#terminal-control-sequence-workaround
 		const decodedText = pastedText.replace(/\x1b\[(\d+);5u/g, (match, code) => {
 			const cp = Number(code);
 			if (cp >= 97 && cp <= 122) return String.fromCharCode(cp - 96);
@@ -1284,8 +1260,7 @@ export class Editor implements Component, Focusable {
 			.filter((char) => char === "\n" || char.charCodeAt(0) >= 32)
 			.join("");
 
-		// If pasting a file path (starts with /, ~, or .) and the character before
-		// the cursor is a word character, prepend a space for better readability
+		// See docs/adr/tui/components-editor.md#file-path-space-insertion
 		if (/^[/~.]/.test(filteredText)) {
 			const currentLine = this.state.lines[this.state.cursorLine] || "";
 			const charBeforeCursor = this.state.cursorCol > 0 ? currentLine[this.state.cursorCol - 1] : "";
@@ -1394,21 +1369,17 @@ export class Editor implements Component, Focusable {
 			const isPastedSegmented = PASTE_MARKER_SINGLE.exec(lastGrapheme.segment);
 
 			if (isPastedSegmented) {
-				// This contains the id part e.g 4 from [paste #4 +123 lines]
+				// See docs/adr/tui/components-editor.md#paste-marker-renumbering
 				const targetId = Number(isPastedSegmented[1]);
 				this.pastes.delete(targetId);
 				this.pasteCounter--;
 
-				// Shift registry entries down in ascending id order, independent
-				// of marker order in the text ([paste #3] becomes [paste #2] when
-				// [paste #1] is removed).
 				const higherIds = [...this.pastes.keys()].filter((id) => id > targetId).sort((a, b) => a - b);
 				for (const id of higherIds) {
 					this.pastes.set(id - 1, this.pastes.get(id)!);
 					this.pastes.delete(id);
 				}
 
-				// Renumber markers with ids greater than the removed one.
 				this.state.lines = this.state.lines.map((line) =>
 					line.replace(PASTE_MARKER_REGEX, (fullMatch, idGroup, suffixGroup) => {
 						const x = Number(idGroup);
@@ -1484,9 +1455,7 @@ export class Editor implements Component, Focusable {
 		const targetVL = visualLines[targetVisualLine];
 		if (!(currentVL && targetVL)) return;
 
-		// When the cursor was snapped to a segment start, resolve the pre-snap
-		// position against the VL it belongs to. This gives the correct visual
-		// column even after a resize reshuffles VLs.
+		// See docs/adr/tui/components-editor.md#cursor-snap-resolution
 		let currentVisualCol: number;
 		if (this.snappedFromCursorCol !== null) {
 			const vlIndex = this.findVisualLineAt(visualLines, currentVL.logicalLine, this.snappedFromCursorCol);
@@ -1495,7 +1464,7 @@ export class Editor implements Component, Focusable {
 			currentVisualCol = this.state.cursorCol - currentVL.startCol;
 		}
 
-		// For non-last segments, clamp to length-1 to stay within the segment
+		// See docs/adr/tui/components-editor.md#non-last-segment-clamping
 		const isLastSourceSegment =
 			currentVisualLine === visualLines.length - 1 ||
 			visualLines[currentVisualLine + 1]?.logicalLine !== currentVL.logicalLine;
@@ -1514,9 +1483,7 @@ export class Editor implements Component, Focusable {
 		const logicalLine = this.state.lines[targetVL.logicalLine] || "";
 		this.state.cursorCol = Math.min(targetCol, logicalLine.length);
 
-		// Snap cursor to atomic segment boundary (e.g. paste markers)
-		// so the cursor never lands in the middle of a multi-grapheme unit.
-		// Single-grapheme segments don't need snapping.
+		// See docs/adr/tui/components-editor.md#atomic-segment-snapping
 		const segments = [...this.segment(logicalLine, "grapheme")];
 		for (const seg of segments) {
 			if (seg.index > this.state.cursorCol) break;
@@ -1526,9 +1493,7 @@ export class Editor implements Component, Focusable {
 				const isMovingDown = targetVisualLine > currentVisualLine;
 
 				if (isContinuation && isMovingDown) {
-					// The segment started on a previous visual line, and we
-					// already visited it on the way down. Skip all remaining
-					// continuation VLs and land on the first VL past it.
+					// See docs/adr/tui/components-editor.md#continuation-segment-skipping
 					const segEnd = seg.index + seg.segment.length;
 					let next = targetVisualLine + 1;
 					while (
@@ -1544,9 +1509,7 @@ export class Editor implements Component, Focusable {
 					}
 				}
 
-				// Snap to the start of the segment so it gets highlighted.
-				// Store the pre-snap position so the next vertical move can
-				// resolve it to the correct visual column.
+				// See docs/adr/tui/components-editor.md#segment-start-snapping
 				this.snappedFromCursorCol = this.state.cursorCol;
 				this.state.cursorCol = seg.index;
 				return;
@@ -1711,7 +1674,7 @@ export class Editor implements Component, Focusable {
 		} else {
 			this.pushUndoSnapshot();
 
-			// Save lastAction before cursor movement (moveWordBackwards resets it)
+			// See docs/adr/tui/components-editor.md#preserve-kill-action-on-word-delete
 			const wasKill = this.lastAction === "kill";
 
 			const oldCursorCol = this.state.cursorCol;
@@ -1754,7 +1717,7 @@ export class Editor implements Component, Focusable {
 		} else {
 			this.pushUndoSnapshot();
 
-			// Save lastAction before cursor movement (moveWordForwards resets it)
+			// See docs/adr/tui/components-editor.md#preserve-kill-action-on-word-delete
 			const wasKill = this.lastAction === "kill";
 
 			const oldCursorCol = this.state.cursorCol;
@@ -1940,14 +1903,7 @@ export class Editor implements Component, Focusable {
 			}
 		}
 
-		// Keep an open autocomplete picker in sync with the new cursor
-		// position: cursor movement changes the text before the cursor, so a
-		// picker computed for the old position is stale. Re-query so it
-		// refreshes — or closes when the new position yields no suggestions —
-		// mirroring insertCharacter()/handleBackspace(). Without this, arrowing
-		// left from `/cmd ` back into the command name leaves the argument
-		// picker showing against a `/cmd` prefix (and a Tab there would
-		// concatenate the stale suggestion onto the partial command name).
+		// See docs/adr/tui/components-editor.md#autocomplete-sync-on-cursor-movement
 		if (this.autocompleteState) {
 			this.updateAutocomplete();
 		}
@@ -2185,7 +2141,7 @@ export class Editor implements Component, Focusable {
 		);
 	}
 
-	// Slash menu only allowed on the first line of the editor
+	// See docs/adr/tui/components-editor.md#slash-menu-constraint
 	private isSlashMenuAllowed(): boolean {
 		return this.state.cursorLine === 0;
 	}

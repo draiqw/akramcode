@@ -110,8 +110,7 @@ export function renderDiff(diffText: string, _options: RenderDiffOptions = {}): 
 				i++;
 			}
 
-			// Only do intra-line diffing when there's exactly one removed and one added line
-			// (indicating a single line modification). Otherwise, show lines as-is.
+			// See docs/adr/coding-agent/modes-interactive-components-diff.md#single-line-intra-line-diffing
 			if (removedLines.length === 1 && addedLines.length === 1) {
 				const removed = removedLines[0];
 				const added = addedLines[0];

@@ -78,7 +78,7 @@ const EXTENSION_LOAD_FAILURE_HINT = `Hint: Start without extensions using "${APP
  * Returns undefined if stdin is a TTY (interactive terminal).
  */
 async function readPipedStdin(): Promise<string | undefined> {
-	// If stdin is a TTY, we're running interactively - don't read stdin
+	// See docs/adr/coding-agent/main.md#tty-detection-for-piped-stdin
 	if (process.stdin.isTTY) {
 		return undefined;
 	}
@@ -255,8 +255,7 @@ async function resolveSessionPath(sessionArg: string, cwd: string, sessionDir?: 
 		return { type: "path", path: resolvePath(sessionArg, cwd) };
 	}
 
-	// Exact IDs only require reading session headers. Fall back to the full
-	// metadata listing for prefix matches.
+	// See docs/adr/coding-agent/main.md#session-resolution-by-exact-id
 	const exactLocalMatch = findLocalSessionByExactId(sessionArg, cwd, sessionDir);
 	if (exactLocalMatch) {
 		return exactLocalMatch;
@@ -597,10 +596,7 @@ export async function main(args: string[], options?: MainOptions) {
 	if (await handlePackageCommand(args, { extensionFactories })) {
 		const exitCode = process.exitCode ?? 0;
 		if (process.platform === "win32" && exitCode === 0 && args[0] === "update") {
-			// We normally prefer process.exit(0) for package commands so bad extensions cannot keep
-			// one-shot commands alive. On Windows, Node can assert after fetch() if process.exit(0)
-			// runs during teardown; let successful `akramcode update` drain naturally instead.
-			// https://github.com/nodejs/node/issues/56645
+			// See docs/adr/coding-agent/main.md#windows-process-exit-during-fetch-teardown
 			return;
 		}
 		process.exit(exitCode);
@@ -680,11 +676,7 @@ export async function main(args: string[], options?: MainOptions) {
 		startupSettingsManager.applyOverrides({ theme: parsed.useTheme });
 	}
 
-	// Decide the final runtime cwd before creating cwd-bound runtime services.
-	// --session and --resume may select a session from another project, so project-local
-	// settings, resources, provider registrations, and models must be resolved only after
-	// the target session cwd is known. The startup-cwd settings manager is used only for
-	// sessionDir lookup during session selection.
+	// See docs/adr/coding-agent/main.md#project-cwd-resolution-before-runtime-services
 	const envSessionDir = process.env[ENV_SESSION_DIR];
 	const sessionDir =
 		(parsed.sessionDir ? normalizePath(parsed.sessionDir) : undefined) ??
@@ -899,7 +891,7 @@ export async function main(args: string[], options?: MainOptions) {
 
 	const { initialMessage, initialImages } = await prepareInitialMessage(parsed, stdinContent);
 	time("prepareInitialMessage");
-	// akramcode reads user-authored themes, so it opts into full validation before any theme loads.
+	// See docs/adr/coding-agent/main.md#user-authored-theme-validation
 	setThemeJsonValidator(validateThemeJson);
 	initTheme(settingsManager.getTheme(), appMode === "interactive");
 	time("initTheme");
@@ -934,7 +926,7 @@ export async function main(args: string[], options?: MainOptions) {
 		process.exit(1);
 	}
 
-	// RPC refreshes catalogs here in the background; interactive mode starts its refresh after TUI initialization.
+	// See docs/adr/coding-agent/main.md#rpc-catalog-refresh-timing
 	if (!offlineMode && appMode === "rpc") {
 		const controller = new AbortController();
 		const timeout = setTimeout(() => controller.abort(), 15_000);

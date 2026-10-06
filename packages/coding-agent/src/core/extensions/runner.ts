@@ -90,8 +90,7 @@ import type {
 	UserBashEventResult,
 } from "./types.ts";
 
-// Extension shortcuts compete with canonical keybinding ids from keybindings.json.
-// Only editor-global shortcuts are reserved here. Picker-specific bindings are not.
+// See docs/adr/coding-agent/core-extensions-runner.md#extension-shortcuts-keybinding-priority
 const RESERVED_KEYBINDINGS_FOR_EXTENSION_CONFLICTS = [
 	"app.interrupt",
 	"app.clear",
@@ -123,8 +122,7 @@ const buildBuiltinKeybindings = (resolvedKeybindings: KeybindingsConfig): BuiltI
 		const restrictOverride = (RESERVED_KEYBINDINGS_FOR_EXTENSION_CONFLICTS as readonly string[]).includes(keybinding);
 		for (const key of keyList) {
 			const normalizedKey = key.toLowerCase() as KeyId;
-			// If multiple actions bind the same key, the reserved action wins so extensions
-			// remain blocked by reserved shortcuts regardless of iteration order.
+			// See docs/adr/coding-agent/core-extensions-runner.md#extension-shortcuts-keybinding-priority
 			const existing = builtinKeybindings[normalizedKey];
 			if (existing?.restrictOverride && !restrictOverride) continue;
 			builtinKeybindings[normalizedKey] = {
@@ -452,8 +450,7 @@ export class ExtensionRunner {
 		this.executeToolFn = contextActions.executeTool;
 		this.getCallableToolsFn = contextActions.getCallableTools ?? (() => []);
 
-		// Servers registered from now on reach the extension that connects them right away. Servers
-		// registered during loading are read on session_start.
+		// See docs/adr/coding-agent/core-extensions-runner.md#server-registration-timing-and-connection
 		this.runtime.mcpServers.setChangeListener(() => {
 			void this.emit({ type: "mcp_servers_change", servers: this.runtime.mcpServers.list() });
 			this.reportUnhandledMcpServers();
@@ -512,8 +509,7 @@ export class ExtensionRunner {
 		}
 		this.runtime.pendingVirtualModelRegistrations = [];
 
-		// From this point on, provider registration/unregistration takes effect immediately
-		// without requiring a /reload.
+		// See docs/adr/coding-agent/core-extensions-runner.md#immediate-provider-registration-after-bind
 		this.runtime.registerProvider = (name, config) => {
 			if (providerActions?.registerProvider) {
 				providerActions.registerProvider(name, config);
@@ -1324,8 +1320,7 @@ export class ExtensionRunner {
 					const event: ContextWithSystemEvent = { type: "context_with_system", messages: currentMessages };
 					const handlerResult = (await handler(event, ctx)) as ContextEventResult | undefined;
 					currentMessages = handlerResult?.messages ?? currentMessages;
-					// Providers read the prompt and initial tools from the leading system message.
-					// Losing it is never intended; report it but honor the handler's output.
+					// See docs/adr/coding-agent/core-extensions-runner.md#leading-system-message-preservation-in-handlers
 					if (hadLeadingSystemMessage && currentMessages[0]?.role !== "system") {
 						this.emitError({
 							extensionPath: ext.path,

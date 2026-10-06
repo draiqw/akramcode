@@ -200,7 +200,7 @@ export async function openDurable(options: OpenDurableOptions = {}): Promise<Ope
 		report = (error) => notice("warning", error instanceof Error ? error.message : String(error));
 		for (const error of pendingReports) report(error);
 		let unsubscribe = conversation.subscribe((value) => update({ conversation: value }));
-		// Subagents appear as their conversations are created. A commit listener only records; it calls no Session API.
+		// See docs/adr/coding-agent/experimental-durable-runtime.md#commit-listener-design
 		const unsubscribeCommits = harness.subscribeCommits((publication) => {
 			let conversations = state.conversations;
 			for (const change of publication.changes) {

@@ -166,7 +166,7 @@ export function truncateHead(content: string, options: TruncationOptions = {}): 
 		outputBytesCount += lineBytes;
 	}
 
-	// Without a byte break, only omitted lines prove the line limit was reached; otherwise a trailing newline exceeded bytes.
+	// See docs/adr/durable/truncate.md#line-vs-byte-limit-detection-logic
 	if (truncatedBy !== "bytes") truncatedBy = outputLinesArr.length < totalLines ? "lines" : "bytes";
 
 	const outputContent = outputLinesArr.join("\n");

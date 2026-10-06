@@ -114,8 +114,7 @@ export const codemodeRenderers: Pick<
 			component.addChild(new Text(lines.join("\n"), 0, 0));
 		}
 
-		// Drop the "Script completed\nWall time ...\nOutput:\n" header. Rejected input (invalid options)
-		// has no header.
+		// See docs/adr/coding-agent/extensions-codemode-renderer.md#drop-script-header-from-output-display
 		const [first, ...rest] = result.content;
 		const hasHeader = first?.type === "text" && SCRIPT_HEADER.test(first.text);
 		const output = options.isPartial
@@ -131,7 +130,7 @@ export const codemodeRenderers: Pick<
 			if (options.expanded) {
 				component.addChild(new Text(styled, 0, 0));
 			} else {
-				// Limit wrapped lines, not logical ones: script output is often one long JSON line.
+				// See docs/adr/coding-agent/extensions-codemode-renderer.md#count-wrapped-visual-lines-for-truncation
 				component.addChild(
 					new VisualLinePreview({
 						text: styled,
@@ -140,7 +139,7 @@ export const codemodeRenderers: Pick<
 						formatHint: (hidden) => expandHint(theme, hidden, "lines"),
 					}),
 				);
-				// The collapsed preview hides the truncation notice at the end, so name the file here.
+				// See docs/adr/coding-agent/extensions-codemode-renderer.md#show-file-path-in-collapsed-preview
 				const fullOutputPath = result.details?.fullOutputPath;
 				if (fullOutputPath) component.addChild(new Text(theme.fg("muted", `Full output: ${fullOutputPath}`), 0, 0));
 			}

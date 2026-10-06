@@ -9,8 +9,7 @@ interface ResizeImageWorkerResponse {
 }
 
 function toTransferableBytes(input: Uint8Array): Uint8Array<ArrayBuffer> {
-	// Transfer detaches the buffer, so transfer a worker-owned copy and leave the
-	// caller's bytes intact.
+	// See docs/adr/coding-agent/utils-image-resize.md#buffer-transfer-semantics
 	return new Uint8Array(input);
 }
 
@@ -93,9 +92,7 @@ export async function resizeImage(
 		import.meta.url,
 	);
 
-	// Bun compiled executables resolve worker entrypoints by string path, not via
-	// new URL(..., import.meta.url). Try the string path first under Bun so the
-	// release binary uses the embedded worker instead of falling back in-process.
+	// See docs/adr/coding-agent/utils-image-resize.md#bun-worker-path-resolution
 	if (typeof process.versions.bun === "string") {
 		try {
 			return await resizeImageInWorker("./src/utils/image-resize-worker.ts", inputBytes, mimeType, options);

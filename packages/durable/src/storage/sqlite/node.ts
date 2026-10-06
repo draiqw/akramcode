@@ -40,7 +40,7 @@ class SerialOperationQueue {
 	runAsync<T>(operation: () => Promise<T>): Promise<T> {
 		if (this.pending > 0) return this.enqueue(operation);
 		this.pending++;
-		// Publish the barrier before the operation starts, so calls it makes synchronously wait behind it.
+		// See docs/adr/durable/storage-sqlite-node.md#publish-barrier-before-operation-starts
 		const { promise: barrier, resolve: releaseBarrier } = Promise.withResolvers<void>();
 		this.tail = barrier;
 		let started: Promise<T>;

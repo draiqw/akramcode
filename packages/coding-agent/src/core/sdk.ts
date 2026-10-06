@@ -33,9 +33,7 @@ import {
 } from "./tools/index.ts";
 import { getBranchSelection } from "./virtual-models.ts";
 
-// Preserve the pre-0.81 fallback for extensions that construct Agent instances
-// or invoke low-level agent loops without supplying streamFn. Agent core remains
-// provider-agnostic and does not import akramcode-ai/compat itself.
+// See docs/adr/coding-agent/core-sdk.md#default-stream-function-fallback
 setDefaultStreamFn(streamSimple);
 
 export interface CreateAgentSessionOptions {

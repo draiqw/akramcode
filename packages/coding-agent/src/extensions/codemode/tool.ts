@@ -373,12 +373,12 @@ export function createCodemodeToolDefinition(
 		promptSnippet: codemodeToolSystemPromptContribution.snippet,
 		promptGuidelines: [...codemodeToolSystemPromptContribution.guidelines],
 		parameters: codemodeSchema,
-		// Scripts must not start other scripts.
+		// See docs/adr/coding-agent/extensions-codemode-tool.md#scripts-cannot-start-other-scripts
 		exposure: "model-only",
 		prepareLoadout: (loadout) => prepareCodemodeLoadout(loadout, options),
-		// Capable models write the script as raw text instead of a JSON-escaped string.
+		// See docs/adr/coding-agent/extensions-codemode-tool.md#raw-text-output-for-capable-models
 		constrainedSampling: { type: "grammar", variants: { openai_lark: CODEMODE_SOURCE_GRAMMAR } },
-		// The sandbox (worker, QuickJS wasm) loads on the first call, not at startup.
+		// See docs/adr/coding-agent/extensions-codemode-tool.md#lazy-load-sandbox-resources
 		execute: async (toolCallId, params, signal, onUpdate, ctx) =>
 			(await loadCodemodeExecutor()).executeCodemode(toolCallId, params, signal, onUpdate, ctx, options),
 		...codemodeRenderers,

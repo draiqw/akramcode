@@ -154,7 +154,7 @@ export const GenerationTask = defineTask<GenerationInput, GenerationCheckpoint, 
 					? thresholdCompaction(view, entries, resolved.contextWindow, settings.compaction)
 					: undefined;
 			if (threshold === "blocking") {
-				// Compact first and prepare again; the transcript is unchanged until the compaction appends.
+				// See docs/adr/durable/harness-generation.md#blocking-compaction-before-request
 				await runtime.commit(async (tx): Promise<Next> => {
 					const child = await createCompaction(tx, conversationId, { reason: "threshold" }, runtime.taskId);
 					const checkpoint = { phase: "prepare", attempt, compacted: child } as const;
@@ -166,7 +166,7 @@ export const GenerationTask = defineTask<GenerationInput, GenerationCheckpoint, 
 				let cutoff = (await tx.scanEntries({ conversationId }, 1)).items[0]?.id;
 				for (const entry of entries) cutoff = (await tx.appendEntry(SystemEntry, conversationId, entry)).id;
 				if (cutoff === undefined) throw new Error(`Conversation ${conversationId} has no entries to send`);
-				// Checked in this commit, so a compaction admitted during preparation counts.
+				// See docs/adr/durable/harness-generation.md#compaction-check-timing
 				if (threshold === "background" && (await tx.doc(LiveDoc, conversationId)).compactions === undefined) {
 					await createCompaction(tx, conversationId, { reason: "threshold" });
 				}
@@ -262,7 +262,7 @@ export const GenerationTask = defineTask<GenerationInput, GenerationCheckpoint, 
 			}
 		}
 		const conversationId = runtime.conversationId;
-		// Runs after the round's tool tasks are terminal; calls never started get `aborted` results (spec §8.5).
+		// See docs/adr/durable/harness-generation.md#tool-task-results-after-terminal
 		const unstarted =
 			checkpoint.phase === "tools"
 				? await readCalls(runtime, checkpoint.assistant, checkpoint.pending, context)
@@ -377,7 +377,7 @@ async function streamResponse(
 		pending = undefined;
 		if (partial === undefined || stopped) return;
 		inFlight = (async () => {
-			// Copy synchronously: the provider keeps mutating its partial.
+			// See docs/adr/durable/harness-generation.md#synchronous-partial-copy
 			const message = copyJson(partial, { omitUndefinedProperties: true });
 			await runtime.commit(async (tx) => {
 				const live = await tx.doc(LiveDoc, runtime.conversationId);
@@ -387,7 +387,7 @@ async function streamResponse(
 			}, context);
 		})()
 			.catch((error: unknown) => {
-				// Rejections after an abort mark or close are expected; the committed state stays consistent.
+				// See docs/adr/durable/harness-generation.md#error-handling-after-abort
 				if (!runtime.signal.aborted) runtime.report(error);
 			})
 			.finally(() => {
@@ -398,8 +398,7 @@ async function streamResponse(
 	try {
 		const events = runtime.models.streamSimple(model, { messages: [...messages] }, options);
 		for await (const event of events) {
-			// A partial without content, such as akramcode-ai's opening `start` event, shows nothing; a deferred response
-			// never gets past it, so it never leaves a partial.
+			// See docs/adr/durable/harness-generation.md#empty-partial-handling
 			if (event.type === "done" || event.type === "error" || event.partial.content.length === 0) continue;
 			pending = event.partial;
 			if (timer === undefined && inFlight === undefined) timer = setTimeout(flush, PARTIAL_THROTTLE_MS);
@@ -419,7 +418,7 @@ async function classify(
 	message: AssistantMessage,
 	context: Context,
 ): Promise<void> {
-	// An abort mark or close: the abort invocation or the reopened run handles the committed state.
+	// See docs/adr/durable/harness-generation.md#abort-handling-in-classify
 	runtime.signal.throwIfAborted();
 	const conversationId = runtime.conversationId;
 	const { attempt, compacted, model: ref, cutoff } = request;
@@ -452,7 +451,7 @@ async function classify(
 	if (message.stopReason === "stop" || message.stopReason === "length" || message.stopReason === "toolUse") {
 		return answer(runtime, message, context);
 	}
-	// The retry and compaction policies govern the next attempt, so they are read now rather than pinned at preparation.
+	// See docs/adr/durable/harness-generation.md#settings-read-on-classify
 	const settings = runtime.settings;
 	const overflow = message.stopReason === "error" && isContextOverflow(message);
 	if (overflow && compacted === undefined && settings.compaction.enabled) {
@@ -472,7 +471,7 @@ async function classify(
 		}
 	}
 	const policy = settings.retry;
-	// An overflow is never retried: only a compaction can make the next request fit.
+	// See docs/adr/durable/harness-generation.md#overflow-non-retriable
 	const retry =
 		message.stopReason === "error" &&
 		!overflow &&
@@ -549,7 +548,7 @@ async function startToolRound(
 	const conversationId = runtime.conversationId;
 	const messages = request.messages ?? (await runtime.context(conversationId, context, request.cutoff)).messages;
 	const offered = new Set(getCurrentTools(messages).map((tool) => tool.name));
-	// Read as the round starts; a tool is resolved as its tool task resolves it.
+	// See docs/adr/durable/harness-generation.md#tool-resolution-timing
 	const tools = (await runtime.agent(context)).tools;
 	const sequential =
 		runtime.settings.toolExecution === "sequential" ||
@@ -606,12 +605,12 @@ async function finishToolRound(
 	const slots = (await runtime.snapshot(LiveDoc, conversationId, context))?.tools ?? [];
 	const results = slots.flatMap((slot) => (slot.entry === undefined ? [] : [slot.entry]));
 	await runtime.hooks.each("afterTools", (hook) => hook(assistant, results, runtime, context));
-	// Every call of the round, including those answered without a task, must ask to terminate.
+	// See docs/adr/durable/harness-generation.md#all-calls-must-request-terminate
 	const terminate =
 		slots.length > 0 &&
 		slots.every((slot) => slot.taskId !== undefined && controls.get(slot.taskId)?.terminate === true);
 	const added = [...controls.values()].flatMap((control) => control?.addTools ?? []);
-	// The last handoff in call order wins.
+	// See docs/adr/durable/harness-generation.md#last-handoff-wins
 	const handoff = [...controls.values()].findLast((control) => control?.handoff !== undefined)?.handoff;
 	await runtime.commit(async (tx): Promise<Next> => {
 		const boundary = await prepareBoundary(tx, conversationId, runtime.settings);
@@ -630,7 +629,7 @@ async function finishToolRound(
 		} else {
 			const { users, reset } = await applyBoundary(tx, boundary, "postTools", now);
 			if (reset) {
-				// The queued reset cut the run's context before an answer.
+				// See docs/adr/durable/harness-generation.md#reset-before-answer
 				endRun(tx, live, runtime.taskId, { status: "unanswered", reason: "reset" });
 				if (users.length > 0) await startRun(tx, conversationId, live, users);
 			} else {

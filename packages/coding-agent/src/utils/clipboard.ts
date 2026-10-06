@@ -81,8 +81,7 @@ export async function copyToClipboard(text: string): Promise<void> {
 	const p = platform();
 	const env = process.env;
 	let copied = false;
-	// Direct writes precede OSC 52 so the terminal cannot race the native writer.
-	// Linux tools retain clipboard selection ownership after this call returns.
+	// See docs/adr/coding-agent/utils-clipboard.md#native-writer-precedence-over-osc-52
 	if (p !== "linux") {
 		try {
 			const clipboard = getNativeClipboard();
@@ -118,9 +117,7 @@ export async function copyToClipboard(text: string): Promise<void> {
 		if (env.WT_SESSION) osc52Emitted = emitOsc52(text);
 		copied = osc52Emitted || (await copyViaWindowsClipboard(text));
 	}
-	// OSC 52 cannot be verified, so a desktop session with a display reports the failure
-	// instead (#9618). Without a display the terminal is the only clipboard route (containers,
-	// WSL without WSLg), and remote sessions always emit it to reach the client clipboard.
+	// See docs/adr/coding-agent/utils-clipboard.md#display-aware-osc-52-fallback
 	const headless = p === "linux" && !env.DISPLAY && !env.WAYLAND_DISPLAY && !env.TERMUX_VERSION;
 	let oversized = false;
 	if (!osc52Emitted && (isRemoteSession(env) || (!copied && headless))) {

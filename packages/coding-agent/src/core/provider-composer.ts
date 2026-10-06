@@ -400,7 +400,7 @@ function composeApiKeyAuth(
 	const inherited = base?.auth.apiKey;
 	const rawKey = configuredApiKey(config, extension);
 	const oauth = extension?.oauth ?? base?.auth.oauth;
-	// OAuth-only providers get no fabricated API-key login method.
+	// See docs/adr/coding-agent/core-provider-composer.md#oauth-only-providers
 	if (!inherited && rawKey === undefined && oauth) return undefined;
 	const rawHeaders = configuredHeaders(config, extension);
 	const authHeader = extension?.authHeader ?? config?.authHeader ?? false;
@@ -487,8 +487,7 @@ function rawModelHeaders(
 	config: ModelsJsonProvider | undefined,
 	extension: ProviderConfigInput | undefined,
 ): Record<string, string> | undefined {
-	// models.json definitions and overrides are chat-only. Extension definitions
-	// are matched by operation and id so colliding models cannot share headers.
+	// See docs/adr/coding-agent/core-provider-composer.md#modelsjson-chat-only-definitions
 	const chatDefinition = isModelType(model, "chat")
 		? config?.models?.find((entry) => entry.id === model.id)
 		: undefined;
@@ -535,8 +534,7 @@ export function composeModelProvider(
 	let refreshedExtensionModels: ProviderConfigInput["models"];
 	const currentExtension = (): ProviderConfigInput | undefined =>
 		extension && refreshedExtensionModels ? { ...extension, models: refreshedExtensionModels } : extension;
-	// models.json modelOverrides are the topmost user-config layer: they apply once,
-	// after custom-model upserts, extension model replacement, and legacy OAuth projection.
+	// See docs/adr/coding-agent/core-provider-composer.md#modeloverrides-layer-ordering
 	const getAllModels = (): AnyModel[] => {
 		let models = applyExtension(
 			providerId,
@@ -544,7 +542,7 @@ export function composeModelProvider(
 			currentExtension(),
 		);
 		if (extensionOAuthCredential && extension?.oauth?.modifyModels) {
-			// The extension hook is chat-only; other model types pass through untouched.
+			// See docs/adr/coding-agent/core-provider-composer.md#extension-oauth-hook-scope
 			models = [
 				...extension.oauth.modifyModels(
 					models.filter((model) => isModelType(model, "chat")),
@@ -560,7 +558,7 @@ export function composeModelProvider(
 				return override && isModelType(model, "chat") ? applyModelOverride(model, override) : model;
 			});
 	};
-	// Validate eagerly so registration/reload reports structural errors immediately.
+	// See docs/adr/coding-agent/core-provider-composer.md#eager-provider-validation
 	getAllModels();
 	const apiKey = composeApiKeyAuth(providerId, base, config, extension);
 	const oauth = composeOAuthAuth(providerId, base, config, extension);

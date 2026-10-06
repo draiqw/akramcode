@@ -106,9 +106,7 @@ export class Box implements Component {
 		const contentWidth = Math.max(1, width - this.paddingX * 2);
 		const leftPad = " ".repeat(this.paddingX);
 
-		// Render all children. Keep the child lines unpadded: children usually return the same string
-		// objects every frame, so the cache check below is a cheap identity comparison per line.
-		// Padding here would create new strings that must be compared character by character.
+		// See docs/adr/tui/components-box.md#unpadded-child-lines-for-cache-efficiency
 		const childLines: string[] = [];
 		const mouseChildren: Array<{ component: Component; height: number }> = [];
 		for (const child of this.children) {
@@ -161,7 +159,7 @@ export class Box implements Component {
 		const visLen = visibleWidth(line);
 		const padNeeded = Math.max(0, width - visLen);
 		const padded = line + " ".repeat(padNeeded);
-		// Already padded to width, so apply the background directly instead of measuring the line again.
+		// See docs/adr/tui/components-box.md#direct-background-application
 		return this.bgFn ? this.bgFn(padded) : padded;
 	}
 }

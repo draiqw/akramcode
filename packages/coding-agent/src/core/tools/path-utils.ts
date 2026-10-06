@@ -9,13 +9,12 @@ function tryMacOSScreenshotPath(filePath: string): string {
 }
 
 function tryNFDVariant(filePath: string): string {
-	// macOS stores filenames in NFD (decomposed) form, try converting user input to NFD
+	// See docs/adr/coding-agent/core-tools-path-utils.md#macos-filename-normalization-variants
 	return filePath.normalize("NFD");
 }
 
 function tryCurlyQuoteVariant(filePath: string): string {
-	// macOS uses U+2019 (right single quotation mark) in screenshot names like "Capture d'écran"
-	// Users typically type U+0027 (straight apostrophe)
+	// See docs/adr/coding-agent/core-tools-path-utils.md#macos-filename-normalization-variants
 	return filePath.replace(/'/g, "\u2019");
 }
 
@@ -56,25 +55,25 @@ export function resolveReadPath(filePath: string, cwd: string): string {
 		return resolved;
 	}
 
-	// Try macOS AM/PM variant (narrow no-break space before AM/PM)
+	// See docs/adr/coding-agent/core-tools-path-utils.md#macos-filename-normalization-variants
 	const amPmVariant = tryMacOSScreenshotPath(resolved);
 	if (amPmVariant !== resolved && fileExists(amPmVariant)) {
 		return amPmVariant;
 	}
 
-	// Try NFD variant (macOS stores filenames in NFD form)
+	// See docs/adr/coding-agent/core-tools-path-utils.md#macos-filename-normalization-variants
 	const nfdVariant = tryNFDVariant(resolved);
 	if (nfdVariant !== resolved && fileExists(nfdVariant)) {
 		return nfdVariant;
 	}
 
-	// Try curly quote variant (macOS uses U+2019 in screenshot names)
+	// See docs/adr/coding-agent/core-tools-path-utils.md#macos-filename-normalization-variants
 	const curlyVariant = tryCurlyQuoteVariant(resolved);
 	if (curlyVariant !== resolved && fileExists(curlyVariant)) {
 		return curlyVariant;
 	}
 
-	// Try combined NFD + curly quote (for French macOS screenshots like "Capture d'écran")
+	// See docs/adr/coding-agent/core-tools-path-utils.md#macos-filename-normalization-variants
 	const nfdCurlyVariant = tryCurlyQuoteVariant(nfdVariant);
 	if (nfdCurlyVariant !== resolved && fileExists(nfdCurlyVariant)) {
 		return nfdCurlyVariant;
@@ -90,25 +89,25 @@ export async function resolveReadPathAsync(filePath: string, cwd: string): Promi
 		return resolved;
 	}
 
-	// Try macOS AM/PM variant (narrow no-break space before AM/PM)
+	// See docs/adr/coding-agent/core-tools-path-utils.md#macos-filename-normalization-variants
 	const amPmVariant = tryMacOSScreenshotPath(resolved);
 	if (amPmVariant !== resolved && (await pathExists(amPmVariant))) {
 		return amPmVariant;
 	}
 
-	// Try NFD variant (macOS stores filenames in NFD form)
+	// See docs/adr/coding-agent/core-tools-path-utils.md#macos-filename-normalization-variants
 	const nfdVariant = tryNFDVariant(resolved);
 	if (nfdVariant !== resolved && (await pathExists(nfdVariant))) {
 		return nfdVariant;
 	}
 
-	// Try curly quote variant (macOS uses U+2019 in screenshot names)
+	// See docs/adr/coding-agent/core-tools-path-utils.md#macos-filename-normalization-variants
 	const curlyVariant = tryCurlyQuoteVariant(resolved);
 	if (curlyVariant !== resolved && (await pathExists(curlyVariant))) {
 		return curlyVariant;
 	}
 
-	// Try combined NFD + curly quote (for French macOS screenshots like "Capture d'écran")
+	// See docs/adr/coding-agent/core-tools-path-utils.md#macos-filename-normalization-variants
 	const nfdCurlyVariant = tryCurlyQuoteVariant(nfdVariant);
 	if (nfdCurlyVariant !== resolved && (await pathExists(nfdCurlyVariant))) {
 		return nfdCurlyVariant;

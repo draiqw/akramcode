@@ -66,7 +66,7 @@ export async function deriveContext(
 	const head = bounds.head;
 	const range = await scanRange(storage, conversationId, bounds, context);
 	const edits = new Map<EntryId, ContextEdit>();
-	// Edits of every entry in the range count, including older head markers that `selectActive()` drops.
+	// See docs/adr/durable/harness-context.md#edit-tracking-across-all-entries
 	for (const entry of range) for (const edit of entry.edits ?? []) edits.set(edit.target, edit);
 
 	const entries = selectActive(head, range);

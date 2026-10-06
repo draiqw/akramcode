@@ -18,7 +18,7 @@ export interface ResizedImage {
 	wasResized: boolean;
 }
 
-// 4.5MB of base64 payload. Provides headroom below Anthropic's 5MB limit.
+// See docs/adr/coding-agent/utils-image-resize-core.md#anthropic-size-headroom
 const DEFAULT_MAX_BYTES = 4.5 * 1024 * 1024;
 
 const DEFAULT_OPTIONS: Required<ImageResizeOptions> = {

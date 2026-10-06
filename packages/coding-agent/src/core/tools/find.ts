@@ -58,7 +58,7 @@ export interface FindOperations {
 
 const defaultFindOperations: FindOperations = {
 	exists: pathExists,
-	// This is a placeholder. Actual fd execution happens in execute() when no custom glob is provided.
+	// See docs/adr/coding-agent/core-tools-find.md#placeholder-glob-operation
 	glob: () => [],
 };
 
@@ -181,10 +181,7 @@ export function createFindToolDefinition(
 
 						const args: string[] = ["--glob", "--color=never", "--hidden"];
 
-						// fd normally ignores .gitignore outside git repos, so keep --no-require-git
-						// there. Inside repos, use fd's default git-aware behavior so parent
-						// .gitignore rules stop at nested repo boundaries:
-						// https://github.com/earendil-works/pi/issues/5960
+						// See docs/adr/coding-agent/core-tools-find.md#git-aware-gitignore-handling
 						let insideGitRepo = false;
 						for (let current = searchPath; ; ) {
 							if (await pathExists(path.join(current, ".git"))) {
@@ -198,9 +195,7 @@ export function createFindToolDefinition(
 						if (!insideGitRepo) args.push("--no-require-git");
 						args.push("--max-results", String(effectiveLimit));
 
-						// fd --glob matches against the basename unless --full-path is set; in --full-path
-						// mode it matches against the absolute candidate path, so a path-containing
-						// pattern like 'src/**/*.spec.ts' needs a leading '**/' to match anything.
+						// See docs/adr/coding-agent/core-tools-find.md#fd-pattern-matching-with-full-paths
 						let effectivePattern = pattern;
 						if (pattern.includes("/")) {
 							args.push("--full-path");

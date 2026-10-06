@@ -60,7 +60,7 @@ function headRange(bytes: Uint8Array, limits: OutputLimits): [number, number] {
 
 function tailRange(bytes: Uint8Array, limits: OutputLimits): [number, number] {
 	if (limits.maxLines === 0 || limits.maxBytes === 0) return [bytes.length, bytes.length];
-	// A trailing newline ends the last line rather than starting another.
+	// See docs/adr/durable/harness-output.md#trailing-newline-line-counting
 	const last = bytes[bytes.length - 1] === NEWLINE ? bytes.length - 2 : bytes.length - 1;
 	let start = 0;
 	let lines = 1;
@@ -75,7 +75,7 @@ function tailRange(bytes: Uint8Array, limits: OutputLimits): [number, number] {
 	if (bytes.length - start > limits.maxBytes) {
 		const from = bytes.length - limits.maxBytes;
 		const newline = bytes.indexOf(NEWLINE, from - 1);
-		// The first line starting inside the byte window, or a cut of the last line when it alone is too long.
+		// See docs/adr/durable/harness-output.md#byte-window-boundary-handling
 		start = newline !== -1 && newline + 1 < bytes.length ? newline + 1 : characterStart(bytes, from);
 	}
 	return [start, bytes.length];
@@ -130,7 +130,7 @@ export class OutputBuffer {
 
 	/** Accept a chunk; returns whether anything was accepted. */
 	push(chunk: string | Uint8Array): boolean {
-		// Bytes of an incomplete character from an earlier byte chunk come first.
+		// See docs/adr/durable/harness-output.md#incomplete-character-buffering
 		const text =
 			typeof chunk === "string" ? this.#decoder.decode() + chunk : this.#decoder.decode(chunk, { stream: true });
 		return this.#accept(text);
@@ -153,12 +153,11 @@ export class OutputBuffer {
 		this.#storedBytes += bytes;
 		this.#storedNewlines += newlines;
 		if (this.#limits.retain === "head") {
-			// Nothing past a full window is ever needed.
+			// See docs/adr/durable/harness-output.md#head-retention-early-stop
 			this.#full = this.#storedBytes > this.#limits.maxBytes || this.#storedNewlines >= this.#limits.maxLines;
 			return true;
 		}
-		// Drop leading chunks while the rest still holds more than a window: more than `maxBytes` bytes or `maxLines`
-		// newlines, plus one, so the window's line start can still be found. Each chunk is dropped once.
+		// See docs/adr/durable/harness-output.md#tail-retention-window-sliding
 		while (this.#chunks.length > 1) {
 			const first = this.#chunks[0]!;
 			const bytesAfter = this.#storedBytes - first.bytes;
@@ -178,7 +177,7 @@ export class OutputBuffer {
 		const kept = boundOutput(stored, this.#limits);
 		const storedLines = lines(this.#storedNewlines, stored === "" || stored.endsWith("\n"));
 		const keptLines = storedLines - kept.droppedLines;
-		// Tail windows never reach back before this one, so only the kept slice needs storing.
+		// See docs/adr/durable/harness-output.md#snapshot-optimization
 		if (this.#limits.retain === "tail" || this.#chunks.length > 1) {
 			const text = this.#limits.retain === "tail" ? kept.text : stored;
 			const bytes = this.#limits.retain === "tail" ? kept.bytes : this.#storedBytes;

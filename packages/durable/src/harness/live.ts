@@ -67,10 +67,7 @@ export const LiveDoc = defineDoc<LiveState>({
 	history: "latest",
 	fork: "initial",
 	initial: () => ({}),
-	// REMINDER: a complete base whenever nothing runs (spec §8.2): no generation and no running tool slot. That holds
-	// while idle, in the commit handing a generation over to its tool round, and between tools, so the delta chain
-	// spans at most one generation or the overlapping execution of one round's tools. A slot holds output only while
-	// running, so every base is small. Do not add a delta-count bound; the tool output benchmark checks this rule.
+	// See docs/adr/durable/harness-live.md#checkpoint-granularity-for-delta-chains
 	checkpointWhen: (value) =>
 		value.generation === undefined && !(value.tools ?? []).some((slot) => slot.status === "running"),
 });

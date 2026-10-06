@@ -449,7 +449,7 @@ export class InteractiveMode {
 	private footer: FooterComponent;
 	private footerContainer: Container;
 	private footerDataProvider: FooterDataProvider;
-	// Stored so the same manager can be injected into custom editors, selectors, and extension UI.
+	// See docs/adr/coding-agent/modes-interactive-interactive-mode.md#keybindings-manager-storage
 	private keybindings: KeybindingsManager;
 	private version: string;
 	private isInitialized = false;
@@ -957,27 +957,24 @@ export class InteractiveMode {
 			this.widgetContainerBelow,
 			this.footerContainer,
 		]);
-		// Accept text while startup completes, but only enable interrupt, exit, and submission feedback.
+		// See docs/adr/coding-agent/modes-interactive-interactive-mode.md#startup-ui-input-handling
 		this.defaultEditor.onAction("app.clear", () => this.handleCtrlC());
 		this.defaultEditor.onCtrlD = () => this.handleCtrlD();
 		this.defaultEditor.onSubmit = (text) => this.handleStartupSubmit(text);
 		this.ui.setFocus(this.editor);
 
-		// Start the UI before initializing extensions so session_start handlers can use interactive dialogs
+		// See docs/adr/coding-agent/modes-interactive-interactive-mode.md#ui-startup-before-extensions
 		this.ui.start();
 		this.isInitialized = true;
 
 		this.themeController.applyFromSettings();
-		// The header and startup notices bake theme colors into their text, so build them once the terminal
-		// reported its colors. This ends at the terminal's DA1 reply, or after 100 ms if it answers nothing.
+		// See docs/adr/coding-agent/modes-interactive-interactive-mode.md#header-theme-colors-timing
 		await this.themeController.waitForTerminalColors();
 
 		// Add header with keybindings from config (unless silenced)
 		if (this.shouldShowStartupHeader()) {
 			const showDetails = this.shouldShowStartupDetails();
-			// Built on demand so the header follows theme changes. The logo's first line carries the version,
-			// its second line the first line of key hints. Terminals that cannot render the logo get a
-			// "AkramCode vX" line instead, with the key hints below it.
+			// See docs/adr/coding-agent/modes-interactive-interactive-mode.md#header-on-demand-rendering
 			const showLogo = supportsAkramCodeLogo();
 			const withLogo = (hints: string) => {
 				if (!showLogo) return `${akramCodeWordmark()} ${theme.fg("dim", `v${this.version}`)}\n${hints}`;
@@ -1052,21 +1049,19 @@ export class InteractiveMode {
 		}
 		this.ui.requestRender();
 
-		// Ensure fd and rg are available after mounting the TUI (downloads if missing, adds to PATH via getBinDir)
-		// so slow downloads do not make startup appear frozen.
-		// Both are needed: fd for autocomplete, rg for grep tool and bash commands.
+		// See docs/adr/coding-agent/modes-interactive-interactive-mode.md#tool-availability-on-startup
 		const [fdPath] = await Promise.all([
 			ensureTool("fd", (status) => this.showManagedToolStatus(status)),
 			ensureTool("rg", (status) => this.showManagedToolStatus(status)),
 		]);
 		this.fdPath = fdPath;
 
-		// Enable the remaining input handlers only after managed-tool setup completes.
+		// See docs/adr/coding-agent/modes-interactive-interactive-mode.md#input-handlers-activation
 		this.setupKeyHandlers();
 		this.setupEditorSubmitHandler();
 		this.ui.requestRender();
 
-		// Initialize extensions first so resources are shown before messages
+		// See docs/adr/coding-agent/modes-interactive-interactive-mode.md#extension-initialization-order
 		await this.rebindCurrentSession();
 
 		// Render initial messages AFTER showing loaded resources
@@ -1140,8 +1135,7 @@ export class InteractiveMode {
 				}
 			})
 			.finally(() => {
-				// On Windows, npm can overwrite the shared console title while checking
-				// extension package versions. Restore AkramCode's title after the startup check.
+				// See docs/adr/coding-agent/modes-interactive-interactive-mode.md#windows-console-title-workaround
 				if (process.platform === "win32" && this.isInitialized) {
 					this.updateTerminalTitle();
 				}
@@ -1279,7 +1273,7 @@ export class InteractiveMode {
 			runTmuxShow("extended-keys-format"),
 		]);
 
-		// If we couldn't query tmux (timeout, sandbox, etc.), don't warn
+		// See docs/adr/coding-agent/modes-interactive-interactive-mode.md#tmux-query-robustness
 		if (extendedKeys === undefined) return undefined;
 
 		if (extendedKeys !== "on" && extendedKeys !== "always") {
@@ -1298,7 +1292,7 @@ export class InteractiveMode {
 	 * Only shows new entries since last seen version, skips for resumed sessions.
 	 */
 	private getChangelogForDisplay(): string | undefined {
-		// Skip changelog for resumed/continued sessions (already have messages)
+		// See docs/adr/coding-agent/modes-interactive-interactive-mode.md#changelog-skip-for-resumed-sessions
 		if (this.session.state.messages.length > 0) {
 			return undefined;
 		}
@@ -1308,7 +1302,7 @@ export class InteractiveMode {
 		const entries = parseChangelog(changelogPath);
 
 		if (!lastVersion) {
-			// Fresh install - record the version, don't show changelog
+			// See docs/adr/coding-agent/modes-interactive-interactive-mode.md#changelog-skip-for-fresh-installs
 			this.settingsManager.setLastChangelogVersion(VERSION);
 			return undefined;
 		}
@@ -1738,7 +1732,7 @@ export class InteractiveMode {
 			}
 			return theme.fg("dim", `  ${labels.join(", ")}`);
 		};
-		// Bodies are built on demand so the listing follows theme changes.
+		// See docs/adr/coding-agent/modes-interactive-interactive-mode.md#resource-listing-on-demand-rendering
 		const addLoadedSection = (
 			name: string,
 			collapsedBody: () => string,
@@ -2968,8 +2962,7 @@ export class InteractiveMode {
 	// =========================================================================
 
 	private setupKeyHandlers(): void {
-		// Set up handlers on defaultEditor - they use this.editor for text access
-		// so they work correctly regardless of which editor is active
+		// See docs/adr/coding-agent/modes-interactive-interactive-mode.md#key-handler-setup-location
 		this.defaultEditor.onEscape = () => {
 			if (this.session.isStreaming) {
 				this.restoreQueuedMessagesToEditor({ abort: true });
@@ -3311,8 +3304,7 @@ export class InteractiveMode {
 		switch (event.type) {
 			case "agent_start":
 				this.pendingTools.clear();
-				// Restore main escape handler if retry handler is still active
-				// (retry success event fires later, but we need main handler now)
+				// See docs/adr/coding-agent/modes-interactive-interactive-mode.md#retry-handler-restoration
 				if (this.retryEscapeHandler) {
 					this.defaultEditor.onEscape = this.retryEscapeHandler;
 					this.retryEscapeHandler = undefined;
@@ -4168,18 +4160,10 @@ export class InteractiveMode {
 	private async shutdown(options?: { fromSignal?: boolean }): Promise<void> {
 		if (this.isShuttingDown) return;
 		this.isShuttingDown = true;
-		// Keep signal handlers registered until terminal cleanup has completed.
-		// `signal-exit` checks the listener list during the same SIGTERM/SIGHUP
-		// dispatch and re-sends the signal if only its own listeners remain.
+		// See docs/adr/coding-agent/modes-interactive-interactive-mode.md#signal-handlers-during-shutdown
 
 		if (options?.fromSignal) {
-			// Signal-triggered shutdown (SIGTERM/SIGHUP). Emit extension cleanup
-			// (session_shutdown) BEFORE touching the terminal. Extension teardown
-			// such as removing sockets does not write to the tty, so it must not be
-			// skipped if a later terminal-restore write fails on a dead or stalled
-			// terminal. If the terminal is gone, the restore writes below emit EIO,
-			// which the stdout/stderr error handler turns into emergencyTerminalExit;
-			// the render loop is already idle, so this cannot hot-spin (see #4144).
+			// See docs/adr/coding-agent/modes-interactive-interactive-mode.md#signal-triggered-shutdown-sequence
 			await this.runtimeHost.dispose();
 			this.themeController.disableAutoSync();
 			await this.ui.terminal.drainInput(1000);
@@ -4187,11 +4171,7 @@ export class InteractiveMode {
 			process.exit(0);
 		}
 
-		// Interactive quit (Ctrl+D, Ctrl+C, /quit, extension shutdown()). Stop the
-		// TUI before emitting shutdown events so extension UI cleanup cannot repaint
-		// the final frame while the process is exiting.
-		// Drain any in-flight Kitty key release events before stopping.
-		// This prevents escape sequences from leaking to the parent shell over slow SSH.
+		// See docs/adr/coding-agent/modes-interactive-interactive-mode.md#interactive-quit-shutdown-sequence
 		this.themeController.disableAutoSync();
 		await this.ui.terminal.drainInput(1000);
 
@@ -4210,8 +4190,7 @@ export class InteractiveMode {
 		this.isShuttingDown = true;
 		this.unregisterSignalHandlers();
 		killTrackedDetachedChildren();
-		// The terminal is gone. Do not run normal shutdown because TUI and
-		// extension cleanup can write restore sequences and re-trigger EIO.
+		// See docs/adr/coding-agent/modes-interactive-interactive-mode.md#emergency-terminal-cleanup
 		process.exit(129);
 	}
 
@@ -4311,13 +4290,10 @@ export class InteractiveMode {
 			return;
 		}
 
-		// Keep the event loop alive while suspended. Without this, stopping the TUI
-		// can leave Node with no ref'ed handles, causing the process to exit on fg
-		// before the SIGCONT handler gets a chance to restore the terminal.
+		// See docs/adr/coding-agent/modes-interactive-interactive-mode.md#suspend-event-loop-management
 		const suspendKeepAlive = setInterval(() => {}, 2 ** 30);
 
-		// Ignore SIGINT while suspended so Ctrl+C in the terminal does not
-		// kill the backgrounded process. The handler is removed on resume.
+		// See docs/adr/coding-agent/modes-interactive-interactive-mode.md#sigint-handling-during-suspend
 		const ignoreSigint = () => {};
 		process.on("SIGINT", ignoreSigint);
 
@@ -6443,11 +6419,11 @@ export class InteractiveMode {
 		const cacheWaste = computeCacheWaste(entries, this.session.modelRuntime);
 
 		// Cost/token totals per provider/model actually used (e.g. OpenRouter `auto`
-		// resolves to a concrete responseModel). Usage without model attribution is
-		// grouped separately so the breakdown reconciles with the session total.
+		// resolves to a concrete responseModel).
+		// See docs/adr/coding-agent/modes-interactive-interactive-mode.md#usage-breakdown-grouping
 		const usageBreakdown = getUsageCostBreakdown(entries);
 
-		// Snapshot the stats; the text is built on demand so it follows theme changes.
+		// See docs/adr/coding-agent/modes-interactive-interactive-mode.md#session-stats-snapshot
 		const cacheWarmingStatus = this.session.cacheWarmingStatus;
 		const cacheWarmingMode = this.settingsManager.getCacheWarmingMode();
 		const model = this.session.model;

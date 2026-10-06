@@ -141,7 +141,7 @@ export class ModelSelectorComponent extends Container implements Focusable {
 		// Add bottom border
 		this.addChild(new DynamicBorder());
 
-		// Render the current snapshot immediately, then refresh in the background.
+		// See docs/adr/coding-agent/modes-interactive-components-model-selector.md#snapshot-first-loading-strategy
 		this.loadModelsFromSnapshot();
 		if (initialSearchInput) this.filterModels(initialSearchInput);
 		else this.updateList();
@@ -286,9 +286,7 @@ export class ModelSelectorComponent extends Container implements Focusable {
 		} else {
 			this.filteredModels = this.activeModels;
 		}
-		// When filtering by a query, move the selector to the top row so the best
-		// match is highlighted. When the query is cleared, keep the current position
-		// clamped to the (restored) list length.
+		// See docs/adr/coding-agent/modes-interactive-components-model-selector.md#selector-position-on-filter-changes
 		this.selectedIndex = query ? 0 : Math.min(this.selectedIndex, Math.max(0, this.filteredModels.length - 1));
 		this.updateList();
 	}

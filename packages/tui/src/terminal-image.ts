@@ -75,13 +75,12 @@ function detectCapabilitiesFromEnvironment(tmuxForwardsHyperlink: () => boolean)
 	const hasTrueColorHint = colorTerm === "truecolor" || colorTerm === "24bit" || term.endsWith("-direct");
 	const isWindowsConsole = process.platform === "win32";
 
-	// Emit OSC 8 hyperlinks only when tmux confirms it forwards.
-	// Image protocols are unreliable under tmux, so leave `images: null`.
+	// See docs/adr/tui/terminal-image.md#tmux-terminal-capability-handling
 	if (process.env.TMUX || term.startsWith("tmux")) {
 		return { images: null, trueColor: hasTrueColorHint, hyperlinks: tmuxForwardsHyperlink() };
 	}
 
-	// screen does not forward OSC 8 hyperlinks, so keep them off there.
+	// See docs/adr/tui/terminal-image.md#screen-terminal-limitations
 	if (term.startsWith("screen")) {
 		return { images: null, trueColor: hasTrueColorHint, hyperlinks: false };
 	}
@@ -119,17 +118,12 @@ function detectCapabilitiesFromEnvironment(tmuxForwardsHyperlink: () => boolean)
 		return { images: null, trueColor: true, hyperlinks: false };
 	}
 
-	// Windows Terminal does not always set WT_SESSION, for example when it hosts
-	// a cmd.exe launched directly from Win+R. Modern Windows consoles support
-	// truecolor; keep hyperlinks off unless we positively detected support above.
+	// See docs/adr/tui/terminal-image.md#windows-terminal-wt_session-behavior
 	if (isWindowsConsole) {
 		return { images: null, trueColor: true, hyperlinks: false };
 	}
 
-	// Unknown terminal: be conservative. OSC 8 is rendered invisibly as "just
-	// text" on terminals that swallow it, which means the URL disappears from
-	// the rendered output. Default to the legacy `text (url)` behavior unless we
-	// have positively identified a hyperlink-capable terminal above.
+	// See docs/adr/tui/terminal-image.md#unknown-terminal-conservative-fallback
 	return { images: null, trueColor: hasTrueColorHint, hyperlinks: false };
 }
 

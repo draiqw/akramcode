@@ -33,7 +33,7 @@ export function requestTerminalColors(ui: TUI, apply: (colors: TerminalColors) =
 	try {
 		query = ui.queryTerminalColors({ timeoutMs: TERMINAL_QUERY_TIMEOUT_MS, onLateReply: apply });
 	} catch {
-		// Treat a failed query like a terminal that does not report colors.
+		// See docs/adr/coding-agent/modes-interactive-theme-theme-controller.md#failed-query-fallback
 		query = Promise.resolve({});
 	}
 	return query.then(apply, () => apply({}));
@@ -61,12 +61,12 @@ export class InteractiveThemeController {
 	private readonly showError: (message: string) => void;
 	private readonly onChanged: () => void;
 	private currentThemeSetting: string | undefined;
-	// Last reported colors; a query that times out keeps them instead of erasing them.
+	// See docs/adr/coding-agent/modes-interactive-theme-theme-controller.md#terminal-colors-retention
 	private terminalColors: TerminalColors | undefined;
 	private activeThemeName: string | undefined;
 	private autoSyncEnabled = false;
 	private terminalColorSchemeUnsubscribe: (() => void) | undefined;
-	// Settles when the latest color query completed or timed out, and its colors applied.
+	// See docs/adr/coding-agent/modes-interactive-theme-theme-controller.md#color-query-settlement
 	private terminalColorQuery: Promise<void> = Promise.resolve();
 
 	constructor(

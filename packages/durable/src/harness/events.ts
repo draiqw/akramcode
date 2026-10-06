@@ -153,7 +153,7 @@ export async function watchEvents(
 			const held = new Set<TaskId>(completing.map((record) => record.id));
 			let current = initial;
 			snapshot = snapshotOf(initial);
-			// Batches are the watch's values; an overflow delivers a snapshot of the newest view instead.
+			// See docs/adr/durable/harness-events.md#watch-batches-and-overflow-behavior
 			watch = new CommittedWatch<readonly AgentEvent[]>([], release, () => [snapshotOf(current)]);
 			return {
 				publication: (before, after, ops, publication, commitContext) => {
@@ -212,7 +212,7 @@ function translate(
 		}
 	}
 	if (viewOps.length === 0 && entries.length === 0 && tasks.size === 0 && submissions.length === 0) return [];
-	// Entries are appended in ID order; submission records are published in the order the commit first touched them.
+	// See docs/adr/durable/harness-events.md#submission-ordering
 	submissions.sort((a, b) => a.id - b.id);
 	const was = parts(before);
 	const now = parts(after);
@@ -269,14 +269,14 @@ function translate(
 		if (previous.status === "done") continue;
 		const slot = slots.find((candidate) => candidate.callId === previous.callId);
 		if (slot?.status === "done") endTool(previous.callId, previous.name, slot.entry);
-		// A slot whose run ended in this commit may have had its result appended with it, as for unstarted calls.
+		// See docs/adr/durable/harness-events.md#slot-result-lookup-for-completed-runs
 		else if (slot === undefined) endTool(previous.callId, previous.name, resultOf(entries, previous.callId)?.id);
 	}
 	for (const slot of slots) {
 		if (slot.status === "done" && !slotsBefore.has(slot.callId)) endTool(slot.callId, slot.name, slot.entry);
 	}
 
-	// Entries in append order; a tool's end directly precedes its result's message, as in the coding agent.
+	// See docs/adr/durable/harness-events.md#event-ordering-entries-and-tool-ends
 	let assistantAppended = false;
 	for (const entry of entries) {
 		events.push(...toolEnds.filter((end) => end.entry === entry));
@@ -285,7 +285,7 @@ function translate(
 			events.push({ type: "entry_appended", entry });
 			continue;
 		}
-		// A streamed answer already started with its first partial.
+		// See docs/adr/durable/harness-events.md#streamed-answer-handling
 		const streamed = message.role === "assistant" && partialBefore !== undefined && !assistantAppended;
 		if (message.role === "assistant") assistantAppended = true;
 		if (!streamed) events.push({ type: "message_start", message });
@@ -302,8 +302,7 @@ function translate(
 			events.push({ type: "compaction_end", taskId, reason });
 		}
 	}
-	// A generation's turn ends when its outcome is committed: at a `completing` hold or at terminal, whichever comes
-	// first, so a successor created at the hold starts after it.
+	// See docs/adr/durable/harness-events.md#generation-turn-ending
 	let turnEnded = false;
 	for (const task of tasks.values()) {
 		const status = task.state.status;
@@ -328,7 +327,7 @@ function translate(
 	// Submissions, document state, then what began.
 	for (const record of submissions) events.push({ type: "submission", record });
 	if (now.inbox !== was.inbox) events.push({ type: "inbox_update", items: queued(now.inbox) });
-	// A retired document reads as its initial value, as in a snapshot.
+	// See docs/adr/durable/harness-events.md#retired-document-state
 	if (now.agent !== was.agent) {
 		events.push({ type: "agent_changed", agent: now.agent ?? AgentDoc.definition.initial() });
 	}
@@ -355,7 +354,7 @@ const PARTIAL_PATH = ["docs", "akramcode.live", "generation", "message"];
 /** Translate the view operations on the in-flight message into message changes (spec §9.4). */
 function messageChanges(viewOps: readonly Op[], message: AssistantMessage): MessageChange[] {
 	const changes: MessageChange[] = [];
-	// A block sent whole already holds every later change to it in this batch.
+	// See docs/adr/durable/harness-events.md#block-tracking-for-message-deltas
 	const whole = new Set<number>();
 	for (const op of viewOps) {
 		// View operations never replace the root.
@@ -415,7 +414,7 @@ function toolUpdate(
 	else if (trimStart > 0 || append !== "") {
 		output = { ...(trimStart > 0 ? { trimStart } : {}), ...(append === "" ? {} : { append }) };
 	}
-	// A safe replay clears a running slot's progress: removed details send `null`, removed diagnostics `[]`.
+	// See docs/adr/durable/harness-events.md#safe-replay-of-slot-progress
 	const update = {
 		...(output === undefined ? {} : { output }),
 		...(slot.details === previous.details ? {} : { details: slot.details ?? null }),

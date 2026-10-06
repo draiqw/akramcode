@@ -109,8 +109,7 @@ class SessionSourceAttachment<T> implements ReplicatedStateSourceAttachment<T> {
 			try {
 				this.#drain();
 			} catch {
-				// Chord's frame listener contains source-contract failures. Isolate an
-				// unexpected direct listener failure to this attachment as well.
+				// See docs/adr/durable/session-observation.md#listener-error-isolation
 				this.dispose();
 			}
 		});

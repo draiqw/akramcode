@@ -205,18 +205,14 @@ export class Input implements Component, Focusable {
 			return;
 		}
 
-		// Kitty CSI-u printable character (e.g. \x1b[97u for 'a').
-		// Terminals with Kitty protocol flag 1 (disambiguate) send CSI-u for all keys,
-		// including plain printable characters. Decode before the control-char check
-		// since CSI-u sequences contain \x1b which would be rejected.
+		// See docs/adr/tui/components-input.md#kitty-csi-u-protocol-decoding-order
 		const kittyPrintable = decodeKittyPrintable(data);
 		if (kittyPrintable !== undefined) {
 			this.insertCharacter(kittyPrintable);
 			return;
 		}
 
-		// Regular character input - accept printable characters including Unicode,
-		// but reject control characters (C0: 0x00-0x1F, DEL: 0x7F, C1: 0x80-0x9F)
+		// See docs/adr/tui/components-input.md#control-character-filtering
 		const hasControlChars = [...data].some((ch) => {
 			const code = ch.charCodeAt(0);
 			return code < 32 || code === 0x7f || (code >= 0x80 && code <= 0x9f);

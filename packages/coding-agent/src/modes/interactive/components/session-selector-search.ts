@@ -56,8 +56,7 @@ export function parseSearchQuery(query: string): ParsedSearchQuery {
 		}
 	}
 
-	// Token mode with quote support.
-	// Example: foo "node cve" bar
+	// See docs/adr/coding-agent/modes-interactive-components-session-selector-search.md#token-mode-with-quote-support
 	const tokens: { kind: "fuzzy" | "phrase"; value: string }[] = [];
 	let buf = "";
 	let inQuote = false;
@@ -95,7 +94,7 @@ export function parseSearchQuery(query: string): ParsedSearchQuery {
 		hadUnclosedQuote = true;
 	}
 
-	// If quotes were unbalanced, fall back to plain whitespace tokenization.
+	// See docs/adr/coding-agent/modes-interactive-components-session-selector-search.md#quote-unbalancing-fallback
 	if (hadUnclosedQuote) {
 		return {
 			mode: "tokens",
@@ -167,7 +166,7 @@ export function filterAndSortSessions(
 	const parsed = parseSearchQuery(query);
 	if (parsed.error) return [];
 
-	// Recent mode: filter only, keep incoming order.
+	// See docs/adr/coding-agent/modes-interactive-components-session-selector-search.md#recent-mode-ordering
 	if (sortMode === "recent") {
 		const filtered: SessionInfo[] = [];
 		for (const s of nameFiltered) {
@@ -177,7 +176,7 @@ export function filterAndSortSessions(
 		return filtered;
 	}
 
-	// Relevance mode: sort by score, tie-break by modified desc.
+	// See docs/adr/coding-agent/modes-interactive-components-session-selector-search.md#relevance-mode-scoring
 	const scored: { session: SessionInfo; score: number }[] = [];
 	for (const s of nameFiltered) {
 		const res = matchSession(s, parsed);

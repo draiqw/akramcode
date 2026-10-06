@@ -12,7 +12,7 @@ import { oauthErrorHtml, oauthSuccessHtml } from "@akramcode/ai/utils/oauth-page
 import { getProviderEnvValue } from "@akramcode/ai/utils/provider-env";
 import { generatePKCE } from "./pkce.ts";
 
-// every login registers a new client with this ID; OpenAI returns the issued client ID in the callback
+// See docs/adr/providers/auth-oauth-openai-chatgpt.md#dynamic-client-registration-per-login
 const DYNAMIC_CLIENT_ID = "dynamic_agent_client";
 const AGENT_NAME_HINT = "AkramCode";
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -25,7 +25,7 @@ const CALLBACK_PATH = "/auth/callback";
 const REDIRECT_URI = `http://127.0.0.1:${CALLBACK_PORT}${CALLBACK_PATH}`;
 const DIRECT_TOKEN_SCOPE = "chatgpt.tokens.use.direct";
 const SCOPE = `openid profile email offline_access resource.invoke ${DIRECT_TOKEN_SCOPE}`;
-// Refresh this long before the real expiry so a request never starts with a token about to expire.
+// See docs/adr/providers/auth-oauth-openai-chatgpt.md#early-token-expiry-margin
 const EXPIRY_MARGIN_MS = 3 * 60 * 1000;
 
 type AuthorizationResult = {
@@ -197,8 +197,7 @@ async function exchangeAuthorizationCode(
 		}),
 		signal,
 	);
-	// AkramCode does not use the ID token to identify the user or read profile data.
-	// Keep the presence check as part of the token-response contract.
+	// See docs/adr/providers/auth-oauth-openai-chatgpt.md#id-token-presence-check
 	if (typeof token.id_token !== "string" || token.id_token.trim().length === 0) {
 		throw new Error("OpenAI OAuth token response did not contain an ID token");
 	}
@@ -289,11 +288,7 @@ async function loginOpenAIChatGPT(
 	} finally {
 		manualAbort.abort();
 		callback?.server.close();
-		// close() only stops accepting new connections. Browsers open spare connections ahead of
-		// time, and one that has not sent a request yet stays open and attached to this server.
-		// A later login in the same process starts a new server with a new state, but the browser
-		// may send that login's callback over the spare connection. This server would then handle
-		// it and reject it with "OAuth state mismatch", and the new login would never see it.
+		// See docs/adr/providers/auth-oauth-openai-chatgpt.md#spare-connection-handling-on-callback-completion
 		callback?.server.closeAllConnections();
 	}
 }

@@ -68,14 +68,14 @@ const Research = defineTask<{ task: string }, ResearchState, null>({
 	initial: () => ({ phase: "deliver" }),
 	phases: {
 		deliver: async (task, runtime, context) => {
-			// The subagent's conversation is owned by this task. No Session call may run inside a commit.
+			// See docs/adr/coding-agent/experimental-vacation-vacation.md#subagent-conversation-ownership-constraint
 			let owned: ConversationId | undefined;
 			await runtime.commit(async (tx) => {
 				owned = (await tx.scanConversations({ ownerTaskId: task.id }, 1)).items[0]?.id;
 				return undefined;
 			}, context);
 			const child = await runtime.conversation(owned!, context);
-			// A rerun after a crash gets the same submission back.
+			// See docs/adr/coding-agent/experimental-vacation-vacation.md#idempotent-submissions-after-crashes
 			const request = { type: "input", content: task.input.task, requestId: `research:${task.id}` } as const;
 			const settled = await (await child!.submit(request, context)).wait(context);
 			await runtime.commit(async (tx) => {
@@ -109,7 +109,7 @@ const research = defineTool({
 	parameters: Type.Object({ task: Type.String({ description: "What to research, with the city and dates" }) }),
 	execute: async (args, api, context) => {
 		await api.commit(async (tx) => {
-			// Background: the main conversation stays free while the research runs.
+			// See docs/adr/coding-agent/experimental-vacation-vacation.md#research-runs-in-the-background
 			const owner = await tx.createTask(
 				Research,
 				{ task: args.task },

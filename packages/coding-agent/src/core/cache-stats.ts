@@ -70,10 +70,7 @@ function detectMiss(
 	const missedTokens = Math.min(prev.promptTokens, promptTokens) - usage.cacheRead;
 	if (missedTokens <= NOISE_FLOOR_TOKENS) return undefined;
 
-	// Extra cost = missed tokens billed at the actual paid rate (input/cacheWrite,
-	// incl. write premium) instead of the cache-read rate. Missed tokens can only
-	// land in the input or cacheWrite buckets, so the paid rate comes straight
-	// from this message's own cost breakdown.
+	// See docs/adr/coding-agent/core-cache-stats.md#cost-calculation-for-cache-misses
 	const paidTokens = usage.input + usage.cacheWrite;
 	const paidPerToken = paidTokens > 0 ? (usage.cost.input + usage.cost.cacheWrite) / paidTokens : 0;
 	const readPerToken =

@@ -35,7 +35,7 @@ export const Subagent: Extension = defineExtension({
 				const child = await api.commit(async (tx) => {
 					const existing = (await tx.scanConversations({ ownerTaskId: api.taskId }, 1)).items[0];
 					if (existing !== undefined) return existing.id;
-					// Starts as a copy of this conversation's agent; without this extension it cannot delegate further.
+					// See docs/adr/coding-agent/experimental-durable-subagent.md#extension-removal-for-child-conversations
 					const created = await tx.createConversation({ ownership: { kind: "task", taskId: api.taskId } });
 					await configure(tx, created.id, { extensions: { remove: [Subagent] } });
 					return created.id;

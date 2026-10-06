@@ -129,7 +129,7 @@ export class RpcClient {
 			this.handleLine(line);
 		});
 
-		// Wait a moment for process to initialize
+		// See docs/adr/coding-agent/modes-rpc-rpc-client.md#process-initialization-delay
 		await new Promise((resolve) => setTimeout(resolve, 100));
 
 		if (this.process.exitCode !== null) {
@@ -532,8 +532,7 @@ export class RpcClient {
 				return;
 			}
 
-			// Otherwise it's an event. Iterate a snapshot so listeners that unsubscribe during dispatch
-			// do not cause later listeners to miss this event.
+			// See docs/adr/coding-agent/modes-rpc-rpc-client.md#event-snapshot-iteration
 			for (const listener of [...this.eventListeners]) {
 				listener(data as JsonAgentSessionEvent);
 			}
@@ -609,8 +608,7 @@ export class RpcClient {
 			const errorResponse = response as Extract<RpcResponse, { success: false }>;
 			throw new Error(errorResponse.error);
 		}
-		// Type assertion: we trust response.data matches T based on the command sent.
-		// This is safe because each public method specifies the correct T for its command.
+		// See docs/adr/coding-agent/modes-rpc-rpc-client.md#type-assertion-for-response-data
 		const successResponse = response as Extract<RpcResponse, { success: true; data: unknown }>;
 		return successResponse.data as T;
 	}

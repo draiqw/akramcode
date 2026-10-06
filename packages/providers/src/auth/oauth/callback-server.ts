@@ -59,7 +59,7 @@ export async function startOAuthCallbackServer<T>(
 		resolveWait = resolve;
 		rejectWait = reject;
 	});
-	// A cancelled or closed wait may never be observed.
+	// See docs/adr/providers/auth-oauth-callback-server.md#unobserved-wait-promise-rejection-handling
 	waitPromise.catch(() => undefined);
 
 	let claimed = false;

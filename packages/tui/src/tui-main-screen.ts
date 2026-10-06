@@ -303,7 +303,7 @@ export class TuiMainScreen extends TuiBase implements TUI {
 			output.flush();
 			this.cursorRow = Math.max(0, newLines.length - 1);
 			this.hardwareCursorRow = this.cursorRow;
-			// Reset max lines when clearing, otherwise track growth
+			// See docs/adr/tui/tui-main-screen.md#reset-max-lines-on-full-clear
 			if (clear) {
 				this.maxLinesRendered = newLines.length;
 			} else {
@@ -341,18 +341,14 @@ export class TuiMainScreen extends TuiBase implements TUI {
 			return;
 		}
 
-		// Height changes normally need a full re-render to keep the visible viewport aligned,
-		// but Termux changes height when the software keyboard shows or hides.
-		// In that environment, a full redraw causes the entire history to replay on every toggle.
+		// See docs/adr/tui/tui-main-screen.md#termux-height-change-handling
 		if (heightChanged && !isTermuxSession()) {
 			logRedraw(`terminal height changed (${this.previousHeight} -> ${height})`);
 			fullRender(true);
 			return;
 		}
 
-		// Content shrunk below the working area and no overlays - re-render to clear empty rows
-		// (overlays need the padding, so only do this when no overlays are active)
-		// Configurable via setClearOnShrink()
+		// See docs/adr/tui/tui-main-screen.md#clear-on-shrink-with-overlay-constraint
 		if (this.getClearOnShrink() && newLines.length < this.maxLinesRendered && !this.hasOverlayEntries) {
 			logRedraw(`clearOnShrink (maxLinesRendered=${this.maxLinesRendered})`);
 			fullRender(true);
@@ -446,8 +442,7 @@ export class TuiMainScreen extends TuiBase implements TUI {
 			return;
 		}
 
-		// Differential rendering can only touch what was actually visible.
-		// If the first changed line is above the previous viewport, we need a full redraw.
+		// See docs/adr/tui/tui-main-screen.md#differential-rendering-viewport-constraint
 		if (firstChanged < prevViewportTop) {
 			logRedraw(`firstChanged < viewportTop (${firstChanged} < ${prevViewportTop})`);
 			fullRender(true);
@@ -597,12 +592,10 @@ export class TuiMainScreen extends TuiBase implements TUI {
 
 		output.flush();
 
-		// Track cursor position for next render
-		// cursorRow tracks end of content (for viewport calculation)
-		// hardwareCursorRow tracks actual terminal cursor position (for movement)
+		// See docs/adr/tui/tui-main-screen.md#cursor-position-tracking-split
 		this.cursorRow = Math.max(0, newLines.length - 1);
 		this.hardwareCursorRow = finalCursorRow;
-		// Track terminal's working area (grows but doesn't shrink unless cleared)
+		// See docs/adr/tui/tui-main-screen.md#terminal-working-area-tracking
 		this.maxLinesRendered = Math.max(this.maxLinesRendered, newLines.length);
 		this.previousViewportTop = Math.max(prevViewportTop, finalCursorRow - height + 1);
 

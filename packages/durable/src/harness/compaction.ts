@@ -149,7 +149,7 @@ export const CompactionTask = defineTask<CompactionInput, CompactionCheckpoint, 
 			const { model: ref, thinkingLevel, streamOptions, maxTokens, tail, firstKept, attempt } = request;
 			const model = runtime.models.getModel(ref.provider, ref.modelId);
 			if (model === undefined) return failNoModel(runtime, ref, context);
-			// The context at `tail` is immutable, so this is the range `select` chose.
+			// See docs/adr/durable/harness-compaction.md#immutable-context-at-tail
 			const view = await runtime.context(runtime.conversationId, context, tail);
 			const cut = view.entries.findIndex((entry) => entry.id === firstKept);
 			const now = runtime.now();
@@ -274,7 +274,7 @@ function isCandidate(contributions: ContextView["contributions"], index: number)
 	const first = contributions[index]![0];
 	if (first?.role === "assistant") return true;
 	if (first?.role !== "user") return false;
-	// A result of the preceding assistant's calls that follows this entry, before the next assistant, belongs before it.
+	// See docs/adr/durable/harness-compaction.md#tool-result-placement-before-next-assistant
 	let calls: ReadonlySet<string> = new Set();
 	for (let before = index - 1; before >= 0; before--) {
 		const assistant = contributions[before]!.findLast((message) => message.role === "assistant");

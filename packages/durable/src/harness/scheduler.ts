@@ -504,7 +504,7 @@ export class TaskScheduler {
 			for (const record of done) {
 				const outcome = (record.state as { readonly outcome: TaskOutcome<JsonValue> }).outcome;
 				tx.setTask(withState(record, { status: "terminal", outcome }));
-				// REMINDER: only the scheduler writes `faulted` and `orphaned` (spec §5.4); their cleanup waits for this commit.
+				// See docs/adr/durable/harness-scheduler.md#scheduler-only-faulted-and-orphaned-outcomes
 				if (outcome.status === "faulted" || outcome.status === "orphaned") {
 					await this.#settleOutcome(tx, record, outcome);
 				}
@@ -676,7 +676,7 @@ export class TaskScheduler {
 		this.#dirty = true;
 		if (this.#draining || !this.#enabled || this.#closing) return;
 		this.#draining = true;
-		// Never commit synchronously from a commit or registry listener.
+		// See docs/adr/durable/harness-scheduler.md#serialized-commit-ordering
 		queueMicrotask(() => void this.#drain());
 	}
 

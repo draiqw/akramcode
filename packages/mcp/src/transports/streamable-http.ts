@@ -201,8 +201,7 @@ export class StreamableHttpTransport extends TransportEvents implements McpTrans
 		this.options = Object.freeze({ ...options, headers: options.headers ? { ...options.headers } : undefined });
 		this.url = new URL(options.url);
 		const fetch = options.fetch ?? globalThis.fetch;
-		// Call fetch without a receiver. `this.fetch(...)` and `context.fetch(...)` would pass the transport or
-		// the auth context as `this`, which Cloudflare Workers reject for the platform fetch ("Illegal invocation").
+		// See docs/adr/mcp/transports-streamable-http.md#unbound-fetch-for-cloudflare-workers-compatibility
 		this.fetch = (input, init) => fetch(input, init);
 	}
 
@@ -232,7 +231,7 @@ export class StreamableHttpTransport extends TransportEvents implements McpTrans
 		if (!isJsonRpcRequest(message)) {
 			// Notifications and responses are acknowledged with 202 and carry no reply; ignore any body.
 			await discard(response);
-			// The server-to-client stream may only open once the session is initialized.
+			// See docs/adr/mcp/transports-streamable-http.md#deferred-get-stream-initialization
 			if ("method" in message && message.method === "notifications/initialized") this.startGetStream();
 			return;
 		}
@@ -338,7 +337,7 @@ export class StreamableHttpTransport extends TransportEvents implements McpTrans
 			},
 			onEvent: (event) => {
 				cursor.received = true;
-				// Events without data prime resumption; other event types are not JSON-RPC.
+				// See docs/adr/mcp/transports-streamable-http.md#sse-resumption-priming-events
 				if (!event.data.trim() || (event.event !== undefined && event.event !== "message")) return;
 				let message: JsonRpcMessage;
 				try {
@@ -414,7 +413,7 @@ export class StreamableHttpTransport extends TransportEvents implements McpTrans
 				if (!stream) return;
 				const openedAt = Date.now();
 				await this.consumeSse(stream, cursor);
-				// A stream that stayed up for a while counts as healthy, even if it was idle.
+				// See docs/adr/mcp/transports-streamable-http.md#stream-health-detection-during-idle-periods
 				if (cursor.received || Date.now() - openedAt > this.maxDelay()) attempt = 0;
 			} catch (error) {
 				if (this.closed) return;

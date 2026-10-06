@@ -108,7 +108,7 @@ export function migrateSessionsFromAgentRoot(): void {
 
 			const cwd: string = header.cwd;
 
-			// Compute the correct session directory (same encoding as session-manager.ts)
+			// See docs/adr/coding-agent/migrations.md#session-directory-path-encoding
 			const safePath = `--${cwd.replace(/^[/\\]/, "").replace(/[/\\:]/g, "-")}--`;
 			const correctDir = join(agentDir, "sessions", safePath);
 
@@ -229,14 +229,12 @@ function checkDeprecatedExtensionDirs(baseDir: string, label: string): string[] 
 	}
 
 	if (existsSync(toolsDir)) {
-		// Check if tools/ contains anything other than fd/rg (which are auto-extracted binaries)
+		// See docs/adr/coding-agent/migrations.md#managed-binaries-in-tools-directory
 		try {
 			const entries = readdirSync(toolsDir);
 			const customTools = entries.filter((e) => {
 				const lower = e.toLowerCase();
-				return (
-					lower !== "fd" && lower !== "rg" && lower !== "fd.exe" && lower !== "rg.exe" && !e.startsWith(".") // Ignore .DS_Store and other hidden files
-				);
+				return lower !== "fd" && lower !== "rg" && lower !== "fd.exe" && lower !== "rg.exe" && !e.startsWith(".");
 			});
 			if (customTools.length > 0) {
 				warnings.push(

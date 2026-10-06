@@ -139,8 +139,7 @@ type ReadonlyJsonValue =
 	| readonly ReadonlyJsonValue[]
 	| { readonly [key: string]: ReadonlyJsonValue };
 
-// A type assignable to readonly JSON is valid as is. Walking a recursive JSON type instead, for example one with
-// readonly arrays, would never terminate.
+// See docs/adr/chord/types.md#json-type-recursion-termination
 type InvalidJsonPart<T> = IsAny<T> extends true
 	? T
 	: unknown extends T

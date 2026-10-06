@@ -86,8 +86,7 @@ async function convertToPng(bytes: Uint8Array): Promise<Uint8Array | null> {
 	}
 }
 
-// Undefined means the backend failed; null means it has no image. An empty
-// Wayland clipboard must not fall through to stale X11 clipboard contents.
+// See docs/adr/coding-agent/utils-clipboard-image.md#waylandx11-clipboard-distinction
 async function readClipboardImageViaWlPaste(): Promise<ClipboardImage | null | undefined> {
 	const list = await runClipboardCommand("wl-paste", ["--list-types"], { timeoutMs: DEFAULT_LIST_TIMEOUT_MS });
 	if (list === undefined) return undefined;
@@ -216,7 +215,7 @@ export async function readClipboardImage(options?: {
 			image = await readClipboardImageViaWlPaste();
 		}
 		if (image === undefined) image = await readClipboardImageViaXclip();
-		// Preserve Linux's empty/unavailable distinction if Windows has no image.
+		// See docs/adr/coding-agent/utils-clipboard-image.md#linux-emptyunavailable-preservation
 		if (!image && wsl) image = (await readClipboardImageViaPowerShell()) ?? image;
 		if (image === undefined) image = await readClipboardImageViaNativeClipboard();
 	} else {

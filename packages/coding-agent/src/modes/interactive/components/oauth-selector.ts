@@ -50,7 +50,7 @@ export function formatAuthSelectorProviderStatus(provider: AuthSelectorProvider)
 export class OAuthSelectorComponent extends Container implements Focusable {
 	private searchInput: Input;
 
-	// Focusable implementation - propagate to search input for IME cursor positioning
+	// See docs/adr/coding-agent/modes-interactive-components-oauth-selector.md#focusable-ime-support-pattern
 	private _focused = false;
 	get focused(): boolean {
 		return this._focused;

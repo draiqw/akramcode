@@ -65,7 +65,7 @@ function renderHorizontalViewport(rows: HorizontalViewportRow[], width: number):
 	const maxHorizontalScroll = Math.max(0, maxBodyWidth - viewportWidth);
 	const selectedRow = rows.find((row) => row.isSelected);
 
-	// Only pan horizontally when needed to keep enough selected-row content visible after its anchor.
+	// See docs/adr/coding-agent/modes-interactive-components-tree-selector.md#horizontal-viewport-panning-strategy
 	let horizontalScroll = 0;
 	if (selectedRow && maxHorizontalScroll > 0) {
 		const minVisibleAnchorContentWidth = Math.min(
@@ -201,17 +201,13 @@ class TreeList implements Component {
 		const result: FlatNode[] = [];
 		this.toolCallMap.clear();
 
-		// Indentation rules:
-		// - At indent 0: stay at 0 unless parent has >1 children (then +1)
-		// - At indent 1: children always go to indent 2 (visual grouping of subtree)
-		// - At indent 2+: stay flat for single-child chains, +1 only if parent branches
+		// See docs/adr/coding-agent/modes-interactive-components-tree-selector.md#indentation-rules
 
 		// Stack items: [node, indent, justBranched, showConnector, isLast, gutters, isVirtualRootChild]
 		type StackItem = [SessionTreeNode, number, boolean, boolean, boolean, GutterInfo[], boolean];
 		const stack: StackItem[] = [];
 
-		// Determine which subtrees contain the active leaf (to sort current branch first)
-		// Use iterative post-order traversal to avoid stack overflow
+		// See docs/adr/coding-agent/modes-interactive-components-tree-selector.md#post-order-traversal-for-active-leaf-detection
 		const containsActive = new Map<SessionTreeNode, boolean>();
 		const leafId = this.currentLeafId;
 		{
@@ -270,7 +266,7 @@ class TreeList implements Component {
 			const children = node.children;
 			const multipleChildren = children.length > 1;
 
-			// Order children so the branch containing the active leaf comes first
+			// See docs/adr/coding-agent/modes-interactive-components-tree-selector.md#child-ordering-by-active-path
 			const orderedChildren = (() => {
 				const prioritized: SessionTreeNode[] = [];
 				const rest: SessionTreeNode[] = [];
@@ -297,12 +293,8 @@ class TreeList implements Component {
 				childIndent = indent;
 			}
 
-			// Build gutters for children
-			// If this node showed a connector, add a gutter entry for descendants
-			// Only add gutter if connector is actually displayed (not suppressed for virtual root children)
+			// See docs/adr/coding-agent/modes-interactive-components-tree-selector.md#gutter-positioning-for-tree-indentation
 			const connectorDisplayed = showConnector && !isVirtualRootChild;
-			// When connector is displayed, add a gutter entry at the connector's position
-			// Connector is at position (displayIndent - 1), so gutter should be there too
 			const currentDisplayIndent = this.multipleRoots ? Math.max(0, indent - 1) : indent;
 			const connectorPosition = Math.max(0, currentDisplayIndent - 1);
 			const childGutters: GutterInfo[] = connectorDisplayed
@@ -328,8 +320,7 @@ class TreeList implements Component {
 	}
 
 	private applyFilter(): void {
-		// Update lastSelectedId only when we have a valid selection (non-empty list)
-		// This preserves the selection when switching through empty filter results
+		// See docs/adr/coding-agent/modes-interactive-components-tree-selector.md#selection-preservation-during-filtering
 		if (this.filteredNodes.length > 0) {
 			this.lastSelectedId = this.filteredNodes[this.selectedIndex]?.node.entry.id ?? this.lastSelectedId;
 		}

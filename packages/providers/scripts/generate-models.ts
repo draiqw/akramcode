@@ -186,9 +186,7 @@ const OPENAI_LONG_CONTEXT_PRICING_MODEL_IDS = new Set([
 	"gpt-6.1-sol",
 ]);
 
-// Keep the generated default no less restrictive than coding-agent's historical
-// image preprocessing. Provider limits can narrow this profile, but unknown
-// providers retain the cache-safe 2000px / 4.5 MiB behavior.
+// See docs/adr/scripts/generate-models.md#conservative-image-preprocessing-defaults
 const DEFAULT_IMAGE_RESIZE = {
 	maxWidth: 2000,
 	maxHeight: 2000,
@@ -211,8 +209,7 @@ function withOpenAiLongContextPricing(cost: Model<Api>["cost"]): Model<Api>["cos
 	};
 }
 
-// Keep current OpenAI prices authoritative until models.dev and passthrough
-// catalogs catch up.
+// See docs/adr/scripts/generate-models.md#authoritative-openai-pricing
 // https://developers.openai.com/api/docs/pricing
 const OPENAI_STANDARD_COSTS: Record<string, ModelCost> = {
 	"gpt-5.6-luna": { input: 0.2, output: 1.2, cacheRead: 0.02, cacheWrite: 0.25 },
@@ -296,9 +293,7 @@ function supportsOpenAiMax(model: Model<Api>): boolean {
 }
 
 const VERIFIED_ANTHROPIC_MID_CONVO_EFFORT_PROVIDERS = new Set(["openrouter"]);
-// OpenRouter rejects `configuration_update` system messages on Opus 5 ("Mid-conversation
-// reasoning effort (configuration_update) is not supported on anthropic/claude-opus-5-20260723")
-// while accepting them on Fable 5.1, so gate that model there.
+// See docs/adr/scripts/generate-models.md#openrouter-anthropic-mid-conversation-effort-limitation
 const MID_CONVO_EFFORT_UNSUPPORTED_ANTHROPIC_MODELS = new Set(["openrouter:anthropic/claude-opus-5"]);
 
 function supportsAnthropicMidConvoEffort(modelId: string): boolean {
@@ -415,7 +410,7 @@ function detectOpenAICompletionsCompat(model: Model<"openai-completions">): Open
 		chatTemplateKwargs: {},
 		chatTemplateArgs: {},
 		zaiToolStream: false,
-		// Preserve built-in behavior as explicit metadata against the conservative runtime default.
+		// See docs/adr/scripts/generate-models.md#conservative-openai-completions-defaults
 		supportsStrictMode: true,
 		supportsOpenAIGrammarTools: false,
 		supportsMidConvoSystemMessages: false,
@@ -466,9 +461,7 @@ function applyStrictToolCompatMetadata(model: Model<Api>): void {
 	}
 }
 
-// Responses endpoints verified (OpenAI, ChatGPT Codex backend) to pass
-// OpenAI custom grammar tools through. OpenAI rejects `type: "custom"` tools
-// for pre-GPT-5 models (gpt-4.x, gpt-4o, o-series).
+// See docs/adr/scripts/generate-models.md#openai-responses-custom-grammar-tools
 const OPENAI_GRAMMAR_TOOL_PROVIDERS = new Set(["openai", "openai-codex"]);
 const OPENAI_GRAMMAR_TOOL_APIS = new Set<Api>(["openai-responses", "openai-codex-responses"]);
 
@@ -493,8 +486,7 @@ function applyOpenAIToolSearchMetadata(model: Model<Api>): void {
 	};
 }
 
-// DeepSeek V4 Pro and OpenAI models behind OpenRouter accept plain system text
-// in place after the conversation has started.
+// See docs/adr/scripts/generate-models.md#deepseek-mid-conversation-system-messages
 function applyOpenAICompletionsTranscriptMetadata(model: Model<Api>): void {
 	if (model.api !== "openai-completions") return;
 	const isTextOnly =
@@ -509,7 +501,7 @@ function applyOpenAICompletionsTranscriptMetadata(model: Model<Api>): void {
 	};
 }
 
-// Newer OpenAI Responses models accept developer messages after the conversation has started.
+// See docs/adr/scripts/generate-models.md#openai-responses-transcript-system-messages
 function applyOpenAIResponsesTranscriptMetadata(model: Model<Api>): void {
 	const isOpenAIResponses = model.provider === "openai" && model.api === "openai-responses";
 	const isOpenAICodex = model.provider === "openai-codex" && model.api === "openai-codex-responses";
@@ -522,8 +514,7 @@ function applyOpenAIResponsesTranscriptMetadata(model: Model<Api>): void {
 	};
 }
 
-// OpenAI charges prompt-cache writes starting with the GPT-5.6 family, and exactly
-// those models accept `prompt_cache_options`; older models reject the parameter.
+// See docs/adr/scripts/generate-models.md#explicit-prompt-cache-mode-for-caching-models
 // https://developers.openai.com/api/docs/guides/prompt-caching
 function applyOpenAIExplicitPromptCacheMetadata(model: Model<Api>): void {
 	if (model.provider !== "openai" || model.api !== "openai-responses") return;
@@ -594,9 +585,7 @@ function applyThinkingLevelMetadata(model: Model<any>): void {
 	if (model.id.endsWith("gpt-5.5-pro")) {
 		mergeThinkingLevelMap(model, { off: null, minimal: null, low: null });
 	}
-	// Anthropic adaptive-thinking effort support (per Anthropic adaptive thinking docs):
-	// - "max" is available on all adaptive-thinking Claude models.
-	// - "xhigh" is only available on Opus 4.7/4.8/5, Sonnet 5, and Fable 5.
+	// See docs/adr/scripts/generate-models.md#anthropic-adaptive-thinking-model-capability
 	if (
 		model.id.includes("opus-4-6") ||
 		model.id.includes("opus-4.6") ||
@@ -644,10 +633,7 @@ function applyThinkingLevelMetadata(model: Model<any>): void {
 		mergeThinkingLevelMap(model, { minimal: "low" });
 	}
 	if (model.provider === "openrouter" && model.id.startsWith("inception/mercury-2")) {
-		// Mercury 2 in instant mode (reasoning_effort: "none") disables tool calling.
-		// Mark "off" unsupported so the openai-completions provider omits the reasoning param
-		// instead of defaulting to {reasoning:{effort:"none"}} (see openai-completions.ts:575).
-		// AkramCode's low/medium/high pass through verbatim; OpenRouter normalizes to Mercury's vocabulary.
+		// See docs/adr/scripts/generate-models.md#mercury-2-instant-mode-tool-calling-limitation
 		mergeThinkingLevelMap(model, { off: null });
 	}
 	if (model.provider === "openrouter" && model.id === "z-ai/glm-5.2") {
@@ -715,7 +701,7 @@ async function loadModelsDevData(): Promise<Model<any>[]> {
 			for (const [modelId, model] of Object.entries(data.openai.models)) {
 				const m = model as ModelsDevModel;
 				if (m.tool_call !== true) continue;
-				// models.dev lists this alias, but it is not accepted by OpenAI APIs.
+				// See docs/adr/scripts/generate-models.md#modelsdev-openai-alias-limitation
 				if (MODELS_DEV_OPENAI_UNSUPPORTED_MODEL_IDS.has(modelId)) continue;
 
 				models.push({
@@ -760,8 +746,7 @@ async function generateModels() {
 
 	// Temporary overrides until upstream model metadata is corrected.
 	for (const candidate of allModels) {
-		// Keep direct OpenAI requests in the short-context pricing tier by default. Users can opt into the
-		// larger context through model overrides, so retain long-context cost metadata on the capped models.
+		// See docs/adr/scripts/generate-models.md#short-context-openai-model-pricing
 		if (candidate.provider === "openai" && OPENAI_SHORT_CONTEXT_CAPPED_MODEL_IDS.has(candidate.id)) {
 			candidate.contextWindow = OPENAI_LONG_CONTEXT_INPUT_THRESHOLD;
 			candidate.maxTokens = 128000;
@@ -770,16 +755,15 @@ async function generateModels() {
 			const standardCost = OPENAI_STANDARD_COSTS[candidate.id];
 			candidate.cost = withOpenAiLongContextPricing(standardCost ?? candidate.cost);
 		}
-		// models.dev reports gpt-5-pro output as 272000 (a duplicate of the input sub-limit);
-		// the actual max output is 128000.
+		// See docs/adr/scripts/generate-models.md#openai-gpt-5-pro-output-limit-correction
 		if (candidate.provider === "openai" && candidate.id === "gpt-5-pro") {
 			candidate.maxTokens = 128000;
 		}
-		// Keep Kimi K3's canonical output limit when gateway metadata is missing or incorrect.
+		// See docs/adr/scripts/generate-models.md#kimi-k3-output-limit-stability
 		if (candidate.provider === "openrouter" && OPENROUTER_KIMI_K3_MODEL_IDS.has(candidate.id)) {
 			candidate.maxTokens = KIMI_K3_MAX_TOKENS;
 		}
-		// Keep selected OpenRouter model metadata stable until upstream settles.
+		// See docs/adr/scripts/generate-models.md#openrouter-model-metadata-stabilization
 		if (candidate.provider === "openrouter" && candidate.id === "moonshotai/kimi-k2.5") {
 			candidate.cost.input = 0.41;
 			candidate.cost.output = 2.06;
@@ -1044,10 +1028,7 @@ async function generateModels() {
 		});
 	}
 
-	// Add "fusion" alias for openrouter/fusion. OpenRouter exposes Fusion as a
-	// router alias/plugin entry point; its model metadata does not advertise
-	// tools, but the alias resolves to a concrete model that can invoke caller
-	// tools and has the openrouter:fusion server tool auto-injected.
+	// See docs/adr/scripts/generate-models.md#openrouter-fusion-router-metadata-note
 	if (!allModels.some(m => m.provider === "openrouter" && m.id === "openrouter/fusion")) {
 		allModels.push({
 			id: "openrouter/fusion",
@@ -1084,8 +1065,7 @@ async function generateModels() {
 			applyImageInputMetadata(model);
 	}
 
-	// Only these providers ship in the built-in catalog; anything else is reached
-	// through a user-defined provider (models.json or an extension).
+	// See docs/adr/scripts/generate-models.md#built-in-provider-catalog-limitation
 	const keptProviders = new Set(["deepseek", "openai", "openai-codex", "openrouter"]);
 	allModels.splice(0, allModels.length, ...allModels.filter((model) => keptProviders.has(model.provider)));
 
@@ -1099,7 +1079,7 @@ async function generateModels() {
 	const providers: Record<string, ProviderCatalog> = {};
 	for (const model of allModels) {
 		providers[model.provider] ??= { chat: {}, image: {}, classifier: {} };
-		// Only add if not already present (models.dev takes priority over OpenRouter).
+		// See docs/adr/scripts/generate-models.md#model-catalog-priority-ordering
 		providers[model.provider].chat[model.id] ??= { ...model, type: "chat" };
 	}
 	for (const model of openRouterCatalog.images) {

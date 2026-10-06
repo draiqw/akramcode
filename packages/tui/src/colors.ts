@@ -188,7 +188,7 @@ function isInSrgbGamut(linear: number[]): boolean {
 }
 
 function oklchToRgb({ l, c, h }: OklchChannels): RgbColor {
-	// Gamut mapping keeps the hue fixed, so its direction is computed once and scaled by chroma.
+	// See docs/adr/tui/colors.md#gamut-mapping-preserves-hue
 	const radians = (h * Math.PI) / 180;
 	const cos = Math.cos(radians);
 	const sin = Math.sin(radians);
@@ -197,8 +197,7 @@ function oklchToRgb({ l, c, h }: OklchChannels): RgbColor {
 	const direct = atChroma(c);
 	if (isInSrgbGamut(direct)) return linearSrgbToRgb(direct);
 
-	// Reduce chroma until the color fits. The achromatic color is always in gamut, so it is the
-	// fallback when no bisection step fits, e.g. `oklch(100% 0.3 150)` must map to white.
+	// See docs/adr/tui/colors.md#achromatic-fallback-for-out-of-gamut-colors
 	let linear = atChroma(0);
 	let low = 0;
 	let high = c;

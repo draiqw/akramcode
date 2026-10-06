@@ -56,8 +56,7 @@ function loadThemes(resources: ResolvedResource[]): Theme[] {
 			}
 			themes.push(loadedTheme);
 		} catch {
-			// Startup prompts should not fail because a theme is broken. The normal
-			// resource loader reports theme diagnostics later in startup.
+			// See docs/adr/coding-agent/cli-startup-ui.md#theme-loading-error-handling
 		}
 	}
 	return themes;
@@ -207,7 +206,7 @@ export async function showFirstTimeSetup(settingsManager: SettingsManager): Prom
 		ui.addChild(component);
 		ui.setFocus(component);
 		ui.requestRender();
-		// The terminal's colors regenerate the system theme; re-rendering rebuilds the dialog with it.
+		// See docs/adr/coding-agent/cli-startup-ui.md#terminal-color-regeneration
 		queryStartupTerminalColors(ui, () => setTheme(previewTheme));
 	});
 }

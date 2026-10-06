@@ -94,16 +94,11 @@ function commonBuildOptions() {
 		minifySyntax: true,
 		minifyWhitespace: true,
 		platform: "node",
-		// The source uses jiti/static so Bun embeds its Babel transform. The Node
-		// package replaces it with a synchronous lazy require so jiti loads only
-		// when importing an extension; Babel remains deferred until a cache miss
-		// needs transformation.
+		// See docs/adr/scripts/build-coding-agent-bundle.md#lazy-jiti-transform-plugin
 		plugins: [lazyJitiPlugin, httpsProxyAgentNamedExportPlugin],
 		sourcemap: false,
 		target: "node22.19",
-		// Do not apply the monorepo's source-oriented path aliases while bundling
-		// compiled output. Release builds must resolve the same package entries as
-		// an installed npm package.
+		// See docs/adr/scripts/build-coding-agent-bundle.md#disable-monorepo-path-aliases-in-bundle
 		tsconfigRaw: { compilerOptions: {} },
 	};
 }

@@ -228,9 +228,7 @@ export function fuzzyFindText(content: string, oldText: string): FuzzyMatchResul
 		};
 	}
 
-	// When fuzzy matching, return offsets in normalized space. Callers can use
-	// the normalized content to compute replacements, then decide how much of
-	// that normalized output should be written back.
+	// See docs/adr/durable/tools-edit-diff.md#fuzzy-matching-offset-semantics
 	return {
 		found: true,
 		index: fuzzyIndex,

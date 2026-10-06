@@ -81,7 +81,7 @@ function automaticErrorStatus(error: unknown): SpanStatus {
 			return { status: "error", error: { name: error.name, message: error.message } };
 		}
 	} catch {
-		// Error inspection is passive. Fall through to an error status without details.
+		// See docs/adr/telemetry/memory.md#passive-error-inspection-and-recovery
 	}
 	return { status: "error" };
 }
@@ -143,7 +143,7 @@ function startInMemorySpan<T>(
 			try {
 				recordedSpan.events.push({ name, attributes: copyAttributes(attributes) });
 			} catch {
-				// Recording is passive. Ignore malformed or unreadable telemetry payloads.
+				// See docs/adr/telemetry/memory.md#passive-telemetry-recording-with-malformed-data
 			}
 		},
 		setAttributes(attributes) {
@@ -151,7 +151,7 @@ function startInMemorySpan<T>(
 			try {
 				recordedSpan.attributes = mergeAttributes(recordedSpan.attributes, attributes);
 			} catch {
-				// Recording is passive. Ignore malformed or unreadable telemetry payloads.
+				// See docs/adr/telemetry/memory.md#passive-telemetry-recording-with-malformed-data
 			}
 		},
 		setStatus(status) {
@@ -160,7 +160,7 @@ function startInMemorySpan<T>(
 				recordedSpan.status = copyStatus(status);
 				recordedSpan.explicitStatus = true;
 			} catch {
-				// Recording is passive. Ignore malformed or unreadable telemetry payloads.
+				// See docs/adr/telemetry/memory.md#passive-telemetry-recording-with-malformed-data
 			}
 		},
 	};

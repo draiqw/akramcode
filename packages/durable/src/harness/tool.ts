@@ -96,7 +96,7 @@ export const ToolTask = defineTask<ToolTaskInput, ToolTaskCheckpoint, ToolTaskRe
 			const call = await readCall(runtime, task.input, context);
 			const tool = (await runtime.agent(context)).tools.find((each) => each.name === call.name);
 			if (replay === "safe" && tool?.replay === "safe") {
-				// The rerun reports from scratch; clear what the interrupted attempt published.
+				// See docs/adr/durable/harness-tool.md#recovery-rerun-strategy
 				await runtime.commit(async (tx) => {
 					const slot = toolSlot(await tx.doc(LiveDoc, runtime.conversationId), runtime.taskId);
 					if (slot !== undefined) clearProgress(slot);
@@ -105,7 +105,7 @@ export const ToolTask = defineTask<ToolTaskInput, ToolTaskCheckpoint, ToolTaskRe
 				return run(runtime, call, tool, args, context);
 			}
 			const message = `Tool ${call.name} was interrupted and may have partially run`;
-			// `failed` records cancellation intent, so the call's owned conversations, left unsupervised, are aborted.
+			// See docs/adr/durable/harness-tool.md#failed-status-cascading
 			const ending = { status: "failed", message } as const;
 			await settle(runtime, call, ending, (slot) => fromSlot(slot, "interrupted", message), context);
 		},
@@ -204,7 +204,7 @@ async function run(
 			detailsContext.abortSignal?.throwIfAborted();
 			reported.details = copyJson(value, { omitUndefinedProperties: true });
 			const committed = progress.markAndWait();
-			// Cancelling the wait leaves the update in place; the commit's own outcome stays observed.
+			// See docs/adr/durable/harness-tool.md#commit-outcome-consistency
 			committed.catch(() => {});
 			return awaitWithContext(committed, detailsContext);
 		},
@@ -241,7 +241,7 @@ async function run(
 	let result: ToolExecutionResult;
 	let ending = COMPLETED;
 	try {
-		// Built for this call, so a rerun after recovery gets the conversation's environment at that time.
+		// See docs/adr/durable/harness-tool.md#environment-at-call-time
 		const env = await runtime.env(context);
 		result = await tool.execute(args, { ...api, env }, context);
 	} catch (error) {
@@ -251,13 +251,12 @@ async function run(
 			throw error;
 		}
 		result = { isError: true, diagnostics: [toolDiagnostic("tool_error", errorText(error))] };
-		// A throw, from `execute()` or from building the environment, ends the task `failed`, which cancels what the call owned; it no longer supervises it. The error text
-		// is already in the result entry.
+		// See docs/adr/durable/harness-tool.md#tool-error-entry-ownership
 		ending = { status: "failed", message: `Tool ${call.name} threw` };
 	}
 	ended = true;
 	reported.output.end();
-	// Details still waiting for a progress commit settle with the terminal commit, the final flush.
+	// See docs/adr/durable/harness-tool.md#progress-commit-final-flush
 	const pending = await progress.stop();
 	try {
 		const settled = await finalResult(runtime, call, result, reported, context);
@@ -277,13 +276,12 @@ function publishProgress(runtime: Runtime, reported: Reported, context: Context)
 	let written = { text: "", details: undefined as JsonValue | undefined, diagnostics: 0 };
 	return new Progress(
 		async () => {
-			// Capture everything synchronously: the tool keeps reporting while the commit is in flight.
+			// See docs/adr/durable/harness-tool.md#synchronous-progress-capture
 			const snapshot = reported.output.snapshot();
 			const current = { text: snapshot.text, details: reported.details, diagnostics: reported.diagnostics.length };
 			const added = reported.diagnostics.slice(written.diagnostics, current.diagnostics);
 			const detailsChanged = current.details !== written.details;
-			// What the commit writes, as Chord diffs the string: an append, a trim plus an append of what follows the shared
-			// part, or the whole window when its bounded overlap search finds nothing.
+			// See docs/adr/durable/harness-tool.md#chord-diff-optimization
 			let bytes = 0;
 			if (snapshot.text !== written.text) {
 				const shared = snapshot.text.startsWith(written.text)
@@ -296,12 +294,11 @@ function publishProgress(runtime: Runtime, reported: Reported, context: Context)
 			await runtime.commit(async (tx) => {
 				const slot = toolSlot(await tx.doc(LiveDoc, runtime.conversationId), runtime.taskId);
 				if (slot === undefined) return undefined;
-				// REMINDER: assign `output` as one string field. Chord then diffs it into an append, or a trim plus an
-				// append for a sliding tail; replacing the slot object would record the whole window on every commit.
+				// See docs/adr/durable/harness-tool.md#output-field-delta-encoding
 				if ((slot.output ?? "") !== snapshot.text) slot.output = snapshot.text;
 				if (snapshot.droppedBytes > 0) slot.droppedBytes = snapshot.droppedBytes;
 				if (snapshot.droppedLines > 0) slot.droppedLines = snapshot.droppedLines;
-				// Diff details leaf by leaf and append new diagnostics, so each commit writes only what changed.
+				// See docs/adr/durable/harness-tool.md#details-and-diagnostics-diffing
 				if (detailsChanged && current.details !== undefined) {
 					assignJson(slot as unknown as Record<string, JsonValue>, "details", current.details);
 				}
@@ -315,7 +312,7 @@ function publishProgress(runtime: Runtime, reported: Reported, context: Context)
 			return bytes;
 		},
 		(error) => {
-			// Rejections after an abort mark or close are expected; the committed state stays consistent.
+			// See docs/adr/durable/harness-tool.md#error-handling-in-progress-commits
 			if (!runtime.signal.aborted) runtime.report(error);
 		},
 	);
@@ -346,7 +343,7 @@ async function finalResult(
 	await runtime.hooks.each("afterTool", async (hook) => {
 		final = (await hook(call, final, runtime, context)) ?? final;
 	});
-	// The retained output's truncation applies only while afterTool kept that content.
+	// See docs/adr/durable/harness-tool.md#truncation-application-timing
 	if (retained !== undefined && retained.droppedBytes > 0 && final.content === content) {
 		harness.push(truncated(retained, reported.limits.retain));
 	}
@@ -378,7 +375,7 @@ async function settle(
 			const error = { message: ending.message };
 			return { status: "terminal", outcome: { status: "failed", error, result: { entryId } } };
 		}
-		// Tools build control objects freely; drop keys set to undefined so the task result is strict JSON.
+		// See docs/adr/durable/harness-tool.md#control-object-normalization
 		const control =
 			result.control === undefined
 				? {}

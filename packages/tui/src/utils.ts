@@ -36,13 +36,12 @@ function couldBeEmoji(segment: string): boolean {
 	);
 }
 
-// Regexes for character classification (same as string-width library)
+// See docs/adr/tui/utils.md#regex-patterns-match-string-width-library
 const zeroWidthRegex = /^(?:\p{Default_Ignorable_Code_Point}|\p{Control}|\p{Mark}|\p{Surrogate})+$/v;
 const leadingNonPrintingRegex = /^[\p{Default_Ignorable_Code_Point}\p{Control}\p{Format}\p{Mark}\p{Surrogate}]+/v;
 const nonPrintingCharRegex = /^(?:\p{Default_Ignorable_Code_Point}|\p{Control}|\p{Format}|\p{Mark}|\p{Surrogate})$/v;
 const markCharRegex = /^\p{Mark}$/v;
-// Marks that terminals allocate cells for when attached to a base character.
-// This includes Unicode spacing marks and non-spacing exceptions in legacy wcwidth tables.
+// See docs/adr/tui/utils.md#terminal-spacing-marks-exception
 const terminalSpacingMarkRegex =
 	/^(?:[\p{Spacing_Mark}--[\u1734\u302E\u302F]]|[\u065F\u0F7F\u102B\u102C\u1031\u1033-\u1035\u1038\u103A-\u103E])+$/v;
 const rgiEmojiRegex = /^\p{RGI_Emoji}$/v;
@@ -186,7 +185,7 @@ function graphemeWidth(segment: string): number {
 		if (code === 0x09) return 3;
 	}
 
-	// Some marks occupy cells even without a base character.
+	// See docs/adr/tui/utils.md#non-base-character-marks
 	if (terminalSpacingMarkRegex.test(segment)) {
 		return [...segment].length;
 	}
@@ -208,19 +207,14 @@ function graphemeWidth(segment: string): number {
 		return 0;
 	}
 
-	// Regional indicator symbols (U+1F1E6..U+1F1FF) are often rendered as
-	// full-width emoji in terminals, even when isolated during streaming.
-	// Keep width conservative (2) to avoid terminal auto-wrap drift artifacts.
+	// See docs/adr/tui/utils.md#regional-indicator-symbol-conservative-width
 	if (cp >= 0x1f1e6 && cp <= 0x1f1ff) {
 		return 2;
 	}
 
 	let width = eastAsianWidth(cp);
 
-	// Intl.Segmenter can group multiple terminal-spacing code points into one
-	// grapheme. Count trailing visible code points that terminals may allocate
-	// cells for: Indic consonants after marks, halfwidth/fullwidth forms, and
-	// Thai/Lao AM vowels.
+	// See docs/adr/tui/utils.md#intlsegmenter-grapheme-grouping-complexity
 	let followsMark = false;
 	const chars = [...base];
 	for (const char of chars.slice(1)) {
@@ -252,8 +246,7 @@ export function visibleWidth(str: string): number {
 		return 0;
 	}
 
-	// Fast path: printable ASCII, tabs, and ANSI escape sequences. Styled lines take this path, so
-	// re-rendering after a theme change does not run grapheme segmentation on every line.
+	// See docs/adr/tui/utils.md#fast-path-for-common-text
 	const asciiWidth = asciiVisibleWidth(str);
 	if (asciiWidth !== -1) {
 		return asciiWidth;
@@ -272,9 +265,7 @@ export function visibleWidth(str: string): number {
 	}
 	let escapeIndex = clean.indexOf("\x1b");
 	if (escapeIndex !== -1) {
-		// Strip supported ANSI/OSC/APC escape sequences in one pass.
-		// This covers CSI styling/cursor codes, OSC hyperlinks and prompt markers,
-		// and APC sequences like CURSOR_MARKER.
+		// See docs/adr/tui/utils.md#single-pass-ansi-sequence-stripping
 		let stripped = "";
 		let copyFrom = 0;
 		while (escapeIndex !== -1) {
@@ -557,10 +548,7 @@ class AnsiCodeTracker {
 	private activeHyperlink: ActiveHyperlink | null = null;
 
 	process(ansiCode: string): void {
-		// OSC 8 hyperlink: \x1b]8;;<url>\x1b\\ (open) or \x1b]8;;\x1b\\ (close).
-		// Preserve the original terminator because some terminals only make BEL-terminated
-		// links clickable. OAuth login URLs use BEL, so reopening wrapped lines with ST
-		// made only the first physical line clickable in those terminals.
+		// See docs/adr/tui/utils.md#osc-8-hyperlink-terminator-preservation
 		const hyperlink = parseOsc8Hyperlink(ansiCode);
 		if (hyperlink !== undefined) {
 			this.activeHyperlink = hyperlink;
@@ -701,7 +689,7 @@ class AnsiCodeTracker {
 		this.strikethrough = false;
 		this.fgColor = null;
 		this.bgColor = null;
-		// SGR reset does not affect OSC 8 hyperlink state
+		// See docs/adr/tui/utils.md#sgr-reset-does-not-affect-hyperlinks
 	}
 
 	/** Clear all state for reuse. */
@@ -829,7 +817,7 @@ function splitIntoTokensWithAnsi(text: string): string[] {
 		if (end === -1) end = text.length;
 
 		const chunk = text.slice(i, end);
-		// Printable ASCII characters are single graphemes, so skip the segmenter for them.
+		// See docs/adr/tui/utils.md#printable-ascii-segmentation-optimization
 		const ascii = isPrintableAscii(chunk);
 		for (const segment of ascii ? chunk : graphemeSegments(chunk)) {
 			const segmentIsSpace = segment === " ";
@@ -902,14 +890,13 @@ export function wrapTextWithAnsi(text: string, width: number): string[] {
 		return [""];
 	}
 
-	// Handle newlines by processing each line separately
-	// Track ANSI state across lines so styles carry over after literal newlines
+	// See docs/adr/tui/utils.md#multi-line-ansi-state-tracking
 	const inputLines = text.split(/\r\n|\r|\n/);
 	const result: string[] = [];
 	const tracker = new AnsiCodeTracker();
 
 	for (const inputLine of inputLines) {
-		// Prepend active ANSI codes from previous lines (except for first line)
+		// See docs/adr/tui/utils.md#active-ansi-code-prepending
 		const prefix = result.length > 0 ? tracker.getActiveCodes() : "";
 		const wrappedLines = wrapSingleLine(prefix + inputLine, width);
 		for (const wrappedLine of wrappedLines) {
@@ -943,10 +930,10 @@ function wrapSingleLine(line: string, width: number): string[] {
 		const tokenVisibleLength = visibleWidth(token);
 		const isWhitespace = token.trim() === "";
 
-		// Token itself is too long - break it character by character
+		// See docs/adr/tui/utils.md#long-token-character-by-character-breaking
 		if (tokenVisibleLength > width && !isWhitespace) {
 			if (currentLine) {
-				// Add specific reset for underline only (preserves background)
+				// See docs/adr/tui/utils.md#underline-reset-only-for-line-breaks
 				const lineEndReset = tracker.getLineEndReset();
 				if (lineEndReset) {
 					currentLine += lineEndReset;
@@ -956,7 +943,7 @@ function wrapSingleLine(line: string, width: number): string[] {
 				currentVisibleLength = 0;
 			}
 
-			// Break long token - breakLongWord handles its own resets
+			// See docs/adr/tui/utils.md#long-token-breaking-delegation
 			const broken = breakLongWord(token, width, tracker);
 			for (let i = 0; i < broken.length - 1; i++) {
 				wrapped.push(broken[i]!);
@@ -978,7 +965,7 @@ function wrapSingleLine(line: string, width: number): string[] {
 			}
 			wrapped.push(lineToWrap);
 			if (isWhitespace) {
-				// Don't start new line with whitespace
+				// See docs/adr/tui/utils.md#no-whitespace-line-start
 				currentLine = tracker.getActiveCodes();
 				currentVisibleLength = 0;
 			} else {
@@ -995,11 +982,11 @@ function wrapSingleLine(line: string, width: number): string[] {
 	}
 
 	if (currentLine) {
-		// No reset at end of final line - let caller handle it
+		// See docs/adr/tui/utils.md#no-reset-at-final-line
 		wrapped.push(currentLine);
 	}
 
-	// Trailing whitespace can cause lines to exceed the requested width
+	// See docs/adr/tui/utils.md#trailing-whitespace-line-width-overage
 	return wrapped.length > 0 ? wrapped.map((line) => line.trimEnd()) : [""];
 }
 
@@ -1024,8 +1011,7 @@ function breakLongWord(word: string, width: number, tracker: AnsiCodeTracker): s
 	let currentLine = tracker.getActiveCodes();
 	let currentWidth = 0;
 
-	// First, separate ANSI codes from visible content
-	// We need to handle ANSI codes specially since they're not graphemes
+	// See docs/adr/tui/utils.md#separate-ansi-from-visible-content
 	let i = 0;
 	const segments: Array<{ type: "ansi" | "grapheme"; value: string }> = [];
 
@@ -1060,13 +1046,13 @@ function breakLongWord(word: string, width: number, tracker: AnsiCodeTracker): s
 		}
 
 		const grapheme = seg.value;
-		// Skip empty graphemes to avoid issues with string-width calculation
+		// See docs/adr/tui/utils.md#skip-empty-graphemes
 		if (!grapheme) continue;
 
 		const graphemeWidth = visibleWidth(grapheme);
 
 		if (currentWidth + graphemeWidth > width) {
-			// Add specific reset for underline only (preserves background)
+			// See docs/adr/tui/utils.md#underline-reset-only-for-line-breaks
 			const lineEndReset = tracker.getLineEndReset();
 			if (lineEndReset) {
 				currentLine += lineEndReset;
@@ -1081,7 +1067,7 @@ function breakLongWord(word: string, width: number, tracker: AnsiCodeTracker): s
 	}
 
 	if (currentLine) {
-		// No reset at end of final segment - caller handles continuation
+		// See docs/adr/tui/utils.md#no-reset-at-final-segment
 		lines.push(currentLine);
 	}
 
@@ -1283,7 +1269,7 @@ export function sliceWithWidth(
 		const ansi = extractAnsiCode(line, i);
 		if (ansi) {
 			if (currentCol >= startCol && currentCol < endCol) {
-				// Keep original order: codes from before the range must precede codes at the boundary
+				// See docs/adr/tui/utils.md#ansi-code-ordering-at-boundaries
 				result += pendingAnsi + ansi.code;
 				pendingAnsi = "";
 			} else if (currentCol < startCol) pendingAnsi += ansi.code;
@@ -1346,13 +1332,13 @@ export function extractSegments(
 	while (i < line.length) {
 		const ansi = extractAnsiCode(line, i);
 		if (ansi) {
-			// Track all SGR codes to know styling state at afterStart
+			// See docs/adr/tui/utils.md#sgr-state-tracking-for-range-context
 			pooledStyleTracker.process(ansi.code);
 			// Include ANSI codes in their respective segments
 			if (currentCol < beforeEnd) {
 				pendingAnsiBefore += ansi.code;
 			} else if (currentCol >= afterStart && currentCol < afterEnd && afterStarted) {
-				// Only include after we've started "after" (styling already prepended)
+				// See docs/adr/tui/utils.md#include-ansi-after-styling-applied
 				after += ansi.code;
 			}
 			i += ansi.length;
@@ -1375,7 +1361,7 @@ export function extractSegments(
 			} else if (currentCol >= afterStart && currentCol < afterEnd) {
 				const fits = !strictAfter || currentCol + w <= afterEnd;
 				if (fits) {
-					// On first "after" grapheme, prepend inherited styling from before overlay
+					// See docs/adr/tui/utils.md#inherited-styling-in-overlay-after-segment
 					if (!afterStarted) {
 						after += pooledStyleTracker.getActiveCodes();
 						afterStarted = true;
@@ -1386,7 +1372,7 @@ export function extractSegments(
 			}
 
 			currentCol += w;
-			// Early exit: done with "before" only, or done with both segments
+			// See docs/adr/tui/utils.md#early-exit-for-segment-extraction
 			if (afterLen <= 0 ? currentCol >= beforeEnd : currentCol >= afterEnd) break;
 		}
 		i = textEnd;

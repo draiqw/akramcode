@@ -56,7 +56,7 @@ function parseStoreWrites(json: string): CodemodeStoreWrites {
 }
 
 function defaultWorkerUrl(): URL {
-	// `.ts` when running from source (tests, tsx), `.js` from the published dist.
+	// See docs/adr/codemode/runtime/host.md#worker-url-format-detection
 	return new URL(import.meta.url.endsWith(".ts") ? "./worker.ts" : "./worker.js", import.meta.url);
 }
 
@@ -229,8 +229,7 @@ class Execution {
 			status = "error";
 		}
 
-		// Already cancelled by finish(): the record keeps "cancelled" and the
-		// worker is gone or going.
+		// See docs/adr/codemode/runtime/host.md#cancelled-call-tracking
 		if (!this.pending.delete(id)) return;
 		if (record) {
 			record.status = status;

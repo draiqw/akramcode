@@ -91,7 +91,7 @@ function getCacheControl(
 	};
 }
 
-// Stealth mode: Mimic Claude Code's tool naming exactly
+// See docs/adr/providers/api-anthropic-messages.md#claude-code-tool-naming
 const claudeCodeVersion = "2.1.280";
 
 // Claude Code 2.x tool names (canonical casing)
@@ -193,13 +193,7 @@ const MID_CONVERSATION_OUTPUT_CONFIG_BETA = "mid-conversation-output-config-2026
 const THINKING_BINDING_CONTROLS_BETA = "thinking-binding-controls-2026-08-01";
 const INLINE_TOOLS_BETA = "inline-tools-2026-09-15";
 
-/**
- * Stable deferred tool declared whenever native tool changes are in use. Anthropic adds
- * hidden prompt scaffolding for mid-conversation tool changes; declaring this placeholder
- * from the first request keeps that scaffolding in the cached prefix, so the first tool
- * change does not invalidate the cache (measured: full miss without it). It is never
- * activated and the model cannot see it.
- */
+// See docs/adr/providers/api-anthropic-messages.md#deferred-tool-placeholder-for-cache-preservation
 const DEFERRED_TOOL_PLACEHOLDER: BetaTool = {
 	name: "__akramcode_deferred_placeholder__",
 	description: "Reserved placeholder. Never available. Never call this.",
@@ -368,11 +362,7 @@ function getAnthropicFederation(
 	};
 }
 
-/**
- * The SDK caches the federated access token per client, but akramcode creates a client
- * per request. Keep one client for the current federation config and fetch, and
- * clone it per request with `withOptions()`, which shares the token cache.
- */
+// See docs/adr/providers/api-anthropic-messages.md#federation-client-caching-and-token-reuse
 let federationClient: { key: string; fetch: typeof globalThis.fetch | undefined; client: Anthropic } | undefined;
 
 interface ServerSentEvent {
@@ -657,14 +647,13 @@ export const stream: StreamFunction<"anthropic-messages", AnthropicOptions> = (
 									(fallback) => fallback.provider === model.provider && fallback.model === responseModel,
 								)?.cost;
 					usageModel = fallbackCost ? { ...model, id: responseModel, cost: fallbackCost } : model;
-					// Capture initial token usage from message_start event
-					// This ensures we have input token counts even if the stream is aborted early
+					// See docs/adr/providers/api-anthropic-messages.md#early-token-usage-capture
 					output.usage.input = event.message.usage.input_tokens || 0;
 					output.usage.output = event.message.usage.output_tokens || 0;
 					output.usage.cacheRead = event.message.usage.cache_read_input_tokens || 0;
 					output.usage.cacheWrite = event.message.usage.cache_creation_input_tokens || 0;
 					output.usage.cacheWrite1h = event.message.usage.cache_creation?.ephemeral_1h_input_tokens || 0;
-					// Anthropic doesn't provide total_tokens, compute from components
+					// See docs/adr/providers/api-anthropic-messages.md#total-tokens-calculation
 					output.usage.totalTokens =
 						output.usage.input + output.usage.output + output.usage.cacheRead + output.usage.cacheWrite;
 					calculateCost(usageModel, output.usage);
@@ -783,8 +772,7 @@ export const stream: StreamFunction<"anthropic-messages", AnthropicOptions> = (
 							});
 						} else if (block.type === "toolCall") {
 							block.arguments = parseStreamingJson(block.partialJson);
-							// Finalize in-place and strip the scratch buffer so replay only
-							// carries parsed arguments.
+							// See docs/adr/providers/api-anthropic-messages.md#streaming-scratch-buffer-cleanup
 							delete (block as { partialJson?: string }).partialJson;
 							stream.push({
 								type: "toolcall_end",
@@ -805,8 +793,7 @@ export const stream: StreamFunction<"anthropic-messages", AnthropicOptions> = (
 							output.errorMessage = stopReasonResult.errorMessage;
 						}
 					}
-					// Only update usage fields if present (not null).
-					// Preserves input_tokens from message_start when proxies omit it in message_delta.
+					// See docs/adr/providers/api-anthropic-messages.md#proxy-compatibility-for-usage-updates
 					if (event.usage) {
 						if (event.usage.input_tokens != null) {
 							output.usage.input = event.usage.input_tokens;
@@ -820,20 +807,20 @@ export const stream: StreamFunction<"anthropic-messages", AnthropicOptions> = (
 						if (event.usage.cache_creation_input_tokens != null) {
 							output.usage.cacheWrite = event.usage.cache_creation_input_tokens;
 						}
-						// Vercel AI Gateway includes the TTL breakdown in deltas, though the SDK only types it on message_start.
+						// See docs/adr/providers/api-anthropic-messages.md#vercel-ai-gateway-ttl-breakdown
 						const cacheCreation = (
 							event.usage as typeof event.usage & { cache_creation?: { ephemeral_1h_input_tokens?: number } }
 						).cache_creation;
 						if (cacheCreation?.ephemeral_1h_input_tokens != null) {
 							output.usage.cacheWrite1h = cacheCreation.ephemeral_1h_input_tokens;
 						}
-						// Anthropic reports reasoning tokens as a subset of output tokens.
+						// See docs/adr/providers/api-anthropic-messages.md#reasoning-token-tracking
 						const thinkingTokens = event.usage.output_tokens_details?.thinking_tokens;
 						if (thinkingTokens != null) {
 							output.usage.reasoning = thinkingTokens;
 						}
 					}
-					// Anthropic doesn't provide total_tokens, compute from components
+					// See docs/adr/providers/api-anthropic-messages.md#total-tokens-calculation
 					output.usage.totalTokens =
 						output.usage.input + output.usage.output + output.usage.cacheRead + output.usage.cacheWrite;
 					calculateCost(usageModel, output.usage);
@@ -1092,10 +1079,7 @@ function buildParams(
 	const initialSystemText = initialSystemMessage ? getSystemMessageText(initialSystemMessage) : "";
 	const transformedMessages = transformMessages(context.messages, model, normalizeToolCallId);
 	const conversationMessages = initialSystemMessage ? transformedMessages.slice(1) : transformedMessages;
-	// Native tool changes keep the request-level tool list fixed and define every later tool
-	// by value in a `tool_addition` block, which also expresses same-name redefinitions.
-	// Anthropic rejects a tool list where every tool is deferred, so there must be an initial
-	// active tool to anchor the placeholder. Otherwise the current tool list is sent.
+	// See docs/adr/providers/api-anthropic-messages.md#native-tool-changes-and-cache-survival
 	const initialTools = initialSystemMessage?.toolsAdded ?? [];
 	const nativeToolChanges =
 		compat.supportsMidConvoSystemMessages && compat.supportsMidConvoToolChanges && initialTools.length > 0;
@@ -1361,7 +1345,7 @@ function convertMessages(
 						text: sanitizeSurrogates(block.text),
 					});
 				} else if (block.type === "thinking") {
-					// Redacted thinking: pass the opaque payload back as redacted_thinking
+					// See docs/adr/providers/api-anthropic-messages.md#redacted-thinking-protocol
 					if (block.redacted) {
 						blocks.push({
 							type: "redacted_thinking",
@@ -1372,9 +1356,7 @@ function convertMessages(
 					const thinkingSignature = block.thinkingSignature;
 					const hasThinkingSignature = !!thinkingSignature && thinkingSignature.trim().length > 0;
 					if (block.thinking.trim().length === 0 && !hasThinkingSignature) continue;
-					// If thinking signature is missing/empty (e.g., from aborted stream),
-					// convert to plain text for Anthropic. Some compatible providers emit
-					// and accept empty signatures, so let marked models preserve the block.
+					// See docs/adr/providers/api-anthropic-messages.md#empty-thinking-signatures
 					if (!hasThinkingSignature) {
 						blocks.push(
 							allowEmptySignature

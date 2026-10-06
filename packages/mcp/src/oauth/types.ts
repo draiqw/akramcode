@@ -120,7 +120,7 @@ function optionalStrings(value: unknown, name: string): string[] | undefined {
 
 function safeUrl(value: unknown, name: string): string {
 	const text = requiredString(value, name);
-	// URL parsing throws a `TypeError`, which discovery reserves for network failures.
+	// See docs/adr/mcp/oauth-types.md#url-validation-without-try-catch
 	if (!URL.canParse(text)) throw new Error(`Invalid ${name}`);
 	const url = new URL(text);
 	if (["javascript:", "data:", "vbscript:"].includes(url.protocol)) throw new Error(`Invalid ${name}`);

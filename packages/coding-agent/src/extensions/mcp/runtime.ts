@@ -298,9 +298,7 @@ export class McpServerConnection implements McpToolCaller, McpResourceServer {
 					continue;
 				}
 				if (error instanceof McpSessionExpiredError && attempt === 1) {
-					// The server no longer knows the session (restart, deploy), so it did not run the request.
-					// Retry once on a new session. The old client is detached but not closed: closing would
-					// fail its other in-flight calls, which instead get the same 404 and retry the same way.
+					// See docs/adr/coding-agent/extensions-mcp-runtime.md#session-expiry-retry-strategy
 					if (this.client === client) this.client = undefined;
 					continue;
 				}
@@ -389,7 +387,7 @@ export class McpServerConnection implements McpToolCaller, McpResourceServer {
 			});
 			const stdio = transport instanceof StdioTransport ? transport : undefined;
 			client.onClose(() => this.handleClientClose(client, stdio));
-			// Servers without the tools capability (prompts or resources only) do not answer tools/list.
+			// See docs/adr/coding-agent/extensions-mcp-runtime.md#tools-capability-handling
 			const hasResources = client.serverCapabilities?.resources !== undefined;
 			const [tools, resources] = await Promise.all([
 				client.serverCapabilities?.tools ? client.listTools() : [],
@@ -466,8 +464,7 @@ export class McpServerConnection implements McpToolCaller, McpResourceServer {
 		const client = this.client;
 		this.client = undefined;
 		await client?.close().catch(() => undefined);
-		// A refresh the server already answered may have rotated the refresh token; exiting before the
-		// new tokens are saved would lose the grant.
+		// See docs/adr/coding-agent/extensions-mcp-runtime.md#token-rotation-safety
 		await this.authProvider?.settled();
 	}
 }

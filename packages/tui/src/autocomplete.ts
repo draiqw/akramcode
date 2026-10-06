@@ -58,8 +58,7 @@ function findLastDelimiter(text: string): number {
 	return lastDelimiter;
 }
 
-// Strip opening wrappers before a path, e.g. "(~/Dev" -> "~/Dev" or "`src/ma" -> "src/ma".
-// Keep a wrapper if the token also contains its closer, e.g. "app/[slug]/pa" or "(group)/pa".
+// See docs/adr/tui/autocomplete.md#wrapper-stripping-strategy
 function stripLeadingWrappers(token: string): string {
 	let result = token;
 	while (result.length > 0) {
@@ -145,7 +144,7 @@ function buildCompletionValue(
 	return `${openQuote}${path}${closeQuote}`;
 }
 
-// Use fd to walk directory tree (fast, respects .gitignore)
+// See docs/adr/tui/autocomplete.md#file-discovery-with-fd
 async function walkDirectoryWithFd(
 	baseDir: string,
 	fdPath: string,

@@ -154,8 +154,7 @@ function arminModel(color: Rgb): Model {
 	});
 }
 
-// The sliding puzzle: after the model spun for a while, blocks slide into free neighboring cells, a few at a time.
-// Each cycle shuffles, flies every block back home, and holds the model briefly.
+// See docs/adr/coding-agent/modes-interactive-components-easter-egg-3d.md#sliding-puzzle-animation-sequence
 const PUZZLE_START = FLY_START + FLY_DURATION + 3;
 const PUZZLE_STEP = 0.3;
 const PUZZLE_STEPS = 12;
@@ -201,7 +200,7 @@ function shuffleSteps(model: Model, cycle: number): Cell3[][] {
 					candidates.push({ block, target });
 				}
 			}
-			// Prefer blocks that did not just move, so the puzzle does not look like one block jittering.
+			// See docs/adr/coding-agent/modes-interactive-components-easter-egg-3d.md#block-jittering-prevention
 			const fresh = candidates.filter((candidate) => !lastMoved.has(candidate.block));
 			const pool = fresh.length > 0 ? fresh : candidates;
 			const choice = pool[Math.floor(next() * pool.length)];
@@ -225,11 +224,10 @@ const WAVE_JITTER = 0.12;
 const DISSOLVE_END = FLY_START + WAVE_SPREAD + WAVE_JITTER + DUST_DURATION;
 const BACKGROUND_FADE = 0.5;
 const EXIT_DURATION = 1.1;
-// A faint starfield fades in behind the logo once the screen has dissolved.
+// See docs/adr/coding-agent/modes-interactive-components-easter-egg-3d.md#starfield-background
 const STARS_START = 2.5;
 const STARS_FADE = 2;
 const STAR_DENSITY = 0.018;
-// Star tints: neutral, pale blue, pale gold, and pale rose, each mixed half with the terminal's foreground.
 const STAR_TINTS: Rgb[] = [
 	[255, 255, 255],
 	[170, 195, 255],
@@ -237,9 +235,7 @@ const STAR_TINTS: Rgb[] = [
 	[255, 190, 205],
 ];
 const LOGO_COLOR_STEP = 5;
-// On light backgrounds most of each braille cell shows the bright background, which washes the logo out. There,
-// the logo gets a halo: its colors and coverage blurred into the cell backgrounds, strongest under the logo and
-// fading out over HALO_RADIUS_X columns and HALO_RADIUS_Y rows (cells are about twice as tall as wide).
+// See docs/adr/coding-agent/modes-interactive-components-easter-egg-3d.md#halo-effect-for-light-backgrounds
 const LIGHT_HALO_STRENGTH = 0.3;
 const HALO_RADIUS_X = 6;
 const HALO_RADIUS_Y = 3;
@@ -433,10 +429,9 @@ function multiply(a: number[], b: number[]): number[] {
 	return result;
 }
 
-// The spin is locked to the puzzle: one turn per cycle, facing the camera in the middle of each hold.
+// See docs/adr/coding-agent/modes-interactive-components-easter-egg-3d.md#spin-timing-locked-to-puzzle-cycle
 const SPIN_RAMP = 1.4;
 const SPIN_SPEED = (Math.PI * 2) / PUZZLE_CYCLE;
-// How much the spin slows down while facing the camera (and speeds up while facing away), from 0 to 1.
 const SPIN_LINGER = 0.6;
 const FIRST_FRONT_VIEW = PUZZLE_START + PUZZLE_STEP * PUZZLE_STEPS + PUZZLE_RETURN + PUZZLE_HOLD / 2;
 
@@ -450,7 +445,7 @@ function baseSpinPhase(time: number): number {
 	return SPIN_SPEED * (SPIN_RAMP * 0.5 + elapsed - SPIN_RAMP);
 }
 
-// Extra rotation added during the flight, so the phase is a whole number of turns at every assembled front view.
+// See docs/adr/coding-agent/modes-interactive-components-easter-egg-3d.md#spin-phase-alignment
 const SPIN_ALIGNMENT = Math.PI * 2 - (baseSpinPhase(FIRST_FRONT_VIEW) % (Math.PI * 2));
 
 /** Spin phase: whole turns exactly when the reassembled logo faces the camera. */
@@ -584,7 +579,7 @@ class BlockRaster {
 			const originA = origin[a]!;
 			const originU = origin[u]!;
 			const originV = origin[v]!;
-			// The ray direction in object space is linear in the dot position, so it is stepped per dot.
+			// See docs/adr/coding-agent/modes-interactive-components-easter-egg-3d.md#ray-casting-optimization
 			const stepA = m[a]! / scale;
 			const stepU = m[u]! / scale;
 			const stepV = m[v]! / scale;
@@ -716,7 +711,7 @@ class BlockRaster {
 					blue += horizontal[source + 3]! * weight;
 				}
 				const target = y * width + x;
-				// Cells under the logo keep at least their own coverage, so faces stay solidly tinted.
+				// See docs/adr/coding-agent/modes-interactive-components-easter-egg-3d.md#solid-tinting-under-the-logo
 				const count = counts[target]!;
 				if (count > 0 && count / 8 > coverage) {
 					coverage = count / 8;
@@ -725,7 +720,7 @@ class BlockRaster {
 					blue = (rgb[target * 3 + 2]! / count) * coverage;
 				}
 				if (coverage <= 0) continue;
-				// Quantized so neighboring cells usually share a background and its escape sequence.
+				// See docs/adr/coding-agent/modes-interactive-components-easter-egg-3d.md#color-quantization-for-escape-sequences
 				const amount = Math.round(strength * Math.min(1, coverage) ** 0.7 * HALO_LEVELS) / HALO_LEVELS;
 				if (amount <= 0) continue;
 				this.haloAmount[target] = amount;
@@ -798,15 +793,13 @@ class BlockRaster {
 					};
 					if (face.maxX < face.minX || face.maxY < face.minY) continue;
 
-					// Faces are flat, so lighting is computed once per face. The normal in camera space is a
-					// column of the rotation matrix.
+					// See docs/adr/coding-agent/modes-interactive-components-easter-egg-3d.md#flat-face-lighting
 					const nx = m[a]! * side;
 					const ny = m[3 + a]! * side;
 					const nz = m[6 + a]! * side;
 					const diffuse = Math.max(0, nx * LIGHT[0] + ny * LIGHT[1] + nz * LIGHT[2]);
 					const rim = Math.max(0, nx * 0.8 - nz * 0.3);
-					// On light backgrounds, highlights toward white would vanish, so faces only get darker than
-					// the brand colors there.
+					// See docs/adr/coding-agent/modes-interactive-components-easter-egg-3d.md#light-background-specular-removal
 					const specular = lightBackground
 						? 0
 						: Math.max(0, nx * HALF_VECTOR[0] + ny * HALF_VECTOR[1] + nz * HALF_VECTOR[2]) ** 24 * 0.6 * 255;
@@ -961,7 +954,7 @@ export class EasterEgg3dAnimation implements Component {
 			this.stars = this.prepareStars(width, height);
 		}
 
-		// Dissolve time runs forward on entry and backward on exit, so the screen reassembles in reverse order.
+		// See docs/adr/coding-agent/modes-interactive-components-easter-egg-3d.md#dissolve-time-reversal-on-exit
 		let dissolveTime: number;
 		let pose: Pose;
 		let hintAlpha: number;

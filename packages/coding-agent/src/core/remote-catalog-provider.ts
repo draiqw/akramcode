@@ -90,8 +90,7 @@ export function withRemoteCatalog(provider: Provider, catalogBaseUrl: string, lo
 				return;
 			}
 
-			// Only revalidate when a cached body backs the validator, so a 304 can never
-			// leave the overlay empty.
+			// See docs/adr/coding-agent/core-remote-catalog-provider.md#conditional-etag-validation
 			const validator = stored && stored.models.length > 0 ? stored.etag : undefined;
 			const url = new URL(`/api/models/providers/${encodeURIComponent(provider.id)}`, catalogBaseUrl);
 			url.searchParams.set("types", REMOTE_CATALOG_MODEL_TYPES.join(","));
@@ -109,8 +108,7 @@ export function withRemoteCatalog(provider: Provider, catalogBaseUrl: string, lo
 			);
 			if (context.signal.aborted) return;
 			const checkedAt = Date.now();
-			// Unchanged: dynamicModels already holds the stored overlay, so only the
-			// freshness window moves.
+			// See docs/adr/coding-agent/core-remote-catalog-provider.md#304-response-handling
 			if (response.status === 304 && stored) {
 				await context.publish({ persist: { ...stored, checkedAt } });
 				return;
@@ -127,8 +125,7 @@ export function withRemoteCatalog(provider: Provider, catalogBaseUrl: string, lo
 				return;
 			}
 			if (!response.ok) {
-				// Transient failure: the cached body and its validator stay valid, so keep the
-				// etag and let the next refresh revalidate instead of downloading the catalog.
+				// See docs/adr/coding-agent/core-remote-catalog-provider.md#transient-failure-recovery
 				await context.publish({ persist: { ...(stored ?? { models: [] }), checkedAt } });
 				throw new Error(`Model catalog request failed for ${provider.id}: ${response.status}`);
 			}

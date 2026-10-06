@@ -4,31 +4,24 @@ function buildProviderErrorPattern(patterns: readonly string[]): RegExp {
 	return new RegExp(patterns.join("|"), "i");
 }
 
+// See docs/adr/ai/utils-retry.md#non-retryable-error-patterns
 const NON_RETRYABLE_PROVIDER_LIMIT_ERROR_PATTERN = buildProviderErrorPattern([
-	// OpenCode Go/free-tier limits returned as 429 JSON error types by OpenCode's
-	// Zen API. These are subscription/account limits, not transient throttles.
 	"GoUsageLimitError",
 	"FreeUsageLimitError",
 
-	// OpenCode Go subscription-limit text asks users to enable available-balance
-	// usage after rolling/weekly/monthly limits are reached.
 	"Monthly usage limit reached",
 	"available balance",
 
-	// Generic quota/budget/billing exhaustion. `insufficient_quota` is OpenAI's
-	// quota/billing error code; the other strings cover common gateway wording.
 	"insufficient_quota",
 	"out of budget",
 	"quota exceeded",
 	"billing",
 
-	// Sign in with ChatGPT: the subscription's shared usage limit, which resets
-	// after hours rather than seconds.
 	"subscription_sharing_usage_limit_exceeded",
 ]);
 
+// See docs/adr/ai/utils-retry.md#retryable-error-patterns
 const RETRYABLE_PROVIDER_ERROR_PATTERN = buildProviderErrorPattern([
-	// Generic provider load, HTTP status, and server-side transient failures.
 	"overloaded",
 	"currently experiencing high demand",
 	"model is at capacity",
@@ -45,14 +38,9 @@ const RETRYABLE_PROVIDER_ERROR_PATTERN = buildProviderErrorPattern([
 	"server.?error",
 	"internal.?error",
 
-	// Wrapper/provider text for transient upstream failures, including OpenRouter
-	// "Provider returned error" responses (#2264).
 	"provider.?returned.?error",
 	"exceeded request buffer limit while retrying upstream",
 
-	// Network, proxy, and fetch transport failures. This includes OpenAI Codex
-	// raw-fetch failures such as "upstream connect", "connection refused", and
-	// "reset before headers" (#733), plus OpenRouter connection drops (#3317).
 	"network.?error",
 	"connection.?error",
 	"connection.?refused",
@@ -70,33 +58,22 @@ const RETRYABLE_PROVIDER_ERROR_PATTERN = buildProviderErrorPattern([
 	"timeout",
 	"terminated",
 
-	// WebSocket transports can report close/error text instead of HTTP/fetch text.
 	"websocket.?closed",
 	"websocket.?error",
 
-	// Premature stream endings from SDKs and transports. Anthropic can throw
-	// "stream ended without ..." and "Anthropic stream ended before message_stop"
-	// (#4433); HTTP/2 clients can throw a no-response error (#3594).
 	"ended without",
 	"stream ended before message_stop",
 	"stream ended before a terminal response event",
 	"http2 request did not get a response",
 
-	// Provider-requested retry delay cap failures should flow through the outer
-	// retry policy so callers can surface/abort the backoff (#1123).
 	"retry delay",
 
-	// Explicit retry guidance emitted mid-stream by OpenAI Responses
-	// and compatible gateways (#6019).
 	"you can retry your request",
 	"try your request again",
 	"please retry your request",
 
-	// gRPC based providers (e.g. NVIDIA NIM)
 	"ResourceExhausted",
 
-	// Sign in with ChatGPT: usage or user data temporarily unavailable. Usage
-	// failures can arrive mid-stream without an HTTP 503 in the message.
 	"subscription_sharing_usage_unavailable",
 	"subscription_sharing_user_unavailable",
 ]);

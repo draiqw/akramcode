@@ -137,7 +137,7 @@ export class ConversationViews {
 				if (mount.observers.size === 0 && this.#mounts.get(id) === mount) this.#mounts.delete(id);
 			};
 			const observer = await create(mount.value, detach, this.#storage);
-			// Close or cancellation may begin while the mount hydrates; register nothing then.
+			// See docs/adr/durable/harness-view.md#race-condition-during-mount-hydration
 			if (this.#closed) throw closedError();
 			context.abortSignal?.throwIfAborted();
 			this.#mounts.set(id, mount);

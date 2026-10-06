@@ -350,7 +350,7 @@ export class SessionImpl implements Session {
 	close(context: Context): Promise<void> {
 		if (this.#closing === undefined) {
 			const cleanup = withoutAbortSignal(context);
-			// Seal admission before anything else runs, then stop observers; admitted work settles before Storage closes.
+			// See docs/adr/durable/session-session.md#close-ordering
 			this.#closing = Promise.resolve()
 				.then(() => this.beforeClose())
 				.then(() =>
@@ -423,11 +423,11 @@ export class SessionImpl implements Session {
 		}
 		let seq: Seq;
 		try {
-			// Once admitted, caller cancellation does not interrupt Storage settlement.
+			// See docs/adr/durable/session-session.md#cancellation-after-admission
 			seq = await this.#storage.commit(writes, withoutAbortSignal(context));
 		} catch (error) {
 			tx.discard();
-			// Callback errors never reach this branch; StorageRejected alone guarantees that no batch effect committed.
+			// See docs/adr/durable/session-session.md#error-handling-after-storage-admission
 			if (!(error instanceof StorageRejected)) this.#poison = { error };
 			throw error;
 		}
@@ -435,7 +435,7 @@ export class SessionImpl implements Session {
 		try {
 			documents = tx.adopt(seq);
 		} catch (error) {
-			// Storage already committed; a failed adoption leaves memory behind durable state.
+			// See docs/adr/durable/session-session.md#adoption-failure-poisoning
 			this.#poison = { error };
 			throw error;
 		}
@@ -487,10 +487,10 @@ export class SessionImpl implements Session {
 		unsubscribeCommit = this.subscribeCommits((publication, context) => {
 			for (const change of publication.changes) {
 				if (change.type !== "document" || change.record.id !== loaded.record.id) continue;
-				// A document state's frames carry no caller cancellation; a watch observes its own cancellation.
+				// See docs/adr/durable/session-session.md#observer-cancellation-semantics
 				const frameContext = observer instanceof CommittedStateSource ? withoutAbortSignal(context) : context;
 				const ops = observedOperations(observed, change);
-				// A migration-only base changes nothing for an observer of the new version.
+				// See docs/adr/durable/session-session.md#migration-only-bases
 				if (ops.length === 0) continue;
 				observer.advance(change.value, ops, frameContext);
 			}
@@ -506,7 +506,7 @@ export class SessionImpl implements Session {
 		context: Context,
 	): Promise<LoadedDocument | undefined> {
 		const cached = this.#documents.get(addressId);
-		// A tracker serves only tokens of the version its value was materialized for; others reload from Storage.
+		// See docs/adr/durable/session-session.md#tracker-version-binding
 		if (cached?.valueVersion === definition.version) return cached;
 		if (cached !== undefined) this.#documents.delete(addressId);
 		const record = await this.#storage.findDocument(address, "current", context);

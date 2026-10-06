@@ -468,7 +468,7 @@ export class SqliteStorage implements Storage {
 
 	async document(id: DocumentId, at: DocumentPoint, _context: Context): Promise<StoredDocument | undefined> {
 		this.assertOpen();
-		// The record and revision queries must observe one committed state; a commit between them can replace the base.
+		// See docs/adr/durable/storage-sqlite-storage.md#transactional-consistency-for-document-queries
 		return this.db.transaction((transaction) => this.materializeDocument(transaction, id, at));
 	}
 
@@ -520,10 +520,7 @@ export class SqliteStorage implements Storage {
 		await this.db.close();
 	}
 
-	/**
-	 * Run a read that issues several queries. Close waits for admitted reads, so their later queries never reach a
-	 * closed database. Single-query reads and transactions are already ordered before close by the database.
-	 */
+	// See docs/adr/durable/storage-sqlite-storage.md#read-admission-gate-design
 	private async admitRead<T>(read: () => Promise<T>): Promise<T> {
 		this.assertOpen();
 		this.admittedReads++;

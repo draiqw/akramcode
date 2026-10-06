@@ -287,7 +287,7 @@ export class ModelRuntime implements Models {
 		}
 		const overlay = this.config.getProvider(providerId);
 		if (!(overlay && Object.keys(overlay).some((key) => key !== "enabled")) && !extension) {
-			// No overlays: use the builtin untouched so its auth/login/stream behavior is exact.
+			// See docs/adr/coding-agent/core-model-runtime.md#use-builtin-provider-untouched-without-overlays
 			this.compositionErrors.delete(providerId);
 			return base;
 		}
@@ -701,8 +701,7 @@ export class ModelRuntime implements Models {
 	streamSimple(model: Model<Api>, context: Context, options?: ModelsSimpleStreamOptions): AssistantMessageEventStream {
 		const transcript = normalizeContext(context);
 		if (isVirtualModel(model)) {
-			// Requests outside the agent loop are routed here. Callers sized them before routing, so
-			// cap the output budget to the routed model.
+			// See docs/adr/coding-agent/core-model-runtime.md#cap-output-budget-for-virtual-model-routing
 			return lazyStream(model, async () => {
 				const route = await this.resolveModel(model, transcript.messages, {
 					reason: "direct",
@@ -712,8 +711,7 @@ export class ModelRuntime implements Models {
 				const { maxTokens: limit } = route.model;
 				const maxTokens = options?.maxTokens && limit > 0 ? Math.min(options.maxTokens, limit) : options?.maxTokens;
 				const reasoning = route.thinkingLevel === "off" ? undefined : route.thinkingLevel;
-				// Caller credentials were resolved for the virtual model's provider. Another provider
-				// resolves its own, so they are not sent to the wrong vendor.
+				// See docs/adr/coding-agent/core-model-runtime.md#keep-caller-credentials-isolated-in-virtual-model-routing
 				const { apiKey, headers, env, ...rest } = options ?? {};
 				const auth = route.model.provider === model.provider ? { apiKey, headers, env } : {};
 				return this.streamSimple(route.model, context, { ...rest, ...auth, maxTokens, reasoning });
@@ -834,8 +832,7 @@ export class ModelRuntime implements Models {
 			...options,
 			allowNetwork: options.allowNetwork ?? this.modelNetworkEnabled,
 		};
-		// Published akramcode-ai builds before ModelsStore returned void and accepted a provider ID.
-		// The fallback keeps source-mode CLI tests working without rebuilding workspace dependencies.
+		// See docs/adr/coding-agent/core-model-runtime.md#compatibility-fallback-for-older-modelsstore
 		const result = ((await this.models.refresh(refreshOptions)) as ModelsRefreshResult | undefined) ?? {
 			aborted: refreshOptions.signal?.aborted ?? false,
 			errors: new Map(),
@@ -858,7 +855,7 @@ export class ModelRuntime implements Models {
 			try {
 				await this.queueAvailabilityRefresh(options.signal);
 			} catch {
-				// Availability errors are recorded by the latest pass; refreshed models remain usable.
+				// See docs/adr/coding-agent/core-model-runtime.md#availability-errors-and-model-refresh-isolation
 			}
 		}
 		return { aborted: result.aborted || (options.signal?.aborted ?? false), errors };
@@ -902,12 +899,10 @@ export class ModelRuntime implements Models {
 	}
 
 	registerProvider(providerId: string, config: ProviderConfigInput): void {
-		// Validate the incoming registration on its own, like the legacy registry:
-		// a broken re-registration must throw without touching the stored config.
+		// See docs/adr/coding-agent/core-model-runtime.md#validate-registration-independently
 		validateExtensionProvider(providerId, this.builtins.get(providerId), this.config.getProvider(providerId), config);
 		this.nativeExtensionProviders.delete(providerId);
-		// Re-registration merges defined values over the previous registration and
-		// preserves undefined ones, matching the legacy ModelRegistry contract.
+		// See docs/adr/coding-agent/core-model-runtime.md#validate-registration-independently
 		const previous = this.extensionProviders.get(providerId);
 		const effective: ProviderConfigInput = { ...previous };
 		for (const [key, value] of Object.entries(config)) {
@@ -948,8 +943,7 @@ export class ModelRuntime implements Models {
 		models.set(id, { model: createVirtualModel(definition), route: (request) => definition.route(request) });
 		this.virtualModels.set(providerId, models);
 		if (!this.recomposeProvider(providerId) && !this.snapshot.configuredProviders.has(providerId)) {
-			// A provider of only virtual models needs no credentials. Mark it configured now: session
-			// restore checks auth before the refresh below lands.
+			// See docs/adr/coding-agent/core-model-runtime.md#virtual-providers-need-no-credentials
 			const auth = new Map(this.snapshot.auth).set(providerId, { type: "api_key", source: "virtual" });
 			const configuredProviders = new Set(this.snapshot.configuredProviders).add(providerId);
 			this.snapshot = { ...this.snapshot, auth, configuredProviders };
@@ -993,7 +987,7 @@ export class ModelRuntime implements Models {
 		const { failed, ...request } = options;
 		const latest = findLatestResponse(messages);
 		const previousModel = latest && this.getPhysicalModel(latest.provider, latest.model);
-		// A failed routing attempt names the virtual model; there is no physical request to report.
+		// See docs/adr/coding-agent/core-model-runtime.md#failed-routing-with-virtual-models
 		const failedModel = failed && this.getPhysicalModel(failed.provider, failed.model);
 		const route = await virtual.route({
 			...request,

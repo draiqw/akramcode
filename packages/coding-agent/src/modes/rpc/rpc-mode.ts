@@ -177,23 +177,23 @@ export async function runRpcMode(runtimeHost: AgentSessionRuntime): Promise<neve
 		},
 
 		setWorkingMessage(_message?: string): void {
-			// Working message not supported in RPC mode - requires TUI loader access
+			// See docs/adr/coding-agent/modes-rpc-rpc-mode.md#extension-ui-limitations-in-rpc-mode
 		},
 
 		setWorkingVisible(_visible: boolean): void {
-			// Working visibility not supported in RPC mode - requires TUI loader access
+			// See docs/adr/coding-agent/modes-rpc-rpc-mode.md#extension-ui-limitations-in-rpc-mode
 		},
 
 		setWorkingIndicator(_options?: WorkingIndicatorOptions): void {
-			// Working indicator customization not supported in RPC mode - requires TUI loader access
+			// See docs/adr/coding-agent/modes-rpc-rpc-mode.md#extension-ui-limitations-in-rpc-mode
 		},
 
 		setHiddenThinkingLabel(_label?: string): void {
-			// Hidden thinking label not supported in RPC mode - requires TUI message rendering access
+			// See docs/adr/coding-agent/modes-rpc-rpc-mode.md#extension-ui-limitations-in-rpc-mode
 		},
 
 		setWidget(key: string, content: unknown, options?: ExtensionWidgetOptions): void {
-			// Only support string arrays in RPC mode - factory functions are ignored
+			// See docs/adr/coding-agent/modes-rpc-rpc-mode.md#string-only-widgets
 			if (content === undefined || Array.isArray(content)) {
 				output({
 					type: "extension_ui_request",
@@ -204,19 +204,18 @@ export async function runRpcMode(runtimeHost: AgentSessionRuntime): Promise<neve
 					widgetPlacement: options?.placement,
 				} as RpcExtensionUIRequest);
 			}
-			// Component factories are not supported in RPC mode - would need TUI access
 		},
 
 		setFooter(_factory: unknown): void {
-			// Custom footer not supported in RPC mode - requires TUI access
+			// See docs/adr/coding-agent/modes-rpc-rpc-mode.md#extension-ui-limitations-in-rpc-mode
 		},
 
 		setHeader(_factory: unknown): void {
-			// Custom header not supported in RPC mode - requires TUI access
+			// See docs/adr/coding-agent/modes-rpc-rpc-mode.md#extension-ui-limitations-in-rpc-mode
 		},
 
 		setTitle(title: string): void {
-			// Fire and forget - host can implement terminal title control
+			// See docs/adr/coding-agent/modes-rpc-rpc-mode.md#fire-and-forget-notifications
 			output({
 				type: "extension_ui_request",
 				id: crypto.randomUUID(),
@@ -226,17 +225,17 @@ export async function runRpcMode(runtimeHost: AgentSessionRuntime): Promise<neve
 		},
 
 		async custom() {
-			// Custom UI not supported in RPC mode
+			// See docs/adr/coding-agent/modes-rpc-rpc-mode.md#extension-ui-limitations-in-rpc-mode
 			return undefined as never;
 		},
 
 		pasteToEditor(text: string): void {
-			// Paste handling not supported in RPC mode - falls back to setEditorText
+			// See docs/adr/coding-agent/modes-rpc-rpc-mode.md#paste-operation-fallback
 			this.setEditorText(text);
 		},
 
 		setEditorText(text: string): void {
-			// Fire and forget - host can implement editor control
+			// See docs/adr/coding-agent/modes-rpc-rpc-mode.md#fire-and-forget-notifications
 			output({
 				type: "extension_ui_request",
 				id: crypto.randomUUID(),
@@ -246,8 +245,7 @@ export async function runRpcMode(runtimeHost: AgentSessionRuntime): Promise<neve
 		},
 
 		getEditorText(): string {
-			// Synchronous method can't wait for RPC response
-			// Host should track editor state locally if needed
+			// See docs/adr/coding-agent/modes-rpc-rpc-mode.md#synchronous-editor-methods
 			return "";
 		},
 
@@ -271,15 +269,15 @@ export async function runRpcMode(runtimeHost: AgentSessionRuntime): Promise<neve
 		},
 
 		addAutocompleteProvider(): void {
-			// Autocomplete provider composition is not supported in RPC mode
+			// See docs/adr/coding-agent/modes-rpc-rpc-mode.md#extension-ui-limitations-in-rpc-mode
 		},
 
 		setEditorComponent(): void {
-			// Custom editor components not supported in RPC mode
+			// See docs/adr/coding-agent/modes-rpc-rpc-mode.md#extension-ui-limitations-in-rpc-mode
 		},
 
 		getEditorComponent() {
-			// Custom editor components not supported in RPC mode
+			// See docs/adr/coding-agent/modes-rpc-rpc-mode.md#extension-ui-limitations-in-rpc-mode
 			return undefined;
 		},
 
@@ -296,17 +294,17 @@ export async function runRpcMode(runtimeHost: AgentSessionRuntime): Promise<neve
 		},
 
 		setTheme(_theme: string | Theme) {
-			// Theme switching not supported in RPC mode
+			// See docs/adr/coding-agent/modes-rpc-rpc-mode.md#extension-ui-limitations-in-rpc-mode
 			return { success: false, error: "Theme switching not supported in RPC mode" };
 		},
 
 		getToolsExpanded() {
-			// Tool expansion not supported in RPC mode - no TUI
+			// See docs/adr/coding-agent/modes-rpc-rpc-mode.md#extension-ui-limitations-in-rpc-mode
 			return false;
 		},
 
 		setToolsExpanded(_expanded: boolean) {
-			// Tool expansion not supported in RPC mode - no TUI
+			// See docs/adr/coding-agent/modes-rpc-rpc-mode.md#extension-ui-limitations-in-rpc-mode
 		},
 	});
 
@@ -392,8 +390,7 @@ export async function runRpcMode(runtimeHost: AgentSessionRuntime): Promise<neve
 			// =================================================================
 
 			case "prompt": {
-				// Start prompt handling immediately, but emit the authoritative response only after
-				// prompt preflight succeeds. Queued and immediately handled prompts also count as success.
+				// See docs/adr/coding-agent/modes-rpc-rpc-mode.md#prompt-handling-behavior
 				let preflightSucceeded = false;
 				void session
 					.prompt(command.message, {

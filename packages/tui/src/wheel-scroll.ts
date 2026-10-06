@@ -1,12 +1,11 @@
 /** Lines moved per mouse-wheel event, or `"auto"` to accelerate fast wheel spins. */
 export type WheelScrollLines = number | "auto";
 
-// Several events closer than this belong to one physical notch (Ghostty emits them ~4 ms apart)
-// or come from a high-resolution source. They move one line each and do not accelerate.
+// See docs/adr/tui/wheel-scroll.md#burst-gap-tolerance-for-multi-notch-events
 const BURST_GAP_MS = 5;
 // A pause longer than this ends a scroll gesture.
 const GESTURE_GAP_MS = 200;
-// Average event gap that maps to one line per event. Faster events scale up proportionally.
+// See docs/adr/tui/wheel-scroll.md#reference-gap-for-proportional-acceleration
 const REFERENCE_GAP_MS = 100;
 const MAX_AUTO_LINES = 6;
 

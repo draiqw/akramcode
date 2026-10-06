@@ -228,7 +228,7 @@ export function createToolSearchToolDefinition(
 		description: TOOL_SEARCH_DESCRIPTION,
 		promptSnippet: "Search for tools that are not loaded yet and load the matches",
 		parameters: toolSearchSchema,
-		// Searching is not something scripts need; it changes what the model sees.
+		// See docs/adr/coding-agent/extensions-tool-search-tool.md#model-only-exposure-for-tool-search
 		exposure: "model-only",
 		async execute(_toolCallId, { query, limit }) {
 			if (query.trim() === "") throw new Error("query must not be empty");

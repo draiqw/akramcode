@@ -79,8 +79,7 @@ const MAX_CACHED_OFFSCREEN_KITTY_TRANSMISSION_BYTES = 32 * 1024 * 1024;
 const MAX_CACHED_OFFSCREEN_KITTY_DECODED_BYTES = 64 * 1024 * 1024;
 const DOUBLE_CLICK_INTERVAL_MS = 500;
 const COPY_ERROR_FLASH_DURATION_MS = 5000;
-// Regular mode delegates double-click selection to the terminal emulator. Fullscreen owns mouse selection,
-// so mirror common terminal word-selection behavior by keeping paths and kebab-case tokens whole.
+// See docs/adr/tui/tui-alt-screen.md#terminal-word-selection-behavior
 const TERMINAL_WORD_SELECTION_JOINERS = new Set(["/", "-"]);
 const wordSegmenter = getWordSegmenter();
 
@@ -363,8 +362,7 @@ export class TuiAltScreen extends TuiBase implements ViewportTUI {
 		this.lastComponentClick = undefined;
 		this.resetRenderState();
 		const term = process.env.TERM?.toLowerCase() ?? "";
-		// Multiplexers can lag when every pointer movement is forwarded. Button-motion
-		// tracking preserves clicks, wheel events, selections, and scrollbar dragging.
+		// See docs/adr/tui/tui-alt-screen.md#multiplexer-aware-mouse-tracking
 		const mouseSequence =
 			process.env.TMUX !== undefined ||
 			process.env.ZELLIJ !== undefined ||
@@ -696,7 +694,7 @@ export class TuiAltScreen extends TuiBase implements ViewportTUI {
 		const wheelEvent = this.parseWheelEvent(data);
 		if (wheelEvent) {
 			const lines = this.wheelScroll.next(wheelEvent.direction, performance.now());
-			// SGR mouse button codes use bit 3 (value 8) for the Alt modifier.
+			// See docs/adr/tui/tui-alt-screen.md#sgr-mouse-button-code-modifiers
 			const wheelDelta =
 				wheelEvent.direction * ((wheelEvent.button & 8) !== 0 ? lines * ALT_WHEEL_SCROLL_MULTIPLIER : lines);
 			const event = this.createMouseEvent("wheel", wheelEvent.button, wheelEvent.x, wheelEvent.y, { wheelDelta });

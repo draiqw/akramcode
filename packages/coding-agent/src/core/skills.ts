@@ -225,7 +225,7 @@ function loadSkillsFromDirInternal(
 				continue;
 			}
 
-			// Skip node_modules to avoid scanning dependencies
+			// See docs/adr/coding-agent/core-skills.md#skip-node_modules-during-discovery
 			if (entry.name === "node_modules") {
 				continue;
 			}

@@ -15,7 +15,7 @@ import { theme } from "../theme/theme.ts";
 import { DynamicBorder } from "./dynamic-border.ts";
 import { keyDisplayText } from "./keybinding-hints.ts";
 
-// EnabledIds: null = all enabled (no filter), string[] = explicit ordered list
+// See docs/adr/coding-agent/modes-interactive-components-scoped-models-selector.md#enabledids-design-pattern
 type EnabledIds = string[] | null;
 
 function isEnabled(enabledIds: EnabledIds, id: string): boolean {
@@ -102,7 +102,7 @@ export class ScopedModelsSelectorComponent extends Container implements Focusabl
 	private selectedIndex = 0;
 	private searchInput: Input;
 
-	// Focusable implementation - propagate to searchInput for IME cursor positioning
+	// See docs/adr/coding-agent/modes-interactive-components-scoped-models-selector.md#focusable-ime-support-pattern
 	private _focused = false;
 	get focused(): boolean {
 		return this._focused;

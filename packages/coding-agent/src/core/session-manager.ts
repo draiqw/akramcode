@@ -555,9 +555,7 @@ export function buildSessionProjection(
 	const projectedEntries = contextEntries.map(
 		(sourceEntry, index): ProjectedSessionEntry => ({
 			sourceEntry,
-			// buildContextEntries() may retain an older compaction entry because its
-			// raw ID lies inside the newest retained range. Only the newest compaction
-			// at index zero contributes a checkpoint and summary.
+			// See docs/adr/coding-agent/core-session-manager.md#compaction-entry-retention
 			messages:
 				sourceEntry.type === "compaction" && index > 0
 					? []
@@ -1157,12 +1155,7 @@ export class SessionManager {
 		return this.sessionFile;
 	}
 
-	/**
-	 * A new session file is created only once the session contains a user or assistant message.
-	 * Setup entries alone (model, thinking level, system prompt) stay in memory so opening and
-	 * closing akramcode without chatting leaves no file behind. Starting at the user message (not the
-	 * first assistant reply) keeps the prompt on disk if the first turn never completes (#10000).
-	 */
+	// See docs/adr/coding-agent/core-session-manager.md#session-file-persistence-strategy
 	private _hasConversation(): boolean {
 		return this.fileEntries.some(
 			(e) => e.type === "message" && (e.message.role === "user" || e.message.role === "assistant"),
@@ -1554,8 +1547,7 @@ export class SessionManager {
 			}
 		}
 
-		// Sort children by timestamp (oldest first, newest at bottom)
-		// Use iterative approach to avoid stack overflow on deep trees
+		// See docs/adr/coding-agent/core-session-manager.md#tree-sorting-via-iteration
 		const stack: SessionTreeNode[] = [...roots];
 		while (stack.length > 0) {
 			const node = stack.pop()!;
@@ -1636,9 +1628,7 @@ export class SessionManager {
 			throw new Error(`Entry ${leafId} not found`);
 		}
 
-		// Filter out LabelEntry from path - we'll recreate them from the resolved map.
-		// Because labels are real tree entries, later entries can be children of labels;
-		// removing labels requires re-chaining the retained path to avoid orphaned subtrees.
+		// See docs/adr/coding-agent/core-session-manager.md#label-filtering-and-re-chaining
 		const pathWithoutLabels: SessionEntry[] = [];
 		const replacementByLabelId = new Map<string, string>();
 		const pendingLabelIds: string[] = [];
@@ -1714,8 +1704,7 @@ export class SessionManager {
 			this.sessionFile = newSessionFile;
 			this._buildIndex();
 
-			// Use the same rule as _persist(): write now if the branched path already
-			// has a conversation, otherwise let _persist() create the file later.
+			// See docs/adr/coding-agent/core-session-manager.md#branched-session-file-writing
 			if (this._hasConversation()) {
 				this._rewriteFile();
 				this.flushed = true;

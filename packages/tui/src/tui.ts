@@ -82,9 +82,7 @@ export function dispatchMouseEvent(component: Component, event: TuiMouseEvent): 
 	const result = component.handleMouse?.(event);
 	if (!result) return undefined;
 	if ("target" in result) {
-		// The component forwarded the event to a child it hosts. Like a delegating container, it routes
-		// keys to that child itself, so it keeps keyboard focus. Focusing the child directly would leave
-		// focus on a detached component once the host removes it, e.g. a closed settings submenu.
+		// See docs/adr/tui/tui.md#focus-management-in-delegating-containers
 		const forwarded = result as TuiMouseDispatchResult;
 		return forwarded.focus && component.handleInput ? { ...forwarded, focusTarget: component } : forwarded;
 	}
@@ -160,11 +158,7 @@ type PendingTerminalColorQuery = {
 const TERMINAL_PALETTE_SIZE = 16;
 /** OSC 10 and 11 plus OSC 4 for every palette color. */
 const TERMINAL_COLOR_REPLY_COUNT = 2 + TERMINAL_PALETTE_SIZE;
-/**
- * Default colors, palette colors 0-15, and a trailing primary device attributes (DA1) request.
- * Every terminal answers DA1 and terminals answer in order, so the DA1 reply marks the end of
- * the color replies, including for terminals that ignore the color queries.
- */
+// See docs/adr/tui/tui.md#terminal-color-query-with-da1-marker
 const TERMINAL_COLOR_QUERY = `\x1b]10;?\x07\x1b]11;?\x07${Array.from(
 	{ length: TERMINAL_PALETTE_SIZE },
 	(_, index) => `\x1b]4;${index};?\x07`,
@@ -1066,7 +1060,7 @@ export abstract class TuiBase extends Container implements TUI {
 			data = current;
 		}
 
-		// Consume terminal cell size responses without blocking unrelated input.
+		// See docs/adr/tui/tui.md#cell-size-response-consumption
 		if (this.consumeCellSizeResponse(data)) {
 			return;
 		}
@@ -1077,8 +1071,7 @@ export abstract class TuiBase extends Container implements TUI {
 			return;
 		}
 
-		// If focused component is an overlay, verify it's still visible
-		// (visibility can change due to terminal resize or visible() callback)
+		// See docs/adr/tui/tui.md#overlay-visibility-verification
 		const focusedOverlay = this.overlayStack.find((o) => o.component === this.focusedComponent);
 		if (focusedOverlay && !this.isOverlayVisible(focusedOverlay)) {
 			// Focused overlay is no longer visible, redirect to topmost visible overlay
@@ -1105,16 +1098,14 @@ export abstract class TuiBase extends Container implements TUI {
 			}
 		}
 
-		// Pass input to focused component (including Ctrl+C)
-		// The focused component can decide how to handle Ctrl+C
+		// See docs/adr/tui/tui.md#input-routing-to-focused-component
 		if (this.focusedComponent?.handleInput) {
 			// Filter out key release events unless component opts in
 			if (isKeyRelease(data) && !this.focusedComponent.wantsKeyRelease) {
 				return;
 			}
 			this.focusedComponent.handleInput(data);
-			// Keyboard input is latency-sensitive. Avoid the throttled timer path,
-			// where even setTimeout(0) can take a full 16 ms tick on Windows.
+			// See docs/adr/tui/tui.md#keyboard-input-latency-sensitivity
 			this.requestImmediateRender();
 		}
 	}
@@ -1381,9 +1372,7 @@ export abstract class TuiBase extends Container implements TUI {
 			height: overlayLines.length,
 		}));
 
-		// Pad to at least terminal height so overlays have screen-relative positions.
-		// Excludes maxLinesRendered: the historical high-water mark caused self-reinforcing
-		// inflation that pushed content into scrollback on terminal widen.
+		// See docs/adr/tui/tui.md#overlay-rendering-height-calculation
 		const workingHeight = Math.max(result.length, termHeight, minLinesNeeded);
 
 		// Extend result with empty lines if content is too short for overlay placement or working area
@@ -1398,8 +1387,7 @@ export abstract class TuiBase extends Container implements TUI {
 			for (let i = 0; i < overlayLines.length; i++) {
 				const idx = viewportStart + row + i;
 				if (idx >= 0 && idx < result.length) {
-					// Defensive: truncate overlay line to declared width before compositing
-					// (components should already respect width, but this ensures it)
+					// See docs/adr/tui/tui.md#overlay-line-truncation
 					const truncatedOverlayLine =
 						visibleWidth(overlayLines[i]) > w ? sliceByColumn(overlayLines[i], 0, w, true) : overlayLines[i];
 					result[idx] = this.compositeLineAt(result[idx], truncatedOverlayLine, col, w, termWidth);

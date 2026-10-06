@@ -234,7 +234,7 @@ export class NestedToolCallRunner {
 		}
 
 		scope.recorder.finish(record, outcome.isError, textOf(outcome.result));
-		// Nested results are not persisted, so their usage is only counted through the recorder.
+		// See docs/adr/coding-agent/core-nested-tool-calls.md#usage-counting-for-nested-results
 		if (outcome.result.usage) scope.recorder.addUsage(outcome.result.usage);
 		await this.host.emit({
 			type: "tool_execution_end",

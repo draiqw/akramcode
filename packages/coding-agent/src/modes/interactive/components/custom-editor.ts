@@ -99,33 +99,29 @@ export class CustomEditor extends Editor {
 
 		// Check app keybindings first
 
-		// Escape/interrupt - only if autocomplete is NOT active
+		// See docs/adr/coding-agent/modes-interactive-components-custom-editor.md#escape-key-handling-with-autocomplete
 		if (this.keybindings.matches(data, "app.interrupt")) {
 			if (!this.isShowingAutocomplete()) {
-				// Use dynamic onEscape if set, otherwise registered handler
 				const handler = this.onEscape ?? this.actionHandlers.get("app.interrupt");
 				if (handler) {
 					handler();
 					return;
 				}
 			}
-			// Let parent handle escape for autocomplete cancellation
 			super.handleInput(data);
 			return;
 		}
 
-		// Exit (Ctrl+D) - only when editor is empty
+		// See docs/adr/coding-agent/modes-interactive-components-custom-editor.md#exit-key-only-when-empty
 		if (this.keybindings.matches(data, "app.exit")) {
 			if (this.getText().length === 0) {
 				const handler = this.onCtrlD ?? this.actionHandlers.get("app.exit");
 				if (handler) handler();
 				return;
 			}
-			// Fall through to editor handling for delete-char-forward when not empty
 		}
 
-		// Explicit history bindings take precedence over app actions while the editor is focused.
-		// This lets users bind Ctrl+P even though it cycles models by default.
+		// See docs/adr/coding-agent/modes-interactive-components-custom-editor.md#history-binding-precedence
 		if (
 			this.keybindings.matches(data, "tui.editor.historyPrevious") ||
 			this.keybindings.matches(data, "tui.editor.historyNext")

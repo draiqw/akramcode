@@ -1,17 +1,4 @@
-// Shared normalization for provider HTTP error objects.
-//
-// Endpoints behind a proxy / gateway may return a non-2xx response whose body
-// the provider SDK cannot fold into `error.message`. The SDK error object still
-// carries the HTTP status and the raw/parsed body, but under SDK-specific field
-// names. Provider catch blocks that read only `error.message` therefore drop
-// the body and surface opaque messages like `"403 status code (no body)"` or
-// collapse to `"Unknown: UnknownError"`.
-//
-// `normalizeProviderError` probes the known SDK field shapes (`openai`,
-// Anthropic, generic `statusCode`/`body` errors) and returns a struct each
-// provider composes into its display string. The `messageCarriesBody` flag
-// captures the Anthropic happy path where the SDK already folded the body
-// into the message, so providers can preserve it without double-printing.
+// See docs/adr/ai/utils-error-body.md#provider-http-error-normalization
 
 export const MAX_PROVIDER_ERROR_BODY_CHARS = 4000;
 

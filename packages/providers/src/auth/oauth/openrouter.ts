@@ -112,7 +112,7 @@ async function exchangeAuthorizationCode(
 
 async function loginOpenRouter(interaction: ProviderAuthInteraction): Promise<OAuthCredential> {
 	const { verifier, challenge } = await generatePKCE();
-	// OpenRouter sends no `state`; the random path keeps stray requests from completing the sign-in.
+	// See docs/adr/providers/auth-oauth-openrouter.md#random-path-instead-of-oauth-state-parameter
 	const callback = await startOAuthCallbackServer({
 		providerName: "OpenRouter",
 		host: getCallbackHost(),

@@ -56,8 +56,7 @@ export async function fetchWithRetry(
 			try {
 				await response.body?.cancel();
 			} catch {
-				// The response is being discarded before a retry. There is nothing useful to
-				// do if cancelling its body also fails.
+				// See docs/adr/coding-agent/utils-management-http.md#response-body-cancellation
 			}
 		} catch (error) {
 			const attemptTimedOut =

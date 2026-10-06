@@ -246,9 +246,7 @@ export class AssistantMessageFrameEncoder {
 				state.catchupJson += event.delta;
 				const argumentsValue = parseStreamingJson<ToolCall["arguments"]>(state.catchupJson);
 				if (serializedArguments(argumentsValue) !== state.snapshotArguments) {
-					// Legacy grammar calls include the initial input in toolcall_start, but their
-					// JSON delta stream still begins at an empty input. Its parsed arguments can
-					// therefore extend, rather than exactly reproduce, the start snapshot.
+					// See docs/adr/ai/utils-assistant-message-frame.md#legacy-grammar-tool-calls-handling
 					const snapshotArguments = parseStreamingJson<ToolCall["arguments"]>(state.snapshotArguments);
 					if (!isJsonPrefix(snapshotArguments, argumentsValue)) return undefined;
 				}

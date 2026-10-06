@@ -186,7 +186,7 @@ export function killTrackedDetachedChildren(): void {
  */
 export function killProcessTree(pid: number): void {
 	if (process.platform === "win32") {
-		// Use the trusted System32 executable so cleanup does not depend on PATH.
+		// See docs/adr/coding-agent/utils-shell.md#trusted-system-binary-for-process-cleanup
 		try {
 			const child = spawn(
 				join(process.env.SystemRoot ?? "C:\\Windows", "System32", "taskkill.exe"),
@@ -197,7 +197,7 @@ export function killProcessTree(pid: number): void {
 					windowsHide: true,
 				},
 			);
-			// A failed spawn emits "error" asynchronously; consume it to avoid crashing Node.
+			// See docs/adr/coding-agent/utils-shell.md#async-error-handling-in-spawn
 			child.once("error", () => {});
 		} catch {
 			// Ignore errors if taskkill fails.
@@ -207,7 +207,7 @@ export function killProcessTree(pid: number): void {
 		try {
 			process.kill(-pid, "SIGKILL");
 		} catch {
-			// Fallback to killing just the child if process group kill fails
+			// See docs/adr/coding-agent/utils-shell.md#unix-process-group-killing-fallback
 			try {
 				process.kill(pid, "SIGKILL");
 			} catch {

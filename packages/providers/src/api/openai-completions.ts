@@ -322,8 +322,7 @@ export const stream: StreamFunction<"openai-completions", OpenAICompletionsOptio
 			timestamp: Date.now(),
 		};
 
-		// `reasoning_details` are replay metadata, not user-visible stream deltas.
-		// Keep them in memory during streaming and serialize once when the block is finalized.
+		// See docs/adr/providers/api-openai-completions.md#reasoning-details-as-replay-metadata
 		let streamedReasoningDetails: OpenAIReasoningDetail[] | undefined;
 		const applyStreamedReasoningDetails = (block: ThinkingContent): void => {
 			if (streamedReasoningDetails !== undefined) {
@@ -558,8 +557,7 @@ export const stream: StreamFunction<"openai-completions", OpenAICompletionsOptio
 				const choice = Array.isArray(chunk.choices) ? chunk.choices[0] : undefined;
 				if (!choice) continue;
 
-				// Fallback: some providers (e.g., Moonshot) return usage
-				// in choice.usage instead of the standard chunk.usage
+				// See docs/adr/providers/api-openai-completions.md#fallback-for-providers-omitting-usage-in-initial-chunks
 				if (!chunk.usage && (choice as any).usage) {
 					output.usage = parseChunkUsage((choice as any).usage, model);
 				}
@@ -590,10 +588,7 @@ export const stream: StreamFunction<"openai-completions", OpenAICompletionsOptio
 						});
 					}
 
-					// Some endpoints return reasoning in reasoning_content (llama.cpp),
-					// or reasoning (other openai compatible endpoints)
-					// Use the first non-empty reasoning field to avoid duplication
-					// (e.g., chutes.ai returns both reasoning_content and reasoning with same content)
+					// See docs/adr/providers/api-openai-completions.md#reasoning-field-variation-across-providers
 					const reasoningFields = ["reasoning_content", "reasoning", "reasoning_text"];
 					const deltaFields = choice.delta as Record<string, unknown>;
 					let foundReasoningField: string | null = null;
@@ -703,10 +698,7 @@ export const stream: StreamFunction<"openai-completions", OpenAICompletionsOptio
 			}
 			output.stopReason = options?.signal?.aborted ? "aborted" : "error";
 			output.errorMessage = formatProviderError(normalizeProviderError(error));
-			// Some providers via OpenRouter give additional information in this field.
-			// normalizeProviderError already stringifies the parsed body (error.error)
-			// into errorMessage, so only append the raw metadata when it is not already
-			// present to avoid double-printing it.
+			// See docs/adr/providers/api-openai-completions.md#error-metadata-handling-with-normalized-messages
 			const rawMetadata = (error as any)?.error?.metadata?.raw;
 			if (rawMetadata && !output.errorMessage.includes(String(rawMetadata))) {
 				output.errorMessage += `\n${rawMetadata}`;
@@ -1173,13 +1165,7 @@ export function convertMessages(
 	const params: ChatCompletionMessageParam[] = [];
 
 	const normalizeToolCallId = (id: string): string => {
-		// Handle pipe-separated IDs from OpenAI Responses API
-		// Format: {call_id}|{id} where {id} can be 400+ chars with special chars (+, /, =)
-		// These come from providers like openai-codex and OpenAI-compatible gateways
-		// Extract just the call_id part and normalize it
-		// Multiple tool calls in the same turn can share call_id but differ by item_id.
-		// Preserve item-level uniqueness when replaying into Chat Completions, which
-		// requires distinct tool call ids.
+		// See docs/adr/providers/api-openai-completions.md#tool-call-id-normalization-for-cross-provider-compatibility
 		if (id.includes("|")) {
 			// Sanitize to allowed chars and truncate to 40 chars (OpenAI limit)
 			const separatorIndex = id.indexOf("|");
@@ -1209,8 +1195,7 @@ export function convertMessages(
 
 	for (let i = 0; i < transformedMessages.length; i++) {
 		const msg = transformedMessages[i];
-		// Some providers don't allow user messages directly after tool results
-		// Insert a synthetic assistant message to bridge the gap
+		// See docs/adr/providers/api-openai-completions.md#provider-specific-tool-result-requirements
 		if (compat.requiresAssistantAfterToolResult && lastRole === "toolResult" && msg.role === "user") {
 			params.push({
 				role: "assistant",
@@ -1262,7 +1247,7 @@ export function convertMessages(
 				});
 			}
 		} else if (msg.role === "assistant") {
-			// Some providers don't accept null content, use empty string instead
+			// See docs/adr/providers/api-openai-completions.md#assistant-message-content-nullability
 			const assistantMsg: ChatCompletionAssistantMessageParamWithReasoning = {
 				role: "assistant",
 				content: compat.requiresAssistantAfterToolResult ? "" : null,
@@ -1300,16 +1285,12 @@ export function convertMessages(
 						.join("\n\n");
 					assistantMsg.content = [{ type: "text", text: thinkingText }, ...assistantTextParts];
 				} else {
-					// Always send assistant content as a plain string (OpenAI Chat Completions
-					// API standard format). Sending as an array of {type:"text", text:"..."}
-					// objects is non-standard and causes some models (e.g. DeepSeek V3.2 via
-					// NVIDIA NIM) to mirror the content-block structure literally in their
-					// output, producing recursive nesting like [{'type':'text','text':'[{...}]'}].
+					// See docs/adr/providers/api-openai-completions.md#assistant-content-format-restrictions
 					if (assistantText.length > 0) {
 						assistantMsg.content = assistantText;
 					}
 
-					// reasoning_details is the structured alternative to a raw reasoning field.
+					// See docs/adr/providers/api-openai-completions.md#reasoning-details-preservation-for-legacy-formats
 					if (!preservedReasoningDetails) {
 						// Use the signature from the first thinking block if available (for llama.cpp server + gpt-oss)
 						let signature = nonEmptyThinkingBlocks[0].thinkingSignature;
@@ -1322,11 +1303,7 @@ export function convertMessages(
 					}
 				}
 			} else if (assistantText.length > 0) {
-				// Always send assistant content as a plain string (OpenAI Chat Completions
-				// API standard format). Sending as an array of {type:"text", text:"..."}
-				// objects is non-standard and causes some models (e.g. DeepSeek V3.2 via
-				// NVIDIA NIM) to mirror the content-block structure literally in their
-				// output, producing recursive nesting like [{'type':'text','text':'[{...}]'}].
+				// See docs/adr/providers/api-openai-completions.md#assistant-content-format-restrictions
 				assistantMsg.content = assistantText;
 			}
 

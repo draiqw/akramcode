@@ -115,7 +115,7 @@ function generateThemeVars(themeName?: string): string {
 		lines.push(`--${key}: ${value};`);
 	}
 
-	// Use explicit theme export colors if available, otherwise derive from userMessageBg
+	// See docs/adr/coding-agent/core-export-html-index.md#theme-export-colors
 	const themeExport = getThemeExportColors(themeName);
 	const userMessageBg = colors.userMessageBg || "#343541";
 	const derivedColors = deriveExportColors(userMessageBg);
@@ -156,7 +156,7 @@ function generateHtml(sessionData: SessionData, themeName?: string): string {
 	const containerBg = themeExport.cardBg ?? derivedExportColors.cardBg;
 	const infoBg = themeExport.infoBg ?? derivedExportColors.infoBg;
 
-	// Base64 encode session data to avoid escaping issues
+	// See docs/adr/coding-agent/core-export-html-index.md#session-data-encoding
 	const sessionDataBase64 = Buffer.from(JSON.stringify(sessionData)).toString("base64");
 
 	// Build the CSS with theme variables injected
@@ -174,7 +174,7 @@ function generateHtml(sessionData: SessionData, themeName?: string): string {
 		.replace("{{HIGHLIGHT_JS}}", hljsJs);
 }
 
-/** Tools rendered directly by the HTML template (not pre-rendered via TUI→ANSI→HTML pipeline) */
+// See docs/adr/coding-agent/core-export-html-index.md#template-rendered-tools
 const TEMPLATE_RENDERED_TOOLS = new Set(["bash", "read", "write", "edit", "ls"]);
 
 /**
@@ -254,7 +254,7 @@ export async function exportSessionToHtml(
 	let renderedTools: Record<string, RenderedToolHtml> | undefined;
 	if (opts.toolRenderer) {
 		renderedTools = preRenderCustomTools(entries, opts.toolRenderer);
-		// Only include if we actually rendered something
+		// See docs/adr/coding-agent/core-export-html-index.md#conditional-tool-rendering
 		if (Object.keys(renderedTools).length === 0) {
 			renderedTools = undefined;
 		}

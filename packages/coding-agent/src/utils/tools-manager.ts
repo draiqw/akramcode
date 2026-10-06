@@ -101,12 +101,7 @@ export function getToolPath(tool: "fd" | "rg"): string | null {
 	return null;
 }
 
-// Resolve the latest release version from the release page redirect.
-// The api.github.com releases endpoint counts against the anonymous API
-// quota (60 requests/hour per IP), which is permanently exhausted behind
-// shared egress IPs such as corporate proxies and CI runners. The web
-// endpoint answers with a redirect to the tagged release at no quota cost
-// and lives on the same origin as the binary download itself.
+// See docs/adr/coding-agent/utils-tools-manager.md#github-releases-api-quota-strategy
 export async function getLatestVersion(repo: string): Promise<string> {
 	const response = await fetchWithRetry(
 		`https://github.com/${repo}/releases/latest`,
@@ -117,8 +112,7 @@ export async function getLatestVersion(repo: string): Promise<string> {
 		{ timeoutMs: NETWORK_TIMEOUT_MS },
 	);
 
-	// Only the status and headers matter here. Discard the body so the
-	// connection can be reused.
+	// See docs/adr/coding-agent/utils-tools-manager.md#preserving-response-connection-reusability
 	try {
 		await response.body?.cancel();
 	} catch {
@@ -220,8 +214,7 @@ function extractZipArchive(archivePath: string, extractDir: string, assetName: s
 	const failures: string[] = [];
 
 	if (platform() === "win32") {
-		// Windows ships bsdtar as tar.exe, which supports zip files. Prefer the
-		// System32 binary over Git Bash's GNU tar, which does not handle zip archives.
+		// See docs/adr/coding-agent/utils-tools-manager.md#windows-tarexe-for-zip-extraction
 		const tarFailure = runExtractionCommand(getWindowsTarCommand(), ["xf", archivePath, "-C", extractDir]);
 		if (!tarFailure) return;
 		failures.push(tarFailure);
@@ -262,7 +255,7 @@ async function downloadTool(tool: "fd" | "rg"): Promise<string> {
 	const plat = platform();
 	const architecture = arch();
 
-	// fd is pinned on darwin/x64, so skip the version lookup there.
+	// See docs/adr/coding-agent/utils-tools-manager.md#fd-version-pinning-on-darwin-x64
 	const version =
 		tool === "fd" && plat === "darwin" && architecture === "x64" ? "10.3.0" : await getLatestVersion(config.repo);
 
@@ -283,8 +276,7 @@ async function downloadTool(tool: "fd" | "rg"): Promise<string> {
 	// Download
 	await downloadFile(downloadUrl, archivePath);
 
-	// Extract into a unique temp directory. fd and rg downloads can run concurrently
-	// during startup, so sharing a fixed directory causes races.
+	// See docs/adr/coding-agent/utils-tools-manager.md#unique-temp-directory-for-concurrent-downloads
 	const extractDir = join(
 		TOOLS_DIR,
 		`extract_tmp_${config.binaryName}_${process.pid}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`,
@@ -300,8 +292,7 @@ async function downloadTool(tool: "fd" | "rg"): Promise<string> {
 			throw new Error(`Unsupported archive format: ${assetName}`);
 		}
 
-		// Find the binary in extracted files. Some archives contain files directly
-		// at root, others nest under a versioned subdirectory.
+		// See docs/adr/coding-agent/utils-tools-manager.md#binary-location-search-in-archives
 		const binaryFileName = config.binaryName + binaryExt;
 		const extractedDir = join(extractDir, assetName.replace(/\.(tar\.gz|zip)$/, ""));
 		const extractedBinaryCandidates = [join(extractedDir, binaryFileName), join(extractDir, binaryFileName)];
@@ -363,8 +354,7 @@ export async function ensureTool(
 		return undefined;
 	}
 
-	// On Android/Termux, Linux binaries don't work due to Bionic libc incompatibility.
-	// Users must install via pkg.
+	// See docs/adr/coding-agent/utils-tools-manager.md#androidtermux-platform-incompatibility
 	if (platform() === "android") {
 		const pkgName = TERMUX_PACKAGES[tool] ?? tool;
 		onStatus?.({ type: "warning", message: `${config.name} not found. Install with: pkg install ${pkgName}` });
@@ -379,10 +369,7 @@ export async function ensureTool(
 		onStatus?.({ type: "info", message: `${config.name} installed to ${path}` });
 		return path;
 	} catch (e) {
-		// Include the error cause chain: fetch failures surface as a bare
-		// "fetch failed" TypeError with the actionable detail (DNS, TLS,
-		// timeout) hidden in the cause. Depth-capped to guard against
-		// circular cause chains.
+		// See docs/adr/coding-agent/utils-tools-manager.md#error-cause-chain-traversal
 		const messages: string[] = [];
 		for (
 			let current: unknown = e, depth = 0;

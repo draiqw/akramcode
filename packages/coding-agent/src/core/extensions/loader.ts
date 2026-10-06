@@ -87,9 +87,7 @@ function getAliases(): Record<string, string> {
 	const akramCodeCodingAgentEntry = packageIndex;
 	const akramCodeAgentCoreEntry = resolveWorkspaceOrImport("agent/dist/index.js", "@akramcode/agent-core");
 	const akramCodeTuiEntry = resolveWorkspaceOrImport("tui/dist/index.js", "@akramcode/tui");
-	// Extensions resolve the akramcode-ai root to the compat entrypoint (a strict
-	// superset of the core entrypoint): existing extensions using the old
-	// global API keep working at runtime until compat is removed.
+	// See docs/adr/coding-agent/core-extensions-loader.md#compat-entrypoint-routing-for-backward-compatibility
 	const akramCodeAiCompatEntry = resolveWorkspaceOrImport("ai/dist/compat.js", "@akramcode/providers/compat");
 	const akramCodeAiOauthEntry = resolveWorkspaceOrImport("ai/dist/oauth.js", "@akramcode/providers/oauth");
 	const akramCodeAiProvidersEntry = resolveWorkspaceOrImport(
@@ -208,8 +206,7 @@ export function createExtensionRuntime(): ExtensionRuntime {
 			eventBusUnsubscribers.add(trackedUnsubscribe);
 			return trackedUnsubscribe;
 		},
-		// Pre-bind: queue registrations so bindCore() can flush them once the
-		// model registry is available. bindCore() replaces both with direct calls.
+		// See docs/adr/coding-agent/core-extensions-loader.md#pre-binding-provider-registration-queue
 		registerProvider: (name, config, extensionPath = "<unknown>") => {
 			runtime.pendingProviderRegistrations.push({ name, config, extensionPath });
 		},

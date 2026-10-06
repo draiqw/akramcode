@@ -268,8 +268,7 @@ class TrackerImpl<T extends object> implements Tracker<T> {
 			context.status.value = "stale";
 			throw new Error("Prepared change is stale");
 		}
-		// Materialization happened during prepare. Adoption is an infallible pointer
-		// swap so storage failure can discard the candidate without touching authority.
+		// See docs/adr/chord/delta-tracker.md#materialization-ownership
 		this.#value = prepared.value;
 		context.status.value = "consumed";
 		this.#revision += 1;
@@ -303,9 +302,7 @@ class TrackerImpl<T extends object> implements Tracker<T> {
 			const context = reference.deref();
 			if (context === undefined || context === winner) continue;
 			if (context.status.value === "open" || context.status.value === "prepared") context.status.value = "stale";
-			// Adoption must not walk every node touched by a competing draft. Drop the
-			// context's strong overlay references in O(1); externally retained proxies
-			// still see the stale status and are reclaimed with their holders.
+			// See docs/adr/chord/delta-tracker.md#adoption-context-cleanup
 			releaseOverlayReferences(context);
 		}
 		this.#contexts.clear();
@@ -325,9 +322,7 @@ export function track<T extends object>(initial: T): Tracker<T> {
 function materializePrepared<T extends object>(context: OverlayContext): PreparedImpl<T> {
 	const operations = ensureOperations(context);
 	const base = context.baseValue as T;
-	// Operation payloads are already detached from the mutable overlay. The
-	// resulting revision and public batch intentionally share those payloads under
-	// the trusted immutable-transfer contract.
+	// See docs/adr/chord/delta-tracker.md#materialization-ownership
 	const value =
 		operations.length === 0
 			? base
@@ -342,7 +337,7 @@ function materializePrepared<T extends object>(context: OverlayContext): Prepare
 
 function materializeOperations<T extends object>(base: T, operations: readonly Op[]): T {
 	for (const operation of operations) {
-		// Native splice/permutation remains faster for large structural batches.
+		// See docs/adr/chord/delta-tracker.md#native-splice-performance
 		if (operation[0] === "p" || operation[0] === "m") return applyImmutable(base, operations);
 	}
 	return applyImmutableTrusted(base, operations);
@@ -1688,8 +1683,7 @@ function emitSimpleObjectOperations(context: OverlayContext): Op[] | undefined {
 		nodes.push(node);
 		if (nodes.length > MAX_SIMPLE_OBJECT_NODES) return undefined;
 	}
-	// Stable insertion sort avoids comparator/bucket allocations for the usual
-	// handful of dirty object nodes.
+	// See docs/adr/chord/delta-tracker.md#stable-insertion-sort-strategy
 	for (let index = 1; index < nodes.length; index++) {
 		const node = nodes[index]!;
 		const depth = node.preparedPath!.length;
@@ -1848,8 +1842,7 @@ function emitObjectWrite(node: OverlayNode, path: Path, operations: Op[], key: s
 }
 
 function emitObjectOperations(node: OverlayNode, path: Path, operations: Op[]): boolean {
-	// Immutable replay must encode delete-and-readd explicitly so string-key
-	// insertion order matches the draft.
+	// See docs/adr/chord/delta-tracker.md#immutable-replay-delete-readd-encoding
 	if (node.readded !== undefined) {
 		for (const key of node.readded) {
 			if (Object.hasOwn(nodeBase(node), key)) operations.push(["d", [...path, key] as unknown as NonEmptyPath]);
@@ -2011,8 +2004,7 @@ function emitChangedValue(
 	if (!isContainer(after) && before === after) return false;
 	if (isContainer(before) && isContainer(after) && equalTrustedJson(before, after)) return false;
 	if (typeof before === "string" && typeof after === "string") {
-		// Slice/equality stays on V8's rope fast path; startsWith scans the entire
-		// accumulated prefix on every append.
+		// See docs/adr/chord/delta-tracker.md#v8-rope-optimization
 		if (after.length > before.length && after.slice(0, before.length) === before) {
 			operations.push(["a", path, after.slice(before.length)]);
 			return true;

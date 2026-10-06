@@ -284,9 +284,7 @@ export class CacheWarmer {
 	private schedule(run: ActiveRun): void {
 		run.extensionOverride = false;
 		run.nextWarmAt = Date.now() + run.delayMs;
-		// A timer can run late after sleep or event-loop blockage. Keep half of
-		// the planned pre-expiry margin for that delay and request dispatch; a
-		// late refresh is likely a full-price cache write, not a cache warm.
+		// See docs/adr/coding-agent/core-cache-warmer.md#refresh-deadline-calculation
 		run.refreshDeadlineAt = run.nextWarmAt + Math.floor((run.ttlMs - run.delayMs) / 2);
 		const deadline = run.startedAt + (run.phase === "idle" ? MAX_IDLE_WARMING_AGE_MS : MAX_WARMING_AGE_MS);
 		if (run.nextWarmAt > deadline || Date.now() >= deadline) {
@@ -349,7 +347,7 @@ export class CacheWarmer {
 				this.onWarmed?.(entry);
 			}
 		} catch {
-			// Cache warming is best-effort and must not affect the active agent run.
+			// See docs/adr/coding-agent/core-cache-warmer.md#error-handling-in-cache-warming
 		}
 		if (this.run === run) this.schedule(run);
 	}

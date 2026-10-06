@@ -361,8 +361,7 @@ export function createMcpExtension(options: McpExtensionOptions = {}): Extension
 			};
 			const previous = serverTools.get(server) ?? new Set<string>();
 			const current = new Set<string>();
-			// Like Codex, all tools whose names sanitize to the same name get the hash suffix, so which
-			// one would keep the plain name does not depend on the order of the list.
+			// See docs/adr/coding-agent/extensions-mcp-index.md#tool-name-hash-suffix-handling
 			const plain = [...new Set(connection.tools.map((tool) => tool.name))].map((tool) =>
 				createMcpToolName(server, tool),
 			);
@@ -394,8 +393,7 @@ export function createMcpExtension(options: McpExtensionOptions = {}): Extension
 				akramcode.registerTool(definition);
 			}
 			serverTools.set(server, current);
-			// Tools cannot be unregistered, so tools the server dropped are re-registered as hidden. When
-			// the server offers them again they are registered with their configured exposure above.
+			// See docs/adr/coding-agent/extensions-mcp-index.md#dropped-tools-reregistration
 			for (const name of previous) {
 				const definition = definitions.get(name);
 				if (!current.has(name) && definition) akramcode.registerTool({ ...definition, exposure: "hidden" });
@@ -611,7 +609,7 @@ export function createMcpExtension(options: McpExtensionOptions = {}): Extension
 				if (error instanceof runtime.McpSignInCancelledError) return "Sign-in cancelled.";
 				return `Sign-in failed: ${errorMessage(error)}`;
 			}
-			// The challenge that asked for this sign-in (for example for more scope) is answered.
+			// See docs/adr/coding-agent/extensions-mcp-index.md#challenge-clearing-after-signin
 			connection.challenge = undefined;
 			try {
 				await connection.reconnect();
@@ -662,7 +660,7 @@ export function createMcpExtension(options: McpExtensionOptions = {}): Extension
 			if (failed) return failed;
 			if (server.connection?.state === "connected") registerTools(server.connection);
 			syncResourceTools();
-			// Tools no longer exposed directly leave the declared set; direct tools are activated on registration.
+			// See docs/adr/coding-agent/extensions-mcp-index.md#direct-tool-deactivation
 			const indirect = new Set(
 				akramcode
 					.getAllTools()
@@ -972,16 +970,14 @@ export function createMcpExtension(options: McpExtensionOptions = {}): Extension
 			overridden = registered.overridden;
 			servers = [...loaded.servers.map((entry) => ({ entry })), ...registered.servers];
 			emitChange();
-			// Codemode or tool_search is activated from the config: the first prompt does not wait for
-			// servers whose tools are not declared to the model, and scripts or searches wait for them.
+			// See docs/adr/coding-agent/extensions-mcp-index.md#discovery-tool-activation
 			ensureDiscoveryActive(ctx);
 			const enabled = servers.filter(isEnabled);
 			if (enabled.length === 0) {
 				reportProblems(ctx);
 				return;
 			}
-			// The MCP client loads only now, so sessions without servers never pay for it. Waiting one
-			// event loop turn lets the first render happen before loading and connecting.
+			// See docs/adr/coding-agent/extensions-mcp-index.md#lazy-mcp-client-loading
 			const runtime = new Promise((resolve) => setImmediate(resolve)).then(() => loadMcpRuntime());
 			const isCurrent = () => current === generation;
 			pending = Promise.all(enabled.map((server) => startConnection(server, isCurrent, runtime)))
@@ -996,9 +992,7 @@ export function createMcpExtension(options: McpExtensionOptions = {}): Extension
 				});
 		});
 
-		// The first prompt waits for servers whose tools are declared to the model, so they are declared
-		// in its first request, but not indefinitely: a slow or hanging server must not hold up the
-		// prompt. Other servers are waited for when a script or search needs them (below).
+		// See docs/adr/coding-agent/extensions-mcp-index.md#bounded-direct-server-wait
 		const waitForDirectServers = async (ctx: ExtensionContext) => {
 			if (waitedForStartup) return;
 			waitedForStartup = true;
@@ -1019,8 +1013,7 @@ export function createMcpExtension(options: McpExtensionOptions = {}): Extension
 			}
 		};
 
-		// Every prompt lists the servers in the `mcp_servers` section as they are when it starts. AkramCode
-		// appends the section to the conversation when it changed, for example after a server connected.
+		// See docs/adr/coding-agent/extensions-mcp-index.md#dynamic-servers-section-update
 		akramcode.on("before_agent_start", async (event, ctx) => {
 			await waitForDirectServers(ctx);
 			const { sections } = event.systemPromptOptions;
@@ -1029,9 +1022,7 @@ export function createMcpExtension(options: McpExtensionOptions = {}): Extension
 			else delete sections[MCP_SERVERS_SECTION];
 		});
 
-		// A codemode script waits for the servers it names, or for every server when it searches or
-		// enumerates tools, so their tools are registered before the script runs. tool_search and the
-		// resource tools reach every server, so they wait for all of them.
+		// See docs/adr/coding-agent/extensions-mcp-index.md#selective-server-wait-on-tool-call
 		akramcode.on("tool_call", async (event, ctx) => {
 			const tool = akramcode.getAllTools().find((candidate) => candidate.name === event.toolName);
 			if (!tool) return;

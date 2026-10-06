@@ -5,7 +5,7 @@
  * It is only intended for CLI use, not browser environments.
  */
 
-// NEVER convert to top-level imports - breaks browser/Vite builds
+// See docs/adr/providers/auth-oauth-openai-codex.md#lazy-crypto-import-to-avoid-breaking-browservite-builds
 let _randomBytes: typeof import("node:crypto").randomBytes | null = null;
 if (typeof process !== "undefined" && (process.versions?.node || process.versions?.bun)) {
 	import("node:crypto").then((m) => {
@@ -358,7 +358,7 @@ async function loginOpenAICodexDeviceCode(interaction: ProviderAuthInteraction):
 
 async function loginOpenAICodex(interaction: ProviderAuthInteraction): Promise<OAuthCredential> {
 	const { verifier, state, url } = await createAuthorizationFlow();
-	// Port 1455 is shared with the Codex CLI; when it is taken, fall back to the pasted redirect URL.
+	// See docs/adr/providers/auth-oauth-openai-codex.md#port-1455-fallback-for-callback-server
 	const callback = await startOAuthCallbackServer({
 		providerName: "OpenAI",
 		host: getCallbackHost(),

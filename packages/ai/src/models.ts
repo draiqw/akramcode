@@ -1201,7 +1201,7 @@ export function calculateCost(model: AnyModel, usage: Usage): Usage["cost"] {
 		}
 	}
 
-	// Anthropic charges 2x base input for 1h cache writes.
+	// See docs/adr/ai/models.md#anthropic-cache-write-pricing
 	const longWrite = usage.cacheWrite1h ?? 0;
 	const shortWrite = usage.cacheWrite - longWrite;
 	usage.cost.input = (rates.input / 1000000) * usage.input;

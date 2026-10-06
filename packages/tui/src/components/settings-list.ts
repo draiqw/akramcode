@@ -198,7 +198,7 @@ export class SettingsList implements Component {
 			this.selectedIndex = Math.max(0, Math.min(displayItems.length - 1, this.selectedIndex + delta));
 			return { handled: true, render: this.selectedIndex !== previousIndex };
 		}
-		// Hover must not change selection: the visible range is centered on it.
+		// See docs/adr/tui/components-settings-list.md#hover-does-not-change-selection
 		if (event.button !== "left" || (event.type !== "press" && event.type !== "click")) return undefined;
 
 		const rowOffset = this.searchEnabled ? 2 : 0;
@@ -220,8 +220,7 @@ export class SettingsList implements Component {
 	}
 
 	handleInput(data: string): void {
-		// If submenu is active, delegate all input to it
-		// The submenu's onCancel (triggered by escape) will call done() which closes it
+		// See docs/adr/tui/components-settings-list.md#submenu-input-delegation-and-cancellation
 		if (this.submenuComponent) {
 			this.submenuComponent.handleInput?.(data);
 			return;

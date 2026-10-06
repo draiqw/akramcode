@@ -112,9 +112,7 @@ function getInferredNpmInstall(): { root: string; prefix: string } | undefined {
 	if (!root) return undefined;
 	const rootParent = path.dirname(root);
 	if (path.basename(rootParent) === "lib") return { root, prefix: path.dirname(rootParent) };
-	// Windows global npm prefixes use `<prefix>\\node_modules`, which is
-	// indistinguishable from local project installs by path shape alone. Do not
-	// infer unsupported Windows custom prefixes without `npm root -g` evidence.
+	// See docs/adr/coding-agent/config.md#windows-global-npm-prefix-ambiguity
 	return undefined;
 }
 
@@ -375,8 +373,7 @@ export function findNodePackageDir(startDir: string): string {
 	while (dir !== dirname(dir)) {
 		if (existsSync(join(dir, "package.json"))) {
 			const parent = dirname(dir);
-			// build:binary places Bun's metadata inside dist/. Node still needs the
-			// package root so its dist-relative asset paths do not become dist/dist/.
+			// See docs/adr/coding-agent/config.md#bun-metadata-organization
 			if (basename(dir) === "dist" && existsSync(join(parent, "package.json"))) {
 				return parent;
 			}

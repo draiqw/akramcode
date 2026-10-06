@@ -15,7 +15,7 @@ import { DynamicBorder } from "./dynamic-border.ts";
 import { keyHint, keyText } from "./keybinding-hints.ts";
 import { truncateToVisualLines } from "./visual-truncate.ts";
 
-// Preview line limit when not expanded (matches tool execution behavior)
+// See docs/adr/coding-agent/modes-interactive-components-bash-execution.md#preview-line-limit
 const PREVIEW_LINES = 20;
 
 export class BashExecutionComponent extends Container {
@@ -33,7 +33,7 @@ export class BashExecutionComponent extends Container {
 		super();
 		this.command = command;
 
-		// Use dim border for excluded-from-context commands (!! prefix)
+		// See docs/adr/coding-agent/modes-interactive-components-bash-execution.md#border-color-for-excluded-commands
 		const colorKey = excludeFromContext ? "dim" : "bashMode";
 		const borderColor = (str: string) => theme.fg(colorKey, str);
 
@@ -78,8 +78,7 @@ export class BashExecutionComponent extends Container {
 	}
 
 	appendOutput(chunk: string): void {
-		// Strip ANSI codes and normalize line endings
-		// Note: binary data is already sanitized in tui-renderer.ts executeBashCommand
+		// See docs/adr/coding-agent/modes-interactive-components-bash-execution.md#binary-data-safety
 		const clean = stripAnsi(chunk).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 
 		// Append to output lines

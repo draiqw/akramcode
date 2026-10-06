@@ -74,12 +74,12 @@ export class Submissions {
 
 	async wait(id: SubmissionId, context: Context): Promise<SettledSubmissionRecord> {
 		this.#resume();
-		// Check and register on the line so no settling publication falls between them.
+		// See docs/adr/durable/harness-submissions.md#session-line-registration-for-wait
 		const found = await this.#session.readOnLine(async () => {
 			const record = await this.#storage.submission(id, context);
 			if (record === undefined) throw new Error(`Submission ${id} does not exist`);
 			if (isSettled(record)) return { promise: Promise.resolve(record) };
-			// Close rejects registered waiters synchronously and may begin during the read.
+			// See docs/adr/durable/harness-submissions.md#close-during-wait-registration
 			if (this.#closed) throw closedError();
 			return { promise: this.#waiters.add(id, context) };
 		});
@@ -165,7 +165,7 @@ export async function admitSubmission(
 	const busy = live.run !== undefined;
 	if (busy && draft.type === "input" && draft.whenBusy === "reject") throw new ConversationBusy(conversationId);
 	const requestId = draft.requestId === undefined ? {} : { requestId: draft.requestId };
-	// A boundary reads the table, so it is prepared before the first table write; a busy one needs none.
+	// See docs/adr/durable/harness-submissions.md#boundary-preparation-timing
 	const boundary = busy ? undefined : await prepareBoundary(tx, conversationId, queueModes);
 	if (boundary === undefined || boundary.inbox.items.length > 0) {
 		const { id } = await tx.createSubmission({
@@ -174,7 +174,7 @@ export async function admitSubmission(
 			type: draft.type,
 			status: "queued",
 		});
-		// Hosts may leave optional fields `undefined`; drafts take strict JSON.
+		// See docs/adr/durable/harness-submissions.md#submission-json-normalization
 		const value = copyJson(draft.type === "write" ? draft.entry : draft.content, {
 			omitUndefinedProperties: true,
 		});

@@ -80,7 +80,7 @@ export async function applyBoundary(
 	const users = [...pick("steer", boundary.steeringMode), ...(final ? pick("followUp", boundary.followUpMode) : [])];
 	users.sort((a, b) => a - b);
 
-	// `appendEntry()` copies the drafts' values; the items are removed only afterwards.
+	// See docs/adr/durable/harness-inbox.md#entry-copies-before-removal
 	for (const index of writes) {
 		const item = items[index] as Draft<Extract<InboxItem, { mode: "write" }>>;
 		const draft = item.entry as unknown as EntryDraft;

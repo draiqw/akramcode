@@ -137,7 +137,7 @@ export function createLsToolDefinition(
 						}
 
 						const rawOutput = results.join("\n");
-						// Apply byte truncation. There is no separate line limit because entry count is already capped.
+						// See docs/adr/coding-agent/core-tools-ls.md#no-line-limit-in-output-truncation
 						const truncation = truncateHead(rawOutput, { maxLines: Number.MAX_SAFE_INTEGER });
 						let output = truncation.content;
 						const details: LsToolDetails = {};

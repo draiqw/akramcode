@@ -293,12 +293,7 @@ export function convertResponsesMessages<TApi extends Api>(
 					const customInputProperty = options?.grammarToolInputProperties?.get(toolCall.name);
 					let itemId: string | undefined = itemIdRaw;
 
-					// For different-model messages, set id to undefined to avoid pairing validation.
-					// OpenAI tracks which item IDs were paired with rs_xxx reasoning items.
-					// By omitting the id, we avoid triggering that validation (like cross-provider does).
-					// Also drop ids that do not match the replayed item type: function_call ids must be fc_*
-					// and custom_tool_call ids must be ctc_*. Foreign tool call ids are normalized to fc_*, and
-					// a call can switch between the two types when grammar tool support differs.
+					// See docs/adr/providers/api-openai-responses-shared.md#item-id-handling-for-cross-model-replay
 					const itemIdPrefix = customInputProperty === undefined ? "fc_" : "ctc_";
 					if (isDifferentModel || !itemId?.startsWith(itemIdPrefix)) {
 						itemId = undefined;
@@ -531,10 +526,7 @@ export async function processResponsesStream<TApi extends Api>(
 	const getOrCreateSlot = (outputIndex: number, item: ResponseOutputItem): ResponsesOutputSlot | undefined => {
 		return outputSlots.get(outputIndex) ?? createSlot(outputIndex, item);
 	};
-	// Azure OpenAI can omit reasoning.encrypted_content from response.output_item.done
-	// and provide it only in response.completed.response.output. Backfill the
-	// persisted reasoning signature from the terminal response to keep store:false
-	// multi-turn replay stateless. See https://github.com/earendil-works/pi/issues/6409.
+	// See docs/adr/providers/api-openai-responses-shared.md#reasoning-signature-backfill-from-terminal-response
 	const backfillReasoningSignatures = (responseOutput: ResponseOutputItem[]): void => {
 		for (const item of responseOutput) {
 			if (item.type !== "reasoning" || !item.encrypted_content) continue;

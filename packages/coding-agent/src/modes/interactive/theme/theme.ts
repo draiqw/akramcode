@@ -185,12 +185,11 @@ function withThemeColorFallbacks(colors: ThemeJson["colors"]): ThemeJson["colors
 /** The background a theme is designed for. */
 export type ThemeAppearance = TerminalTheme;
 
-// The terminal's reported colors. Replaced (never mutated) on update, so themes can cache resolved colors
-// by identity.
+// See docs/adr/coding-agent/modes-interactive-theme-theme.md#terminal-colors-caching
 let terminalColors: TerminalColors = {};
-// While the terminal color query is in flight, the system theme renders in grayscale.
+// See docs/adr/coding-agent/modes-interactive-theme-theme.md#grayscale-rendering
 let terminalColorsPending = false;
-// The terminal's last light/dark report (mode 2031). Only used while it has not reported a background.
+// See docs/adr/coding-agent/modes-interactive-theme-theme.md#terminal-color-scheme-fallback
 let terminalColorScheme: TerminalTheme | undefined;
 
 /**
@@ -244,14 +243,14 @@ export class Theme {
 	readonly sourcePath?: string;
 	sourceInfo?: SourceInfo;
 	private mode: TerminalColorMode;
-	// Precomputed escape sequences keep fg()/bg() on the render hot path to a lookup and concat.
+	// See docs/adr/coding-agent/modes-interactive-theme-theme.md#precomputed-ansi-sequences
 	private readonly fgAnsi = new Map<ThemeColor, string>();
 	private readonly bgAnsi = new Map<ThemeBg, string>();
-	// Tokens set to "" have no color of their own; `colors` fills them from the terminal defaults.
+	// See docs/adr/coding-agent/modes-interactive-theme-theme.md#token-defaults
 	private readonly concreteColors: Partial<Record<ThemeToken, Color>> = {};
 	private readonly defaultForegroundTokens: ThemeToken[] = [];
 	private readonly defaultBackgroundTokens: ThemeToken[] = [];
-	// Foreground tokens rendered faint (SGR 2) on top of their color.
+	// See docs/adr/coding-agent/modes-interactive-theme-theme.md#faint-tokens
 	private readonly dimTokens: ReadonlySet<ThemeColor>;
 	private readonly ownAppearance: ThemeAppearance | undefined;
 	private resolvedColors: { terminal: TerminalColors; colors: Readonly<Record<ThemeToken, Color>> } | undefined;
@@ -718,7 +717,7 @@ export function getTerminalTheme(): TerminalTheme {
 // Global Theme Instance
 // ============================================================================
 
-// Use globalThis to share theme across module loaders (node + jiti in dev mode)
+// See docs/adr/coding-agent/modes-interactive-theme-theme.md#globalthis-sharing
 const THEME_KEY = Symbol.for("@akramcode/coding-agent:theme");
 const THEME_KEY_OLD = Symbol.for("@mariozechner/pi-coding-agent:theme");
 
@@ -808,7 +807,7 @@ export function onThemeChange(callback: () => void): void {
 function startThemeWatcher(): void {
 	stopThemeWatcher();
 
-	// Only watch if it's a custom theme (not built-in)
+	// See docs/adr/coding-agent/modes-interactive-theme-theme.md#custom-theme-watching
 	if (
 		!currentThemeName ||
 		currentThemeName === "dark" ||
@@ -835,12 +834,12 @@ function startThemeWatcher(): void {
 		themeReloadTimer = setTimeout(() => {
 			themeReloadTimer = undefined;
 
-			// Ignore stale timers after switching themes or stopping the watcher
+			// See docs/adr/coding-agent/modes-interactive-theme-theme.md#stale-timer-ignoring
 			if (currentThemeName !== watchedThemeName) {
 				return;
 			}
 
-			// Keep the last successfully loaded theme active if the file is temporarily missing
+			// See docs/adr/coding-agent/modes-interactive-theme-theme.md#missing-file-tolerance
 			if (!fs.existsSync(themeFile)) {
 				return;
 			}
@@ -855,7 +854,7 @@ function startThemeWatcher(): void {
 					onThemeChangeCallback();
 				}
 			} catch (_error) {
-				// Ignore errors (file might be in invalid state while being edited)
+				// See docs/adr/coding-agent/modes-interactive-theme-theme.md#silent-reload-errors
 			}
 		}, 100);
 	};

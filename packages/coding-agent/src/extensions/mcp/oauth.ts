@@ -79,14 +79,14 @@ function callbackSettings(settings: McpOAuthSettings): CallbackSettings {
 	const address = url.hostname.replace(/^\[|\]$/g, "");
 	const port = url.port ? Number(url.port) : settings.callbackPort;
 	let fixedRedirectUrl: string | undefined;
-	// A configured URI with a port is sent exactly as written, since servers compare it as a string.
+	// See docs/adr/coding-agent/extensions-mcp-oauth.md#configured-uri-normalization
 	if (url.port) fixedRedirectUrl = settings.callbackUrl;
 	else if (port !== undefined) {
 		url.port = String(port);
 		fixedRedirectUrl = url.href;
 	}
 	return {
-		// `localhost` is served on 127.0.0.1; browsers fall back to it when ::1 refuses.
+		// See docs/adr/coding-agent/extensions-mcp-oauth.md#localhost-fallback-behavior
 		host: address === "localhost" ? CALLBACK_HOST : address,
 		redirectHost: address,
 		port,
@@ -175,7 +175,7 @@ export class McpOAuthCredentialStore {
 				minTimeout: REFRESH_LOCK_RETRY_MS,
 				maxTimeout: REFRESH_LOCK_RETRY_MS,
 			},
-			// The default throws from a timer. A lost lock at worst lets two refreshes overlap.
+			// See docs/adr/coding-agent/extensions-mcp-oauth.md#lock-compromise-handling
 			onCompromised: () => {},
 		});
 		try {
@@ -299,14 +299,14 @@ export function createMcpAuthProvider(options: {
 			const token = state?.tokens?.access_token;
 			const expired = state?.tokensExpireAt !== undefined && state.tokensExpireAt - REFRESH_SKEW_MS <= Date.now();
 			if (!expired || !state?.tokens?.refresh_token) return token;
-			// Failures fall through: the request goes out with the old token and a 401 decides what happens.
+			// See docs/adr/coding-agent/extensions-mcp-oauth.md#refresh-failure-handling
 			await refresh(token).catch(() => undefined);
 			return (await store.load())?.tokens?.access_token;
 		},
 		onUnauthorized: async (context) => {
 			const challenge = parseWwwAuthenticate(context.response.headers.get("www-authenticate"));
 			options.onChallenge(challenge);
-			// A refresh keeps the granted scope, so more scope needs a new sign-in.
+			// See docs/adr/coding-agent/extensions-mcp-oauth.md#insufficient-scope-handling
 			if (challenge.error === "insufficient_scope") throw new McpOAuthAuthorizationRequiredError();
 			await refresh(context.token, context.fetch, challenge);
 		},
@@ -422,7 +422,7 @@ export async function signInMcpServer(options: {
 			const next: McpOAuthState = { ...stored };
 			// Every sign-in gets a fresh `state` parameter.
 			delete next.oauthState;
-			// A registered client cannot use another redirect URI, and its tokens belong to it.
+			// See docs/adr/coding-agent/extensions-mcp-oauth.md#registered-client-redirect-constraint
 			if (!settings.clientId && !registeredRedirectUrls(stored.clientInformation).includes(redirectUrl)) {
 				delete next.clientInformation;
 				delete next.tokens;
@@ -439,14 +439,13 @@ export async function signInMcpServer(options: {
 			serverUrl,
 			resourceMetadataUrl: options.challenge?.resourceMetadataUrl,
 			authorizationServerMetadataUrl: settings.authServerMetadataUrl,
-			// A server asking for more scope gets it on top of the configured scope and, since the challenge
-			// may list only the missing scopes, on top of the scope granted so far.
+			// See docs/adr/coding-agent/extensions-mcp-oauth.md#scope-merging-strategy
 			scope: mergeScopes(
 				settings.scope,
 				stepUp ? stepUpScope(stored?.tokens?.scope, options.challenge?.scope) : options.challenge?.scope,
 			),
 		};
-		// A refresh keeps the granted scope; a server asking for more needs the browser flow.
+		// See docs/adr/coding-agent/extensions-mcp-oauth.md#refresh-skips-stepup-flow
 		const skipRefresh = stepUp;
 		if ((await authorizeMcp(provider, { ...flow, skipRefresh })) === "AUTHORIZED") return;
 		if (!authorizationUrl) throw new Error("OAuth flow did not produce an authorization URL");

@@ -222,17 +222,14 @@ export function streamProxy(
 				throw new Error("Request aborted by user");
 			}
 
-			// The final event may not be newline-terminated; flush the decoder and
-			// process whatever is left in the buffer.
+			// See docs/adr/agent/proxy.md#flush-remaining-buffer-after-stream-ends
 			buffer += decoder.decode();
 			if (buffer) {
 				processLine(buffer);
 			}
 
 			if (!sawTerminalEvent) {
-				// A clean EOF without a done/error event means the server dropped the
-				// response mid-stream. Surface it as an error instead of leaving
-				// consumers waiting on a result that never arrives.
+				// See docs/adr/agent/proxy.md#clean-eof-as-server-error
 				partial.stopReason = "error";
 				partial.errorMessage = "Connection closed by proxy server before the response completed";
 				stream.push({

@@ -1085,8 +1085,7 @@ export class AgentSession {
 				this._nestedToolCalls.clear();
 			}
 		}
-		// When a user message starts, check if it's from either queue and remove it BEFORE emitting
-		// This ensures the UI sees the updated queue state
+		// See docs/adr/coding-agent/core-agent-session.md#event-dispatch-before-state-emission
 		if (event.type === "message_start" && event.message.role === "user") {
 			this._overflowRecoveryAttempted = false;
 			const messageText = contentText(event.message.content, "");
@@ -1142,8 +1141,7 @@ export class AgentSession {
 					this._overflowRecoveryAttempted = false;
 				}
 
-				// Reset retry counter immediately on successful assistant response
-				// This prevents accumulation across multiple LLM calls within a turn
+				// See docs/adr/coding-agent/core-agent-session.md#immediate-retry-counter-reset
 				if (assistantMsg.stopReason !== "error" && this._retryAttempt > 0) {
 					this._emit({
 						type: "auto_retry_end",
@@ -1155,11 +1153,7 @@ export class AgentSession {
 			}
 		}
 
-		// A turn ends after its assistant message and every tool result has been appended,
-		// so this is the first point in the run where a context-only custom message can be
-		// inserted without landing between a tool call and its result. Flushing after the
-		// extension and listener dispatch above also picks up messages that turn_end
-		// handlers queued.
+		// See docs/adr/coding-agent/core-agent-session.md#deferred-custom-messages-during-turns
 		if (event.type === "turn_end") {
 			this._lastAssistantToolResults = event.toolResults;
 			this._flushPendingCustomMessages();
@@ -1236,10 +1230,7 @@ export class AgentSession {
 	}
 
 	private _replaceMessageInPlace(target: AgentMessage, replacement: AgentMessage): void {
-		// Agent-core stores the finalized message object in its state before emitting message_end.
-		// SessionManager persistence happens later in _handleAgentEvent() with event.message.
-		// Mutating this object in place keeps agent state, later turn/agent events, listeners,
-		// and the eventual SessionManager.appendMessage(event.message) persistence in sync.
+		// See docs/adr/coding-agent/core-agent-session.md#in-place-message-mutation-for-state-consistency
 		if (target === replacement) {
 			return;
 		}
@@ -1290,8 +1281,7 @@ export class AgentSession {
 			};
 			const replacement = await this._extensionRunner.emitMessageEnd(extensionEvent);
 			if (replacement) {
-				// Untyped extension handlers can return messages with null/missing content;
-				// normalize so it never enters agent state or session history.
+				// See docs/adr/coding-agent/core-agent-session.md#early-normalization-of-extension-messages
 				const normalized =
 					(replacement.role === "user" ||
 						replacement.role === "assistant" ||
@@ -1368,7 +1358,7 @@ export class AgentSession {
 			this.abortBash();
 			this.agent.abort();
 		} catch {
-			// Dispose must succeed even if an abort hook throws.
+			// See docs/adr/coding-agent/core-agent-session.md#safe-disposal-with-error-recovery
 		}
 
 		this._extensionRunner.invalidate(
@@ -1488,8 +1478,7 @@ export class AgentSession {
 	setActiveToolsByName(toolNames: string[]): void {
 		const previous = this.getActiveToolNames();
 		this._setActiveTools(toolNames);
-		// A loadout that deactivates a tool replaces the restored one, whose pending tools are dropped.
-		// One that only adds tools, like activating tool_search, keeps them.
+		// See docs/adr/coding-agent/core-agent-session.md#tool-loadout-deactivation-semantics
 		const active = new Set(this.getActiveToolNames());
 		if (previous.some((name) => !active.has(name))) this._pendingToolNames.clear();
 	}
@@ -1654,7 +1643,7 @@ export class AgentSession {
 		const toolSnippets: Record<string, string> = {};
 		for (const name of this._toolRegistry.keys()) {
 			const snippet = this._toolPromptSnippets.get(name);
-			// Tools without a snippet are not listed. Hidden tools are only callable through another tool.
+			// See docs/adr/coding-agent/core-agent-session.md#hidden-tools-not-listed-in-prompts
 			if (snippet && !this._hiddenDeclarations.has(name)) toolSnippets[name] = snippet;
 		}
 
@@ -1691,7 +1680,7 @@ export class AgentSession {
 		messages: AgentMessage[] = this.agent.state.messages,
 	): SystemMessage | undefined {
 		options.selectedTools = this._applyToolLoadout(options.selectedTools).map((tool) => tool.name);
-		// The tool list must match the declarations the request carries, so hidden tools are not listed.
+		// See docs/adr/coding-agent/core-agent-session.md#tool-declarations-must-match-request
 		options.toolSnippets = Object.fromEntries(
 			Object.entries(options.toolSnippets).filter(([name]) => !this._hiddenDeclarations.has(name)),
 		);
@@ -1774,11 +1763,10 @@ export class AgentSession {
 
 	private async _runAgentPrompt(messages: AgentMessage | AgentMessage[]): Promise<void> {
 		this._agentRunAbortRequested = false;
-		// Compaction before the prompt may have scheduled a retry; the new prompt replaces it.
+		// See docs/adr/coding-agent/core-agent-session.md#failed-response-clear-before-new-prompt
 		this._failedResponse = undefined;
 		this._recordSelection();
-		// The run records the loadout in the transcript; restored tools that did not register by now
-		// are dropped, so a tool that never registers does not stay pending.
+		// See docs/adr/coding-agent/core-agent-session.md#pending-tool-registration-cleanup
 		this._pendingToolNames.clear();
 		this._isAgentRunActive = true;
 		try {
@@ -1838,8 +1826,7 @@ export class AgentSession {
 			return !this._agentRunAbortRequested;
 		}
 
-		// The low-level loop drains both queues before agent_end. Messages queued by
-		// agent_end handlers require a fresh run before pre-settlement handlers fire.
+		// See docs/adr/coding-agent/core-agent-session.md#queue-draining-before-agent-end
 		return !this._agentRunAbortRequested && this.agent.hasQueuedMessages();
 	}
 
@@ -1925,8 +1912,7 @@ export class AgentSession {
 		}
 		const expandPromptTemplates = options?.expandPromptTemplates ?? true;
 		const preflightResult = options?.preflightResult;
-		// Handle extension commands first (execute immediately, even during streaming)
-		// Extension commands manage their own LLM interaction via akramcode.sendMessage()
+		// See docs/adr/coding-agent/core-agent-session.md#extension-commands-execute-immediately
 		if (expandPromptTemplates && text.startsWith("/")) {
 			const handled = await this._tryExecuteExtensionCommand(text);
 			if (handled) {
@@ -2009,17 +1995,14 @@ export class AgentSession {
 			await this._checkCompaction(lastAssistant, false);
 		}
 
-		// Emit before_agent_start before normalizing images so extension-driven model
-		// selection determines the resize profile used for the request and history.
+		// See docs/adr/coding-agent/core-agent-session.md#image-normalization-after-extension-hooks
 		const selectedToolsBefore = this._baseSystemPromptOptions.selectedTools;
 		const result = await this._extensionRunner.emitBeforeAgentStart(
 			expandedText,
 			currentImages,
 			this._baseSystemPromptOptions,
 		);
-		// Handlers may edit event.systemPromptOptions.selectedTools or call setActiveTools(),
-		// which updates the live loadout instead. An explicit edit wins; otherwise the live
-		// loadout is authoritative, so a setActiveTools() call is not undone here.
+		// See docs/adr/coding-agent/core-agent-session.md#tool-selection-authority-after-hooks
 		const handlerEditedTools =
 			result.systemPromptOptions.selectedTools.length !== selectedToolsBefore.length ||
 			result.systemPromptOptions.selectedTools.some((name, index) => name !== selectedToolsBefore[index]);
@@ -2028,7 +2011,7 @@ export class AgentSession {
 		const normalized = await this._normalizePromptImages(currentImages);
 		const userText = normalized.hints.length > 0 ? `${expandedText}\n\n${normalized.hints.join("\n")}` : expandedText;
 
-		// Build messages only after hooks and image normalization have completed.
+		// See docs/adr/coding-agent/core-agent-session.md#message-building-after-normalization
 		const messages: AgentMessage[] = [];
 		const userContent: (TextContent | ImageContent)[] = [{ type: "text", text: userText }];
 		userContent.push(...normalized.images);
@@ -2048,7 +2031,7 @@ export class AgentSession {
 			messages.push({
 				role: "custom",
 				customType: msg.customType,
-				// Untyped extensions can pass null/missing content; normalize at ingestion.
+				// See docs/adr/coding-agent/core-agent-session.md#early-normalization-of-extension-messages
 				content: msg.content ?? [],
 				display: msg.display,
 				details: msg.details,
@@ -2271,10 +2254,7 @@ export class AgentSession {
 			}
 			await this._runAgentPrompt(appMessage);
 		} else if (this.isStreaming) {
-			// Appending now would put the message between an assistant tool call and its
-			// result, which providers that validate message order reject on replay. Defer
-			// to the end of the turn. Nothing is emitted yet: message events must not
-			// describe messages the session tree does not contain.
+			// See docs/adr/coding-agent/core-agent-session.md#deferred-custom-messages-during-turns
 			this._pendingCustomMessages.push(appMessage);
 		} else {
 			this._appendCustomMessage(appMessage);
@@ -2508,11 +2488,7 @@ export class AgentSession {
 			this._addPersistedDefaultToNonEmptyScope(next.model);
 		}
 
-		// Apply thinking level for the new model.
-		// - Explicit scoped model thinking level overrides defaults
-		// - Per-model thinking level overrides take priority over the global default
-		// setThinkingLevel clamps to model capabilities.
-		// Model persistence does not implicitly rewrite the global thinking default.
+		// See docs/adr/coding-agent/core-agent-session.md#thinking-level-application
 		this.setThinkingLevel(thinkingLevel);
 
 		await this._emitModelSelect(next.model, currentModel, "cycle");
@@ -2543,8 +2519,7 @@ export class AgentSession {
 			this._addPersistedDefaultToNonEmptyScope(nextModel);
 		}
 
-		// Apply thinking level for the new model.
-		// Model persistence does not implicitly rewrite the global thinking default.
+		// See docs/adr/coding-agent/core-agent-session.md#thinking-level-application
 		this.setThinkingLevel(thinkingLevel);
 
 		await this._emitModelSelect(nextModel, currentModel, "cycle");
@@ -2623,7 +2598,7 @@ export class AgentSession {
 		if (explicitLevel !== undefined) {
 			return explicitLevel;
 		}
-		// Per-model default takes priority when switching to a model that has one
+		// See docs/adr/coding-agent/core-agent-session.md#thinking-level-application
 		if (targetModel) {
 			const perModel = this.settingsManager.getModelThinkingLevel(targetModel.provider, targetModel.id);
 			if (perModel !== undefined) {
@@ -2825,7 +2800,7 @@ export class AgentSession {
 				usage,
 				details,
 			};
-			// compaction_end listeners may submit queued prompts, so expose idle state before notifying them.
+			// See docs/adr/coding-agent/core-agent-session.md#continue-after-auto-compaction
 			this._clearManualCompactionState();
 			this._emit({
 				type: "compaction_end",
@@ -2908,18 +2883,12 @@ export class AgentSession {
 		// Skip if message was aborted (user cancelled) - unless skipAbortedCheck is false
 		if (skipAbortedCheck && assistantMessage.stopReason === "aborted") return false;
 
-		// Skip overflow check if the message came from a different model.
-		// This handles the case where user switched from a smaller-context model (e.g. opus)
-		// to a larger-context model (e.g. codex) - the overflow error from the old model
-		// shouldn't trigger compaction for the new model. Under a virtual selection, the
-		// physical model that produced the message supplies the limits.
+		// See docs/adr/coding-agent/core-agent-session.md#model-specific-overflow-checks
 		const messageModel = this._modelForMessage(assistantMessage);
 		const sameModel = messageModel !== undefined;
 		const contextWindow = (messageModel ?? this.model)?.contextWindow ?? 0;
 
-		// Skip compaction checks if this assistant message is older than the latest
-		// compaction boundary. This prevents a stale pre-compaction usage/error
-		// from retriggering compaction on the first prompt after compaction.
+		// See docs/adr/coding-agent/core-agent-session.md#post-compaction-usage-trust
 		const compactionEntry = getLatestCompactionEntry(this.sessionManager.getBranch());
 		const assistantIsFromBeforeCompaction =
 			compactionEntry !== null && assistantMessage.timestamp <= new Date(compactionEntry.timestamp).getTime();
@@ -2927,9 +2896,7 @@ export class AgentSession {
 			return false;
 		}
 
-		// Automatic cases 1 and 2: context overflow.
-		// A length stop is recoverable when output ended below the model's original desired limit,
-		// independent of the configured context size or any context-clamped provider request limit.
+		// See docs/adr/coding-agent/core-agent-session.md#recoverable-length-stops
 		const currentProjection = this.sessionManager.buildSessionProjection();
 		const assistantEntryId = this._findPersistedMessageEntryId(assistantMessage);
 		const assistantIsProjected =
@@ -2963,8 +2930,7 @@ export class AgentSession {
 		if (contextOverflow || recoverableLength) {
 			const willRetry = assistantMessage.stopReason !== "stop";
 
-			// Case 2: the response completed successfully. Compact, but do not retry because
-			// agent.continue() cannot continue from a completed assistant response.
+			// See docs/adr/coding-agent/core-agent-session.md#no-retry-after-completed-response
 			if (!willRetry) {
 				return await this._runAutoCompaction("overflow", false);
 			}
@@ -2999,10 +2965,7 @@ export class AgentSession {
 			return retry;
 		}
 
-		// Case 3: threshold compaction without retry.
-		// For error messages or all-zero usage messages, estimate from the last valid response.
-		// This ensures sessions that hit persistent API errors (e.g. 529) or malformed zero-usage
-		// responses can still compact and do not reset context accounting.
+		// See docs/adr/coding-agent/core-agent-session.md#threshold-compaction-with-estimation
 		let contextTokens: number;
 		const projection = currentProjection;
 		const hasContextEdits = projection.entries.some((entry) => entry.sourceEntry.type === "context_edit");
@@ -3012,12 +2975,8 @@ export class AgentSession {
 		} else if (assistantMessage.stopReason === "error" || directContextTokens === 0) {
 			const messages = this.agent.state.messages;
 			const estimate = estimateContextTokens(messages);
-			// Without provider usage, estimate.tokens is the pure message-size estimate.
-			// Only usage-backed estimates need the stale pre-compaction check.
+			// See docs/adr/coding-agent/core-agent-session.md#usage-staleness-checks-after-compaction
 			if (estimate.lastUsageIndex !== null) {
-				// Verify the usage source is post-compaction. Kept pre-compaction messages
-				// have stale usage reflecting the old (larger) context and would falsely
-				// trigger compaction right after one just finished.
 				const usageMsg = messages[estimate.lastUsageIndex];
 				if (
 					compactionEntry &&
@@ -3159,8 +3118,7 @@ export class AgentSession {
 
 			if (willRetry) return true;
 
-			// Auto-compaction can complete while follow-up/steering/custom messages are waiting.
-			// Continue once so queued messages are delivered.
+			// See docs/adr/coding-agent/core-agent-session.md#continue-after-auto-compaction
 			return this.agent.hasQueuedMessages();
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "compaction failed";
@@ -3446,8 +3404,7 @@ export class AgentSession {
 	}
 
 	private _refreshToolRegistry(options?: { activeToolNames?: string[]; includeAllExtensionTools?: boolean }): void {
-		// Tools that were already activated on registration. A tool whose exposure changes to
-		// `direct` or `model-only` (for example from `hidden`) is activated like a new tool.
+		// See docs/adr/coding-agent/core-agent-session.md#tool-activation-on-registration
 		const previousActivatedOnRegistration = new Set(
 			[...this._toolRegistry.keys()].filter((name) => this._isActivatedOnRegistration(name)),
 		);
@@ -3522,7 +3479,7 @@ export class AgentSession {
 
 		if (allowedToolNames) {
 			for (const toolName of this._toolRegistry.keys()) {
-				// Naming a tool activates it even when it is not active by default.
+				// See docs/adr/coding-agent/core-agent-session.md#tool-allowlist-activation-behavior
 				if (allowedToolNames.has(toolName) && this._isDeclarable(toolName)) {
 					nextActiveToolNames.push(toolName);
 				}
@@ -3621,14 +3578,13 @@ export class AgentSession {
 		this.syncQueueModesFromSettings();
 		resetApiProviders();
 		await this._resourceLoader.reload();
-		// Activate tools newly added to defaultTools. Removed ones stay active, and tools disabled
-		// during the session stay disabled unless the setting newly adds them.
+		// See docs/adr/coding-agent/core-agent-session.md#defaulttools-setting-reload-semantics
 		const addedDefaultTools = this._usesDefaultTools
 			? (this.settingsManager.getDefaultTools() ?? DEFAULT_TOOL_NAMES).filter(
 					(name) => !previousDefaultTools.has(name),
 				)
 			: [];
-		// Tools the new extensions register later, such as MCP tools, are pending until then.
+		// See docs/adr/coding-agent/core-agent-session.md#pending-tool-registration-preservation
 		for (const name of this.getActiveToolNames()) this._pendingToolNames.add(name);
 		this._buildRuntime({
 			activeToolNames: [...this.getActiveToolNames(), ...addedDefaultTools],
@@ -3658,7 +3614,7 @@ export class AgentSession {
 	 * Context overflow errors are NOT retryable (handled by compaction instead).
 	 */
 	private _isRetryableError(message: AssistantMessage): boolean {
-		// Context overflow is handled by compaction, not retry.
+		// See docs/adr/coding-agent/core-agent-session.md#context-overflow-handled-by-compaction
 		if (isContextOverflow(message, (this._modelForMessage(message) ?? this.model)?.contextWindow ?? 0)) return false;
 		return isRetryableAssistantError(message);
 	}
@@ -3734,7 +3690,7 @@ export class AgentSession {
 			errorMessage: message.errorMessage || "Unknown error",
 		});
 
-		// Keep the failed attempt in raw history while durably omitting it from model projection.
+		// See docs/adr/coding-agent/core-agent-session.md#failed-attempt-persistence-before-recovery-compaction
 		this._omitRecoveryAttempt(message);
 
 		// Wait with exponential backoff (abortable)
@@ -3797,7 +3753,7 @@ export class AgentSession {
 		const abortController = new AbortController();
 		this._bashAbortControllers.add(abortController);
 
-		// Apply command prefix if configured (e.g., "shopt -s expand_aliases" for alias support)
+		// See docs/adr/coding-agent/core-agent-session.md#shell-command-prefix-for-alias-support
 		const prefix = this.settingsManager.getShellCommandPrefix();
 		const shellPath = this.settingsManager.getShellPath();
 		const resolvedCommand = prefix ? `${prefix}\n${command}` : command;
@@ -3840,9 +3796,8 @@ export class AgentSession {
 			excludeFromContext: options?.excludeFromContext,
 		};
 
-		// If agent is streaming, defer adding to avoid breaking tool_use/tool_result ordering
+		// See docs/adr/coding-agent/core-agent-session.md#deferred-bash-messages-during-streaming
 		if (this.isStreaming) {
-			// Queue for later - will be flushed on agent_end
 			this._pendingBashMessages.push(bashMessage);
 		} else {
 			this.sessionManager.appendMessage(bashMessage);
@@ -3903,7 +3858,7 @@ export class AgentSession {
 
 	/**
 	 * Navigate to a different node in the session tree.
-	 * Unlike fork() which creates a new session file, this stays in the same file.
+	 * See docs/adr/coding-agent/core-agent-session.md#tree-navigation-stays-in-session-file
 	 *
 	 * @param targetId The entry ID to navigate to
 	 * @param options.summarize Whether user wants to summarize abandoned branch
@@ -4127,9 +4082,8 @@ export class AgentSession {
 	}
 
 	/**
-	 * Get session statistics. Aggregates over ALL session entries (including
-	 * history that was compacted away), so token/cost totals reflect what was
-	 * actually billed across the session.
+	 * Get session statistics.
+	 * See docs/adr/coding-agent/core-agent-session.md#session-statistics-aggregation
 	 */
 	getSessionStats(): SessionStats {
 		let userMessages = 0;
@@ -4192,9 +4146,7 @@ export class AgentSession {
 		const contextWindow = model.contextWindow ?? 0;
 		if (contextWindow <= 0) return undefined;
 
-		// After compaction, the last assistant usage reflects pre-compaction context size.
-		// We can only trust usage from an assistant that responded after the latest compaction.
-		// If no such assistant exists, context token count is unknown until the next LLM response.
+		// See docs/adr/coding-agent/core-agent-session.md#post-compaction-usage-trust
 		const projection = this.sessionManager.buildSessionProjection();
 		const branch = this.sessionManager.getBranch();
 		const latestCompaction = getLatestCompactionEntry(branch);

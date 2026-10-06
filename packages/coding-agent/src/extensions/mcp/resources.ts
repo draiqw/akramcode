@@ -316,7 +316,7 @@ export function createMcpResourceToolDefinitions(options: {
 			if (!uri) throw new Error("uri must be provided");
 			const server = findServer(serverName);
 			const result = await server.readResource(uri, { signal, timeoutMs: server.timeoutMs });
-			// Several contents (for example a directory) are labeled with their URIs.
+			// See docs/adr/coding-agent/extensions-mcp-resources.md#labeling-multi-content-resources
 			const blocks: ContentBlock[] = result.contents.flatMap((contents) => [
 				...(result.contents.length > 1 ? [{ type: "text" as const, text: `${contents.uri}:` }] : []),
 				{ type: "resource" as const, resource: contents },

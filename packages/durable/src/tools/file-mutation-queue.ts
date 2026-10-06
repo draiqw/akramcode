@@ -9,10 +9,7 @@ async function mutationKey(env: ExecutionEnv, path: string, context: Context): P
 	return `${env.id}\0${await canonical(env, absolutePath, context)}`;
 }
 
-/**
- * The canonical path; for a file that does not exist yet, its canonical parent joined with its name, so a `write` that
- * creates a file and a later mutation of it share one key even under a symlinked directory.
- */
+// See docs/adr/durable/tools-file-mutation-queue.md#canonical-path-construction
 async function canonical(env: ExecutionEnv, absolutePath: string, context: Context): Promise<string> {
 	const result = await env.canonicalPath(absolutePath, context);
 	if (result.ok) return result.value;
@@ -25,11 +22,7 @@ async function canonical(env: ExecutionEnv, absolutePath: string, context: Conte
 	return getOrThrow(await env.joinPath([await canonical(env, parent, context), name], context));
 }
 
-/**
- * Serialize `edit` and `write` mutations of one file within this process: same file system id and canonical path,
- * whichever environment object the call got. Other files, and other file systems, never wait. Concurrent calls on one
- * file run in the order their keys resolve. Not a lock against `bash` or other processes.
- */
+// See docs/adr/durable/tools-file-mutation-queue.md#mutation-serialization
 export async function withFileMutationQueue<T>(
 	env: ExecutionEnv,
 	path: string,

@@ -22,7 +22,7 @@ type LockResult<T> = {
 	next?: string;
 };
 
-// The mode applies only on creation so administrator-managed modes and ACLs remain intact.
+// See docs/adr/coding-agent/core-auth-storage.md#file-mode-constraint
 const AUTH_FILE_WRITE_OPTIONS = { encoding: "utf-8", mode: 0o600 } as const;
 
 type AuthFileReload = {
@@ -86,7 +86,7 @@ export class FileAuthStorageBackend implements AuthStorageBackend {
 				lastError = error;
 				const start = Date.now();
 				while (Date.now() - start < delayMs) {
-					// Sleep synchronously to avoid changing callers to async.
+					// See docs/adr/coding-agent/core-auth-storage.md#synchronous-sleep-pattern
 				}
 			}
 		}
@@ -198,7 +198,7 @@ export class FileAuthStorageBackend implements AuthStorageBackend {
 				try {
 					await release();
 				} catch {
-					// Ignore unlock errors when lock is compromised.
+					// See docs/adr/coding-agent/core-auth-storage.md#lock-compromise-error-handling
 				}
 			}
 		}

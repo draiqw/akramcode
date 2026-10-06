@@ -68,7 +68,7 @@ function extractFileOperations(
 	if (prevCompactionIndex >= 0) {
 		const prevCompaction = entries[prevCompactionIndex] as CompactionEntry;
 		if (!prevCompaction.fromHook && prevCompaction.details) {
-			// fromHook field kept for session file compatibility
+			// See docs/adr/coding-agent/core-compaction.md#fromhook-field-compatibility
 			const details = prevCompaction.details as CompactionDetails;
 			if (Array.isArray(details.readFiles)) {
 				for (const f of details.readFiles) fileOps.read.add(f);
@@ -97,7 +97,7 @@ function extractFileOperations(
  */
 function getMessagesFromProjectedEntryForCompaction(entry: ProjectedSessionEntry): AgentMessage[] {
 	if (entry.sourceEntry.type === "compaction") return [];
-	// System messages are prompt state, not conversation; the compaction entry carries their replay.
+	// See docs/adr/coding-agent/core-compaction.md#system-messages-as-prompt-state
 	return entry.messages.filter((message) => message.role !== "system");
 }
 
@@ -624,8 +624,7 @@ export async function completeSummarization(
 	retry?: RetryPolicy,
 	callbacks?: RetryCallbacks,
 ): Promise<AssistantMessage> {
-	// Avoid cache writes for one-off summaries. Reuse caller-supplied routing when available;
-	// callers without a session ID, including branch summaries, receive a fresh routing ID.
+	// See docs/adr/coding-agent/core-compaction.md#cache-bypass-for-summaries
 	const requestOptions: SimpleStreamOptions = {
 		...options,
 		cacheRetention: "none",

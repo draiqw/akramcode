@@ -202,28 +202,17 @@ function loadContextFileFromDir(dir: string): { path: string; content: string } 
 	return null;
 }
 
-/**
- * The main repo's context file that a nested linked worktree's own copy shadows: both
- * occupy the same logical repository scope, so loading both applies that context twice. Returns
- * undefined when nothing is shadowed, leaving normal ancestor inheritance alone.
- *
- * Returned canonicalized (realpath), because `git worktree add` writes the `.git`
- * file's `gitdir:` target in realpath form while cwd may still be symlinked
- * (macOS `/tmp` -> `/private/tmp`).
- */
+// See docs/adr/coding-agent/core-resource-loader.md#context-file-shadowing-in-git-worktrees
+// See docs/adr/coding-agent/core-resource-loader.md#path-canonicalization-for-worktrees
 function findShadowedContextFile(cwd: string): string | undefined {
 	const gitPaths = findGitPaths(cwd);
 	if (!gitPaths) return undefined;
 	const commonGitDir = canonicalizePath(gitPaths.commonGitDir);
 	const worktreeRoot = canonicalizePath(gitPaths.repoDir);
 	const mainRepoRoot = dirname(commonGitDir);
-	// False for an ordinary repo, where the two are the same dir, and for a sibling
-	// worktree (`git worktree add ../feat`), whose main repo is not an ancestor.
+	// See docs/adr/coding-agent/core-resource-loader.md#repository-path-validation
 	if (!worktreeRoot.startsWith(`${mainRepoRoot}${sep}`)) return undefined;
-	// dirname of the common git dir is the main worktree root only when that dir is
-	// itself checked out from the same repo. In a bare layout (`proj/.bare` +
-	// `proj/main`) it is just the directory holding `.bare`, which tracks nothing; a
-	// submodule's gitdir has no `commondir`, so it lands under `.git/modules`.
+	// See docs/adr/coding-agent/core-resource-loader.md#common-git-directory-layout-detection
 	if (canonicalizePath(join(mainRepoRoot, ".git")) !== commonGitDir) return undefined;
 	const worktreeContextFile = loadContextFileFromDir(worktreeRoot);
 	return worktreeContextFile ? join(mainRepoRoot, basename(worktreeContextFile.path)) : undefined;

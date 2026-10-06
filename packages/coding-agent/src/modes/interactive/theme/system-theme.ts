@@ -540,7 +540,7 @@ export function generateSystemThemeColors(input: SystemThemeInput): SystemThemeC
 	let relaxation = 0;
 	let colors = solve(0);
 	if (!colors) {
-		// Mid-gray backgrounds cannot fit every level: relax as little as possible. Full relaxation always fits.
+		// See docs/adr/coding-agent/modes-interactive-theme-system-theme.md#mid-gray-background-relaxation
 		let [low, high] = [0, 2];
 		colors = solve(high);
 		for (let index = 0; index < 20; index++) {
@@ -565,8 +565,7 @@ export function generateSystemThemeColors(input: SystemThemeInput): SystemThemeC
 
 	for (const token of FOREGROUND_TOKENS) {
 		const surfaces = surfacesOf(token);
-		// Body text uses the terminal's own foreground where it is clearly stronger than muted text; otherwise
-		// the foreground's hue at just enough lightness.
+		// See docs/adr/coding-agent/modes-interactive-theme-system-theme.md#body-text-foreground-selection
 		let text = solved.get(token);
 		if (foreground) {
 			const targets = surfaces.map((surface) => target(FOREGROUND_LEVEL, oklabLightness(surface), relaxation));
@@ -580,7 +579,7 @@ export function generateSystemThemeColors(input: SystemThemeInput): SystemThemeC
 				text = anchored(sourceOf(foreground), FAMILIES.neutral, oklabToOkhslLightness(needed), saturation);
 			}
 		}
-		// Body text keeps at least 4.5:1 on the surfaces it is drawn on, even on relaxed mid-gray backgrounds.
+		// See docs/adr/coding-agent/modes-interactive-theme-system-theme.md#body-text-contrast
 		if (text) result[token] = hexOf(withTextContrast(text, surfaces, lighter));
 	}
 	return { colors: result, dim: [], appearance };

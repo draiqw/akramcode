@@ -183,24 +183,19 @@ export class ProcessTerminal implements Terminal {
 		process.stdin.setEncoding("utf8");
 		process.stdin.resume();
 
-		// Enable bracketed paste mode - terminal will wrap pastes in \x1b[200~ ... \x1b[201~
+		// See docs/adr/tui/terminal.md#bracketed-paste-mode
 		process.stdout.write("\x1b[?2004h");
 
 		// Set up resize handler immediately
 		process.stdout.on("resize", this.resizeHandler);
 
-		// Refresh terminal dimensions - they may be stale after suspend/resume
-		// (SIGWINCH is lost while process is stopped). Unix only, best-effort.
+		// See docs/adr/tui/terminal.md#refresh-terminal-dimensions-on-suspendresume
 		refreshTerminalDimensions();
 
-		// On Windows, enable ENABLE_VIRTUAL_TERMINAL_INPUT so the console sends
-		// VT escape sequences (e.g. \x1b[Z for Shift+Tab) instead of raw console
-		// events that lose modifier information. Must run AFTER setRawMode(true)
-		// since that resets console mode flags.
+		// See docs/adr/tui/terminal.md#windows-virtual-terminal-input-mode
 		this.enableWindowsVTInput();
 
-		// Query Kitty keyboard protocol and fall back to modifyOtherKeys when DA confirms no Kitty response.
-		// See: https://sw.kovidgoyal.net/kitty/keyboard-protocol/
+		// See docs/adr/tui/terminal.md#kitty-keyboard-protocol-progressive-enhancement
 		this.queryAndEnableKittyProtocol();
 	}
 
@@ -229,7 +224,7 @@ export class ProcessTerminal implements Terminal {
 			this.forwardInputSequence(negotiation?.sequence ?? sequence);
 		});
 
-		// Re-wrap paste content with bracketed paste markers for existing editor handling
+		// See docs/adr/tui/terminal.md#paste-content-re-wrapping
 		this.stdinBuffer.on("paste", (content) => {
 			if (this.inputHandler) {
 				this.inputHandler(`\x1b[200~${content}\x1b[201~`);
@@ -392,8 +387,7 @@ export class ProcessTerminal implements Terminal {
 		const shouldDisableKittyProtocol = this.keyboardProtocolPushed || this._kittyProtocolActive;
 		this.clearKeyboardProtocolNegotiationBuffer();
 		if (shouldDisableKittyProtocol) {
-			// Disable Kitty keyboard protocol first so any late key releases
-			// do not generate new Kitty escape sequences.
+			// See docs/adr/tui/terminal.md#disable-kitty-protocol-before-input-drain
 			process.stdout.write("\x1b[<u");
 			this.keyboardProtocolPushed = false;
 			this._kittyProtocolActive = false;
@@ -463,9 +457,7 @@ export class ProcessTerminal implements Terminal {
 			this.resizeHandler = undefined;
 		}
 
-		// Pause stdin to prevent any buffered input (e.g., Ctrl+D) from being
-		// re-interpreted after raw mode is disabled. This fixes a race condition
-		// where Ctrl+D could close the parent shell over SSH.
+		// See docs/adr/tui/terminal.md#pause-stdin-before-restoring-raw-mode
 		process.stdin.pause();
 
 		// Restore raw mode state

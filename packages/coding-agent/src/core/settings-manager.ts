@@ -174,7 +174,7 @@ export interface Settings {
 	sessionDir?: string; // Custom session storage directory (same format as --session-dir CLI flag)
 	httpProxy?: string; // Proxy URL applied as HTTP_PROXY and HTTPS_PROXY for AkramCode-managed HTTP clients
 	httpIdleTimeoutMs?: number; // HTTP header/body idle timeout in milliseconds; 0 disables it
-	cacheWarming?: CacheWarmingMode; // default: "streaming"; global only because each refresh costs money
+	cacheWarming?: CacheWarmingMode; // See docs/adr/coding-agent/core-settings-manager.md#cache-warming-global-only-setting
 	websocketConnectTimeoutMs?: number; // WebSocket connect/open handshake timeout in milliseconds; 0 disables it
 	tuiMode?: TuiMode; // default: "fullscreen"
 	fullscreenExitOutput?: FullscreenExitOutput; // default: "transcript"; no effect in regular TUI mode
@@ -315,7 +315,7 @@ export class FileSettingsStorage implements SettingsStorage {
 				lastError = error;
 				const start = Date.now();
 				while (Date.now() - start < delayMs) {
-					// Sleep synchronously to avoid changing callers to async.
+					// See docs/adr/coding-agent/core-settings-manager.md#synchronous-lock-acquisition
 				}
 			}
 		}

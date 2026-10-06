@@ -18,8 +18,7 @@ function killProcessTree(child: ChildProcess, signal: NodeJS.Signals): void {
 	const pid = child.pid;
 	if (process.platform === "win32" && pid !== undefined) {
 		if (child.exitCode !== null) return;
-		// Windows has no graceful signals, and cross-spawn runs `.cmd` shims through cmd.exe; killing only
-		// that would leave the server running.
+		// See docs/adr/mcp/transports-stdio.md#windows-process-termination-via-taskkill
 		spawn("taskkill", ["/pid", String(pid), "/T", "/F"], { stdio: "ignore", windowsHide: true }).on(
 			"error",
 			() => {},
@@ -28,7 +27,7 @@ function killProcessTree(child: ChildProcess, signal: NodeJS.Signals): void {
 	}
 	if (USE_PROCESS_GROUPS && pid !== undefined) {
 		try {
-			// Negative pid: the whole group, so wrappers like `npx` or `uvx` do not leave the server behind.
+			// See docs/adr/mcp/transports-stdio.md#process-group-termination-for-wrappers
 			process.kill(-pid, signal);
 			return;
 		} catch {
@@ -97,7 +96,7 @@ export class StdioTransport extends TransportEvents implements McpTransport {
 			env,
 			stdio: ["pipe", "pipe", this.options.stderr === "inherit" ? "inherit" : "pipe"],
 			windowsHide: true,
-			// Own process group, so closing the transport can terminate the server's children too.
+			// See docs/adr/mcp/transports-stdio.md#detached-process-groups-for-child-cleanup
 			detached: USE_PROCESS_GROUPS,
 		});
 		this.child = child;

@@ -422,7 +422,7 @@ export const Harness = {
 		try {
 			await harness.openTasks(context);
 		} catch (error) {
-			// The caller's context may be what failed open: close without it, and rethrow the open error.
+			// See docs/adr/durable/harness-harness.md#close-without-caller-context-on-open-failure
 			await harness
 				.close(withoutAbortSignal(context))
 				.catch((closeError: unknown) => options.onReport?.(closeError));

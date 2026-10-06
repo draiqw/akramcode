@@ -156,8 +156,7 @@ function validateBundle(inputDir) {
 		throw new Error(`Refusing to publish only ${modelCount} models; expected at least ${MINIMUM_MODEL_COUNT}`);
 	}
 
-	// The full catalog is a superset of the chat catalog, so hashing it alone
-	// changes the revision for chat-only and image-only updates alike.
+	// See docs/adr/scripts/publish-model-catalog.md#hashing-the-full-model-catalog
 	const digest = createHash("sha256").update(allModelsBytes).digest("hex");
 	return {
 		modelsPath,

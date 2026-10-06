@@ -68,8 +68,7 @@ export function transformMessages<TApi extends Api>(
 ): Message[] {
 	// Build a map of original tool call IDs to normalized IDs
 	const toolCallIdMap = new Map<string, string>();
-	// Normalize null/undefined content from untyped callers (custom tools, hand-built
-	// histories, old session files) so downstream code can rely on the type contract.
+	// See docs/adr/providers/api-transform-messages.md#null-content-normalization-from-untyped-callers
 	const normalizedMessages = messages.map((msg) => (msg.content == null ? { ...msg, content: [] } : msg));
 	const imageAwareMessages = downgradeUnsupportedImages(normalizedMessages, model);
 
@@ -99,15 +98,13 @@ export function transformMessages<TApi extends Api>(
 
 			const transformedContent = assistantMsg.content.flatMap((block) => {
 				if (block.type === "thinking") {
-					// Redacted thinking is opaque encrypted content, only valid for the same model.
-					// Drop it for cross-model to avoid API errors.
+					// See docs/adr/providers/api-transform-messages.md#redacted-thinking-as-opaque-encrypted-content
 					if (block.redacted) {
 						return isSameModel ? block : [];
 					}
-					// For same model: keep thinking blocks with signatures (needed for replay)
-					// even if the thinking text is empty (OpenAI encrypted reasoning)
+					// See docs/adr/providers/api-transform-messages.md#thinking-block-signature-preservation-for-same-model-replay
 					if (isSameModel && block.thinkingSignature) return block;
-					// Skip empty thinking blocks, convert others to plain text
+					// See docs/adr/providers/api-transform-messages.md#cross-model-thinking-block-conversion
 					if (!block.thinking || block.thinking.trim() === "") return [];
 					if (isSameModel) return block;
 					return {
@@ -160,9 +157,7 @@ export function transformMessages<TApi extends Api>(
 	const result: Message[] = [];
 	let pendingToolCalls: ToolCall[] = [];
 	let existingToolResultIds = new Set<string>();
-	// System messages are transparent to tool-call accounting: one that lands between a tool
-	// call and its results is held back and emitted after the results (synthetic ones
-	// included), so it never causes a duplicate result for a call that is answered later.
+	// See docs/adr/providers/api-transform-messages.md#system-message-transparency-to-tool-call-accounting
 	const heldSystemMessages: Message[] = [];
 	const closePendingToolCalls = () => {
 		if (pendingToolCalls.length > 0) {

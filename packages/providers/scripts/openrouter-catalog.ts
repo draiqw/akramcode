@@ -106,8 +106,7 @@ export function buildOpenRouterCatalog(
 		});
 	}
 
-	// Decision models such as TypeSafe's Jev are served through OpenRouter's
-	// TypeSafe-compatible System One endpoint.
+	// See docs/adr/providers/scripts-openrouter-catalog.md#decision-models-through-typesafe-endpoint
 	const classifiers: OpenRouterCatalog["classifiers"] = [];
 	for (const model of decisionListed) {
 		if (classifiers.some((entry) => entry.id === model.id)) continue;

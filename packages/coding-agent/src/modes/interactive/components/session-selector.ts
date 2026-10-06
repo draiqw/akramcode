@@ -87,7 +87,7 @@ class SessionSelectorHeader implements Component {
 
 	setLoading(loading: boolean): void {
 		this.loading = loading;
-		// Progress is scoped to the current load; clear whenever the loading state is set
+		// See docs/adr/coding-agent/modes-interactive-components-session-selector.md#load-progress-scoping
 		this.loadProgress = null;
 	}
 
@@ -152,7 +152,7 @@ class SessionSelectorHeader implements Component {
 		const left = truncateToWidth(leftText, availableLeft, "");
 		const spacing = Math.max(0, width - visibleWidth(left) - visibleWidth(rightText));
 
-		// Build hint lines - changes based on state (all branches truncate to width)
+		// See docs/adr/coding-agent/modes-interactive-components-session-selector.md#hint-line-state-management
 		let hintLine1: string;
 		let hintLine2: string;
 		if (this.confirmingDeletePath !== null) {
@@ -310,7 +310,7 @@ class SessionList implements Component, Focusable {
 	public onError?: (message: string) => void;
 	private maxVisible: number = 10; // Max sessions visible (one line each)
 
-	// Focusable implementation - propagate to searchInput for IME cursor positioning
+	// See docs/adr/coding-agent/modes-interactive-components-session-selector.md#focusable-ime-support-pattern
 	private _focused = false;
 	get focused(): boolean {
 		return this._focused;
@@ -378,11 +378,11 @@ class SessionList implements Component, Focusable {
 			this.nameFilter === "all" ? this.allSessions : this.allSessions.filter((session) => hasSessionName(session));
 
 		if (this.sortMode === "threaded" && !trimmed) {
-			// Threaded mode without search: show tree structure
+			// See docs/adr/coding-agent/modes-interactive-components-session-selector.md#threaded-vs-flat-session-display
 			const roots = buildSessionTree(nameFiltered);
 			this.filteredSessions = flattenSessionTree(roots);
 		} else {
-			// Other modes or with search: flat list
+			// See docs/adr/coding-agent/modes-interactive-components-session-selector.md#threaded-vs-flat-session-display
 			const filtered = filterAndSortSessions(nameFiltered, query, this.sortMode, "all");
 			this.filteredSessions = filtered.map((session) => ({
 				session,
@@ -403,7 +403,7 @@ class SessionList implements Component, Focusable {
 		const selected = this.filteredSessions[this.selectedIndex];
 		if (!selected) return;
 
-		// Prevent deleting current session
+		// See docs/adr/coding-agent/modes-interactive-components-session-selector.md#delete-prevention-for-active-session
 		if (this.isCurrentSessionPath(selected.session.path)) {
 			this.onError?.("Cannot delete the currently active session");
 			return;
@@ -580,7 +580,7 @@ class SessionList implements Component, Focusable {
 			return;
 		}
 
-		// Ctrl+D: initiate delete confirmation (useful on terminals that don't distinguish Ctrl+Backspace from Backspace)
+		// See docs/adr/coding-agent/modes-interactive-components-session-selector.md#ctrld-terminal-compatibility
 		if (kb.matches(keyData, "app.session.delete")) {
 			this.startDeleteConfirmationForSelectedSession();
 			return;
@@ -595,8 +595,7 @@ class SessionList implements Component, Focusable {
 			return;
 		}
 
-		// Ctrl+Backspace: non-invasive convenience alias for delete
-		// Only triggers deletion when the query is empty; otherwise it is forwarded to the input
+		// See docs/adr/coding-agent/modes-interactive-components-session-selector.md#non-invasive-backspace-delete
 		if (kb.matches(keyData, "app.session.deleteNoninvasive")) {
 			if (this.searchInput.getValue().length > 0) {
 				this.searchInput.handleInput(keyData);

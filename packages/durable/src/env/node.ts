@@ -269,7 +269,7 @@ function killProcessTree(pid: number): void {
 					windowsHide: true,
 				},
 			);
-			// A failed spawn emits "error" asynchronously; consume it to avoid crashing Node.
+			// See docs/adr/durable/env-node.md#async-spawn-error-consumption
 			child.once("error", () => {});
 		} catch {
 			// Ignore errors.
@@ -405,7 +405,7 @@ class NodeTextLineReader implements TextLineReader {
 					return ok({ text, terminated: false });
 				}
 
-				// Explicit positions allow an aborted read to be retried without skipping bytes.
+				// See docs/adr/durable/env-node.md#explicit-byte-positions-for-read-retry
 				const { bytesRead } = await this.file.read(this.chunk, 0, this.chunk.length, this.byteOffset);
 				const afterReadAbort = abortResult<TextLine | undefined>(context.abortSignal, this.path);
 				if (afterReadAbort) return afterReadAbort;
@@ -429,7 +429,7 @@ class NodeTextLineReader implements TextLineReader {
 		try {
 			await this.file.close();
 		} catch {
-			// Closing is best-effort, including after cancellation or an earlier I/O failure.
+			// See docs/adr/durable/env-node.md#best-effort-file-closing
 		}
 	}
 }
@@ -506,10 +506,10 @@ export class NodeExecutionEnv implements ExecutionEnv {
 				callbackError = new ExecutionError("callback_error", cause.message, cause);
 				onAbort();
 			};
-			// One decoder per stream, so a character split across chunks of one stream survives interleaving.
+			// See docs/adr/durable/env-node.md#separate-decoders-per-stream
 			const stdoutDecoder = new TextDecoder();
 			const stderrDecoder = new TextDecoder();
-			// No output reaches the caller after exec() settled, for example from a descendant holding stdio open.
+			// See docs/adr/durable/env-node.md#no-output-after-exec-settles
 			const emit = (text: string): void => {
 				if (settled || text === "" || options?.onOutput === undefined || callbackError !== undefined) return;
 				try {
@@ -518,7 +518,7 @@ export class NodeExecutionEnv implements ExecutionEnv {
 					failCallback(error);
 				}
 			};
-			// Output seen before the spill starts: counted against the thresholds and kept for the spill's prefix.
+			// See docs/adr/durable/env-node.md#output-tracking-before-spill
 			let seenBytes = 0;
 			let seenNewlines = 0;
 
@@ -679,9 +679,7 @@ export class NodeExecutionEnv implements ExecutionEnv {
 						settle(err(spillError));
 						return;
 					}
-					// A process killed by a signal (e.g. OOM killer) has no exit code; map it
-					// to the conventional 128 + signal number so callers do not mistake it
-					// for a successful exit.
+					// See docs/adr/durable/env-node.md#signal-to-exit-code-mapping
 					const exitCode = code ?? (exitSignal ? 128 + (osConstants.signals[exitSignal] ?? 0) : 1);
 					settle(ok({ exitCode, ...(spillPath === undefined ? {} : { spillPath }) }));
 				},

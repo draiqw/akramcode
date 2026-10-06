@@ -280,7 +280,7 @@ export function stepUpScope(granted: string | undefined, challenged: string | un
 
 async function runFlow(provider: OAuthClientProvider, options: OAuthFlowOptions): Promise<OAuthFlowResult> {
 	const metadataUrl = options.authorizationServerMetadataUrl && secureEndpoint(options.authorizationServerMetadataUrl);
-	// With a configured metadata URL, discovery is not cached, so changing the URL applies at once.
+	// See docs/adr/mcp/oauth-flow.md#discovery-metadata-caching
 	const cached = metadataUrl ? undefined : await provider.discoveryState?.();
 	const discovered = cached?.authorizationServerUrl
 		? {
@@ -307,7 +307,7 @@ async function runFlow(provider: OAuthClientProvider, options: OAuthFlowOptions)
 	}
 	const metadata = discovered.authorizationServerMetadata;
 	const resource = selectResource(options.serverUrl, discovered.resourceMetadata);
-	// `||`, not `??`: an empty scope (for example from `scopes_supported: []`) falls through to the next source.
+	// See docs/adr/mcp/oauth-flow.md#scope-fallthrough-with-logical-or
 	const scope =
 		options.scope || discovered.resourceMetadata?.scopes_supported?.join(" ") || provider.clientMetadata.scope;
 	let client = await provider.clientInformation();
@@ -348,8 +348,7 @@ async function runFlow(provider: OAuthClientProvider, options: OAuthFlowOptions)
 			codeVerifier: await provider.codeVerifier(),
 			redirectUrl: provider.redirectUrl,
 		});
-		// A response without `scope` grants the requested scope (RFC 6749 §5.1). Recorded so a step-up can
-		// keep it. Callers pass the options of the authorization request, so `scope` is what was requested.
+		// See docs/adr/mcp/oauth-flow.md#scope-persistence-in-authorization-response
 		await provider.saveTokens(withScope(tokens, scope));
 		return "AUTHORIZED";
 	}
@@ -360,7 +359,7 @@ async function runFlow(provider: OAuthClientProvider, options: OAuthFlowOptions)
 				...tokenOptions,
 				refreshToken: existing.refresh_token,
 			});
-			// A refresh without `scope` keeps the scope of the grant (RFC 6749 §6).
+			// See docs/adr/mcp/oauth-flow.md#scope-preservation-in-refresh-grants
 			await provider.saveTokens(withScope(tokens, existing.scope));
 			return "AUTHORIZED";
 		} catch (error) {

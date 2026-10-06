@@ -89,25 +89,22 @@ export class Image implements Component {
 				}
 
 				if (caps.images === "kitty") {
-					// For Kitty: C=1 prevents cursor movement.
-					// Don't need the cursor movement.
+					// See docs/adr/tui/components-image.md#kitty-protocol-cursor-control
 					lines = [result.sequence];
 
-					// Return `rows` lines so TUI accounts for image height.
+					// See docs/adr/tui/components-image.md#multi-line-rendering-for-image-height-accounting
 					for (let i = 0; i < result.rows - 1; i++) {
 						lines.push("");
 					}
 				} else {
-					// Return `rows` lines so TUI accounts for image height.
-					// First (rows-1) lines are empty and cleared before the image is drawn.
-					// Last line: move cursor back up, draw the image, then move back down
-					// so TUI cursor accounting stays inside the scroll area.
+					// See docs/adr/tui/components-image.md#multi-line-rendering-for-image-height-accounting
 					lines = [];
 					for (let i = 0; i < result.rows - 1; i++) {
 						lines.push("");
 					}
 					const rowOffset = result.rows - 1;
 					const moveUp = rowOffset > 0 ? `\x1b[${rowOffset}A` : "";
+					// See docs/adr/tui/components-image.md#sixel-image-cursor-positioning
 					lines.push(moveUp + result.sequence);
 				}
 			} else {

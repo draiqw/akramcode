@@ -32,7 +32,7 @@ export class CustomMessageComponent extends Container {
 
 		this.addChild(new Spacer(1));
 
-		// Create box with purple background (used for default rendering)
+		// See docs/adr/coding-agent/modes-interactive-components-custom-message.md#purple-background-for-default-rendering
 		this.box = new Box(1, 1, (t) => theme.bg("customMessageBg", t));
 
 		this.rebuild();
@@ -65,7 +65,7 @@ export class CustomMessageComponent extends Container {
 		}
 		this.removeChild(this.box);
 
-		// Try custom renderer first - it handles its own styling
+		// See docs/adr/coding-agent/modes-interactive-components-custom-message.md#custom-renderer-first-strategy
 		if (this.customRenderer) {
 			try {
 				const component = this.customRenderer(
@@ -74,14 +74,11 @@ export class CustomMessageComponent extends Container {
 					theme,
 				);
 				if (component) {
-					// Custom renderer provides its own styled component
 					this.customComponent = component;
 					this.addChild(component);
 					return;
 				}
-			} catch {
-				// Fall through to default rendering
-			}
+			} catch {}
 		}
 
 		// Default rendering uses our box

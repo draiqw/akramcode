@@ -145,7 +145,7 @@ export async function openDurable(options: OpenDurableOptions = {}): Promise<Ope
 		const initial = location.created ? await findInitialAgentModel(settingsManager, modelRuntime) : undefined;
 		const root = await harness.root(context, {
 			agent: {
-				// Only the vacation planner; the research subagent selects search itself.
+				// See docs/adr/coding-agent/experimental-vacation-runtime.md#main-conversation-receives-only-vacation-extension
 				extensions: [Vacation],
 				...(initial?.model === undefined ? {} : { model: initial.model }),
 				...(initial?.thinkingLevel === undefined ? {} : { thinkingLevel: initial.thinkingLevel }),
@@ -197,7 +197,7 @@ export async function openDurable(options: OpenDurableOptions = {}): Promise<Ope
 		report = (error) => notice("warning", error instanceof Error ? error.message : String(error));
 		for (const error of pendingReports) report(error);
 		let unsubscribe = conversation.subscribe((value) => update({ conversation: value }));
-		// Subagents appear as their conversations are created. A commit listener only records; it calls no Session API.
+		// See docs/adr/coding-agent/experimental-vacation-runtime.md#subagents-appear-when-conversations-are-created
 		const unsubscribeCommits = harness.subscribeCommits((publication) => {
 			let conversations = state.conversations;
 			for (const change of publication.changes) {
@@ -275,7 +275,7 @@ export async function openDurable(options: OpenDurableOptions = {}): Promise<Ope
 							notice("error", `Compaction ${outcome.status}: ${outcome.error?.message ?? outcome.reason ?? ""}`);
 					}, fail);
 				}),
-			// Not queued: it waits until the conversation is idle.
+			// See docs/adr/coding-agent/experimental-vacation-runtime.md#abort-does-not-queue
 			abort: () => current.abort(context).catch(fail),
 			cycleThinking: () =>
 				command(async () => {
@@ -323,7 +323,7 @@ export async function openDurable(options: OpenDurableOptions = {}): Promise<Ope
 			notice("warning", `Saved model is unavailable: ${saved.provider}/${saved.modelId}`);
 		}
 		if (initial?.fallbackMessage !== undefined) notice("info", initial.fallbackMessage);
-		// The task panel starts open; /tasks hides it.
+		// See docs/adr/coding-agent/experimental-vacation-runtime.md#task-panel-starts-open
 		await controller.toggleTasks();
 		// Recovered work from an interrupted turn continues now.
 		harness.resume();
@@ -346,7 +346,7 @@ export async function openDurable(options: OpenDurableOptions = {}): Promise<Ope
 					conversation.dispose();
 					closeTasks();
 					try {
-						// Close writes no outcome: a running turn resumes with --continue.
+						// See docs/adr/coding-agent/experimental-vacation-runtime.md#close-without-writing-outcome
 						await opened.close(context);
 					} finally {
 						await location.release();

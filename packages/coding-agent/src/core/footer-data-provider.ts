@@ -310,9 +310,7 @@ export class FooterDataProvider {
 
 		const pollGitHead = shouldPollGitHead(this.gitPaths.repoDir);
 
-		// Watch the directory containing HEAD, not HEAD itself.
-		// Git uses atomic writes (write temp, rename over HEAD), which changes the inode.
-		// fs.watch on a file stops working after the inode changes.
+		// See docs/adr/coding-agent/core-footer-data-provider.md#watch-directory-not-head-file-directly
 		this.headWatcher = watchWithErrorHandler(
 			dirname(this.gitPaths.headPath),
 			(_eventType, filename) => {
@@ -339,8 +337,7 @@ export class FooterDataProvider {
 			return;
 		}
 
-		// In reftable repos, branch switches update files in the reftable directory
-		// instead of HEAD. Watch it separately so the footer picks up those changes.
+		// See docs/adr/coding-agent/core-footer-data-provider.md#monitor-reftable-repos-separately
 		const reftableDir = join(this.gitPaths.commonGitDir, "reftable");
 		if (existsSync(reftableDir)) {
 			this.reftableWatcher = watchWithErrorHandler(

@@ -32,7 +32,7 @@ function pathSuffix(pathname: string): string {
 
 function field(header: string, name: string): string | undefined {
 	const match = header.match(new RegExp(String.raw`(?:^|[,\s])${name}=(?:"([^"]*)"|([^\s,]+))`, "i"));
-	// An empty value (`scope=""`) carries no information, so it counts as absent.
+	// See docs/adr/mcp/oauth-discovery.md#empty-scope-values-as-absent
 	return match?.[1] || match?.[2] || undefined;
 }
 
@@ -114,7 +114,7 @@ export async function discoverAuthorizationServerMetadata(
 		const metadata = parseAuthorizationServerMetadata(await response.json());
 		if (!options.skipIssuerValidation) {
 			const expected = String(authorizationServerUrl);
-			// URL parsing adds a trailing slash to bare origins, so compare without one on either side.
+			// See docs/adr/mcp/oauth-discovery.md#url-comparison-without-trailing-slash
 			const trim = (value: string) => (value.endsWith("/") ? value.slice(0, -1) : value);
 			if (trim(metadata.issuer) !== trim(expected)) throw new OAuthIssuerMismatchError(expected, metadata.issuer);
 		}

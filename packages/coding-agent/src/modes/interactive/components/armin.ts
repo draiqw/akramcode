@@ -5,7 +5,7 @@
 import type { Component, TUI } from "@akramcode/tui";
 import { theme } from "../theme/theme.ts";
 
-// XBM image: 31x36 pixels, LSB first, 1=background, 0=foreground
+// See docs/adr/coding-agent/modes-interactive-components-armin.md#xbm-image-data-format
 export const ARMIN_WIDTH = 31;
 export const ARMIN_HEIGHT = 36;
 const WIDTH = ARMIN_WIDTH;

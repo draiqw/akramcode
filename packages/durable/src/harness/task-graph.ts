@@ -119,7 +119,7 @@ export class TaskGraphView {
 				if (mount.observers.size === 0 && this.#mount === mount) this.#mount = undefined;
 			};
 			const observer = create(mount.value, detach);
-			// Close or cancellation may begin while the mount builds; register nothing then.
+			// See docs/adr/durable/harness-task-graph.md#registration-race-condition-handling
 			if (this.#closed) throw closedError();
 			context.abortSignal?.throwIfAborted();
 			this.#mount = mount;
@@ -171,8 +171,7 @@ function advance(mount: Mount, publication: CommitPublication, context: Context)
 		ops.push(["s", ["tasks", key], next as unknown as JsonValue]);
 		changed.set(key, next);
 	}
-	// After the tasks, so a conversation created with its owner task in one commit finds the owner's node. Change order
-	// within a publication is unspecified, so each owner's list is sorted again.
+	// See docs/adr/durable/harness-task-graph.md#publication-processing-order
 	const created = new Map<string, ConversationId[]>();
 	for (const change of publication.changes) {
 		if (change.type !== "conversation" || change.value.owner === undefined) continue;

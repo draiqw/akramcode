@@ -349,9 +349,7 @@ async function renderPrompt(request: RequestContext, content: string): Promise<s
 		false,
 	);
 	if (!isRecord(body) || typeof body.prompt !== "string") throw new Error(`${LABEL} did not return a prompt`);
-	// Some templates always open a reasoning block for the reply. Closing it at once
-	// leaves an empty block, as templates with thinking disabled produce, so the next
-	// token is the answer.
+	// See docs/adr/providers/api-llama-cpp-classify.md#reasoning-block-template-handling
 	return body.prompt.endsWith("<think>") ? `${body.prompt}</think>` : body.prompt;
 }
 

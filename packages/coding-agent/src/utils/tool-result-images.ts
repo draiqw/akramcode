@@ -44,9 +44,7 @@ export async function normalizeToolResultImages(
 			resizeOptions: options?.resizeOptions,
 		});
 		if (!processed.ok) {
-			// Unlike `read`, keep the original block. The tool already produced this image and the
-			// failure may just be an unavailable image backend, so passing it through preserves the
-			// behavior tools have today instead of silently deleting their output.
+			// See docs/adr/coding-agent/utils-tool-result-images.md#preserving-tool-generated-images-on-processing-failure
 			normalized.push(block);
 			continue;
 		}

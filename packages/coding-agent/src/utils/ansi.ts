@@ -53,8 +53,6 @@ export function stripAnsi(value: string): string {
 		return value;
 	}
 
-	// Even though the regex is global, we don't need to reset the `.lastIndex`
-	// because unlike `.exec()` and `.test()`, `.replace()` does it automatically
-	// and doing it manually has a performance penalty.
+	// See docs/adr/coding-agent/utils-ansi.md#automatic-lastindex-reset-in-replace
 	return value.replace(regex, "");
 }
