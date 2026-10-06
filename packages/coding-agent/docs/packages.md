@@ -10,7 +10,7 @@ Install from npm, git, or a local path:
 
 ```bash
 akramcode install npm:@example/akramcode-tools@1.0.0
-akramcode install git:github.com/example/pi-tools@v1
+akramcode install git:github.com/example/akramcode-tools@v1
 akramcode install ./local-package
 ```
 
@@ -31,8 +31,8 @@ akramcode -e npm:@example/akramcode-tools
 | Source | Example | Behavior |
 |---|---|---|
 | npm | `npm:@example/akramcode-tools@1.0.0` | Installed under the AkramCode npm directory |
-| git | `git:github.com/example/pi-tools@v1` | Cloned and reconciled to the selected ref |
-| URL | `https://github.com/example/pi-tools` | Treated as a git source |
+| git | `git:github.com/example/akramcode-tools@v1` | Cloned and reconciled to the selected ref |
+| URL | `https://github.com/example/akramcode-tools` | Treated as a git source |
 | Local | `./akramcode-tools` | Loaded from the resolved path without copying |
 
 Versioned npm specifications are pinned. Git tags and commits are also pinned; package updates reconcile the checkout but do not move a configured ref.
@@ -71,7 +71,7 @@ Use an explicit manifest when resources live elsewhere or need filtering:
 
 Paths are relative to the package root. Arrays accept glob patterns and exclusions. List dot-prefixed or symlinked resource roots directly when traversal through a glob would not discover them.
 
-The `akramcode-package` keyword makes an npm package eligible for discovery in the [AkramCode package gallery](https://pi.dev/packages). Optional `akramcode.image` and `akramcode.video` fields add gallery previews.
+The `akramcode-package` keyword marks an npm package as an AkramCode package. Optional `akramcode.image` and `akramcode.video` fields add gallery previews.
 
 ## Declare dependencies
 

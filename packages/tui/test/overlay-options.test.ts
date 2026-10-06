@@ -553,7 +553,7 @@ describe("TUI overlay options", () => {
 		});
 	});
 
-	// https://github.com/earendil-works/pi/issues/10026
+	// upstream issue #10026
 	describe("hiding after stop", () => {
 		it("hideOverlay() leaves the cursor visible", () => {
 			const terminal = new CursorTrackingTerminal(80, 24);

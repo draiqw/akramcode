@@ -4,7 +4,7 @@ Source: packages/tui/src/components/markdown.ts
 
 ## Streamed code block fence trimming
 
-Partial closing fences from streamed markdown are trimmed to prevent code blocks from shrinking or flickering when the final fence character arrives. Without this, incomplete fences would be rendered, then replaced when the full fence arrives, causing visual instability. See https://github.com/earendil-works/pi/issues/5825.
+Partial closing fences from streamed markdown are trimmed to prevent code blocks from shrinking or flickering when the final fence character arrives. Without this, incomplete fences would be rendered, then replaced when the full fence arrives, causing visual instability. See upstream issue #5825.
 
 ## Weak reference caching for parsed tokens
 

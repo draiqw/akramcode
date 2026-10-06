@@ -21,18 +21,10 @@ export const VIRTUAL_MODULES: Record<string, unknown> = {
 	"@akramcode/agent-core": bundledAkramCodeAgentCore,
 	"@akramcode/tui": bundledAkramCodeTui,
 	// Extensions resolve the akramcode-ai root to the compat entrypoint (a strict
-	// superset of the core entrypoint): existing extensions using the old
-	// global API keep working at runtime until compat is removed.
+	// superset of the core entrypoint).
 	"@akramcode/ai": bundledAkramCodeAiCompat,
 	"@akramcode/providers/compat": bundledAkramCodeAiCompat,
 	"@akramcode/providers/oauth": bundledAkramCodeAiOauth,
 	"@akramcode/providers/providers/all": bundledAkramCodeAiProviders,
 	"@akramcode/coding-agent": bundledAkramCodeCodingAgent,
-	"@mariozechner/pi-agent-core": bundledAkramCodeAgentCore,
-	"@mariozechner/pi-tui": bundledAkramCodeTui,
-	"@mariozechner/pi-ai": bundledAkramCodeAiCompat,
-	"@mariozechner/pi-ai/compat": bundledAkramCodeAiCompat,
-	"@mariozechner/pi-ai/oauth": bundledAkramCodeAiOauth,
-	"@mariozechner/pi-ai/providers/all": bundledAkramCodeAiProviders,
-	"@mariozechner/pi-coding-agent": bundledAkramCodeCodingAgent,
 };

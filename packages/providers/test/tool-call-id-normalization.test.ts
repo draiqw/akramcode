@@ -7,7 +7,7 @@
  * OpenAI Responses API generates IDs in format: {call_id}|{id}
  * where {id} can be 400+ chars with special characters (+, /, =).
  *
- * Regression test for: https://github.com/earendil-works/pi/issues/1022
+ * Regression test for: upstream issue #1022
  */
 
 import type { AssistantMessage, Message, Tool, ToolResultMessage } from "@akramcode/ai/types";

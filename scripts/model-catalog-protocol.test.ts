@@ -59,34 +59,35 @@ test("redirects AkramCode user agents to an explicit catalog version", () => {
 	// Regression test for #9099: released clients identify themselves only by User-Agent.
 	assert.deepEqual(
 		parseModelCatalogRequest(
-			"https://pi.dev/api/models/providers/openrouter?types=chat%2Cimage",
+			"https://catalog.example.test/api/models/providers/openrouter?types=chat%2Cimage",
 			"akramcode/0.84.4 (linux; node/v22.0.0; x64)",
 		),
 		{
 			kind: "redirect",
-			location: "https://pi.dev/api/models/providers/openrouter?types=chat%2Cimage&akramcode-version=0.84.4",
+			location:
+				"https://catalog.example.test/api/models/providers/openrouter?types=chat%2Cimage&akramcode-version=0.84.4",
 		},
 	);
-	assert.deepEqual(parseModelCatalogRequest("https://pi.dev/api/models", "akramcode/0.84.4"), {
+	assert.deepEqual(parseModelCatalogRequest("https://catalog.example.test/api/models", "akramcode/0.84.4"), {
 		kind: "redirect",
-		location: "https://pi.dev/api/models?akramcode-version=0.84.4",
+		location: "https://catalog.example.test/api/models?akramcode-version=0.84.4",
 	});
 });
 
 test("serves explicit and unversioned catalog requests without redirecting", () => {
 	assert.deepEqual(
 		parseModelCatalogRequest(
-			"https://pi.dev/api/models?akramcode-version=0.83.0",
+			"https://catalog.example.test/api/models?akramcode-version=0.83.0",
 			"akramcode/0.85.1 (linux; node/v22.0.0; x64)",
 		),
 		{ kind: "catalog", akramCodeVersion: "0.83.0", representation: "legacy" },
 	);
-	assert.deepEqual(parseModelCatalogRequest("https://pi.dev/api/models?types=chat", "curl/8.0.0"), {
+	assert.deepEqual(parseModelCatalogRequest("https://catalog.example.test/api/models?types=chat", "curl/8.0.0"), {
 		kind: "catalog",
 		akramCodeVersion: undefined,
 		representation: "typed",
 	});
-	assert.deepEqual(parseModelCatalogRequest("https://pi.dev/api/models", "akramcode/latest"), {
+	assert.deepEqual(parseModelCatalogRequest("https://catalog.example.test/api/models", "akramcode/latest"), {
 		kind: "catalog",
 		akramCodeVersion: undefined,
 		representation: "legacy",
@@ -94,11 +95,14 @@ test("serves explicit and unversioned catalog requests without redirecting", () 
 });
 
 test("rejects invalid catalog request parameters", () => {
-	assert.deepEqual(parseModelCatalogRequest("https://pi.dev/api/models?akramcode-version=latest", undefined), {
-		kind: "invalid",
-		error: "Invalid AkramCode version.",
-	});
-	assert.deepEqual(parseModelCatalogRequest("https://pi.dev/api/models?types=", "akramcode/0.84.4"), {
+	assert.deepEqual(
+		parseModelCatalogRequest("https://catalog.example.test/api/models?akramcode-version=latest", undefined),
+		{
+			kind: "invalid",
+			error: "Invalid AkramCode version.",
+		},
+	);
+	assert.deepEqual(parseModelCatalogRequest("https://catalog.example.test/api/models?types=", "akramcode/0.84.4"), {
 		kind: "invalid",
 		error: "Invalid model types.",
 	});

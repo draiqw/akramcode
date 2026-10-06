@@ -42,7 +42,7 @@ test("synchronizes private dependencies without touching registry aliases, gener
 			private: true,
 			dependencies: {
 				"@akramcode/coding-agent": "^1.0.0",
-				"@mariozechner/pi-ai": "npm:@akramcode/ai@1.0.0",
+				"@old-scope/legacy-ai": "npm:@akramcode/ai@1.0.0",
 			},
 		});
 		await writeManifest(root, "packages/coding-agent/install-lock", {
@@ -59,7 +59,7 @@ test("synchronizes private dependencies without touching registry aliases, gener
 
 		const evalsManifest = await readManifest(root, "packages/evals");
 		assert.equal(evalsManifest.dependencies["@akramcode/coding-agent"], "^2.0.0");
-		assert.equal(evalsManifest.dependencies["@mariozechner/pi-ai"], "npm:@akramcode/ai@1.0.0");
+		assert.equal(evalsManifest.dependencies["@old-scope/legacy-ai"], "npm:@akramcode/ai@1.0.0");
 		const generatedManifest = await readManifest(root, "packages/coding-agent/install-lock");
 		assert.equal(generatedManifest.dependencies["@akramcode/coding-agent"], "^1.0.0");
 

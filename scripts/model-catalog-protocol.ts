@@ -1,14 +1,10 @@
 /**
- * Model catalog protocol shared by akramcode and pi.dev.
+ * Model catalog protocol shared by akramcode and the catalog server.
  *
- * This file is copied verbatim into two repositories. Change both copies in
- * the same pair of pull requests and keep them byte for byte identical:
- *
- *   earendil-works/pi      scripts/model-catalog-protocol.ts
- *   earendil-works/pi.dev  src/shared/models/protocol.ts
+ * Shared between the catalog publisher and the catalog server.
  *
  * akramcode uses it to publish catalog revisions and to test clients against the
- * catalog selection pi.dev performs. pi.dev uses it to serve catalog requests.
+ * catalog selection the catalog server performs. The server uses it to serve catalog requests.
  * Keep it free of imports and runtime specific APIs so it runs unchanged in
  * Node.js and Cloudflare Workers.
  *

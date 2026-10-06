@@ -535,7 +535,7 @@ describe("Coding Agent Tools", () => {
 			expect(readFileSync(largeOutput.full_output_path!, "utf-8").endsWith("300000\n")).toBe(true);
 		});
 
-		// Regression tests for https://github.com/earendil-works/pi/issues/9577
+		// Regression tests for upstream issue #9577
 		it.skipIf(process.platform === "win32")(
 			"should map signal-killed commands to 128 plus the signal number",
 			async () => {

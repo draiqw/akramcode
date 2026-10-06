@@ -2,7 +2,7 @@ import assert from "node:assert";
 import { describe, it } from "node:test";
 import { sliceByColumn } from "../src/utils.ts";
 
-// https://github.com/earendil-works/pi/issues/10169
+// upstream issue #10169
 describe("sliceByColumn ANSI order regression", () => {
 	it("keeps a reset at the slice start after earlier style codes", () => {
 		const line = "\x1b[32mfoo\x1b[39m bar";

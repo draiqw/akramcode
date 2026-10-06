@@ -13,7 +13,7 @@ function storedKeys(backend: InMemoryAuthStorageBackend): string[] {
 }
 
 describe("MCP OAuth credential store", () => {
-	// https://github.com/earendil-works/pi/issues/10252
+	// upstream issue #10252
 	it("keeps separate credentials for servers sharing a SERVER_URL", async () => {
 		const store = new McpOAuthCredentialStore(new InMemoryAuthStorageBackend());
 		await store.forServer("work", SERVER_URL).save(state("work-token"));

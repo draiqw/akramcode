@@ -23,10 +23,6 @@ export default mergeConfig(
 			alias: [
 				{ find: /^@akramcode\/ai$/, replacement: workspaceSourcePaths.aiIndex },
 				{ find: /^@akramcode\/agent-core$/, replacement: workspaceSourcePaths.agentIndex },
-				{ find: /^@mariozechner\/akramcode-ai$/, replacement: workspaceSourcePaths.aiIndex },
-				{ find: /^@mariozechner\/akramcode-ai\/oauth$/, replacement: `${workspaceSourcePaths.providersSrc}/oauth.ts` },
-				{ find: /^@mariozechner\/akramcode-agent-core$/, replacement: workspaceSourcePaths.agentIndex },
-				{ find: /^@mariozechner\/akramcode-tui$/, replacement: workspaceSourcePaths.tuiIndex },
 			],
 		},
 	}),

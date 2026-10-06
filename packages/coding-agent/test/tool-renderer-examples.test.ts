@@ -83,7 +83,7 @@ describe("tool renderer examples", () => {
 			tools: ["read", "bash", "write", "edit", "find", "grep", "ls"],
 		},
 	])("keeps the system prompt unchanged for the $name example", async ({ extensionPath, tools }) => {
-		// Regression test for https://github.com/earendil-works/pi/issues/10072
+		// Regression test for upstream issue #10072
 		const baseline = await getSessionState(undefined, tools);
 		const withRenderer = await getSessionState(extensionPath, tools);
 
@@ -91,7 +91,7 @@ describe("tool renderer examples", () => {
 	});
 
 	it("keeps minimal mode's edit tool in the default shell", async () => {
-		// Regression test for https://github.com/earendil-works/pi/issues/10072
+		// Regression test for upstream issue #10072
 		const minimalMode = await getSessionState(join(examplesDir, "minimal-mode.ts"), ["edit"]);
 		const editToolDefinition = minimalMode.editToolDefinition;
 		if (!editToolDefinition) throw new Error("minimal mode did not register the edit tool");

@@ -12,7 +12,7 @@ For a built-in provider, start with `/login`, then choose a model with `/model`.
 | An OpenAI- or Anthropic-compatible endpoint | Add it to `models.json` |
 | A provider with a custom protocol or authentication flow | Build or install a provider extension |
 
-Browse the [model catalog](https://pi.dev/models) for current providers, model IDs, capabilities, context limits, and pricing. AkramCode starts with its bundled catalog and can overlay newer catalog data from pi.dev. Cached catalog data remains available offline; run `akramcode update --models` to force a refresh.
+Current providers, model IDs, capabilities, context limits, and pricing. AkramCode starts with its bundled catalog and can overlay newer catalog data from a remote catalog. Cached catalog data remains available offline; run `akramcode update --models` to force a refresh.
 
 ## Authenticate
 

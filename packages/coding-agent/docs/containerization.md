@@ -9,11 +9,9 @@ You can isolate the complete AkramCode process or keep AkramCode on the host and
 | Method | Where AkramCode runs | What is isolated | Credential handling | Best for |
 |---|---|---|---|---|
 | Plain Docker | Container | AkramCode, built-in tools, `!` commands, and extensions | Credentials passed into the container | A straightforward local container boundary |
-| Docker Sandboxes | Managed sandbox | AkramCode, built-in tools, `!` commands, and extensions | Provider credentials remain on the host and are substituted by the proxy | Managed local isolation without exposing the real provider key |
 | OpenShell | Local or remote sandbox | AkramCode, built-in tools, `!` commands, and extensions | Policy-controlled credentials and inference routing | Filesystem, process, network, and credential policies |
-| Gondolin extension | Host | Built-in tools and `!` commands | Stored AkramCode credentials remain on the host, but commands inherit host environment variables | A local micro-VM for tool execution while retaining the host interface |
 
-The method changes where extensions run. When the complete AkramCode process runs inside an isolated environment, its extensions run there too. When host AkramCode delegates built-in tools through Gondolin, other extension tools still run on the host unless they also delegate their work.
+The method changes where extensions run. When the complete AkramCode process runs inside an isolated environment, its extensions run there too.
 
 ## Decide what AkramCode can access
 
@@ -79,31 +77,6 @@ Inside AkramCode, run:
 
 The command should report `/workspace`. Changes under `/workspace` write through to the mounted host folder. Remove the bind mount or use a read-only mount when that is not acceptable.
 
-## Run AkramCode with Docker Sandboxes
-
-[Docker Sandboxes](https://docs.docker.com/ai/sandboxes/) runs the complete AkramCode process inside a managed sandbox. Its proxy can keep the real provider credential on the host and substitute it when requests leave the sandbox.
-
-Configure credentials before creating the sandbox. Do not run `/login` inside the sandbox because that writes a real credential into it.
-
-### Configure the provider credential
-
-Store the credential for your provider with `sbx secret set` or `sbx secret set-custom`, following the Docker Sandboxes documentation. The sandbox receives a placeholder, which the proxy replaces only for requests to the configured host.
-
-### Start AkramCode
-
-Run this from the working folder you want mounted:
-
-```bash
-sbx run --kit "docker.io/sbx/akramcode-kit:latest" akramcode
-```
-
-For an existing sandbox, run AkramCode non-interactively with:
-
-```bash
-sbx exec <sandbox-name> -- akramcode -p "list the failing tests"
-```
-
-See the [AkramCode kit documentation](https://github.com/docker/sbx-kits-contrib/tree/main/pi) for other providers, troubleshooting, and image pinning.
 
 ## Run AkramCode with OpenShell
 
@@ -136,35 +109,3 @@ openshell sandbox download akramcode-sandbox /workspace/working-folder ./working
 ```
 
 OpenShell inference routing can keep raw model credentials outside the sandbox. When configured, point AkramCode at the corresponding OpenAI-compatible endpoint exposed by the gateway.
-
-## Route tools through Gondolin
-
-[Gondolin](https://github.com/earendil-works/gondolin) is a local Linux micro-VM. Its example extension keeps the AkramCode process and file-based provider credentials on the host while routing the built-in tools and user `!` commands into the VM.
-
-Commands inside the VM inherit the host process environment. Provider keys supplied through environment variables can therefore be visible inside the VM. Do not use this pattern as a credential boundary unless you remove sensitive variables or change the extension's environment handling.
-
-Gondolin requires Node.js 23.6 or newer and QEMU installed through your operating-system package manager.
-
-### Install the extension
-
-From a AkramCode source checkout:
-
-```bash
-mkdir -p ~/.akramcode/agent/extensions
-cp -R packages/coding-agent/examples/extensions/gondolin ~/.akramcode/agent/extensions/gondolin
-cd ~/.akramcode/agent/extensions/gondolin
-npm install --ignore-scripts
-```
-
-### Start AkramCode
-
-Run AkramCode from the working folder you want mounted:
-
-```bash
-cd /path/to/working-folder
-akramcode -e ~/.akramcode/agent/extensions/gondolin
-```
-
-The extension mounts the host working folder at `/workspace` in the VM and overrides `read`, `write`, `edit`, `bash`, `grep`, `find`, and `ls`. File changes under `/workspace` write through to the host.
-
-Other extension tools still run on the host unless they explicitly delegate their operations. Review the [Gondolin example](../examples/extensions/gondolin/) before adding tools that could bypass the VM boundary.

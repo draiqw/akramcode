@@ -81,5 +81,5 @@ When possible, include the exact affected path, package version or commit SHA,
 configuration, and a proof of concept against the latest release or latest
 `main`.  For dependency reports, include evidence that the shipped dependency is
 affected and that the issue is reachable through AkramCode.  For exposed-secret reports,
-include evidence that the credential is owned by Earendil or grants access to
-Earendil-operated infrastructure or services.
+include evidence that the credential is owned by AkramCode or grants access to
+AkramCode-operated infrastructure or services.

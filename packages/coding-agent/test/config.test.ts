@@ -65,7 +65,7 @@ function createPnpmGlobalInstall(): { root: string; packageDir: string } {
 	const temp = mkdtempSync(join(tmpdir(), "akramcode-pnpm-"));
 	const binDir = join(temp, "bin");
 	const root = join(temp, "pnpm", "global", "5", "node_modules");
-	const packageDir = join(root, "@mariozechner", "akramcode-coding-agent");
+	const packageDir = join(root, "@old-scope", "akramcode-coding-agent");
 	mkdirSync(packageDir, { recursive: true });
 	mkdirSync(binDir, { recursive: true });
 	writeFileSync(join(binDir, process.platform === "win32" ? "pnpm.cmd" : "pnpm"), createFakePnpmScript(root));
@@ -77,9 +77,9 @@ function createPnpmGlobalInstall(): { root: string; packageDir: string } {
 		join(
 			root,
 			".pnpm",
-			"@mariozechner+akramcode-coding-agent@0.0.0",
+			"@old-scope+akramcode-coding-agent@0.0.0",
 			"node_modules",
-			"@mariozechner",
+			"@old-scope",
 			"akramcode-coding-agent",
 			"dist",
 			"cli.js",
@@ -92,7 +92,7 @@ function createYarnGlobalInstall(): { globalDir: string; packageDir: string } {
 	const temp = mkdtempSync(join(tmpdir(), "akramcode-yarn-"));
 	const binDir = join(temp, "bin");
 	const globalDir = join(temp, "yarn", "global");
-	const packageDir = join(globalDir, "node_modules", "@mariozechner", "akramcode-coding-agent");
+	const packageDir = join(globalDir, "node_modules", "@old-scope", "akramcode-coding-agent");
 	mkdirSync(packageDir, { recursive: true });
 	mkdirSync(binDir, { recursive: true });
 	writeFileSync(join(binDir, process.platform === "win32" ? "yarn.cmd" : "yarn"), createFakeYarnScript(globalDir));
@@ -100,7 +100,7 @@ function createYarnGlobalInstall(): { globalDir: string; packageDir: string } {
 	tempDir = temp;
 	process.env.PATH = `${binDir}${delimiter}${originalPath ?? ""}`;
 	process.env.AKRAMCODE_PACKAGE_DIR = packageDir;
-	setExecPath(join(globalDir, ".yarn", "@mariozechner", "akramcode-coding-agent", "dist", "cli.js"));
+	setExecPath(join(globalDir, ".yarn", "@old-scope", "akramcode-coding-agent", "dist", "cli.js"));
 	return { globalDir, packageDir };
 }
 
@@ -228,17 +228,17 @@ describe("detectInstallMethod", () => {
 	test("self-updates renamed packages from the current install prefix", () => {
 		const { prefix } = createNpmPrefixInstall();
 
-		const command = getSelfUpdateCommand("@mariozechner/pi-coding-agent", undefined, "@new-scope/akramcode");
+		const command = getSelfUpdateCommand("@old-scope/akramcode-coding-agent", undefined, "@new-scope/akramcode");
 
 		expect(command).toEqual({
 			command: "npm",
 			args: ["--prefix", prefix, "install", "-g", "--ignore-scripts", "--min-release-age=0", "@new-scope/akramcode"],
-			display: `npm --prefix ${prefix} uninstall -g @mariozechner/pi-coding-agent && npm --prefix ${prefix} install -g --ignore-scripts --min-release-age=0 @new-scope/akramcode`,
+			display: `npm --prefix ${prefix} uninstall -g @old-scope/akramcode-coding-agent && npm --prefix ${prefix} install -g --ignore-scripts --min-release-age=0 @new-scope/akramcode`,
 			steps: [
 				{
 					command: "npm",
-					args: ["--prefix", prefix, "uninstall", "-g", "@mariozechner/pi-coding-agent"],
-					display: `npm --prefix ${prefix} uninstall -g @mariozechner/pi-coding-agent`,
+					args: ["--prefix", prefix, "uninstall", "-g", "@old-scope/akramcode-coding-agent"],
+					display: `npm --prefix ${prefix} uninstall -g @old-scope/akramcode-coding-agent`,
 				},
 				{
 					command: "npm",
@@ -330,19 +330,19 @@ describe("detectInstallMethod", () => {
 	test("self-updates renamed pnpm global installs by removing the old package first", () => {
 		createPnpmGlobalInstall();
 
-		const command = getSelfUpdateCommand("@mariozechner/pi-coding-agent", undefined, "@new-scope/akramcode");
+		const command = getSelfUpdateCommand("@old-scope/akramcode-coding-agent", undefined, "@new-scope/akramcode");
 
 		expect(detectInstallMethod()).toBe("pnpm");
 		expect(command).toEqual({
 			command: "pnpm",
 			args: ["install", "-g", "--ignore-scripts", "--config.minimumReleaseAge=0", "@new-scope/akramcode"],
 			display:
-				"pnpm remove -g @mariozechner/pi-coding-agent && pnpm install -g --ignore-scripts --config.minimumReleaseAge=0 @new-scope/akramcode",
+				"pnpm remove -g @old-scope/akramcode-coding-agent && pnpm install -g --ignore-scripts --config.minimumReleaseAge=0 @new-scope/akramcode",
 			steps: [
 				{
 					command: "pnpm",
-					args: ["remove", "-g", "@mariozechner/pi-coding-agent"],
-					display: "pnpm remove -g @mariozechner/pi-coding-agent",
+					args: ["remove", "-g", "@old-scope/akramcode-coding-agent"],
+					display: "pnpm remove -g @old-scope/akramcode-coding-agent",
 				},
 				{
 					command: "pnpm",
@@ -399,19 +399,19 @@ describe("detectInstallMethod", () => {
 	test("self-updates renamed yarn global installs by removing the old package first", () => {
 		createYarnGlobalInstall();
 
-		const command = getSelfUpdateCommand("@mariozechner/pi-coding-agent", undefined, "@new-scope/akramcode");
+		const command = getSelfUpdateCommand("@old-scope/akramcode-coding-agent", undefined, "@new-scope/akramcode");
 
 		expect(detectInstallMethod()).toBe("yarn");
 		expect(command).toEqual({
 			command: "yarn",
 			args: ["global", "add", "--ignore-scripts", "@new-scope/akramcode"],
 			display:
-				"yarn global remove @mariozechner/pi-coding-agent && yarn global add --ignore-scripts @new-scope/akramcode",
+				"yarn global remove @old-scope/akramcode-coding-agent && yarn global add --ignore-scripts @new-scope/akramcode",
 			steps: [
 				{
 					command: "yarn",
-					args: ["global", "remove", "@mariozechner/pi-coding-agent"],
-					display: "yarn global remove @mariozechner/pi-coding-agent",
+					args: ["global", "remove", "@old-scope/akramcode-coding-agent"],
+					display: "yarn global remove @old-scope/akramcode-coding-agent",
 				},
 				{
 					command: "yarn",
@@ -425,19 +425,19 @@ describe("detectInstallMethod", () => {
 	test("self-updates renamed bun global installs by removing the old package first", () => {
 		createBunGlobalInstall();
 
-		const command = getSelfUpdateCommand("@mariozechner/pi-coding-agent", undefined, "@new-scope/akramcode");
+		const command = getSelfUpdateCommand("@old-scope/akramcode-coding-agent", undefined, "@new-scope/akramcode");
 
 		expect(detectInstallMethod()).toBe("bun");
 		expect(command).toEqual({
 			command: "bun",
 			args: ["install", "-g", "--ignore-scripts", "--minimum-release-age=0", "@new-scope/akramcode"],
 			display:
-				"bun uninstall -g @mariozechner/pi-coding-agent && bun install -g --ignore-scripts --minimum-release-age=0 @new-scope/akramcode",
+				"bun uninstall -g @old-scope/akramcode-coding-agent && bun install -g --ignore-scripts --minimum-release-age=0 @new-scope/akramcode",
 			steps: [
 				{
 					command: "bun",
-					args: ["uninstall", "-g", "@mariozechner/pi-coding-agent"],
-					display: "bun uninstall -g @mariozechner/pi-coding-agent",
+					args: ["uninstall", "-g", "@old-scope/akramcode-coding-agent"],
+					display: "bun uninstall -g @old-scope/akramcode-coding-agent",
 				},
 				{
 					command: "bun",

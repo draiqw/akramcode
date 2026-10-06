@@ -227,7 +227,7 @@ describe("openai-codex streaming", () => {
 		expect(providerEventModels).toEqual([model, model, model, model, model]);
 	});
 
-	// Regression test for https://github.com/earendil-works/pi/issues/9047
+	// Regression test for upstream issue #9047
 	it("processes a terminal SSE event without a trailing blank line", async () => {
 		const token = mockToken();
 		const sse = buildSSEPayload({ status: "completed" }).trimEnd();

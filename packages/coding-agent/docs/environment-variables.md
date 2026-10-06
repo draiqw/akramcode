@@ -82,7 +82,7 @@ These variables are read by AkramCode itself:
 | `AKRAMCODE_CODING_AGENT_SESSION_DIR` | Override session storage; overridden by `--session-dir` |
 | `AKRAMCODE_PACKAGE_DIR` | Override the package directory, useful for Nix/Guix store paths |
 | `AKRAMCODE_OFFLINE` | Disable automatic network activity, including model catalog refreshes |
-| `AKRAMCODE_SKIP_VERSION_CHECK` | Disable the `pi.dev` latest-version request |
+| `AKRAMCODE_SKIP_VERSION_CHECK` | Disable the latest-version request |
 | `AKRAMCODE_TELEMETRY` | Override install/update telemetry and provider attribution headers: `1`/`true`/`yes` or `0`/`false`/`no` |
 | `AKRAMCODE_CACHE_RETENTION` | Set to `long` for extended provider prompt caching where supported |
 | `AKRAMCODE_SHARE_VIEWER_URL` | Override the base URL used by `/share` |

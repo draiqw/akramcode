@@ -8,8 +8,7 @@
 import type { ExtensionAPI, Theme } from "@akramcode/coding-agent";
 import { VERSION } from "@akramcode/coding-agent";
 
-// --- PI MASCOT ---
-// Based on pi_mascot.ts - the akramcode agent character
+// --- MASCOT ---
 function getAkramCodeMascot(theme: Theme): string[] {
 	// --- COLORS ---
 	// 3b1b Blue: R=80, G=180, B=230

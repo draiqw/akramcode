@@ -113,7 +113,7 @@ Rules:
 
 Attribution:
 
-- Internal (from issues): `Fixed foo bar ([#123](https://github.com/earendil-works/pi/issues/123))`
+- Internal (from issues): `Fixed foo bar ([#123](upstream issue #123))`
 - External contributions: `Added feature X ([#456](https://github.com/draiqw/akramcode/pull/456) by [@username](https://github.com/username))`
 
 ## Releasing

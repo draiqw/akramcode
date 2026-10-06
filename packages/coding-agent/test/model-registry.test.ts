@@ -633,7 +633,7 @@ describe("ModelRegistry", () => {
 			expect(opus?.samplingParams).toBeUndefined();
 		});
 
-		// Regression test for https://github.com/earendil-works/pi/issues/9631
+		// Regression test for upstream issue #9631
 		test("model override deep-merges image resize limits", async () => {
 			writeRawModelsJson({
 				test: {

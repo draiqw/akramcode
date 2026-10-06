@@ -26,13 +26,12 @@ AkramCode does not include a built-in permission system for restricting filesyst
 
 If you need stronger boundaries, containerize or sandbox AkramCode. See [packages/coding-agent/docs/containerization.md](packages/coding-agent/docs/containerization.md) for three patterns:
 
-- **Gondolin extension**: keep `akramcode` and provider auth on the host while routing built-in tools and `!` commands into a local Linux micro-VM.
 - **Plain Docker**: run the whole `akramcode` process in a local container for simple isolation.
 - **OpenShell**: run the whole `akramcode` process in a policy-controlled sandbox.
 
 ## Contributing
 
-See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for contribution guidelines and [AGENTS.md](AGENTS.md) for project-specific rules (for both humans and agents).  Longer term plans for AkramCode can also be found in [RFCs](https://rfc.earendil.com/keyword/pi/).
+See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for contribution guidelines and [AGENTS.md](AGENTS.md) for project-specific rules (for both humans and agents).
 
 ## Development
 

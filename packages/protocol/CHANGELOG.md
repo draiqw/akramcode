@@ -35,9 +35,9 @@
 ### Breaking Changes
 
 - Restricted assistant and tool transcript lifecycle schemas to valid state combinations and terminal items.
-- Replaced `SessionSummarySchema` and `SessionSummary` with durable `SessionMetadataSchema` and `SessionMetadata` for session lists; runtime state remains in acquired `SessionSnapshot` values ([#7708](https://github.com/earendil-works/pi/pull/7708)).
+- Replaced `SessionSummarySchema` and `SessionSummary` with durable `SessionMetadataSchema` and `SessionMetadata` for session lists; runtime state remains in acquired `SessionSnapshot` values ([#7708](https://github.com/draiqw/akramcode/pull/7708)).
 
 ### Added
 
-- Added transport-neutral CBOR protocol schemas, codecs, and length-prefixed framing for remote pi sessions.
-- Added `not_implemented` and `internal_error` protocol error codes for sanitized server failures ([#7644](https://github.com/earendil-works/pi/pull/7644)).
+- Added transport-neutral CBOR protocol schemas, codecs, and length-prefixed framing for remote akramcode sessions.
+- Added `not_implemented` and `internal_error` protocol error codes for sanitized server failures ([#7644](https://github.com/draiqw/akramcode/pull/7644)).

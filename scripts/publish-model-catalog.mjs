@@ -23,9 +23,9 @@ import {
 } from "./model-catalog-protocol.ts";
 
 // The storage layout, index format, and version ordering are defined in
-// model-catalog-protocol.ts, which pi.dev shares to serve these artifacts.
+// model-catalog-protocol.ts, which the catalog server shares to serve these artifacts.
 // Bump this only when generated model metadata requires behavior unavailable in older akramcode clients.
-const MINIMUM_PI_VERSION = "0.80.7";
+const MINIMUM_VERSION = "0.80.7";
 const JSON_CONTENT_TYPE = "application/json; charset=utf-8";
 const IMMUTABLE_CACHE_CONTROL = "public, max-age=31536000, immutable";
 const INDEX_CACHE_CONTROL = "no-store";
@@ -227,7 +227,7 @@ function uploadJson(bucket, endpoint, sourcePath, key, cacheControl) {
 	]);
 }
 
-// Validate with the same parser pi.dev uses, but keep the stored entries so
+// Validate with the same parser the catalog server uses, but keep the stored entries so
 // the publication metadata of existing revisions is preserved.
 function validateIndex(index) {
 	parseModelCatalogIndex(index);
@@ -236,7 +236,7 @@ function validateIndex(index) {
 
 function buildIndex(existingIndex, publication) {
 	const entry = {
-		minimumAkramCodeVersion: MINIMUM_PI_VERSION,
+		minimumAkramCodeVersion: MINIMUM_VERSION,
 		revision: publication.revision,
 		sourceCommit: publication.sourceCommit,
 		publishedAt: new Date().toISOString(),
@@ -249,7 +249,7 @@ function buildIndex(existingIndex, publication) {
 		modelTypes: publication.modelTypes,
 	};
 	const catalogs = (existingIndex?.catalogs || [])
-		.filter((catalog) => catalog.minimumAkramCodeVersion !== MINIMUM_PI_VERSION)
+		.filter((catalog) => catalog.minimumAkramCodeVersion !== MINIMUM_VERSION)
 		.concat(entry)
 		.sort((left, right) => compareModelCatalogAkramCodeVersions(left.minimumAkramCodeVersion, right.minimumAkramCodeVersion));
 	return validateIndex({
@@ -265,7 +265,7 @@ async function main() {
 	const bundle = validateBundle(inputDir);
 	const publication = {
 		schemaVersion: MODEL_CATALOG_SCHEMA_VERSION,
-		minimumAkramCodeVersion: MINIMUM_PI_VERSION,
+		minimumAkramCodeVersion: MINIMUM_VERSION,
 		revision: bundle.revision,
 		sourceCommit: options.sourceCommit || gitSourceCommit(),
 		providerCount: bundle.providerCount,
@@ -292,7 +292,7 @@ async function main() {
 		const hasCurrentIndex = downloadIndex(options.bucket, options.endpoint, currentIndexPath);
 		const currentIndex = hasCurrentIndex ? validateIndex(readJson(currentIndexPath)) : undefined;
 		const currentEntry = currentIndex?.catalogs.find(
-			(catalog) => catalog.minimumAkramCodeVersion === MINIMUM_PI_VERSION,
+			(catalog) => catalog.minimumAkramCodeVersion === MINIMUM_VERSION,
 		);
 		if (currentIndex?.defaultRevision === bundle.revision && currentEntry?.revision === bundle.revision) {
 			console.log(`Model catalog ${bundle.revision} is already current; no objects uploaded.`);

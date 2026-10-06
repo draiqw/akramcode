@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EventStream } from "../src/utils/event-stream.ts";
 
-// Regression tests for https://github.com/earendil-works/pi/issues/9055
+// Regression tests for upstream issue #9055
 describe("EventStream", () => {
 	it("drains buffered events in order and ignores events pushed after completion", async () => {
 		const stream = new EventStream<number, number>(

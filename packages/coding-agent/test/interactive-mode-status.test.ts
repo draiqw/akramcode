@@ -679,26 +679,26 @@ describe("InteractiveMode.showLoadedResources", () => {
 				),
 			},
 			{
-				path: "/tmp/project/.akramcode/git/github.com/HazAT/pi-interactive-subagents/extensions/index.ts",
+				path: "/tmp/project/.akramcode/git/github.com/HazAT/interactive-subagents/extensions/index.ts",
 				sourceInfo: createSourceInfo(
-					"/tmp/project/.akramcode/git/github.com/HazAT/pi-interactive-subagents/extensions/index.ts",
+					"/tmp/project/.akramcode/git/github.com/HazAT/interactive-subagents/extensions/index.ts",
 					{
-						source: "git:github.com/HazAT/pi-interactive-subagents",
+						source: "git:github.com/HazAT/interactive-subagents",
 						scope: "project",
 						origin: "package",
-						baseDir: "/tmp/project/.akramcode/git/github.com/HazAT/pi-interactive-subagents",
+						baseDir: "/tmp/project/.akramcode/git/github.com/HazAT/interactive-subagents",
 					},
 				),
 			},
 			{
-				path: "/tmp/project/.akramcode/git/github.com/HazAT/pi-interactive-subagents/extensions/subagents/index.ts",
+				path: "/tmp/project/.akramcode/git/github.com/HazAT/interactive-subagents/extensions/subagents/index.ts",
 				sourceInfo: createSourceInfo(
-					"/tmp/project/.akramcode/git/github.com/HazAT/pi-interactive-subagents/extensions/subagents/index.ts",
+					"/tmp/project/.akramcode/git/github.com/HazAT/interactive-subagents/extensions/subagents/index.ts",
 					{
-						source: "git:github.com/HazAT/pi-interactive-subagents",
+						source: "git:github.com/HazAT/interactive-subagents",
 						scope: "project",
 						origin: "package",
-						baseDir: "/tmp/project/.akramcode/git/github.com/HazAT/pi-interactive-subagents",
+						baseDir: "/tmp/project/.akramcode/git/github.com/HazAT/interactive-subagents",
 					},
 				),
 			},
@@ -794,7 +794,7 @@ describe("InteractiveMode.showLoadedResources", () => {
 
 		expect(normalizeRenderedOutput(fakeThis.loadedResourcesContainer)).toMatchInlineSnapshot(`
 			"[Extensions]
-			  @scope/akramcode-scoped, akramcode-markdown-preview, answer.ts, cli-extension.ts, HazAT/pi-interactive-subagents, HazAT/pi-interactive-subagents:subagents, local-index, user-index"
+			  @scope/akramcode-scoped, akramcode-markdown-preview, answer.ts, cli-extension.ts, HazAT/interactive-subagents, HazAT/interactive-subagents:subagents, local-index, user-index"
 		`);
 	});
 
@@ -1164,7 +1164,7 @@ describe("InteractiveMode.showLoadedResources", () => {
   project
     /tmp/project/.akramcode/extensions/answer.ts
     /tmp/project/.akramcode/extensions/local-index
-    git:github.com/HazAT/pi-interactive-subagents
+    git:github.com/HazAT/interactive-subagents
       extensions
       extensions/subagents
     npm:@scope/akramcode-scoped
@@ -1179,7 +1179,7 @@ describe("InteractiveMode.showLoadedResources", () => {
 
 	test("shows context paths relative to cwd while preserving full external paths", () => {
 		const home = homedir();
-		const cwd = path.join(home, "Development", "pi-mono");
+		const cwd = path.join(home, "Development", "akramcode");
 		const fakeThis = createShowLoadedResourcesThis({
 			quietStartup: false,
 			cwd,
@@ -1220,7 +1220,7 @@ describe("InteractiveMode.showLoadedResources", () => {
 
 	test("shows full context paths when expanded", () => {
 		const home = homedir();
-		const cwd = path.join(home, "Development", "pi-mono");
+		const cwd = path.join(home, "Development", "akramcode");
 		const fakeThis = createShowLoadedResourcesThis({
 			quietStartup: false,
 			toolOutputExpanded: true,
@@ -1238,7 +1238,7 @@ describe("InteractiveMode.showLoadedResources", () => {
 		const output = renderAll(fakeThis.loadedResourcesContainer).replace(/\\/g, "/");
 		expect(output).toContain("[Context]");
 		expect(output).toContain("~/.akramcode/agent/AGENTS.md");
-		expect(output).toContain("~/Development/pi-mono/AGENTS.md");
+		expect(output).toContain("~/Development/akramcode/AGENTS.md");
 		expect(output).not.toContain("~/.akramcode/agent/AGENTS.md, AGENTS.md");
 	});
 

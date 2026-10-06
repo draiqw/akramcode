@@ -719,7 +719,6 @@ export function getTerminalTheme(): TerminalTheme {
 
 // See docs/adr/coding-agent/modes-interactive-theme-theme.md#globalthis-sharing
 const THEME_KEY = Symbol.for("@akramcode/coding-agent:theme");
-const THEME_KEY_OLD = Symbol.for("@mariozechner/pi-coding-agent:theme");
 
 // Export theme as a getter that reads from globalThis
 // This ensures all module instances (node, jiti) see the same theme
@@ -733,7 +732,6 @@ export const theme: Theme = new Proxy({} as Theme, {
 
 function setGlobalTheme(t: Theme): void {
 	(globalThis as Record<symbol, Theme>)[THEME_KEY] = t;
-	(globalThis as Record<symbol, Theme>)[THEME_KEY_OLD] = t;
 }
 
 let currentThemeName: string | undefined;

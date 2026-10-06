@@ -76,7 +76,7 @@ describe("documentation variant", () => {
 			cwd: "/workspace",
 			selectedTools: [...DOCUMENTATION_EVAL_TOOLS],
 		});
-		expect(prompt).toContain("\n<docs>\nPi documentation (read only");
+		expect(prompt).toContain("\n<docs>\nAkramCode documentation (read only");
 		expect(prompt).toContain("\n<rules>\n");
 		expect(prompt).toContain("\n<cwd>\n/workspace\n</cwd>");
 		expect(prompt).toContain("docs/models.md");
@@ -109,7 +109,7 @@ describe("documentation variant", () => {
 
 	it("fails closed when prompt markers are missing", () => {
 		expect(() => excludeAkramCodeDocumentation("Instructions")).toThrow("no AkramCode documentation section");
-		expect(() => excludeAkramCodeDocumentation("\n<docs>\nPi documentation\n</docs>")).toThrow(
+		expect(() => excludeAkramCodeDocumentation("\n<docs>\nAkramCode documentation\n</docs>")).toThrow(
 			"no working-directory section",
 		);
 	});

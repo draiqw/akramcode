@@ -55,10 +55,6 @@ const HOST_PROVIDED_EXTENSION_PACKAGES = new Set([
 	"@akramcode/ai",
 	"@akramcode/coding-agent",
 	"@akramcode/tui",
-	"@mariozechner/pi-agent-core",
-	"@mariozechner/pi-ai",
-	"@mariozechner/pi-coding-agent",
-	"@mariozechner/pi-tui",
 	"@sinclair/typebox",
 	"typebox",
 ]);
