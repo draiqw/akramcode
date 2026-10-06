@@ -19,7 +19,7 @@ Child processes inherit both markers. They are not session-specific and are not 
 
 ## Shell Tool Session Environment
 
-Commands run by the `bash` and `powershell` tools receive the current AkramCode session state:
+Commands run by the `bash` tool receive the current AkramCode session state:
 
 | Variable | Description |
 |----------|-------------|
@@ -46,11 +46,11 @@ if [ -n "$AKRAMCODE_SESSION_FILE" ]; then
 fi
 ```
 
-These variables are injected into the LLM-callable `bash` and `powershell` tools. They are not injected into user-entered `!` or `!!` commands.
+These variables are injected into the LLM-callable `bash` tool. They are not injected into user-entered `!` or `!!` commands.
 
 ### Custom Shell Tools
 
-Tools created with `createBashTool()` or `createPowerShellTool()` expose the session environment by default when registered with AkramCode. Injection happens before `spawnHook`, so a hook receives the variables in `ctx.env`:
+Tools created with `createBashTool()` expose the session environment by default when registered with AkramCode. Injection happens before `spawnHook`, so a hook receives the variables in `ctx.env`:
 
 ```typescript
 const bashTool = createBashTool(cwd, {
@@ -64,7 +64,7 @@ const bashTool = createBashTool(cwd, {
 Disable session metadata independently of the spawn hook:
 
 ```typescript
-const powershellTool = createPowerShellTool(cwd, {
+const bashTool = createBashTool(cwd, {
   exposeSessionEnvironment: false,
   spawnHook: (ctx) => ctx,
 });

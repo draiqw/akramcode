@@ -93,8 +93,6 @@ import type {
 	GrepToolInput,
 	LsToolDetails,
 	LsToolInput,
-	PowerShellToolDetails,
-	PowerShellToolInput,
 	ReadToolDetails,
 	ReadToolInput,
 	WriteToolInput,
@@ -1155,11 +1153,6 @@ export interface BashToolCallEvent extends ToolCallEventBase {
 	input: BashToolInput;
 }
 
-export interface PowerShellToolCallEvent extends ToolCallEventBase {
-	toolName: "powershell";
-	input: PowerShellToolInput;
-}
-
 export interface ReadToolCallEvent extends ToolCallEventBase {
 	toolName: "read";
 	input: ReadToolInput;
@@ -1203,7 +1196,6 @@ export interface CustomToolCallEvent extends ToolCallEventBase {
  */
 export type ToolCallEvent =
 	| BashToolCallEvent
-	| PowerShellToolCallEvent
 	| ReadToolCallEvent
 	| EditToolCallEvent
 	| WriteToolCallEvent
@@ -1233,11 +1225,6 @@ interface ToolResultEventBase {
 export interface BashToolResultEvent extends ToolResultEventBase {
 	toolName: "bash";
 	details: BashToolDetails | undefined;
-}
-
-export interface PowerShellToolResultEvent extends ToolResultEventBase {
-	toolName: "powershell";
-	details: PowerShellToolDetails | undefined;
 }
 
 export interface ReadToolResultEvent extends ToolResultEventBase {
@@ -1278,7 +1265,6 @@ export interface CustomToolResultEvent extends ToolResultEventBase {
 /** Fired after a tool executes. Can modify result. */
 export type ToolResultEvent =
 	| BashToolResultEvent
-	| PowerShellToolResultEvent
 	| ReadToolResultEvent
 	| EditToolResultEvent
 	| WriteToolResultEvent
@@ -1290,9 +1276,6 @@ export type ToolResultEvent =
 // Type guards for ToolResultEvent
 export function isBashToolResult(e: ToolResultEvent): e is BashToolResultEvent {
 	return e.toolName === "bash";
-}
-export function isPowerShellToolResult(e: ToolResultEvent): e is PowerShellToolResultEvent {
-	return e.toolName === "powershell";
 }
 export function isReadToolResult(e: ToolResultEvent): e is ReadToolResultEvent {
 	return e.toolName === "read";
@@ -1334,7 +1317,6 @@ export function isLsToolResult(e: ToolResultEvent): e is LsToolResultEvent {
  * CustomToolCallEvent.toolName is `string` which overlaps with all literals.
  */
 export function isToolCallEventType(toolName: "bash", event: ToolCallEvent): event is BashToolCallEvent;
-export function isToolCallEventType(toolName: "powershell", event: ToolCallEvent): event is PowerShellToolCallEvent;
 export function isToolCallEventType(toolName: "read", event: ToolCallEvent): event is ReadToolCallEvent;
 export function isToolCallEventType(toolName: "edit", event: ToolCallEvent): event is EditToolCallEvent;
 export function isToolCallEventType(toolName: "write", event: ToolCallEvent): event is WriteToolCallEvent;

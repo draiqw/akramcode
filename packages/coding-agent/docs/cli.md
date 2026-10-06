@@ -131,7 +131,6 @@ Default enabled tools are `read`, `bash`, `edit`, and `write`, unless `defaultTo
 |---|---|
 | `read` | Read text files and supported images |
 | `bash` | Run shell commands |
-| `powershell` | Run PowerShell commands on Windows |
 | `edit` | Apply exact text replacements to an existing file |
 | `write` | Create or overwrite a file |
 | `grep` | Search file contents |

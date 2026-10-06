@@ -119,22 +119,6 @@ export function getShellConfig(customShellPath?: string): ShellConfig {
 	return { shell: "sh", args: ["-c"] };
 }
 
-export const POWERSHELL_ARGS = ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command"] as const;
-
-/** Resolve PowerShell on Windows, preferring PowerShell 7 when available. */
-export function getPowerShellConfig(): ShellConfig {
-	if (process.platform !== "win32") {
-		throw new Error("The powershell tool is only available on Windows.");
-	}
-
-	const shell = findExecutableOnPath("pwsh.exe") ?? findExecutableOnPath("powershell.exe");
-	if (!shell) {
-		throw new Error("No PowerShell executable found. Install PowerShell or add powershell.exe/pwsh.exe to PATH.");
-	}
-
-	return { shell, args: [...POWERSHELL_ARGS] };
-}
-
 export function getShellEnv(): NodeJS.ProcessEnv {
 	const binDir = getBinDir();
 	const pathKey = Object.keys(process.env).find((key) => key.toLowerCase() === "path") ?? "PATH";

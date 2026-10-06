@@ -4,17 +4,12 @@ import { createEditToolDefinition, editToolSystemPromptContribution } from "../s
 import { createFindToolDefinition, findToolSystemPromptContribution } from "../src/core/tools/find.ts";
 import { createGrepToolDefinition, grepToolSystemPromptContribution } from "../src/core/tools/grep.ts";
 import { createLsToolDefinition, lsToolSystemPromptContribution } from "../src/core/tools/ls.ts";
-import {
-	createPowerShellToolDefinition,
-	powershellToolSystemPromptContribution,
-} from "../src/core/tools/powershell.ts";
 import { createReadToolDefinition, readToolSystemPromptContribution } from "../src/core/tools/read.ts";
 import { createWriteToolDefinition, writeToolSystemPromptContribution } from "../src/core/tools/write.ts";
 
 const cases = [
 	["read", readToolSystemPromptContribution, createReadToolDefinition],
 	["bash", bashToolSystemPromptContribution, createBashToolDefinition],
-	["powershell", powershellToolSystemPromptContribution, createPowerShellToolDefinition],
 	["edit", editToolSystemPromptContribution, createEditToolDefinition],
 	["write", writeToolSystemPromptContribution, createWriteToolDefinition],
 	["grep", grepToolSystemPromptContribution, createGrepToolDefinition],
@@ -33,11 +28,8 @@ describe("built-in tool system prompt contributions", () => {
 		},
 	);
 
-	test.each([
-		["bash", createBashToolDefinition],
-		["powershell", createPowerShellToolDefinition],
-	] as const)("keeps %s session-environment guidance conditional", (_name, createDefinition) => {
-		const definition = createDefinition("/workspace", { exposeSessionEnvironment: false });
+	test("keeps bash session-environment guidance conditional", () => {
+		const definition = createBashToolDefinition("/workspace", { exposeSessionEnvironment: false });
 
 		expect(definition.promptGuidelines).toBeUndefined();
 	});

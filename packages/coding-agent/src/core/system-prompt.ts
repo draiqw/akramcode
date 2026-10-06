@@ -93,19 +93,12 @@ function buildRules(
 	};
 
 	const hasBash = selectedTools.includes("bash");
-	const hasPowerShell = selectedTools.includes("powershell");
 	const hasGrep = selectedTools.includes("grep");
 	const hasFind = selectedTools.includes("find");
 	const hasLs = selectedTools.includes("ls");
 
-	if ((hasBash || hasPowerShell) && !hasGrep && !hasFind && !hasLs) {
-		if (hasBash && hasPowerShell) {
-			addRule("Use bash or PowerShell for file operations like listing, searching, and finding files");
-		} else if (hasPowerShell) {
-			addRule("Use PowerShell for file operations like listing, searching, and finding files");
-		} else {
-			addRule("Use bash for file operations like ls, rg, find");
-		}
+	if (hasBash && !hasGrep && !hasFind && !hasLs) {
+		addRule("Use bash for file operations like ls, rg, find");
 	}
 
 	for (const name of selectedTools) {

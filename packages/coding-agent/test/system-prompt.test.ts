@@ -94,19 +94,19 @@ describe("buildSystemPrompt", () => {
 			expect(prompt).toContain("- write:");
 		});
 
-		test.each([
-			[["powershell"], "Use PowerShell for file operations"],
-			[["bash", "powershell"], "Use bash or PowerShell for file operations"],
-		] as const)("uses shell-specific guidance for %j", (selectedTools, expected) => {
-			const prompt = buildSystemPrompt({
-				selectedTools: [...selectedTools],
-				contextFiles: [],
-				skills: [],
-				cwd: process.cwd(),
-			});
+		test.each([[["bash"], "Use bash for file operations"]] as const)(
+			"uses shell-specific guidance for %j",
+			(selectedTools, expected) => {
+				const prompt = buildSystemPrompt({
+					selectedTools: [...selectedTools],
+					contextFiles: [],
+					skills: [],
+					cwd: process.cwd(),
+				});
 
-			expect(prompt).toContain(expected);
-		});
+				expect(prompt).toContain(expected);
+			},
+		);
 
 		test("instructs models to resolve akramcode docs and examples under absolute base paths", () => {
 			const prompt = buildSystemPrompt({
