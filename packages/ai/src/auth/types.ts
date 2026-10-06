@@ -105,7 +105,7 @@ export interface AuthResult {
 	auth: ModelAuth;
 	/** Provider-scoped environment/config values resolved from credentials and ambient context. */
 	env?: ProviderEnv;
-	/** Human-readable label for status UI: "ANTHROPIC_API_KEY", "OAuth", "~/.aws/credentials". */
+	/** Human-readable label for status UI: "OPENROUTER_API_KEY", "OAuth", "~/.aws/credentials". */
 	source?: string;
 }
 
@@ -168,7 +168,7 @@ export type ProviderAuthInteraction = AuthInteraction & { signal: AbortSignal };
  * profiles, ADC files). Ambient-only providers omit `login`.
  */
 export interface ApiKeyAuth {
-	/** Display name, e.g. "Anthropic API key". */
+	/** Display name, e.g. "OpenRouter API key". */
 	name: string;
 
 	/** Interactive setup (prompt for key/provider env). Absent = ambient-only. */
@@ -214,7 +214,7 @@ export interface LoginOptions {
  * auth from whatever credential ends up stored.
  */
 export interface OAuthAuth {
-	/** Display name, e.g. "Anthropic (Claude Pro/Max)". */
+	/** Display name, e.g. "OpenAI (ChatGPT Plus/Pro)". */
 	name: string;
 
 	/** Whether access through this auth method is backed by a provider subscription. */

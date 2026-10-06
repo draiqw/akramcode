@@ -59,13 +59,13 @@ From the working folder you want AkramCode to access, run:
 
 ```bash
 docker run --rm -it \
-  -e ANTHROPIC_API_KEY \
+  -e OPENROUTER_API_KEY \
   -v "$PWD:/workspace" \
   -v akramcode-agent-home:/root/.akramcode/agent \
   akramcode-sandbox
 ```
 
-Replace `ANTHROPIC_API_KEY` with the credential required by your provider. The named `akramcode-agent-home` volume keeps container-local settings, credentials, and sessions between runs.
+Replace `OPENROUTER_API_KEY` with the credential required by your provider. The named `akramcode-agent-home` volume keeps container-local settings, credentials, and sessions between runs.
 
 Do not mount the host's `~/.akramcode/agent` unless the container should have access to your host AkramCode configuration and credentials.
 
@@ -85,22 +85,9 @@ The command should report `/workspace`. Changes under `/workspace` write through
 
 Configure credentials before creating the sandbox. Do not run `/login` inside the sandbox because that writes a real credential into it.
 
-### Use a Claude Pro or Max token
+### Configure the provider credential
 
-Generate the token with `claude setup-token` on a machine with Claude Code. If an `anthropic` secret is already configured, remove it first so the proxy does not add an API-key header alongside the bearer token:
-
-```bash
-sbx secret rm anthropic
-
-sbx secret set-custom \
-  --host api.anthropic.com \
-  --env ANTHROPIC_OAUTH_TOKEN \
-  --placeholder 'sk-ant-oat01-{rand}'
-```
-
-`sbx secret set-custom` reads the real token from standard input. The sandbox receives an OAuth-shaped placeholder, which the proxy replaces only for requests to the configured host.
-
-For an Anthropic API key, use `sbx secret set anthropic` instead.
+Store the credential for your provider with `sbx secret set` or `sbx secret set-custom`, following the Docker Sandboxes documentation. The sandbox receives a placeholder, which the proxy replaces only for requests to the configured host.
 
 ### Start AkramCode
 
@@ -148,7 +135,7 @@ openshell sandbox upload akramcode-sandbox ./working-folder /workspace
 openshell sandbox download akramcode-sandbox /workspace/working-folder ./working-folder-out
 ```
 
-OpenShell inference routing can keep raw model credentials outside the sandbox. When configured, point AkramCode at the corresponding OpenAI-compatible or Anthropic-compatible endpoint exposed by the gateway.
+OpenShell inference routing can keep raw model credentials outside the sandbox. When configured, point AkramCode at the corresponding OpenAI-compatible endpoint exposed by the gateway.
 
 ## Route tools through Gondolin
 

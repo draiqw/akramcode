@@ -148,7 +148,7 @@ function getDefaultAgentDir(): string {
  * // With explicit model
  * import { getModel } from '@akramcode/ai';
  * const { session } = await createAgentSession({
- *   model: getModel('anthropic', 'claude-opus-4-5'),
+ *   model: getModel('openrouter', 'anthropic/claude-sonnet-4.5'),
  *   thinkingLevel: 'high',
  * });
  *

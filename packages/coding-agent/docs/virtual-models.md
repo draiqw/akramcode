@@ -10,7 +10,7 @@ A virtual model selects a model and a thinking level. A router maps that pair to
 
 ```
 selected (virtual model, virtual level)  ->  dispatched (physical model, physical level)
-jev/auto:low                             ->  anthropic/claude-sonnet-4-5:high
+jev/auto:low                             ->  openrouter/anthropic/claude-sonnet-4.5:high
 ```
 
 The virtual thinking level is an input to the router. Its meaning is up to the router; it need not correspond to a reasoning budget.
@@ -45,8 +45,8 @@ export default function (akramcode: ExtensionAPI) {
       if (request.reason !== "user" && sticky) {
         return { model: sticky.model, thinkingLevel: sticky.thinkingLevel ?? "medium" };
       }
-      const id = request.thinkingLevel === "high" ? "claude-sonnet-4-5" : "claude-haiku-4-5";
-      return { model: ctx.modelRegistry.find("anthropic", id)!, thinkingLevel: "medium" };
+      const id = request.thinkingLevel === "high" ? "anthropic/claude-sonnet-4.5" : "anthropic/claude-haiku-4.5";
+      return { model: ctx.modelRegistry.find("openrouter", id)!, thinkingLevel: "medium" };
     },
   });
 }
@@ -96,8 +96,8 @@ akramcode.registerVirtualModel<{ phase: "plan" | "build" }>({
   name: "Phased",
   route(request, ctx) {
     const state = request.state ?? { phase: "plan" };
-    const id = state.phase === "plan" ? "claude-opus-4-5" : "claude-haiku-4-5";
-    return { model: ctx.modelRegistry.find("anthropic", id)!, thinkingLevel: "medium", state };
+    const id = state.phase === "plan" ? "anthropic/claude-sonnet-4.5" : "anthropic/claude-haiku-4.5";
+    return { model: ctx.modelRegistry.find("openrouter", id)!, thinkingLevel: "medium", state };
   },
 });
 ```

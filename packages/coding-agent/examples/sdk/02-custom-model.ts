@@ -9,9 +9,9 @@ import { createAgentSession, ModelRuntime } from "@akramcode/coding-agent";
 const modelRuntime = await ModelRuntime.create();
 
 // Option 1: Find a specific built-in model by provider/id
-const opus = modelRuntime.getModel("anthropic", "claude-opus-4-5");
-if (opus) {
-	console.log(`Found model: ${opus.provider}/${opus.id}`);
+const claude = modelRuntime.getModel("openrouter", "anthropic/claude-sonnet-4.5");
+if (claude) {
+	console.log(`Found model: ${claude.provider}/${claude.id}`);
 }
 
 // Option 2: Find model via registry (includes custom models from models.json)

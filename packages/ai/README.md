@@ -357,7 +357,7 @@ const providerAuth = await models.getAuth(model.provider);
 const modelAuth = await models.getAuth(model);
 
 if (modelAuth) {
-  console.log(`configured via ${modelAuth.source}`); // e.g. "ANTHROPIC_API_KEY", "OAuth", "stored credential"
+  console.log(`configured via ${modelAuth.source}`); // e.g. "OPENROUTER_API_KEY", "OAuth", "stored credential"
   console.log(modelAuth.auth.headers);              // Provider auth headers + model.headers
 } else {
   console.log('not configured');
@@ -481,7 +481,7 @@ const strictTool: Tool = {
 };
 ```
 
-Strict JSON-schema constrained sampling is supported for OpenAI and Anthropic models.
+Strict JSON-schema constrained sampling is supported for OpenAI models and for models using the `anthropic-messages` protocol (such as OpenRouter's Anthropic-routed models).
 
 ```typescript
 const patchTool: Tool = {
@@ -1271,7 +1271,7 @@ import { normalizeContext } from '@akramcode/ai';
 import { stream } from '@akramcode/providers/api/anthropic-messages';
 
 const s = stream(claudeModel, normalizeContext(context), {
-  apiKey: process.env.ANTHROPIC_API_KEY,
+  apiKey: process.env.OPENROUTER_API_KEY,
   thinkingEnabled: true,
   thinkingBudgetTokens: 2048,
 });
@@ -1685,7 +1685,7 @@ Compat is a strict superset of the root entrypoint, so a file can switch its imp
 | Old | New |
 |-----|-----|
 | `getModel('openai', 'gpt-4o-mini')` | `models.getModel('openai', 'gpt-4o-mini')` or `getBuiltinModel()` from `providers/all` |
-| `getModels('anthropic')` / `getProviders()` | `models.getModels('openrouter')` / `models.getProviders()` or `getBuiltin*` |
+| `getModels('openai')` / `getProviders()` | `models.getModels('openrouter')` / `models.getProviders()` or `getBuiltin*` |
 | `stream(model, ctx, opts)` (env-key injection) | `models.stream(model, ctx, opts)` (provider auth resolution) |
 | `registerApiProvider({ api, stream, streamSimple })` | `createProvider({ id, auth, models, api })` + `models.setProvider()` |
 | `getEnvApiKey('openai')` | `await models.getAuth(model.provider)` |

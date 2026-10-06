@@ -1782,7 +1782,7 @@ export interface ExtensionAPI {
 	 *
 	 * @example
 	 * // Override baseUrl for an existing provider
-	 * akramcode.registerProvider("anthropic", {
+	 * akramcode.registerProvider("openrouter", {
 	 *   baseUrl: "https://proxy.example.com"
 	 * });
 	 *

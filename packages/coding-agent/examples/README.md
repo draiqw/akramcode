@@ -26,7 +26,7 @@ Example extensions demonstrating:
 - Git integration (checkpoints, auto-commit)
 - System prompt modifications and custom compaction
 - External integrations (SSH, file watchers, system theme sync)
-- Custom providers (Anthropic with custom streaming, GitLab Duo)
+- Custom providers (GitLab Duo)
 
 ### [plugins/akramcode-example-plugin/](plugins/akramcode-example-plugin/)
 An experimental plugin package that AkramCode automatically builds into separate Session-worker and TUI Chord facets.
