@@ -55,6 +55,7 @@ import {
 	resetApiProviders,
 	streamSimple,
 } from "@akramcode/providers/compat";
+import type { SandboxRuntime } from "@akramcode/sandbox";
 import { getThemeByName, theme } from "../modes/interactive/theme/theme.ts";
 import { stripFrontmatter } from "../utils/frontmatter.ts";
 import { processImage } from "../utils/image-process.ts";
@@ -119,6 +120,7 @@ import type { ModelRuntime } from "./model-runtime.ts";
 import { NestedToolCallRunner } from "./nested-tool-calls.ts";
 import { expandPromptTemplate, type PromptTemplate } from "./prompt-templates.ts";
 import type { ResourceExtensionPaths, ResourceLoader } from "./resource-loader.ts";
+import { sandboxToolsOptions } from "./sandbox-tools.ts";
 import { exportSessionToJsonl } from "./session-export.ts";
 import {
 	type BranchSummaryEntry,
@@ -140,7 +142,7 @@ import {
 	normalizeBuildSystemPromptOptions,
 } from "./system-prompt.ts";
 import { type BashOperations, createLocalBashOperations } from "./tools/bash.ts";
-import { createAllToolDefinitions } from "./tools/index.ts";
+import { createAllToolDefinitions, type ToolsOptions } from "./tools/index.ts";
 import { createToolDefinitionFromAgentTool } from "./tools/tool-definition-wrapper.ts";
 import { addUsageToTotals, combineUsage, createUsageTotals } from "./usage-totals.ts";
 import {
@@ -276,6 +278,8 @@ export interface AgentSessionConfig {
 	 * a definition-first registry even when callers provide plain AgentTool instances.
 	 */
 	baseToolsOverride?: Record<string, AgentTool>;
+	/** Sandbox the built-in tools and `!` commands run in; the session releases it on dispose. */
+	sandbox?: SandboxRuntime;
 	/** Mutable ref used by Agent to access the current ExtensionRunner */
 	extensionRunnerRef?: { current?: ExtensionRunner };
 	/** Session start event metadata emitted when extensions bind to this runtime. */
@@ -433,6 +437,8 @@ export class AgentSession {
 	private _allowedToolNames?: Set<string>;
 	private _excludedToolNames?: Set<string>;
 	private _baseToolsOverride?: Record<string, AgentTool>;
+	private _sandbox?: SandboxRuntime;
+	private _sandboxReleased?: Promise<void>;
 	private _sessionStartEvent: SessionStartEvent;
 	private _extensionUIContext?: ExtensionUIContext;
 	private _extensionMode: ExtensionMode = "print";
@@ -478,6 +484,7 @@ export class AgentSession {
 		this._allowedToolNames = config.allowedToolNames ? new Set(config.allowedToolNames) : undefined;
 		this._excludedToolNames = config.excludedToolNames ? new Set(config.excludedToolNames) : undefined;
 		this._baseToolsOverride = config.baseToolsOverride;
+		this._sandbox = config.sandbox;
 		this._sessionStartEvent = config.sessionStartEvent ?? { type: "session_start", reason: "startup" };
 
 		// Always subscribe to agent events for internal handling
@@ -1371,6 +1378,25 @@ export class AgentSession {
 			this._cacheWarmer.cancel();
 		}
 		cleanupSessionResources(this.sessionId);
+		void this.releaseSandbox();
+	}
+
+	/** Give the sandbox back. Safe to call more than once; resolves when the release finished. */
+	releaseSandbox(): Promise<void> {
+		if (!this._sandbox) return Promise.resolve();
+		this._sandboxReleased ??= this._sandbox.release().catch(() => undefined);
+		return this._sandboxReleased;
+	}
+
+	private _withSandbox(options: ToolsOptions): ToolsOptions {
+		if (!this._sandbox) return options;
+		const sandboxOptions = sandboxToolsOptions(this._sandbox);
+		return {
+			...options,
+			...sandboxOptions,
+			read: { ...options.read, ...sandboxOptions.read },
+			bash: { ...options.bash, ...sandboxOptions.bash },
+		};
 	}
 
 	// =========================================================================
@@ -3527,10 +3553,13 @@ export class AgentSession {
 						createToolDefinitionFromAgentTool(tool),
 					]),
 				)
-			: createAllToolDefinitions(this._cwd, {
-					read: { autoResizeImages },
-					bash: { commandPrefix: shellCommandPrefix, shellPath },
-				});
+			: createAllToolDefinitions(
+					this._cwd,
+					this._withSandbox({
+						read: { autoResizeImages },
+						bash: { commandPrefix: shellCommandPrefix, shellPath },
+					}),
+				);
 
 		this._baseToolDefinitions = new Map(
 			Object.entries(baseToolDefinitions).map(([name, tool]) => [name, tool as ToolDefinition]),
@@ -3762,7 +3791,7 @@ export class AgentSession {
 			const result = await executeBashWithOperations(
 				resolvedCommand,
 				this.sessionManager.getCwd(),
-				options?.operations ?? createLocalBashOperations({ shellPath }),
+				options?.operations ?? this._sandbox?.bash ?? createLocalBashOperations({ shellPath }),
 				{
 					onChunk: (delta) => {
 						onChunk?.(delta);

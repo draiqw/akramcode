@@ -174,6 +174,7 @@ export class AgentSessionRuntime {
 		});
 		this.beforeSessionInvalidate?.();
 		this.session.dispose();
+		await this.session.releaseSandbox();
 	}
 
 	private apply(result: CreateAgentSessionRuntimeResult): void {
@@ -407,6 +408,7 @@ export class AgentSessionRuntime {
 		});
 		this.beforeSessionInvalidate?.();
 		this.session.dispose();
+		await this.session.releaseSandbox();
 	}
 }
 

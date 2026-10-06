@@ -11,6 +11,7 @@ const packages = [
 	{ directory: "packages/telemetry", name: "@akramcode/telemetry" },
 	{ directory: "packages/codemode", name: "@akramcode/codemode" },
 	{ directory: "packages/mcp", name: "@akramcode/mcp" },
+	{ directory: "packages/sandbox", name: "@akramcode/sandbox" },
 	{ directory: "packages/ai", name: "@akramcode/ai" },
 	{ directory: "packages/providers", name: "@akramcode/providers" },
 	{ directory: "packages/durable", name: "@akramcode/durable" },

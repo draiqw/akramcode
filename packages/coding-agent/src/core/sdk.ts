@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { Agent, type AgentMessage, setDefaultStreamFn, type ThinkingLevel } from "@akramcode/agent-core";
 import type { ModelsSimpleStreamOptions } from "@akramcode/ai";
 import { clampThinkingLevel, type Message, type Model, streamSimple } from "@akramcode/providers/compat";
+import { createSandboxProvider } from "@akramcode/sandbox";
 import { getAgentDir } from "../config.ts";
 import { resolvePath } from "../utils/paths.ts";
 import { AgentSession } from "./agent-session.ts";
@@ -13,6 +14,7 @@ import { convertToLlm } from "./messages.ts";
 import { findInitialModel } from "./model-resolver.ts";
 import { ModelRuntime } from "./model-runtime.ts";
 import { mergeProviderAttributionHeaders } from "./provider-attribution.ts";
+import { resolveConfigValue } from "./resolve-config-value.ts";
 import type { ResourceLoader } from "./resource-loader.ts";
 import { DefaultResourceLoader } from "./resource-loader.ts";
 import { getDefaultSessionDir, SessionManager } from "./session-manager.ts";
@@ -430,8 +432,24 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 		sessionManager.appendThinkingLevelChange(thinkingLevel);
 	}
 
+	const sandboxSettings = settingsManager.getSandboxSettings();
+	const sandboxProvider = createSandboxProvider(
+		sandboxSettings?.opensandbox?.apiKey
+			? {
+					...sandboxSettings,
+					opensandbox: {
+						...sandboxSettings.opensandbox,
+						apiKey: resolveConfigValue(sandboxSettings.opensandbox.apiKey),
+					},
+				}
+			: sandboxSettings,
+		{ dataDir: join(getAgentDir(), "sandbox") },
+	);
+	const sandbox = await sandboxProvider?.acquire({ sessionId: sessionManager.getSessionId(), cwd });
+
 	const session = new AgentSession({
 		agent,
+		sandbox,
 		sessionManager,
 		settingsManager,
 		cwd,

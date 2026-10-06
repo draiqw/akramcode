@@ -17,6 +17,7 @@
 			"@akramcode/codemode/source": ["./packages/codemode/src/source.ts"],
 			"@akramcode/codemode/worker": ["./packages/codemode/src/runtime/worker.ts"],
 			"@akramcode/mcp": ["./packages/mcp/src/index.ts"],
+			"@akramcode/sandbox": ["./packages/sandbox/src/index.ts"],
 			"@akramcode/mcp/oauth": ["./packages/mcp/src/oauth/index.ts"],
 			"@akramcode/mcp/testing": ["./packages/mcp/src/testing/index.ts"],
 			"@akramcode/ai": ["./packages/ai/src/index.ts"],

@@ -1,5 +1,6 @@
 import type { ThinkingLevel } from "@akramcode/agent-core";
 import { DEFAULT_MAX_AGENT_RETRY_DELAY_MS, type Model, type Transport } from "@akramcode/ai";
+import type { SandboxSettings } from "@akramcode/sandbox";
 import type {
 	TuiMode as RendererTuiMode,
 	ScrollViewScrollbar,
@@ -171,6 +172,7 @@ export interface Settings {
 	showHardwareCursor?: boolean; // Show terminal cursor while still positioning it for IME
 	markdown?: MarkdownSettings;
 	codemode?: CodemodeSettings;
+	sandbox?: SandboxSettings; // Global-only: where the built-in tools run (local machine or an OpenSandbox sandbox)
 	sessionDir?: string; // Custom session storage directory (same format as --session-dir CLI flag)
 	httpProxy?: string; // Proxy URL applied as HTTP_PROXY and HTTPS_PROXY for AkramCode-managed HTTP clients
 	httpIdleTimeoutMs?: number; // HTTP header/body idle timeout in milliseconds; 0 disables it
@@ -1101,6 +1103,11 @@ export class SettingsManager {
 		this.globalSettings.defaultProjectTrust = defaultProjectTrust;
 		this.markModified("defaultProjectTrust");
 		this.save();
+	}
+
+	/** Global-only: a project must not be able to move command execution to another server. */
+	getSandboxSettings(): SandboxSettings | undefined {
+		return this.globalSettings.sandbox;
 	}
 
 	getShellCommandPrefix(): string | undefined {

@@ -27,6 +27,7 @@ const WORKSPACE = {
 	"@akramcode/codemode": "packages/codemode/src",
 	"@akramcode/telemetry": "packages/telemetry/src",
 	"@akramcode/mcp": "packages/mcp/src",
+	"@akramcode/sandbox": "packages/sandbox/src",
 	"@akramcode/tui": "packages/tui/src",
 };
 

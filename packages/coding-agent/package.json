@@ -55,6 +55,7 @@
 		"@akramcode/providers": "^1.0.6",
 		"@akramcode/codemode": "^1.0.6",
 		"@akramcode/mcp": "^1.0.6",
+		"@akramcode/sandbox": "^1.0.6",
 		"@akramcode/tui": "^1.0.6",
 		"@silvia-odwyer/photon-node": "0.3.4",
 		"brace-expansion": "5.0.12",

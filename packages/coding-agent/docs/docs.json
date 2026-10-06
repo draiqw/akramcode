@@ -87,6 +87,10 @@
             {
               "title": "Connect MCP Servers",
               "path": "mcp.md"
+            },
+            {
+              "title": "Run Tools in a Sandbox",
+              "path": "sandbox.md"
             }
           ]
         },

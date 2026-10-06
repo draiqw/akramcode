@@ -142,6 +142,16 @@ Keep `retry.provider.maxRetries` at `0` unless provider-level retries are requir
 
 See [Shell aliases](shell-aliases.md) for shell setup and [AkramCode Packages](packages.md) for package-manager behavior.
 
+## Sandbox
+
+The `sandbox` block is global-only and selects where the built-in tools run. See [Run Tools in a Sandbox](sandbox.md).
+
+| Setting | Type | Default | Description |
+|---|---|---|---|
+| `sandbox.provider` | `"local"` \| `"opensandbox"` | `"local"` | Run tools on this machine or in an OpenSandbox sandbox. |
+| `sandbox.workspace` | `"mount"` \| `"volume"` | `"mount"` | Mount the session folder, or keep the workspace in a volume per session. |
+| `sandbox.opensandbox` | object | see [sandbox.md](sandbox.md) | Server address, API key, image, limits, reuse and retention. |
+
 ## Resources
 
 Resource paths in user settings resolve from the agent directory. Paths in project settings resolve from the project `.akramcode` directory. Absolute paths and `~` are supported.
