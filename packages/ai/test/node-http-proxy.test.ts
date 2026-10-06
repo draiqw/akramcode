@@ -40,18 +40,16 @@ describe("node HTTP proxy resolution", () => {
 	it("respects NO_PROXY exclusions", () => {
 		resetProxyEnv();
 		process.env.HTTPS_PROXY = "http://proxy.example:8080";
-		process.env.NO_PROXY = "bedrock-runtime.us-east-1.amazonaws.com";
+		process.env.NO_PROXY = "api.example.com";
 
-		expect(resolveHttpProxyUrlForTarget("https://bedrock-runtime.us-east-1.amazonaws.com")).toBeUndefined();
+		expect(resolveHttpProxyUrlForTarget("https://api.example.com")).toBeUndefined();
 	});
 
 	it("resolves HTTP and HTTPS proxy URLs", () => {
 		resetProxyEnv();
 		process.env.HTTPS_PROXY = "http://proxy.example:8080";
 
-		expect(resolveHttpProxyUrlForTarget("https://bedrock-runtime.us-east-1.amazonaws.com")?.toString()).toBe(
-			"http://proxy.example:8080/",
-		);
+		expect(resolveHttpProxyUrlForTarget("https://api.example.com")?.toString()).toBe("http://proxy.example:8080/");
 	});
 
 	it("prefers scoped proxy env aliases before process env aliases", () => {
@@ -59,7 +57,7 @@ describe("node HTTP proxy resolution", () => {
 		process.env.https_proxy = "http://process-proxy.example:8080";
 
 		expect(
-			resolveHttpProxyUrlForTarget("https://bedrock-runtime.us-east-1.amazonaws.com", {
+			resolveHttpProxyUrlForTarget("https://api.example.com", {
 				HTTPS_PROXY: "http://scoped-proxy.example:8080",
 			})?.toString(),
 		).toBe("http://scoped-proxy.example:8080/");
@@ -69,9 +67,7 @@ describe("node HTTP proxy resolution", () => {
 		resetProxyEnv();
 		process.env.HTTPS_PROXY = "socks5://proxy.example:1080";
 
-		expect(() => resolveHttpProxyUrlForTarget("https://bedrock-runtime.us-east-1.amazonaws.com")).toThrow(
-			UNSUPPORTED_PROXY_PROTOCOL_MESSAGE,
-		);
+		expect(() => resolveHttpProxyUrlForTarget("https://api.example.com")).toThrow(UNSUPPORTED_PROXY_PROTOCOL_MESSAGE);
 	});
 
 	it("handles subdomain wildcards, IPv6, and ports in NO_PROXY", () => {

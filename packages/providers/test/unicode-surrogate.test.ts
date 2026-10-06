@@ -11,12 +11,8 @@ import { resolveApiKey } from "./oauth.ts";
 const emptySchema = Type.Object({});
 
 // Resolve OAuth tokens at module level (async, runs before tests)
-const oauthTokens = await Promise.all([
-	resolveApiKey("anthropic"),
-	resolveApiKey("github-copilot"),
-	resolveApiKey("openai-codex"),
-]);
-const [_anthropicOAuthToken, _githubCopilotToken, openaiCodexToken] = oauthTokens;
+const oauthTokens = await Promise.all([resolveApiKey("anthropic"), resolveApiKey("openai-codex")]);
+const [_anthropicOAuthToken, openaiCodexToken] = oauthTokens;
 
 /**
  * Test for Unicode surrogate pair handling in tool results.
@@ -30,7 +26,7 @@ const [_anthropicOAuthToken, _githubCopilotToken, openaiCodexToken] = oauthToken
  */
 
 async function testEmojiInToolResults<TApi extends Api>(llm: Model<TApi>, options: StreamOptionsWithExtras = {}) {
-	const toolCallId = llm.provider === "mistral" ? "testtool1" : "test_1";
+	const toolCallId = "test_1";
 	// Simulate a tool that returns emoji
 	const context: Context = {
 		systemPrompt: "You are a helpful assistant.",
@@ -117,7 +113,7 @@ async function testEmojiInToolResults<TApi extends Api>(llm: Model<TApi>, option
 }
 
 async function testRealWorldLinkedInData<TApi extends Api>(llm: Model<TApi>, options: StreamOptionsWithExtras = {}) {
-	const toolCallId = llm.provider === "mistral" ? "linkedin1" : "linkedin_1";
+	const toolCallId = "linkedin_1";
 	const context: Context = {
 		systemPrompt: "You are a helpful assistant.",
 		messages: [
@@ -206,7 +202,7 @@ Unanswered Comments: 2
 }
 
 async function testUnpairedHighSurrogate<TApi extends Api>(llm: Model<TApi>, options: StreamOptionsWithExtras = {}) {
-	const toolCallId = llm.provider === "mistral" ? "testtool2" : "test_2";
+	const toolCallId = "test_2";
 	const context: Context = {
 		systemPrompt: "You are a helpful assistant.",
 		messages: [

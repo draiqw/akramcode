@@ -1,16 +1,16 @@
 // Unit tests for the shared provider error-body normalizer.
 //
 // See issues/provider-error-body-passthrough. These cover one synthesized error
-// object per SDK shape (Mistral, openai APIError, @google/genai ApiError, AWS
-// Bedrock ServiceException), plus the non-Error fallback, truncation, the empty
+// object per SDK shape (generic statusCode/body errors, openai APIError,
+// Anthropic), plus the non-Error fallback, truncation, the empty
 // parsed-body edge case, and the formatProviderError compose helper.
 
 import { describe, expect, it } from "vitest";
 import { formatProviderError, MAX_PROVIDER_ERROR_BODY_CHARS, normalizeProviderError } from "../src/utils/error-body.ts";
 
 describe("normalizeProviderError", () => {
-	it("extracts status and body from a Mistral-shaped error", () => {
-		const error = Object.assign(new Error("Mistral request failed"), {
+	it("extracts status and body from a generic statusCode/body error", () => {
+		const error = Object.assign(new Error("Upstream request failed"), {
 			statusCode: 403,
 			body: '{"error":"blocked by gateway WAF"}',
 		});
@@ -37,7 +37,7 @@ describe("normalizeProviderError", () => {
 		expect(norm.messageCarriesBody).toBe(false);
 	});
 
-	it("preserves the message when @google/genai already folds the body into it", () => {
+	it("preserves the message when the SDK already folds the body into it", () => {
 		const body = { error: { code: 403, message: "Permission denied" } };
 		const error = Object.assign(new Error(JSON.stringify(body)), {
 			status: 403,
@@ -48,63 +48,6 @@ describe("normalizeProviderError", () => {
 		expect(norm.status).toBe(403);
 		expect(norm.messageCarriesBody).toBe(true);
 		expect(norm.message).toBe(JSON.stringify(body));
-	});
-
-	it("extracts status and body from a Bedrock-shaped ServiceException", () => {
-		const error = Object.assign(new Error("UnknownError"), {
-			name: "UnknownError",
-			$metadata: { httpStatusCode: 403 },
-			$response: { statusCode: 403, body: '{"message":"blocked by gateway WAF"}' },
-		});
-
-		const norm = normalizeProviderError(error);
-
-		expect(norm.status).toBe(403);
-		expect(norm.body).toBe('{"message":"blocked by gateway WAF"}');
-		expect(norm.messageCarriesBody).toBe(false);
-	});
-
-	it("ignores a Bedrock response stream instead of serializing its internals", () => {
-		const error = Object.assign(
-			new Error("Invocation of model ID anthropic.claude-opus-5 with on-demand throughput isn't supported."),
-			{
-				name: "ValidationException",
-				$metadata: { httpStatusCode: 400 },
-				$response: {
-					statusCode: 400,
-					body: { pipe: () => undefined, _events: { close: [null, null] } },
-				},
-			},
-		);
-
-		const norm = normalizeProviderError(error);
-
-		expect(norm.status).toBe(400);
-		expect(norm.body).toBeUndefined();
-		expect(norm.message).toContain("on-demand throughput isn't supported");
-		expect(norm.messageCarriesBody).toBe(true);
-	});
-
-	it("ignores a class-instance response body without a pipe method instead of serializing it", () => {
-		// Not every SDK response wrapper is a node stream: web ReadableStreams
-		// and SDK-specific wrapper classes have no `pipe`, but serializing them
-		// still yields internals-noise that would replace the real message.
-		class SdkHttpResponseBody {
-			locked = false;
-			state = { storedError: undefined };
-		}
-		const error = Object.assign(new Error("Input is too long for requested model."), {
-			name: "ValidationException",
-			$metadata: { httpStatusCode: 400 },
-			$response: { statusCode: 400, body: new SdkHttpResponseBody() },
-		});
-
-		const norm = normalizeProviderError(error);
-
-		expect(norm.status).toBe(400);
-		expect(norm.body).toBeUndefined();
-		expect(norm.message).toContain("Input is too long");
-		expect(norm.messageCarriesBody).toBe(true);
 	});
 
 	it("ignores a class-instance `error` field instead of serializing it", () => {

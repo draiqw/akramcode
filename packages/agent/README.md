@@ -13,11 +13,11 @@ npm install @akramcode/agent-core
 ```typescript
 import { Agent } from "@akramcode/agent-core";
 import { createModels } from "@akramcode/ai";
-import { anthropicProvider } from "@akramcode/providers/providers/anthropic";
+import { openrouterProvider } from "@akramcode/providers/providers/openrouter";
 
 const models = createModels();
-models.setProvider(anthropicProvider());
-const model = models.getModel("anthropic", "claude-sonnet-4-6");
+models.setProvider(openrouterProvider());
+const model = models.getModel("openrouter", "anthropic/claude-sonnet-4.6");
 if (!model) throw new Error("Model not found");
 
 const agent = new Agent({

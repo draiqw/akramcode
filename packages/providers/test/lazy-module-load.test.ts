@@ -9,7 +9,7 @@ const aiEntryUrl = new URL("../../ai/src/index.ts", import.meta.url).href;
 const compatEntryUrl = new URL("../src/compat.ts", import.meta.url).href;
 const providersAllUrl = new URL("../src/providers/all.ts", import.meta.url).href;
 
-const SDK_SPECIFIERS = ["@anthropic-ai/sdk", "openai", "@google/genai", "@aws-sdk/client-bedrock-runtime"] as const;
+const SDK_SPECIFIERS = ["@anthropic-ai/sdk", "openai"] as const;
 
 type ProbeResult = {
 	loadedSpecifiers: string[];

@@ -28,17 +28,17 @@ describe("OAuthSelectorComponent", () => {
 		).prototype.getLoginProviderOptions;
 		const providers = [
 			{
-				id: "anthropic",
-				name: "Anthropic",
+				id: "openrouter",
+				name: "OpenRouter",
 				auth: {
-					oauth: { name: "Anthropic (Claude Pro/Max)", login: async () => ({}) },
-					apiKey: { name: "Anthropic API key", login: async () => ({}) },
+					oauth: { name: "OpenRouter (OAuth)", login: async () => ({}) },
+					apiKey: { name: "OpenRouter API key", login: async () => ({}) },
 				},
 			},
 			{
-				id: "google-vertex",
-				name: "Google Vertex AI",
-				auth: { apiKey: { name: "Google Cloud credentials" } },
+				id: "deepseek",
+				name: "DeepSeek",
+				auth: { apiKey: { name: "DeepSeek API key" } },
 			},
 		];
 		const fakeThis = {
@@ -54,27 +54,27 @@ describe("OAuthSelectorComponent", () => {
 		const apiKeyOptions = getLoginProviderOptions.call(fakeThis, "api_key");
 		expect(apiKeyOptions).toMatchObject([
 			{
-				id: "anthropic",
-				name: "Anthropic",
+				id: "deepseek",
+				name: "DeepSeek",
 				authType: "api_key",
-				method: { name: "Anthropic API key" },
+				method: { name: "DeepSeek API key" },
 			},
 			{
-				id: "google-vertex",
-				name: "Google Vertex AI",
+				id: "openrouter",
+				name: "OpenRouter",
 				authType: "api_key",
-				method: { name: "Google Cloud credentials" },
+				method: { name: "OpenRouter API key" },
 			},
 		]);
 		expect(getLoginProviderOptions.call(fakeThis, "oauth")).toMatchObject([
-			{ id: "anthropic", name: "Anthropic", authType: "oauth" },
+			{ id: "openrouter", name: "OpenRouter", authType: "oauth" },
 		]);
 	});
 
 	it("renders an option without compiled auth status as not configured", () => {
 		const selector = new OAuthSelectorComponent(
 			"login",
-			[{ id: "google", name: "Google", authType: "api_key", status: undefined }],
+			[{ id: "deepseek", name: "DeepSeek", authType: "api_key", status: undefined }],
 			() => {},
 			() => {},
 		);

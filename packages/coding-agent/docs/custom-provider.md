@@ -111,7 +111,7 @@ Publish persisted catalog data only when it should survive across runs. A live s
 
 Use one of AkramCode AI’s API implementations whenever the provider protocol matches it.
 
-Supported implementations cover Anthropic Messages, OpenAI Chat Completions and Responses, Google Generative AI and Vertex, Azure OpenAI Responses, Mistral Conversations, and Bedrock Converse.
+Supported implementations cover Anthropic Messages, OpenAI Chat Completions, OpenAI Responses, and the ChatGPT Codex Responses backend.
 
 The provider can still customize authentication, base URLs, headers, model filtering, and discovery while delegating request conversion and streaming to an existing API implementation.
 

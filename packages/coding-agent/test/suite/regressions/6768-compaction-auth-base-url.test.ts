@@ -3,8 +3,8 @@ import { fauxAssistantMessage } from "@akramcode/providers";
 import { afterEach, describe, expect, it } from "vitest";
 import { createHarness, type Harness } from "../harness.ts";
 
-const INDIVIDUAL_BASE_URL = "https://api.individual.githubcopilot.com";
-const ENTERPRISE_BASE_URL = "https://api.enterprise.githubcopilot.com";
+const INDIVIDUAL_BASE_URL = "https://api.individual.example.test";
+const ENTERPRISE_BASE_URL = "https://api.enterprise.example.test";
 
 function seedCompactableSession(harness: Harness): void {
 	harness.settingsManager.applyOverrides({ compaction: { keepRecentTokens: 1 } });
@@ -33,7 +33,7 @@ function seedCompactableSession(harness: Harness): void {
 	harness.session.agent.state.messages = harness.sessionManager.buildSessionContext().messages;
 }
 
-describe("issue #6768 Copilot compaction base URL", () => {
+describe("issue #6768 compaction auth-resolved base URL", () => {
 	let harness: Harness | undefined;
 
 	afterEach(() => {
@@ -65,16 +65,16 @@ describe("issue #6768 Copilot compaction base URL", () => {
 		};
 		const provider: Provider<string> = {
 			id: catalogModel.provider,
-			name: "Copilot regression provider",
+			name: "Auth base URL regression provider",
 			baseUrl: INDIVIDUAL_BASE_URL,
 			auth: {
 				apiKey: {
-					name: "Copilot token",
+					name: "Auth token",
 					resolve: async ({ credential }) =>
 						credential?.key ? { auth: { apiKey: credential.key }, source: "explicit token" } : undefined,
 				},
 				oauth: {
-					name: "Copilot OAuth",
+					name: "Auth OAuth",
 					login: async () => {
 						throw new Error("unused");
 					},

@@ -3,15 +3,10 @@ import catalog from "./protocol-models.json" with { type: "json" };
 
 /**
  * Model metadata for protocol tests of APIs that no built-in provider uses any more
- * (Anthropic, Bedrock, Google, Mistral, Azure). Snapshot of the entries those tests read.
+ * (Anthropic). Snapshot of the entries those tests read.
  */
 interface ProtocolApis {
-	"amazon-bedrock": "bedrock-converse-stream";
 	anthropic: "anthropic-messages";
-	"azure-openai-responses": "azure-openai-responses";
-	google: "google-generative-ai";
-	"google-vertex": "google-vertex";
-	mistral: "mistral-conversations";
 	openai: "openai-responses";
 	openrouter: Api;
 }

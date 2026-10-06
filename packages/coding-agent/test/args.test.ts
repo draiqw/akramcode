@@ -142,8 +142,8 @@ describe("parseArgs", () => {
 		});
 
 		test("parses --models as comma-separated list", () => {
-			const result = parseArgs(["--models", "gpt-4o,claude-sonnet,gemini-pro"]);
-			expect(result.models).toEqual(["gpt-4o", "claude-sonnet", "gemini-pro"]);
+			const result = parseArgs(["--models", "gpt-4o,claude-sonnet,deepseek-flash"]);
+			expect(result.models).toEqual(["gpt-4o", "claude-sonnet", "deepseek-flash"]);
 		});
 
 		// Issue #10334

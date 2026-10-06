@@ -124,13 +124,7 @@ try {
 		);
 	}
 
-	const aiSdkPackages = [
-		"@anthropic-ai/sdk",
-		"@aws-sdk/client-bedrock-runtime",
-		"@google/genai",
-		"@mistralai/mistralai",
-		"openai",
-	];
+	const aiSdkPackages = ["@anthropic-ai/sdk", "openai"];
 	const includedAiSdkPackages = aiSdkPackages.filter((packageName) => includesNodePackage(inputs, packageName));
 	if (
 		includedAiSdkPackages.length !== 1 ||

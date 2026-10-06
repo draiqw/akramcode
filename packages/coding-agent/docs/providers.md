@@ -27,7 +27,7 @@ Run `/logout` and select a provider to remove its stored credential. This does n
 | DeepSeek | API key | `DEEPSEEK_API_KEY` |
 | Radius | OAuth or API key | `RADIUS_API_KEY` |
 
-Any other OpenAI-, Anthropic- or Google-compatible service can be added as a custom provider. See [Models](models.md#configure-a-compatible-endpoint).
+Any other OpenAI- or Anthropic-compatible service can be added as a custom provider. See [Models](models.md#configure-a-compatible-endpoint).
 
 ## Use an API key from the environment
 

@@ -13,8 +13,6 @@ const preload = `data:text/javascript,${encodeURIComponent(`
 		"/node_modules/typebox/",
 		"/node_modules/@anthropic-ai/sdk/",
 		"/node_modules/openai/",
-		"/node_modules/@google/genai/",
-		"/node_modules/@aws-sdk/",
 		"/providers/data/",
 		"/models.generated.",
 	];

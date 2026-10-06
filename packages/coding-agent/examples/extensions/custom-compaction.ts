@@ -6,7 +6,7 @@
  * 1. Summarizes ALL messages (messagesToSummarize + turnPrefixMessages)
  * 2. Discards all old turns completely, keeping only the summary
  *
- * This example also demonstrates using a different model (Gemini Flash) for summarization,
+ * This example also demonstrates using a different model (Gemini Flash via OpenRouter) for summarization,
  * which can be cheaper/faster than the main conversation model.
  *
  * Usage:
@@ -25,7 +25,7 @@ export default function (akramcode: ExtensionAPI) {
 		const { messagesToSummarize, turnPrefixMessages, tokensBefore, firstKeptEntryId, previousSummary } = preparation;
 
 		// Use Gemini Flash for summarization (cheaper/faster than most conversation models)
-		const model = ctx.modelRegistry.find("google", "gemini-2.5-flash");
+		const model = ctx.modelRegistry.find("openrouter", "google/gemini-2.5-flash");
 		if (!model) {
 			ctx.ui.notify(`Could not find Gemini Flash model, using default compaction`, "warning");
 			return;

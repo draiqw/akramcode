@@ -246,7 +246,7 @@ export interface AgentLoopConfig extends SimpleStreamOptions {
 	/**
 	 * Resolves an API key dynamically for each LLM call.
 	 *
-	 * Useful for short-lived OAuth tokens (e.g., GitHub Copilot) that may expire
+	 * Useful for short-lived OAuth tokens that may expire
 	 * during long-running tool execution phases.
 	 *
 	 * Contract: must not throw or reject. Return undefined when no key is available.

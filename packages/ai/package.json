@@ -47,8 +47,6 @@
 		"llm",
 		"openai",
 		"anthropic",
-		"gemini",
-		"bedrock",
 		"unified",
 		"api"
 	],

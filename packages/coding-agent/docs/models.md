@@ -9,7 +9,7 @@ For a built-in provider, start with `/login`, then choose a model with `/model`.
 | A supported subscription | Sign in through `/login` |
 | A provider API key | Store it through `/login` or set its environment variable |
 | A local GGUF model | Connect AkramCode to the llama.cpp router |
-| An OpenAI-, Anthropic-, or Google-compatible endpoint | Add it to `models.json` |
+| An OpenAI- or Anthropic-compatible endpoint | Add it to `models.json` |
 | A provider with a custom protocol or authentication flow | Build or install a provider extension |
 
 Browse the [model catalog](https://pi.dev/models) for current providers, model IDs, capabilities, context limits, and pricing. AkramCode starts with its bundled catalog and can overlay newer catalog data from pi.dev. Cached catalog data remains available offline; run `akramcode update --models` to force a refresh.

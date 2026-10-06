@@ -4,7 +4,7 @@ This is the home of the AkramCode agent harness project including our self exten
 
 * **[@akramcode/coding-agent](packages/coding-agent)**: Interactive coding agent CLI
 * **[@akramcode/agent-core](packages/agent)**: Agent runtime with tool calling and state management
-* **[@akramcode/ai](packages/ai)**: Unified multi-provider LLM API (OpenAI, Anthropic, Google, …)
+* **[@akramcode/ai](packages/ai)**: Unified multi-provider LLM API (OpenAI, OpenAI Codex, OpenRouter, DeepSeek)
 
 Documentation: [packages/coding-agent/docs](packages/coding-agent/docs). You can also ask the agent to explain itself.
 
@@ -14,7 +14,7 @@ Documentation: [packages/coding-agent/docs](packages/coding-agent/docs). You can
 |---------|-------------|
 | **[@akramcode/chord](packages/chord)** | Standalone application-composition runtime for services, replicated state, RPC, and plugins |
 | **[@akramcode/telemetry](packages/telemetry)** | Vendor-neutral telemetry contracts, reference adapter, conformance tests, and typed schemas |
-| **[@akramcode/ai](packages/ai)** | Unified multi-provider LLM API (OpenAI, Anthropic, Google, etc.) |
+| **[@akramcode/ai](packages/ai)** | Unified multi-provider LLM API (OpenAI, OpenAI Codex, OpenRouter, DeepSeek) |
 | **[@akramcode/durable](packages/durable)** | Durable conversation, task, and document runtime |
 | **[@akramcode/agent-core](packages/agent)** | Agent runtime with tool calling and state management |
 | **[@akramcode/coding-agent](packages/coding-agent)** | Interactive coding agent CLI |

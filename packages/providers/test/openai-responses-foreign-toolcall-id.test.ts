@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { convertResponsesMessages } from "../src/api/openai-responses-shared.ts";
 import { getModel, normalizeContext } from "../src/compat.ts";
 
-const COPILOT_RAW_TOOL_CALL_ID =
+const FOREIGN_RAW_TOOL_CALL_ID =
 	"call_4VnzVawQXPB9MgYib7CiQFEY|I9b95oN1wD/cHXKTw3PpRkL6KkCtzTJhUxMouMWYwHeTo2j3htzfSk7YPx2vifiIM4g3A8XXyOj8q4Bt6SLUG7gqY1E3ELkrkVQNHglRfUmWj84lqxJY+Puieb3VKyX0FB+83TUzn91cDMF/4gzt990IzqVrc+nIb9RRscRD070Du16q1glydVjWR0SBJsE6TbY/esOjFpqplogQqrajm1eI++f3eLi73R6q7hVusY0QbeFySVxABCjhN0lXB04caBe1rzHjYzul6MAXj7uq+0r17VLq+yrtyYhN12wkmFqHeqTyEei6EFPbMy24Nc+IbJlkP0OCg02W+gOnyBFcbi2ctvJFSOhSjt1CqBdqCnnhwUqXjbWiT0wh3DmLScRgTHmGkaI+oAcQQjfic65nxj+TnEkReA==";
 
 const usage: Usage = {
@@ -17,20 +17,20 @@ const usage: Usage = {
 };
 
 describe("OpenAI Responses foreign tool call ID normalization", () => {
-	it("hashes foreign Copilot tool item IDs into a bounded Codex-safe fc_<hash> shape", () => {
+	it("hashes foreign tool item IDs into a bounded Codex-safe fc_<hash> shape", () => {
 		const model = getModel("openai-codex", "gpt-6.1-sol");
 		const assistant: AssistantMessage = {
 			role: "assistant",
 			content: [
 				{
 					type: "toolCall",
-					id: COPILOT_RAW_TOOL_CALL_ID,
+					id: FOREIGN_RAW_TOOL_CALL_ID,
 					name: "edit",
 					arguments: { path: "src/styles/app.css" },
 				},
 			],
 			api: "openai-responses",
-			provider: "github-copilot",
+			provider: "openai",
 			model: "gpt-5.5",
 			usage,
 			stopReason: "toolUse",
@@ -38,7 +38,7 @@ describe("OpenAI Responses foreign tool call ID normalization", () => {
 		};
 		const toolResult: ToolResultMessage = {
 			role: "toolResult",
-			toolCallId: COPILOT_RAW_TOOL_CALL_ID,
+			toolCallId: FOREIGN_RAW_TOOL_CALL_ID,
 			toolName: "edit",
 			content: [{ type: "text", text: "ok" }],
 			isError: false,
@@ -58,7 +58,7 @@ describe("OpenAI Responses foreign tool call ID normalization", () => {
 			throw new Error("Expected function_call item");
 		}
 
-		const expectedItemId = `fc_${shortHash(COPILOT_RAW_TOOL_CALL_ID.split("|")[1]!)}`;
+		const expectedItemId = `fc_${shortHash(FOREIGN_RAW_TOOL_CALL_ID.split("|")[1]!)}`;
 		expect(functionCall.id).toBe(expectedItemId);
 		expect(functionCall.id?.length ?? 0).toBeLessThanOrEqual(64);
 		expect(functionCall.id).toMatch(/^fc_[A-Za-z0-9]+$/);

@@ -203,7 +203,7 @@ export class LoginDialogComponent extends Container implements Focusable {
 	}
 
 	/**
-	 * Show waiting message (for polling flows like GitHub Copilot)
+	 * Show waiting message (for polling flows such as device-code login)
 	 */
 	showWaiting(message: string): void {
 		this.contentContainer.addChild(new Spacer(1));

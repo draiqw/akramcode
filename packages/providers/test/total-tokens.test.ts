@@ -7,7 +7,6 @@
  *
  * - OpenAI Completions: Uses native total_tokens field
  * - OpenAI Responses: Uses native total_tokens field
- * - Google: Uses native totalTokenCount field
  * - Anthropic: Computed as input + output + cacheRead + cacheWrite
  * - Other OpenAI-compatible providers: Uses native total_tokens field
  */
@@ -21,12 +20,8 @@ type StreamOptionsWithExtras = StreamOptions & Record<string, unknown>;
 import { resolveApiKey } from "./oauth.ts";
 
 // Resolve OAuth tokens at module level (async, runs before tests)
-const oauthTokens = await Promise.all([
-	resolveApiKey("anthropic"),
-	resolveApiKey("github-copilot"),
-	resolveApiKey("openai-codex"),
-]);
-const [anthropicOAuthToken, _githubCopilotToken, openaiCodexToken] = oauthTokens;
+const oauthTokens = await Promise.all([resolveApiKey("anthropic"), resolveApiKey("openai-codex")]);
+const [anthropicOAuthToken, openaiCodexToken] = oauthTokens;
 
 // Generate a long system prompt to trigger caching (>2k bytes for most providers)
 const LONG_SYSTEM_PROMPT = `You are a helpful assistant. Be concise in your responses.

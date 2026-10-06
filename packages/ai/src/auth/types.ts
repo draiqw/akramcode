@@ -233,7 +233,7 @@ export interface OAuthAuth {
 
 	/**
 	 * Side-effect-free derivation of request auth from a valid credential.
-	 * Covers per-credential baseUrl (GitHub Copilot). Async so lazy wrappers
+	 * Covers per-credential baseUrl. Async so lazy wrappers
 	 * can load the implementation on first use.
 	 */
 	toAuth(credential: OAuthCredential): Promise<ModelAuth>;

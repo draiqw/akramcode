@@ -11,13 +11,13 @@ function anthropicNormalizeToolCallId(
 	return id.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 64);
 }
 
-function makeCopilotClaudeModel(): Model<"anthropic-messages"> {
+function makeOpenRouterClaudeModel(): Model<"anthropic-messages"> {
 	return {
 		id: "claude-sonnet-4.6",
 		name: "Claude Sonnet 4.6",
 		api: "anthropic-messages",
-		provider: "github-copilot",
-		baseUrl: "https://api.individual.githubcopilot.com",
+		provider: "openrouter",
+		baseUrl: "https://openrouter.ai/api/v1",
 		reasoning: true,
 		input: ["text", "image"],
 		cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
@@ -31,7 +31,7 @@ function makeAssistantMessage(content: AssistantMessage["content"]): AssistantMe
 		role: "assistant",
 		content,
 		api: "openai-responses",
-		provider: "github-copilot",
+		provider: "openrouter",
 		model: "gpt-5",
 		usage: {
 			input: 0,
@@ -46,9 +46,9 @@ function makeAssistantMessage(content: AssistantMessage["content"]): AssistantMe
 	};
 }
 
-describe("OpenAI to Anthropic session migration for Copilot Claude", () => {
+describe("OpenAI to Anthropic session migration for Claude via OpenRouter", () => {
 	it("converts thinking blocks to plain text when source model differs", () => {
-		const model = makeCopilotClaudeModel();
+		const model = makeOpenRouterClaudeModel();
 		const messages: Message[] = [
 			{ role: "user", content: "hello", timestamp: Date.now() },
 			{
@@ -62,7 +62,7 @@ describe("OpenAI to Anthropic session migration for Copilot Claude", () => {
 					{ type: "text", text: "Hi there!" },
 				],
 				api: "openai-completions",
-				provider: "github-copilot",
+				provider: "openrouter",
 				model: "gpt-4o",
 				usage: {
 					input: 0,
@@ -88,7 +88,7 @@ describe("OpenAI to Anthropic session migration for Copilot Claude", () => {
 	});
 
 	it("removes thoughtSignature from tool calls when migrating between models", () => {
-		const model = makeCopilotClaudeModel();
+		const model = makeOpenRouterClaudeModel();
 		const messages: Message[] = [
 			{ role: "user", content: "run a command", timestamp: Date.now() },
 			{
@@ -103,7 +103,7 @@ describe("OpenAI to Anthropic session migration for Copilot Claude", () => {
 					},
 				],
 				api: "openai-responses",
-				provider: "github-copilot",
+				provider: "openrouter",
 				model: "gpt-5",
 				usage: {
 					input: 0,
@@ -134,7 +134,7 @@ describe("OpenAI to Anthropic session migration for Copilot Claude", () => {
 	});
 
 	it("adds synthetic tool results for trailing orphaned tool calls", () => {
-		const model = makeCopilotClaudeModel();
+		const model = makeOpenRouterClaudeModel();
 		const messages: Message[] = [
 			{ role: "user", content: "read the file", timestamp: Date.now() },
 			makeAssistantMessage([
@@ -160,7 +160,7 @@ describe("OpenAI to Anthropic session migration for Copilot Claude", () => {
 	});
 
 	it("adds synthetic results only for trailing tool calls that are still missing results", () => {
-		const model = makeCopilotClaudeModel();
+		const model = makeOpenRouterClaudeModel();
 		const messages: Message[] = [
 			{ role: "user", content: "run commands", timestamp: Date.now() },
 			makeAssistantMessage([

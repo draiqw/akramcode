@@ -1,7 +1,7 @@
 /**
  * Tool Call ID Normalization Tests
  *
- * Tests that tool call IDs from OpenAI Responses API (github-copilot, openai-codex, opencode)
+ * Tests that tool call IDs from OpenAI Responses API (openai, openai-codex)
  * are properly normalized when sent to other providers.
  *
  * OpenAI Responses API generates IDs in format: {call_id}|{id}
@@ -17,7 +17,6 @@ import { completeSimple, getEnvApiKey, getModel } from "../src/compat.ts";
 import { resolveApiKey } from "./oauth.ts";
 
 // Resolve API keys
-const _copilotToken = await resolveApiKey("github-copilot");
 const openrouterKey = getEnvApiKey("openrouter");
 const codexToken = await resolveApiKey("openai-codex");
 
@@ -62,7 +61,7 @@ describe("Tool Call ID Normalization - Prefilled Context", () => {
 				},
 			],
 			api: "openai-responses",
-			provider: "github-copilot",
+			provider: "openai",
 			model: "gpt-5.2-codex",
 			usage: {
 				input: 100,

@@ -58,7 +58,6 @@ import {
 	resolveJsonSchemaStrictSampling,
 	type UnsupportedStrictSchemaKeywordCheck,
 } from "./constrained-sampling.ts";
-import { buildCopilotDynamicHeaders, hasCopilotVisionInput } from "./github-copilot-headers.ts";
 import { adjustMaxTokensForThinking, buildBaseOptions, clampMaxTokensToContext } from "./simple-options.ts";
 import { transformMessages } from "./transform-messages.ts";
 
@@ -285,7 +284,7 @@ export interface AnthropicOptions extends StreamOptions {
 	/**
 	 * Pre-built Anthropic client instance. When provided, skips internal client
 	 * construction entirely. Use this to inject alternative SDK clients such as
-	 * `AnthropicVertex` that shares the same messaging API.
+	 * other Anthropic-compatible clients that share the same messaging API.
 	 */
 	client?: Anthropic;
 }
@@ -612,27 +611,10 @@ export const stream: StreamFunction<"anthropic-messages", AnthropicOptions> = (
 				const federation = getAnthropicFederation(model, apiKey, options?.headers, options?.env);
 				if (!federation) assertRequestAuth(model.provider, apiKey, options?.headers);
 
-				let copilotDynamicHeaders: Record<string, string> | undefined;
-				if (model.provider === "github-copilot") {
-					const hasImages = hasCopilotVisionInput(normalizedContext.messages);
-					copilotDynamicHeaders = buildCopilotDynamicHeaders({
-						messages: normalizedContext.messages,
-						hasImages,
-					});
-				}
-
 				const cacheRetention = resolveCacheRetention(options?.cacheRetention, options?.env);
 				const cacheSessionId = cacheRetention === "none" ? undefined : options?.sessionId;
 
-				const created = createClient(
-					model,
-					apiKey,
-					options?.headers,
-					options?.fetch,
-					copilotDynamicHeaders,
-					cacheSessionId,
-					federation,
-				);
+				const created = createClient(model, apiKey, options?.headers, options?.fetch, cacheSessionId, federation);
 				client = created.client;
 				isOAuth = created.isOAuthToken;
 			}
@@ -984,32 +966,9 @@ function createClient(
 	apiKey: string | undefined,
 	optionsHeaders?: ProviderHeaders,
 	fetch?: typeof globalThis.fetch,
-	dynamicHeaders?: Record<string, string>,
 	sessionId?: string,
 	federation?: AnthropicFederationConfig,
 ): { client: Anthropic; isOAuthToken: boolean } {
-	// Copilot: Bearer auth.
-	if (model.provider === "github-copilot") {
-		const client = new AkramCodeAnthropic({
-			apiKey: null,
-			authToken: apiKey ?? null,
-			baseURL: model.baseUrl,
-			dangerouslyAllowBrowser: true,
-			fetch,
-			defaultHeaders: mergeClientHeaders(
-				{
-					accept: "application/json",
-					"anthropic-dangerous-direct-browser-access": "true",
-				},
-				model.headers,
-				dynamicHeaders,
-				optionsHeaders,
-			),
-		});
-
-		return { client, isOAuthToken: false };
-	}
-
 	// OAuth: Bearer auth, Claude Code identity headers
 	if (apiKey && isOAuthToken(apiKey)) {
 		const client = new AkramCodeAnthropic({

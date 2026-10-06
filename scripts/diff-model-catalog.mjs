@@ -15,8 +15,8 @@ JSON differences. If providers are omitted, all providers are compared.
 worktree's getSupportedThinkingLevels() implementation.
 
 Examples:
-  node scripts/diff-model-catalog.mjs github-copilot
-  npm run diff:model-catalog -- --thinking moonshotai kimi-coding
+  node scripts/diff-model-catalog.mjs openrouter
+  npm run diff:model-catalog -- --thinking openai openai-codex
 `);
 }
 

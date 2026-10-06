@@ -195,7 +195,6 @@ describe("OpenAI Responses tool-call namespaces", () => {
 		);
 		const targetModels: Model<Api>[] = [
 			{ ...model, id: "gpt-5.2", name: "GPT-5.2" },
-			{ ...model, provider: "azure-openai-responses" },
 			{
 				...model,
 				api: "openai-codex-responses",

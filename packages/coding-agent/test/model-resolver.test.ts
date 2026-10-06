@@ -428,11 +428,11 @@ describe("resolveCliModel", () => {
 	});
 
 	test("prefers the sole authenticated provider for an ambiguous bare exact model id", () => {
-		const azureModel: Model<"anthropic-messages"> = {
+		const otherModel: Model<"anthropic-messages"> = {
 			...mockModels[1],
 			id: "gpt-5.6-sol",
 			name: "GPT 5.6 Sol",
-			provider: "azure-openai-responses",
+			provider: "openai",
 		};
 		const codexModel: Model<"anthropic-messages"> = {
 			...mockModels[1],
@@ -441,7 +441,7 @@ describe("resolveCliModel", () => {
 			provider: "openai-codex",
 		};
 		const registry = {
-			getModels: () => [azureModel, codexModel],
+			getModels: () => [otherModel, codexModel],
 			hasConfiguredAuth: (provider: string) => provider === "openai-codex",
 		} as unknown as Parameters<typeof resolveCliModel>[0]["modelRuntime"];
 
@@ -456,11 +456,11 @@ describe("resolveCliModel", () => {
 	});
 
 	test("requires an explicit provider for an ambiguous bare exact model id without a unique authenticated provider", () => {
-		const azureModel: Model<"anthropic-messages"> = {
+		const otherModel: Model<"anthropic-messages"> = {
 			...mockModels[1],
 			id: "gpt-5.6-sol",
 			name: "GPT 5.6 Sol",
-			provider: "azure-openai-responses",
+			provider: "openai",
 		};
 		const codexModel: Model<"anthropic-messages"> = {
 			...mockModels[1],
@@ -469,7 +469,7 @@ describe("resolveCliModel", () => {
 			provider: "openai-codex",
 		};
 		const registry = {
-			getModels: () => [azureModel, codexModel],
+			getModels: () => [otherModel, codexModel],
 			hasConfiguredAuth: () => false,
 		} as unknown as Parameters<typeof resolveCliModel>[0]["modelRuntime"];
 
@@ -480,7 +480,7 @@ describe("resolveCliModel", () => {
 
 		expect(result.model).toBeUndefined();
 		expect(result.error).toContain('Model "gpt-5.6-sol" is ambiguous across providers');
-		expect(result.error).toContain("azure-openai-responses/gpt-5.6-sol");
+		expect(result.error).toContain("openai/gpt-5.6-sol");
 		expect(result.error).toContain("openai-codex/gpt-5.6-sol");
 		expect(result.error).toContain("Use --provider or provider/model");
 	});
