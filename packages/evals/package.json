@@ -11,9 +11,9 @@
 		"test": "vitest run --config vitest.test.config.ts"
 	},
 	"devDependencies": {
-		"@akramcode/ai": "^1.0.3",
-		"@akramcode/providers": "^1.0.3",
-		"@akramcode/coding-agent": "^1.0.3",
+		"@akramcode/ai": "^1.0.4",
+		"@akramcode/providers": "^1.0.4",
+		"@akramcode/coding-agent": "^1.0.4",
 		"@types/node": "22.19.19",
 		"@vitest-evals/core": "0.15.0",
 		"autoevals": "0.3.0",
