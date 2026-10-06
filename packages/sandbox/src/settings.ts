@@ -29,6 +29,8 @@ export interface OpenSandboxSettings {
 	volumeRetentionDays?: number;
 	/** Network access of the sandbox: `deny` blocks all outbound traffic. */
 	network?: "allow" | "deny";
+	/** Reach the sandbox through the server instead of directly. Default: on unless the server is on this machine. */
+	useServerProxy?: boolean;
 }
 
 export interface ResolvedOpenSandboxSettings {
@@ -44,12 +46,18 @@ export interface ResolvedOpenSandboxSettings {
 	volumePrefix: string;
 	volumeRetentionDays: number;
 	network: "allow" | "deny";
+	useServerProxy: boolean;
 }
 
 export interface ResolvedSandboxSettings {
 	provider: SandboxProviderName;
 	workspace: SandboxWorkspace;
 	opensandbox: ResolvedOpenSandboxSettings;
+}
+
+function isLoopback(domain: string): boolean {
+	const host = domain.startsWith("[") ? domain.slice(1, domain.indexOf("]")) : domain.split(":")[0];
+	return host === "localhost" || host === "127.0.0.1" || host === "::1";
 }
 
 function positive(value: unknown, fallback: number): number {
@@ -78,6 +86,8 @@ export function resolveSandboxSettings(raw: SandboxSettings | undefined): Resolv
 			volumePrefix: text(os.volumePrefix, "akc-"),
 			volumeRetentionDays: positive(os.volumeRetentionDays, 30),
 			network: os.network === "deny" ? "deny" : "allow",
+			useServerProxy:
+				typeof os.useServerProxy === "boolean" ? os.useServerProxy : !isLoopback(text(os.domain, "127.0.0.1:8080")),
 		},
 	};
 }

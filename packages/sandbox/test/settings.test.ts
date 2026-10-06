@@ -11,6 +11,16 @@ describe("resolveSandboxSettings", () => {
 		expect(resolved.opensandbox.ttlMinutes).toBe(330);
 	});
 
+	it("goes through the server proxy unless the server is on this machine", () => {
+		const proxied = (opensandbox: { domain?: string; useServerProxy?: boolean }) =>
+			resolveSandboxSettings({ opensandbox }).opensandbox.useServerProxy;
+		expect(proxied({})).toBe(false);
+		expect(proxied({ domain: "localhost:9" })).toBe(false);
+		expect(proxied({ domain: "[::1]:9" })).toBe(false);
+		expect(proxied({ domain: "sandbox.example.com" })).toBe(true);
+		expect(proxied({ domain: "sandbox.example.com", useServerProxy: false })).toBe(false);
+	});
+
 	it("keeps valid values and ignores invalid ones", () => {
 		const resolved = resolveSandboxSettings({
 			provider: "opensandbox",

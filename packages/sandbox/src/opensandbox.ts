@@ -38,6 +38,7 @@ export function createOpenSandboxApi(settings: ResolvedOpenSandboxSettings): Ope
 		domain: settings.domain,
 		protocol: settings.protocol,
 		apiKey: settings.apiKey,
+		useServerProxy: settings.useServerProxy,
 	});
 	const manager = SandboxManager.create({ connectionConfig });
 	return {

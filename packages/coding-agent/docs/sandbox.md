@@ -60,6 +60,7 @@ The `sandbox` block is read from user settings only (`~/.akramcode/agent/setting
 | `opensandbox.maxLive` | `12` | Most reusable sandboxes alive at once; the longest idle are deleted first. |
 | `opensandbox.volumePrefix` | `akc-` | Prefix of the volumes AkramCode creates. Keep it in the server's `managed_volume_prefixes`. |
 | `opensandbox.volumeRetentionDays` | `30` | Volumes untouched for this long are deleted by a daily sweep. |
+| `opensandbox.useServerProxy` | on unless the server is on this machine | Reach the sandbox through the server. A remote server needs it, because the sandbox ports are not reachable from your machine. |
 | `opensandbox.network` | `allow` | `deny` blocks all outbound traffic from the sandbox (needs the server's egress sidecar image). |
 
 ## What is reused
