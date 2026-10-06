@@ -123,7 +123,7 @@ describe("Tool Call ID Normalization - Prefilled Context", () => {
 	it.skipIf(!codexToken)(
 		"openai-codex should handle prefilled context with long pipe-separated IDs",
 		async () => {
-			const model = getModel("openai-codex", "gpt-5.5");
+			const model = getModel("openai-codex", "gpt-6.1-sol");
 			const messages = buildPrefilledMessages();
 
 			const response = await completeSimple(

@@ -30,20 +30,14 @@ describe("getSupportedThinkingLevels", () => {
 		expect(getSupportedThinkingLevels(model!)).not.toContain("max");
 	});
 
-	it.each([
-		"gpt-5.5",
-		"gpt-5.6-sol",
-		"gpt-5.6-terra",
-		"gpt-5.6-luna",
-		"gpt-6-astra",
-		"gpt-6-sol",
-		"gpt-6-luna",
-		"gpt-6.1-sol",
-	] as const)("includes xhigh for openai-codex %s models", (modelId) => {
-		const model = getModel("openai-codex", modelId);
-		expect(model).toBeDefined();
-		expect(getSupportedThinkingLevels(model!)).toContain("xhigh");
-	});
+	it.each(["gpt-6-astra", "gpt-6-luna", "gpt-6.1-sol"] as const)(
+		"includes xhigh for openai-codex %s models",
+		(modelId) => {
+			const model = getModel("openai-codex", modelId);
+			expect(model).toBeDefined();
+			expect(getSupportedThinkingLevels(model!)).toContain("xhigh");
+		},
+	);
 
 	it.each(["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-6-sol", "gpt-6-luna"] as const)(
 		"includes xhigh and max for OpenAI %s models",
@@ -55,7 +49,6 @@ describe("getSupportedThinkingLevels", () => {
 	);
 
 	it.each([
-		["gpt-6-sol", { input: 2, output: 10, cacheRead: 0.2, cacheWrite: 2.5 }],
 		["gpt-6-luna", { input: 0.1, output: 0.5, cacheRead: 0.01, cacheWrite: 0.125 }],
 		["gpt-6.1-sol", { input: 2, output: 10, cacheRead: 0.1, cacheWrite: 2.5 }],
 	] as const)("includes official metadata for OpenAI and Codex %s", (modelId, cost) => {
@@ -75,7 +68,7 @@ describe("getSupportedThinkingLevels", () => {
 						},
 					],
 				},
-				contextWindow: 272000,
+				contextWindow: provider === "openai-codex" ? 1000000 : 272000,
 				maxTokens: 128000,
 				compat: {
 					supportsAdditionalTools: true,

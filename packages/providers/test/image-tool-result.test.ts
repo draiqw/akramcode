@@ -275,7 +275,7 @@ describe("Tool Results with Images", () => {
 			"gpt-5.5 - should handle tool result with only image",
 			{ retry: 3, timeout: 30000 },
 			async () => {
-				const llm = getModel("openai-codex", "gpt-5.5");
+				const llm = getModel("openai-codex", "gpt-6.1-sol");
 				await handleToolWithImageResult(llm, { apiKey: openaiCodexToken });
 			},
 		);
@@ -284,7 +284,7 @@ describe("Tool Results with Images", () => {
 			"gpt-5.5 - should handle tool result with text and image",
 			{ retry: 3, timeout: 30000 },
 			async () => {
-				const llm = getModel("openai-codex", "gpt-5.5");
+				const llm = getModel("openai-codex", "gpt-6.1-sol");
 				await handleToolWithTextAndImageResult(llm, { apiKey: openaiCodexToken });
 			},
 		);

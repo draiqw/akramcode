@@ -107,7 +107,7 @@ describe("Token Statistics on Abort", () => {
 			"gpt-5.5 - should include token stats when aborted mid-stream",
 			{ retry: 3, timeout: 30000 },
 			async () => {
-				const llm = getModel("openai-codex", "gpt-5.5");
+				const llm = getModel("openai-codex", "gpt-6.1-sol");
 				await testTokensOnAbort(llm, { apiKey: openaiCodexToken });
 			},
 		);

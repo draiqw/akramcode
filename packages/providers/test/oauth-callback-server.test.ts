@@ -71,9 +71,8 @@ describe.sequential("OAuth callback server", () => {
 		expect(success).toMatchObject({ status: 200, contentType: "text/html; charset=utf-8" });
 		expect(success.body).toContain("Authentication successful");
 		expect(success.body).toContain("Signed in to Example.");
-		expect(success.body).toContain('fill="#F09082"');
-		expect(success.body).toContain('fill="#4D9ABF"');
-		expect(success.body).toContain('fill="#F1BE58"');
+		expect(success.body).toContain('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"');
+		expect(success.body).toContain('fill="#fafafa"');
 		await expect(server.wait()).resolves.toBe("completed:the-code");
 	});
 
