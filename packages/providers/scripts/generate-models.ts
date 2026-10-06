@@ -1602,9 +1602,9 @@ async function generateModels() {
 
 	// OpenAI Codex (ChatGPT OAuth) models
 	// NOTE: These are not fetched from models.dev; we keep a small, explicit list to avoid aliases.
-	// Only GPT-6 Luna, GPT-6 Astra and GPT-6.1 Sol are kept; their context window is set to 1M by project decision.
+	// Only GPT-6 Luna, GPT-6 Astra and GPT-6.1 Sol are kept; their input limit of 922k was measured against the Codex backend (1,050,000 window minus 128k output).
 	const CODEX_BASE_URL = "https://chatgpt.com/backend-api";
-	const CODEX_CONTEXT = 1000000;
+	const CODEX_CONTEXT = 922000;
 	const CODEX_MAX_TOKENS = 128000;
 	const codexModels: Model<"openai-codex-responses">[] = [
 		{
