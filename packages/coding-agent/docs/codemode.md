@@ -36,7 +36,7 @@ The result starts with `Script completed` or `Script failed`, the wall time, and
 
 ## Call tools
 
-Every tool the session can call is a method of `tools`, named by its identifier: characters that are not valid in a JavaScript identifier become `_`, so the MCP tool `mcp__dev-radius__search` is `tools.mcp__dev_radius__search`. Each method takes one object with the tool's arguments.
+Every tool the session can call is a method of `tools`, named by its identifier: characters that are not valid in a JavaScript identifier become `_`, so the MCP tool `mcp__dev-gateway__search` is `tools.mcp__dev_gateway__search`. Each method takes one object with the tool's arguments.
 
 What a call resolves to depends on the tool:
 

@@ -487,7 +487,7 @@ describe("InteractiveMode.createBaseAutocompleteProvider", () => {
 				{ id: "anthropic", name: "Anthropic", authType: "oauth", subscription: true },
 				{ id: "anthropic", name: "Anthropic", authType: "api_key", subscription: true },
 				{ id: "openai", name: "OpenAI", authType: "api_key" },
-				{ id: "radius", name: "Radius", authType: "oauth", subscription: false },
+				{ id: "deepseek", name: "DeepSeek", authType: "oauth", subscription: false },
 			],
 		};
 
@@ -505,12 +505,14 @@ describe("InteractiveMode.createBaseAutocompleteProvider", () => {
 			},
 		]);
 
-		// OAuth sign-in without a subscription, such as Radius, is an account.
-		const radiusLine = "/login radius";
-		const radiusSuggestions = await provider.getSuggestions([radiusLine], 0, radiusLine.length, {
+		// An OAuth sign-in without a subscription is an account.
+		const accountLine = "/login deepseek";
+		const accountSuggestions = await provider.getSuggestions([accountLine], 0, accountLine.length, {
 			signal: new AbortController().signal,
 		});
-		expect(radiusSuggestions?.items).toEqual([{ value: "radius", label: "radius", description: "Radius · account" }]);
+		expect(accountSuggestions?.items).toEqual([
+			{ value: "deepseek", label: "deepseek", description: "DeepSeek · account" },
+		]);
 	});
 });
 describe("InteractiveMode.showLoadedResources", () => {

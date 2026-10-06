@@ -6,13 +6,8 @@ import { deepseekProvider } from "./deepseek.ts";
 import { openaiProvider } from "./openai.ts";
 import { openaiCodexProvider } from "./openai-codex.ts";
 import { openrouterProvider } from "./openrouter.ts";
-import { radiusProvider } from "./radius.ts";
 
-export { radiusProvider };
-
-/** Providers present in the generated catalog. `KnownProvider` additionally
- * includes purely dynamic providers (e.g. "radius") that have no static
- * catalog entry. */
+/** Providers present in the generated catalog. */
 export type BuiltinProvider = keyof typeof MODELS;
 
 type BuiltinChatModelId<TProvider extends BuiltinProvider> = keyof (typeof MODELS)[TProvider];
@@ -97,7 +92,7 @@ export function getAllBuiltinModels<TProvider extends BuiltinProvider>(provider:
 
 /** All built-in providers, freshly constructed. */
 export function builtinProviders(): Provider[] {
-	return [deepseekProvider(), openaiProvider(), openaiCodexProvider(), openrouterProvider(), radiusProvider()];
+	return [deepseekProvider(), openaiProvider(), openaiCodexProvider(), openrouterProvider()];
 }
 
 /** A `Models` collection with every built-in provider registered. */

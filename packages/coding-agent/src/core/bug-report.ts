@@ -238,7 +238,7 @@ export interface BugReportSessionEntryData {
 	hint: string | null;
 	sessionIncluded: boolean;
 	summaryIncluded: boolean;
-	delivery: "zip" | "upload";
+	delivery: "zip";
 	path?: string;
 }
 
@@ -248,7 +248,7 @@ interface BugReportFile {
 	data: string;
 }
 
-/** Files shared by upload and zip export. */
+/** Files written to the zip export. */
 export function bugReportFiles(bundle: BugReportBundle): BugReportFile[] {
 	const files: BugReportFile[] = [
 		{ name: "report.json", contentType: "application/json", data: `${JSON.stringify(bundle.metadata, null, 2)}\n` },

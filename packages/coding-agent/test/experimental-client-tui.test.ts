@@ -229,7 +229,6 @@ describe("experimental client TUI", () => {
 			});
 			const server: ClientTuiServer = {
 				serverId,
-				radius: true,
 				server: serverServices,
 				session: sessionServices,
 			};
@@ -286,24 +285,12 @@ describe("experimental client TUI", () => {
 				});
 				await vi.waitFor(() => expect(component.render(80).join("\n")).toContain("Reloaded plugins."));
 
-				publishReplacement(attachment, { status: "detached" });
-				publishReplacement(connectionState, {
-					status: "disconnected",
-					since: "later",
-					reason: "network lost",
-					retryAt: null,
-				});
-				await vi.waitFor(() => expect(component.render(80).join("\n")).toContain("retrying"));
 				component.handleInput("\u0003");
 				expect(finished).toBe(true);
 				finished = false;
 				component.handleInput("\u0004");
 				expect(finished).toBe(true);
 				finished = false;
-				publishReplacement(connectionState, { status: "connecting", attempt: 1 });
-				publishReplacement(connectionState, { status: "connected", since: "reconnected" });
-				publishReplacement(attachment, { status: "attached", sessionId });
-				await vi.waitFor(() => expect(component.render(80).join("\n")).not.toContain("Reattaching"));
 
 				component.handleInput("/model");
 				component.handleInput("\u001b");

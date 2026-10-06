@@ -25,7 +25,6 @@ Run `/logout` and select a provider to remove its stored credential. This does n
 | OpenAI Codex | OAuth | none |
 | OpenRouter | API key or OAuth | `OPENROUTER_API_KEY` |
 | DeepSeek | API key | `DEEPSEEK_API_KEY` |
-| Radius | OAuth or API key | `RADIUS_API_KEY` |
 
 Any other OpenAI- or Anthropic-compatible service can be added as a custom provider. See [Models](models.md#configure-a-compatible-endpoint).
 
@@ -62,17 +61,3 @@ To use a secret manager without writing the resolved key to disk, set a provider
 ```
 
 AkramCode runs the command when the key is first needed and caches its standard output for the process lifetime. Empty output, a timeout, or a nonzero exit leaves the key unresolved until AkramCode restarts.
-
-## Provider specific config
-
-### Radius
-
-Radius is a service crafted for AkramCode by the builders of AkramCode, Earendil Works. It provides a customizable AI gateway with organization-level controls and analytics built in, and artifacts for sharing what you create with AkramCode.
-
-To get started, run `/login radius` in AkramCode. This adds Radius as a provider, and its models appear in `/model` like any other provider's.
-
-Radius also has an MCP server, so AkramCode can manage Radius for you.
-
-Radius is currently in early alpha and evolving quickly. See [radius.earendil.com](https://radius.earendil.com) for more.
-
-Radius authentication uses its gateway catalog and caches refreshed model metadata for later offline startup. A custom Radius gateway configured in `models.json` uses its own catalog rather than inheriting the public `radius.pi.dev` catalog.

@@ -34,12 +34,7 @@ import { type OpenClientRuntimeOptions, openClientRuntime } from "./client-runti
 import { ExperimentalChatView, liveOf } from "./client-tui-chat.ts";
 import { createPresentationFacetLoaders } from "./plugins/bundled.ts";
 import { AgentController, type AgentOperationResponse, type AgentQueueResponse } from "./services/agent-controller.ts";
-import type {
-	ServerConnectionState,
-	ServerServiceSource,
-	SessionAttachmentState,
-	SessionServiceSource,
-} from "./services/connection.ts";
+import type { ServerServiceSource, SessionServiceSource } from "./services/connection.ts";
 import { PresentationPlugins } from "./services/plugins.ts";
 import { PresentationUI } from "./services/presentation-ui.ts";
 import { SessionDirectory, SessionManagement, type SessionSummary } from "./services/sessions.ts";
@@ -56,7 +51,6 @@ export interface RunClientTuiOptions extends OpenClientRuntimeOptions {
 
 export interface ClientTuiServer {
 	readonly serverId: string;
-	readonly radius: boolean;
 	readonly server: ServerServiceSource;
 	readonly session: SessionServiceSource;
 }
@@ -118,7 +112,6 @@ export class ExperimentalClientTui implements Component {
 	#busy = false;
 	#closed = false;
 	#closePromise: Promise<void> | undefined;
-	#recoveryTransition: Promise<void> = Promise.resolve();
 	#laneUnsubscribe: (() => void) | undefined;
 	#chatView: ExperimentalChatView | undefined;
 
@@ -300,14 +293,6 @@ export class ExperimentalClientTui implements Component {
 						if (this.#controller === controller) this.#controller = undefined;
 					});
 					env.own(commands.subscribe(() => this.#updateAutocomplete()));
-					if (server.radius) {
-						env.own(
-							server.server.connection.subscribe((state) => this.#handleConnectionState(server.serverId, state)),
-						);
-						env.own(
-							server.session.attachment.subscribe((state) => this.#handleAttachmentState(sessionFeature, state)),
-						);
-					}
 				});
 			},
 		});
@@ -342,7 +327,6 @@ export class ExperimentalClientTui implements Component {
 		this.#completeSelection(undefined);
 		const errors: unknown[] = [];
 		try {
-			await this.#recoveryTransition;
 			await this.#closeLane();
 			await this.#facetReloadTail;
 		} catch (error) {
@@ -443,53 +427,6 @@ export class ExperimentalClientTui implements Component {
 
 	#selectedSlashCommands(): SlashCommands | undefined {
 		return this.#slashCommands;
-	}
-
-	#handleConnectionState(serverId: string, state: ServerConnectionState): void {
-		if (this.#closed || this.#selectedServerId !== serverId) return;
-		if (state.status === "connected") {
-			if (this.#laneUnsubscribe === undefined) {
-				this.#busy = true;
-				this.#status = "Reattaching Session…";
-				this.#rebuild();
-			}
-			return;
-		}
-		this.#busy = true;
-		this.#status = state.status === "connecting" ? "Reconnecting to Radius…" : "Radius disconnected; retrying…";
-		this.#queueRecovery(() => this.#closeLane());
-		this.#rebuild();
-	}
-
-	#handleAttachmentState(feature: SessionFeature, state: SessionAttachmentState): void {
-		if (this.#closed || this.#selectedServerId !== feature.serverId || this.#sessionId === undefined) return;
-		if (state.status === "attached" && state.sessionId === this.#sessionId) {
-			this.#queueRecovery(async () => {
-				if (this.#laneUnsubscribe === undefined) await this.#openLane(feature);
-				this.#busy = false;
-				this.#status = "";
-				this.#rebuild();
-			});
-			return;
-		}
-		if (state.status === "attaching" && state.sessionId === this.#sessionId) {
-			this.#busy = true;
-			this.#status = "Reattaching Session…";
-			this.#rebuild();
-		}
-	}
-
-	#queueRecovery(operation: () => Promise<void>): void {
-		this.#recoveryTransition = this.#recoveryTransition
-			.then(async () => {
-				if (!this.#closed) await operation();
-			})
-			.catch((error: unknown) => {
-				if (this.#closed) return;
-				this.#busy = true;
-				this.#status = `Reconnect error: ${message(error)}`;
-				this.#rebuild();
-			});
 	}
 
 	async #openLane(feature: SessionFeature): Promise<void> {
@@ -672,9 +609,6 @@ async function prepareClientSession(
 			if (matches.length > 1) throw new Error(`Session ${command.sessionId} is available from more than one server`);
 			selected = matches[0];
 			if (selected === undefined) {
-				if (command.connect?.transport === "radius") {
-					throw new Error(`Remote server does not contain Session ${command.sessionId}`);
-				}
 				const feature = requireSingleServer(features);
 				selected = {
 					server: feature.server,
@@ -775,7 +709,6 @@ export async function runClientTui(command: ClientCommand, options: RunClientTui
 			ui: tui,
 			servers: runtime.servers.map((server) => ({
 				serverId: server.route.serverId,
-				radius: server.route.transport === "radius",
 				server: server.server,
 				session: server.session,
 			})),

@@ -14,7 +14,6 @@ import type { ModelRuntime } from "./model-runtime.ts";
 export const defaultModelPerProvider: Partial<Record<KnownProvider, string>> = {
 	openai: "gpt-5.5",
 	"openai-codex": "gpt-6-luna",
-	radius: "balanced",
 	deepseek: "deepseek-v4-pro",
 	openrouter: "moonshotai/kimi-k2.6",
 };

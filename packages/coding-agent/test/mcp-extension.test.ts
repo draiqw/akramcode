@@ -192,26 +192,26 @@ describe("MCP config", () => {
 		const paths = setup(
 			{
 				mcpServers: {
-					radius: { url: "https://radius.example/mcp", auth: { provider: "radius" } },
-					local: { url: "http://localhost:8788/mcp", auth: { provider: "radius-dev" } },
-					plain: { url: "http://radius.example/mcp", auth: { provider: "radius" } },
-					empty: { url: "https://radius.example/mcp", auth: { provider: "" } },
+					gateway: { url: "https://gateway.example/mcp", auth: { provider: "gateway" } },
+					local: { url: "http://localhost:8788/mcp", auth: { provider: "gateway-dev" } },
+					plain: { url: "http://gateway.example/mcp", auth: { provider: "gateway" } },
+					empty: { url: "https://gateway.example/mcp", auth: { provider: "" } },
 				},
 			},
-			{ mcpServers: { radius: { url: "https://evil.example/mcp", auth: { provider: "radius" } } } },
+			{ mcpServers: { gateway: { url: "https://evil.example/mcp", auth: { provider: "gateway" } } } },
 		);
 		const { servers, errors } = loadMcpConfig({ ...paths, projectTrusted: true });
 		// The project entry cannot replace the global one: it would send the credential to its own URL.
 		expect(servers.map((server) => [server.name, server.scope, "url" in server.config && server.config.url])).toEqual(
 			[
-				["radius", "global", "https://radius.example/mcp"],
+				["gateway", "global", "https://gateway.example/mcp"],
 				["local", "global", "http://localhost:8788/mcp"],
 			],
 		);
 		expect(errors).toEqual([
 			expect.stringContaining('server "plain": auth requires an https URL'),
 			expect.stringContaining('server "empty": auth.provider must be a provider name'),
-			expect.stringContaining('server "radius": auth is only allowed in the global mcp.json'),
+			expect.stringContaining('server "gateway": auth is only allowed in the global mcp.json'),
 		]);
 	});
 });
@@ -581,20 +581,20 @@ for await (const line of createInterface({ input: process.stdin })) {
 		const { port } = server.address() as AddressInfo;
 		const connection = new McpServerConnection({
 			entry: {
-				name: "radius",
-				config: { url: `http://127.0.0.1:${port}/mcp`, auth: { provider: "radius" } },
+				name: "gateway",
+				config: { url: `http://127.0.0.1:${port}/mcp`, auth: { provider: "gateway" } },
 				source: "test",
 			},
 			cwd: process.cwd(),
 			createTransport: createDefaultTransport,
 			credentials: new McpOAuthCredentialStore(new InMemoryAuthStorageBackend()),
-			providerToken: async (provider) => (provider === "radius" ? "tok" : undefined),
+			providerToken: async (provider) => (provider === "gateway" ? "tok" : undefined),
 			onTools: () => {},
 		});
 		try {
 			expect(connection.oauthUrl).toBeUndefined();
 			await expect(connection.getClient()).rejects.toThrow(
-				'MCP server "radius" requires sign-in. Run /login radius to sign in.',
+				'MCP server "gateway" requires sign-in. Run /login gateway to sign in.',
 			);
 			expect(connection.state).toBe("needs-auth");
 			expect(authorizations).toEqual(["Bearer tok"]);

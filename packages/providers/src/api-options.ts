@@ -1,4 +1,3 @@
-import type { AkramCodeMessagesOptions } from "./api/akramcode-messages.ts";
 import type { AnthropicOptions } from "./api/anthropic-messages.ts";
 import type { OpenAICodexResponsesOptions } from "./api/openai-codex-responses.ts";
 import type { OpenAICompletionsOptions } from "./api/openai-completions.ts";
@@ -10,7 +9,6 @@ declare module "@akramcode/ai/types" {
 		"openai-completions": OpenAICompletionsOptions;
 		"openai-responses": OpenAIResponsesOptions;
 		"openai-codex-responses": OpenAICodexResponsesOptions;
-		"akramcode-messages": AkramCodeMessagesOptions;
 	}
 }
 

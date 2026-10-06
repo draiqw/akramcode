@@ -15,7 +15,6 @@ type OAuthFlowLoaders = {
 	openaiCodex: () => OAuthAuth | Promise<OAuthAuth>;
 	openaiChatGPT: () => OAuthAuth | Promise<OAuthAuth>;
 	openrouter: () => OAuthAuth | Promise<OAuthAuth>;
-	radius: (options: { name: string; gateway: string }) => OAuthAuth | Promise<OAuthAuth>;
 };
 
 let bundledLoaders: OAuthFlowLoaders | undefined;
@@ -38,13 +37,4 @@ export const loadOpenAIChatGPTOAuth = async (): Promise<OAuthAuth> => {
 export const loadOpenRouterOAuth = async (): Promise<OAuthAuth> => {
 	if (bundledLoaders) return bundledLoaders.openrouter();
 	return ((await importOAuthModule("./openrouter.ts")) as { openRouterOAuth: OAuthAuth }).openRouterOAuth;
-};
-
-export const loadRadiusOAuth = async (options: { name: string; gateway: string }): Promise<OAuthAuth> => {
-	if (bundledLoaders) return bundledLoaders.radius(options);
-	return (
-		(await importOAuthModule("./radius.ts")) as {
-			createRadiusOAuth: (input: { name: string; gateway: string }) => OAuthAuth;
-		}
-	).createRadiusOAuth(options);
 };

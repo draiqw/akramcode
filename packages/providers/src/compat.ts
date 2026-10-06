@@ -11,7 +11,6 @@
  */
 
 export * from "@akramcode/ai";
-export * from "./api/akramcode-messages.lazy.ts";
 export * from "./api/anthropic-messages.lazy.ts";
 export * from "./api/openai-codex-responses.lazy.ts";
 export * from "./api/openai-completions.lazy.ts";
@@ -24,7 +23,6 @@ export * from "./index.ts";
 export * from "./legacy-api-aliases.ts";
 export * from "./providers/images/register-builtins.ts";
 
-import { akramCodeMessagesApi } from "./api/akramcode-messages.lazy.ts";
 import { anthropicMessagesApi } from "./api/anthropic-messages.lazy.ts";
 import { openAICodexResponsesApi } from "./api/openai-codex-responses.lazy.ts";
 import { openAICompletionsApi } from "./api/openai-completions.lazy.ts";
@@ -172,7 +170,6 @@ const BUILTIN_APIS: [Api, ProviderStreams][] = [
 	["openai-completions", openAICompletionsApi()],
 	["openai-responses", openAIResponsesApi()],
 	["openai-codex-responses", openAICodexResponsesApi()],
-	["akramcode-messages", akramCodeMessagesApi()],
 ];
 
 const builtinApiProviderInstances = new Map<Api, ReturnType<typeof getApiProvider>>();

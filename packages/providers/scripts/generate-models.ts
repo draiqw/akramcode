@@ -26,11 +26,6 @@ import {
 	validateGeneratedModelData,
 	validateModelDataDirectory,
 } from "./model-data.ts";
-import {
-	DEFAULT_RADIUS_GATEWAY,
-	getRadiusModelsFromConfig,
-	loadRadiusGatewayConfig,
-} from "../src/providers/radius-config.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -706,21 +701,6 @@ async function fetchOpenRouterModels(): Promise<OpenRouterCatalog> {
 	}
 }
 
-async function fetchRadiusModels(): Promise<Model<"akramcode-messages">[]> {
-	try {
-		console.log("Fetching models from Radius API...");
-		const config = await loadRadiusGatewayConfig(DEFAULT_RADIUS_GATEWAY);
-		const models = getRadiusModelsFromConfig("radius", config);
-		if (models.length === 0) throw new Error("Radius API returned no models");
-		console.log(`Fetched ${models.length} models from Radius`);
-		return models;
-	} catch (error) {
-		console.error("Failed to fetch Radius models:", error);
-		if (generatorOptions.strict) throw error;
-		return [];
-	}
-}
-
 async function loadModelsDevData(): Promise<Model<any>[]> {
 	try {
 		console.log("Fetching models from models.dev API...");
@@ -772,13 +752,11 @@ async function generateModels() {
 	// Fetch models from all upstream catalogs.
 	// models.dev: OpenAI
 	// OpenRouter: its tool-capable routed catalog
-	// Radius: its unauthenticated public catalog; authenticated clients overlay it at runtime
 	const modelsDevModels = await loadModelsDevData();
 	const openRouterCatalog = await fetchOpenRouterModels();
-	const radiusModels = await fetchRadiusModels();
 
 	// Combine chat models (models.dev has priority where sources overlap).
-	const allModels = [...modelsDevModels, ...openRouterCatalog.chat, ...radiusModels];
+	const allModels = [...modelsDevModels, ...openRouterCatalog.chat];
 
 	// Temporary overrides until upstream model metadata is corrected.
 	for (const candidate of allModels) {
@@ -1108,7 +1086,7 @@ async function generateModels() {
 
 	// Only these providers ship in the built-in catalog; anything else is reached
 	// through a user-defined provider (models.json or an extension).
-	const keptProviders = new Set(["deepseek", "openai", "openai-codex", "openrouter", "radius"]);
+	const keptProviders = new Set(["deepseek", "openai", "openai-codex", "openrouter"]);
 	allModels.splice(0, allModels.length, ...allModels.filter((model) => keptProviders.has(model.provider)));
 
 	// Keep chat and image catalogs separate so one upstream ID can expose both

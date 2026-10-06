@@ -61,7 +61,6 @@ Unified LLM API with provider collections, automatic auth resolution, token and 
 
 - **OpenAI**
 - **OpenAI Codex (legacy)** (ChatGPT Plus/Pro subscription, requires OAuth, see below)
-- **Radius** (API key or OAuth, with a dynamically refreshed gateway catalog)
 - **DeepSeek**
 - **OpenRouter**
 - **Any OpenAI-compatible API**: vLLM, LM Studio, etc.
@@ -313,7 +312,6 @@ import {
 } from '@akramcode/providers/providers/all';
 
 const model = getBuiltinModel('openai', 'gpt-4o-mini'); // typed Model<'openai-responses'>
-const radius = getBuiltinModel('radius', 'balanced');   // typed Model<'akramcode-messages'>
 const flux = getBuiltinImageModel('openrouter', 'black-forest-labs/flux.2-pro');
 const jev = getBuiltinClassifierModel('typesafe', 'jev-latest');
 const providers = getBuiltinProviders();
@@ -334,7 +332,7 @@ await models.refresh();                            // refresh all providers conc
 const fresh = models.getModel('llamacpp', 'qwen3-30b');
 ```
 
-Static built-in providers are no-ops for `refresh()`. Radius is both static and dynamic: it ships the public `radius.pi.dev` catalog for synchronous API lookup, then overlays cached and freshly fetched `/v1/config` models when refreshed with configured auth. See [createProvider()](#createprovider) for building a dynamic provider.
+Static built-in providers are no-ops for `refresh()`. See [createProvider()](#createprovider) for building a dynamic provider.
 
 ## Auth
 
@@ -430,7 +428,6 @@ Built-in providers resolve these env vars (Node.js; in browsers pass `apiKey` ex
 | OpenAI | `OPENAI_API_KEY` |
 | DeepSeek | `DEEPSEEK_API_KEY` |
 | OpenRouter | `OPENROUTER_API_KEY` |
-| Radius | `RADIUS_API_KEY` |
 
 Stored credentials remain provider-scoped, so save the key under the provider ID you register.
 

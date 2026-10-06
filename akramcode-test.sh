@@ -19,7 +19,6 @@ if [[ "$NO_ENV" == "true" ]]; then
   unset OPENAI_API_KEY
   unset OPENROUTER_API_KEY
   unset DEEPSEEK_API_KEY
-  unset RADIUS_API_KEY
   echo "Running without API keys..."
 fi
 

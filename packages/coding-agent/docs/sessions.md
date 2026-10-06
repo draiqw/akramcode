@@ -55,12 +55,12 @@ Use `--session` when you already know the session path or ID. Use `--fork` to cr
 
 ## Export or share a session
 
-Use `/export` to write the current session as HTML or JSONL. Use `/share` to upload it and get a viewer link. AkramCode uses a Radius artifact when Radius authentication is configured; otherwise, it uses a private GitHub gist.
+Use `/export` to write the current session as HTML or JSONL. Use `/share` to upload it and get a viewer link. AkramCode uses a private GitHub gist.
 
 Review exported or shared sessions first. They can contain prompts, model responses, tool arguments, command output, file contents, and extension messages.
 
 ## Report a bug
 
-Run `/bug [description]` to prepare a private report for the AkramCode developers. You can include the session transcript, omit it, or ask the current model to summarize the problem. Review any transcript or generated summary because it can contain sensitive conversation data.
+Run `/bug [description]` to prepare a bug report as a zip archive. You can include the session transcript, omit it, or ask the current model to summarize the problem. Review any transcript or generated summary because it can contain sensitive conversation data.
 
-The report includes environment and provider configuration without credential values, plus recorded error diagnostics. Upload it through `radius.pi.dev` or export the same report as a zip to inspect and share yourself. Uploads do not require a login; Radius authentication attributes the report to your account so the developers can follow up. If an upload fails, AkramCode offers to export the zip.
+The report includes environment and provider configuration without credential values, plus recorded error diagnostics. The zip is written to the current directory; nothing is uploaded, so you can inspect it and share it yourself.

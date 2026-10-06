@@ -434,8 +434,8 @@ export async function executeCodemode(
 }
 
 /**
- * Whether `query` names the namespace: its name, its script identifier (`mcp__dev-radius` is
- * `mcp__dev_radius`), or the part after its last `__` in either form (`dev-radius`, `dev_radius`).
+ * Whether `query` names the namespace: its name, its script identifier (`mcp__dev-gateway` is
+ * `mcp__dev_gateway`), or the part after its last `__` in either form (`dev-gateway`, `dev_gateway`).
  */
 function isNamespaceName(namespace: string, query: string): boolean {
 	const id = toCodemodeIdentifier(namespace);

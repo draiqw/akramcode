@@ -15,7 +15,6 @@ const API_KEY_ENV_VARS: Readonly<Record<string, string>> = {
 	openai: "OPENAI_API_KEY",
 	deepseek: "DEEPSEEK_API_KEY",
 	openrouter: "OPENROUTER_API_KEY",
-	radius: "RADIUS_API_KEY",
 };
 
 /** Configured environment variables that can provide an API key for a provider. */

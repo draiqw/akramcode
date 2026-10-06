@@ -5,20 +5,17 @@ import { DEEPSEEK_CLASSIFIER_MODELS, DEEPSEEK_IMAGE_MODELS, DEEPSEEK_MODELS } fr
 import { OPENAI_CLASSIFIER_MODELS, OPENAI_IMAGE_MODELS, OPENAI_MODELS } from "./providers/openai.models.ts";
 import { OPENAI_CODEX_CLASSIFIER_MODELS, OPENAI_CODEX_IMAGE_MODELS, OPENAI_CODEX_MODELS } from "./providers/openai-codex.models.ts";
 import { OPENROUTER_CLASSIFIER_MODELS, OPENROUTER_IMAGE_MODELS, OPENROUTER_MODELS } from "./providers/openrouter.models.ts";
-import { RADIUS_CLASSIFIER_MODELS, RADIUS_IMAGE_MODELS, RADIUS_MODELS } from "./providers/radius.models.ts";
 
 export const MODELS: {
 	readonly "deepseek": typeof DEEPSEEK_MODELS;
 	readonly "openai": typeof OPENAI_MODELS;
 	readonly "openai-codex": typeof OPENAI_CODEX_MODELS;
 	readonly "openrouter": typeof OPENROUTER_MODELS;
-	readonly "radius": typeof RADIUS_MODELS;
 } = {
 	"deepseek": DEEPSEEK_MODELS,
 	"openai": OPENAI_MODELS,
 	"openai-codex": OPENAI_CODEX_MODELS,
 	"openrouter": OPENROUTER_MODELS,
-	"radius": RADIUS_MODELS,
 };
 
 export const IMAGE_MODELS: {
@@ -26,13 +23,11 @@ export const IMAGE_MODELS: {
 	readonly "openai": typeof OPENAI_IMAGE_MODELS;
 	readonly "openai-codex": typeof OPENAI_CODEX_IMAGE_MODELS;
 	readonly "openrouter": typeof OPENROUTER_IMAGE_MODELS;
-	readonly "radius": typeof RADIUS_IMAGE_MODELS;
 } = {
 	"deepseek": DEEPSEEK_IMAGE_MODELS,
 	"openai": OPENAI_IMAGE_MODELS,
 	"openai-codex": OPENAI_CODEX_IMAGE_MODELS,
 	"openrouter": OPENROUTER_IMAGE_MODELS,
-	"radius": RADIUS_IMAGE_MODELS,
 };
 
 export const CLASSIFIER_MODELS: {
@@ -40,11 +35,9 @@ export const CLASSIFIER_MODELS: {
 	readonly "openai": typeof OPENAI_CLASSIFIER_MODELS;
 	readonly "openai-codex": typeof OPENAI_CODEX_CLASSIFIER_MODELS;
 	readonly "openrouter": typeof OPENROUTER_CLASSIFIER_MODELS;
-	readonly "radius": typeof RADIUS_CLASSIFIER_MODELS;
 } = {
 	"deepseek": DEEPSEEK_CLASSIFIER_MODELS,
 	"openai": OPENAI_CLASSIFIER_MODELS,
 	"openai-codex": OPENAI_CODEX_CLASSIFIER_MODELS,
 	"openrouter": OPENROUTER_CLASSIFIER_MODELS,
-	"radius": RADIUS_CLASSIFIER_MODELS,
 };

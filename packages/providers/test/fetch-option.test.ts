@@ -1,7 +1,6 @@
 import type { Api, FetchFunction, ImageModel, Model } from "@akramcode/ai/types";
 import { normalizeContext } from "@akramcode/ai/utils/transcript";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { streamSimple as streamAkramCodeMessages } from "../src/api/akramcode-messages.ts";
 import { streamSimple as streamAnthropic } from "../src/api/anthropic-messages.ts";
 import { streamSimple as streamOpenAICodexResponses } from "../src/api/openai-codex-responses.ts";
 import { streamSimple as streamOpenAICompletions } from "../src/api/openai-completions.ts";
@@ -90,7 +89,7 @@ describe("fetch stream option", () => {
 		expect(globalThis.fetch).toBe(fallback);
 	});
 
-	it("uses fetch for Codex SSE and akramcode-messages HTTP requests", async () => {
+	it("uses fetch for Codex SSE HTTP requests", async () => {
 		const { custom, fallback } = mockFetches();
 		await streamOpenAICodexResponses(createModel("openai-codex-responses"), context, {
 			apiKey: `header.${btoa(JSON.stringify({ "https://api.openai.com/auth": { chatgpt_account_id: "account" } }))}.signature`,
@@ -98,11 +97,7 @@ describe("fetch stream option", () => {
 			transport: "sse",
 			maxRetries: 0,
 		}).result();
-		await streamAkramCodeMessages(createModel("akramcode-messages"), context, {
-			apiKey: "test-key",
-			fetch: custom,
-		}).result();
-		expect(custom).toHaveBeenCalledTimes(2);
+		expect(custom).toHaveBeenCalledTimes(1);
 		expect(fallback).not.toHaveBeenCalled();
 		expect(globalThis.fetch).toBe(fallback);
 	});

@@ -4,12 +4,7 @@ import type { AssistantMessageEventStream } from "./utils/event-stream.ts";
 
 export type { AssistantMessageEventStream } from "./utils/event-stream.ts";
 
-export type KnownApi =
-	| "openai-completions"
-	| "openai-responses"
-	| "openai-codex-responses"
-	| "anthropic-messages"
-	| "akramcode-messages";
+export type KnownApi = "openai-completions" | "openai-responses" | "openai-codex-responses" | "anthropic-messages";
 
 export type Api = KnownApi | (string & {});
 
@@ -21,7 +16,7 @@ export type KnownClassifierApi = "typesafe-system-one" | "llama-cpp-classify";
 
 export type ClassifierApi = KnownClassifierApi | (string & {});
 
-export type KnownProvider = "openai" | "openai-codex" | "radius" | "typesafe" | "deepseek" | "openrouter";
+export type KnownProvider = "openai" | "openai-codex" | "typesafe" | "deepseek" | "openrouter";
 export type ProviderId = KnownProvider | string;
 
 export type ToolChoice = "auto" | "none";
