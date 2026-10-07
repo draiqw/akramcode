@@ -8,6 +8,10 @@
 - Added clearing of old tool results at the compaction threshold: when replacing old large results with placeholders frees enough context, no summary is generated ([docs](docs/compaction.md#clearing-old-tool-results)).
 - Added the built-in `online-compact` extension (Online Context Compact from SoL-Pi): with `"defaultTools": ["+update_plan"]` the context is compacted at completed plan steps when that saves more than the cache rewrite costs ([docs](docs/compaction.md#online-compaction-at-plan-steps)).
 - Added the global `sandbox` setting to run the built-in tools and `!` commands in an OpenSandbox sandbox, with session reuse and cached workspaces ([docs](docs/sandbox.md)).
+- Added live run stats to the working indicator: elapsed time, output tokens, and tokens per second, for example `Working · 1m 05s · ↓ 1.2k tokens · 48.0 tok/s` (`showWorkingStats`) ([docs](docs/usage.md#follow-akramcodes-work)).
+- Added a context-fill bar and the latest response's tokens per second to the footer (`showContextGauge`) ([docs](docs/usage.md#follow-akramcodes-work)).
+- Added a prompt-cache status line to the footer: hit ratio bar, tokens read from and written to the cache, uncached input, and a countdown to the end of the cache lifetime of the retention the latest request used (`showCacheStatus`) ([docs](docs/usage.md#follow-akramcodes-work)).
+- Added clearing the editor with a double `Escape` when it contains text; the text is saved to prompt history (`doubleEscapeClearsInput`) ([docs](docs/usage.md#change-direction)).
 - Added a copy key (`app.message.copy`, default `ctrl+x`) to OAuth sign-in screens in `/login`, `/mcp`, and `/mcp login`, which copies the sign-in URL when the browser cannot be opened or the wrapped link cannot be selected.
 
 ### Fixed

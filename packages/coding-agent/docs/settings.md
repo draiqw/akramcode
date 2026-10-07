@@ -30,6 +30,7 @@ See [Choose a Model](models.md) for model selection and thinking controls.
 | `followUpMode` | `"all" \| "one-at-a-time"` | `"one-at-a-time"` | How queued follow-up messages are delivered. |
 | `externalEditor` | string | `$VISUAL`, `$EDITOR`, then platform default | Command opened by the external-editor keybinding. |
 | `doubleEscapeAction` | `"tree" \| "fork" \| "none"` | `"tree"` | Action for double Escape with an empty editor. |
+| `doubleEscapeClearsInput` | boolean | `true` | Double Escape with text in the editor clears it. The text is saved to prompt history, so `Up` restores it. |
 | `treeFilterMode` | `"default" \| "no-tools" \| "user-only" \| "labeled-only" \| "all"` | `"default"` | Initial filter used by `/tree`. |
 | `defaultProjectTrust` | `"ask" \| "always" \| "never"` | `"ask"` | Fallback project-trust behavior. **Can only be set in agent-directory settings.** |
 
@@ -117,6 +118,9 @@ See [Compaction Reference](compaction.md) for trigger, summarization, and valida
 | `images.blockImages` | boolean | `false` | Prevent images from being sent to models. |
 | `markdown.codeBlockIndent` | string | `"  "` | Prefix used to indent rendered code blocks. |
 | `markdown.mermaid` | `"off" \| "final" \| "streaming"` | `"streaming"` | Mermaid rendering mode. |
+| `showWorkingStats` | boolean | `true` | Show elapsed time, output tokens, and tokens per second next to the working indicator. See [Follow AkramCode's work](usage.md#follow-akramcodes-work). |
+| `showContextGauge` | boolean | `true` | Show a context-fill bar and the latest response's tokens per second in the footer. |
+| `showCacheStatus` | boolean | `true` | Show a footer line with the latest prompt's cache hit ratio, cached tokens, and a countdown to the end of the cache lifetime. |
 
 See [Themes](themes.md) and [Terminal Setup](terminal-setup.md) for format and platform details.
 

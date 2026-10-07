@@ -120,7 +120,7 @@ In fullscreen mode, these actions control the transcript and take precedence ove
 
 | Keybinding id | Default | Description |
 |--------|---------|-------------|
-| `app.interrupt` | `escape` | Cancel / abort |
+| `app.interrupt` | `escape` | Cancel / abort. Pressed twice: clears editor text (`doubleEscapeClearsInput`) or, with an empty editor, runs `doubleEscapeAction` |
 | `app.clear` | `ctrl+c` | Clear editor (first) / exit (second) |
 | `app.exit` | `ctrl+d` | Exit (when editor empty) |
 | `app.suspend` | `ctrl+z` (None on Windows) | Suspend to background |

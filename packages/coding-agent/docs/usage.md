@@ -24,6 +24,16 @@ AkramCode shows each tool call and result while it works. Press `Ctrl+O` to expa
 
 The startup header lists the instructions and resources AkramCode loaded. The editor border indicates the current thinking level. The footer updates as the model uses context and reports usage.
 
+While AkramCode works, the editor border shows how long the run has taken, the output tokens so far, and the generation speed, for example `Working · 1m 05s · ↓ 1.2k tokens · 48.0 tok/s`. Output tokens are estimated at four characters per token while a response streams and replaced by the provider's count when it ends. Speed is measured from the first streamed token of a response, so waiting for the first token and running tools do not lower it.
+
+The footer shows context use as a bar next to the percentage, for example `████░░░░░░ 37.2%/200k`, and the speed of the latest response. When the latest response used the prompt cache, a third footer line shows the cache:
+
+```text
+cache ██████████ 100%  read 390k  wrote 69  new 2  ttl 59:58/1h · warm: keep going
+```
+
+The bar and percentage are the share of the latest prompt read from the cache: `read / (read + wrote + new)`. `read` is tokens read from the cache, `wrote` is tokens written to it, and `new` is uncached input tokens. `ttl` counts down from the latest request or [cache-warming](settings.md#model-and-thinking) refresh to the end of the cache lifetime of the retention that request used (`5m` for short retention, `1h` for long retention on most providers). After it reaches zero, the line reads `cold: next request rewrites the cache`. The countdown is omitted when the model declares no cache lifetime. `showWorkingStats`, `showContextGauge`, and `showCacheStatus` turn these off. See [Terminal and display](settings.md#terminal-and-display).
+
 AkramCode does not ask before every tool call. Review commands and changed files, and use a sandbox for untrusted or unattended work. See [Security](security.md).
 
 ## Change direction
@@ -36,6 +46,8 @@ You can send more input while AkramCode is working:
 | Add work after the current task | Type a message and press `Alt+Enter` |
 | Return queued messages to the editor | Press `Alt+Up` |
 | Stop the current task | Press `Escape` |
+
+Press `Escape` twice with text in the editor to clear it. The text is saved to prompt history, so `Up` brings it back. Set `doubleEscapeClearsInput` to `false` to turn this off. With an empty editor, a double `Escape` opens `/tree` (see `doubleEscapeAction`).
 
 A message sent with `Enter` waits until the current response and its tool calls finish, then guides the next response. A follow-up sent with `Alt+Enter` waits until AkramCode finishes the current task. Aborting returns queued messages to the editor.
 
