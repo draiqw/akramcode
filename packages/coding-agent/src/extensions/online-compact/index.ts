@@ -16,10 +16,18 @@ import { createOnlineContextCompactExtension } from "./extension.ts";
 export const DEFAULT_CACHE_WRITE_READ_RATIO = 12.5;
 
 export { decideCompaction, estimateRemainingRequests } from "./economics.ts";
-export { createOnlineContextCompactExtension, estimateNativeCompactionTokens } from "./extension.ts";
+export {
+	createOnlineContextCompactExtension,
+	estimateNativeCompactionTokens,
+	modelCacheWriteReadRatio,
+} from "./extension.ts";
 
 export function createOnlineCompactExtension(): ExtensionFactory {
-	return createOnlineContextCompactExtension({ cacheWriteReadRatio: DEFAULT_CACHE_WRITE_READ_RATIO });
+	// Priced per model (for example GPT-6.1 Sol 25, GPT-6 Luna 12.5); SoL-Pi's fixed default when prices are unknown.
+	return createOnlineContextCompactExtension({
+		cacheWriteReadRatio: "model",
+		fallbackCacheWriteReadRatio: DEFAULT_CACHE_WRITE_READ_RATIO,
+	});
 }
 
 export default createOnlineCompactExtension();

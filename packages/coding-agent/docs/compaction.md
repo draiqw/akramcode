@@ -91,13 +91,15 @@ At the threshold, AkramCode first tries a cheaper step that needs no model call:
 A summary paraphrases. After the summary, AkramCode appends a `<restored-context>` block with:
 
 - the user's request verbatim, while no later user message survives the cut (it is carried across repeated compactions of the same task);
-- the latest content of up to 5 recently read files (8,000 characters each, 24,000 in total), dropping files written or edited after they were read, and carrying older ones forward.
+- the latest content of up to 5 recently read files (8,000 characters each, 24,000 in total), dropping files written or edited after they were read, files the kept messages already read or change, and reads already cleared to a placeholder, and carrying older ones forward.
+
+Tags inside restored content are neutralized so it cannot close the block, and file content is marked as data, not instructions.
 
 The block is stored in the compaction entry (`details.activeRequest`, `details.restoredFiles`) and is stripped from the previous summary before the next summarization. Disable it with `compaction.restoreContext: false`.
 
 ### Online Compaction at Plan Steps
 
-The built-in `online-compact` extension, ported from [SoL-Pi](https://github.com/NVlabs/SoL-Pi) (MIT), compacts at safe points instead of waiting for the threshold. Enable its tool with `"defaultTools": ["+update_plan"]`. The model keeps its plan current through `update_plan`; when a registered step is marked completed, the extension estimates the remaining requests from the pace of earlier steps and compacts when the input saved over them exceeds the cost of rewriting the prompt cache (or when the context is close to the window). After compaction the task continues in a new turn with a reminder of the current plan. Without `update_plan` calls the extension does nothing.
+The built-in `online-compact` extension, ported from [SoL-Pi](https://github.com/NVlabs/SoL-Pi) (MIT), compacts at safe points instead of waiting for the threshold. Enable its tool with `"defaultTools": ["+update_plan"]`. The model keeps its plan current through `update_plan`; when a registered step is marked completed, the extension estimates the remaining requests from the pace of earlier steps and compacts when the input saved over them exceeds the cost of rewriting the prompt cache (priced from the active model: cache-write over cache-read price, for example 25 for GPT-6.1 Sol and 12.5 for GPT-6 Luna; 12.5 when prices are unknown) (or when the context is close to the window). After compaction the task continues in a new turn with a reminder of the current plan. Without `update_plan` calls the extension does nothing.
 
 ### Overflow and Length Recovery Ordering
 

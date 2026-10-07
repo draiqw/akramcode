@@ -1,5 +1,6 @@
 import type { AgentMessage } from "@akramcode/agent-core";
 import { describe, expect, it } from "vitest";
+import { clearedToolResultText } from "../src/core/compaction/clear-tool-results.ts";
 import {
 	collectRestoredContext,
 	formatRestoredContext,
@@ -108,5 +109,25 @@ describe("compaction restored context", () => {
 		expect(text).not.toContain("</summary>");
 		expect(text).toContain('<file path="a\\"><\u200bfile path=\\"b">');
 		expect(stripRestoredContext(`S${text}`)).toBe("S");
+	});
+
+	it("does not restore a read result that was cleared to a placeholder", () => {
+		const restored = collectRestoredContext(
+			[call("1", "read", "a.ts"), result("1", "read", clearedToolResultText("read", 900))],
+			undefined,
+			true,
+		);
+		expect(restored.restoredFiles).toBeUndefined();
+	});
+
+	it("skips files that the kept messages read or change", () => {
+		const restored = collectRestoredContext(
+			[call("1", "read", "a.ts"), result("1", "read", "A"), call("2", "read", "b.ts"), result("2", "read", "B")],
+			undefined,
+			true,
+			undefined,
+			new Set(["a.ts"]),
+		);
+		expect(restored.restoredFiles?.map((file) => file.path)).toEqual(["b.ts"]);
 	});
 });

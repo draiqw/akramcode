@@ -10,6 +10,7 @@ import {
 	decideCompaction,
 	estimateRemainingRequests,
 } from "../src/extensions/online-compact/economics.ts";
+import { modelCacheWriteReadRatio } from "../src/extensions/online-compact/extension.ts";
 
 function decision(overrides: Partial<Parameters<typeof decideCompaction>[0]> = {}) {
 	return decideCompaction({
@@ -147,5 +148,14 @@ describe("Online Context Compact economics", () => {
 			reason: "economic",
 			requestsSinceLastCompaction: null,
 		});
+	});
+});
+
+describe("modelCacheWriteReadRatio", () => {
+	it("prices a cache write against a cache read from the model costs", () => {
+		expect(modelCacheWriteReadRatio({ cost: { input: 2, cacheRead: 0.1, cacheWrite: 2.5 } })).toBe(25);
+		expect(modelCacheWriteReadRatio({ cost: { input: 1, cacheRead: 0.1, cacheWrite: 0 } })).toBe(10);
+		expect(modelCacheWriteReadRatio({ cost: { input: 1, cacheRead: 0, cacheWrite: 0 } })).toBeNull();
+		expect(modelCacheWriteReadRatio(undefined)).toBeNull();
 	});
 });

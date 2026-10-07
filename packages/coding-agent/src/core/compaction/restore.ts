@@ -10,6 +10,7 @@
 
 import type { AgentMessage } from "@akramcode/agent-core";
 import { contentText } from "@akramcode/ai";
+import { CLEARED_TOOL_RESULT_PREFIX } from "./clear-tool-results.ts";
 
 export const RESTORED_CONTEXT_MARKER = "<restored-context>";
 
@@ -62,12 +63,14 @@ function pathOf(args: unknown): string | undefined {
  * @param summarized messages being replaced by the summary, oldest first
  * @param previous restored context of the previous compaction, if any
  * @param keptHasUserMessage whether a user message survives verbatim after the cut
+ * @param keptPaths files read, written, or edited in the kept messages: already visible or stale
  */
 export function collectRestoredContext(
 	summarized: AgentMessage[],
 	previous: RestoredContext | undefined,
 	keptHasUserMessage: boolean,
 	limits: RestoreLimits = DEFAULT_RESTORE_LIMITS,
+	keptPaths: ReadonlySet<string> = new Set(),
 ): RestoredContext {
 	let activeRequest: string | undefined;
 	if (!keptHasUserMessage) {
@@ -93,7 +96,8 @@ export function collectRestoredContext(
 			const call = calls.get(message.toolCallId);
 			if (call?.name !== "read" || !call.path || message.isError) continue;
 			const text = contentText(message.content, "");
-			if (!text) continue;
+			// A result already cleared to a placeholder has no file content left to restore.
+			if (!text || text.startsWith(CLEARED_TOOL_RESULT_PREFIX)) continue;
 			reads.delete(call.path);
 			reads.set(call.path, text);
 		}
@@ -107,6 +111,7 @@ export function collectRestoredContext(
 	const restoredFiles: RestoredFile[] = [];
 	let total = 0;
 	for (const file of candidates) {
+		if (keptPaths.has(file.path)) continue;
 		if (restoredFiles.length >= limits.maxFiles) break;
 		const content = truncate(file.content, limits.fileChars);
 		if (total + content.length > limits.totalFileChars) continue;

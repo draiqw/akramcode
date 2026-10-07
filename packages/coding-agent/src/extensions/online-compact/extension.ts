@@ -44,7 +44,9 @@ const RECOVERABLE_COMPACTION_ERRORS = new Set([
 ]);
 
 export type OnlineContextCompactOptions = {
-	readonly cacheWriteReadRatio?: number | null;
+	/** Fixed ratio; "model" derives it from the active model's prices, falling back to `fallbackCacheWriteReadRatio`. */
+	readonly cacheWriteReadRatio?: number | null | "model";
+	readonly fallbackCacheWriteReadRatio?: number;
 	readonly keepRecentTokens?: number;
 };
 
@@ -175,13 +177,28 @@ export function estimateNativeCompactionTokens(
 	return previousSummaryTokens + compactionTokenEstimate(path, startIndex, firstKept, projected);
 }
 
+/**
+ * Price of writing the prompt cache relative to reading it, from the model's per-token prices.
+ * Providers without a separate cache-write price (cacheWrite 0) bill the write as ordinary input.
+ */
+export function modelCacheWriteReadRatio(
+	model: { cost?: { input: number; cacheRead: number; cacheWrite: number } } | undefined,
+): number | null {
+	const cost = model?.cost;
+	if (!cost || !(cost.cacheRead > 0)) return null;
+	const write = cost.cacheWrite > 0 ? cost.cacheWrite : cost.input;
+	return write > 0 ? write / cost.cacheRead : null;
+}
+
 function validPositiveInteger(value: unknown): value is number {
 	return typeof value === "number" && Number.isSafeInteger(value) && value > 0;
 }
 
 export function createOnlineContextCompactExtension(options: OnlineContextCompactOptions = {}): ExtensionFactory {
 	const keepRecentTokens = resolveKeepRecentTokens(options.keepRecentTokens);
-	const cacheWriteReadRatio = resolveCacheWriteReadRatio(options.cacheWriteReadRatio);
+	const fixedCacheWriteReadRatio =
+		options.cacheWriteReadRatio === "model" ? undefined : resolveCacheWriteReadRatio(options.cacheWriteReadRatio);
+	const fallbackCacheWriteReadRatio = resolveCacheWriteReadRatio(options.fallbackCacheWriteReadRatio);
 
 	return (pi) => {
 		let state: OnlineState = initialOnlineState();
@@ -337,7 +354,10 @@ export function createOnlineContextCompactExtension(options: OnlineContextCompac
 					state.lastCompactionRequestCount === null ? null : state.requestCount - state.lastCompactionRequestCount,
 				carriedDebtTokens: state.cacheDebtTokens,
 				cacheDebtRepaymentTokens: state.cacheDebtRepaymentTokens,
-				cacheWriteReadRatio,
+				cacheWriteReadRatio:
+					fixedCacheWriteReadRatio !== undefined
+						? fixedCacheWriteReadRatio
+						: (modelCacheWriteReadRatio(context.model) ?? fallbackCacheWriteReadRatio),
 				economics: DEFAULT_COMPACTION_ECONOMICS,
 			});
 			const decision: CompactionDecision =

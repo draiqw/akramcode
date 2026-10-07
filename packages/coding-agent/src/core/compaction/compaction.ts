@@ -794,6 +794,8 @@ export interface CompactionPreparation {
 	previousRestored?: RestoredContext;
 	/** Whether a user message survives verbatim after the cut (unknown is treated as yes) */
 	keptHasUserMessage?: boolean;
+	/** Files read, written, or edited after the cut; not restored again */
+	keptPaths?: ReadonlySet<string>;
 	/** Compaction settions from settings.jsonl	*/
 	settings: CompactionSettings;
 }
@@ -937,9 +939,11 @@ export function prepareCompaction(
 		}
 	}
 
-	const keptHasUserMessage = projectedEntries
-		.slice(cutPoint.firstKeptEntryIndex)
-		.some((entry) => entry.messages.some((message) => message.role === "user"));
+	const keptMessages = projectedEntries.slice(cutPoint.firstKeptEntryIndex).flatMap((entry) => entry.messages);
+	const keptHasUserMessage = keptMessages.some((message) => message.role === "user");
+	const keptFileOps = createFileOps();
+	for (const message of keptMessages) extractFileOpsFromMessage(message, keptFileOps);
+	const keptPaths = new Set([...keptFileOps.read, ...keptFileOps.written, ...keptFileOps.edited]);
 
 	return {
 		firstKeptEntryId,
@@ -952,6 +956,7 @@ export function prepareCompaction(
 		settings,
 		previousRestored,
 		keptHasUserMessage,
+		keptPaths,
 	};
 }
 
@@ -1007,6 +1012,7 @@ export async function compact(
 		settings,
 		previousRestored,
 		keptHasUserMessage,
+		keptPaths,
 	} = preparation;
 
 	// Generate summaries and merge into one
@@ -1085,6 +1091,8 @@ export async function compact(
 					[...messagesToSummarize, ...turnPrefixMessages],
 					previousRestored,
 					keptHasUserMessage ?? true,
+					undefined,
+					keptPaths,
 				);
 	summary += formatRestoredContext(restored);
 
