@@ -6,6 +6,7 @@ import type { ContextUsage } from "../../../core/extensions/types.ts";
 import type { ReadonlyFooterDataProvider } from "../../../core/footer-data-provider.ts";
 import { addUsageToTotals, createUsageTotals, type UsageTotals } from "../../../core/usage-totals.ts";
 import { theme } from "../theme/theme.ts";
+import { type CachePromptUsage, renderCacheStatusLine, renderShareBar } from "./cache-status.ts";
 
 /**
  * Sanitize text for display in a single-line status.
@@ -30,6 +31,19 @@ export function formatTokens(count: number): string {
 	return `${Math.round(count / 1000000)}M`;
 }
 
+/** Formats generation speed, e.g. `48.3 tok/s` or `120 tok/s`. */
+export function formatTokensPerSecond(tokensPerSecond: number): string {
+	return tokensPerSecond >= 100 ? `${Math.round(tokensPerSecond)} tok/s` : `${tokensPerSecond.toFixed(1)} tok/s`;
+}
+
+/** Cells used by the footer's context gauge. */
+const CONTEXT_GAUGE_CELLS = 10;
+
+/** Renders context fill as a fixed-width bar, e.g. `███░░░░░░░` for 30%. */
+export function renderContextGauge(percent: number, cells: number = CONTEXT_GAUGE_CELLS): string {
+	return renderShareBar(percent, cells);
+}
+
 export function formatCwdForFooter(cwd: string, home: string | undefined): string {
 	if (!home) return cwd;
 
@@ -52,6 +66,8 @@ interface SessionStats {
 	limitsModel: unknown;
 	usageTotals: UsageTotals;
 	latestCacheHitRate: number | undefined;
+	/** Prompt usage of the latest assistant response, for the cache status line. */
+	latestPromptUsage: CachePromptUsage | undefined;
 	contextUsage: ContextUsage | undefined;
 }
 
@@ -61,6 +77,10 @@ interface SessionStats {
  */
 export class FooterComponent implements Component {
 	private autoCompactEnabled = true;
+	private showContextGauge = false;
+	private generationSpeed: number | undefined;
+	private showCacheStatus = false;
+	private cacheCountdownLive = false;
 	private session: AgentSession;
 	private footerData: ReadonlyFooterDataProvider;
 	private sessionStats?: SessionStats;
@@ -76,6 +96,26 @@ export class FooterComponent implements Component {
 
 	setAutoCompactEnabled(enabled: boolean): void {
 		this.autoCompactEnabled = enabled;
+	}
+
+	/** Show the context-fill bar and the latest generation speed. */
+	setShowContextGauge(enabled: boolean): void {
+		this.showContextGauge = enabled;
+	}
+
+	/** Show the prompt-cache status line (hit ratio, cached tokens, expiry countdown). */
+	setShowCacheStatus(enabled: boolean): void {
+		this.showCacheStatus = enabled;
+	}
+
+	/** True when the last render showed a running cache countdown, so the footer should be re-rendered each second. */
+	hasLiveCacheCountdown(): boolean {
+		return this.cacheCountdownLive;
+	}
+
+	/** Tokens per second of the latest response, or undefined to hide it. */
+	setGenerationSpeed(tokensPerSecond: number | undefined): void {
+		this.generationSpeed = tokensPerSecond;
 	}
 
 	/**
@@ -120,6 +160,7 @@ export class FooterComponent implements Component {
 		// Calculate cumulative usage from ALL session entries (not just post-compaction messages)
 		const usageTotals = createUsageTotals();
 		let latestCacheHitRate: number | undefined;
+		let latestPromptUsage: CachePromptUsage | undefined;
 
 		for (const entry of sessionManager.getEntries()) {
 			if (entry.type === "usage") {
@@ -131,6 +172,8 @@ export class FooterComponent implements Component {
 					entry.message.usage.input + entry.message.usage.cacheRead + entry.message.usage.cacheWrite;
 				latestCacheHitRate =
 					latestPromptTokens > 0 ? (entry.message.usage.cacheRead / latestPromptTokens) * 100 : undefined;
+				const { input, cacheRead, cacheWrite } = entry.message.usage;
+				latestPromptUsage = { input, cacheRead, cacheWrite };
 			} else if (entry.type === "message" && entry.message.role === "toolResult" && entry.message.usage) {
 				addUsageToTotals(usageTotals, entry.message.usage);
 			} else if ((entry.type === "branch_summary" || entry.type === "compaction") && entry.usage) {
@@ -149,6 +192,7 @@ export class FooterComponent implements Component {
 			limitsModel,
 			usageTotals,
 			latestCacheHitRate,
+			latestPromptUsage,
 			contextUsage,
 		};
 		return this.sessionStats;
@@ -156,7 +200,14 @@ export class FooterComponent implements Component {
 
 	render(width: number): string[] {
 		const state = this.session.state;
-		const { usageTotals, latestCacheHitRate, contextUsage } = this.getSessionStats();
+		const { usageTotals, latestCacheHitRate, latestPromptUsage, contextUsage } = this.getSessionStats();
+		const cacheLine =
+			this.showCacheStatus &&
+			latestPromptUsage !== undefined &&
+			latestPromptUsage.cacheRead + latestPromptUsage.cacheWrite > 0
+				? renderCacheStatusLine(latestPromptUsage, this.session.promptCacheTouch, Date.now(), formatTokens)
+				: undefined;
+		this.cacheCountdownLive = cacheLine?.live ?? false;
 		const contextWindow = contextUsage?.contextWindow ?? state.model?.contextWindow ?? 0;
 		const contextPercentValue = contextUsage?.percent ?? 0;
 		const contextPercent = contextUsage?.percent !== null ? contextPercentValue.toFixed(1) : "?";
@@ -182,7 +233,8 @@ export class FooterComponent implements Component {
 		if (usageTotals.output) statsParts.push(`↓${formatTokens(usageTotals.output)}`);
 		if (usageTotals.cacheRead) statsParts.push(`R${formatTokens(usageTotals.cacheRead)}`);
 		if (usageTotals.cacheWrite) statsParts.push(`W${formatTokens(usageTotals.cacheWrite)}`);
-		if ((usageTotals.cacheRead > 0 || usageTotals.cacheWrite > 0) && latestCacheHitRate !== undefined) {
+		// The cache status line shows the hit ratio in more detail.
+		if (!cacheLine && (usageTotals.cacheRead > 0 || usageTotals.cacheWrite > 0) && latestCacheHitRate !== undefined) {
 			statsParts.push(`CH${latestCacheHitRate.toFixed(1)}%`);
 		}
 
@@ -194,14 +246,19 @@ export class FooterComponent implements Component {
 			const costStr = `$${usageTotals.cost.toFixed(3)}${usingSubscription ? " (sub)" : ""}`;
 			statsParts.push(costStr);
 		}
+		if (this.showContextGauge && this.generationSpeed !== undefined) {
+			statsParts.push(formatTokensPerSecond(this.generationSpeed));
+		}
 
 		// Colorize context percentage based on usage
 		let contextPercentStr: string;
 		const autoIndicator = this.autoCompactEnabled ? " (auto)" : "";
+		const gauge =
+			this.showContextGauge && contextPercent !== "?" ? `${renderContextGauge(contextPercentValue)} ` : "";
 		const contextPercentDisplay =
 			contextPercent === "?"
 				? `?/${formatTokens(contextWindow)}${autoIndicator}`
-				: `${contextPercent}%/${formatTokens(contextWindow)}${autoIndicator}`;
+				: `${gauge}${contextPercent}%/${formatTokens(contextWindow)}${autoIndicator}`;
 		if (contextPercentValue > 90) {
 			contextPercentStr = theme.fg("error", contextPercentDisplay);
 		} else if (contextPercentValue > 70) {
@@ -285,6 +342,9 @@ export class FooterComponent implements Component {
 
 		const pwdLine = truncateToWidth(theme.fg("dim", pwd), width, theme.fg("dim", "..."));
 		const lines = [pwdLine, dimStatsLeft + dimRemainder];
+		if (cacheLine) {
+			lines.push(truncateToWidth(cacheLine.text, width, theme.fg("dim", "...")));
+		}
 
 		// Add extension statuses on a single line, sorted by key alphabetically
 		const extensionStatuses = this.footerData.getExtensionStatuses();

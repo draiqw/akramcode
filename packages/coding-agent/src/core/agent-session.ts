@@ -64,7 +64,7 @@ import { normalizeToolResultImages } from "../utils/tool-result-images.ts";
 import { formatNoApiKeyFoundMessage, formatNoModelSelectedMessage } from "./auth-guidance.ts";
 import { type BashResult, executeBashWithOperations } from "./bash-executor.ts";
 import { generateBugReportSummary } from "./bug-report.ts";
-import type { CacheWarmer, CacheWarmingStatus } from "./cache-warmer.ts";
+import type { CacheWarmer, CacheWarmingStatus, PromptCacheTouch } from "./cache-warmer.ts";
 import {
 	type CompactionPreparation,
 	type CompactionResult,
@@ -262,7 +262,8 @@ export interface AgentSessionConfig {
 	/** Canonical model/auth runtime used by coding-agent internals. */
 	modelRuntime: ModelRuntime;
 	/** Keeps the prompt cache entry of the last session request warm. */
-	cacheWarmer?: Pick<CacheWarmer, "cancel" | "status" | "onAgentSettled" | "onModeChanged" | "onWarmed">;
+	cacheWarmer?: Pick<CacheWarmer, "cancel" | "status" | "onAgentSettled" | "onModeChanged" | "onWarmed"> &
+		Partial<Pick<CacheWarmer, "promptCacheTouch">>;
 	/** Initial active built-in tool names. Default: [read, bash, edit, write] */
 	initialActiveToolNames?: string[];
 	/**
@@ -452,7 +453,8 @@ export class AgentSession {
 	private _extensionErrorUnsubscriber?: () => void;
 
 	private _modelRuntime: ModelRuntime;
-	private _cacheWarmer?: Pick<CacheWarmer, "cancel" | "status" | "onAgentSettled" | "onModeChanged" | "onWarmed">;
+	private _cacheWarmer?: Pick<CacheWarmer, "cancel" | "status" | "onAgentSettled" | "onModeChanged" | "onWarmed"> &
+		Partial<Pick<CacheWarmer, "promptCacheTouch">>;
 
 	// Tool registry for extension getTools/setTools
 	private _toolRegistry: Map<string, AgentTool> = new Map();
@@ -1419,6 +1421,11 @@ export class AgentSession {
 	/** Current cache-warming state and the policy inputs that produced it. */
 	get cacheWarmingStatus(): CacheWarmingStatus | undefined {
 		return this._cacheWarmer?.status;
+	}
+
+	/** When the prompt cache was last written or refreshed by this session, and its lifetime. */
+	get promptCacheTouch(): PromptCacheTouch | undefined {
+		return this._cacheWarmer?.promptCacheTouch;
 	}
 
 	/** Persist the cache-warming mode and immediately reconcile active warming. */

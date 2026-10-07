@@ -95,6 +95,31 @@ describe("status indicators", () => {
 		}
 	});
 
+	it("appends live working detail and refreshes it every second until disposed", () => {
+		initTheme("dark");
+		vi.useFakeTimers();
+		const requestRender = vi.fn();
+		const tui = { requestRender, terminal: { rows: 10 } } as unknown as TUI;
+		let detail: string | undefined;
+		const indicator = new WorkingStatusIndicator(tui, "Working", undefined, undefined, () => detail);
+		expect(stripAnsi(indicator.render(80)[1]!)).toContain("Working");
+		expect(stripAnsi(indicator.render(80)[1]!)).not.toContain("·");
+
+		detail = "3s · ↓ 120 tokens · 40.0 tok/s";
+		vi.advanceTimersByTime(1000);
+		expect(stripAnsi(indicator.render(80)[1]!)).toContain("Working · 3s · ↓ 120 tokens · 40.0 tok/s");
+
+		// Extension messages keep the detail.
+		indicator.setMessage("Reading files");
+		expect(stripAnsi(indicator.render(80)[1]!)).toContain("Reading files · 3s");
+
+		indicator.dispose();
+		const calls = requestRender.mock.calls.length;
+		detail = "4s";
+		vi.advanceTimersByTime(3000);
+		expect(requestRender).toHaveBeenCalledTimes(calls);
+	});
+
 	it("disposes retry countdown updates", () => {
 		initTheme("dark");
 		vi.useFakeTimers();

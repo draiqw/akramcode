@@ -173,6 +173,7 @@ import { UserMessageSelectorComponent } from "./components/user-message-selector
 import { editInExternalEditor } from "./external-editor.ts";
 import { refreshModelCatalogs } from "./model-catalog-refresh.ts";
 import { getModelSearchText } from "./model-search.ts";
+import { formatRunStats, RunStatsTracker } from "./run-stats.ts";
 import { shareSession } from "./session-share.ts";
 import {
 	getAvailableThemes,
@@ -467,6 +468,9 @@ export class InteractiveMode {
 
 	private lastSigintTime = 0;
 	private lastEscapeTime = 0;
+	private readonly runStats = new RunStatsTracker();
+	/** Re-renders once a second while the footer shows a running prompt-cache countdown. */
+	private cacheCountdownTimer: NodeJS.Timeout | undefined;
 	private changelogMarkdown: string | undefined = undefined;
 	private startupNoticesShown = false;
 
@@ -624,7 +628,14 @@ export class InteractiveMode {
 		this.editorContainer.addChild(this.editor as Component);
 		this.footerDataProvider = new FooterDataProvider(this.sessionManager.getCwd());
 		this.footer = new FooterComponent(this.session, this.footerDataProvider);
+		if (this.cacheCountdownTimer) clearInterval(this.cacheCountdownTimer);
+		this.cacheCountdownTimer = setInterval(() => {
+			if (this.footer.hasLiveCacheCountdown()) this.ui.requestRender();
+		}, 1000);
+		this.cacheCountdownTimer.unref?.();
 		this.footer.setAutoCompactEnabled(this.session.autoCompactionEnabled);
+		this.footer.setShowContextGauge(this.settingsManager.getShowContextGauge());
+		this.footer.setShowCacheStatus(this.settingsManager.getShowCacheStatus());
 		this.footerContainer = new Container();
 		this.footerContainer.addChild(this.footer);
 
@@ -2000,6 +2011,9 @@ export class InteractiveMode {
 		}
 		this.footer.setSession(this.session);
 		this.footer.setAutoCompactEnabled(this.session.autoCompactionEnabled);
+		this.footer.setShowContextGauge(this.settingsManager.getShowContextGauge());
+		this.footer.setShowCacheStatus(this.settingsManager.getShowCacheStatus());
+		this.footer.setGenerationSpeed(undefined);
 		this.footerDataProvider.setCwd(this.sessionManager.getCwd());
 		this.hideThinkingBlock = this.settingsManager.getHideThinkingBlock();
 		this.outputPad = this.settingsManager.getOutputPad();
@@ -2262,8 +2276,16 @@ export class InteractiveMode {
 				this.workingMessage ?? this.defaultWorkingMessage,
 				this.workingIndicatorOptions,
 				colorFn,
+				this.settingsManager.getShowWorkingStats() ? () => this.getWorkingStatsDetail() : undefined,
 			),
 		);
+	}
+
+	/** Live detail for the working indicator; empty until the run has lasted a second. */
+	private getWorkingStatsDetail(): string | undefined {
+		if (!this.runStats.isRunning) return undefined;
+		const stats = this.runStats.snapshot(Date.now());
+		return stats.elapsedMs < 1000 ? undefined : formatRunStats(stats);
 	}
 
 	private setWorkingVisible(visible: boolean): void {
@@ -2961,35 +2983,51 @@ export class InteractiveMode {
 	// Key Handlers
 	// =========================================================================
 
-	private setupKeyHandlers(): void {
-		// See docs/adr/coding-agent/modes-interactive-interactive-mode.md#key-handler-setup-location
-		this.defaultEditor.onEscape = () => {
-			if (this.session.isStreaming) {
-				this.restoreQueuedMessagesToEditor({ abort: true });
-			} else if (this.session.isBashRunning) {
-				this.session.abortBash();
-			} else if (this.isBashMode) {
-				this.editor.setText("");
-				this.isBashMode = false;
-				this.updateEditorBorderColor();
-			} else if (!this.editor.getText().trim()) {
-				// Double-escape with empty editor triggers /tree, /fork, or nothing based on setting
-				const action = this.settingsManager.getDoubleEscapeAction();
-				if (action !== "none") {
-					const now = Date.now();
-					if (now - this.lastEscapeTime < 500) {
-						if (action === "tree") {
-							this.showTreeSelector();
-						} else {
-							this.showUserMessageSelector();
-						}
-						this.lastEscapeTime = 0;
+	/** Default Escape handling: abort work, leave bash mode, or act on a double press. */
+	private handleEscape(): void {
+		if (this.session.isStreaming) {
+			this.restoreQueuedMessagesToEditor({ abort: true });
+		} else if (this.session.isBashRunning) {
+			this.session.abortBash();
+		} else if (this.isBashMode) {
+			this.editor.setText("");
+			this.isBashMode = false;
+			this.updateEditorBorderColor();
+		} else if (!this.editor.getText().trim()) {
+			// Double-escape with empty editor triggers /tree, /fork, or nothing based on setting
+			const action = this.settingsManager.getDoubleEscapeAction();
+			if (action !== "none") {
+				const now = Date.now();
+				if (now - this.lastEscapeTime < 500) {
+					if (action === "tree") {
+						this.showTreeSelector();
 					} else {
-						this.lastEscapeTime = now;
+						this.showUserMessageSelector();
 					}
+					this.lastEscapeTime = 0;
+				} else {
+					this.lastEscapeTime = now;
 				}
 			}
-		};
+		} else if (this.settingsManager.getDoubleEscapeClearsInput()) {
+			// Double-escape with a draft clears it; the draft goes to history so it can be recalled.
+			const now = Date.now();
+			if (now - this.lastEscapeTime < 500) {
+				this.editor.addToHistory?.(this.editor.getText());
+				this.editor.setText("");
+				this.lastEscapeTime = 0;
+				// History is reached with cursor-up in an empty editor unless a dedicated key is bound.
+				const historyKey = keyText("tui.editor.historyPrevious") || keyText("tui.editor.cursorUp");
+				this.showStatus(`Input cleared (${historyKey} restores it)`);
+			} else {
+				this.lastEscapeTime = now;
+			}
+		}
+	}
+
+	private setupKeyHandlers(): void {
+		// See docs/adr/coding-agent/modes-interactive-interactive-mode.md#key-handler-setup-location
+		this.defaultEditor.onEscape = () => this.handleEscape();
 
 		// Register app action handlers
 		this.defaultEditor.onAction("app.clear", () => this.handleCtrlC());
@@ -3304,6 +3342,7 @@ export class InteractiveMode {
 		switch (event.type) {
 			case "agent_start":
 				this.pendingTools.clear();
+				this.runStats.startRun(Date.now());
 				// See docs/adr/coding-agent/modes-interactive-interactive-mode.md#retry-handler-restoration
 				if (this.retryEscapeHandler) {
 					this.defaultEditor.onEscape = this.retryEscapeHandler;
@@ -3412,6 +3451,7 @@ export class InteractiveMode {
 
 			case "message_update":
 				if (this.streamingComponent && event.message.role === "assistant") {
+					this.runStats.onUpdate(event.assistantMessageEvent, Date.now());
 					this.streamingMessage = event.message;
 					this.streamingComponent.updateContent(this.streamingMessage, true);
 
@@ -3448,6 +3488,11 @@ export class InteractiveMode {
 			case "message_end":
 				if (event.message.role === "user") break;
 				if (this.streamingComponent && event.message.role === "assistant") {
+					this.runStats.onMessageEnd(event.message);
+					this.footer.setGenerationSpeed(this.runStats.lastSpeed);
+					if (this.activeStatusIndicator instanceof WorkingStatusIndicator) {
+						this.activeStatusIndicator.refreshDetail();
+					}
 					this.streamingMessage = event.message;
 					let errorMessage: string | undefined;
 					if (this.streamingMessage.stopReason === "aborted") {
@@ -3541,6 +3586,7 @@ export class InteractiveMode {
 					this.ui.terminal.setProgress(false);
 				}
 				this.clearStatusIndicator("working");
+				this.runStats.endRun();
 				if (this.streamingComponent) {
 					this.chatContainer.removeChild(this.streamingComponent);
 					this.streamingComponent = undefined;
@@ -4791,6 +4837,10 @@ export class InteractiveMode {
 					collapseChangelog: this.settingsManager.getCollapseChangelog(),
 					enableInstallTelemetry: this.settingsManager.getEnableInstallTelemetry(),
 					doubleEscapeAction: this.settingsManager.getDoubleEscapeAction(),
+					doubleEscapeClearsInput: this.settingsManager.getDoubleEscapeClearsInput(),
+					showWorkingStats: this.settingsManager.getShowWorkingStats(),
+					showContextGauge: this.settingsManager.getShowContextGauge(),
+					showCacheStatus: this.settingsManager.getShowCacheStatus(),
 					treeFilterMode: this.settingsManager.getTreeFilterMode(),
 					showHardwareCursor: this.settingsManager.getShowHardwareCursor(),
 					showCacheMissNotices: this.settingsManager.getShowCacheMissNotices(),
@@ -4911,6 +4961,22 @@ export class InteractiveMode {
 					},
 					onDoubleEscapeActionChange: (action) => {
 						this.settingsManager.setDoubleEscapeAction(action);
+					},
+					onDoubleEscapeClearsInputChange: (enabled) => {
+						this.settingsManager.setDoubleEscapeClearsInput(enabled);
+					},
+					onShowWorkingStatsChange: (enabled) => {
+						this.settingsManager.setShowWorkingStats(enabled);
+					},
+					onShowCacheStatusChange: (enabled) => {
+						this.settingsManager.setShowCacheStatus(enabled);
+						this.footer.setShowCacheStatus(enabled);
+						this.ui.requestRender();
+					},
+					onShowContextGaugeChange: (enabled) => {
+						this.settingsManager.setShowContextGauge(enabled);
+						this.footer.setShowContextGauge(enabled);
+						this.ui.requestRender();
 					},
 					onTreeFilterModeChange: (mode) => {
 						this.settingsManager.setTreeFilterMode(mode);
@@ -6819,6 +6885,8 @@ export class InteractiveMode {
 		this.themeController.disableAutoSync();
 		this.clearExtensionTerminalInputListeners();
 		this.footer.dispose();
+		if (this.cacheCountdownTimer) clearInterval(this.cacheCountdownTimer);
+		this.cacheCountdownTimer = undefined;
 		this.footerDataProvider.dispose();
 		if (this.unsubscribe) {
 			this.unsubscribe();

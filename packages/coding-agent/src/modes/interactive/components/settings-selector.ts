@@ -82,6 +82,10 @@ export interface SettingsConfig {
 	collapseChangelog: boolean;
 	enableInstallTelemetry: boolean;
 	doubleEscapeAction: "fork" | "tree" | "none";
+	doubleEscapeClearsInput: boolean;
+	showWorkingStats: boolean;
+	showContextGauge: boolean;
+	showCacheStatus: boolean;
 	treeFilterMode: "default" | "no-tools" | "user-only" | "labeled-only" | "all";
 	showHardwareCursor: boolean;
 	editorPaddingX: number;
@@ -120,6 +124,10 @@ export interface SettingsCallbacks {
 	onCollapseChangelogChange: (collapsed: boolean) => void;
 	onEnableInstallTelemetryChange: (enabled: boolean) => void;
 	onDoubleEscapeActionChange: (action: "fork" | "tree" | "none") => void;
+	onDoubleEscapeClearsInputChange: (enabled: boolean) => void;
+	onShowWorkingStatsChange: (enabled: boolean) => void;
+	onShowContextGaugeChange: (enabled: boolean) => void;
+	onShowCacheStatusChange: (enabled: boolean) => void;
 	onTreeFilterModeChange: (mode: "default" | "no-tools" | "user-only" | "labeled-only" | "all") => void;
 	onShowHardwareCursorChange: (enabled: boolean) => void;
 	onEditorPaddingXChange: (padding: number) => void;
@@ -489,6 +497,27 @@ export class SettingsSelectorComponent extends Container {
 				values: ["off", "final", "streaming"],
 			},
 			{
+				id: "show-working-stats",
+				label: "Working stats",
+				description: "Show elapsed time, output tokens, and tokens/s next to the working indicator",
+				currentValue: config.showWorkingStats ? "true" : "false",
+				values: ["true", "false"],
+			},
+			{
+				id: "show-context-gauge",
+				label: "Context gauge",
+				description: "Show a context-fill bar and the latest tokens/s in the footer",
+				currentValue: config.showContextGauge ? "true" : "false",
+				values: ["true", "false"],
+			},
+			{
+				id: "show-cache-status",
+				label: "Cache status",
+				description: "Show prompt-cache hit ratio, cached tokens, and the cache expiry countdown in the footer",
+				currentValue: config.showCacheStatus ? "true" : "false",
+				values: ["true", "false"],
+			},
+			{
 				id: "cache-miss-notices",
 				label: "Cache miss notices",
 				description: "Show transcript notices for cache costs and provider recovery diagnostics",
@@ -529,6 +558,13 @@ export class SettingsSelectorComponent extends Container {
 				description: "Action when pressing Escape twice with empty editor",
 				currentValue: config.doubleEscapeAction,
 				values: ["tree", "fork", "none"],
+			},
+			{
+				id: "double-escape-clears-input",
+				label: "Double-escape clears input",
+				description: "Pressing Escape twice with text in the editor clears it; the text stays in history (Up)",
+				currentValue: config.doubleEscapeClearsInput ? "true" : "false",
+				values: ["true", "false"],
 			},
 			{
 				id: "tree-filter-mode",
@@ -871,6 +907,18 @@ export class SettingsSelectorComponent extends Container {
 					}
 					case "double-escape-action":
 						callbacks.onDoubleEscapeActionChange(newValue as "fork" | "tree");
+						break;
+					case "double-escape-clears-input":
+						callbacks.onDoubleEscapeClearsInputChange(newValue === "true");
+						break;
+					case "show-working-stats":
+						callbacks.onShowWorkingStatsChange(newValue === "true");
+						break;
+					case "show-context-gauge":
+						callbacks.onShowContextGaugeChange(newValue === "true");
+						break;
+					case "show-cache-status":
+						callbacks.onShowCacheStatusChange(newValue === "true");
 						break;
 					case "tree-filter-mode":
 						callbacks.onTreeFilterModeChange(

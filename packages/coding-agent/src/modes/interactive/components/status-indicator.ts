@@ -35,8 +35,26 @@ export class StatusIndicator extends Loader {
 	}
 }
 
+/** How often the working indicator refreshes its detail (elapsed time, tokens, speed). */
+const WORKING_DETAIL_REFRESH_MS = 1000;
+
 export class WorkingStatusIndicator extends StatusIndicator {
-	constructor(ui: TUI, message: string, indicator?: WorkingIndicatorOptions, colorFn?: (text: string) => string) {
+	private baseMessage: string;
+	private readonly getDetail: (() => string | undefined) | undefined;
+	private detailTimer: NodeJS.Timeout | undefined;
+
+	/**
+	 * @param getDetail Optional live detail appended after the message, e.g. `12s · ↓ 1.2k tokens · 48.0 tok/s`.
+	 * Each refresh requests a render, so the provider must be cheap.
+	 * It is re-read once per second and whenever the message changes.
+	 */
+	constructor(
+		ui: TUI,
+		message: string,
+		indicator?: WorkingIndicatorOptions,
+		colorFn?: (text: string) => string,
+		getDetail?: () => string | undefined,
+	) {
 		super(
 			"working",
 			ui,
@@ -45,6 +63,34 @@ export class WorkingStatusIndicator extends StatusIndicator {
 			message,
 			indicator,
 		);
+		this.baseMessage = message;
+		this.getDetail = getDetail;
+		if (getDetail) {
+			this.refreshDetail();
+			this.detailTimer = setInterval(() => this.refreshDetail(), WORKING_DETAIL_REFRESH_MS);
+			this.detailTimer.unref?.();
+		}
+	}
+
+	override setMessage(message: string): void {
+		this.baseMessage = message;
+		super.setMessage(this.composeMessage());
+	}
+
+	/** Re-reads the detail now, e.g. after a response finished. */
+	refreshDetail(): void {
+		super.setMessage(this.composeMessage());
+	}
+
+	private composeMessage(): string {
+		const detail = this.getDetail?.();
+		return detail ? `${this.baseMessage} · ${detail}` : this.baseMessage;
+	}
+
+	override dispose(): void {
+		if (this.detailTimer) clearInterval(this.detailTimer);
+		this.detailTimer = undefined;
+		super.dispose();
 	}
 }
 
