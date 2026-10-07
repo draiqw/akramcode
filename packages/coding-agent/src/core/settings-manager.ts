@@ -14,6 +14,7 @@ import lockfile from "proper-lockfile";
 import { CONFIG_DIR_NAME, getAgentDir } from "../config.ts";
 import { normalizePath, resolvePath } from "../utils/paths.ts";
 import { stripBom } from "../utils/text.ts";
+import { type ClearToolResultsSettings, DEFAULT_CLEAR_TOOL_RESULTS_SETTINGS } from "./compaction/clear-tool-results.ts";
 import { DEFAULT_HTTP_IDLE_TIMEOUT_MS, parseHttpIdleTimeoutMs } from "./http-dispatcher.ts";
 
 export interface CompactionModelOverride {
@@ -30,6 +31,8 @@ export interface CompactionSettings {
 	enabled?: boolean; // default: true
 	reserveTokens?: number; // default: 16384
 	keepRecentTokens?: number; // default: 20000
+	restoreContext?: boolean; // default: true
+	clearToolResults?: Partial<ClearToolResultsSettings>;
 	modelOverrides?: Record<string, CompactionModelOverride>; // exact "provider/modelId" keys
 }
 
@@ -957,16 +960,38 @@ export class SettingsManager {
 		return this.getCompactionTokenSetting("keepRecentTokens", model);
 	}
 
+	getClearToolResultsSettings(): ClearToolResultsSettings {
+		const configured = this.settings.compaction?.clearToolResults ?? {};
+		const defaults = DEFAULT_CLEAR_TOOL_RESULTS_SETTINGS;
+		const count = (value: unknown, fallback: number): number =>
+			typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : fallback;
+		return {
+			enabled: configured.enabled !== false && this.getCompactionEnabled(),
+			keep: count(configured.keep, defaults.keep),
+			minResultTokens: count(configured.minResultTokens, defaults.minResultTokens),
+			excludeTools: Array.isArray(configured.excludeTools)
+				? configured.excludeTools.filter((name): name is string => typeof name === "string")
+				: defaults.excludeTools,
+			targetRatio:
+				typeof configured.targetRatio === "number" && configured.targetRatio > 0 && configured.targetRatio <= 1
+					? configured.targetRatio
+					: defaults.targetRatio,
+		};
+	}
+
 	/** Resolve each token setting through model override, ordinary setting, then built-in default. */
 	getCompactionSettings(model?: Pick<Model<string>, "provider" | "id">): {
 		enabled: boolean;
 		reserveTokens: number;
 		keepRecentTokens: number;
+		restoreContext?: false;
 	} {
 		return {
 			enabled: this.getCompactionEnabled(),
 			reserveTokens: this.getCompactionReserveTokens(model),
 			keepRecentTokens: this.getCompactionKeepRecentTokens(model),
+			// Present only when turned off, so the resolved shape stays the same by default.
+			...(this.settings.compaction?.restoreContext === false ? { restoreContext: false as const } : {}),
 		};
 	}
 

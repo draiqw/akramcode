@@ -82,6 +82,23 @@ What the LLM sees:
 
 On repeated compactions, the summarized span starts at the previous compaction's kept boundary (`firstKeptEntryId`), not at the compaction entry itself, falling back to the entry after the previous compaction if that kept entry cannot be found in the path. A retain-none compaction records its own ID as `firstKeptEntryId`; repeated compaction starts after that entry. This preserves messages that survived the earlier compaction by including them in the next summarization pass as well. AkramCode also recalculates `tokensBefore` from the rebuilt, context-edited session projection before writing the new `CompactionEntry`, so the token count reflects the actual pre-compaction context being replaced. Omitted raw entries remain stored but do not affect cut selection, summaries, checkpoints, or token estimates.
 
+### Clearing Old Tool Results
+
+At the threshold, AkramCode first tries a cheaper step that needs no model call: old tool results larger than `compaction.clearToolResults.minResultTokens` are replaced with a placeholder through append-only context edits, except the `keep` most recent ones and those of `excludeTools`. The placeholder names the tool and the size and tells the model to run the tool again if it needs the output. This happens only when it brings the context to `targetRatio` of the threshold or below; otherwise the history is left untouched and the summary below runs. The session emits `tool_results_cleared` with the count and token estimates. The raw results stay in the session file.
+
+### Restored Context
+
+A summary paraphrases. After the summary, AkramCode appends a `<restored-context>` block with:
+
+- the user's request verbatim, while no later user message survives the cut (it is carried across repeated compactions of the same task);
+- the latest content of up to 5 recently read files (8,000 characters each, 24,000 in total), dropping files written or edited after they were read, and carrying older ones forward.
+
+The block is stored in the compaction entry (`details.activeRequest`, `details.restoredFiles`) and is stripped from the previous summary before the next summarization. Disable it with `compaction.restoreContext: false`.
+
+### Online Compaction at Plan Steps
+
+The built-in `online-compact` extension, ported from [SoL-Pi](https://github.com/NVlabs/SoL-Pi) (MIT), compacts at safe points instead of waiting for the threshold. Enable its tool with `"defaultTools": ["+update_plan"]`. The model keeps its plan current through `update_plan`; when a registered step is marked completed, the extension estimates the remaining requests from the pace of earlier steps and compacts when the input saved over them exceeds the cost of rewriting the prompt cache (or when the context is close to the window). After compaction the task continues in a new turn with a reminder of the current plan. Without `update_plan` calls the extension does nothing.
+
 ### Overflow and Length Recovery Ordering
 
 Recovery preserves the existing lifecycle and queue order. The completed attempt remains visible to `turn_end` and `agent_end`; post-run recovery then repairs persisted model context before a fresh retry:

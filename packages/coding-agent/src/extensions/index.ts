@@ -2,6 +2,7 @@ import type { InlineExtension } from "../core/extensions/types.ts";
 import codemodeExtension from "./codemode/index.ts";
 import llamaExtension from "./llama/index.ts";
 import mcpExtension from "./mcp/index.ts";
+import onlineCompactExtension from "./online-compact/index.ts";
 import toolSearchExtension from "./tool-search/index.ts";
 
 export const builtInExtensions: InlineExtension[] = [
@@ -11,4 +12,6 @@ export const builtInExtensions: InlineExtension[] = [
 	{ name: "codemode", factory: codemodeExtension, replaceable: true, builtin: true },
 	{ name: "tool-search", factory: toolSearchExtension, replaceable: true, builtin: true },
 	{ name: "mcp", factory: mcpExtension, replaceable: true, builtin: true },
+	// Inert until `update_plan` is activated (`"defaultTools": ["+update_plan"]`).
+	{ name: "online-compact", factory: onlineCompactExtension, replaceable: true, builtin: true },
 ];

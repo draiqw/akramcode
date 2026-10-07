@@ -156,6 +156,12 @@ The `entry` value uses a persisted [session entry type](session-format.md#entry-
 
 If compaction was aborted, `result` is absent and `aborted` is true. If it failed, `result` is absent, `aborted` is false, and `errorMessage` describes the failure. Successful overflow recovery sets `willRetry` to true before AkramCode retries the prompt.
 
+When clearing old tool results makes a summary unnecessary, no compaction events are emitted; instead:
+
+```json
+{"type":"tool_results_cleared","count":2,"tokensBefore":21415,"tokensAfter":13967}
+```
+
 See [Compaction and Branch Summaries](compaction.md) for result semantics.
 
 ## Retry events

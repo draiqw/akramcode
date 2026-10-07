@@ -35,6 +35,12 @@ import {
 } from "../session-manager.ts";
 import { combineUsage } from "../usage-totals.ts";
 import {
+	collectRestoredContext,
+	formatRestoredContext,
+	type RestoredContext,
+	stripRestoredContext,
+} from "./restore.ts";
+import {
 	computeFileLists,
 	createFileOps,
 	extractFileOpsFromMessage,
@@ -49,7 +55,7 @@ import {
 // ============================================================================
 
 /** Details stored in CompactionEntry.details for file tracking */
-export interface CompactionDetails {
+export interface CompactionDetails extends RestoredContext {
 	readFiles: string[];
 	modifiedFiles: string[];
 }
@@ -121,6 +127,8 @@ export interface CompactionSettings {
 	enabled: boolean;
 	reserveTokens: number;
 	keepRecentTokens: number;
+	/** Append the active request and recently read files verbatim after the summary (default true). */
+	restoreContext?: boolean;
 }
 
 export const DEFAULT_COMPACTION_SETTINGS: CompactionSettings = {
@@ -782,6 +790,10 @@ export interface CompactionPreparation {
 	previousSummary?: string;
 	/** File operations extracted from messagesToSummarize */
 	fileOps: FileOperations;
+	/** Restored context of the previous compaction, carried forward */
+	previousRestored?: RestoredContext;
+	/** Whether a user message survives verbatim after the cut (unknown is treated as yes) */
+	keptHasUserMessage?: boolean;
 	/** Compaction settions from settings.jsonl	*/
 	settings: CompactionSettings;
 }
@@ -886,9 +898,12 @@ export function prepareCompaction(
 	);
 
 	let previousSummary: string | undefined;
+	let previousRestored: RestoredContext | undefined;
 	let boundaryStart = 0;
 	if (prevCompactionIndex >= 0) {
-		previousSummary = (projectedEntries[prevCompactionIndex].sourceEntry as CompactionEntry).summary;
+		const previous = projectedEntries[prevCompactionIndex].sourceEntry as CompactionEntry;
+		previousSummary = stripRestoredContext(previous.summary);
+		if (!previous.fromHook && previous.details) previousRestored = previous.details as RestoredContext;
 		// The canonical projection has already selected the previous compaction's retained tail.
 		boundaryStart = prevCompactionIndex + 1;
 	}
@@ -922,6 +937,10 @@ export function prepareCompaction(
 		}
 	}
 
+	const keptHasUserMessage = projectedEntries
+		.slice(cutPoint.firstKeptEntryIndex)
+		.some((entry) => entry.messages.some((message) => message.role === "user"));
+
 	return {
 		firstKeptEntryId,
 		messagesToSummarize,
@@ -931,6 +950,8 @@ export function prepareCompaction(
 		previousSummary,
 		fileOps,
 		settings,
+		previousRestored,
+		keptHasUserMessage,
 	};
 }
 
@@ -984,6 +1005,8 @@ export async function compact(
 		previousSummary,
 		fileOps,
 		settings,
+		previousRestored,
+		keptHasUserMessage,
 	} = preparation;
 
 	// Generate summaries and merge into one
@@ -1055,6 +1078,15 @@ export async function compact(
 	// Compute file lists and append to summary
 	const { readFiles, modifiedFiles } = computeFileLists(fileOps);
 	summary += formatFileOperations(readFiles, modifiedFiles);
+	const restored =
+		settings.restoreContext === false
+			? {}
+			: collectRestoredContext(
+					[...messagesToSummarize, ...turnPrefixMessages],
+					previousRestored,
+					keptHasUserMessage ?? true,
+				);
+	summary += formatRestoredContext(restored);
 
 	if (!firstKeptEntryId) {
 		throw new Error("First kept entry has no UUID - session may need migration");
@@ -1065,7 +1097,7 @@ export async function compact(
 		firstKeptEntryId,
 		tokensBefore,
 		usage: summaryUsage,
-		details: { readFiles, modifiedFiles } as CompactionDetails,
+		details: { readFiles, modifiedFiles, ...restored } as CompactionDetails,
 	};
 }
 

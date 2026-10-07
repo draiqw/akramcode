@@ -41,7 +41,7 @@ See [Choose a Model](models.md) for model selection and thinking controls.
 | `codemode.mode` | `"on"` \| `"only"` | `"on"` | How the `codemode` tool presents tools while it is active. `on`: declared tools get a note on calling them from scripts appended to their description, and `codemode` lists only tools that are not declared. `only`: `codemode` lists every tool scripts can call, and active built-in and extension tools are hidden from the model, so it reaches them through `codemode`. |
 | `codemode.inlineBudget` | number | `3000` | Estimated tokens (characters / 4) the `codemode` tool's description may spend on tool declarations. Tools that do not fit are left out and found with `searchTools()`. `0` lists only namespaces. |
 
-Available built-in tools are `read`, `bash`, `edit`, `write`, `grep`, `find`, and `ls`. `defaultTools` can also name `codemode` and `tool_search`, which built-in extensions register inactive, and other extension tools registered inactive.
+Available built-in tools are `read`, `bash`, `edit`, `write`, `grep`, `find`, and `ls`. `defaultTools` can also name `codemode`, `tool_search`, and `update_plan` (see [online compaction](compaction.md#online-compaction-at-plan-steps)), which built-in extensions register inactive, and other extension tools registered inactive.
 
 A list of only `+name` and `-name` entries changes the inherited selection instead of replacing it. For example, this enables `codemode` next to the default tools:
 
@@ -71,6 +71,12 @@ CLI tool options override this setting for one invocation; `--tools` does not ac
 | `compaction.reserveTokens` | number | `16384` | Tokens reserved for the model response. |
 | `compaction.keepRecentTokens` | number | `20000` | Recent tokens retained without summarization. |
 | `compaction.modelOverrides` | object | None | Per-model token settings keyed by exact `provider/modelId`. |
+| `compaction.restoreContext` | boolean | `true` | After a compaction, append the active request verbatim and recently read files to the summary. |
+| `compaction.clearToolResults.enabled` | boolean | `true` | At the threshold, first replace old large tool results with placeholders; summarize only if that is not enough. |
+| `compaction.clearToolResults.keep` | number | `3` | Most recent tool results that are never cleared. |
+| `compaction.clearToolResults.minResultTokens` | number | `500` | Smaller results are left alone. |
+| `compaction.clearToolResults.excludeTools` | string[] | `[]` | Tools whose results are never cleared. |
+| `compaction.clearToolResults.targetRatio` | number | `0.85` | Clearing must bring the context to this share of the threshold, otherwise a summary runs instead. |
 
 <a id="per-model-compaction-overrides"></a>
 

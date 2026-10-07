@@ -3555,6 +3555,13 @@ export class InteractiveMode {
 				await this.checkShutdownRequested();
 				break;
 
+			case "tool_results_cleared":
+				this.showStatus(
+					`Cleared ${event.count} old tool result${event.count === 1 ? "" : "s"} (~${event.tokensBefore - event.tokensAfter} tokens) instead of compacting`,
+				);
+				this.footer.invalidate();
+				break;
+
 			case "compaction_start": {
 				if (this.settingsManager.getShowTerminalProgress()) {
 					this.ui.terminal.setProgress(true);

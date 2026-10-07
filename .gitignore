@@ -42,3 +42,6 @@ plans/
 .akramcode/hf-sessions-backup/
 collect.sh
 packages/agent/docs/extensions/akramcode-server-artifact/index.md
+
+# Git worktrees for parallel agents
+.worktrees/

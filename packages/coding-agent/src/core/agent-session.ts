@@ -75,6 +75,7 @@ import {
 	estimateProjectedContextTokens,
 	estimateTokens,
 	generateBranchSummary,
+	planToolResultClearing,
 	prepareCompaction,
 	shouldCompact,
 } from "./compaction/index.ts";
@@ -203,6 +204,8 @@ export type AgentSessionEvent =
 			followUp: readonly string[];
 	  }
 	| { type: "compaction_start"; reason: "manual" | "threshold" | "overflow" }
+	/** Old tool results were replaced with placeholders instead of a summary. */
+	| { type: "tool_results_cleared"; count: number; tokensBefore: number; tokensAfter: number }
 	| { type: "entry_appended"; entry: SessionEntry }
 	| { type: "session_info_changed"; name: string | undefined }
 	| { type: "thinking_level_changed"; level: ThinkingLevel }
@@ -3032,6 +3035,35 @@ export class AgentSession {
 	 * @param willRetry Whether to continue the interrupted turn after overflow compaction
 	 * @returns Whether the post-run loop should call `agent.continue()`
 	 */
+	/**
+	 * Replace old large tool results with placeholders when that alone brings the context well under
+	 * the compaction threshold (see compaction/clear-tool-results.ts). True when no summary is needed.
+	 */
+	private _clearOldToolResults(model: Model<any>): boolean {
+		if (model.contextWindow <= 0) return false;
+		const projection = this.sessionManager.buildSessionProjection();
+		const tokensBefore = estimateProjectedContextTokens(projection, this.sessionManager.getBranch()).tokens;
+		const threshold = model.contextWindow - this.settingsManager.getCompactionSettings(model).reserveTokens;
+		const plan = planToolResultClearing(
+			projection,
+			tokensBefore,
+			threshold,
+			this.settingsManager.getClearToolResultsSettings(),
+		);
+		if (!plan) return false;
+		for (const target of plan.targets) {
+			this.sessionManager.appendContextEdit(target.entryId, { content: target.placeholder });
+		}
+		this._refreshFinalizedContext();
+		this._emit({
+			type: "tool_results_cleared",
+			count: plan.targets.length,
+			tokensBefore,
+			tokensAfter: plan.tokensAfter,
+		});
+		return true;
+	}
+
 	private async _runAutoCompaction(reason: "overflow" | "threshold", willRetry: boolean): Promise<boolean> {
 		const model = this.model;
 		const settings = this.settingsManager.getCompactionSettings(model);
@@ -3044,6 +3076,7 @@ export class AgentSession {
 			if (!model) {
 				return false;
 			}
+			if (reason === "threshold" && this._clearOldToolResults(model)) return false;
 
 			const pathEntries = this.sessionManager.getBranch();
 			const preparation = prepareCompaction(pathEntries, settings);
