@@ -11,6 +11,10 @@
 - Added a copy key (`app.message.copy`, default `ctrl+x`) to OAuth sign-in screens in `/login`, `/mcp`, and `/mcp login`, which copies the sign-in URL when the browser cannot be opened or the wrapped link cannot be selected.
 - Added the `grep.backend` setting. With `"tgrep"`, the `grep` tool asks a running [tgrep](https://github.com/microsoft/tgrep) server (`tgrep serve`) for directory searches and uses ripgrep whenever the server is not running, cannot be verified as your own local tgrep process, does not answer, or a file was just written or edited ([docs](docs/settings.md#grep-backend)).
 
+### Changed
+
+- Shortened the default system prompt and the `edit` tool definition by removing guidance that the tool snippets, descriptions, and schemas already state, and by replacing the per-topic documentation map with a pointer to the docs directory. With the default tools, the fixed part of the system prompt drops from 620 to 416 tokens and the tool definitions from 588 to 542 tokens (o200k tokenizer).
+
 ### Fixed
 
 - A prompt given as an argument (`akramcode -p "..."`) no longer hangs when stdin is an open pipe that never sends data (cron, scripts, other processes); it runs after 2 seconds without piped input. Input that has started to arrive is still read to its end.

@@ -94,20 +94,6 @@ describe("buildSystemPrompt", () => {
 			expect(prompt).toContain("- write:");
 		});
 
-		test.each([[["bash"], "Use bash for file operations"]] as const)(
-			"uses shell-specific guidance for %j",
-			(selectedTools, expected) => {
-				const prompt = buildSystemPrompt({
-					selectedTools: [...selectedTools],
-					contextFiles: [],
-					skills: [],
-					cwd: process.cwd(),
-				});
-
-				expect(prompt).toContain(expected);
-			},
-		);
-
 		test("instructs models to resolve akramcode docs and examples under absolute base paths", () => {
 			const prompt = buildSystemPrompt({
 				contextFiles: [],
@@ -116,9 +102,23 @@ describe("buildSystemPrompt", () => {
 			});
 
 			expect(prompt).toContain(
-				"- When reading akramcode docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory",
+				"- Resolve docs/... under Additional docs and examples/... under Examples, not the current working directory",
 			);
-			expect(prompt).toContain("environment variables (docs/environment-variables.md), MCP servers (docs/mcp.md)");
+			expect(prompt).toContain("non-LLM models such as classifiers and image models are in codemode.md");
+		});
+
+		test("does not repeat guidance that tool snippets and descriptions already carry", () => {
+			const prompt = buildSystemPrompt({
+				selectedTools: ["read", "bash", "edit", "write"],
+				toolSnippets: { bash: "Execute bash commands (ls, grep, find, etc.)" },
+				contextFiles: [],
+				skills: [],
+				cwd: process.cwd(),
+			});
+
+			expect(prompt).not.toContain("Use bash for file operations");
+			expect(prompt).not.toContain("In addition to the tools above");
+			expect(prompt).toContain("<tools>\n- bash: Execute bash commands (ls, grep, find, etc.)\n</tools>");
 		});
 	});
 

@@ -92,15 +92,6 @@ function buildRules(
 		rules.push(normalized);
 	};
 
-	const hasBash = selectedTools.includes("bash");
-	const hasGrep = selectedTools.includes("grep");
-	const hasFind = selectedTools.includes("find");
-	const hasLs = selectedTools.includes("ls");
-
-	if (hasBash && !hasGrep && !hasFind && !hasLs) {
-		addRule("Use bash for file operations like ls, rg, find");
-	}
-
 	for (const name of selectedTools) {
 		for (const rule of toolGuidelines[name] ?? []) addRule(rule);
 	}
@@ -141,16 +132,15 @@ export function buildSystemPromptSections(input: BuildSystemPromptOptions): Syst
 		const visibleTools = selectedTools.filter((name) => !!toolSnippets[name]);
 		const tools =
 			visibleTools.length > 0 ? visibleTools.map((name) => `- ${name}: ${toolSnippets[name]}`).join("\n") : "(none)";
-		promptSections.tools = `${tools}\n\nIn addition to the tools above, you may have access to other custom tools depending on the project.`;
+		promptSections.tools = tools;
 		promptSections.rules = buildRules(selectedTools, toolGuidelines, promptGuidelines);
-		promptSections.docs = `AkramCode documentation (read only when the user asks about akramcode itself, its SDK, extensions, themes, skills, or TUI):
+		// Read in few sessions, so this names where things are instead of mapping every topic to a file.
+		promptSections.docs = `AkramCode documentation (read only when the user asks about akramcode itself: its SDK, extensions, themes, skills, prompt templates, TUI, keybindings, providers, models, packages, MCP, or codemode):
 - Main documentation: ${getReadmePath()}
-- Additional docs: ${getDocsPath()}
+- Additional docs: ${getDocsPath()} (one file per topic, e.g. extensions.md, sdk.md, tui.md, custom-provider.md; non-LLM models such as classifiers and image models are in codemode.md)
 - Examples: ${getExamplesPath()} (extensions, custom tools, SDK)
-- When reading akramcode docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory
-- When asked about: extensions (docs/extensions.md, examples/extensions/), themes (docs/themes.md), skills (docs/skills.md), prompt templates (docs/prompt-templates.md), TUI components (docs/tui.md), keybindings (docs/keybindings.md), SDK integrations (docs/sdk.md), custom providers (docs/custom-provider.md), adding models (docs/models.md), akramcode packages (docs/packages.md), environment variables (docs/environment-variables.md), MCP servers (docs/mcp.md), codemode scripts and non-LLM models such as classifiers and image models (docs/codemode.md)
-- When working on akramcode topics, read the docs and examples, and follow .md cross-references before implementing
-- Always read akramcode .md files completely and follow links to related docs (e.g., tui.md for TUI API details)`;
+- Resolve docs/... under Additional docs and examples/... under Examples, not the current working directory
+- Before implementing akramcode topics, read the relevant .md files completely and follow their cross-references`;
 	}
 
 	if (appendSystemPrompt) promptSections.addendum = appendSystemPrompt;
