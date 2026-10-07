@@ -1,0 +1,13 @@
+{
+	"id": "ts-comprehension-plugin-order",
+	"title": "Find why /api/me leaks another user's profile",
+	"category": "comprehension",
+	"language": "typescript",
+	"prompt": "Bug report for this TypeScript service (an in-process HTTP-style app, see src/server/createApp.ts): `GET /api/me` sometimes returns the profile of a different user. Reproduction: Alice requests /api/me with `authorization: Bearer tok-alice`, then Bob requests /api/me with `authorization: Bearer tok-bob` and receives Alice's profile. Also, after any user has requested /api/me, a request to /api/me without an authorization header returns 200 with that profile instead of 401. Find the root cause and fix it. Everything else must keep working as it does now: CORS preflight (OPTIONS) requests are answered with 204 without authentication, every response (including 401 and 429 responses) carries an `x-request-id` header, rate limiting by client ip still applies to unauthenticated requests, public routes such as /health and /api/catalog need no token, and GET /api/catalog responses are still cached. Run the tests with `node --test test/*.test.ts`.",
+	"test": [
+		"node",
+		"--test",
+		"__hidden__/*.test.ts"
+	],
+	"timeoutSec": 600
+}

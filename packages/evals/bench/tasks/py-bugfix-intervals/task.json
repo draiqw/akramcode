@@ -1,0 +1,9 @@
+{
+	"id": "py-bugfix-intervals",
+	"title": "Fix merge_intervals for touching and unsorted intervals",
+	"category": "bugfix",
+	"language": "python",
+	"prompt": "In this Python project, `intervals.merge_intervals` is buggy and `intervals.free_slots` (which relies on it) returns wrong gaps. Intervals are closed integer ranges given as (start, end) tuples with start <= end. Required behavior of merge_intervals(intervals): accept the intervals in any order, merge any intervals that overlap OR touch (an interval ending at 5 and one starting at 5 become one), return a new list of (start, end) tuples sorted by start, never mutate the input list, return [] for empty input, and raise ValueError for any interval whose start > end. free_slots(busy, day_start, day_end) must return the gaps between the merged busy intervals that lie within [day_start, day_end], as (start, end) tuples in order, excluding zero-length gaps. Fix the bugs. Run the tests with `python3 -m unittest discover -s tests -v`.",
+	"test": ["python3", "-m", "unittest", "discover", "-s", "__hidden__", "-p", "test_*.py", "-v"],
+	"timeoutSec": 600
+}

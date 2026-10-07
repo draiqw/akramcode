@@ -2,6 +2,8 @@
 
 Behavioral evals for AkramCode's coding agent, built with `vitest-evals`.
 
+For A/B measurement of coding quality and token cost across builds or settings, see the quality benchmark in [bench/README.md](bench/README.md).
+
 ## File conventions
 
 Eval definitions are flat under `evals/`:

@@ -1,0 +1,19 @@
+{
+	"id": "py-refactor-extract-validators",
+	"title": "Extract duplicated validation helpers into shop/validators.py",
+	"category": "refactor",
+	"language": "python",
+	"prompt": "The modules shop/customers.py, shop/orders.py, shop/shipping.py and shop/newsletter.py each contain their own private copies of the same three validation helpers (email check, phone normalization, postcode check). Refactor: create a new module shop/validators.py with exactly these public functions:\n- `is_valid_email(value: str) -> bool`\n- `normalize_phone(value: str) -> str` (raises ValueError for invalid numbers)\n- `is_valid_postcode(value: str) -> bool`\nThey must behave exactly like the existing private helpers. Then delete the private copies from all four modules and make those modules import and use the functions from shop.validators instead; after the refactor none of the four modules may define any function or lambda of its own for email, phone or postcode validation. The public API and behavior of the four modules must not change. Run the tests with `python3 -m unittest discover -s tests -v`.",
+	"test": [
+		"python3",
+		"-m",
+		"unittest",
+		"discover",
+		"-s",
+		"__hidden__",
+		"-p",
+		"test_*.py",
+		"-v"
+	],
+	"timeoutSec": 600
+}

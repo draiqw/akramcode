@@ -1,0 +1,23 @@
+{
+	"id": "long-ts-auth-audit",
+	"title": "Audit ~75 route handlers and enforce authentication",
+	"category": "long",
+	"language": "typescript",
+	"prompt": "Security audit. Every handler under src/routes/ exports `route` ({ method, path }) and an async `handler(ctx)`. A route is public if and only if \"METHOD path\" is in PUBLIC_ROUTES from src/config/public-routes.ts (read how that list is built). Enforce this rule:\n\n- Every non-public handler must call requireAuth(ctx) (from src/auth.ts) as the very first statement of its handler function, before anything else. requireAuthOptional does not count, and neither does a commented-out call.\n- Public handlers must not call requireAuth at all.\n- Do not change anything else about a handler's behavior.\n\nWhen you are done, write AUDIT.json at the repository root with exactly this shape: {\"changed\": [<sorted list of \"METHOD path\" strings, e.g. \"GET /api/users/:id\", for every handler file you had to modify>]}.\n\nRun the existing tests with: node --test test/*.test.ts",
+	"test": [
+		"node",
+		"--test",
+		"__hidden__/*.test.ts"
+	],
+	"timeoutSec": 1200,
+	"variants": {
+		"compact": {
+			"settings": {
+				"$compactAtTokens": 12000,
+				"compaction": {
+					"keepRecentTokens": 4000
+				}
+			}
+		}
+	}
+}
