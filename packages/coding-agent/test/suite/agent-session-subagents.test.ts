@@ -102,25 +102,35 @@ describe("AgentSession subagents and background tasks", () => {
 		return harness;
 	}
 
-	it("activates agent, task_stop, and monitor by default and honors the settings", async () => {
+	it("activates agent and task_stop by default and honors the settings", async () => {
 		const harness = await setup();
-		expect(harness.session.getActiveToolNames()).toEqual(expect.arrayContaining(["agent", "task_stop", "monitor"]));
+		expect(harness.session.getActiveToolNames()).toEqual(expect.arrayContaining(["agent", "task_stop"]));
+		expect(harness.session.getAllTools().map((tool) => tool.name)).not.toContain("monitor");
 		const agentTool = harness.session.getToolDefinition("agent");
 		expect(Object.keys(schemaProperties(agentTool?.parameters))).toContain("run_in_background");
-		expect(agentTool?.description).toContain("- general-purpose:");
-		expect(agentTool?.description).toContain("- explore:");
+		expect(agentTool?.description).toContain("general-purpose (default), explore");
+		expect(Object.keys(schemaProperties(harness.session.getToolDefinition("bash")?.parameters))).toEqual(
+			expect.arrayContaining(["run_in_background", "monitor"]),
+		);
 
 		const noSubagents = await setup({ subagents: { enabled: false } });
 		expect(noSubagents.session.getActiveToolNames()).not.toContain("agent");
-		expect(noSubagents.session.getActiveToolNames()).toContain("monitor");
+		expect(noSubagents.session.getActiveToolNames()).toContain("task_stop");
 
 		const noBackground = await setup({ backgroundTasks: { enabled: false } });
 		expect(noBackground.session.getActiveToolNames()).toContain("agent");
 		expect(noBackground.session.getActiveToolNames()).not.toContain("task_stop");
-		expect(noBackground.session.getActiveToolNames()).not.toContain("monitor");
 		expect(Object.keys(schemaProperties(noBackground.session.getToolDefinition("agent")?.parameters))).not.toContain(
 			"run_in_background",
 		);
+		expect(Object.keys(schemaProperties(noBackground.session.getToolDefinition("bash")?.parameters))).not.toContain(
+			"monitor",
+		);
+		// Monitors are a mode of bash: a session without bash cannot run shell commands in the background.
+		const noBash = await createHarness({ createSubagentSession: createAgentSession, excludedToolNames: ["bash"] });
+		harnesses.push(noBash);
+		expect(noBash.session.getAllTools().map((tool) => tool.name)).not.toEqual(expect.arrayContaining(["bash"]));
+		expect(noBash.session.getAllTools().map((tool) => tool.name)).not.toContain("monitor");
 	});
 
 	it("runs a foreground subagent with a fresh context and returns its final text", async () => {
@@ -141,7 +151,7 @@ describe("AgentSession subagents and background tasks", () => {
 			(request) =>
 				request.hasToolResults
 					? fauxAssistantMessage("Child report: no files.")
-					: fauxAssistantMessage(fauxToolCall("ls", { path: "." }), { stopReason: "toolUse" }),
+					: fauxAssistantMessage(fauxToolCall("bash", { command: "echo hi" }), { stopReason: "toolUse" }),
 		);
 		const originalPrompt = "List the files in the working directory.";
 
@@ -151,17 +161,23 @@ describe("AgentSession subagents and background tasks", () => {
 		expect(childRequests[0].prompt).toBe(originalPrompt);
 		// Fresh context: the child never sees the parent's user message.
 		expect(childRequests[0].systemPrompt).toContain("You are a read-only explorer");
-		expect(childRequests[0].tools.sort()).toEqual(["bash", "find", "grep", "ls", "read"]);
+		// explore lists read, grep, find, ls, and bash; the parent has only read and bash active.
+		expect(childRequests[0].tools.sort()).toEqual(["bash", "read"]);
 
 		const [result] = toolResults(harness, "agent");
 		expect(result.isError).toBe(false);
+		expect(getMessageText(result)).toBe("Child report: no files.");
 		const details = result.details as unknown as AgentToolDetails;
-		expect(details).toMatchObject({ agentType: "explore", status: "completed", toolUses: 1, activity: ["ls ."] });
+		expect(details).toMatchObject({
+			agentType: "explore",
+			status: "completed",
+			toolUses: 1,
+			activity: ["$ echo hi"],
+		});
 		expect(details.usage.turns).toBe(2);
 		expect(lastAssistantText(harness)).toBe("Parent done.");
 		expect(details.transcriptFile).toBeDefined();
 		if (details.transcriptFile) {
-			cleanupPaths.push(details.transcriptFile);
 			expect(readFileSync(details.transcriptFile, "utf-8")).toContain(originalPrompt);
 		}
 	});
@@ -176,17 +192,91 @@ describe("AgentSession subagents and background tasks", () => {
 				}),
 				fauxAssistantMessage("ok"),
 			],
-			() => fauxAssistantMessage("worked"),
+			(request) =>
+				request.hasToolResults
+					? fauxAssistantMessage("worked")
+					: fauxAssistantMessage(
+							fauxToolCall("bash", { command: "echo fg", run_in_background: true, monitor: true }),
+							{ stopReason: "toolUse" },
+						),
 		);
 
 		await harness.session.prompt("go");
 
-		expect(childRequests).toHaveLength(1);
-		expect(childRequests[0].tools.sort()).toEqual(["bash", "edit", "find", "grep", "ls", "read", "write"]);
-		expect(childRequests[0].tools).not.toContain("agent");
-		expect(childRequests[0].tools).not.toContain("monitor");
-		const transcript = (toolResults(harness, "agent")[0].details as unknown as AgentToolDetails).transcriptFile;
-		if (transcript) cleanupPaths.push(transcript);
+		expect(childRequests[0].tools.sort()).toEqual(["bash", "edit", "read", "write"]);
+		// Background parameters are removed from the child's bash, and stripped if sent anyway.
+		expect(childRequests[0].hasToolResults).toBe(false);
+		expect(harness.session.tasks.list()).toEqual([]);
+	});
+
+	it("gives subagents only tools the parent session can call, through the parent's tool hooks", async () => {
+		const toolCalls: Array<{ name: string; parent?: string }> = [];
+		const policy = (akramcode: ExtensionAPI) => {
+			akramcode.on("tool_call", (event) => {
+				toolCalls.push({ name: event.toolName, parent: event.parentToolCallId });
+				if (event.toolName === "bash") return { block: true, reason: "bash is blocked by policy" };
+				return undefined;
+			});
+		};
+		const harness = await createHarness({
+			createSubagentSession: createAgentSession,
+			extensionFactories: [policy],
+			// The parent runs without edit and write (as with --tools read,bash,agent).
+			initialActiveToolNames: ["read", "bash", "agent"],
+		});
+		harnesses.push(harness);
+		await harness.session.bindExtensions({});
+		const agentsDir = join(harness.tempDir, "agent", "agents");
+		mkdirSync(agentsDir, { recursive: true });
+		writeFileSync(
+			join(agentsDir, "writer.md"),
+			"---\nname: writer\ndescription: Writes\ntools: write, edit, bash, grep, mcp__*\n---\nWrite.\n",
+		);
+		harness.session.subagents?.reload();
+
+		const childRequests = route(
+			harness,
+			[
+				fauxAssistantMessage(
+					[
+						fauxToolCall("agent", { description: "General", prompt: "general" }, { id: "agent-general" }),
+						fauxToolCall(
+							"agent",
+							{ description: "Writer", prompt: "writer", subagent_type: "writer" },
+							{
+								id: "agent-writer",
+							},
+						),
+					],
+					{ stopReason: "toolUse" },
+				),
+				fauxAssistantMessage("done"),
+			],
+			(request) => {
+				if (request.hasToolResults) return fauxAssistantMessage("finished");
+				return fauxAssistantMessage(fauxToolCall("bash", { command: "touch escaped" }), { stopReason: "toolUse" });
+			},
+		);
+		await harness.session.prompt("go");
+
+		const toolsByPrompt = Object.fromEntries(
+			childRequests.filter((r) => !r.hasToolResults).map((r) => [r.prompt, r.tools.sort()]),
+		);
+		// Without a tool list: the parent's active tools, minus agent tools.
+		expect(toolsByPrompt.general).toEqual(["bash", "read"]);
+		// write, edit, grep, and MCP tools are not active in the parent, so the allowlist cannot add them.
+		expect(toolsByPrompt.writer).toEqual(["bash"]);
+		const writer = harness.session.subagents?.listTypes().types.find((type) => type.name === "writer");
+		expect(writer && harness.session.subagents?.resolveTools(writer).unknown).toEqual([
+			"write",
+			"edit",
+			"grep",
+			"mcp__*",
+		]);
+		// The child's bash calls went through the parent's tool_call hook, which blocked them.
+		const childBash = toolCalls.filter((call) => call.name === "bash");
+		expect(childBash.map((call) => call.parent).sort()).toEqual(["agent-general", "agent-writer"]);
+		expect(existsSync(join(harness.tempDir, "escaped"))).toBe(false);
 	});
 
 	it("runs parallel agent calls concurrently", async () => {
@@ -278,12 +368,12 @@ describe("AgentSession subagents and background tasks", () => {
 		expect(getMessageText(result)).toContain('Unknown agent type "nope". Available: general-purpose, explore');
 	});
 
-	it("gives custom agent types exactly their allowed tools, including extension and MCP tools", async () => {
+	it("gives custom agent types the extension and MCP tools the parent can call", async () => {
 		const executed: string[] = [];
 		const registerTools = (akramcode: ExtensionAPI) => {
 			for (const [name, exposure] of [
 				["web_fetch", "direct"],
-				["mcp__gh__issues", "codemode"],
+				["mcp__gh__issues", "direct"],
 				["mcp__gh__pulls", "deferred"],
 				["mcp__slack__post", "codemode"],
 			] as const) {
@@ -306,19 +396,20 @@ describe("AgentSession subagents and background tasks", () => {
 		mkdirSync(agentsDir, { recursive: true });
 		writeFileSync(
 			join(agentsDir, "triager.md"),
-			"---\nname: triager\ndescription: Triages issues\ntools: read, mcp__gh__*, web_fetch, nope\ndisallowedTools: mcp__gh__pulls\nthinking: off\n---\nTriage issues.\n",
+			"---\nname: triager\ndescription: Triages issues\ntools: read, mcp__*, web_fetch, nope\ndisallowedTools: web_fetch\nthinking: off\n---\nTriage issues.\n",
 		);
 		// The definition was written after the session started: reload it as `/agents` does.
 		const control = harness.session.subagents;
-		expect(control).toBeDefined();
 		control?.reload();
 		const triager = control?.listTypes().types.find((type) => type.name === "triager");
+		// mcp__gh__pulls (deferred) and mcp__slack__post (codemode) are not reachable: neither
+		// tool_search nor codemode is active in the parent.
 		expect(triager && control?.resolveTools(triager)).toEqual({
-			tools: ["read", "mcp__gh__issues", "web_fetch"],
+			tools: ["read", "mcp__gh__issues"],
 			unknown: ["nope"],
 		});
 		expect(harness.session.agent.state.tools.find((tool) => tool.name === "agent")?.description).toContain(
-			"- triager: Triages issues (Tools: read, mcp__gh__issues, web_fetch)",
+			"\n- triager: Triages issues",
 		);
 
 		const childRequests = route(
@@ -337,13 +428,26 @@ describe("AgentSession subagents and background tasks", () => {
 		);
 		await harness.session.prompt("go");
 
-		expect(childRequests[0].tools.sort()).toEqual(["mcp__gh__issues", "read", "web_fetch"]);
+		expect(childRequests[0].tools.sort()).toEqual(["mcp__gh__issues", "read"]);
 		expect(childRequests[0].systemPrompt).toContain("Triage issues.");
-		// The shared MCP tool definition really runs in the child.
+		// The parent's MCP tool really runs for the child.
 		expect(executed).toEqual(["mcp__gh__issues"]);
 		const details = toolResults(harness, "agent")[0].details as unknown as AgentToolDetails;
 		expect(details.activity).toEqual(["mcp__gh__issues {}"]);
-		if (details.transcriptFile) cleanupPaths.push(details.transcriptFile);
+	});
+
+	it("lists project agents only while the project is trusted", async () => {
+		const harness = await setup();
+		const projectAgents = join(harness.tempDir, ".akramcode", "agents");
+		mkdirSync(projectAgents, { recursive: true });
+		writeFileSync(join(projectAgents, "proj.md"), "---\nname: proj\ndescription: Project agent\n---\nDo it.\n");
+		const names = () => harness.session.subagents?.listTypes().types.map((type) => type.name);
+		harness.settingsManager.setProjectTrusted(true);
+		harness.session.subagents?.reload();
+		expect(names()).toContain("proj");
+		// Revoking trust drops project agents without a reload.
+		harness.settingsManager.setProjectTrusted(false);
+		expect(names()).toEqual(["general-purpose", "explore"]);
 	});
 
 	it("runs a background agent and notifies the session with its result", async () => {
@@ -387,7 +491,7 @@ describe("AgentSession subagents and background tasks", () => {
 		const harness = await setup();
 		harness.setResponses([
 			fauxAssistantMessage(
-				fauxToolCall("monitor", { command: "sleep 0.2; echo server-ready", description: "wait for server" }),
+				fauxToolCall("bash", { command: "sleep 0.2; echo server-ready", run_in_background: true, monitor: true }),
 				{ stopReason: "toolUse" },
 			),
 			fauxAssistantMessage("Watching."),
@@ -407,11 +511,11 @@ describe("AgentSession subagents and background tasks", () => {
 	it("stops tasks at the wait timeout and when the session is disposed", async () => {
 		const harness = await setup();
 		harness.setResponses([
-			fauxAssistantMessage(fauxToolCall("monitor", { command: "sleep 5", description: "long" }), {
+			fauxAssistantMessage(fauxToolCall("bash", { command: "sleep 5", run_in_background: true, monitor: true }), {
 				stopReason: "toolUse",
 			}),
 			fauxAssistantMessage("Watching."),
-			fauxAssistantMessage(fauxToolCall("monitor", { command: "sleep 5", description: "second" }), {
+			fauxAssistantMessage(fauxToolCall("bash", { command: "sleep 5", run_in_background: true, monitor: true }), {
 				stopReason: "toolUse",
 			}),
 			fauxAssistantMessage("Watching again."),

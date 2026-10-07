@@ -13,7 +13,7 @@
  * Modes use this class and add their own I/O layer on top.
  */
 
-import { readFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import {
@@ -165,9 +165,9 @@ import {
 	type TaskNotificationDetails,
 } from "./tasks/notifications.ts";
 import { type TaskEvent, TaskRegistry } from "./tasks/task-registry.ts";
-import { createMonitorToolDefinition, createTaskStopToolDefinition } from "./tasks/task-tools.ts";
+import { createTaskStopToolDefinition } from "./tasks/task-tools.ts";
 import { type BashOperations, createLocalBashOperations } from "./tools/bash.ts";
-import { allToolNames, createAllToolDefinitions, type ToolName, type ToolsOptions } from "./tools/index.ts";
+import { createAllToolDefinitions, type ToolsOptions } from "./tools/index.ts";
 import { createToolDefinitionFromAgentTool } from "./tools/tool-definition-wrapper.ts";
 import { addUsageToTotals, combineUsage, createUsageTotals } from "./usage-totals.ts";
 import {
@@ -482,10 +482,12 @@ export class AgentSession {
 	private _agentDir: string;
 	private _isSubagent: boolean;
 	private _createSubagentSession?: SubagentSessionFactory;
-	/** Built-in tools that need this session: `agent`, `task_stop`, and `monitor`. */
+	/** Built-in tools that need this session: `agent` and `task_stop`. */
 	private _sessionToolDefinitions: ToolDefinition[] = [];
-	/** Agent types, read on first use after each runtime build. */
-	private _agentTypes: AgentTypeDiscovery | undefined;
+	/** Agent types, read on first use after each runtime build, and the project trust they were read with. */
+	private _agentTypes: { trusted: boolean; discovery: AgentTypeDiscovery } | undefined;
+	/** Private temp directory for transcripts of sessions without a file. */
+	private _subagentTempDir: string | undefined;
 	/** Background tasks of this session. Stopped when the session is disposed. */
 	readonly tasks: TaskRegistry;
 	private _unsubscribeTasks?: () => void;
@@ -543,9 +545,7 @@ export class AgentSession {
 		this._isSubagent = config.isSubagent ?? false;
 		this._createSubagentSession = config.createSubagentSession;
 		this._sessionStartEvent = config.sessionStartEvent ?? { type: "session_start", reason: "startup" };
-		this.tasks = new TaskRegistry({
-			outputDir: () => join(tmpdir(), "akramcode-tasks", this.sessionManager.getSessionId()),
-		});
+		this.tasks = new TaskRegistry();
 		this._unsubscribeTasks = this.tasks.subscribe((event) => this._handleTaskEvent(event));
 
 		// Always subscribe to agent events for internal handling
@@ -1440,7 +1440,14 @@ export class AgentSession {
 		}
 		this._unsubscribeTasks?.();
 		this._unsubscribeTasks = undefined;
-		this.tasks.stopAll();
+		this.tasks.dispose();
+		if (this._subagentTempDir) {
+			try {
+				rmSync(this._subagentTempDir, { recursive: true, force: true });
+			} catch {
+				// Best effort.
+			}
+		}
 		cleanupSessionResources(this.sessionId);
 		void this.releaseSandbox();
 	}
@@ -3670,7 +3677,7 @@ export class AgentSession {
 						grep: { backend: grepBackend, tgrepPath },
 					}),
 				);
-		this._sessionToolDefinitions = this._createSessionToolDefinitions(backgroundTasks, shellPath);
+		this._sessionToolDefinitions = this._createSessionToolDefinitions(backgroundTasks);
 
 		this._baseToolDefinitions = new Map(
 			Object.entries(baseToolDefinitions).map(([name, tool]) => [name, tool as ToolDefinition]),
@@ -3708,12 +3715,9 @@ export class AgentSession {
 
 	/**
 	 * The built-in tools that need this session: `agent` when subagents are enabled and the session
-	 * can create them, and `task_stop` and `monitor` when background tasks are enabled.
+	 * can create them, and `task_stop` when background tasks are enabled. Monitors are a mode of `bash`.
 	 */
-	private _createSessionToolDefinitions(
-		backgroundTasks: TaskRegistry | undefined,
-		shellPath: string | undefined,
-	): ToolDefinition[] {
+	private _createSessionToolDefinitions(backgroundTasks: TaskRegistry | undefined): ToolDefinition[] {
 		this._agentTypes = undefined;
 		if (this._isSubagent) return [];
 		const definitions: ToolDefinition[] = [];
@@ -3737,41 +3741,44 @@ export class AgentSession {
 				}) as ToolDefinition,
 			);
 		}
-		if (backgroundTasks) {
-			definitions.push(createTaskStopToolDefinition(backgroundTasks) as ToolDefinition);
-			definitions.push(
-				createMonitorToolDefinition({
-					tasks: backgroundTasks,
-					cwd: this._cwd,
-					operations: this._sandbox?.bash ?? createLocalBashOperations({ shellPath }),
-				}) as ToolDefinition,
-			);
-		}
+		if (backgroundTasks) definitions.push(createTaskStopToolDefinition(backgroundTasks) as ToolDefinition);
 		// Not activated on registration like extension tools: they are in DEFAULT_TOOL_NAMES, so they
 		// start active with the default tools and follow `--tools` and `defaultTools`.
 		return definitions.map((definition) => ({ ...definition, defaultActive: false }));
 	}
 
 	private _getAgentTypes(): AgentTypeDiscovery {
-		this._agentTypes ??= discoverAgentTypes({
-			cwd: this._cwd,
-			agentDir: this._agentDir,
-			projectTrusted: this.settingsManager.isProjectTrusted(),
-		});
-		return this._agentTypes;
+		// Read again when project trust changed, so revoking trust drops project agents at once.
+		const trusted = this.settingsManager.isProjectTrusted();
+		if (this._agentTypes?.trusted !== trusted) {
+			this._agentTypes = {
+				trusted,
+				discovery: discoverAgentTypes({ cwd: this._cwd, agentDir: this._agentDir, projectTrusted: trusted }),
+			};
+		}
+		return this._agentTypes.discovery;
 	}
 
 	/**
-	 * Tools a subagent can get: every registered tool except hidden ones, tools that orchestrate
-	 * other tools (codemode, tool search), and the agent and background-control tools.
+	 * Tools a subagent can get: only tools this session can call itself. These are its active direct
+	 * tools, its `codemode` tools while `codemode` is active, and its `deferred` tools while
+	 * `tool_search` or `codemode` is active. Tools that orchestrate other tools (codemode, tool
+	 * search) and the agent and background-control tools are never given. Subagent calls run through
+	 * this session's tool pipeline (`ctx.executeTool()`), so its hooks and checks apply to them.
 	 */
 	private _getSubagentToolSources(): SubagentToolSource[] {
 		const active = new Set(this.getActiveToolNames());
-		return [...this._toolDefinitions.values()].flatMap(({ definition, sourceInfo }) => {
-			if (SUBAGENT_EXCLUDED_TOOL_NAMES.includes(definition.name)) return [];
-			if (this._getToolExposure(definition.name) === "hidden" || definition.prepareLoadout) return [];
-			const builtin = sourceInfo.source === "builtin" && allToolNames.has(definition.name as ToolName);
-			return [{ name: definition.name, active: active.has(definition.name), builtin, definition }];
+		const viaCodemode = active.has("codemode");
+		const viaSearch = viaCodemode || active.has("tool_search");
+		return [...this._toolDefinitions.values()].flatMap(({ definition }) => {
+			const name = definition.name;
+			if (SUBAGENT_EXCLUDED_TOOL_NAMES.includes(name) || definition.prepareLoadout) return [];
+			const exposure = this._getToolExposure(name);
+			const reachable =
+				(exposure === "direct" && active.has(name)) ||
+				(exposure === "codemode" && viaCodemode) ||
+				(exposure === "deferred" && viaSearch);
+			return reachable ? [{ name, active: active.has(name), definition }] : [];
 		});
 	}
 
@@ -3798,13 +3805,19 @@ export class AgentSession {
 		};
 	}
 
-	/** Subagent transcripts go next to the session file, or to the temp dir for sessions without a file. */
+	/**
+	 * Subagent transcripts go next to the session file (a private 0700 directory), or, for sessions
+	 * without a file, to a private temp directory that is deleted with the session.
+	 */
 	private _getSubagentTranscriptDir(): string {
 		const sessionFile = this.sessionManager.getSessionFile();
 		if (sessionFile && this.sessionManager.isPersisted()) {
-			return join(dirname(sessionFile), `${basename(sessionFile, ".jsonl")}.subagents`);
+			const dir = join(dirname(sessionFile), `${basename(sessionFile, ".jsonl")}.subagents`);
+			mkdirSync(dir, { recursive: true, mode: 0o700 });
+			return dir;
 		}
-		return join(tmpdir(), "akramcode-subagents", this.sessionManager.getSessionId());
+		this._subagentTempDir ??= mkdtempSync(join(tmpdir(), "akramcode-subagents-"));
+		return this._subagentTempDir;
 	}
 
 	/** Turn finished tasks and monitor output into task notifications that trigger a turn. */

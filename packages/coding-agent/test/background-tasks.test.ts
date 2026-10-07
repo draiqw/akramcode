@@ -1,4 +1,14 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import {
+	existsSync,
+	lstatSync,
+	mkdtempSync,
+	readdirSync,
+	readFileSync,
+	rmSync,
+	statSync,
+	symlinkSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -9,8 +19,8 @@ import {
 	readTaskOutputTail,
 } from "../src/core/tasks/notifications.ts";
 import { type TaskEvent, type TaskInfo, TaskRegistry } from "../src/core/tasks/task-registry.ts";
-import { createMonitorToolDefinition, createTaskStopToolDefinition } from "../src/core/tasks/task-tools.ts";
-import { createBashToolDefinition, createLocalBashOperations } from "../src/core/tools/bash.ts";
+import { createTaskStopToolDefinition } from "../src/core/tasks/task-tools.ts";
+import { createBashToolDefinition } from "../src/core/tools/bash.ts";
 
 function waitForFinished(
 	tasks: TaskRegistry,
@@ -41,7 +51,7 @@ describe("TaskRegistry", () => {
 
 	beforeEach(() => {
 		dir = mkdtempSync(join(tmpdir(), "akramcode-tasks-test-"));
-		tasks = new TaskRegistry({ outputDir: () => dir });
+		tasks = new TaskRegistry({ parentDir: dir });
 	});
 
 	afterEach(() => {
@@ -113,7 +123,7 @@ describe("task notifications", () => {
 	it("carries the bash output tail, exit code, and output file", async () => {
 		const dir = mkdtempSync(join(tmpdir(), "akramcode-tasks-test-"));
 		try {
-			const tasks = new TaskRegistry({ outputDir: () => dir });
+			const tasks = new TaskRegistry({ parentDir: dir });
 			const handle = tasks.create({ kind: "bash", description: "make", command: "make" });
 			handle.write(`${Array.from({ length: 30 }, (_, i) => `out ${i}`).join("\n")}\n`);
 			await handle.finish({ status: "failed", exitCode: 2 });
@@ -155,7 +165,7 @@ describe("background bash", () => {
 
 	beforeEach(() => {
 		dir = mkdtempSync(join(tmpdir(), "akramcode-bash-bg-test-"));
-		tasks = new TaskRegistry({ outputDir: () => join(dir, "tasks") });
+		tasks = new TaskRegistry({ parentDir: dir });
 	});
 
 	afterEach(() => {
@@ -230,13 +240,13 @@ describe("background bash", () => {
 	});
 });
 
-describe("monitor", () => {
+describe("bash monitor mode", () => {
 	let dir: string;
 	let tasks: TaskRegistry;
 
 	beforeEach(() => {
 		dir = mkdtempSync(join(tmpdir(), "akramcode-monitor-test-"));
-		tasks = new TaskRegistry({ outputDir: () => join(dir, "tasks") });
+		tasks = new TaskRegistry({ parentDir: dir });
 	});
 
 	afterEach(() => {
@@ -249,39 +259,35 @@ describe("monitor", () => {
 		tasks.subscribe((event) => {
 			if (event.type === "output") outputs.push({ lines: event.lines, omitted: event.omittedLines, at: Date.now() });
 		});
-		const monitor = createMonitorToolDefinition({
-			tasks,
-			cwd: dir,
-			operations: createLocalBashOperations(),
-			batchWindowMs: 50,
-			minIntervalMs: 300,
-			maxLinesPerEvent: 3,
+		const bash = createBashToolDefinition(dir, {
+			backgroundTasks: tasks,
+			monitorBatching: { batchWindowMs: 50, minIntervalMs: 300, maxLinesPerEvent: 3 },
 		});
-		const result = await monitor.execute(
+		const result = await bash.execute(
 			"call-1",
 			{
 				command: "for i in 1 2 3 4 5; do echo line$i; done; sleep 0.1; echo late; sleep 0.1; printf tail",
-				description: "watch lines",
+				run_in_background: true,
+				monitor: true,
 			},
 			undefined,
 			undefined,
 			noContext,
 		);
-		expect(textOf(result)).toContain("Monitor started with ID: m1");
+		expect(textOf(result)).toContain("Monitor m1 started (timeout 300s)");
 		const { task } = await waitForFinished(tasks, "m1");
-		expect(task).toMatchObject({ status: "completed", exitCode: 0 });
+		expect(task).toMatchObject({ kind: "monitor", status: "completed", exitCode: 0 });
 		expect(outputs[0]).toMatchObject({ lines: ["line1", "line2", "line3"], omitted: 2 });
 		expect(outputs.slice(1).flatMap((output) => output.lines)).toEqual(["late", "tail"]);
-		// Deliveries after the first respect the minimum interval, except the final flush at exit.
 		if (outputs.length > 2) expect(outputs[1].at - outputs[0].at).toBeGreaterThanOrEqual(250);
 		expect(readFileSync(task.outputFile, "utf-8")).toBe("line1\nline2\nline3\nline4\nline5\nlate\ntail");
 	});
 
-	it("stops at the timeout", async () => {
-		const monitor = createMonitorToolDefinition({ tasks, cwd: dir, operations: createLocalBashOperations() });
-		await monitor.execute(
+	it("stops at the timeout and requires run_in_background", async () => {
+		const bash = createBashToolDefinition(dir, { backgroundTasks: tasks });
+		await bash.execute(
 			"call-1",
-			{ command: "sleep 5", description: "wait", timeout: 0.2 },
+			{ command: "sleep 5", timeout: 0.2, run_in_background: true, monitor: true },
 			undefined,
 			undefined,
 			noContext,
@@ -290,13 +296,86 @@ describe("monitor", () => {
 		expect(task.status).toBe("completed");
 		expect(task.result).toContain("Stopped watching after 0.2 seconds");
 		await expect(
-			monitor.execute(
-				"call-2",
-				{ command: "true", description: "x", timeout: 99999 },
-				undefined,
-				undefined,
-				noContext,
-			),
-		).rejects.toThrow("Invalid timeout");
+			bash.execute("call-2", { command: "true", monitor: true }, undefined, undefined, noContext),
+		).rejects.toThrow("monitor requires run_in_background");
+	});
+
+	it("runs background and monitor commands through the bash spawn pipeline", async () => {
+		const seen: string[] = [];
+		const bash = createBashToolDefinition(dir, {
+			backgroundTasks: tasks,
+			commandPrefix: "PREFIX=from-prefix",
+			spawnHook: (context) => {
+				seen.push(context.command);
+				return { ...context, env: { ...context.env, HOOKED: "from-hook" } };
+			},
+		});
+		await bash.execute(
+			"call-1",
+			{ command: 'echo "$PREFIX $HOOKED"', run_in_background: true },
+			undefined,
+			undefined,
+			noContext,
+		);
+		await bash.execute(
+			"call-2",
+			{ command: 'echo "$PREFIX $HOOKED"', run_in_background: true, monitor: true },
+			undefined,
+			undefined,
+			noContext,
+		);
+		const [background, monitor] = await Promise.all([waitForFinished(tasks, "b1"), waitForFinished(tasks, "m1")]);
+		expect(seen).toEqual([
+			'PREFIX=from-prefix\necho "$PREFIX $HOOKED"',
+			'PREFIX=from-prefix\necho "$PREFIX $HOOKED"',
+		]);
+		expect(readFileSync(background.task.outputFile, "utf-8")).toBe("from-prefix from-hook\n");
+		expect(readFileSync(monitor.task.outputFile, "utf-8")).toBe("from-prefix from-hook\n");
+	});
+});
+
+describe("task output files", () => {
+	it("live in a private, unpredictable directory with private files that are removed on dispose", async () => {
+		const parent = mkdtempSync(join(tmpdir(), "akramcode-tasks-perm-"));
+		try {
+			const tasks = new TaskRegistry({ parentDir: parent });
+			const handle = tasks.create({ kind: "bash", description: "x" });
+			handle.write("secret\n");
+			await handle.finish({ status: "completed", exitCode: 0 });
+			const [dirName] = readdirSync(parent);
+			expect(dirName).toMatch(/^akramcode-tasks-.{6}$/);
+			const outputDir = join(parent, dirName);
+			expect(handle.outputFile.startsWith(outputDir)).toBe(true);
+			if (process.platform !== "win32") {
+				expect(statSync(outputDir).mode & 0o777).toBe(0o700);
+				expect(statSync(handle.outputFile).mode & 0o777).toBe(0o600);
+			}
+			tasks.dispose();
+			expect(existsSync(outputDir)).toBe(false);
+		} finally {
+			rmSync(parent, { recursive: true, force: true });
+		}
+	});
+
+	it("does not follow a symlink planted at the output path", async () => {
+		const parent = mkdtempSync(join(tmpdir(), "akramcode-tasks-link-"));
+		try {
+			const tasks = new TaskRegistry({ parentDir: parent });
+			const first = tasks.create({ kind: "bash", description: "x" });
+			await first.finish({ status: "completed" });
+			// Plant a symlink where the next task's output file goes.
+			const target = join(parent, "target.txt");
+			writeFileSync(target, "original");
+			const nextPath = first.outputFile.replace(/b1\.output$/, "b2.output");
+			symlinkSync(target, nextPath);
+			const second = tasks.create({ kind: "bash", description: "y" });
+			second.write("attacker-controlled\n");
+			await second.finish({ status: "completed" });
+			expect(readFileSync(target, "utf-8")).toBe("original");
+			expect(lstatSync(nextPath).isSymbolicLink()).toBe(true);
+			tasks.dispose();
+		} finally {
+			rmSync(parent, { recursive: true, force: true });
+		}
 	});
 });

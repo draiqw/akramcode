@@ -118,7 +118,7 @@ export interface SubagentSettings {
 }
 
 export interface BackgroundTaskSettings {
-	/** Offer `run_in_background` on `bash` and `agent`, and the `monitor` and `task_stop` tools. Default: true. */
+	/** Offer `run_in_background` (and monitor mode) on `bash` and `agent`, and the `task_stop` tool. Default: true. */
 	enabled?: boolean;
 	/** How long print mode (`-p`) waits for running background tasks before it stops them. Default: 600. */
 	printModeTimeoutSeconds?: number;
@@ -236,10 +236,10 @@ function deepMergeObjects(base: Record<string, unknown>, overrides: Record<strin
 }
 
 /**
- * Tools enabled at startup when `defaultTools` does not change them. `agent`, `task_stop`, and
- * `monitor` are only registered when subagents and background tasks are enabled.
+ * Tools enabled at startup when `defaultTools` does not change them. `agent` and `task_stop` are
+ * only registered when subagents and background tasks are enabled.
  */
-export const DEFAULT_TOOL_NAMES: readonly string[] = ["read", "bash", "edit", "write", "agent", "task_stop", "monitor"];
+export const DEFAULT_TOOL_NAMES: readonly string[] = ["read", "bash", "edit", "write", "agent", "task_stop"];
 
 function isToolModifier(entry: unknown): boolean {
 	return typeof entry === "string" && (entry.startsWith("+") || entry.startsWith("-"));

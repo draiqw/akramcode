@@ -21,7 +21,6 @@ const candidates: SubagentToolCandidate[] = [
 	{ name: "ls", active: false },
 	{ name: "agent", active: true },
 	{ name: "task_stop", active: true },
-	{ name: "monitor", active: true },
 	{ name: "web_search", active: true },
 	{ name: "mcp__github__issues", active: false },
 	{ name: "mcp__github__pulls", active: false },
@@ -67,11 +66,16 @@ describe("agent type discovery", () => {
 			"tester.md",
 			"---\nname: tester\ndescription: Runs tests\ntools: [bash, read]\ndisallowedTools: [edit]\n---\nRun the tests.\n",
 		);
-		// A project definition replaces a user definition with the same name.
+		// A project definition cannot replace a user or built-in definition with the same name.
 		writeAgent(
 			join(cwd, ".akramcode", "agents"),
 			"reviewer.md",
-			"---\nname: reviewer\ndescription: Project reviewer\nmodel: inherit\n---\nProject rules.\n",
+			"---\nname: reviewer\ndescription: Project reviewer\ntools: write\nmodel: inherit\n---\nProject rules.\n",
+		);
+		writeAgent(
+			join(cwd, ".akramcode", "agents"),
+			"explore.md",
+			"---\nname: explore\ndescription: Not read-only\ntools: bash, write\n---\nWrite anything.\n",
 		);
 		writeAgent(join(agentDir, "agents"), "broken.md", "---\ndescription: no name\n---\nbody\n");
 		writeAgent(join(agentDir, "agents"), "odd.md", "---\nname: odd\ndescription: x\nthinking: extreme\n---\nbody\n");
@@ -101,11 +105,16 @@ describe("agent type discovery", () => {
 			"tester",
 		]);
 		expect(trusted.types.find((type) => type.name === "reviewer")).toMatchObject({
-			description: "Project reviewer",
-			source: "project",
-			tools: undefined,
-			model: undefined,
+			description: "Reviews diffs",
+			source: "user",
 		});
+		expect(trusted.types.find((type) => type.name === "explore")?.source).toBe("builtin");
+		expect(trusted.diagnostics.map((diagnostic) => diagnostic.message)).toEqual([
+			"Skipped: frontmatter needs a `name` of letters, digits, `-`, `_`, or `.`",
+			'Unknown thinking level "extreme"; using the parent\'s level',
+			'Skipped: a project agent cannot replace the builtin agent "explore"',
+			'Skipped: a project agent cannot replace the user agent "reviewer"',
+		]);
 		expect(trusted.types.find((type) => type.name === "tester")).toMatchObject({
 			tools: ["bash", "read"],
 			disallowedTools: ["edit"],
@@ -152,9 +161,9 @@ describe("agent type discovery", () => {
 });
 
 describe("resolveAgentTypeTools", () => {
-	it("gives the parent's active tools and the standard built-ins without a tool list", () => {
+	it("gives the parent's active tools without a tool list", () => {
 		expect(resolveAgentTypeTools({}, candidates)).toEqual({
-			tools: ["read", "bash", "edit", "write", "grep", "find", "ls", "web_search"],
+			tools: ["read", "bash", "edit", "write", "web_search"],
 			unknown: [],
 		});
 	});
@@ -169,18 +178,19 @@ describe("resolveAgentTypeTools", () => {
 		expect(resolveAgentTypeTools({ disallowedTools: ["edit", "write", "mcp__*"] }, candidates).tools).toEqual([
 			"read",
 			"bash",
-			"grep",
-			"find",
-			"ls",
 			"web_search",
 		]);
+		// Names that are not among the candidates (tools the parent cannot call) are never given.
+		expect(resolveAgentTypeTools({ tools: ["update_plan", "codemode"] }, candidates)).toEqual({
+			tools: [],
+			unknown: ["update_plan", "codemode"],
+		});
 	});
 
 	it("never gives agent or background-control tools", () => {
 		expect(resolveAgentTypeTools({ tools: ["*"] }, candidates).tools).not.toEqual(expect.arrayContaining(["agent"]));
 		const all = resolveAgentTypeTools({ tools: ["*"] }, candidates).tools;
 		expect(all).not.toContain("task_stop");
-		expect(all).not.toContain("monitor");
 		expect(all).toContain("mcp__slack__post");
 	});
 });

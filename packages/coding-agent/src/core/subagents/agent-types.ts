@@ -10,8 +10,8 @@ export interface AgentTypeDefinition {
 	name: string;
 	description: string;
 	/**
-	 * Tool allowlist: exact names or `*` wildcards such as `mcp__github__*`. Undefined means the
-	 * parent's active tools plus the standard built-in tools.
+	 * Tool allowlist: exact names or `*` wildcards such as `mcp__github__*`, limited to tools the
+	 * parent can call. Undefined means the parent's active tools.
 	 */
 	tools?: string[];
 	/** Tool denylist, applied after `tools`, with the same syntax. */
@@ -44,11 +44,8 @@ export interface SubagentToolCandidate {
 	active: boolean;
 }
 
-/** Built-in tools every session has. */
-export const STANDARD_TOOL_NAMES: readonly string[] = ["read", "bash", "edit", "write", "grep", "find", "ls"];
-
 /** Tools subagents never get: they cannot start agents or control background tasks. */
-export const SUBAGENT_EXCLUDED_TOOL_NAMES: readonly string[] = ["agent", "task_stop", "monitor"];
+export const SUBAGENT_EXCLUDED_TOOL_NAMES: readonly string[] = ["agent", "task_stop"];
 
 export const BUILTIN_AGENT_TYPES: readonly AgentTypeDefinition[] = [
 	{
@@ -156,19 +153,37 @@ export function getProjectAgentsDir(cwd: string): string {
 
 /**
  * Built-in types, then `<agentDir>/agents/*.md`, then `<cwd>/.akramcode/agents/*.md` when the project
- * is trusted. A later definition with the same name replaces an earlier one.
+ * is trusted. A user definition may replace a built-in type. A project definition cannot replace a
+ * built-in or user type: it is skipped with a diagnostic, so a repository cannot silently change
+ * what an agent type the user relies on does.
  */
 export function discoverAgentTypes(options: {
 	cwd: string;
 	agentDir: string;
 	projectTrusted: boolean;
 }): AgentTypeDiscovery {
-	const discovery: AgentTypeDiscovery = { types: [...BUILTIN_AGENT_TYPES], diagnostics: [] };
-	loadAgentTypesFromDir(getUserAgentsDir(options.agentDir), "user", discovery);
-	if (options.projectTrusted) loadAgentTypesFromDir(getProjectAgentsDir(options.cwd), "project", discovery);
-	const byName = new Map<string, AgentTypeDefinition>();
-	for (const type of discovery.types) byName.set(type.name, type);
-	return { types: [...byName.values()], diagnostics: discovery.diagnostics };
+	const byName = new Map<string, AgentTypeDefinition>(BUILTIN_AGENT_TYPES.map((type) => [type.name, type]));
+	const user: AgentTypeDiscovery = { types: [], diagnostics: [] };
+	loadAgentTypesFromDir(getUserAgentsDir(options.agentDir), "user", user);
+	for (const type of user.types) byName.set(type.name, type);
+	const diagnostics = [...user.diagnostics];
+	if (options.projectTrusted) {
+		const project: AgentTypeDiscovery = { types: [], diagnostics: [] };
+		loadAgentTypesFromDir(getProjectAgentsDir(options.cwd), "project", project);
+		diagnostics.push(...project.diagnostics);
+		for (const type of project.types) {
+			const existing = byName.get(type.name);
+			if (existing && existing.source !== "project") {
+				diagnostics.push({
+					path: type.filePath ?? "",
+					message: `Skipped: a project agent cannot replace the ${existing.source} agent "${type.name}"`,
+				});
+				continue;
+			}
+			byName.set(type.name, type);
+		}
+	}
+	return { types: [...byName.values()], diagnostics };
 }
 
 function matchesToolPattern(pattern: string, name: string): boolean {
@@ -181,10 +196,10 @@ function matchesToolPattern(pattern: string, name: string): boolean {
 }
 
 /**
- * The tools a subagent of `type` gets from the parent's `candidates`, and the `tools` and
- * `disallowedTools` entries that match no candidate. Without `tools`, the subagent gets the
- * parent's active tools and the standard built-ins. Agent and background-control tools are
- * always left out.
+ * The tools a subagent of `type` gets from `candidates`, the tools the parent can call, and the
+ * `tools` and `disallowedTools` entries that match no candidate. The result is always a subset of
+ * the candidates: without `tools` it is the parent's active tools. Agent and background-control
+ * tools are always left out.
  */
 export function resolveAgentTypeTools(
 	type: Pick<AgentTypeDefinition, "tools" | "disallowedTools">,
@@ -202,9 +217,7 @@ export function resolveAgentTypeTools(
 			for (const match of matches) if (!selected.includes(match.name)) selected.push(match.name);
 		}
 	} else {
-		selected = available
-			.filter((candidate) => candidate.active || STANDARD_TOOL_NAMES.includes(candidate.name))
-			.map((candidate) => candidate.name);
+		selected = available.filter((candidate) => candidate.active).map((candidate) => candidate.name);
 	}
 	for (const pattern of type.disallowedTools ?? []) {
 		if (!available.some((candidate) => matchesToolPattern(pattern, candidate.name))) unknown.push(pattern);

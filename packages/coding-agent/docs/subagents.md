@@ -22,17 +22,17 @@ In the transcript an agent call shows as `agent(description)` with the subagent'
 
 Subagents:
 
-- run their tools in the main session's working directory and [sandbox](sandbox.md);
+- can never do more than the main session: they get only tools the main session can call itself, and each of their tool calls runs in the main session as a nested call (`ctx.executeTool()`). Extension `tool_call` and `tool_result` hooks, permission checks, the working directory, and the [sandbox](sandbox.md) of the main session apply to them; hooks see the call with `parentToolCallId` set to the `agent` call;
 - receive the project's context files (`AGENTS.md`) and a short system prompt with the date and their type's instructions, not the main system prompt, skills, or prompt templates;
-- never get the `agent`, `task_stop`, or `monitor` tools, and cannot run commands in the background, so they cannot start further agents;
-- save their transcript next to the session file, in `<session>.subagents/`, or in the temp directory for sessions without a file.
+- never get the `agent` or `task_stop` tools, and their `bash` has no background options, so they cannot start further agents or background work;
+- save their transcript next to the session file, in `<session>.subagents/` (mode 0700), or, for sessions without a file, in a private temp directory that is deleted when the session ends.
 
 ### Built-in agent types
 
 | Type | Tools | Use |
 |---|---|---|
-| `general-purpose` | The main agent's tools | Multi-step research and changes |
-| `explore` | `read`, `grep`, `find`, `ls`, `bash` | Read-only code search; its prompt forbids changes |
+| `general-purpose` | The main agent's active tools | Multi-step research and changes |
+| `explore` | `read`, `grep`, `find`, `ls`, `bash`, as far as they are active in the main session | Read-only code search; its prompt forbids changes |
 
 ### Custom agent types
 
@@ -43,20 +43,23 @@ An agent type is a Markdown file with YAML frontmatter. The body is the type's s
 | `~/.akramcode/agent/agents/*.md` | User agents, in every project |
 | `.akramcode/agents/*.md` | Project agents, loaded only when the project is [trusted](security.md) |
 
-A project agent replaces a user agent with the same name, and both replace a built-in type with the same name.
+A user agent can replace a built-in type with the same name. A project agent cannot replace a built-in or user agent: it is skipped and reported as a warning, so a repository cannot change what an agent type you rely on does. Project agents are dropped as soon as the project is no longer trusted.
 
 | Field | Required | Description |
 |---|---|---|
 | `name` | yes | Type name for `subagent_type`: letters, digits, `-`, `_`, `.` |
 | `description` | yes | When the main agent should use this type. The `agent` tool lists it. |
-| `tools` | no | Allowlist, as a comma-separated string or a YAML list. Default: the main agent's active tools plus the built-in tools. |
+| `tools` | no | Allowlist, as a comma-separated string or a YAML list. Default: the main agent's active tools. |
 | `disallowedTools` | no | Denylist applied after `tools`, same syntax |
 | `model` | no | Model (`provider/model-id` or a pattern). Default `inherit`: the main agent's model. |
 | `thinking` | no | Thinking level (`off`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max`). Default `inherit`. |
 
-Tool names can be any tool registered in the session: built-in tools, extension tools, and MCP tools (named `mcp__<server>__<tool>`). `*` matches any characters, so `mcp__github__*` selects every tool of the `github` server. MCP tools are given to the subagent as directly declared tools, whatever their exposure in the main session (`codemode` or `deferred`); hidden tools, `codemode`, and `tool_search` are not available to subagents. Without a `tools` field, MCP tools reach the subagent only if they are active in the main session.
+Tool names refer to tools of the main session: built-in tools, extension tools, and MCP tools (named `mcp__<server>__<tool>`). `*` matches any characters, so `mcp__github__*` selects every tool of the `github` server. The allowlist only selects among the tools the main session can call itself:
 
-The subagent gets exactly the resolved tools: the list is enforced when its session is created, not only described in its prompt. Names that match no tool are ignored and reported as warnings at startup and in `/agents`. MCP servers connect after startup, so unmatched `mcp__` names are reported only in `/agents`.
+- tools active in the main session (disabled with `--tools`, `defaultTools`, or `excludeTools`, or registered inactive, such as `update_plan`, they are not available);
+- MCP tools with `codemode` exposure while `codemode` is active, and with `deferred` exposure while `tool_search` or `codemode` is active.
+
+`codemode`, `tool_search`, `agent`, `task_stop`, and hidden tools are never given. The subagent gets exactly the resolved tools: the list is enforced when its session is created, not only described in its prompt. Names that match no available tool are ignored and reported as warnings at startup and in `/agents`. MCP servers connect after startup, so unmatched `mcp__` names are reported only in `/agents`.
 
 Example: a read-only reviewer.
 
@@ -122,15 +125,15 @@ A background task runs while the conversation continues. There are three kinds:
 |---|---|---|
 | Background command | `bash` with `run_in_background: true` | `b1`, `b2`, ... |
 | Background agent | `agent` with `run_in_background: true` | `a1`, ... |
-| Monitor | `monitor` tool | `m1`, ... |
+| Monitor | `bash` with `run_in_background: true` and `monitor: true` | `m1`, ... |
 
-Each task writes its output to a file under the temp directory (`akramcode-tasks/<session id>/<task id>.output`). The tool result names the file; the model reads it with the `read` tool. For background agents the file records the prompt, the subagent's tool calls, and the result.
+Each task writes its output to `<task id>.output` in a private directory of the session under the temp directory (`akramcode-tasks-<random>`, mode 0700; files 0600, never written through an existing file or symlink). The directory is deleted when the session ends. The tool result names the file; the model reads it with the `read` tool. For background agents the file records the prompt, the subagent's tool calls, and the result.
 
 The `task_stop` tool stops a task by id. The model is not notified about tasks it stops itself.
 
 ### Monitor
 
-`monitor` runs a command and delivers each line it prints to the model, until the command exits, the timeout passes (`timeout` in seconds, default 300, maximum 3600), or the task is stopped. Use line-buffered output in pipes, for example `tail -f server.log | grep --line-buffered ERROR`. Lines are batched: at most one delivery every 2 seconds, at most 40 lines per delivery; the rest are counted and stay in the output file.
+A monitor is a background `bash` command with `monitor: true`. It delivers each line the command prints to the model, until the command exits, the timeout passes (`timeout` in seconds, default 300), or the task is stopped. Because it is a mode of `bash`, it exists only when `bash` is enabled, and the shell command prefix, spawn hooks, and extension hooks of `bash` apply to it, as they do to every background command. Use line-buffered output in pipes, for example `tail -f server.log | grep --line-buffered ERROR`. Lines are batched: at most one delivery every 2 seconds, at most 40 lines per delivery; the rest are counted and stay in the output file.
 
 ### Task notifications
 
@@ -157,13 +160,13 @@ Extensions reach the session's tasks through `ctx.tasks` (a `TaskRegistry`): `li
 | Setting | Default | Description |
 |---|---|---|
 | `subagents.enabled` | `true` | Offer the `agent` tool and `/agents` |
-| `backgroundTasks.enabled` | `true` | Offer `run_in_background`, `monitor`, and `task_stop` |
+| `backgroundTasks.enabled` | `true` | Offer `run_in_background` and `monitor` on `bash`, `run_in_background` on `agent`, and `task_stop` |
 | `backgroundTasks.printModeTimeoutSeconds` | `600` | How long print mode waits for running tasks |
 
-Settings take effect for new sessions and after `/reload`. `agent`, `task_stop`, and `monitor` are part of the default tools: `--tools` and a [`defaultTools`](settings.md#tools) list of plain names replace them, so name them there to keep them (`--tools read,bash,agent`), and `"defaultTools": ["-monitor"]` removes one.
+Settings take effect for new sessions and after `/reload`. `agent` and `task_stop` are part of the default tools: `--tools` and a [`defaultTools`](settings.md#tools) list of plain names replace them, so name them there to keep them (`--tools read,bash,agent`), and `"defaultTools": ["-agent"]` removes one.
 
 ## Limitations
 
 - Subagents share the main process: a subagent that runs a heavy command slows the main session like any tool call.
-- Subagents get extension tools by definition. A tool that relies on interactive UI (`ctx.ui`) gets no UI in a subagent.
+- Built-in read-only tools that are not active in the main session (`grep`, `find`, `ls` by default) are not available to `explore`; it searches with `bash` instead. Add them with `"defaultTools": ["+grep", "+find", "+ls"]`.
 - Background task output files are on the local machine. With a remote [sandbox](sandbox.md) the `read` tool reads the sandbox's files, so read output files with `/tasks` instead.

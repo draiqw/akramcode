@@ -79,7 +79,7 @@ describe("/agents", () => {
 		const reviewer = harness.session.subagents?.listTypes().types.find((type) => type.name === "reviewer");
 		expect(reviewer).toMatchObject({ tools: ["read", "grep"], thinking: "low", source: "user" });
 		expect(harness.session.agent.state.tools.find((tool) => tool.name === "agent")?.description).toContain(
-			"- reviewer: Reviews diffs for bugs (Tools: read, grep)",
+			"\n- reviewer: Reviews diffs for bugs",
 		);
 
 		const remove = scriptedUi({
@@ -90,7 +90,9 @@ describe("/agents", () => {
 		await harness.session.bindExtensions({ uiContext: remove.ui, mode: "tui" });
 		await showAgents(harness.session.extensionRunner.createCommandContext());
 
-		expect(remove.titles[1]).toContain("Tools: read, grep");
+		// grep is not active in the session, so the agent does not get it.
+		expect(remove.titles[1]).toContain("Tools: read\n");
+		expect(remove.titles[1]).toContain("Warning: no tool matches grep");
 		expect(existsSync(path)).toBe(false);
 		expect(harness.session.subagents?.listTypes().types.map((type) => type.name)).toEqual([
 			"general-purpose",

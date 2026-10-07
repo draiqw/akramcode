@@ -15,6 +15,7 @@ import {
 } from "../../utils/shell.ts";
 import type { ExtensionContext, ToolDefinition } from "../extensions/types.ts";
 import type { TaskRegistry } from "../tasks/task-registry.ts";
+import { createLineBatcher, type LineBatcherOptions } from "../tasks/task-tools.ts";
 import { OutputAccumulator } from "./output-accumulator.ts";
 import { BASH_UPDATE_THROTTLE_MS, createShellRenderers } from "./renderers/bash.ts";
 import { wrapToolDefinition } from "./tool-definition-wrapper.ts";
@@ -46,13 +47,14 @@ const bashSchema = Type.Object({
 /** Schema of shells that can run commands in the background. */
 const backgroundBashSchema = Type.Object({
 	...bashSchema.properties,
-	run_in_background: Type.Optional(
-		Type.Boolean({
-			description:
-				"Run the command in the background and return at once with a task id. You are notified when it finishes; read its output file to check progress.",
-		}),
+	run_in_background: Type.Optional(Type.Boolean({ description: "Return at once; you are notified when it ends" })),
+	monitor: Type.Optional(
+		Type.Boolean({ description: "With run_in_background: each output line is sent to you as it is printed" }),
 	),
 });
+
+/** Default timeout of monitors without `timeout`, in seconds. */
+const DEFAULT_MONITOR_TIMEOUT_SECONDS = 300;
 
 export const bashToolSystemPromptContribution = {
 	snippet: "Execute bash commands (ls, grep, find, etc.)",
@@ -239,8 +241,10 @@ export interface BashToolOptions {
 	exposeSessionEnvironment?: boolean;
 	/** Hook to adjust command, cwd, or env before execution */
 	spawnHook?: BashSpawnHook;
-	/** Task registry for `run_in_background`. Without it the parameter is not offered. */
+	/** Task registry for `run_in_background` and `monitor`. Without it the parameters are not offered. */
 	backgroundTasks?: TaskRegistry;
+	/** Batching of monitor lines, for tests. */
+	monitorBatching?: Omit<LineBatcherOptions, "deliver">;
 }
 
 export type BashRenderState = {
@@ -272,7 +276,7 @@ export function createShellToolDefinition(
 	return {
 		name: config.name,
 		label: config.label,
-		description: `Execute a ${config.shellName} command in the current working directory. Returns stdout and stderr. Output is truncated to last ${DEFAULT_MAX_LINES} lines or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.${backgroundTasks ? " Set run_in_background for long-running commands (servers, watchers, long builds or test runs) and keep working; you are notified when the command finishes." : ""}`,
+		description: `Execute a ${config.shellName} command in the current working directory. Returns stdout and stderr. Output is truncated to last ${DEFAULT_MAX_LINES} lines or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.`,
 		promptSnippet: config.promptSnippet,
 		promptGuidelines: exposeSessionEnvironment && config.promptGuidelines ? [...config.promptGuidelines] : undefined,
 		// Without a task registry the model is not offered `run_in_background`.
@@ -281,7 +285,7 @@ export function createShellToolDefinition(
 		constrainedSampling: { type: "json_schema", strict: "prefer" },
 		async execute(
 			_toolCallId,
-			{ command, timeout, run_in_background }: BashToolInput,
+			{ command, timeout, run_in_background, monitor }: BashToolInput,
 			signal?: AbortSignal,
 			onUpdate?,
 			ctx?: ExtensionContext,
@@ -294,32 +298,52 @@ export function createShellToolDefinition(
 				exposeSessionEnvironment,
 				ctx,
 			);
+			if (monitor && !run_in_background) throw new Error("monitor requires run_in_background");
 			if (run_in_background) {
 				if (!backgroundTasks) throw new Error("Background commands are not available in this session");
+				const effectiveTimeout = timeout ?? (monitor ? DEFAULT_MONITOR_TIMEOUT_SECONDS : undefined);
 				// Validate the timeout before the task exists.
-				resolveTimeoutMs(timeout);
-				const task = backgroundTasks.create({ kind: "bash", description: command, command });
+				resolveTimeoutMs(effectiveTimeout);
+				// The command runs through the same spawn pipeline (prefix, spawn hook, environment) as foreground calls.
+				const task = backgroundTasks.create({ kind: monitor ? "monitor" : "bash", description: command, command });
+				const batcher = monitor
+					? createLineBatcher({
+							...options?.monitorBatching,
+							deliver: (lines, omitted) => task.emitOutput(lines, omitted),
+						})
+					: undefined;
 				ops.exec(spawnContext.command, spawnContext.cwd, {
-					onData: (data) => task.write(data),
+					onData: (data) => {
+						task.write(data);
+						batcher?.push(data);
+					},
 					signal: task.signal,
-					timeout,
+					timeout: effectiveTimeout,
 					env: spawnContext.env,
 				}).then(
-					({ exitCode }) =>
-						task.finish(
+					({ exitCode }) => {
+						batcher?.flush();
+						return task.finish(
 							exitCode === 0
 								? { status: "completed", exitCode }
 								: { status: "failed", exitCode: exitCode ?? undefined },
-						),
+						);
+					},
 					(error: unknown) => {
+						batcher?.flush();
 						const message = error instanceof Error ? error.message : String(error);
-						return task.finish({
-							status: "failed",
-							error: message.startsWith("timeout:") ? `timed out after ${timeout} seconds` : message,
-						});
+						if (!message.startsWith("timeout:")) return task.finish({ status: "failed", error: message });
+						return monitor
+							? task.finish({
+									status: "completed",
+									result: `Stopped watching after ${effectiveTimeout} seconds`,
+								})
+							: task.finish({ status: "failed", error: `timed out after ${effectiveTimeout} seconds` });
 					},
 				);
-				const text = `Command running in background with ID: ${task.id}. Output is being written to: ${task.outputFile}\nYou will be notified when it finishes. Use read on the output file to check progress, or task_stop to stop it.`;
+				const text = monitor
+					? `Monitor ${task.id} started (timeout ${effectiveTimeout}s); output lines arrive as task notifications. Output file: ${task.outputFile}`
+					: `Command running in background with ID: ${task.id}. Output file: ${task.outputFile}\nYou will be notified when it finishes.`;
 				return {
 					content: [{ type: "text", text }],
 					details: { taskId: task.id, outputFile: task.outputFile },

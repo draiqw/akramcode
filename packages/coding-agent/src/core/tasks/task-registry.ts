@@ -1,4 +1,5 @@
-import { createWriteStream, mkdirSync, type WriteStream } from "node:fs";
+import { createWriteStream, mkdtempSync, rmSync, type WriteStream } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 export type TaskKind = "bash" | "agent" | "monitor";
@@ -105,20 +106,30 @@ export class TaskRegistry {
 	private readonly entries = new Map<string, TaskEntry>();
 	private readonly listeners = new Set<(event: TaskEvent) => void>();
 	private readonly counters: Record<TaskKind, number> = { bash: 0, agent: 0, monitor: 0 };
-	private readonly getOutputDir: () => string;
+	private readonly parentDir: string;
 	private outputDir: string | undefined;
 
-	constructor(options: { outputDir: () => string }) {
-		this.getOutputDir = options.outputDir;
+	/**
+	 * @param options.parentDir Where the private output directory is created. Default: the temp directory.
+	 */
+	constructor(options?: { parentDir?: string }) {
+		this.parentDir = options?.parentDir ?? tmpdir();
+	}
+
+	/**
+	 * The private output directory, created on first use. `mkdtemp` picks an unpredictable name and
+	 * creates it with mode 0700, so other users cannot read the output or plant files or symlinks in it.
+	 */
+	private getOutputDir(): string {
+		this.outputDir ??= mkdtempSync(join(this.parentDir, "akramcode-tasks-"));
+		return this.outputDir;
 	}
 
 	/** Register a running task and open its output file. */
 	create(input: CreateTaskInput): TaskHandle {
 		this.counters[input.kind]++;
 		const id = `${ID_PREFIX[input.kind]}${this.counters[input.kind]}`;
-		this.outputDir ??= this.getOutputDir();
-		mkdirSync(this.outputDir, { recursive: true });
-		const outputFile = join(this.outputDir, `${id}.output`);
+		const outputFile = join(this.getOutputDir(), `${id}.output`);
 		const entry: TaskEntry = {
 			info: {
 				id,
@@ -131,7 +142,8 @@ export class TaskRegistry {
 				...(input.agentType !== undefined ? { agentType: input.agentType } : {}),
 			},
 			controller: new AbortController(),
-			stream: createWriteStream(outputFile, { flags: "w" }),
+			// `wx` fails instead of following a file or symlink that already exists; 0600 keeps it private.
+			stream: createWriteStream(outputFile, { flags: "wx", mode: 0o600 }),
 			notifyOnFinish: true,
 			finished: false,
 		};
@@ -212,6 +224,19 @@ export class TaskRegistry {
 			if (!entry.finished) {
 				entry.notifyOnFinish = false;
 				entry.controller.abort();
+			}
+		}
+	}
+
+	/** Stop all tasks and delete the output directory. */
+	dispose(): void {
+		this.stopAll();
+		this.listeners.clear();
+		if (this.outputDir) {
+			try {
+				rmSync(this.outputDir, { recursive: true, force: true });
+			} catch {
+				// Best effort: the files are in a private directory.
 			}
 		}
 	}

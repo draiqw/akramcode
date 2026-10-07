@@ -1,4 +1,3 @@
-import { mkdirSync } from "node:fs";
 import { homedir } from "node:os";
 import type { AgentMessage, AgentToolResult, ThinkingLevel } from "@akramcode/agent-core";
 import type { AssistantMessage, Model } from "@akramcode/ai";
@@ -8,7 +7,7 @@ import { type Static, Type } from "typebox";
 import { keyHint } from "../../modes/interactive/components/keybinding-hints.ts";
 import { getMarkdownTheme, type Theme } from "../../modes/interactive/theme/theme.ts";
 import { createExtensionRuntime } from "../extensions/loader.ts";
-import type { ToolDefinition } from "../extensions/types.ts";
+import type { ExtensionToolContext, ToolDefinition } from "../extensions/types.ts";
 import { resolveCliModel } from "../model-resolver.ts";
 import type { ModelRuntime } from "../model-runtime.ts";
 import type { ResourceLoader } from "../resource-loader.ts";
@@ -22,7 +21,6 @@ import {
 	type AgentTypeDefinition,
 	type AgentTypeDiscovery,
 	resolveAgentTypeTools,
-	STANDARD_TOOL_NAMES,
 	type SubagentToolCandidate,
 } from "./agent-types.ts";
 
@@ -35,12 +33,13 @@ const VISIBLE_ACTIVITY_ITEMS = 3;
 /** Creates the child session of a subagent. `createAgentSession` in production; injected to avoid an import cycle. */
 export type SubagentSessionFactory = (options: CreateAgentSessionOptions) => Promise<CreateAgentSessionResult>;
 
-/** A parent tool a subagent can get, with the definition to give it. */
+/** A parent tool a subagent can get, with its definition for the declaration. */
 export interface SubagentToolSource extends SubagentToolCandidate {
-	/** Built-in tools are recreated in the child; others are shared by definition. */
-	builtin: boolean;
 	definition: ToolDefinition;
 }
+
+/** Parameters that start background work; subagents never get them. */
+const BACKGROUND_PARAMETERS = ["run_in_background", "monitor"];
 
 /** Agent type management for `/agents`. */
 export interface SubagentControl {
@@ -62,7 +61,7 @@ export interface SubagentHost {
 	agentDir: string;
 	settingsManager: SettingsManager;
 	modelRuntime: ModelRuntime;
-	/** The parent's sandbox; subagents run their tools in it too. */
+	/** The parent's sandbox; the child session must not acquire its own. */
 	sandbox: SandboxRuntime | undefined;
 	/** Registry for `run_in_background`. Without it the parameter is not offered. */
 	tasks: TaskRegistry | undefined;
@@ -71,7 +70,7 @@ export interface SubagentHost {
 	getContextFiles(): Array<{ path: string; content: string }>;
 	/** Agent types, read when the session starts and after `/agents` changes them. */
 	getAgentTypes(): AgentTypeDiscovery;
-	/** Tools of the parent a subagent can get. */
+	/** Tools of the parent a subagent can get: only tools the parent can call itself. */
 	getToolSources(): SubagentToolSource[];
 	/** Directory for subagent transcripts. */
 	getTranscriptDir(): string;
@@ -94,29 +93,16 @@ export interface AgentToolDetails {
 }
 
 const agentProperties = {
-	description: Type.String({ description: "Short (3-5 word) description of the task" }),
-	prompt: Type.String({
-		description:
-			"The task for the agent. Make it self-contained: the agent does not see this conversation. State the goal, relevant paths and facts, and what to report back.",
-	}),
-	subagent_type: Type.Optional(Type.String({ description: `Type of agent to use (default: ${DEFAULT_AGENT_TYPE})` })),
-	model: Type.Optional(
-		Type.String({
-			description:
-				"Optional model override as provider/model-id or a model pattern. Default: the agent type's model, else the current model.",
-		}),
-	),
+	description: Type.String({ description: "3-5 words" }),
+	prompt: Type.String(),
+	subagent_type: Type.Optional(Type.String()),
+	model: Type.Optional(Type.String()),
 };
 
 const agentSchema = Type.Object(agentProperties);
 const backgroundAgentSchema = Type.Object({
 	...agentProperties,
-	run_in_background: Type.Optional(
-		Type.Boolean({
-			description:
-				"Run the agent in the background and return at once with a task id. You are notified with its result when it finishes.",
-		}),
-	),
+	run_in_background: Type.Optional(Type.Boolean({ description: "Return at once; the result arrives when done" })),
 });
 
 export type AgentToolInput = Static<typeof backgroundAgentSchema>;
@@ -218,6 +204,53 @@ interface SubagentRunResult extends SubagentProgress {
 	text: string;
 }
 
+type ExecuteParentTool = ExtensionToolContext["executeTool"];
+
+/** `schema` without the properties `names`, when it is an object schema. */
+function withoutProperties(
+	schema: ToolDefinition["parameters"],
+	names: readonly string[],
+): ToolDefinition["parameters"] {
+	const object = schema as { properties?: Record<string, unknown>; required?: string[] };
+	if (!object.properties || !names.some((name) => name in (object.properties ?? {}))) return schema;
+	const properties = Object.fromEntries(Object.entries(object.properties).filter(([name]) => !names.includes(name)));
+	const required = object.required?.filter((name) => !names.includes(name));
+	return { ...schema, properties, ...(required ? { required } : {}) } as ToolDefinition["parameters"];
+}
+
+/**
+ * A subagent's stand-in for a parent tool. The call runs in the parent session through
+ * `ctx.executeTool()`, so it passes the parent's argument validation, `tool_call` and `tool_result`
+ * hooks, and permission checks, and uses the parent's tool implementation, cwd, and sandbox, as if
+ * the parent had called the tool. Background parameters are removed.
+ */
+function createParentToolProxy(source: SubagentToolSource, executeParentTool: ExecuteParentTool): ToolDefinition {
+	const { definition } = source;
+	return {
+		name: definition.name,
+		label: definition.label,
+		description: definition.description,
+		parameters: withoutProperties(definition.parameters, BACKGROUND_PARAMETERS),
+		...(definition.executionMode ? { executionMode: definition.executionMode } : {}),
+		async execute(_callId, input, abortSignal, onPartial) {
+			const args = Object.fromEntries(
+				Object.entries((input ?? {}) as Record<string, unknown>).filter(
+					([key]) => !BACKGROUND_PARAMETERS.includes(key),
+				),
+			);
+			const outcome = await executeParentTool(definition.name, args, { signal: abortSignal, onUpdate: onPartial });
+			if (outcome.isError) {
+				const text = outcome.result.content
+					.filter((part): part is { type: "text"; text: string } => part.type === "text")
+					.map((part) => part.text)
+					.join("\n");
+				throw new Error(text || `${definition.name} failed`);
+			}
+			return outcome.result;
+		},
+	};
+}
+
 /** Run one subagent to completion in a child session. Aborting `signal` aborts the child. */
 async function runSubagent(
 	host: SubagentHost,
@@ -225,18 +258,18 @@ async function runSubagent(
 	prompt: string,
 	modelPattern: string | undefined,
 	signal: AbortSignal | undefined,
+	executeParentTool: ExecuteParentTool,
 	onProgress: (progress: SubagentProgress, newActivity: string | undefined) => void,
 ): Promise<SubagentRunResult> {
 	const model = resolveSubagentModel(host, modelPattern ?? type.model);
 	const sources = host.getToolSources();
 	const { tools } = resolveAgentTypeTools(type, sources);
-	// Extension and MCP tools are shared by definition and declared directly, whatever their
-	// exposure in the parent: the child has no codemode or tool search to reach them otherwise.
+	// Every child tool is a proxy for a parent tool the parent can call itself; the child's own
+	// built-in tools of the same names are replaced.
 	const customTools = sources
-		.filter((source) => !source.builtin && tools.includes(source.name))
-		.map((source): ToolDefinition => ({ ...source.definition, exposure: "direct", defaultActive: undefined }));
+		.filter((source) => tools.includes(source.name))
+		.map((source) => createParentToolProxy(source, executeParentTool));
 	const transcriptDir = host.getTranscriptDir();
-	mkdirSync(transcriptDir, { recursive: true });
 	const { session: child } = await host.createSession({
 		cwd: host.cwd,
 		agentDir: host.agentDir,
@@ -295,16 +328,12 @@ async function runSubagent(
 	}
 }
 
-function formatAgentTypeList(types: readonly AgentTypeDefinition[], sources: readonly SubagentToolCandidate[]): string {
+/** Agent types other than the built-ins, one short line each. */
+function formatCustomAgentTypes(types: readonly AgentTypeDefinition[]): string {
 	return types
-		.map((type) => {
-			const tools =
-				type.tools || type.disallowedTools
-					? resolveAgentTypeTools(type, sources).tools.join(", ") || "none"
-					: "all";
-			return `- ${type.name}: ${type.description} (Tools: ${tools})`;
-		})
-		.join("\n");
+		.filter((type) => type.source !== "builtin")
+		.map((type) => `\n- ${type.name}: ${truncate(type.description, 100)}`)
+		.join("");
 }
 
 function statsLine(details: AgentToolDetails): string {
@@ -373,38 +402,20 @@ export function createAgentToolDefinition(
 	host: SubagentHost,
 ): ToolDefinition<typeof backgroundAgentSchema, AgentToolDetails | undefined> {
 	const tasks = host.tasks;
-	const backgroundUsage = tasks
-		? "\n- run_in_background: true returns at once with a task id; you are notified with the result when the agent finishes. Use it when you have independent work to do meanwhile."
-		: "";
-	const describe = (
-		candidates: readonly SubagentToolCandidate[],
-	) => `Launch a subagent that handles a task autonomously in a fresh context, with its own instructions and tools. Only its final message is returned to you.
-
-Available agent types (subagent_type):
-${formatAgentTypeList(host.getAgentTypes().types, candidates)}
-
-Usage:
-- The agent does not see this conversation: write a self-contained prompt with the goal, relevant context, and what to report back.
-- Launch several agents in one message to run them concurrently.
-- Use agents for broad searches and multi-step work whose intermediate output you do not need; do a simple lookup yourself.
-- The result is not shown to the user; relay what matters.${backgroundUsage}`;
+	// Kept short: the description is sent with every request. Details are in docs/subagents.md.
+	const describe = () =>
+		`Run a subagent on a self-contained task in a fresh context (it cannot see this conversation); returns its final message. Calls in one message run in parallel. subagent_type: general-purpose (default), explore (read-only search)${formatCustomAgentTypes(host.getAgentTypes().types)}`;
 	return {
 		name: "agent",
 		label: "agent",
-		description: describe(STANDARD_TOOL_NAMES.map((name) => ({ name, active: true }))),
-		// The tool lists of agent types depend on the registered tools, which change after creation
-		// (extensions, MCP servers that connect later).
-		prepareLoadout: (loadout) => {
-			const declared = new Set(loadout.declared.map((tool) => tool.name));
-			const candidates = loadout.registered
-				.filter((tool) => loadout.getExposure(tool.name) !== "hidden")
-				.map((tool) => ({ name: tool.name, active: declared.has(tool.name) }));
-			return { descriptions: { agent: describe(candidates) } };
-		},
-		promptSnippet: "Delegate a task to a subagent with a fresh context (subagent_type selects its tools)",
+		description: describe(),
+		// Refresh the type list when `/agents` changes the definitions.
+		prepareLoadout: () => ({ descriptions: { agent: describe() } }),
 		// Without a task registry the model is not offered `run_in_background`.
 		parameters: (tasks ? backgroundAgentSchema : agentSchema) as typeof backgroundAgentSchema,
-		async execute(_toolCallId, params, signal, onUpdate) {
+		async execute(_toolCallId, params, signal, onUpdate, ctx) {
+			// Subagent tool calls run in this session through the calling tool's context.
+			const executeParentTool: ExecuteParentTool = (name, args, options) => ctx.executeTool(name, args, options);
 			const typeName = params.subagent_type?.trim() || DEFAULT_AGENT_TYPE;
 			const currentTypes = host.getAgentTypes().types;
 			const type = currentTypes.find((candidate) => candidate.name === typeName);
@@ -437,7 +448,7 @@ Usage:
 				resolveSubagentModel(host, params.model ?? type.model);
 				const task = tasks.create({ kind: "agent", description: params.description, agentType: type.name });
 				task.write(`Agent ${type.name}: ${params.description}\n\nPrompt:\n${params.prompt}\n\nActivity:\n`);
-				runSubagent(host, type, params.prompt, params.model, task.signal, (progress, item) => {
+				runSubagent(host, type, params.prompt, params.model, task.signal, executeParentTool, (progress, item) => {
 					if (item) task.write(`- ${item}\n`);
 					task.update({
 						usage: { ...progress.usage },
@@ -461,7 +472,7 @@ Usage:
 					content: [
 						{
 							type: "text",
-							text: `Agent running in background with ID: ${task.id}. Progress is written to: ${task.outputFile}\nYou will be notified with its result when it finishes. Use task_stop to stop it.`,
+							text: `Agent running in background with ID: ${task.id}. Progress file: ${task.outputFile}\nYou will be notified with its result when it finishes.`,
 						},
 					],
 					details: makeDetails(progress, "running", { taskId: task.id, outputFile: task.outputFile }),
@@ -472,12 +483,20 @@ Usage:
 				content: [{ type: "text", text: "(running...)" }],
 				details: makeDetails({ toolUses: 0, usage: emptyTaskUsage(), activity: [] }, "running"),
 			});
-			const result = await runSubagent(host, type, params.prompt, params.model, signal, (progress) => {
-				onUpdate?.({
-					content: [{ type: "text", text: "(running...)" }],
-					details: makeDetails(progress, "running"),
-				});
-			});
+			const result = await runSubagent(
+				host,
+				type,
+				params.prompt,
+				params.model,
+				signal,
+				executeParentTool,
+				(progress) => {
+					onUpdate?.({
+						content: [{ type: "text", text: "(running...)" }],
+						details: makeDetails(progress, "running"),
+					});
+				},
+			);
 			return {
 				content: [{ type: "text", text: result.text }],
 				details: makeDetails(result, "completed"),

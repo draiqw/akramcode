@@ -29,13 +29,14 @@ function formatDuration(ms: number): string {
 	return `${Math.floor(minutes / 60)}h ${minutes % 60}m ${remainder}s`;
 }
 function formatShellCall(
-	args: { command?: string; timeout?: number; run_in_background?: boolean } | undefined,
+	args: { command?: string; timeout?: number; run_in_background?: boolean; monitor?: boolean } | undefined,
 	prompt: string,
 ): string {
 	const command = str(args?.command);
 	const timeout = args?.timeout as number | undefined;
 	const timeoutSuffix = timeout ? theme.fg("muted", ` (timeout ${timeout}s)`) : "";
-	const backgroundSuffix = args?.run_in_background === true ? theme.fg("muted", " (background)") : "";
+	const backgroundSuffix =
+		args?.run_in_background === true ? theme.fg("muted", args.monitor === true ? " (monitor)" : " (background)") : "";
 	const commandDisplay = command === null ? invalidArgText(theme) : command ? command : theme.fg("toolOutput", "...");
 	return theme.fg("toolTitle", theme.bold(`${prompt} ${commandDisplay}`)) + timeoutSuffix + backgroundSuffix;
 }
@@ -121,7 +122,9 @@ export function createShellRenderers(prompt: string): Pick<ToolDefinition<any, a
 			const text = (context.lastComponent as Text | undefined) ?? new Text("", 0, 0);
 			text.setText(
 				formatShellCall(
-					args as { command?: string; timeout?: number; run_in_background?: boolean } | undefined,
+					args as
+						| { command?: string; timeout?: number; run_in_background?: boolean; monitor?: boolean }
+						| undefined,
 					prompt,
 				),
 			);

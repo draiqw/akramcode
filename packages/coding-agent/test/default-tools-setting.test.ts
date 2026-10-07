@@ -63,7 +63,7 @@ describe("defaultTools setting", () => {
 				.getAllTools()
 				.map((tool) => tool.name)
 				.sort(),
-		).toEqual(["agent", "bash", "edit", "find", "grep", "ls", "monitor", "read", "task_stop", "write"]);
+		).toEqual(["agent", "bash", "edit", "find", "grep", "ls", "read", "task_stop", "write"]);
 		expect(session.getActiveToolNames()).toEqual(["grep", "find"]);
 		expect(session.systemPrompt).toContain("- grep:");
 		expect(session.systemPrompt).not.toContain("- read:");
@@ -89,7 +89,6 @@ describe("defaultTools setting", () => {
 			"bash",
 			"edit",
 			"inactive_tool",
-			"monitor",
 			"read",
 			"task_stop",
 		]);
@@ -195,15 +194,7 @@ describe("defaultTools setting", () => {
 		// #10245
 		it("activates only tools newly added to defaultTools", async () => {
 			const session = await createFileSession();
-			expect(session.getActiveToolNames()).toEqual([
-				"read",
-				"bash",
-				"edit",
-				"write",
-				"agent",
-				"task_stop",
-				"monitor",
-			]);
+			expect(session.getActiveToolNames()).toEqual(["read", "bash", "edit", "write", "agent", "task_stop"]);
 			session.setActiveToolsByName(["read", "edit", "write"]);
 
 			writeSettings({ defaultTools: ["+inactive_tool", "+grep"] });
@@ -241,7 +232,6 @@ describe("defaultTools setting", () => {
 				"bash",
 				"edit",
 				"inactive_tool",
-				"monitor",
 				"read",
 				"task_stop",
 				"write",
@@ -264,7 +254,7 @@ describe("defaultTools setting", () => {
 				.getAllTools()
 				.map((tool) => tool.name)
 				.sort(),
-		).toEqual(["agent", "bash", "edit", "find", "grep", "ls", "monitor", "read", "task_stop", "write"]);
+		).toEqual(["agent", "bash", "edit", "find", "grep", "ls", "read", "task_stop", "write"]);
 		expect(session.getActiveToolNames()).toEqual(["ls"]);
 		session.dispose();
 	});
