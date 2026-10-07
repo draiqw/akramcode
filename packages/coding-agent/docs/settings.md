@@ -40,6 +40,8 @@ See [Choose a Model](models.md) for model selection and thinking controls.
 | `defaultTools` | `string[]` | `read`, `bash`, `edit`, `write` | Tools enabled at startup. Plain names replace the defaults; `+name` adds a tool and `-name` removes one. An empty array disables all built-in tools but not extension or SDK tools. |
 | `codemode.mode` | `"on"` \| `"only"` | `"on"` | How the `codemode` tool presents tools while it is active. `on`: declared tools get a note on calling them from scripts appended to their description, and `codemode` lists only tools that are not declared. `only`: `codemode` lists every tool scripts can call, and active built-in and extension tools are hidden from the model, so it reaches them through `codemode`. |
 | `codemode.inlineBudget` | number | `3000` | Estimated tokens (characters / 4) the `codemode` tool's description may spend on tool declarations. Tools that do not fit are left out and found with `searchTools()`. `0` lists only namespaces. |
+| `grep.backend` | `"rg"` \| `"tgrep"` | `"rg"` | Search program of the `grep` tool. See [Grep backend](#grep-backend). |
+| `grep.tgrepPath` | string | `tgrep` from `PATH` | tgrep executable for `grep.backend: "tgrep"`. Supports a leading `~`. |
 
 Available built-in tools are `read`, `bash`, `edit`, `write`, `grep`, `find`, and `ls`. `defaultTools` can also name `codemode` and `tool_search`, which built-in extensions register inactive, and other extension tools registered inactive.
 
@@ -56,6 +58,35 @@ This removes `bash` and enables `grep`: `["-bash", "+grep"]`. Project settings a
 `/reload` enables tools newly added to `defaultTools`. It does not disable tools removed from it or re-enable unchanged tools you turned off. `--tools`, `--no-tools`, and `--no-builtin-tools` override `defaultTools`, also on reload.
 
 CLI tool options override this setting for one invocation; `--tools` does not accept `+name` or `-name`. See [Command Line](cli.md#tools).
+
+### Grep backend
+
+The `grep` tool searches with [ripgrep](https://github.com/BurntSushi/ripgrep) by default. With `"grep": { "backend": "tgrep" }` it asks a running [tgrep](https://github.com/microsoft/tgrep) server instead. tgrep keeps a trigram index of the repository, so a search for a specific identifier reads only the files that can contain it.
+
+AkramCode does not install tgrep or start its server. Install it (`brew install tgrep`) and keep a server running in the repository:
+
+```bash
+tgrep serve .
+```
+
+The server writes its index to `.tgrep/` in that directory. Add `.tgrep/` to `.gitignore`: the index is build output, and ripgrep searches it when it is not ignored.
+
+For each search, `grep` uses tgrep only when all of these hold, and ripgrep otherwise:
+
+- The search path is a directory. A single file is searched with ripgrep.
+- A `.tgrep/serve.json` in the search path or a parent directory names a running process.
+- No `write` or `edit` tool call is running or finished in the last 2 seconds. The server applies file changes asynchronously, a few tens of milliseconds after they happen.
+- The tools run on this machine. In a `volume` sandbox `grep` does not run; in a `mount` sandbox it runs on the host and may use tgrep.
+
+tgrep runs with `--stats`, and its result is used only when tgrep reports that the server answered. If tgrep fails, exits with an error, takes more than 5 seconds, prints more than 256 KiB after reaching the match limit, or answers from its on-disk index or a file scan, the search runs again with ripgrep. An empty result for a directory below the indexed root also runs again with ripgrep, because the index has no files of ignored directories such as `node_modules/pkg`, which ripgrep searches when they are named. The model sees the same output format, match limit and truncation either way.
+
+Results can differ from ripgrep:
+
+- Changes made outside `write` and `edit`, for example by `bash` or an editor, can be missing for a moment until the server has applied them.
+- A positive `glob` does not include files that `.gitignore` excludes. ripgrep includes such files when the glob matches them.
+- tgrep skips files over 64 MiB and files with known binary extensions, and it never searches `.tgrep/`.
+- Lines with invalid UTF-8 are matched as text with replacement characters.
+- When the match limit cuts the result, the first matches can come from other files, because neither program returns files in a fixed order.
 
 ## Sessions and context
 
