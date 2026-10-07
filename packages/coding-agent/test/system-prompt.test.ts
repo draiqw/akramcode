@@ -107,7 +107,7 @@ describe("buildSystemPrompt", () => {
 			expect(prompt).toContain("non-LLM models such as classifiers and image models are in codemode.md");
 		});
 
-		test("keeps the search rule for bash without search tools, drops other repeated guidance", () => {
+		test("does not repeat guidance that tool snippets and descriptions already carry", () => {
 			const prompt = buildSystemPrompt({
 				selectedTools: ["read", "bash", "edit", "write"],
 				toolSnippets: { bash: "Execute bash commands (ls, grep, find, etc.)" },
@@ -116,8 +116,7 @@ describe("buildSystemPrompt", () => {
 				cwd: process.cwd(),
 			});
 
-			// The benchmark measured fewer targeted searches and more tokens on long tasks without it.
-			expect(prompt).toContain("Use bash for file operations like ls, rg, find");
+			expect(prompt).not.toContain("Use bash for file operations");
 			expect(prompt).not.toContain("In addition to the tools above");
 			expect(prompt).toContain("<tools>\n- bash: Execute bash commands (ls, grep, find, etc.)\n</tools>");
 		});

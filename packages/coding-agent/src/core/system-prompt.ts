@@ -92,13 +92,6 @@ function buildRules(
 		rules.push(normalized);
 	};
 
-	// Without dedicated search tools this steers the model to targeted searches instead of reading
-	// whole files; the quality benchmark measured more tokens on long tasks when it was dropped.
-	const hasSearchTool = selectedTools.some((name) => name === "grep" || name === "find" || name === "ls");
-	if (selectedTools.includes("bash") && !hasSearchTool) {
-		addRule("Use bash for file operations like ls, rg, find");
-	}
-
 	for (const name of selectedTools) {
 		for (const rule of toolGuidelines[name] ?? []) addRule(rule);
 	}
