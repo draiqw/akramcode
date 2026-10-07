@@ -6,10 +6,11 @@ The macOS machine itself is the default sandbox: with no `sandbox` setting, or `
 
 ## Set up the server
 
-AkramCode talks to an OpenSandbox server over HTTP. Run it where Docker runs, for example on a Mac with Docker Desktop:
+AkramCode talks to an OpenSandbox server over HTTP. Use the fork `draiqw/opensandbox` (branch `main`, private repository): it adds the managed volumes and the gVisor checkpoint backend that the stock server lacks. Run it where Docker runs, for example on a Mac with Docker Desktop:
 
 ```bash
-cd OpenSandbox/server
+git clone git@github.com:draiqw/opensandbox.git
+cd opensandbox/server
 uv sync
 uv run opensandbox-server init-config ~/.sandbox.toml --example docker
 ```
@@ -25,7 +26,7 @@ allowed_host_paths = ["/Users"]
 managed_volume_prefixes = ["akc-"]
 ```
 
-Start it with `uv run opensandbox-server`. An empty `allowed_host_paths` rejects every mount. `managed_volume_prefixes` and the `/v1/volumes` endpoints exist only in the aiva fork of OpenSandbox; without them the volume sweep reports volumes it cannot delete and leaves them in place.
+Start it with `uv run opensandbox-server`. An empty `allowed_host_paths` rejects every mount. `managed_volume_prefixes` and the `/v1/volumes` endpoints exist only in that fork; without them the volume sweep reports volumes it cannot delete and leaves them in place.
 
 ## Enable the sandbox
 
