@@ -8,6 +8,7 @@ export {
 	type OpenSandboxApi,
 	OpenSandboxProvider,
 	type OpenSandboxProviderOptions,
+	SandboxUnavailableError,
 } from "./opensandbox.ts";
 export {
 	type OpenSandboxSettings,

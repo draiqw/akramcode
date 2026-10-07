@@ -109,6 +109,20 @@ function makeProvider(
 }
 
 describe("OpenSandboxProvider", () => {
+	it("deletes a half-started sandbox and reports a readable error when the sandbox never becomes ready", async () => {
+		const fake = createFake();
+		const create = fake.api.create;
+		fake.api.create = async (options) => {
+			await create(options);
+			throw new Error("health check timed out");
+		};
+		const provider = makeProvider(fake);
+		await expect(provider.acquire({ sessionId: "s1", cwd: "/work/proj" })).rejects.toThrow(
+			/OpenSandbox is unavailable at 127\.0\.0\.1:8080: health check timed out/,
+		);
+		expect(fake.boxes.size).toBe(0);
+	});
+
 	it("mounts the host folder at the same path in mount mode and keeps file tools on the host", async () => {
 		const fake = createFake();
 		const runtime = await makeProvider(fake).acquire({ sessionId: "s1", cwd: "/work/proj" });

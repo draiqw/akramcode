@@ -9,6 +9,8 @@
 
 ### Fixed
 
+- An unreachable or never-ready sandbox server now ends startup with one error line (`OpenSandbox is unavailable at <domain>: <reason>`) instead of a stack trace, and the half-started sandbox is deleted on the server.
+
 - Fixed the shrinkwrap shipping vulnerable `brace-expansion` 5.0.9 by pinning `brace-expansion` 5.0.12 as a direct dependency (GHSA-q2hr-2g5m-vwhr, GHSA-qhr7-859c-m2p7, GHSA-6j4f-fj2g-mc7p) ([#10288](https://github.com/draiqw/akramcode/issues/10288))
 - Fixed a trailing comma in `--models` adding an extra model to the model cycle ([#10334](https://github.com/draiqw/akramcode/issues/10334))
 

@@ -78,6 +78,14 @@ function slug(value: string): string {
 	);
 }
 
+/** The configured sandbox could not be started; callers show the message instead of a stack trace. */
+export class SandboxUnavailableError extends Error {
+	override readonly name = "SandboxUnavailableError";
+	constructor(message: string, cause: unknown) {
+		super(message, { cause });
+	}
+}
+
 export class OpenSandboxProvider implements SandboxProvider {
 	readonly name = "opensandbox";
 	private readonly config: ResolvedOpenSandboxSettings;
@@ -112,8 +120,14 @@ export class OpenSandboxProvider implements SandboxProvider {
 		if (volumeName) this.ledger.touch(volumeName, this.now());
 
 		let sandbox: Sandbox | undefined;
-		if (leased) sandbox = await this.attach(request);
-		sandbox ??= await this.create(request, volumeName, leased);
+		try {
+			if (leased) sandbox = await this.attach(request);
+			sandbox ??= await this.create(request, volumeName, leased);
+		} catch (error) {
+			await this.discardFailed(request, leased);
+			const reason = error instanceof Error ? error.message : String(error);
+			throw new SandboxUnavailableError(`OpenSandbox is unavailable at ${this.config.domain}: ${reason}`, error);
+		}
 
 		const host: SessionHost = { sandbox, cwd: request.cwd };
 		const files = this.workspace === "volume" ? createSandboxFileOperations(host) : undefined;
@@ -129,6 +143,17 @@ export class OpenSandboxProvider implements SandboxProvider {
 		};
 		void this.background(request.sessionId);
 		return runtime;
+	}
+
+	/** A create that timed out leaves a half-started sandbox on the server: delete it and free the lease. */
+	private async discardFailed(request: SandboxAcquireRequest, leased: boolean): Promise<void> {
+		try {
+			const orphans = await this.api.list({ [META_CONV]: request.sessionId, [META_OWNER]: this.ownerId });
+			for (const info of orphans) await this.api.kill(info.id).catch(() => undefined);
+		} catch {
+			// The server may be unreachable; nothing more to clean up from here.
+		}
+		if (leased) this.leases.release(request.sessionId);
 	}
 
 	/** A live sandbox of this session with the same mounts, or undefined. Stale ones are deleted. */
