@@ -17,7 +17,7 @@
 
 ### Changed
 
-- Shortened the default system prompt and the `edit` tool definition by removing guidance that the tool snippets, descriptions, and schemas already state, and by replacing the per-topic documentation map with a pointer to the docs directory. With the default tools, the fixed part of the system prompt drops from 620 to 416 tokens and the tool definitions from 588 to 542 tokens (o200k tokenizer).
+- Shortened the default system prompt and the `edit` tool definition by removing guidance that the tool snippets, descriptions, and schemas already state, and by replacing the per-topic documentation map with a pointer to the docs directory. With the default tools, the fixed part of the system prompt drops from 620 to 416 tokens and the tool definitions from 588 to 542 tokens (o200k tokenizer). The rule to search with `ls`, `rg`, and `find` through bash stays when no dedicated search tools are active: without it the quality benchmark measured fewer targeted searches and about a third more tokens on long tasks.
 
 ### Fixed
 
