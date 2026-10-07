@@ -3,6 +3,7 @@ import codemodeExtension from "./codemode/index.ts";
 import llamaExtension from "./llama/index.ts";
 import mcpExtension from "./mcp/index.ts";
 import onlineCompactExtension from "./online-compact/index.ts";
+import tasksExtension from "./tasks/index.ts";
 import toolSearchExtension from "./tool-search/index.ts";
 
 export const builtInExtensions: InlineExtension[] = [
@@ -14,4 +15,6 @@ export const builtInExtensions: InlineExtension[] = [
 	{ name: "mcp", factory: mcpExtension, replaceable: true, builtin: true },
 	// Inert until `update_plan` is activated (`"defaultTools": ["+update_plan"]`).
 	{ name: "online-compact", factory: onlineCompactExtension, replaceable: true, builtin: true },
+	// Footer status, `/tasks`, `/agents`, and the chat rendering of task notifications.
+	{ name: "tasks", factory: tasksExtension, replaceable: true, builtin: true },
 ];

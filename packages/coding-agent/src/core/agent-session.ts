@@ -14,7 +14,8 @@
  */
 
 import { readFileSync } from "node:fs";
-import { basename, dirname } from "node:path";
+import { tmpdir } from "node:os";
+import { basename, dirname, join } from "node:path";
 import {
 	type AfterToolCallContext,
 	type AfterToolCallResult,
@@ -56,6 +57,7 @@ import {
 	streamSimple,
 } from "@akramcode/providers/compat";
 import type { SandboxRuntime } from "@akramcode/sandbox";
+import { getAgentDir } from "../config.ts";
 import { getThemeByName, theme } from "../modes/interactive/theme/theme.ts";
 import { stripFrontmatter } from "../utils/frontmatter.ts";
 import { processImage } from "../utils/image-process.ts";
@@ -136,14 +138,36 @@ import { type CacheWarmingMode, DEFAULT_TOOL_NAMES, type SettingsManager } from 
 import type { SlashCommandInfo } from "./slash-commands.ts";
 import { BUILTIN_PATH_PREFIX, createSyntheticSourceInfo, isSyntheticPath, type SourceInfo } from "./source-info.ts";
 import {
+	createAgentToolDefinition,
+	type SubagentControl,
+	type SubagentSessionFactory,
+	type SubagentToolSource,
+} from "./subagents/agent-tool.ts";
+import {
+	type AgentTypeDiscovery,
+	discoverAgentTypes,
+	getProjectAgentsDir,
+	getUserAgentsDir,
+	resolveAgentTypeTools,
+	SUBAGENT_EXCLUDED_TOOL_NAMES,
+} from "./subagents/agent-types.ts";
+import {
 	buildSystemPrompt,
 	buildSystemPromptSections,
 	diffSystemPromptSections,
 	type NormalizedBuildSystemPromptOptions,
 	normalizeBuildSystemPromptOptions,
 } from "./system-prompt.ts";
+import {
+	formatTaskFinishedNotification,
+	formatTaskOutputNotification,
+	TASK_NOTIFICATION_CUSTOM_TYPE,
+	type TaskNotificationDetails,
+} from "./tasks/notifications.ts";
+import { type TaskEvent, TaskRegistry } from "./tasks/task-registry.ts";
+import { createMonitorToolDefinition, createTaskStopToolDefinition } from "./tasks/task-tools.ts";
 import { type BashOperations, createLocalBashOperations } from "./tools/bash.ts";
-import { createAllToolDefinitions, type ToolsOptions } from "./tools/index.ts";
+import { allToolNames, createAllToolDefinitions, type ToolName, type ToolsOptions } from "./tools/index.ts";
 import { createToolDefinitionFromAgentTool } from "./tools/tool-definition-wrapper.ts";
 import { addUsageToTotals, combineUsage, createUsageTotals } from "./usage-totals.ts";
 import {
@@ -282,8 +306,19 @@ export interface AgentSessionConfig {
 	 * a definition-first registry even when callers provide plain AgentTool instances.
 	 */
 	baseToolsOverride?: Record<string, AgentTool>;
-	/** Sandbox the built-in tools and `!` commands run in; the session releases it on dispose. */
+	/** Sandbox the built-in tools and `!` commands run in; the session releases it on dispose unless `ownsSandbox` is false. */
 	sandbox?: SandboxRuntime;
+	/** Whether the session releases `sandbox` on dispose. Default: true. Subagents share the parent's sandbox. */
+	ownsSandbox?: boolean;
+	/** Global config directory, for user agent definitions. Default: ~/.akramcode/agent */
+	agentDir?: string;
+	/**
+	 * Whether this session is a subagent. Subagents get neither the `agent` tool nor background tasks,
+	 * so they cannot start further agents.
+	 */
+	isSubagent?: boolean;
+	/** Creates subagent sessions for the `agent` tool. Without it the tool is not registered. */
+	createSubagentSession?: SubagentSessionFactory;
 	/** Mutable ref used by Agent to access the current ExtensionRunner */
 	extensionRunnerRef?: { current?: ExtensionRunner };
 	/** Session start event metadata emitted when extensions bind to this runtime. */
@@ -442,7 +477,20 @@ export class AgentSession {
 	private _excludedToolNames?: Set<string>;
 	private _baseToolsOverride?: Record<string, AgentTool>;
 	private _sandbox?: SandboxRuntime;
+	private _ownsSandbox: boolean;
 	private _sandboxReleased?: Promise<void>;
+	private _agentDir: string;
+	private _isSubagent: boolean;
+	private _createSubagentSession?: SubagentSessionFactory;
+	/** Built-in tools that need this session: `agent`, `task_stop`, and `monitor`. */
+	private _sessionToolDefinitions: ToolDefinition[] = [];
+	/** Agent types, read on first use after each runtime build. */
+	private _agentTypes: AgentTypeDiscovery | undefined;
+	/** Background tasks of this session. Stopped when the session is disposed. */
+	readonly tasks: TaskRegistry;
+	private _unsubscribeTasks?: () => void;
+	/** Task notifications being delivered; `waitForBackgroundTasks()` waits for them. */
+	private readonly _pendingTaskNotifications = new Set<Promise<void>>();
 	private _sessionStartEvent: SessionStartEvent;
 	private _extensionUIContext?: ExtensionUIContext;
 	private _extensionMode: ExtensionMode = "print";
@@ -490,7 +538,15 @@ export class AgentSession {
 		this._excludedToolNames = config.excludedToolNames ? new Set(config.excludedToolNames) : undefined;
 		this._baseToolsOverride = config.baseToolsOverride;
 		this._sandbox = config.sandbox;
+		this._ownsSandbox = config.ownsSandbox ?? true;
+		this._agentDir = config.agentDir ?? getAgentDir();
+		this._isSubagent = config.isSubagent ?? false;
+		this._createSubagentSession = config.createSubagentSession;
 		this._sessionStartEvent = config.sessionStartEvent ?? { type: "session_start", reason: "startup" };
+		this.tasks = new TaskRegistry({
+			outputDir: () => join(tmpdir(), "akramcode-tasks", this.sessionManager.getSessionId()),
+		});
+		this._unsubscribeTasks = this.tasks.subscribe((event) => this._handleTaskEvent(event));
 
 		// Always subscribe to agent events for internal handling
 		// (session persistence, extensions, auto-compaction, retry logic)
@@ -1382,13 +1438,16 @@ export class AgentSession {
 			this._cacheWarmer.onWarmed = undefined;
 			this._cacheWarmer.cancel();
 		}
+		this._unsubscribeTasks?.();
+		this._unsubscribeTasks = undefined;
+		this.tasks.stopAll();
 		cleanupSessionResources(this.sessionId);
 		void this.releaseSandbox();
 	}
 
 	/** Give the sandbox back. Safe to call more than once; resolves when the release finished. */
 	releaseSandbox(): Promise<void> {
-		if (!this._sandbox) return Promise.resolve();
+		if (!this._sandbox || !this._ownsSandbox) return Promise.resolve();
 		this._sandboxReleased ??= this._sandbox.release().catch(() => undefined);
 		return this._sandboxReleased;
 	}
@@ -3443,6 +3502,8 @@ export class AgentSession {
 				getSystemPromptOptions: () => this._baseSystemPromptOptions,
 				executeTool: (callerId, name, args, options) => this._executeNestedToolCall(callerId, name, args, options),
 				getCallableTools: () => this._getCallableTools(),
+				getTasks: () => this.tasks,
+				getSubagents: () => this.subagents,
 			},
 			{
 				registerProvider: (name, config) => {
@@ -3479,6 +3540,10 @@ export class AgentSession {
 
 		const registeredTools = this._extensionRunner.getAllRegisteredTools();
 		const allCustomTools = [
+			...this._sessionToolDefinitions.map((definition) => ({
+				definition,
+				sourceInfo: createSyntheticSourceInfo(`${BUILTIN_PATH_PREFIX}${definition.name}`, { source: "builtin" }),
+			})),
 			...registeredTools,
 			...this._customTools.map((definition) => ({
 				definition,
@@ -3588,6 +3653,8 @@ export class AgentSession {
 		const shellPath = this.settingsManager.getShellPath();
 		const grepBackend = this.settingsManager.getGrepBackend();
 		const tgrepPath = this.settingsManager.getGrepTgrepPath();
+		const backgroundTasks =
+			!this._isSubagent && this.settingsManager.getBackgroundTasksEnabled() ? this.tasks : undefined;
 		const baseToolDefinitions = this._baseToolsOverride
 			? Object.fromEntries(
 					Object.entries(this._baseToolsOverride).map(([name, tool]) => [
@@ -3599,10 +3666,11 @@ export class AgentSession {
 					this._cwd,
 					this._withSandbox({
 						read: { autoResizeImages },
-						bash: { commandPrefix: shellCommandPrefix, shellPath },
+						bash: { commandPrefix: shellCommandPrefix, shellPath, backgroundTasks },
 						grep: { backend: grepBackend, tgrepPath },
 					}),
 				);
+		this._sessionToolDefinitions = this._createSessionToolDefinitions(backgroundTasks, shellPath);
 
 		this._baseToolDefinitions = new Map(
 			Object.entries(baseToolDefinitions).map(([name, tool]) => [name, tool as ToolDefinition]),
@@ -3636,6 +3704,168 @@ export class AgentSession {
 			activeToolNames: baseActiveToolNames,
 			includeAllExtensionTools: options.includeAllExtensionTools,
 		});
+	}
+
+	/**
+	 * The built-in tools that need this session: `agent` when subagents are enabled and the session
+	 * can create them, and `task_stop` and `monitor` when background tasks are enabled.
+	 */
+	private _createSessionToolDefinitions(
+		backgroundTasks: TaskRegistry | undefined,
+		shellPath: string | undefined,
+	): ToolDefinition[] {
+		this._agentTypes = undefined;
+		if (this._isSubagent) return [];
+		const definitions: ToolDefinition[] = [];
+		const createSession = this._createSubagentSession;
+		if (createSession && this.settingsManager.getSubagentsEnabled()) {
+			definitions.push(
+				createAgentToolDefinition({
+					cwd: this._cwd,
+					agentDir: this._agentDir,
+					settingsManager: this.settingsManager,
+					modelRuntime: this._modelRuntime,
+					sandbox: this._sandbox,
+					tasks: backgroundTasks,
+					getModel: () => this.model,
+					getThinkingLevel: () => this.thinkingLevel,
+					getContextFiles: () => this._resourceLoader.getAgentsFiles().agentsFiles,
+					getAgentTypes: () => this._getAgentTypes(),
+					getToolSources: () => this._getSubagentToolSources(),
+					getTranscriptDir: () => this._getSubagentTranscriptDir(),
+					createSession,
+				}) as ToolDefinition,
+			);
+		}
+		if (backgroundTasks) {
+			definitions.push(createTaskStopToolDefinition(backgroundTasks) as ToolDefinition);
+			definitions.push(
+				createMonitorToolDefinition({
+					tasks: backgroundTasks,
+					cwd: this._cwd,
+					operations: this._sandbox?.bash ?? createLocalBashOperations({ shellPath }),
+				}) as ToolDefinition,
+			);
+		}
+		// Not activated on registration like extension tools: they are in DEFAULT_TOOL_NAMES, so they
+		// start active with the default tools and follow `--tools` and `defaultTools`.
+		return definitions.map((definition) => ({ ...definition, defaultActive: false }));
+	}
+
+	private _getAgentTypes(): AgentTypeDiscovery {
+		this._agentTypes ??= discoverAgentTypes({
+			cwd: this._cwd,
+			agentDir: this._agentDir,
+			projectTrusted: this.settingsManager.isProjectTrusted(),
+		});
+		return this._agentTypes;
+	}
+
+	/**
+	 * Tools a subagent can get: every registered tool except hidden ones, tools that orchestrate
+	 * other tools (codemode, tool search), and the agent and background-control tools.
+	 */
+	private _getSubagentToolSources(): SubagentToolSource[] {
+		const active = new Set(this.getActiveToolNames());
+		return [...this._toolDefinitions.values()].flatMap(({ definition, sourceInfo }) => {
+			if (SUBAGENT_EXCLUDED_TOOL_NAMES.includes(definition.name)) return [];
+			if (this._getToolExposure(definition.name) === "hidden" || definition.prepareLoadout) return [];
+			const builtin = sourceInfo.source === "builtin" && allToolNames.has(definition.name as ToolName);
+			return [{ name: definition.name, active: active.has(definition.name), builtin, definition }];
+		});
+	}
+
+	/** Agent type management for `/agents`, or undefined when the `agent` tool is not available. */
+	get subagents(): SubagentControl | undefined {
+		if (!this._sessionToolDefinitions.some((definition) => definition.name === "agent")) return undefined;
+		return {
+			listTypes: () => this._getAgentTypes(),
+			resolveTools: (type) => resolveAgentTypeTools(type, this._getSubagentToolSources()),
+			listTools: () =>
+				this._getSubagentToolSources().map((source) => ({
+					name: source.name,
+					description: source.definition.description,
+					active: source.active,
+				})),
+			userAgentsDir: getUserAgentsDir(this._agentDir),
+			projectAgentsDir: getProjectAgentsDir(this._cwd),
+			isProjectTrusted: () => this.settingsManager.isProjectTrusted(),
+			reload: () => {
+				this._agentTypes = undefined;
+				// Rebuild the active loadout so the agent tool lists the new types.
+				this._setActiveTools(this.getActiveToolNames());
+			},
+		};
+	}
+
+	/** Subagent transcripts go next to the session file, or to the temp dir for sessions without a file. */
+	private _getSubagentTranscriptDir(): string {
+		const sessionFile = this.sessionManager.getSessionFile();
+		if (sessionFile && this.sessionManager.isPersisted()) {
+			return join(dirname(sessionFile), `${basename(sessionFile, ".jsonl")}.subagents`);
+		}
+		return join(tmpdir(), "akramcode-subagents", this.sessionManager.getSessionId());
+	}
+
+	/** Turn finished tasks and monitor output into task notifications that trigger a turn. */
+	private _handleTaskEvent(event: TaskEvent): void {
+		let message: { content: string; details: TaskNotificationDetails } | undefined;
+		if (event.type === "finished" && event.notify) {
+			message = {
+				content: formatTaskFinishedNotification(event.task),
+				details: { task: event.task, event: "finished" },
+			};
+		} else if (event.type === "output") {
+			message = {
+				content: formatTaskOutputNotification(event.task, event.lines, event.omittedLines),
+				details: { task: event.task, event: "output", lines: event.lines, omittedLines: event.omittedLines },
+			};
+		}
+		if (!message) return;
+		const delivery = this.sendCustomMessage(
+			{
+				customType: TASK_NOTIFICATION_CUSTOM_TYPE,
+				content: message.content,
+				display: true,
+				details: message.details,
+			},
+			{ triggerTurn: true, deliverAs: "followUp" },
+		)
+			.catch((error: unknown) => {
+				this._extensionRunner.emitError({
+					extensionPath: "<runtime>",
+					event: "task_notification",
+					error: error instanceof Error ? error.message : String(error),
+				});
+			})
+			.finally(() => {
+				this._pendingTaskNotifications.delete(delivery);
+			});
+		this._pendingTaskNotifications.add(delivery);
+	}
+
+	/**
+	 * Wait until no background task is running and every task notification has been handled,
+	 * including the turns the notifications trigger. Print mode uses this so that `-p` returns the
+	 * answer that follows background work. Running tasks are stopped after `timeoutMs`.
+	 * @returns false when the timeout stopped tasks.
+	 */
+	async waitForBackgroundTasks(timeoutMs: number): Promise<boolean> {
+		const deadline = Date.now() + timeoutMs;
+		while (true) {
+			while (this._pendingTaskNotifications.size > 0) {
+				await Promise.all([...this._pendingTaskNotifications]);
+			}
+			await this.waitForIdle();
+			if (this._pendingTaskNotifications.size > 0) continue;
+			if (this.tasks.running().length === 0) return true;
+			const remaining = deadline - Date.now();
+			if (remaining <= 0) {
+				this.tasks.stopAll();
+				return false;
+			}
+			await this.tasks.waitForActivity(remaining);
+		}
 	}
 
 	async reload(options?: { beforeSessionStart?: () => void | Promise<void> }): Promise<void> {

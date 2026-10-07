@@ -14,6 +14,10 @@
 - Added clearing the editor with a double `Escape` when it contains text; the text is saved to prompt history (`doubleEscapeClearsInput`) ([docs](docs/usage.md#change-direction)).
 - Added a copy key (`app.message.copy`, default `ctrl+x`) to OAuth sign-in screens in `/login`, `/mcp`, and `/mcp login`, which copies the sign-in URL when the browser cannot be opened or the wrapped link cannot be selected.
 - Added the `grep.backend` setting. With `"tgrep"`, the `grep` tool asks a running [tgrep](https://github.com/microsoft/tgrep) server (`tgrep serve`) for directory searches and uses ripgrep whenever the server is not running, cannot be verified as your own local tgrep process, does not answer, or a file was just written or edited ([docs](docs/settings.md#grep-backend)).
+- Added subagents: the built-in `agent` tool runs a task in a child session with a fresh context, its own prompt, and its own tools, in the same process and sandbox. Several calls run concurrently; the transcript shows live progress and a `Done (N tool uses · X tokens · Ys)` summary. Built-in types `general-purpose` and `explore`; custom types are Markdown files in `~/.akramcode/agent/agents/` and, for trusted projects, `.akramcode/agents/`, with `tools` and `disallowedTools` (built-in, extension, and MCP tools, `*` wildcards), `model`, and `thinking` ([docs](docs/subagents.md)).
+- Added `/agents` to list agent types with their tools and to create (with a tool picker), edit, and delete them without a restart ([docs](docs/subagents.md#manage-agent-types-with-agents)).
+- Added background tasks: `run_in_background` on `bash` and `agent`, the `monitor` tool that delivers each output line of a command as an event, and `task_stop`. Finished tasks send a task notification that starts a turn; the footer shows running tasks and `/tasks` inspects and stops them. Print mode waits for running tasks (`backgroundTasks.printModeTimeoutSeconds`) ([docs](docs/subagents.md#background-tasks)).
+- Added the `subagents.enabled` and `backgroundTasks.enabled` settings ([docs](docs/settings.md#tools)).
 
 ### Changed
 

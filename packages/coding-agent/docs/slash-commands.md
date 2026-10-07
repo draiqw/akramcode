@@ -46,6 +46,8 @@ Review a session before exporting or sharing it. Sessions can contain prompts, t
 | Command | Description |
 |---|---|
 | `/trust` | Save a project trust decision for future AkramCode processes |
+| `/agents` | List, create, edit, and delete [agent types](subagents.md#custom-agent-types) |
+| `/tasks` | Inspect and stop [background tasks](subagents.md#background-tasks) |
 | `/reload` | Reload keybindings, extensions, skills, templates, themes, and context files |
 | `/hotkeys` | Show active keyboard shortcuts |
 | `/changelog` | Show changelog entries |

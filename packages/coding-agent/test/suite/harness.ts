@@ -23,6 +23,7 @@ import { convertToLlm } from "../../src/core/messages.ts";
 import { SessionManager } from "../../src/core/session-manager.ts";
 import type { Settings } from "../../src/core/settings-manager.ts";
 import { SettingsManager } from "../../src/core/settings-manager.ts";
+import type { SubagentSessionFactory } from "../../src/core/subagents/agent-tool.ts";
 import type { InlineExtension, ResourceLoader } from "../../src/index.ts";
 import { theme } from "../../src/modes/interactive/theme/theme.ts";
 import {
@@ -121,6 +122,8 @@ export interface HarnessOptions {
 	modelsJson?: Record<string, unknown>;
 	/** Session to continue, for example to test a resume. Default: a new in-memory session. */
 	sessionManager?: SessionManager;
+	/** Enables the `agent` tool. */
+	createSubagentSession?: SubagentSessionFactory;
 }
 
 export interface Harness {
@@ -241,6 +244,9 @@ export async function createHarness(options: HarnessOptions = {}): Promise<Harne
 		allowedToolNames: options.allowedToolNames,
 		excludedToolNames: options.excludedToolNames,
 		extensionRunnerRef,
+		// Keep agent discovery away from the real ~/.akramcode/agent.
+		agentDir: join(tempDir, "agent"),
+		createSubagentSession: options.createSubagentSession,
 	});
 
 	const events: AgentSessionEvent[] = [];

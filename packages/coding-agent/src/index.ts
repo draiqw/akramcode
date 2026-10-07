@@ -324,6 +324,19 @@ export {
 	type SkillFrontmatter,
 } from "./core/skills.ts";
 export { createSyntheticSourceInfo } from "./core/source-info.ts";
+export type { AgentToolDetails, SubagentControl } from "./core/subagents/agent-tool.ts";
+export type { AgentTypeDefinition, AgentTypeDiagnostic } from "./core/subagents/agent-types.ts";
+export { TASK_NOTIFICATION_CUSTOM_TYPE, type TaskNotificationDetails } from "./core/tasks/notifications.ts";
+export type {
+	TaskEvent,
+	TaskHandle,
+	TaskInfo,
+	TaskKind,
+	TaskOutcome,
+	TaskRegistry,
+	TaskStatus,
+	TaskUsage,
+} from "./core/tasks/task-registry.ts";
 export { type EditDiffResult, generateDiffString, generateUnifiedPatch } from "./core/tools/edit-diff.ts";
 // Tools
 export {

@@ -112,6 +112,18 @@ export interface CodemodeSettings {
 	inlineBudget?: number;
 }
 
+export interface SubagentSettings {
+	/** Offer the `agent` tool. Default: true. */
+	enabled?: boolean;
+}
+
+export interface BackgroundTaskSettings {
+	/** Offer `run_in_background` on `bash` and `agent`, and the `monitor` and `task_stop` tools. Default: true. */
+	enabled?: boolean;
+	/** How long print mode (`-p`) waits for running background tasks before it stops them. Default: 600. */
+	printModeTimeoutSeconds?: number;
+}
+
 export type DefaultProjectTrust = "ask" | "always" | "never";
 /** true hides all startup output, "header" keeps only the startup header. */
 export type QuietStartup = boolean | "header";
@@ -185,6 +197,8 @@ export interface Settings {
 	showHardwareCursor?: boolean; // Show terminal cursor while still positioning it for IME
 	markdown?: MarkdownSettings;
 	codemode?: CodemodeSettings;
+	subagents?: SubagentSettings;
+	backgroundTasks?: BackgroundTaskSettings;
 	sandbox?: SandboxSettings; // Global-only: where the built-in tools run (local machine or an OpenSandbox sandbox)
 	sessionDir?: string; // Custom session storage directory (same format as --session-dir CLI flag)
 	httpProxy?: string; // Proxy URL applied as HTTP_PROXY and HTTPS_PROXY for AkramCode-managed HTTP clients
@@ -221,8 +235,11 @@ function deepMergeObjects(base: Record<string, unknown>, overrides: Record<strin
 	return result;
 }
 
-/** Tools enabled at startup when `defaultTools` does not change them. */
-export const DEFAULT_TOOL_NAMES: readonly string[] = ["read", "bash", "edit", "write"];
+/**
+ * Tools enabled at startup when `defaultTools` does not change them. `agent`, `task_stop`, and
+ * `monitor` are only registered when subagents and background tasks are enabled.
+ */
+export const DEFAULT_TOOL_NAMES: readonly string[] = ["read", "bash", "edit", "write", "agent", "task_stop", "monitor"];
 
 function isToolModifier(entry: unknown): boolean {
 	return typeof entry === "string" && (entry.startsWith("+") || entry.startsWith("-"));
@@ -1518,6 +1535,20 @@ export class SettingsManager {
 		this.globalSettings.showWorkingStats = enabled;
 		this.markModified("showWorkingStats");
 		this.save();
+	}
+
+	getSubagentsEnabled(): boolean {
+		return this.settings.subagents?.enabled ?? true;
+	}
+
+	getBackgroundTasksEnabled(): boolean {
+		return this.settings.backgroundTasks?.enabled ?? true;
+	}
+
+	/** How long print mode waits for running background tasks, in milliseconds. */
+	getBackgroundTasksPrintModeTimeoutMs(): number {
+		const seconds = this.settings.backgroundTasks?.printModeTimeoutSeconds;
+		return typeof seconds === "number" && Number.isFinite(seconds) && seconds >= 0 ? seconds * 1000 : 600_000;
 	}
 
 	getShowContextGauge(): boolean {

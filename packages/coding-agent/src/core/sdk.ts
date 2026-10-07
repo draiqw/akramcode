@@ -2,7 +2,7 @@ import { join } from "node:path";
 import { Agent, type AgentMessage, setDefaultStreamFn, type ThinkingLevel } from "@akramcode/agent-core";
 import type { ModelsSimpleStreamOptions } from "@akramcode/ai";
 import { clampThinkingLevel, type Message, type Model, streamSimple } from "@akramcode/providers/compat";
-import { createSandboxProvider } from "@akramcode/sandbox";
+import { createSandboxProvider, type SandboxRuntime } from "@akramcode/sandbox";
 import { getAgentDir } from "../config.ts";
 import { resolvePath } from "../utils/paths.ts";
 import { AgentSession } from "./agent-session.ts";
@@ -86,6 +86,12 @@ export interface CreateAgentSessionOptions {
 	settingsManager?: SettingsManager;
 	/** Session start event metadata for extension runtime startup. */
 	sessionStartEvent?: SessionStartEvent;
+	/**
+	 * Create the session as a subagent of another session. It runs its tools in the parent's
+	 * `sandbox` (no sandbox is acquired or released) and gets neither the `agent` tool nor
+	 * background tasks.
+	 */
+	subagent?: { sandbox: SandboxRuntime | undefined };
 }
 
 /** Result from createAgentSession */
@@ -432,24 +438,33 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 		sessionManager.appendThinkingLevelChange(thinkingLevel);
 	}
 
-	const sandboxSettings = settingsManager.getSandboxSettings();
-	const sandboxProvider = createSandboxProvider(
-		sandboxSettings?.opensandbox?.apiKey
-			? {
-					...sandboxSettings,
-					opensandbox: {
-						...sandboxSettings.opensandbox,
-						apiKey: resolveConfigValue(sandboxSettings.opensandbox.apiKey),
-					},
-				}
-			: sandboxSettings,
-		{ dataDir: join(getAgentDir(), "sandbox") },
-	);
-	const sandbox = await sandboxProvider?.acquire({ sessionId: sessionManager.getSessionId(), cwd });
+	let sandbox: SandboxRuntime | undefined;
+	if (options.subagent) {
+		sandbox = options.subagent.sandbox;
+	} else {
+		const sandboxSettings = settingsManager.getSandboxSettings();
+		const sandboxProvider = createSandboxProvider(
+			sandboxSettings?.opensandbox?.apiKey
+				? {
+						...sandboxSettings,
+						opensandbox: {
+							...sandboxSettings.opensandbox,
+							apiKey: resolveConfigValue(sandboxSettings.opensandbox.apiKey),
+						},
+					}
+				: sandboxSettings,
+			{ dataDir: join(getAgentDir(), "sandbox") },
+		);
+		sandbox = await sandboxProvider?.acquire({ sessionId: sessionManager.getSessionId(), cwd });
+	}
 
 	const session = new AgentSession({
 		agent,
 		sandbox,
+		ownsSandbox: !options.subagent,
+		agentDir,
+		isSubagent: options.subagent !== undefined,
+		createSubagentSession: options.subagent ? undefined : createAgentSession,
 		sessionManager,
 		settingsManager,
 		cwd,

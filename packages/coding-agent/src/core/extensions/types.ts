@@ -80,7 +80,9 @@ import type {
 import type { Settings } from "../settings-manager.ts";
 import type { SlashCommandInfo } from "../slash-commands.ts";
 import type { SourceInfo } from "../source-info.ts";
+import type { SubagentControl } from "../subagents/agent-tool.ts";
 import type { BuildSystemPromptOptions, NormalizedBuildSystemPromptOptions } from "../system-prompt.ts";
+import type { TaskRegistry } from "../tasks/task-registry.ts";
 import type { BashOperations } from "../tools/bash.ts";
 import type { EditToolDetails } from "../tools/edit.ts";
 import type {
@@ -360,6 +362,10 @@ export interface ExtensionContext {
 	compact(options?: CompactOptions): void;
 	/** Get the current effective system prompt. */
 	getSystemPrompt(): string;
+	/** Background tasks of the session (background bash commands, background agents, monitors). */
+	readonly tasks?: TaskRegistry;
+	/** Agent type management, when the session offers the `agent` tool. */
+	readonly subagents?: SubagentControl;
 }
 
 /** Options for {@link ExtensionToolContext.executeTool}. */
@@ -2154,6 +2160,10 @@ export interface ExtensionContextActions {
 	) => Promise<AgentToolCallOutcome>;
 	/** Backs `ExtensionToolContext.tools`. */
 	getCallableTools?: () => readonly AgentTool[];
+	/** Backs `ExtensionContext.tasks`. */
+	getTasks?: () => TaskRegistry;
+	/** Backs `ExtensionContext.subagents`. */
+	getSubagents?: () => SubagentControl | undefined;
 }
 
 /**

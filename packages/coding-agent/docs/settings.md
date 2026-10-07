@@ -38,11 +38,14 @@ See [Choose a Model](models.md) for model selection and thinking controls.
 
 | Setting | Type | Default | Description |
 |---|---|---|---|
-| `defaultTools` | `string[]` | `read`, `bash`, `edit`, `write` | Tools enabled at startup. Plain names replace the defaults; `+name` adds a tool and `-name` removes one. An empty array disables all built-in tools but not extension or SDK tools. |
+| `defaultTools` | `string[]` | `read`, `bash`, `edit`, `write`, `agent`, `task_stop`, `monitor` | Tools enabled at startup. Plain names replace the defaults; `+name` adds a tool and `-name` removes one. An empty array disables all built-in tools but not extension or SDK tools. `agent`, `task_stop`, and `monitor` exist only while [subagents and background tasks](subagents.md) are enabled. |
 | `codemode.mode` | `"on"` \| `"only"` | `"on"` | How the `codemode` tool presents tools while it is active. `on`: declared tools get a note on calling them from scripts appended to their description, and `codemode` lists only tools that are not declared. `only`: `codemode` lists every tool scripts can call, and active built-in and extension tools are hidden from the model, so it reaches them through `codemode`. |
 | `codemode.inlineBudget` | number | `3000` | Estimated tokens (characters / 4) the `codemode` tool's description may spend on tool declarations. Tools that do not fit are left out and found with `searchTools()`. `0` lists only namespaces. |
 | `grep.backend` | `"rg"` \| `"tgrep"` | `"rg"` | Search program of the `grep` tool. See [Grep backend](#grep-backend). |
 | `grep.tgrepPath` | string | `tgrep` from `PATH` | tgrep executable for `grep.backend: "tgrep"`. Supports a leading `~`. |
+| `subagents.enabled` | boolean | `true` | Offer the `agent` tool, which delegates tasks to subagents, and the `/agents` command. See [Subagents](subagents.md). |
+| `backgroundTasks.enabled` | boolean | `true` | Offer `run_in_background` on `bash` and `agent`, and the `monitor` and `task_stop` tools. See [Background tasks](subagents.md#background-tasks). |
+| `backgroundTasks.printModeTimeoutSeconds` | number | `600` | How long print mode (`-p`) waits for running background tasks before it stops them. |
 
 Available built-in tools are `read`, `bash`, `edit`, `write`, `grep`, `find`, and `ls`. `defaultTools` can also name `codemode`, `tool_search`, and `update_plan` (see [online compaction](compaction.md#online-compaction-at-plan-steps)), which built-in extensions register inactive, and other extension tools registered inactive.
 
@@ -218,7 +221,7 @@ Resource paths in user settings resolve from the agent directory. Paths in proje
 
 Resource arrays support glob exclusions with `!pattern`, exact inclusion with `+path`, and exact exclusion with `-path`. AkramCode loads resources listed in both user-level and project settings.
 
-The built-in extensions are named `builtin:mcp`, `builtin:llama.cpp`, `builtin:codemode`, and `builtin:tool-search` in `extensions`. They load by default; `-builtin:mcp` disables one. A `+builtin:<name>` or `-builtin:<name>` entry in project settings overrides the user setting. `akramcode config` lists them under Built-in. `--no-extensions` disables them too, and `-e builtin:<name>` loads one explicitly.
+The built-in extensions are named `builtin:mcp`, `builtin:llama.cpp`, `builtin:codemode`, `builtin:tool-search`, `builtin:online-compact`, and `builtin:tasks` (`/tasks`, `/agents`, the running-task footer status, and task notification rendering) in `extensions`. They load by default; `-builtin:mcp` disables one. A `+builtin:<name>` or `-builtin:<name>` entry in project settings overrides the user setting. `akramcode config` lists them under Built-in. `--no-extensions` disables them too, and `-e builtin:<name>` loads one explicitly.
 
 ## Updates and telemetry
 
