@@ -3579,6 +3579,8 @@ export class AgentSession {
 		const autoResizeImages = this.settingsManager.getImageAutoResize();
 		const shellCommandPrefix = this.settingsManager.getShellCommandPrefix();
 		const shellPath = this.settingsManager.getShellPath();
+		const grepBackend = this.settingsManager.getGrepBackend();
+		const tgrepPath = this.settingsManager.getGrepTgrepPath();
 		const baseToolDefinitions = this._baseToolsOverride
 			? Object.fromEntries(
 					Object.entries(this._baseToolsOverride).map(([name, tool]) => [
@@ -3591,6 +3593,7 @@ export class AgentSession {
 					this._withSandbox({
 						read: { autoResizeImages },
 						bash: { commandPrefix: shellCommandPrefix, shellPath },
+						grep: { backend: grepBackend, tgrepPath },
 					}),
 				);
 

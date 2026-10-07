@@ -3,6 +3,16 @@ import { resolve } from "node:path";
 
 const fileMutationQueues = new Map<string, Promise<void>>();
 let registrationQueue = Promise.resolve();
+let activeMutations = 0;
+let lastMutationEndedAt = 0;
+
+/**
+ * Whether a queued file mutation is running or finished less than `windowMs` ago.
+ * Index-backed search uses this to avoid answering from an index that has not seen the change yet.
+ */
+export function hasRecentFileMutation(windowMs: number): boolean {
+	return activeMutations > 0 || Date.now() - lastMutationEndedAt < windowMs;
+}
 
 function isMissingPathError(error: unknown): boolean {
 	return (
@@ -30,6 +40,16 @@ async function getMutationQueueKey(filePath: string): Promise<string> {
  * Operations for different files still run in parallel.
  */
 export async function withFileMutationQueue<T>(filePath: string, fn: () => Promise<T>): Promise<T> {
+	activeMutations++;
+	try {
+		return await runInFileMutationQueue(filePath, fn);
+	} finally {
+		activeMutations--;
+		lastMutationEndedAt = Date.now();
+	}
+}
+
+async function runInFileMutationQueue<T>(filePath: string, fn: () => Promise<T>): Promise<T> {
 	const registration = registrationQueue.then(async () => {
 		const key = await getMutationQueueKey(filePath);
 		const currentQueue = fileMutationQueues.get(key) ?? Promise.resolve();

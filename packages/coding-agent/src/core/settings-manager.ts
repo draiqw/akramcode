@@ -73,6 +73,11 @@ export interface ImageSettings {
 	blockImages?: boolean; // default: false - when true, prevents all images from being sent to LLM providers
 }
 
+export interface GrepSettings {
+	backend?: "rg" | "tgrep"; // default: "rg"; "tgrep" uses a running `tgrep serve` and falls back to rg
+	tgrepPath?: string; // tgrep executable; default: "tgrep" from PATH; supports leading ~ expansion
+}
+
 export interface ThinkingBudgetsSettings {
 	minimal?: number;
 	low?: number;
@@ -164,6 +169,7 @@ export interface Settings {
 	enableSkillCommands?: boolean; // default: true - register skills as /skill:name commands
 	terminal?: TerminalSettings;
 	images?: ImageSettings;
+	grep?: GrepSettings;
 	enabledModels?: string[]; // Model patterns for cycling (same format as --models CLI flag)
 	defaultTools?: string[]; // Initial tool selection; `+name`/`-name` entries add to or remove from the inherited selection
 	doubleEscapeAction?: "fork" | "tree" | "none"; // Action for double-escape with empty editor (default: "tree")
@@ -1425,6 +1431,16 @@ export class SettingsManager {
 			lines === "auto" ? lines : Math.max(1, Math.min(100, Math.floor(lines)));
 		this.markModified("fullscreenWheelScrollLines");
 		this.save();
+	}
+
+	// Global settings only: a project must not choose an executable that the grep tool runs.
+	getGrepBackend(): "rg" | "tgrep" {
+		return this.globalSettings.grep?.backend === "tgrep" ? "tgrep" : "rg";
+	}
+
+	getGrepTgrepPath(): string | undefined {
+		const tgrepPath = this.globalSettings.grep?.tgrepPath;
+		return typeof tgrepPath === "string" && tgrepPath ? normalizePath(tgrepPath) : undefined;
 	}
 
 	getImageAutoResize(): boolean {

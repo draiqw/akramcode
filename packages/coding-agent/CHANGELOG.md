@@ -9,6 +9,7 @@
 - Added the built-in `online-compact` extension (Online Context Compact from SoL-Pi): with `"defaultTools": ["+update_plan"]` the context is compacted at completed plan steps when that saves more than the cache rewrite costs, priced from the active model's cache prices ([docs](docs/compaction.md#online-compaction-at-plan-steps)).
 - Added the global `sandbox` setting to run the built-in tools and `!` commands in an OpenSandbox sandbox, with session reuse and cached workspaces ([docs](docs/sandbox.md)).
 - Added a copy key (`app.message.copy`, default `ctrl+x`) to OAuth sign-in screens in `/login`, `/mcp`, and `/mcp login`, which copies the sign-in URL when the browser cannot be opened or the wrapped link cannot be selected.
+- Added the `grep.backend` setting. With `"tgrep"`, the `grep` tool asks a running [tgrep](https://github.com/microsoft/tgrep) server (`tgrep serve`) for directory searches and uses ripgrep whenever the server is not running, cannot be verified as your own local tgrep process, does not answer, or a file was just written or edited ([docs](docs/settings.md#grep-backend)).
 
 ### Fixed
 
