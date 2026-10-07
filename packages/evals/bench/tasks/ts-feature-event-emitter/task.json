@@ -1,0 +1,9 @@
+{
+	"id": "ts-feature-event-emitter",
+	"title": "Add once(), off() and wildcard listeners to an event emitter",
+	"category": "feature",
+	"language": "typescript",
+	"prompt": "Extend the `Emitter` class in src/emitter.ts (used by src/store.ts) with these features, keeping existing behavior: (1) `once(event, listener)`: the listener runs at most once; it is removed before it is invoked. (2) `off(event, listener)`: removes the earliest-registered registration of that exact listener for that event (also for listeners added with once(), using the original function); no-op if absent; returns `this`. (3) Wildcard: listeners registered for the event name \"*\" (via on, once or off) are called for every emitted event with `(eventName, ...args)`. Ordering rules for `emit(event, ...args)`: first the listeners of that exact event in registration order, then the \"*\" listeners in registration order. The listener list is snapshotted when emit starts: listeners added during an emit are not called by that emit, and listeners removed during an emit are not called if they have not run yet. `emit` returns true if at least one listener (specific or wildcard) was called, otherwise false. Calling `emit(\"*\")` throws a TypeError. `listenerCount(event)` counts the current registrations for exactly that name (\"*\" counts wildcard listeners). `on`, `once` and `off` all return `this`. Run the tests with `node --test test/*.test.ts` (or `npm test`).",
+	"test": ["node", "--test", "__hidden__/*.test.ts"],
+	"timeoutSec": 600
+}

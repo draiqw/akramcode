@@ -1,0 +1,29 @@
+{
+	"id": "long-py-api-migration",
+	"title": "Migrate ~50 modules from a deprecated HTTP API to the new client",
+	"category": "long",
+	"language": "python",
+	"prompt": "The modules under app/modules/ still use the deprecated app.legacy API (legacy.fetch and legacy.Timeout). Migrate every use to the new client in app/client.py, following the mapping in MIGRATION.md exactly. Behavior must stay the same: each request goes to the same URL with the same retry count and timeout seconds. Some modules are already migrated, some only mention the old API in strings or comments, and some define unrelated functions named fetch; leave those files unchanged.\n\nWhen you are done, write MIGRATION_REPORT.json at the repository root with exactly this shape: {\"migrated_modules\": [<sorted list of paths relative to the repository root, like \"app/modules/billing_01.py\", of every module you migrated>], \"call_sites\": <total number of legacy fetch call expressions you replaced across all modules>}.\n\nRun the existing tests with: python3 -m unittest discover -s tests -v",
+	"test": [
+		"python3",
+		"-m",
+		"unittest",
+		"discover",
+		"-s",
+		"__hidden__",
+		"-p",
+		"test_*.py",
+		"-v"
+	],
+	"timeoutSec": 1200,
+	"variants": {
+		"compact": {
+			"settings": {
+				"$compactAtTokens": 12000,
+				"compaction": {
+					"keepRecentTokens": 4000
+				}
+			}
+		}
+	}
+}

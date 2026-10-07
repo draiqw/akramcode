@@ -1,0 +1,9 @@
+{
+	"id": "py-feature-retry",
+	"title": "Implement a retry decorator from its docstring spec",
+	"category": "feature",
+	"language": "python",
+	"prompt": "`retrying.core.retry` is a stub that raises NotImplementedError. Implement it exactly as its docstring specifies (the docstring is the spec; keep the signature). `retrying.client.fetch_config` already uses it. Do not use third-party packages. Run the tests with `python3 -m unittest discover -s tests -v`.",
+	"test": ["python3", "-m", "unittest", "discover", "-s", "__hidden__", "-p", "test_*.py", "-v"],
+	"timeoutSec": 600
+}

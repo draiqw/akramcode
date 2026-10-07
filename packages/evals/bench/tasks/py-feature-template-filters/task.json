@@ -1,0 +1,9 @@
+{
+	"id": "py-feature-template-filters",
+	"title": "Add filters to a tiny template engine",
+	"category": "feature",
+	"language": "python",
+	"prompt": "The template engine in the `tmpl` package (`tmpl.render(template, context)`) supports `{{ name }}` and dotted lookups like `{{ user.name }}`; a missing variable renders as an empty string. Add filters with this syntax: `{{ expr|filter }}`, chained left to right as in `{{ name|default:\"anon\"|upper }}`, with optional whitespace around the expression, each `|`, and inside the braces (`{{ name | upper }}`). Filters: `upper` and `lower` convert the value to str and change its case (a missing value stays \"\"); `default:\"text\"` replaces the value with the given text when the variable is missing, None, or the empty string (the argument is always a double-quoted string, may contain spaces and colons, but no double quotes or `|`). A value that is not missing is converted with str(). An unknown filter name raises `tmpl.errors.TemplateError` with the message `unknown filter: <name>`. Text outside `{{ }}` must be left untouched, and templates without filters must render exactly as before. Run the tests with `python3 -m unittest discover -s tests -v`.",
+	"test": ["python3", "-m", "unittest", "discover", "-s", "__hidden__", "-p", "test_*.py", "-v"],
+	"timeoutSec": 600
+}

@@ -1,0 +1,822 @@
+{
+ "changed": [
+  "DELETE /api/files/:id",
+  "DELETE /api/projects/:id",
+  "GET /api/admin",
+  "GET /api/files/:id",
+  "GET /api/files/:id/history",
+  "GET /api/invoices/:id",
+  "GET /api/invoices/:id/related",
+  "GET /api/orders/:id/related",
+  "GET /api/products/:id/related",
+  "GET /api/reports/:id",
+  "GET /api/users",
+  "GET /catalog/public/:id",
+  "GET /docs/:page",
+  "POST /api/files",
+  "POST /api/projects",
+  "POST /auth/logout",
+  "POST /webhooks/github",
+  "PUT /api/notifications/:id",
+  "PUT /api/products/:id"
+ ],
+ "routes": {
+  "src/routes/admin/delete-api-admin-by-id.ts": {
+   "key": "DELETE /api/admin/:id",
+   "public": false,
+   "reply": {
+    "body": {
+     "deleted": {
+      "key": "admin:42"
+     }
+    },
+    "status": 204
+   }
+  },
+  "src/routes/admin/get-api-admin-by-id-related.ts": {
+   "key": "GET /api/admin/:id/related",
+   "public": false,
+   "reply": {
+    "body": {
+     "current": {
+      "key": "admin:42"
+     },
+     "entries": 2
+    },
+    "status": 200
+   }
+  },
+  "src/routes/admin/get-api-admin-by-id.ts": {
+   "key": "GET /api/admin/:id",
+   "public": false,
+   "reply": {
+    "body": {
+     "key": "admin:42"
+    },
+    "status": 200
+   }
+  },
+  "src/routes/admin/get-api-admin.ts": {
+   "key": "GET /api/admin",
+   "public": false,
+   "reply": {
+    "body": {
+     "count": 2,
+     "items": [
+      "admin:1",
+      "admin:2"
+     ]
+    },
+    "status": 200
+   }
+  },
+  "src/routes/admin/post-api-admin.ts": {
+   "key": "POST /api/admin",
+   "public": false,
+   "reply": {
+    "body": null,
+    "status": 201
+   }
+  },
+  "src/routes/admin/put-api-admin-by-id.ts": {
+   "key": "PUT /api/admin/:id",
+   "public": false,
+   "reply": {
+    "body": null,
+    "status": 200
+   }
+  },
+  "src/routes/auth/post-auth-login.ts": {
+   "key": "POST /auth/login",
+   "public": true,
+   "reply": {
+    "body": {
+     "ok": true,
+     "route": "POST /auth/login"
+    },
+    "status": 200
+   }
+  },
+  "src/routes/auth/post-auth-logout.ts": {
+   "key": "POST /auth/logout",
+   "public": false,
+   "reply": {
+    "body": {
+     "ok": true,
+     "route": "POST /auth/logout"
+    },
+    "status": 200
+   }
+  },
+  "src/routes/auth/post-auth-password-reset.ts": {
+   "key": "POST /auth/password-reset",
+   "public": true,
+   "reply": {
+    "body": {
+     "ok": true,
+     "route": "POST /auth/password-reset"
+    },
+    "status": 200
+   }
+  },
+  "src/routes/auth/post-auth-register.ts": {
+   "key": "POST /auth/register",
+   "public": true,
+   "reply": {
+    "body": {
+     "ok": true,
+     "route": "POST /auth/register"
+    },
+    "status": 200
+   }
+  },
+  "src/routes/catalog/get-catalog-by-id.ts": {
+   "key": "GET /catalog/:id",
+   "public": false,
+   "reply": {
+    "body": {
+     "key": "catalog:42"
+    },
+    "status": 200
+   }
+  },
+  "src/routes/catalog/get-catalog-public-by-id.ts": {
+   "key": "GET /catalog/public/:id",
+   "public": true,
+   "reply": {
+    "body": {
+     "key": "catalog:42"
+    },
+    "status": 200
+   }
+  },
+  "src/routes/docs/get-docs-by-page-edit-history.ts": {
+   "key": "GET /docs/:page/edit-history",
+   "public": false,
+   "reply": {
+    "body": {
+     "key": "docs:intro"
+    },
+    "status": 200
+   }
+  },
+  "src/routes/docs/get-docs-by-page.ts": {
+   "key": "GET /docs/:page",
+   "public": true,
+   "reply": {
+    "body": {
+     "key": "docs:intro"
+    },
+    "status": 200
+   }
+  },
+  "src/routes/files/delete-api-files-by-id.ts": {
+   "key": "DELETE /api/files/:id",
+   "public": false,
+   "reply": {
+    "body": {
+     "deleted": {
+      "key": "file:42"
+     }
+    },
+    "status": 204
+   }
+  },
+  "src/routes/files/get-api-files-by-id-history.ts": {
+   "key": "GET /api/files/:id/history",
+   "public": false,
+   "reply": {
+    "body": {
+     "current": {
+      "key": "file:42"
+     },
+     "entries": 2
+    },
+    "status": 200
+   }
+  },
+  "src/routes/files/get-api-files-by-id-related.ts": {
+   "key": "GET /api/files/:id/related",
+   "public": false,
+   "reply": {
+    "body": {
+     "current": {
+      "key": "file:42"
+     },
+     "entries": 2
+    },
+    "status": 200
+   }
+  },
+  "src/routes/files/get-api-files-by-id.ts": {
+   "key": "GET /api/files/:id",
+   "public": false,
+   "reply": {
+    "body": {
+     "key": "file:42"
+    },
+    "status": 200
+   }
+  },
+  "src/routes/files/get-api-files.ts": {
+   "key": "GET /api/files",
+   "public": false,
+   "reply": {
+    "body": {
+     "count": 2,
+     "items": [
+      "file:1",
+      "file:2"
+     ]
+    },
+    "status": 200
+   }
+  },
+  "src/routes/files/post-api-files.ts": {
+   "key": "POST /api/files",
+   "public": false,
+   "reply": {
+    "body": null,
+    "status": 201
+   }
+  },
+  "src/routes/files/put-api-files-by-id.ts": {
+   "key": "PUT /api/files/:id",
+   "public": false,
+   "reply": {
+    "body": null,
+    "status": 200
+   }
+  },
+  "src/routes/health/get-health.ts": {
+   "key": "GET /health",
+   "public": true,
+   "reply": {
+    "body": {
+     "ok": true,
+     "route": "GET /health"
+    },
+    "status": 200
+   }
+  },
+  "src/routes/invoices/delete-api-invoices-by-id.ts": {
+   "key": "DELETE /api/invoices/:id",
+   "public": false,
+   "reply": {
+    "body": {
+     "deleted": {
+      "key": "invoice:42"
+     }
+    },
+    "status": 204
+   }
+  },
+  "src/routes/invoices/get-api-invoices-by-id-history.ts": {
+   "key": "GET /api/invoices/:id/history",
+   "public": false,
+   "reply": {
+    "body": {
+     "current": {
+      "key": "invoice:42"
+     },
+     "entries": 2
+    },
+    "status": 200
+   }
+  },
+  "src/routes/invoices/get-api-invoices-by-id-related.ts": {
+   "key": "GET /api/invoices/:id/related",
+   "public": false,
+   "reply": {
+    "body": {
+     "current": {
+      "key": "invoice:42"
+     },
+     "entries": 2
+    },
+    "status": 200
+   }
+  },
+  "src/routes/invoices/get-api-invoices-by-id.ts": {
+   "key": "GET /api/invoices/:id",
+   "public": false,
+   "reply": {
+    "body": {
+     "key": "invoice:42"
+    },
+    "status": 200
+   }
+  },
+  "src/routes/invoices/put-api-invoices-by-id.ts": {
+   "key": "PUT /api/invoices/:id",
+   "public": false,
+   "reply": {
+    "body": null,
+    "status": 200
+   }
+  },
+  "src/routes/notifications/delete-api-notifications-by-id.ts": {
+   "key": "DELETE /api/notifications/:id",
+   "public": false,
+   "reply": {
+    "body": {
+     "deleted": {
+      "key": "notification:42"
+     }
+    },
+    "status": 204
+   }
+  },
+  "src/routes/notifications/get-api-notifications-by-id-history.ts": {
+   "key": "GET /api/notifications/:id/history",
+   "public": false,
+   "reply": {
+    "body": {
+     "current": {
+      "key": "notification:42"
+     },
+     "entries": 2
+    },
+    "status": 200
+   }
+  },
+  "src/routes/notifications/get-api-notifications-by-id-related.ts": {
+   "key": "GET /api/notifications/:id/related",
+   "public": false,
+   "reply": {
+    "body": {
+     "current": {
+      "key": "notification:42"
+     },
+     "entries": 2
+    },
+    "status": 200
+   }
+  },
+  "src/routes/notifications/get-api-notifications-by-id.ts": {
+   "key": "GET /api/notifications/:id",
+   "public": false,
+   "reply": {
+    "body": {
+     "key": "notification:42"
+    },
+    "status": 200
+   }
+  },
+  "src/routes/notifications/get-api-notifications.ts": {
+   "key": "GET /api/notifications",
+   "public": false,
+   "reply": {
+    "body": {
+     "count": 2,
+     "items": [
+      "notification:1",
+      "notification:2"
+     ]
+    },
+    "status": 200
+   }
+  },
+  "src/routes/notifications/post-api-notifications.ts": {
+   "key": "POST /api/notifications",
+   "public": false,
+   "reply": {
+    "body": null,
+    "status": 201
+   }
+  },
+  "src/routes/notifications/put-api-notifications-by-id.ts": {
+   "key": "PUT /api/notifications/:id",
+   "public": false,
+   "reply": {
+    "body": null,
+    "status": 200
+   }
+  },
+  "src/routes/orders/delete-api-orders-by-id.ts": {
+   "key": "DELETE /api/orders/:id",
+   "public": false,
+   "reply": {
+    "body": {
+     "deleted": {
+      "key": "order:42"
+     }
+    },
+    "status": 204
+   }
+  },
+  "src/routes/orders/get-api-orders-by-id-related.ts": {
+   "key": "GET /api/orders/:id/related",
+   "public": false,
+   "reply": {
+    "body": {
+     "current": {
+      "key": "order:42"
+     },
+     "entries": 2
+    },
+    "status": 200
+   }
+  },
+  "src/routes/orders/get-api-orders-by-id.ts": {
+   "key": "GET /api/orders/:id",
+   "public": false,
+   "reply": {
+    "body": {
+     "key": "order:42"
+    },
+    "status": 200
+   }
+  },
+  "src/routes/orders/post-api-orders.ts": {
+   "key": "POST /api/orders",
+   "public": false,
+   "reply": {
+    "body": null,
+    "status": 201
+   }
+  },
+  "src/routes/orders/put-api-orders-by-id.ts": {
+   "key": "PUT /api/orders/:id",
+   "public": false,
+   "reply": {
+    "body": null,
+    "status": 200
+   }
+  },
+  "src/routes/products/delete-api-products-by-id.ts": {
+   "key": "DELETE /api/products/:id",
+   "public": false,
+   "reply": {
+    "body": {
+     "deleted": {
+      "key": "product:42"
+     }
+    },
+    "status": 204
+   }
+  },
+  "src/routes/products/get-api-products-by-id-history.ts": {
+   "key": "GET /api/products/:id/history",
+   "public": false,
+   "reply": {
+    "body": {
+     "current": {
+      "key": "product:42"
+     },
+     "entries": 2
+    },
+    "status": 200
+   }
+  },
+  "src/routes/products/get-api-products-by-id-related.ts": {
+   "key": "GET /api/products/:id/related",
+   "public": false,
+   "reply": {
+    "body": {
+     "current": {
+      "key": "product:42"
+     },
+     "entries": 2
+    },
+    "status": 200
+   }
+  },
+  "src/routes/products/get-api-products-by-id.ts": {
+   "key": "GET /api/products/:id",
+   "public": false,
+   "reply": {
+    "body": {
+     "key": "product:42"
+    },
+    "status": 200
+   }
+  },
+  "src/routes/products/get-api-products.ts": {
+   "key": "GET /api/products",
+   "public": false,
+   "reply": {
+    "body": {
+     "count": 2,
+     "items": [
+      "product:1",
+      "product:2"
+     ]
+    },
+    "status": 200
+   }
+  },
+  "src/routes/products/put-api-products-by-id.ts": {
+   "key": "PUT /api/products/:id",
+   "public": false,
+   "reply": {
+    "body": null,
+    "status": 200
+   }
+  },
+  "src/routes/projects/delete-api-projects-by-id.ts": {
+   "key": "DELETE /api/projects/:id",
+   "public": false,
+   "reply": {
+    "body": {
+     "deleted": {
+      "key": "project:42"
+     }
+    },
+    "status": 204
+   }
+  },
+  "src/routes/projects/get-api-projects-by-id-history.ts": {
+   "key": "GET /api/projects/:id/history",
+   "public": false,
+   "reply": {
+    "body": {
+     "current": {
+      "key": "project:42"
+     },
+     "entries": 2
+    },
+    "status": 200
+   }
+  },
+  "src/routes/projects/get-api-projects-by-id.ts": {
+   "key": "GET /api/projects/:id",
+   "public": false,
+   "reply": {
+    "body": {
+     "key": "project:42"
+    },
+    "status": 200
+   }
+  },
+  "src/routes/projects/get-api-projects.ts": {
+   "key": "GET /api/projects",
+   "public": false,
+   "reply": {
+    "body": {
+     "count": 2,
+     "items": [
+      "project:1",
+      "project:2"
+     ]
+    },
+    "status": 200
+   }
+  },
+  "src/routes/projects/post-api-projects.ts": {
+   "key": "POST /api/projects",
+   "public": false,
+   "reply": {
+    "body": null,
+    "status": 201
+   }
+  },
+  "src/routes/reports/delete-api-reports-by-id.ts": {
+   "key": "DELETE /api/reports/:id",
+   "public": false,
+   "reply": {
+    "body": {
+     "deleted": {
+      "key": "report:42"
+     }
+    },
+    "status": 204
+   }
+  },
+  "src/routes/reports/get-api-reports-by-id-history.ts": {
+   "key": "GET /api/reports/:id/history",
+   "public": false,
+   "reply": {
+    "body": {
+     "current": {
+      "key": "report:42"
+     },
+     "entries": 2
+    },
+    "status": 200
+   }
+  },
+  "src/routes/reports/get-api-reports-by-id-related.ts": {
+   "key": "GET /api/reports/:id/related",
+   "public": false,
+   "reply": {
+    "body": {
+     "current": {
+      "key": "report:42"
+     },
+     "entries": 2
+    },
+    "status": 200
+   }
+  },
+  "src/routes/reports/get-api-reports-by-id.ts": {
+   "key": "GET /api/reports/:id",
+   "public": false,
+   "reply": {
+    "body": {
+     "key": "report:42"
+    },
+    "status": 200
+   }
+  },
+  "src/routes/reports/get-api-reports.ts": {
+   "key": "GET /api/reports",
+   "public": false,
+   "reply": {
+    "body": {
+     "count": 2,
+     "items": [
+      "report:1",
+      "report:2"
+     ]
+    },
+    "status": 200
+   }
+  },
+  "src/routes/reports/post-api-reports.ts": {
+   "key": "POST /api/reports",
+   "public": false,
+   "reply": {
+    "body": null,
+    "status": 201
+   }
+  },
+  "src/routes/teams/get-api-teams-by-id-history.ts": {
+   "key": "GET /api/teams/:id/history",
+   "public": false,
+   "reply": {
+    "body": {
+     "current": {
+      "key": "team:42"
+     },
+     "entries": 2
+    },
+    "status": 200
+   }
+  },
+  "src/routes/teams/get-api-teams-by-id-related.ts": {
+   "key": "GET /api/teams/:id/related",
+   "public": false,
+   "reply": {
+    "body": {
+     "current": {
+      "key": "team:42"
+     },
+     "entries": 2
+    },
+    "status": 200
+   }
+  },
+  "src/routes/teams/get-api-teams-by-id.ts": {
+   "key": "GET /api/teams/:id",
+   "public": false,
+   "reply": {
+    "body": {
+     "key": "team:42"
+    },
+    "status": 200
+   }
+  },
+  "src/routes/teams/post-api-teams.ts": {
+   "key": "POST /api/teams",
+   "public": false,
+   "reply": {
+    "body": null,
+    "status": 201
+   }
+  },
+  "src/routes/teams/put-api-teams-by-id.ts": {
+   "key": "PUT /api/teams/:id",
+   "public": false,
+   "reply": {
+    "body": null,
+    "status": 200
+   }
+  },
+  "src/routes/users/delete-api-users-by-id.ts": {
+   "key": "DELETE /api/users/:id",
+   "public": false,
+   "reply": {
+    "body": {
+     "deleted": {
+      "key": "user:42"
+     }
+    },
+    "status": 204
+   }
+  },
+  "src/routes/users/get-api-users-by-id-history.ts": {
+   "key": "GET /api/users/:id/history",
+   "public": false,
+   "reply": {
+    "body": {
+     "current": {
+      "key": "user:42"
+     },
+     "entries": 2
+    },
+    "status": 200
+   }
+  },
+  "src/routes/users/get-api-users-by-id-related.ts": {
+   "key": "GET /api/users/:id/related",
+   "public": false,
+   "reply": {
+    "body": {
+     "current": {
+      "key": "user:42"
+     },
+     "entries": 2
+    },
+    "status": 200
+   }
+  },
+  "src/routes/users/get-api-users-by-id.ts": {
+   "key": "GET /api/users/:id",
+   "public": false,
+   "reply": {
+    "body": {
+     "key": "user:42"
+    },
+    "status": 200
+   }
+  },
+  "src/routes/users/get-api-users.ts": {
+   "key": "GET /api/users",
+   "public": false,
+   "reply": {
+    "body": {
+     "count": 2,
+     "items": [
+      "user:1",
+      "user:2"
+     ]
+    },
+    "status": 200
+   }
+  },
+  "src/routes/users/put-api-users-by-id.ts": {
+   "key": "PUT /api/users/:id",
+   "public": false,
+   "reply": {
+    "body": null,
+    "status": 200
+   }
+  },
+  "src/routes/version/get-version.ts": {
+   "key": "GET /version",
+   "public": true,
+   "reply": {
+    "body": {
+     "ok": true,
+     "route": "GET /version"
+    },
+    "status": 200
+   }
+  },
+  "src/routes/webhooks/post-webhooks-github.ts": {
+   "key": "POST /webhooks/github",
+   "public": true,
+   "reply": {
+    "body": {
+     "ok": true,
+     "route": "POST /webhooks/github"
+    },
+    "status": 200
+   }
+  },
+  "src/routes/webhooks/post-webhooks-paypal.ts": {
+   "key": "POST /webhooks/paypal",
+   "public": false,
+   "reply": {
+    "body": {
+     "ok": true,
+     "route": "POST /webhooks/paypal"
+    },
+    "status": 200
+   }
+  },
+  "src/routes/webhooks/post-webhooks-slack.ts": {
+   "key": "POST /webhooks/slack",
+   "public": true,
+   "reply": {
+    "body": {
+     "ok": true,
+     "route": "POST /webhooks/slack"
+    },
+    "status": 200
+   }
+  },
+  "src/routes/webhooks/post-webhooks-stripe.ts": {
+   "key": "POST /webhooks/stripe",
+   "public": true,
+   "reply": {
+    "body": {
+     "ok": true,
+     "route": "POST /webhooks/stripe"
+    },
+    "status": 200
+   }
+  }
+ }
+}

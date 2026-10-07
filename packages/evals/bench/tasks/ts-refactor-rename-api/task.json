@@ -1,0 +1,13 @@
+{
+	"id": "ts-refactor-rename-api",
+	"title": "Rename fetchUserData to loadUser across the codebase",
+	"category": "refactor",
+	"language": "typescript",
+	"prompt": "In this TypeScript project, rename the exported function `fetchUserData` (defined in src/api/users.ts) to `loadUser`. Update every import, re-export, call site and test so the project keeps working. After the change the identifier `fetchUserData` must not appear anywhere under src/ or test/ (no compatibility alias). Do not rename other functions with similar names, such as `fetchUserDataset` in src/analytics/dataset.ts, and do not change behavior. Run the tests with `node --test test/*.test.ts`.",
+	"test": [
+		"node",
+		"--test",
+		"__hidden__/*.test.ts"
+	],
+	"timeoutSec": 600
+}

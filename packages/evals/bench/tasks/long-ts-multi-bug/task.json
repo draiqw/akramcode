@@ -1,0 +1,23 @@
+{
+	"id": "long-ts-multi-bug",
+	"title": "Find and fix several independent bugs across 40 TypeScript modules",
+	"category": "long",
+	"language": "typescript",
+	"prompt": "This project has 40 small integer-array transformation stages in src/stages/stageNN.ts; the doc comment at the top of each module is its specification. The test suite fails: some stages contain bugs. Fix every buggy stage so that it matches its specification. Do not modify anything under test/ and do not change modules that are already correct.\n\nWhen you are done, write FIXED.json at the repository root: a JSON array of the paths (relative to the repository root, for example \"src/stages/stage03.ts\") of every source file you changed, sorted alphabetically.\n\nRun the tests with: node --test test/*.test.ts (the output is long: one line per test case).",
+	"test": [
+		"node",
+		"--test",
+		"__hidden__/*.test.ts"
+	],
+	"timeoutSec": 1200,
+	"variants": {
+		"compact": {
+			"settings": {
+				"$compactAtTokens": 12000,
+				"compaction": {
+					"keepRecentTokens": 4000
+				}
+			}
+		}
+	}
+}

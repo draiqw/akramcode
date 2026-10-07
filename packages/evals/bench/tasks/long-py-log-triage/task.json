@@ -1,0 +1,29 @@
+{
+	"id": "long-py-log-triage",
+	"title": "Triage a large set of service logs and fix the bug they point to",
+	"category": "long",
+	"language": "python",
+	"prompt": "The directory logs/ contains production logs (32 files) from an incident window. Each log entry starts on its own line with: timestamp, level (INFO, DEBUG, WARN or ERROR), svc=<service>, req=<request id>, then for WARN and ERROR entries a structured field code=<ERROR_CODE>, then msg=\"...\". Lines that do not start with a timestamp (for example Python traceback lines) belong to the preceding entry and are not entries themselves. Note that msg text can itself mention strings like code=E_SOMETHING; only the structured code= field that directly follows req= counts.\n\nDo two things:\n\n1. Write ERROR_SUMMARY.json at the repository root with exactly this shape:\n   {\"counts\": {\"<ERROR_CODE>\": <number of ERROR-level entries with that code across all log files>, ...}, \"parse_error_requests\": [<sorted list of the distinct request ids that have at least one ERROR-level entry with code E_PARSE>]}\n   Only ERROR-level entries count (WARN entries are not errors). Include every code that occurs at ERROR level.\n\n2. Exactly one error code in these logs is caused by a bug in our own code under service/ (its tracebacks point into service/). All other codes come from upstream systems or bad client input and need no code change. Find that bug and fix it so the function behaves as its docstring specifies. Keep the existing behavior for inputs that already work.\n\nRun the existing tests with: python3 -m unittest discover -s tests -v",
+	"test": [
+		"python3",
+		"-m",
+		"unittest",
+		"discover",
+		"-s",
+		"__hidden__",
+		"-p",
+		"test_*.py",
+		"-v"
+	],
+	"timeoutSec": 1200,
+	"variants": {
+		"compact": {
+			"settings": {
+				"$compactAtTokens": 12000,
+				"compaction": {
+					"keepRecentTokens": 4000
+				}
+			}
+		}
+	}
+}

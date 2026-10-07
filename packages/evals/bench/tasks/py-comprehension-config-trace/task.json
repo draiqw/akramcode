@@ -1,0 +1,19 @@
+{
+	"id": "py-comprehension-config-trace",
+	"title": "Trace effective configuration values through layered config",
+	"category": "comprehension",
+	"language": "python",
+	"prompt": "This repository (package `orbit`) builds its runtime configuration from several layers (defaults, profiles, plugins, environment variables, constraints). Determine the effective values of the settings `http.timeout_seconds`, `cache.ttl_seconds` and `workers.max` when the service runs with profile `prod` and its process environment contains exactly the variables defined in deploy/prod.env (no other variables). The source code is the source of truth; documentation may be outdated. Write the answer to a file ANSWER.json in the repository root with exactly this shape (integers, no other keys): {\"http.timeout_seconds\": <int>, \"cache.ttl_seconds\": <int>, \"workers.max\": <int>}. Do not modify any existing files.",
+	"test": [
+		"python3",
+		"-m",
+		"unittest",
+		"discover",
+		"-s",
+		"__hidden__",
+		"-p",
+		"test_*.py",
+		"-v"
+	],
+	"timeoutSec": 600
+}

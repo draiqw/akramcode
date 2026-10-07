@@ -1,0 +1,9 @@
+{
+	"id": "py-bugfix-cross-module",
+	"title": "Fix money rounding across pricing, tax and invoice modules",
+	"category": "bugfix",
+	"language": "python",
+	"prompt": "A customer reports that invoices from `shop.invoice.build_invoice` are off by a cent in some cases (for example, a 10% discount on an 8.35 item shows a 0.83 discount instead of 0.84). The money math is spread over several modules in the `shop` package. Make all money calculations exact using decimal.Decimal (never float) with these rules: for each invoice line, gross = unit_price * qty; the line discount = gross * discount_pct / 100 rounded to cents with ROUND_HALF_UP; line total = gross - line discount. `shop.pricing.line_total(unit_price, qty, discount_pct)` returns that line total and `shop.pricing.line_discount(unit_price, qty, discount_pct)` returns the line discount, both as Decimal quantized to 0.01 (unit_price and discount_pct may be given as str, int or Decimal). The invoice subtotal is the sum of line totals, the discount is the sum of line discounts, tax = subtotal * tax_rate rounded to cents with ROUND_HALF_UP (`shop.tax.compute_tax(amount, rate)` returns it as a Decimal quantized to 0.01; rate may be a str or Decimal like \"0.0725\"), and total = subtotal + tax. `build_invoice` must return the same dict shape as now, with every money value formatted as a string with exactly two decimals. Run the tests with `python3 -m unittest discover -s tests -v`.",
+	"test": ["python3", "-m", "unittest", "discover", "-s", "__hidden__", "-p", "test_*.py", "-v"],
+	"timeoutSec": 600
+}
