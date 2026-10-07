@@ -167,6 +167,9 @@ export interface Settings {
 	enabledModels?: string[]; // Model patterns for cycling (same format as --models CLI flag)
 	defaultTools?: string[]; // Initial tool selection; `+name`/`-name` entries add to or remove from the inherited selection
 	doubleEscapeAction?: "fork" | "tree" | "none"; // Action for double-escape with empty editor (default: "tree")
+	doubleEscapeClearsInput?: boolean; // default: true - double-escape with a non-empty editor clears it and saves the text to history
+	showWorkingStats?: boolean; // default: true - show elapsed time, output tokens, and tokens/s next to the working indicator
+	showContextGauge?: boolean; // default: true - show a context-fill bar and the latest tokens/s in the footer
 	treeFilterMode?: "default" | "no-tools" | "user-only" | "labeled-only" | "all"; // Default filter when opening /tree
 	thinkingBudgets?: ThinkingBudgetsSettings; // Custom token budgets for thinking levels
 	editorPaddingX?: number; // Horizontal padding for input editor (default: 0)
@@ -1477,6 +1480,36 @@ export class SettingsManager {
 	setDoubleEscapeAction(action: "fork" | "tree" | "none"): void {
 		this.globalSettings.doubleEscapeAction = action;
 		this.markModified("doubleEscapeAction");
+		this.save();
+	}
+
+	getDoubleEscapeClearsInput(): boolean {
+		return this.settings.doubleEscapeClearsInput ?? true;
+	}
+
+	setDoubleEscapeClearsInput(enabled: boolean): void {
+		this.globalSettings.doubleEscapeClearsInput = enabled;
+		this.markModified("doubleEscapeClearsInput");
+		this.save();
+	}
+
+	getShowWorkingStats(): boolean {
+		return this.settings.showWorkingStats ?? true;
+	}
+
+	setShowWorkingStats(enabled: boolean): void {
+		this.globalSettings.showWorkingStats = enabled;
+		this.markModified("showWorkingStats");
+		this.save();
+	}
+
+	getShowContextGauge(): boolean {
+		return this.settings.showContextGauge ?? true;
+	}
+
+	setShowContextGauge(enabled: boolean): void {
+		this.globalSettings.showContextGauge = enabled;
+		this.markModified("showContextGauge");
 		this.save();
 	}
 

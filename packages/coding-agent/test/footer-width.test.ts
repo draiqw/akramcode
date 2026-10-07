@@ -2,7 +2,7 @@ import { visibleWidth } from "@akramcode/tui";
 import { beforeAll, describe, expect, it } from "vitest";
 import type { AgentSession } from "../src/core/agent-session.ts";
 import type { ReadonlyFooterDataProvider } from "../src/core/footer-data-provider.ts";
-import { FooterComponent, formatCwdForFooter } from "../src/modes/interactive/components/footer.ts";
+import { FooterComponent, formatCwdForFooter, renderContextGauge } from "../src/modes/interactive/components/footer.ts";
 import { initTheme } from "../src/modes/interactive/theme/theme.ts";
 import { stripAnsi } from "../src/utils/ansi.ts";
 
@@ -278,5 +278,31 @@ describe("FooterComponent width handling", () => {
 
 		expect(stats).toContain("$1.234");
 		expect(stats).not.toContain("(sub)");
+	});
+});
+
+describe("FooterComponent context gauge and speed", () => {
+	beforeAll(() => {
+		initTheme(undefined, false);
+	});
+
+	it("renders the gauge proportionally, with at least one cell for any usage", () => {
+		expect(renderContextGauge(0)).toBe("░".repeat(10));
+		expect(renderContextGauge(0.4)).toBe(`█${"░".repeat(9)}`);
+		expect(renderContextGauge(37)).toBe(`████${"░".repeat(6)}`);
+		expect(renderContextGauge(150)).toBe("█".repeat(10));
+	});
+
+	it("shows the gauge and latest tokens/s only when enabled", () => {
+		const footer = new FooterComponent(createSession({ sessionName: "" }), createFooterData(1));
+		footer.setGenerationSpeed(48.26);
+		const hidden = stripAnsi(footer.render(120)[1]);
+		expect(hidden).not.toContain("█");
+		expect(hidden).not.toContain("tok/s");
+
+		footer.setShowContextGauge(true);
+		const shown = stripAnsi(footer.render(120)[1]);
+		expect(shown).toContain(`█${"░".repeat(9)} 12.3%/200k`);
+		expect(shown).toContain("48.3 tok/s");
 	});
 });

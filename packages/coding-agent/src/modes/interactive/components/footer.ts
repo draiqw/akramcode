@@ -30,6 +30,25 @@ export function formatTokens(count: number): string {
 	return `${Math.round(count / 1000000)}M`;
 }
 
+/** Formats generation speed, e.g. `48.3 tok/s` or `120 tok/s`. */
+export function formatTokensPerSecond(tokensPerSecond: number): string {
+	return tokensPerSecond >= 100 ? `${Math.round(tokensPerSecond)} tok/s` : `${tokensPerSecond.toFixed(1)} tok/s`;
+}
+
+/** Cells used by the footer's context gauge. */
+const CONTEXT_GAUGE_CELLS = 10;
+
+/**
+ * Renders context fill as a fixed-width bar, e.g. `███░░░░░░░` for 30%.
+ * Any usage above zero shows at least one filled cell so a fresh session is distinguishable from an unknown one.
+ */
+export function renderContextGauge(percent: number, cells: number = CONTEXT_GAUGE_CELLS): string {
+	const clamped = Math.min(100, Math.max(0, percent));
+	let filled = Math.round((clamped / 100) * cells);
+	if (clamped > 0 && filled === 0) filled = 1;
+	return "█".repeat(filled) + "░".repeat(cells - filled);
+}
+
 export function formatCwdForFooter(cwd: string, home: string | undefined): string {
 	if (!home) return cwd;
 
@@ -61,6 +80,8 @@ interface SessionStats {
  */
 export class FooterComponent implements Component {
 	private autoCompactEnabled = true;
+	private showContextGauge = false;
+	private generationSpeed: number | undefined;
 	private session: AgentSession;
 	private footerData: ReadonlyFooterDataProvider;
 	private sessionStats?: SessionStats;
@@ -76,6 +97,16 @@ export class FooterComponent implements Component {
 
 	setAutoCompactEnabled(enabled: boolean): void {
 		this.autoCompactEnabled = enabled;
+	}
+
+	/** Show the context-fill bar and the latest generation speed. */
+	setShowContextGauge(enabled: boolean): void {
+		this.showContextGauge = enabled;
+	}
+
+	/** Tokens per second of the latest response, or undefined to hide it. */
+	setGenerationSpeed(tokensPerSecond: number | undefined): void {
+		this.generationSpeed = tokensPerSecond;
 	}
 
 	/**
@@ -194,14 +225,19 @@ export class FooterComponent implements Component {
 			const costStr = `$${usageTotals.cost.toFixed(3)}${usingSubscription ? " (sub)" : ""}`;
 			statsParts.push(costStr);
 		}
+		if (this.showContextGauge && this.generationSpeed !== undefined) {
+			statsParts.push(formatTokensPerSecond(this.generationSpeed));
+		}
 
 		// Colorize context percentage based on usage
 		let contextPercentStr: string;
 		const autoIndicator = this.autoCompactEnabled ? " (auto)" : "";
+		const gauge =
+			this.showContextGauge && contextPercent !== "?" ? `${renderContextGauge(contextPercentValue)} ` : "";
 		const contextPercentDisplay =
 			contextPercent === "?"
 				? `?/${formatTokens(contextWindow)}${autoIndicator}`
-				: `${contextPercent}%/${formatTokens(contextWindow)}${autoIndicator}`;
+				: `${gauge}${contextPercent}%/${formatTokens(contextWindow)}${autoIndicator}`;
 		if (contextPercentValue > 90) {
 			contextPercentStr = theme.fg("error", contextPercentDisplay);
 		} else if (contextPercentValue > 70) {
