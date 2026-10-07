@@ -8,11 +8,54 @@ export interface SessionHost {
 	cwd: string;
 	sessionId?: string;
 	closeSession?: () => Promise<void>;
+	/** Overrides the session probe deadline (tests). */
+	probeMs?: number;
+}
+
+/** How long a fresh shell session may take to answer a no-op before it is treated as stuck. */
+export const SESSION_PROBE_MS = 30_000;
+
+function withDeadline<T>(work: Promise<T>, ms: number, message: string): Promise<T> {
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	const deadline = new Promise<never>((_, reject) => {
+		timer = setTimeout(() => reject(new Error(message)), ms);
+	});
+	return Promise.race([work, deadline]).finally(() => clearTimeout(timer));
+}
+
+/**
+ * A new session is proven with a no-op before the real command is sent: a sandbox whose command
+ * channel accepted the connection but never answers would otherwise hang the agent silently.
+ * One more session is tried before giving up with a readable error.
+ */
+async function openSession(host: SessionHost, probeMs: number): Promise<string> {
+	let last: unknown;
+	for (let attempt = 0; attempt < 2; attempt++) {
+		let id: string | undefined;
+		try {
+			id = await withDeadline(
+				host.sandbox.commands.createSession({ workingDirectory: host.cwd }),
+				probeMs,
+				"creating a shell session timed out",
+			);
+			const created = id;
+			await withDeadline(host.sandbox.commands.runInSession(created, ":"), probeMs, "the shell did not answer");
+			return created;
+		} catch (error) {
+			last = error;
+			if (id) {
+				const stuck = id;
+				void host.sandbox.commands.deleteSession(stuck).catch(() => undefined);
+			}
+		}
+	}
+	const reason = last instanceof Error ? last.message : String(last);
+	throw new Error(`The sandbox shell is not responding (${reason}). Check the OpenSandbox server and try again.`);
 }
 
 async function ensureSession(host: SessionHost): Promise<string> {
 	if (host.sessionId) return host.sessionId;
-	const id = await host.sandbox.commands.createSession({ workingDirectory: host.cwd });
+	const id = await openSession(host, host.probeMs ?? SESSION_PROBE_MS);
 	host.sessionId = id;
 	host.closeSession = async () => {
 		const current = host.sessionId;

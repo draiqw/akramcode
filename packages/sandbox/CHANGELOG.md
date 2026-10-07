@@ -9,3 +9,4 @@
 ### Fixed
 
 - A sandbox that never becomes ready is deleted on the server instead of being left running, and startup fails with `OpenSandbox is unavailable at <domain>: <reason>`.
+- A new shell session is proven with a no-op (30 s deadline, one retry) before the first command, so a sandbox whose command channel never answers fails with `The sandbox shell is not responding` instead of hanging silently.

@@ -21,7 +21,7 @@ function host(
 				interrupted.push(id);
 			},
 			runInSession: async (_id: string, command: string, _o: unknown, handlers: Handlers, signal?: AbortSignal) =>
-				run(command, handlers, signal),
+				command === ":" ? { exitCode: 0 } : run(command, handlers, signal),
 		},
 	} as unknown as Sandbox;
 	const state: SessionHost = { sandbox, cwd: "/p" };
@@ -108,5 +108,33 @@ describe("sandbox bash operations", () => {
 			Promise.race([pending, new Promise((resolve) => setTimeout(() => resolve("hung"), 200))]),
 		).resolves.toBe("hung");
 		expect(h.interrupted).toEqual(["s1"]);
+	});
+
+	it("fails with a readable error when a new shell session never answers", async () => {
+		const h = host(async () => ({ exitCode: 0 }));
+		const commands = (h.state.sandbox as unknown as { commands: { runInSession: unknown } }).commands;
+		commands.runInSession = () => new Promise(() => undefined);
+		h.state.probeMs = 20;
+		await expect(
+			createSandboxBashOperations(h.state).exec("echo hi", "/p", { onData: () => undefined }),
+		).rejects.toThrow(/sandbox shell is not responding \(the shell did not answer\)/);
+		expect(h.sessions()).toBe(2);
+	});
+
+	it("recovers when only the first new session is stuck", async () => {
+		let first = true;
+		const h = host(async () => ({ exitCode: 0 }));
+		const commands = (h.state.sandbox as unknown as { commands: { runInSession: unknown } }).commands;
+		commands.runInSession = (_id: string, command: string) => {
+			if (command === ":" && first) {
+				first = false;
+				return new Promise(() => undefined);
+			}
+			return Promise.resolve({ exitCode: 0 });
+		};
+		h.state.probeMs = 20;
+		const result = await createSandboxBashOperations(h.state).exec("echo hi", "/p", { onData: () => undefined });
+		expect(result).toEqual({ exitCode: 0 });
+		expect(h.sessions()).toBe(2);
 	});
 });
