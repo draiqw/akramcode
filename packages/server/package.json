@@ -1,6 +1,6 @@
 {
 	"name": "@akramcode/server",
-	"version": "1.0.9",
+	"version": "1.0.10",
 	"description": "experimental server package for akramcode",
 	"type": "module",
 	"main": "./dist/index.js",
@@ -47,8 +47,8 @@
 		"node": ">=22.19.0"
 	},
 	"dependencies": {
-		"@akramcode/chord": "^1.0.9",
-		"@akramcode/protocol": "^1.0.9"
+		"@akramcode/chord": "^1.0.10",
+		"@akramcode/protocol": "^1.0.10"
 	},
 	"devDependencies": {
 		"shx": "0.4.0",

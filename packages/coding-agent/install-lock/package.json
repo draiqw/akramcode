@@ -1,10 +1,10 @@
 {
 	"name": "@akramcode/coding-agent-install",
-	"version": "1.0.9",
+	"version": "1.0.10",
 	"private": true,
 	"description": "Lockfile root used by the AkramCode installer and updater.",
 	"dependencies": {
-		"@akramcode/coding-agent": "1.0.9"
+		"@akramcode/coding-agent": "1.0.10"
 	},
 	"overrides": {
 		"protobufjs": "7.6.6"
