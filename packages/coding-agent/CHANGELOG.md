@@ -4,7 +4,7 @@
 
 ### Added
 
-- Added restored context after compaction: the active request verbatim and recently read files follow the summary, so the agent continues from the original instructions ([docs](docs/compaction.md#restored-context)).
+- Added restored context after compaction: the active request verbatim and recently read files follow the summary, so the agent continues from the original instructions; tags inside restored content are neutralized and file content is marked as data, not instructions ([docs](docs/compaction.md#restored-context)).
 - Added clearing of old tool results at the compaction threshold: when replacing old large results with placeholders frees enough context, no summary is generated ([docs](docs/compaction.md#clearing-old-tool-results)).
 - Added the built-in `online-compact` extension (Online Context Compact from SoL-Pi): with `"defaultTools": ["+update_plan"]` the context is compacted at completed plan steps when that saves more than the cache rewrite costs ([docs](docs/compaction.md#online-compaction-at-plan-steps)).
 - Added the global `sandbox` setting to run the built-in tools and `!` commands in an OpenSandbox sandbox, with session reuse and cached workspaces ([docs](docs/sandbox.md)).
