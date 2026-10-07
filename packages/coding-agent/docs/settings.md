@@ -74,9 +74,17 @@ The server writes its index to `.tgrep/` in that directory. Add `.tgrep/` to `.g
 For each search, `grep` uses tgrep only when all of these hold, and ripgrep otherwise:
 
 - The search path is a directory. A single file is searched with ripgrep.
-- A `.tgrep/serve.json` in the search path or a parent directory names a running process.
+- The nearest `.tgrep/serve.json` in the search path or a parent directory names a server that passes the checks below.
 - No `write` or `edit` tool call is running or finished in the last 2 seconds. The server applies file changes asynchronously, a few tens of milliseconds after they happen.
 - The tools run on this machine. In a `volume` sandbox `grep` does not run; in a `mount` sandbox it runs on the host and may use tgrep.
+
+A repository or another user could plant `.tgrep/serve.json` and point it at a process they control. The server is trusted only when:
+
+- The indexed directory, `.tgrep/` and `serve.json` are not symlinks and not writable by group or others, and `.tgrep/` and `serve.json` belong to you.
+- git does not track `.tgrep/serve.json`.
+- The named process is alive, runs as you, runs the configured tgrep executable (`grep.tgrepPath`, or `tgrep` from `PATH`, compared by real path), holds `.tgrep/serve.lock` open, and listens on the named port on `127.0.0.1` or `::1`. This is checked with `lsof`; without `lsof`, ripgrep is used.
+
+The first check of a server takes about 100ms; a passing result is reused for 60 seconds while `serve.json` and the process stay the same.
 
 tgrep runs with `--stats`, and its result is used only when tgrep reports that the server answered. If tgrep fails, exits with an error, takes more than 5 seconds, prints more than 256 KiB after reaching the match limit, or answers from its on-disk index or a file scan, the search runs again with ripgrep. An empty result for a directory below the indexed root also runs again with ripgrep, because the index has no files of ignored directories such as `node_modules/pkg`, which ripgrep searches when they are named. The model sees the same output format, match limit and truncation either way.
 

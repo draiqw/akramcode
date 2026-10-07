@@ -9,7 +9,7 @@ import type { ExtensionContext, ToolDefinition } from "../extensions/types.ts";
 import { hasRecentFileMutation } from "./file-mutation-queue.ts";
 import {
 	buildTgrepArgs,
-	findTgrepServerIndex,
+	findTgrepServer,
 	TGREP_MAX_OUTPUT_BYTES_AFTER_LIMIT,
 	TGREP_MUTATION_GRACE_MS,
 	TGREP_SERVER_MARKER,
@@ -265,8 +265,9 @@ export function createGrepToolDefinition(
 			// See docs/adr/coding-agent/core-tools-grep.md#tgrep-backend
 			const runTgrep = async (isDirectory: boolean): Promise<SearchProcessResult | undefined> => {
 				if (!tgrepCommand || !isDirectory || hasRecentFileMutation(TGREP_MUTATION_GRACE_MS)) return undefined;
-				const indexDir = findTgrepServerIndex(searchPath);
-				if (!indexDir) return undefined;
+				const server = await findTgrepServer(searchPath, tgrepCommand);
+				if (!server) return undefined;
+				const { indexDir } = server;
 				const args = buildTgrepArgs({
 					indexDir,
 					pattern,
@@ -277,7 +278,7 @@ export function createGrepToolDefinition(
 					limit: effectiveLimit,
 				});
 				try {
-					const result = await runSearchProcess(tgrepCommand, args, {
+					const result = await runSearchProcess(server.binary, args, {
 						programName: "tgrep",
 						limit: effectiveLimit,
 						signal,

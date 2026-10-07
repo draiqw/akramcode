@@ -1,11 +1,27 @@
-import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import {
+	chmodSync,
+	existsSync,
+	mkdirSync,
+	readFileSync,
+	realpathSync,
+	rmSync,
+	symlinkSync,
+	writeFileSync,
+} from "node:fs";
 import { homedir, tmpdir } from "node:os";
-import { join } from "node:path";
+import { delimiter, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { SettingsManager } from "../src/core/settings-manager.ts";
 import { withFileMutationQueue } from "../src/core/tools/file-mutation-queue.ts";
 import { createGrepToolDefinition, type GrepToolInput } from "../src/core/tools/grep.ts";
-import { buildTgrepArgs, findTgrepServerIndex, TGREP_SERVER_MARKER } from "../src/core/tools/grep-tgrep.ts";
+import {
+	buildTgrepArgs,
+	findTgrepServer,
+	type ProbeResult,
+	TGREP_SERVER_MARKER,
+	type TgrepServerProbe,
+} from "../src/core/tools/grep-tgrep.ts";
 
 function textOf(result: { content: Array<{ type: string; text?: string }> }): string {
 	return result.content
@@ -19,6 +35,27 @@ function matchEvent(filePath: string, lineNumber: number, text: string): string 
 		type: "match",
 		data: { path: { text: filePath }, line_number: lineNumber, lines: { text: `${text}\n` } },
 	});
+}
+
+const uid = process.getuid?.() ?? 0;
+
+/** lsof -F output of a valid tgrep server process. */
+function lsofRecords(options: { pid: number; binary: string; indexDir: string; port: number }): string {
+	return [
+		`p${options.pid}`,
+		`u${uid}`,
+		"ftxt",
+		"tREG",
+		`n${options.binary}`,
+		"f3",
+		"tREG",
+		`n${join(options.indexDir, "serve.lock")}`,
+		"f6",
+		"tIPv4",
+		`n127.0.0.1:${options.port}`,
+		"TST=LISTEN",
+		"",
+	].join("\n");
 }
 
 interface FakeTgrep {
@@ -44,9 +81,14 @@ describe("grep tool tgrep backend", () => {
 		);
 		chmodSync(fakeTgrep, 0o755);
 	};
+	let savedPath: string | undefined;
+	// Writes the discovery file and what the fake lsof reports for a matching server process.
 	const writeServeJson = (pid: number, dir = root) => {
-		mkdirSync(join(dir, ".tgrep"), { recursive: true });
-		writeFileSync(join(dir, ".tgrep", "serve.json"), JSON.stringify({ pid, port: 1 }));
+		const indexDir = join(dir, ".tgrep");
+		mkdirSync(indexDir, { recursive: true });
+		writeFileSync(join(indexDir, "serve.json"), JSON.stringify({ pid, port: 4321 }));
+		writeFileSync(join(indexDir, "serve.lock"), "");
+		writeFileSync(join(fakeDir, "lsof.txt"), lsofRecords({ pid, binary: fakeTgrep, indexDir, port: 4321 }));
 	};
 	const tgrepArgs = (): string[] | undefined =>
 		existsSync(argsFile) ? readFileSync(argsFile, "utf-8").trimEnd().split("\n") : undefined;
@@ -72,9 +114,16 @@ describe("grep tool tgrep backend", () => {
 		fakeTgrep = join(fakeDir, "tgrep");
 		argsFile = join(fakeDir, "args.txt");
 		writeFileSync(join(root, "src", "a.ts"), "const needle = 1;\nconst other = 2;\n");
+		const binDir = join(fakeDir, "bin");
+		mkdirSync(binDir);
+		writeFileSync(join(binDir, "lsof"), `#!/bin/sh\ncat "${join(fakeDir, "lsof.txt")}"\n`);
+		chmodSync(join(binDir, "lsof"), 0o755);
+		savedPath = process.env.PATH;
+		process.env.PATH = `${binDir}${delimiter}${savedPath ?? ""}`;
 	});
 
 	afterEach(() => {
+		process.env.PATH = savedPath;
 		rmSync(join(root, ".."), { recursive: true, force: true });
 	});
 
@@ -245,6 +294,17 @@ describe("grep tool tgrep backend", () => {
 		expect(textOf(result)).toContain("src/a.ts:1: const needle = 1;");
 	});
 
+	it("ignores a discovery file that the repository ships", async () => {
+		writeServeJson(process.pid);
+		writeFakeTgrep({ stdout: [matchEvent(join(root, "src", "a.ts"), 1, "spoofed")], stderr: TGREP_SERVER_MARKER });
+		const git = (...args: string[]) => execFileSync("git", args, { cwd: root, stdio: "ignore" });
+		git("init", "-q");
+		git("add", "-f", ".tgrep/serve.json");
+
+		expect(textOf(await grep({ pattern: "needle" }))).toBe("src/a.ts:1: const needle = 1;");
+		expect(tgrepArgs()).toBeUndefined();
+	});
+
 	it("rejects an aborted tgrep search without falling back", async () => {
 		writeServeJson(process.pid);
 		writeFakeTgrep({ sleepSeconds: 5, stderr: TGREP_SERVER_MARKER });
@@ -272,17 +332,179 @@ describe("grep tool tgrep backend", () => {
 	});
 });
 
-describe("tgrep helpers", () => {
-	it("returns undefined when no ancestor has a live server", () => {
-		const dir = join(tmpdir(), `grep-tgrep-none-${Date.now()}`);
-		mkdirSync(dir, { recursive: true });
-		try {
-			expect(findTgrepServerIndex(dir)).toBeUndefined();
-		} finally {
-			rmSync(dir, { recursive: true, force: true });
+describe("tgrep server verification", () => {
+	let root: string;
+	let indexDir: string;
+	let binary: string;
+	let lsofOutput: string;
+	let gitResult: ProbeResult | undefined;
+	let probeUid: number;
+	let lsofCalls: number;
+
+	const probe: TgrepServerProbe = {
+		getuid: () => probeUid,
+		run: async (command) => {
+			if (command === "git") return gitResult;
+			lsofCalls++;
+			return { status: 0, stdout: lsofOutput, stderr: "" };
+		},
+	};
+	const find = () => findTgrepServer(join(root, "src"), binary, probe);
+	const writeServe = (info: unknown) => writeFileSync(join(indexDir, "serve.json"), JSON.stringify(info));
+
+	beforeEach(() => {
+		const base = join(tmpdir(), `grep-tgrep-verify-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+		root = join(base, "repo");
+		indexDir = join(root, ".tgrep");
+		mkdirSync(join(root, "src"), { recursive: true });
+		mkdirSync(indexDir);
+		chmodSync(indexDir, 0o755);
+		binary = join(base, "tgrep");
+		writeFileSync(binary, "#!/bin/sh\n");
+		chmodSync(binary, 0o755);
+		writeServe({ pid: process.pid, port: 4321 });
+		chmodSync(join(indexDir, "serve.json"), 0o644);
+		writeFileSync(join(indexDir, "serve.lock"), "");
+		lsofOutput = lsofRecords({ pid: process.pid, binary, indexDir, port: 4321 });
+		gitResult = {
+			status: 128,
+			stdout: "",
+			stderr: "fatal: not a git repository (or any of the parent directories): .git",
+		};
+		probeUid = uid;
+		lsofCalls = 0;
+	});
+
+	afterEach(() => {
+		rmSync(join(root, ".."), { recursive: true, force: true });
+	});
+
+	it("accepts a server that passes every check and caches the verification", async () => {
+		const server = await find();
+		expect(server?.indexDir).toBe(indexDir);
+		expect(server?.binary).toBe(realpathSync(binary));
+		expect(await find()).toEqual(server);
+		expect(lsofCalls).toBe(1);
+	});
+
+	it("accepts an untracked discovery file in a git repository", async () => {
+		gitResult = { status: 0, stdout: "", stderr: "" };
+		expect(await find()).toBeDefined();
+	});
+
+	it("returns undefined without a discovery file or executable", async () => {
+		rmSync(join(indexDir, "serve.json"));
+		expect(await find()).toBeUndefined();
+		writeServe({ pid: process.pid, port: 4321 });
+		binary = join(root, "missing-tgrep");
+		expect(await find()).toBeUndefined();
+	});
+
+	it("rejects a discovery file writable by group or others", async () => {
+		chmodSync(join(indexDir, "serve.json"), 0o664);
+		expect(await find()).toBeUndefined();
+		chmodSync(join(indexDir, "serve.json"), 0o646);
+		expect(await find()).toBeUndefined();
+	});
+
+	it("rejects an index directory or indexed root writable by group or others", async () => {
+		chmodSync(indexDir, 0o775);
+		expect(await find()).toBeUndefined();
+		chmodSync(indexDir, 0o755);
+		chmodSync(root, 0o777);
+		expect(await find()).toBeUndefined();
+	});
+
+	it("rejects a discovery file of another user", async () => {
+		probeUid = uid + 1;
+		expect(await find()).toBeUndefined();
+	});
+
+	it("rejects a symlinked discovery file or index directory", async () => {
+		const elsewhere = join(root, "..", "elsewhere.json");
+		writeFileSync(elsewhere, JSON.stringify({ pid: process.pid, port: 4321 }));
+		rmSync(join(indexDir, "serve.json"));
+		symlinkSync(elsewhere, join(indexDir, "serve.json"));
+		expect(await find()).toBeUndefined();
+
+		const realIndex = join(root, "..", "real-index");
+		rmSync(indexDir, { recursive: true });
+		mkdirSync(realIndex);
+		writeFileSync(join(realIndex, "serve.json"), JSON.stringify({ pid: process.pid, port: 4321 }));
+		symlinkSync(realIndex, indexDir);
+		expect(await find()).toBeUndefined();
+	});
+
+	it("rejects a discovery file that git tracks or when git cannot run", async () => {
+		gitResult = { status: 0, stdout: ".tgrep/serve.json\n", stderr: "" };
+		expect(await find()).toBeUndefined();
+		gitResult = undefined;
+		expect(await find()).toBeUndefined();
+		gitResult = { status: 1, stdout: "", stderr: "fatal: something else" };
+		expect(await find()).toBeUndefined();
+	});
+
+	it("rejects an invalid pid or port", async () => {
+		for (const info of [
+			{ pid: 0, port: 4321 },
+			{ pid: "1", port: 4321 },
+			{ pid: process.pid, port: 0 },
+			{ pid: process.pid, port: 70000 },
+			{ pid: process.pid },
+		]) {
+			writeServe(info);
+			expect(await find()).toBeUndefined();
 		}
 	});
 
+	it("rejects a pid that is not running", async () => {
+		writeServe({ pid: 2 ** 31 - 2, port: 4321 });
+		expect(await find()).toBeUndefined();
+		expect(lsofCalls).toBe(0);
+	});
+
+	it("rejects a process when lsof fails", async () => {
+		const failing: TgrepServerProbe = {
+			...probe,
+			run: async (command) => (command === "git" ? gitResult : undefined),
+		};
+		expect(await findTgrepServer(join(root, "src"), binary, failing)).toBeUndefined();
+		const erroring: TgrepServerProbe = {
+			...probe,
+			run: async (command) => (command === "git" ? gitResult : { status: 1, stdout: lsofOutput, stderr: "" }),
+		};
+		expect(await findTgrepServer(join(root, "src"), binary, erroring)).toBeUndefined();
+	});
+
+	it("rejects a process of another user", async () => {
+		lsofOutput = lsofOutput.replace(`u${uid}`, `u${uid + 1}`);
+		expect(await find()).toBeUndefined();
+	});
+
+	it("rejects a process that runs another executable", async () => {
+		lsofOutput = lsofOutput.replace(`n${binary}`, "n/bin/sh");
+		expect(await find()).toBeUndefined();
+	});
+
+	it("rejects a process that does not hold the server lock of this index", async () => {
+		lsofOutput = lsofOutput.replace(`n${join(indexDir, "serve.lock")}`, "n/tmp/other/.tgrep/serve.lock");
+		expect(await find()).toBeUndefined();
+	});
+
+	it("rejects a server that does not listen on the named port on loopback", async () => {
+		const valid = lsofOutput;
+		for (const replacement of ["n0.0.0.0:4321", "n192.168.1.5:4321", "n127.0.0.1:9999", "n*:4321"]) {
+			lsofOutput = valid.replace("n127.0.0.1:4321", replacement);
+			expect(await find()).toBeUndefined();
+		}
+		lsofOutput = valid.replace("TST=LISTEN", "TST=ESTABLISHED");
+		expect(await find()).toBeUndefined();
+		lsofOutput = valid.replace("tIPv4\nn127.0.0.1:4321", "tIPv6\nn[::1]:4321");
+		expect(await find()).toBeDefined();
+	});
+});
+
+describe("tgrep helpers", () => {
 	it("puts all flags before the pattern separator", () => {
 		const args = buildTgrepArgs({ indexDir: "/r/.tgrep", pattern: "-x", searchPath: "/r", limit: 3 });
 		expect(args.slice(-3)).toEqual(["--", "-x", "/r"]);
