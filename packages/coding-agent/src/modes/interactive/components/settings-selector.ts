@@ -85,6 +85,7 @@ export interface SettingsConfig {
 	doubleEscapeClearsInput: boolean;
 	showWorkingStats: boolean;
 	showContextGauge: boolean;
+	showCacheStatus: boolean;
 	treeFilterMode: "default" | "no-tools" | "user-only" | "labeled-only" | "all";
 	showHardwareCursor: boolean;
 	editorPaddingX: number;
@@ -126,6 +127,7 @@ export interface SettingsCallbacks {
 	onDoubleEscapeClearsInputChange: (enabled: boolean) => void;
 	onShowWorkingStatsChange: (enabled: boolean) => void;
 	onShowContextGaugeChange: (enabled: boolean) => void;
+	onShowCacheStatusChange: (enabled: boolean) => void;
 	onTreeFilterModeChange: (mode: "default" | "no-tools" | "user-only" | "labeled-only" | "all") => void;
 	onShowHardwareCursorChange: (enabled: boolean) => void;
 	onEditorPaddingXChange: (padding: number) => void;
@@ -506,6 +508,13 @@ export class SettingsSelectorComponent extends Container {
 				label: "Context gauge",
 				description: "Show a context-fill bar and the latest tokens/s in the footer",
 				currentValue: config.showContextGauge ? "true" : "false",
+				values: ["true", "false"],
+			},
+			{
+				id: "show-cache-status",
+				label: "Cache status",
+				description: "Show prompt-cache hit ratio, cached tokens, and the cache expiry countdown in the footer",
+				currentValue: config.showCacheStatus ? "true" : "false",
 				values: ["true", "false"],
 			},
 			{
@@ -907,6 +916,9 @@ export class SettingsSelectorComponent extends Container {
 						break;
 					case "show-context-gauge":
 						callbacks.onShowContextGaugeChange(newValue === "true");
+						break;
+					case "show-cache-status":
+						callbacks.onShowCacheStatusChange(newValue === "true");
 						break;
 					case "tree-filter-mode":
 						callbacks.onTreeFilterModeChange(

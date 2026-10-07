@@ -131,6 +131,14 @@ export interface CacheWarmingStatus {
 	extensionOverride?: boolean;
 }
 
+/** When the prompt cache entry of the session was last written or refreshed, and how long it lives. */
+export interface PromptCacheTouch {
+	/** Time the latest session request or cache-warming refresh was sent. */
+	touchedAt: number;
+	/** Lifetime for the retention that request used; undefined when caching is off or the model has no lifetime. */
+	ttlMs: number | undefined;
+}
+
 /** The request whose prompt cache entry should be kept warm, exactly as it was sent. */
 export interface CacheWarmRequest {
 	model: Model<Api>;
@@ -162,6 +170,7 @@ interface ActiveRun extends CacheWarmRequest {
 export class CacheWarmer {
 	private run?: ActiveRun;
 	private inactive: CacheWarmingStatus;
+	private lastTouch?: PromptCacheTouch;
 	private readonly models: Pick<ModelRuntime, "streamSimple">;
 	private readonly sessionManager: Pick<SessionManager, "appendUsage" | "getBranch">;
 	private readonly getMode: () => CacheWarmingMode;
@@ -201,9 +210,15 @@ export class CacheWarmer {
 		};
 	}
 
+	/** Latest request that wrote or refreshed the prompt cache entry, tracked even when warming is off. */
+	get promptCacheTouch(): PromptCacheTouch | undefined {
+		return this.lastTouch;
+	}
+
 	/** Keep the prompt cache entry written by `request` warm while `isCurrent` holds. */
 	start(request: CacheWarmRequest, isCurrent: () => boolean): void {
 		this.clearRun();
+		this.lastTouch = { touchedAt: Date.now(), ttlMs: getPromptCacheTtlMs(request.model, request.options) };
 		const mode = this.getMode();
 		if (mode === "off") {
 			this.stop("cache warming disabled");
@@ -337,6 +352,7 @@ export class CacheWarmer {
 				.result();
 			if (!this.validateRun(run)) return;
 			if (message.stopReason !== "error" && message.stopReason !== "aborted") {
+				this.lastTouch = { touchedAt: Date.now(), ttlMs: run.ttlMs };
 				const entry = this.sessionManager.appendUsage(
 					"cache_warm",
 					message.provider,

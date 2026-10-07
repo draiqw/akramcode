@@ -1,5 +1,5 @@
 import { visibleWidth } from "@akramcode/tui";
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { AgentSession } from "../src/core/agent-session.ts";
 import type { ReadonlyFooterDataProvider } from "../src/core/footer-data-provider.ts";
 import { FooterComponent, formatCwdForFooter, renderContextGauge } from "../src/modes/interactive/components/footer.ts";
@@ -26,6 +26,7 @@ function createSession(options: {
 	toolUsage?: AssistantUsage;
 	usingSubscription?: boolean;
 	routedModel?: { model: { id: string }; thinkingLevel?: string };
+	promptCacheTouch?: { touchedAt: number; ttlMs: number | undefined };
 }): AgentSession {
 	const usage = options.usage;
 	const entries: Array<Record<string, unknown>> = [];
@@ -84,6 +85,7 @@ function createSession(options: {
 		},
 		getContextUsage: () => ({ contextWindow: 200_000, percent: 12.3 }),
 		routedModel: options.routedModel,
+		promptCacheTouch: options.promptCacheTouch,
 		modelRuntime: {
 			isUsingSubscription: () => options.usingSubscription ?? false,
 		},
@@ -304,5 +306,68 @@ describe("FooterComponent context gauge and speed", () => {
 		const shown = stripAnsi(footer.render(120)[1]);
 		expect(shown).toContain(`█${"░".repeat(9)} 12.3%/200k`);
 		expect(shown).toContain("48.3 tok/s");
+	});
+});
+
+describe("FooterComponent cache status line", () => {
+	const usage = { input: 2, output: 10, cacheRead: 390_000, cacheWrite: 69, cost: { total: 0.1 } };
+
+	beforeAll(() => {
+		initTheme(undefined, false);
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	it("shows hit ratio, token split, and a live countdown from the latest request", () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(1_000_000);
+		const session = createSession({
+			sessionName: "",
+			usage,
+			promptCacheTouch: { touchedAt: 1_000_000 - 2_000, ttlMs: 3_600_000 },
+		});
+		const footer = new FooterComponent(session, createFooterData(1));
+		footer.setShowCacheStatus(true);
+
+		const lines = footer.render(120).map(stripAnsi);
+		expect(lines).toHaveLength(3);
+		expect(lines[2]).toBe("cache ██████████ 100%  read 390k  wrote 69  new 2  ttl 59:58/1h · warm: keep going");
+		// The detailed line replaces the CH% figure on the stats line.
+		expect(lines[1]).not.toContain("CH");
+		expect(footer.hasLiveCacheCountdown()).toBe(true);
+
+		vi.setSystemTime(1_000_000 + 3_600_000);
+		const expired = stripAnsi(footer.render(120)[2]);
+		expect(expired).toContain("ttl 0:00/1h · cold: next request rewrites the cache");
+		expect(footer.hasLiveCacheCountdown()).toBe(false);
+	});
+
+	it("omits the countdown when the cache lifetime is unknown and stays within width", () => {
+		const session = createSession({
+			sessionName: "",
+			usage,
+			promptCacheTouch: { touchedAt: Date.now(), ttlMs: undefined },
+		});
+		const footer = new FooterComponent(session, createFooterData(1));
+		footer.setShowCacheStatus(true);
+
+		expect(stripAnsi(footer.render(120)[2])).toBe("cache ██████████ 100%  read 390k  wrote 69  new 2");
+		for (const line of footer.render(30)) {
+			expect(visibleWidth(line)).toBeLessThanOrEqual(30);
+		}
+	});
+
+	it("is hidden when disabled or when the latest response used no cache", () => {
+		const cached = new FooterComponent(createSession({ sessionName: "", usage }), createFooterData(1));
+		expect(cached.render(120)).toHaveLength(2);
+
+		const uncached = new FooterComponent(
+			createSession({ sessionName: "", usage: { ...usage, cacheRead: 0, cacheWrite: 0 } }),
+			createFooterData(1),
+		);
+		uncached.setShowCacheStatus(true);
+		expect(uncached.render(120)).toHaveLength(2);
 	});
 });

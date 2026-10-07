@@ -179,6 +179,24 @@ describe("cache warming", () => {
 		warmer.cancel();
 	});
 
+	it("tracks when the prompt cache was last touched, with the request's lifetime, even when warming is off", async () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(1_000);
+		const off = fakeRuntime({ mode: "off" });
+		expect(off.warmer.promptCacheTouch).toBeUndefined();
+		off.warmer.start(request(adaptiveModel, { cacheRetention: "long" }), current);
+		expect(off.warmer.promptCacheTouch).toEqual({ touchedAt: 1_000, ttlMs: 3_600_000 });
+		off.warmer.start(request(adaptiveModel, { cacheRetention: "none" }), current);
+		expect(off.warmer.promptCacheTouch).toEqual({ touchedAt: 1_000, ttlMs: undefined });
+
+		// A successful refresh restarts the countdown.
+		const { warmer } = fakeRuntime();
+		warmer.start(request(), current);
+		await vi.advanceTimersByTimeAsync(270_000);
+		expect(warmer.promptCacheTouch).toEqual({ touchedAt: 271_000, ttlMs: 300_000 });
+		warmer.cancel();
+	});
+
 	it("does not issue refreshes after their safe deadline", async () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(0);

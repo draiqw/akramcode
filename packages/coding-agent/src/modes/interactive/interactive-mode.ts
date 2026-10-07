@@ -469,6 +469,8 @@ export class InteractiveMode {
 	private lastSigintTime = 0;
 	private lastEscapeTime = 0;
 	private readonly runStats = new RunStatsTracker();
+	/** Re-renders once a second while the footer shows a running prompt-cache countdown. */
+	private cacheCountdownTimer: NodeJS.Timeout | undefined;
 	private changelogMarkdown: string | undefined = undefined;
 	private startupNoticesShown = false;
 
@@ -626,8 +628,14 @@ export class InteractiveMode {
 		this.editorContainer.addChild(this.editor as Component);
 		this.footerDataProvider = new FooterDataProvider(this.sessionManager.getCwd());
 		this.footer = new FooterComponent(this.session, this.footerDataProvider);
+		if (this.cacheCountdownTimer) clearInterval(this.cacheCountdownTimer);
+		this.cacheCountdownTimer = setInterval(() => {
+			if (this.footer.hasLiveCacheCountdown()) this.ui.requestRender();
+		}, 1000);
+		this.cacheCountdownTimer.unref?.();
 		this.footer.setAutoCompactEnabled(this.session.autoCompactionEnabled);
 		this.footer.setShowContextGauge(this.settingsManager.getShowContextGauge());
+		this.footer.setShowCacheStatus(this.settingsManager.getShowCacheStatus());
 		this.footerContainer = new Container();
 		this.footerContainer.addChild(this.footer);
 
@@ -2004,6 +2012,7 @@ export class InteractiveMode {
 		this.footer.setSession(this.session);
 		this.footer.setAutoCompactEnabled(this.session.autoCompactionEnabled);
 		this.footer.setShowContextGauge(this.settingsManager.getShowContextGauge());
+		this.footer.setShowCacheStatus(this.settingsManager.getShowCacheStatus());
 		this.footer.setGenerationSpeed(undefined);
 		this.footerDataProvider.setCwd(this.sessionManager.getCwd());
 		this.hideThinkingBlock = this.settingsManager.getHideThinkingBlock();
@@ -4831,6 +4840,7 @@ export class InteractiveMode {
 					doubleEscapeClearsInput: this.settingsManager.getDoubleEscapeClearsInput(),
 					showWorkingStats: this.settingsManager.getShowWorkingStats(),
 					showContextGauge: this.settingsManager.getShowContextGauge(),
+					showCacheStatus: this.settingsManager.getShowCacheStatus(),
 					treeFilterMode: this.settingsManager.getTreeFilterMode(),
 					showHardwareCursor: this.settingsManager.getShowHardwareCursor(),
 					showCacheMissNotices: this.settingsManager.getShowCacheMissNotices(),
@@ -4957,6 +4967,11 @@ export class InteractiveMode {
 					},
 					onShowWorkingStatsChange: (enabled) => {
 						this.settingsManager.setShowWorkingStats(enabled);
+					},
+					onShowCacheStatusChange: (enabled) => {
+						this.settingsManager.setShowCacheStatus(enabled);
+						this.footer.setShowCacheStatus(enabled);
+						this.ui.requestRender();
 					},
 					onShowContextGaugeChange: (enabled) => {
 						this.settingsManager.setShowContextGauge(enabled);
@@ -6870,6 +6885,8 @@ export class InteractiveMode {
 		this.themeController.disableAutoSync();
 		this.clearExtensionTerminalInputListeners();
 		this.footer.dispose();
+		if (this.cacheCountdownTimer) clearInterval(this.cacheCountdownTimer);
+		this.cacheCountdownTimer = undefined;
 		this.footerDataProvider.dispose();
 		if (this.unsubscribe) {
 			this.unsubscribe();

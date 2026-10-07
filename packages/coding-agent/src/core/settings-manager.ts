@@ -170,6 +170,7 @@ export interface Settings {
 	doubleEscapeClearsInput?: boolean; // default: true - double-escape with a non-empty editor clears it and saves the text to history
 	showWorkingStats?: boolean; // default: true - show elapsed time, output tokens, and tokens/s next to the working indicator
 	showContextGauge?: boolean; // default: true - show a context-fill bar and the latest tokens/s in the footer
+	showCacheStatus?: boolean; // default: true - show the prompt-cache status line (hit ratio, cached tokens, expiry countdown) in the footer
 	treeFilterMode?: "default" | "no-tools" | "user-only" | "labeled-only" | "all"; // Default filter when opening /tree
 	thinkingBudgets?: ThinkingBudgetsSettings; // Custom token budgets for thinking levels
 	editorPaddingX?: number; // Horizontal padding for input editor (default: 0)
@@ -1510,6 +1511,16 @@ export class SettingsManager {
 	setShowContextGauge(enabled: boolean): void {
 		this.globalSettings.showContextGauge = enabled;
 		this.markModified("showContextGauge");
+		this.save();
+	}
+
+	getShowCacheStatus(): boolean {
+		return this.settings.showCacheStatus ?? true;
+	}
+
+	setShowCacheStatus(enabled: boolean): void {
+		this.globalSettings.showCacheStatus = enabled;
+		this.markModified("showCacheStatus");
 		this.save();
 	}
 
