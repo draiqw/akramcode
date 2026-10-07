@@ -33,7 +33,7 @@ With terminal stdin and stdout, AkramCode opens the terminal UI unless `--print`
 |---|---|
 | `message` | Provide an initial prompt |
 | `@path` | Include a text file or image in the first prompt |
-| Piped stdin | Prepend its contents to the first prompt |
+| Piped stdin | Prepend its contents to the first prompt. When the prompt is given as an argument and stdin sends nothing within 2 seconds, the run continues without it, so a script that leaves stdin open does not hang |
 | `--` | Stop option parsing so a prompt can begin with `-` |
 
 AkramCode resolves `@path` from the current working directory. The working directory also controls project configuration, resource discovery, and session grouping.
