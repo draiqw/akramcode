@@ -358,6 +358,89 @@ describe("RPC prompt response semantics", () => {
 		}
 	});
 
+	it("reports invalid command fields as errors instead of applying or crashing on them", async () => {
+		const { lineHandler, cleanup } = await startRpcMode({ withAuth: true, responseDelayMs: 300 });
+		const responseFor = (id: string) =>
+			parseOutputLines(rpcIo.outputLines).find((line) => line.type === "response" && line.id === id);
+
+		try {
+			const invalid: Array<[string, Record<string, unknown>, string]> = [
+				["t1", { type: "set_thinking_level", level: "bogus" }, "bogus"],
+				["t2", { type: "set_steering_mode", mode: "bogus" }, "bogus"],
+				["t3", { type: "set_follow_up_mode", mode: "bogus" }, "bogus"],
+				["t4", { type: "prompt" }, "message"],
+				["t5", { type: "prompt", message: 42 }, "message"],
+				["t6", { type: "set_session_name" }, "name"],
+				["t7", { type: "set_auto_retry", enabled: "yes" }, "enabled"],
+				["t8", { type: "switch_session", sessionPath: "/nonexistent-akramcode-session.jsonl" }, "nonexistent"],
+			];
+			for (const [id, command] of invalid) lineHandler(JSON.stringify({ id, ...command }));
+			lineHandler(JSON.stringify({ id: "t9" }));
+
+			await vi.waitFor(() => {
+				for (const [id, , mention] of invalid) {
+					const response = responseFor(id);
+					expect(response, id).toMatchObject({ success: false });
+					expect(String(response?.error), id).toContain(mention);
+					// Raw JavaScript errors must not reach the client.
+					expect(String(response?.error), id).not.toMatch(/undefined is not|is not a function|evaluating/);
+				}
+				expect(responseFor("t9")).toMatchObject({ success: false, error: expect.stringContaining("type") });
+			});
+
+			lineHandler(JSON.stringify({ id: "s1", type: "get_state" }));
+			lineHandler(JSON.stringify({ id: "s2", type: "get_last_assistant_text" }));
+			await vi.waitFor(() => {
+				const state = responseFor("s1")?.data as { thinkingLevel?: string; steeringMode?: string } | undefined;
+				expect(state?.steeringMode).not.toBe("bogus");
+				expect(state?.thinkingLevel).not.toBe("bogus");
+				// Documented: `text` is null when there is no assistant text.
+				expect(responseFor("s2")).toMatchObject({ success: true, data: { text: null } });
+			});
+
+			lineHandler(JSON.stringify({ id: "p1", type: "prompt", message: "Start" }));
+			await vi.waitFor(() => expect(getPromptResponses(rpcIo.outputLines, "p1")).toHaveLength(1));
+			lineHandler(JSON.stringify({ id: "p2", type: "prompt", message: "x", streamingBehavior: "bogus" }));
+			await vi.waitFor(() => {
+				expect(getPromptResponses(rpcIo.outputLines, "p2")).toMatchObject([
+					{ success: false, error: expect.stringContaining("streamingBehavior") },
+				]);
+			});
+		} finally {
+			await cleanup();
+		}
+	});
+
+	it("continues queued follow-ups after abort, as documented", async () => {
+		const { lineHandler, cleanup } = await startRpcMode({ withAuth: true, responseDelayMs: 400 });
+
+		try {
+			lineHandler(JSON.stringify({ id: "a1", type: "prompt", message: "Start" }));
+			await vi.waitFor(() => expect(getPromptResponses(rpcIo.outputLines, "a1")).toHaveLength(1));
+			lineHandler(JSON.stringify({ id: "a2", type: "follow_up", message: "FOLLOW-AFTER-ABORT" }));
+			await vi.waitFor(() =>
+				expect(parseOutputLines(rpcIo.outputLines)).toContainEqual(
+					expect.objectContaining({ id: "a2", type: "response", success: true }),
+				),
+			);
+			lineHandler(JSON.stringify({ id: "a3", type: "abort" }));
+
+			// The queued follow-up runs in a new turn without another prompt.
+			await vi.waitFor(
+				() => {
+					const userTexts = parseOutputLines(rpcIo.outputLines).flatMap((line) => {
+						const message = line.message as { role?: string; content?: Array<{ text?: string }> } | undefined;
+						return line.type === "message_end" && message?.role === "user" ? [message.content?.[0]?.text] : [];
+					});
+					expect(userTexts).toContain("FOLLOW-AFTER-ABORT");
+				},
+				{ timeout: 3000 },
+			);
+		} finally {
+			await cleanup();
+		}
+	});
+
 	// #9803: a handler can consume A while independently queueing B; report A's outcome.
 	it.each(["steer", "follow_up"] as const)(
 		"reports %s as handled even when an extension queues another message",

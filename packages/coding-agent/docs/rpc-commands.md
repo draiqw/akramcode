@@ -2,6 +2,8 @@
 
 This reference lists commands accepted on stdin in [RPC mode](rpc.md). Each command and response is one JSON object. Shared message values use the [message types](message-types.md).
 
+A line that is not a JSON object with a string `type` returns an error response with command `"parse"`. Commands with missing or invalid fields return an error response naming the field.
+
 ## Prompting
 
 ### prompt
@@ -26,7 +28,9 @@ With images:
 - `"steer"`: Queue the message while the agent is running. It is delivered after the current assistant turn finishes executing its tool calls, before the next LLM call.
 - `"followUp"`: Wait until the agent finishes. Message is delivered only when agent stops.
 
-If the agent is streaming and no `streamingBehavior` is specified, the command returns an error.
+If the agent is streaming and no `streamingBehavior` is specified, the command returns an error. `streamingBehavior`, when present, must be `"steer"` or `"followUp"`; any other value returns an error.
+
+`message` must be a string. `images`, when present, must be an array of image objects; otherwise the command returns an error. The same rules apply to `steer` and `follow_up`.
 
 **Extension commands**: If the message is an extension command (e.g., `/mycommand`), it executes immediately even during streaming. Extension commands manage their own LLM interaction via `akramcode.sendMessage()`.
 
@@ -279,7 +283,7 @@ Set the reasoning/thinking level for models that support it.
 {"type": "set_thinking_level", "level": "high"}
 ```
 
-Levels: `"off"`, `"minimal"`, `"low"`, `"medium"`, `"high"`, `"xhigh"`, `"max"`
+Levels: `"off"`, `"minimal"`, `"low"`, `"medium"`, `"high"`, `"xhigh"`, `"max"`. Any other value returns an error that lists these levels.
 
 `"xhigh"` and `"max"` are exposed only when supported by the selected model. Some models, including GPT-5.6, expose both.
 
@@ -340,6 +344,8 @@ Modes:
 - `"all"`: Deliver all steering messages after the current assistant turn finishes executing its tool calls
 - `"one-at-a-time"`: Deliver one steering message per completed assistant turn (default)
 
+Any other value returns an error.
+
 Response:
 ```json
 {"type": "response", "command": "set_steering_mode", "success": true}
@@ -356,6 +362,8 @@ Control how follow-up messages (from `follow_up`) are delivered.
 Modes:
 - `"all"`: Deliver all follow-up messages when agent finishes
 - `"one-at-a-time"`: Deliver one follow-up message per agent completion (default)
+
+Any other value returns an error.
 
 Response:
 ```json
@@ -405,7 +413,7 @@ Response:
 
 ### set_auto_compaction
 
-Enable or disable automatic compaction when context is nearly full.
+Enable or disable automatic compaction when context is nearly full. `enabled` must be a boolean.
 
 ```json
 {"type": "set_auto_compaction", "enabled": true}
@@ -420,7 +428,7 @@ Response:
 
 ### set_auto_retry
 
-Enable or disable automatic retry on transient errors (overloaded, rate limit, 5xx).
+Enable or disable automatic retry on transient errors (overloaded, rate limit, 5xx). `enabled` must be a boolean.
 
 ```json
 {"type": "set_auto_retry", "enabled": true}
@@ -591,7 +599,7 @@ Response:
 
 ### switch_session
 
-Load a different session file. Can be canceled by a `session_before_switch` extension event handler.
+Load a different session file. Can be canceled by a `session_before_switch` extension event handler. If `sessionPath` does not exist, the command returns an error and the current session is kept.
 
 ```json
 {"type": "switch_session", "sessionPath": "/path/to/session.jsonl"}
@@ -766,7 +774,7 @@ The `text` value is `null` if no assistant text exists.
 
 ### set_session_name
 
-Set a display name for the current session. The name appears in session listings and helps identify sessions.
+Set a display name for the current session. The name appears in session listings and helps identify sessions. `name` must be a string.
 
 ```json
 {"type": "set_session_name", "name": "my-feature-work"}

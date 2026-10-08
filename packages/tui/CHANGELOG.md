@@ -2,10 +2,15 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added the `wrapCodeBlocks` Markdown option; with `false`, code block lines are not wrapped.
+
 ### Fixed
 
 - Fixed `\pi` and `\Pi` not rendering in LaTeX math (they were renamed to `\akramcode` and `\AkramCode` by the project rename).
 - Fixed shell text such as `for i in $(seq 1 3); do echo n$i` rendering as inline math: a `$...$` pair whose content has `;`, `&&`, or `||`, or whose closing `$` starts a variable after spaced text, stays literal.
+- Fixed `Enter` on a slash command argument chosen from autocomplete (for example `/thinking high`) only inserting it; it now submits, like a command name.
 
 ## [1.0.0] - 2026-10-01
 

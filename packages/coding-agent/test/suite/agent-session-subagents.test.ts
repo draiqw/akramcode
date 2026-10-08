@@ -780,6 +780,31 @@ describe("AgentSession subagents and background tasks", () => {
 		expect(requests[0]).toContain('Background command "build" completed');
 	});
 
+	it("stops tasks at the print-mode timeout even while a monitor keeps producing output", async () => {
+		const harness = await setup();
+		// Each turn takes longer than the gap between notifications, so one is always pending after a turn.
+		const slowAnswer: FauxResponseFactory = async () => {
+			await new Promise((resolve) => setTimeout(resolve, 60));
+			return fauxAssistantMessage("ok");
+		};
+		harness.setResponses(Array.from({ length: 200 }, () => slowAnswer));
+		const monitor = harness.session.tasks.create({ kind: "monitor", description: "endless" });
+		let line = 0;
+		const timer = setInterval(() => monitor.emitOutput([`line ${++line}`]), 15);
+		monitor.signal.addEventListener("abort", () => {
+			clearInterval(timer);
+			void monitor.finish({ status: "completed" });
+		});
+
+		const started = Date.now();
+		expect(await harness.session.waitForBackgroundTasks(300)).toBe(false);
+		clearInterval(timer);
+
+		// Before the fix, every pending notification skipped the deadline check and the wait never ended.
+		expect(Date.now() - started).toBeLessThan(3000);
+		await vi.waitFor(() => expect(harness.session.tasks.get(monitor.id)?.status).toBe("stopped"));
+	});
+
 	it("does not pause notifications for an abort that is not a user interrupt", async () => {
 		const harness = await setup(undefined, [
 			(akramcode) => {

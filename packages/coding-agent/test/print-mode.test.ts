@@ -1,6 +1,7 @@
 import type { AssistantMessage, ImageContent } from "@akramcode/ai";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { SessionShutdownEvent } from "../src/index.ts";
+import { initTheme } from "../src/modes/interactive/theme/theme.ts";
 import { runPrintMode } from "../src/modes/print-mode.ts";
 
 type EmitEvent = SessionShutdownEvent;
@@ -174,6 +175,50 @@ describe("runPrintMode", () => {
 		);
 		expect(writes.join("")).toContain("after background work");
 		expect(writes.join("")).not.toContain("first");
+	});
+
+	describe("--render-markdown", () => {
+		function captureStdout(): string[] {
+			const writes: string[] = [];
+			vi.spyOn(process.stdout, "write").mockImplementation(((
+				chunk: string | Uint8Array,
+				callback?: (error?: Error | null) => void,
+			) => {
+				writes.push(String(chunk));
+				callback?.();
+				return true;
+			}) as typeof process.stdout.write);
+			return writes;
+		}
+
+		async function renderAnswer(text: string): Promise<string> {
+			initTheme("dark");
+			const writes = captureStdout();
+			const exitCode = await runPrintMode(
+				createRuntimeHost(createAssistantMessage({ text })) as unknown as Parameters<typeof runPrintMode>[0],
+				{ mode: "text", renderMarkdown: true, initialMessage: "go" },
+			);
+			expect(exitCode).toBe(0);
+			return writes.join("");
+		}
+
+		afterEach(() => {
+			vi.unstubAllEnvs();
+		});
+
+		it("keeps long code lines whole so copied commands work", async () => {
+			const command = `curl -s "https://example.com/api/v1/items?${"field=value&".repeat(12)}end=1"`;
+			const output = await renderAnswer(`Run:\n\n\`\`\`sh\n${command}\n\`\`\``);
+			expect(output.replace(/\x1b\[[0-9;]*m/g, "")).toContain(command);
+		});
+
+		it("writes plain text without escape sequences when NO_COLOR is set", async () => {
+			vi.stubEnv("NO_COLOR", "1");
+			const output = await renderAnswer("# Title\n\nSee [docs](https://example.com) and **bold**.");
+			expect(output).toContain("Title");
+			expect(output).toContain("bold");
+			expect(output).not.toMatch(/\x1b/);
+		});
 	});
 
 	it("reports background tasks stopped by the print-mode timeout", async () => {

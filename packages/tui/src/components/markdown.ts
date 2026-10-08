@@ -230,7 +230,15 @@ export interface MarkdownOptions {
 	transform?: (markdown: string, availableWidth: number) => string;
 	/** Render supported LaTeX math expressions as Unicode text (default: true). */
 	renderLatex?: boolean;
+	/**
+	 * Wrap code block lines at the width (default: true). With false, long code lines stay whole, so text
+	 * copied from output that is not redrawn (for example printed to a terminal once) keeps commands intact.
+	 */
+	wrapCodeBlocks?: boolean;
 }
+
+/** Marks a rendered line that must not be wrapped; removed before output. */
+const NO_WRAP_MARKER = "\u0000nowrap\u0000";
 
 interface InlineStyleContext {
 	applyText: (text: string) => string;
@@ -329,6 +337,8 @@ export class Markdown implements Component {
 		for (const line of renderedLines) {
 			if (isImageLine(line)) {
 				wrappedLines.push(line);
+			} else if (line.startsWith(NO_WRAP_MARKER)) {
+				wrappedLines.push(line.slice(NO_WRAP_MARKER.length));
 			} else {
 				for (const wrappedLine of wrapTextWithAnsi(line, contentWidth)) {
 					wrappedLines.push(wrappedLine);
@@ -531,17 +541,18 @@ export class Markdown implements Component {
 
 			case "code": {
 				const indent = this.theme.codeBlockIndent ?? "  ";
+				const noWrap = this.options.wrapCodeBlocks === false ? NO_WRAP_MARKER : "";
 				lines.push(this.theme.codeBlockBorder(`\`\`\`${token.lang || ""}`));
 				if (this.theme.highlightCode) {
 					const highlightedLines = this.theme.highlightCode(token.text, token.lang);
 					for (const hlLine of highlightedLines) {
-						lines.push(`${indent}${hlLine}`);
+						lines.push(`${noWrap}${indent}${hlLine}`);
 					}
 				} else {
 					// Split code by newlines and style each line
 					const codeLines = token.text.split("\n");
 					for (const codeLine of codeLines) {
-						lines.push(`${indent}${this.theme.codeBlock(codeLine)}`);
+						lines.push(`${noWrap}${indent}${this.theme.codeBlock(codeLine)}`);
 					}
 				}
 				lines.push(this.theme.codeBlockBorder("```"));

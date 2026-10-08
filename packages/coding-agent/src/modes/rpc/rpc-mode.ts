@@ -12,6 +12,8 @@
  */
 
 import * as crypto from "node:crypto";
+import { existsSync } from "node:fs";
+import type { ThinkingLevel } from "@akramcode/agent-core";
 import type { AgentSessionRuntime } from "../../core/agent-session-runtime.ts";
 import type {
 	ExtensionUIContext,
@@ -46,6 +48,48 @@ export type {
 	RpcResponse,
 	RpcSessionState,
 } from "./rpc-types.ts";
+
+const THINKING_LEVELS: readonly ThinkingLevel[] = ["off", "minimal", "low", "medium", "high", "xhigh", "max"];
+const QUEUE_MODES = ["all", "one-at-a-time"] as const;
+const STREAMING_BEHAVIORS = ["steer", "followUp"] as const;
+
+function isOneOf<T extends string>(allowed: readonly T[], value: unknown): value is T {
+	return allowed.some((item) => item === value);
+}
+
+/** Throws if a command field is not a string. The error is reported as the command's response. */
+function assertString(value: unknown, command: string, field: string): asserts value is string {
+	if (typeof value !== "string") {
+		throw new Error(`${command} requires a string "${field}"`);
+	}
+}
+
+/** Throws if a command field is not a boolean. The error is reported as the command's response. */
+function assertBoolean(value: unknown, command: string, field: string): asserts value is boolean {
+	if (typeof value !== "boolean") {
+		throw new Error(`${command} requires a boolean "${field}"`);
+	}
+}
+
+function isImageContent(value: unknown): boolean {
+	if (typeof value !== "object" || value === null) return false;
+	return (
+		"type" in value &&
+		value.type === "image" &&
+		"data" in value &&
+		typeof value.data === "string" &&
+		"mimeType" in value &&
+		typeof value.mimeType === "string"
+	);
+}
+
+/** Throws if `images` is present but is not an array of image content objects. */
+function assertImages(value: unknown, command: string): void {
+	if (value === undefined) return;
+	if (!Array.isArray(value) || !value.every(isImageContent)) {
+		throw new Error(`${command} "images" must be an array of {"type": "image", "data": string, "mimeType": string}`);
+	}
+}
 
 /**
  * Run in RPC mode.
@@ -395,6 +439,15 @@ export async function runRpcMode(runtimeHost: AgentSessionRuntime): Promise<neve
 
 			case "prompt": {
 				// See docs/adr/coding-agent/modes-rpc-rpc-mode.md#prompt-handling-behavior
+				assertString(command.message, "prompt", "message");
+				assertImages(command.images, "prompt");
+				if (command.streamingBehavior !== undefined && !isOneOf(STREAMING_BEHAVIORS, command.streamingBehavior)) {
+					return error(
+						id,
+						"prompt",
+						`Invalid streamingBehavior: ${JSON.stringify(command.streamingBehavior)}. Valid values: ${STREAMING_BEHAVIORS.join(", ")}`,
+					);
+				}
 				let preflightSucceeded = false;
 				let releasePreflight = () => {};
 				const previousPreflight = promptPreflight;
@@ -424,17 +477,25 @@ export async function runRpcMode(runtimeHost: AgentSessionRuntime): Promise<neve
 			}
 
 			case "steer": {
+				assertString(command.message, "steer", "message");
+				assertImages(command.images, "steer");
 				const disposition = await session.steer(command.message, command.images, { source: "rpc" });
 				return success(id, "steer", { disposition });
 			}
 
 			case "follow_up": {
+				assertString(command.message, "follow_up", "message");
+				assertImages(command.images, "follow_up");
 				const disposition = await session.followUp(command.message, command.images, { source: "rpc" });
 				return success(id, "follow_up", { disposition });
 			}
 
 			case "abort": {
 				await session.abort();
+				// Documented: `abort` continues the user's messages that remain queued (clear_queue first to drop them).
+				void session.continueQueuedMessages().catch((e: unknown) => {
+					output(error(undefined, "abort", e instanceof Error ? e.message : String(e)));
+				});
 				return success(id, "abort");
 			}
 
@@ -505,6 +566,13 @@ export async function runRpcMode(runtimeHost: AgentSessionRuntime): Promise<neve
 			// =================================================================
 
 			case "set_thinking_level": {
+				if (!isOneOf(THINKING_LEVELS, command.level)) {
+					return error(
+						id,
+						"set_thinking_level",
+						`Invalid thinking level: ${JSON.stringify(command.level)}. Valid levels: ${THINKING_LEVELS.join(", ")}`,
+					);
+				}
 				session.setThinkingLevel(command.level);
 				return success(id, "set_thinking_level");
 			}
@@ -527,11 +595,25 @@ export async function runRpcMode(runtimeHost: AgentSessionRuntime): Promise<neve
 			// =================================================================
 
 			case "set_steering_mode": {
+				if (!isOneOf(QUEUE_MODES, command.mode)) {
+					return error(
+						id,
+						"set_steering_mode",
+						`Invalid steering mode: ${JSON.stringify(command.mode)}. Valid modes: ${QUEUE_MODES.join(", ")}`,
+					);
+				}
 				session.setSteeringMode(command.mode);
 				return success(id, "set_steering_mode");
 			}
 
 			case "set_follow_up_mode": {
+				if (!isOneOf(QUEUE_MODES, command.mode)) {
+					return error(
+						id,
+						"set_follow_up_mode",
+						`Invalid follow-up mode: ${JSON.stringify(command.mode)}. Valid modes: ${QUEUE_MODES.join(", ")}`,
+					);
+				}
 				session.setFollowUpMode(command.mode);
 				return success(id, "set_follow_up_mode");
 			}
@@ -546,6 +628,7 @@ export async function runRpcMode(runtimeHost: AgentSessionRuntime): Promise<neve
 			}
 
 			case "set_auto_compaction": {
+				assertBoolean(command.enabled, "set_auto_compaction", "enabled");
 				session.setAutoCompactionEnabled(command.enabled);
 				return success(id, "set_auto_compaction");
 			}
@@ -555,6 +638,7 @@ export async function runRpcMode(runtimeHost: AgentSessionRuntime): Promise<neve
 			// =================================================================
 
 			case "set_auto_retry": {
+				assertBoolean(command.enabled, "set_auto_retry", "enabled");
 				session.setAutoRetryEnabled(command.enabled);
 				return success(id, "set_auto_retry");
 			}
@@ -611,6 +695,9 @@ export async function runRpcMode(runtimeHost: AgentSessionRuntime): Promise<neve
 			}
 
 			case "switch_session": {
+				if (!existsSync(command.sessionPath)) {
+					return error(id, "switch_session", `Session file not found: ${command.sessionPath}`);
+				}
 				const result = await runtimeHost.switchSession(command.sessionPath);
 				if (!result.cancelled) {
 					await rebindSession();
@@ -663,10 +750,11 @@ export async function runRpcMode(runtimeHost: AgentSessionRuntime): Promise<neve
 
 			case "get_last_assistant_text": {
 				const text = session.getLastAssistantText();
-				return success(id, "get_last_assistant_text", { text });
+				return success(id, "get_last_assistant_text", { text: text ?? null });
 			}
 
 			case "set_session_name": {
+				assertString(command.name, "set_session_name", "name");
 				const name = command.name.trim();
 				if (!name) {
 					return error(id, "set_session_name", "Session name cannot be empty");
@@ -769,6 +857,22 @@ export async function runRpcMode(runtimeHost: AgentSessionRuntime): Promise<neve
 					`Failed to parse command: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
 				),
 			);
+			await waitForRawStdoutBackpressure();
+			return;
+		}
+
+		if (
+			typeof parsed !== "object" ||
+			parsed === null ||
+			Array.isArray(parsed) ||
+			!("type" in parsed) ||
+			typeof parsed.type !== "string"
+		) {
+			const id =
+				typeof parsed === "object" && parsed !== null && "id" in parsed && typeof parsed.id === "string"
+					? parsed.id
+					: undefined;
+			output(error(id, "parse", 'Command must be a JSON object with a string "type"'));
 			await waitForRawStdoutBackpressure();
 			return;
 		}

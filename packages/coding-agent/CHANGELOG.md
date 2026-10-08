@@ -38,6 +38,14 @@
 - Fixed held task notifications after an interrupt: a user message queued during a run now also resumes them, an extension's `sendUserMessage()` no longer does, and they are sent before the user's message instead of after it, so the model answers the message.
 - Fixed cancelling compaction (`Escape`) or switching sessions during compaction starting a turn for the task notifications held during it; they now wait for the next message. A message submitted when compaction ends (for example one queued during it) now goes out in the same turn as those notifications, after them, and a steering message queued during a run is delivered after the held notifications instead of before.
 - Fixed user messages in the transcript dropping `$` signs: they are no longer rendered as LaTeX math, so shell commands and prices show as typed.
+- Fixed `read` counting a trailing newline as an extra line: the remaining-lines notice, the `offset` hint after the last line, the "beyond end of file" error, and the total in the truncation notice were off by one. `offset` and `limit` must now be positive integers.
+- Fixed print mode ignoring `backgroundTasks.printModeTimeoutSeconds` while a monitor keeps producing output; tasks are now stopped at the deadline.
+- Fixed RPC `abort` leaving the user's queued messages unsent until the next prompt; as documented, they now continue after the abort.
+- Fixed RPC commands accepting invalid values (`set_thinking_level`, `set_steering_mode`, `set_follow_up_mode`, `streamingBehavior`, `enabled`, `images`) and reporting raw JavaScript errors for missing fields; they are now rejected with clear errors. `switch_session` to a missing file fails instead of switching, and `get_last_assistant_text` returns `text: null` when there is no text.
+- Fixed `--tools` silently disabling all tools for unknown names; unknown names are now reported as a warning.
+- Fixed `-p` without a prompt exiting 0 with no output; it now fails with an error.
+- Fixed `--render-markdown` wrapping long code lines, which broke copied commands, and ignoring `NO_COLOR`.
+- Removed the startup warning `Agent "explore": no tool matches grep, find, ls`: built-in agent types do not warn about optional tools that are off by default.
 
 ## [1.0.0] - 2026-10-01
 

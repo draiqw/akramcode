@@ -13,8 +13,8 @@ import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, formatSize, type TruncationResult
 
 const readSchema = Type.Object({
 	path: Type.String({ description: "Path to the file to read (relative or absolute)" }),
-	offset: Type.Optional(Type.Number({ description: "Line number to start reading from (1-indexed)" })),
-	limit: Type.Optional(Type.Number({ description: "Maximum number of lines to read" })),
+	offset: Type.Optional(Type.Integer({ minimum: 1, description: "Line number to start reading from (1-indexed)" })),
+	limit: Type.Optional(Type.Integer({ minimum: 1, description: "Maximum number of lines to read" })),
 });
 
 export const readToolSystemPromptContribution = {
@@ -85,6 +85,13 @@ export function createReadToolDefinition(
 			_onUpdate?,
 			ctx?: ExtensionContext,
 		) {
+			// Schema enforces this for model calls, but callers may bypass schema validation.
+			if (offset !== undefined && (!Number.isInteger(offset) || offset < 1)) {
+				throw new Error("offset must be a positive integer");
+			}
+			if (limit !== undefined && (!Number.isInteger(limit) || limit < 1)) {
+				throw new Error("limit must be a positive integer");
+			}
 			return new Promise<{ content: (TextContent | ImageContent)[]; details: ReadToolDetails | undefined }>(
 				(resolve, reject) => {
 					if (signal?.aborted) {
@@ -134,6 +141,8 @@ export function createReadToolDefinition(
 								const buffer = await ops.readFile(absolutePath);
 								const textContent = buffer.toString("utf-8");
 								const allLines = textContent.split("\n");
+								// A trailing "\n" terminates the last line; it does not start an extra empty line.
+								if (textContent.endsWith("\n")) allLines.pop();
 								const totalFileLines = allLines.length;
 								// See docs/adr/coding-agent/core-tools-read.md#offset-indexing-conversion
 								const startLine = offset ? Math.max(0, offset - 1) : 0;

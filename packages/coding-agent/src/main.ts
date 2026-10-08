@@ -822,6 +822,20 @@ export async function main(args: string[], options?: MainOptions) {
 			noTools: sessionOptions.noTools,
 			customTools: sessionOptions.customTools,
 		});
+		if (sessionOptions.tools) {
+			// Only tools loaded at startup are known here. MCP tools may register later, so `mcp__` names are skipped.
+			const loadedToolNames = new Set(created.session.getAllTools().map((tool) => tool.name));
+			const excludedToolNames = new Set(sessionOptions.excludeTools);
+			const unknownToolNames = sessionOptions.tools.filter(
+				(name) => !loadedToolNames.has(name) && !excludedToolNames.has(name) && !name.startsWith("mcp__"),
+			);
+			if (unknownToolNames.length > 0) {
+				diagnostics.push({
+					type: "warning",
+					message: `Unknown tool name(s) in --tools, ignored: ${unknownToolNames.join(", ")}`,
+				});
+			}
+		}
 		const cliThinkingOverride = parsed.thinking !== undefined || cliThinkingFromModel;
 		if (created.session.model && cliThinkingOverride) {
 			created.session.setThinkingLevel(created.session.thinkingLevel);
@@ -885,6 +899,11 @@ export async function main(args: string[], options?: MainOptions) {
 
 	const { initialMessage, initialImages } = await prepareInitialMessage(parsed, stdinContent);
 	time("prepareInitialMessage");
+	// `-p` with no argument, @file, or piped input would otherwise run nothing and exit 0.
+	if (parsed.print && appMode === "print" && initialMessage === undefined && parsed.messages.length === 0) {
+		console.error(chalk.red("Error: No prompt given. Pass a prompt argument or pipe input with --print."));
+		process.exit(1);
+	}
 	// See docs/adr/coding-agent/main.md#user-authored-theme-validation
 	setThemeJsonValidator(validateThemeJson);
 	initTheme(settingsManager.getTheme(), appMode === "interactive");

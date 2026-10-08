@@ -887,6 +887,26 @@ A=
 			assert.ok(output.includes("│ ℂ³"));
 		});
 
+		it("keeps long code lines whole when code block wrapping is off", () => {
+			const command = `curl -s "https://example.com/api?${"a=1&".repeat(20)}end=1"`;
+			const source = `Run:\n\n\`\`\`sh\n${command}\n\`\`\`\n\n${"word ".repeat(30)}`;
+			const plain = (lines: string[]) => lines.map((line) => stripAnsi(line).trimEnd());
+
+			const unwrapped = plain(
+				new Markdown(source, 0, 0, defaultMarkdownTheme, undefined, { wrapCodeBlocks: false }).render(60),
+			);
+			assert.ok(unwrapped.includes(`  ${command}`), "the code line stays whole");
+			assert.ok(
+				unwrapped.every((line) => !line.includes("\u0000")),
+				"no marker leaks into output",
+			);
+			// Prose still wraps at the width.
+			assert.ok(unwrapped.filter((line) => line.startsWith("word")).length > 1);
+
+			const wrapped = plain(new Markdown(source, 0, 0, defaultMarkdownTheme).render(60));
+			assert.ok(!wrapped.includes(`  ${command}`), "default rendering wraps code lines");
+		});
+
 		it("does not treat currency, shell variables, or code spans as math", () => {
 			const source = "Costs $5 and $10 or $8k–$12k; use `$x$`, $HOME, and $" + "{PATH}.";
 			const markdown = new Markdown(source, 0, 0, defaultMarkdownTheme);

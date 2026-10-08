@@ -31,12 +31,20 @@ function describeTools(type: AgentTypeDefinition, resolved: { tools: string[] })
 	return resolved.tools.length > 0 ? resolved.tools.join(", ") : "no tools";
 }
 
+/**
+ * Tool names to warn about. Built-in types name optional tools (`grep`, `find`, `ls` for `explore`) that are
+ * off by default, so a missing one is expected and not reported.
+ */
+function reportableUnknownTools(type: AgentTypeDefinition, resolved: { unknown: string[] }): string[] {
+	return type.source === "builtin" ? [] : resolved.unknown;
+}
+
 /** One line per agent type for the `/agents` list. */
 export function formatAgentTypeItem(
 	type: AgentTypeDefinition,
 	resolved: { tools: string[]; unknown: string[] },
 ): string {
-	const warning = resolved.unknown.length > 0 ? " ⚠" : "";
+	const warning = reportableUnknownTools(type, resolved).length > 0 ? " ⚠" : "";
 	return `${type.name} (${type.source}) · ${truncate(describeTools(type, resolved), 60)}${warning}`;
 }
 
@@ -50,7 +58,8 @@ export function formatAgentTypeDetail(
 	lines.push(`Tools: ${describeTools(type, resolved)}`);
 	if (type.tools) lines.push(`Allowlist: ${type.tools.join(", ")}`);
 	if (type.disallowedTools) lines.push(`Denylist: ${type.disallowedTools.join(", ")}`);
-	if (resolved.unknown.length > 0) lines.push(`Warning: no tool matches ${resolved.unknown.join(", ")}`);
+	const unknown = reportableUnknownTools(type, resolved);
+	if (unknown.length > 0) lines.push(`Warning: no tool matches ${unknown.join(", ")}`);
 	lines.push(`Model: ${type.model ?? "inherit"}`, `Thinking: ${type.thinking ?? "inherit"}`);
 	const prompt = type.systemPrompt.split("\n");
 	lines.push("", ...prompt.slice(0, 12), ...(prompt.length > 12 ? [`… (${prompt.length - 12} more lines)`] : []));
@@ -63,9 +72,9 @@ export function collectAgentWarnings(control: SubagentControl, options?: { inclu
 	const warnings = diagnostics.map((diagnostic) => `Agent definition ${diagnostic.path}: ${diagnostic.message}`);
 	for (const type of types) {
 		// MCP servers connect after startup, so their tools may not exist yet.
-		const unknown = control
-			.resolveTools(type)
-			.unknown.filter((name) => options?.includeMcp || !name.startsWith("mcp__"));
+		const unknown = reportableUnknownTools(type, control.resolveTools(type)).filter(
+			(name) => options?.includeMcp || !name.startsWith("mcp__"),
+		);
 		if (unknown.length > 0) warnings.push(`Agent "${type.name}": no tool matches ${unknown.join(", ")}`);
 	}
 	return warnings;

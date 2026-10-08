@@ -10,6 +10,7 @@ import type { AssistantMessage, ImageContent } from "@akramcode/ai";
 import { Markdown } from "@akramcode/tui";
 import type { AgentSessionRuntime } from "../core/agent-session-runtime.ts";
 import { flushRawStdout, waitForRawStdoutBackpressure, writeRawStdout } from "../core/output-guard.ts";
+import { stripAnsi } from "../utils/ansi.ts";
 import { killTrackedDetachedChildren } from "../utils/shell.ts";
 import { getMarkdownTheme } from "./interactive/theme/theme.ts";
 import { toJsonEvent } from "./json-event.ts";
@@ -167,8 +168,14 @@ export async function runPrintMode(runtimeHost: AgentSessionRuntime, options: Pr
 						}
 						// Wrap at the terminal width; 80 columns when stdout is not a terminal.
 						const width = process.stdout.columns || 80;
-						const lines = new Markdown(content.text.trim(), 0, 0, getMarkdownTheme()).render(width);
-						writeRawStdout(`${lines.map((line) => line.trimEnd()).join("\n")}\n`);
+						// Code lines stay whole, so commands and URLs copied from the output are not broken.
+						const lines = new Markdown(content.text.trim(), 0, 0, getMarkdownTheme(), undefined, {
+							wrapCodeBlocks: false,
+						}).render(width);
+						const rendered = lines.map((line) => line.trimEnd()).join("\n");
+						// NO_COLOR (https://no-color.org): any non-empty value disables ANSI and OSC 8 escapes.
+						const noColor = (process.env.NO_COLOR ?? "") !== "";
+						writeRawStdout(`${noColor ? stripAnsi(rendered) : rendered}\n`);
 					}
 				}
 			}

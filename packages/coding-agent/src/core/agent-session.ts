@@ -1883,6 +1883,22 @@ export class AgentSession {
 	// =========================================================================
 
 	private async _runAgentPrompt(messages: AgentMessage | AgentMessage[]): Promise<void> {
+		await this._runAgent(() => this.agent.prompt(messages));
+	}
+
+	/**
+	 * Start a run for the user's queued steering and follow-up messages, for example after an abort
+	 * left them in the queue (RPC `abort` continues queued messages).
+	 * @returns false when the agent is busy or nothing is queued.
+	 */
+	async continueQueuedMessages(): Promise<boolean> {
+		if (this.isStreaming || this.isCompacting || this.pendingMessageCount === 0) return false;
+		if (!this.agent.hasQueuedMessages()) return false;
+		await this._runAgent(() => this.agent.continue());
+		return true;
+	}
+
+	private async _runAgent(start: () => Promise<void>): Promise<void> {
 		this._agentRunAbortRequested = false;
 		// See docs/adr/coding-agent/core-agent-session.md#failed-response-clear-before-new-prompt
 		this._failedResponse = undefined;
@@ -1891,7 +1907,7 @@ export class AgentSession {
 		this._pendingToolNames.clear();
 		this._isAgentRunActive = true;
 		try {
-			await this.agent.prompt(messages);
+			await start();
 			while (!this._agentRunAbortRequested) {
 				if (await this._handlePostAgentRun()) {
 					if (this._agentRunAbortRequested) break;
@@ -4037,19 +4053,33 @@ export class AgentSession {
 	 */
 	async waitForBackgroundTasks(timeoutMs: number): Promise<boolean> {
 		const deadline = Date.now() + timeoutMs;
-		while (true) {
-			while (this._pendingTaskNotifications.size > 0) {
-				await Promise.all([...this._pendingTaskNotifications]);
+		let timedOut = false;
+		// A timer, not a check between waits: a monitor that keeps producing output keeps its notification
+		// turn running, so the loop below may not get back to a check before the deadline.
+		const timer = setTimeout(() => {
+			if (this.tasks.running().length === 0) return;
+			timedOut = true;
+			// Stopped tasks send no notifications, so the turns already started can finish.
+			this.tasks.stopAll();
+		}, timeoutMs);
+		try {
+			while (true) {
+				while (this._pendingTaskNotifications.size > 0) {
+					await Promise.all([...this._pendingTaskNotifications]);
+				}
+				await this.waitForIdle();
+				if (this._pendingTaskNotifications.size > 0) continue;
+				if (timedOut) return false;
+				if (this.tasks.running().length === 0) return true;
+				const remaining = deadline - Date.now();
+				if (remaining <= 0) {
+					this.tasks.stopAll();
+					return false;
+				}
+				await this.tasks.waitForActivity(remaining);
 			}
-			await this.waitForIdle();
-			if (this._pendingTaskNotifications.size > 0) continue;
-			if (this.tasks.running().length === 0) return true;
-			const remaining = deadline - Date.now();
-			if (remaining <= 0) {
-				this.tasks.stopAll();
-				return false;
-			}
-			await this.tasks.waitForActivity(remaining);
+		} finally {
+			clearTimeout(timer);
 		}
 	}
 

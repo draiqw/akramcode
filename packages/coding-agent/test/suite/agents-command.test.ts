@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { createAgentSession } from "../../src/core/sdk.ts";
 import { DEFAULT_TOOL_NAMES } from "../../src/core/settings-manager.ts";
-import { showAgents } from "../../src/extensions/tasks/agents.ts";
+import { collectAgentWarnings, showAgents } from "../../src/extensions/tasks/agents.ts";
 import { createHarness, createTestUiContext, type Harness } from "./harness.ts";
 
 type SelectAnswer = (title: string, options: string[]) => string | undefined;
@@ -98,6 +98,21 @@ describe("/agents", () => {
 			"general-purpose",
 			"explore",
 		]);
+	});
+
+	it("does not warn about optional tools of built-in agent types", async () => {
+		const harness = await createHarness({
+			createSubagentSession: createAgentSession,
+			initialActiveToolNames: [...DEFAULT_TOOL_NAMES],
+		});
+		harnesses.push(harness);
+		const control = harness.session.subagents;
+		if (!control) throw new Error("subagents are not enabled");
+		// grep, find, and ls are off by default; explore lists them, so it would warn on every start.
+		expect(control.resolveTools(control.listTypes().types.find((type) => type.name === "explore")!).unknown).toEqual(
+			expect.arrayContaining(["grep"]),
+		);
+		expect(collectAgentWarnings(control)).toEqual([]);
 	});
 
 	it("rejects invalid names and existing files without writing", async () => {

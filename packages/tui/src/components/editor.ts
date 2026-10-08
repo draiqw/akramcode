@@ -786,7 +786,13 @@ export class Editor implements Component, Focusable {
 					this.state.cursorLine = result.cursorLine;
 					this.setCursorCol(result.cursorCol);
 
-					if (this.autocompletePrefix.startsWith("/")) {
+					// Command-name completions (prefix "/...") and slash command argument completions
+					// (regular, non-forced request on a "/cmd ..." line; "@" prefixes are file mentions)
+					// submit on Enter. Forced (Tab) and file completions only insert.
+					const isSlashCommandLine = this.state.lines.length === 1 && (this.state.lines[0] ?? "").startsWith("/");
+					const isCommandArgumentCompletion =
+						this.autocompleteState === "regular" && !this.autocompletePrefix.startsWith("@");
+					if (this.autocompletePrefix.startsWith("/") || (isCommandArgumentCompletion && isSlashCommandLine)) {
 						this.cancelAutocomplete();
 						// Fall through to submit
 					} else {
