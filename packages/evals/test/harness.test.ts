@@ -79,14 +79,14 @@ describe("documentation variant", () => {
 		expect(prompt).toContain("\n<docs>\nAkramCode documentation (read only");
 		expect(prompt).toContain("\n<rules>\n");
 		expect(prompt).toContain("\n<cwd>\n/workspace\n</cwd>");
-		expect(prompt).toContain("docs/models.md");
+		expect(prompt).toContain("Resolve docs/... under Additional docs");
 
 		const stripped = excludeAkramCodeDocumentation(prompt);
 		expect(stripped).toContain("\n<rules>\n");
 		expect(stripped).toContain("\n<cwd>\n/workspace\n</cwd>");
 		expect(stripped).not.toContain("<docs>");
 		expect(stripped).not.toContain("AkramCode documentation");
-		expect(stripped).not.toContain("docs/models.md");
+		expect(stripped).not.toContain("Resolve docs/...");
 		expect(stripped).not.toContain(getReadmePath());
 		expect(stripped).not.toContain(getDocsPath());
 		expect(stripped).not.toContain(getExamplesPath());
