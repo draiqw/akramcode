@@ -198,6 +198,26 @@ export interface AppliedEditsResult {
 	newContent: string;
 }
 
+const COPIED_LINE_NUMBER = /^ *\d+\t/;
+
+function stripLineNumbers(text: string): string | undefined {
+	const lines = text.split("\n");
+	if (!lines.every((line) => COPIED_LINE_NUMBER.test(line))) return undefined;
+	return lines.map((line) => line.replace(COPIED_LINE_NUMBER, "")).join("\n");
+}
+
+/**
+ * The read tool prefixes lines with `<number>\t`. When a model copies those prefixes into an edit,
+ * oldText matches nothing; drop them from oldText (and from newText when every line has one) if the
+ * stripped text is in the file.
+ */
+function stripCopiedLineNumbers(content: string, edit: Edit): Edit {
+	if (fuzzyFindText(content, edit.oldText).found) return edit;
+	const oldText = stripLineNumbers(edit.oldText);
+	if (oldText === undefined || !fuzzyFindText(content, oldText).found) return edit;
+	return { oldText, newText: stripLineNumbers(edit.newText) ?? edit.newText };
+}
+
 /**
  * Find oldText in content, trying exact match first, then fuzzy match.
  * When fuzzy matching is used, the returned contentForReplacement is the
@@ -302,10 +322,12 @@ export function applyEditsToNormalizedContent(
 	edits: Edit[],
 	path: string,
 ): AppliedEditsResult {
-	const normalizedEdits = edits.map((edit) => ({
-		oldText: normalizeToLF(edit.oldText),
-		newText: normalizeToLF(edit.newText),
-	}));
+	const normalizedEdits = edits.map((edit) =>
+		stripCopiedLineNumbers(normalizedContent, {
+			oldText: normalizeToLF(edit.oldText),
+			newText: normalizeToLF(edit.newText),
+		}),
+	);
 
 	for (let i = 0; i < normalizedEdits.length; i++) {
 		if (normalizedEdits[i].oldText.length === 0) {

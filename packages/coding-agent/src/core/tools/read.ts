@@ -56,6 +56,13 @@ export interface ReadToolOptions {
 	operations?: ReadOperations;
 }
 
+/** Text lines in read output start with the line number and a tab, as `cat -n` prints them. */
+export const READ_LINE_NUMBER_PREFIX = /^ *(\d+)\t/;
+
+function formatNumberedLine(lineNumber: number, line: string): string {
+	return `${lineNumber}\t${line}`;
+}
+
 function getNonVisionImageNote(model: Model<Api> | undefined): string | undefined {
 	if (!model || model.input.includes("image")) {
 		return undefined;
@@ -73,7 +80,7 @@ export function createReadToolDefinition(
 	return {
 		name: "read",
 		label: "read",
-		description: `Read the contents of a file. Supports text files and images (jpg, png, gif, webp, bmp). Images are sent as attachments. For text files, output is truncated to ${DEFAULT_MAX_LINES} lines or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.`,
+		description: `Read the contents of a file. Supports text files and images (jpg, png, gif, webp, bmp). Images are sent as attachments. Text lines are prefixed with their line number and a tab (\`12\\t...\`); the prefix is not part of the file, so never copy it into edit oldText or newText. For text files, output is truncated to ${DEFAULT_MAX_LINES} lines or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.`,
 		promptSnippet: readToolSystemPromptContribution.snippet,
 		promptGuidelines: [...readToolSystemPromptContribution.guidelines],
 		parameters: readSchema,
@@ -151,16 +158,19 @@ export function createReadToolDefinition(
 								if (startLine >= allLines.length) {
 									throw new Error(`Offset ${offset} is beyond end of file (${allLines.length} lines total)`);
 								}
-								let selectedContent: string;
 								let userLimitedLines: number | undefined;
 								// If limit is specified by the user, honor it first. Otherwise truncateHead decides.
-								if (limit !== undefined) {
-									const endLine = Math.min(startLine + limit, allLines.length);
-									selectedContent = allLines.slice(startLine, endLine).join("\n");
-									userLimitedLines = endLine - startLine;
-								} else {
-									selectedContent = allLines.slice(startLine).join("\n");
-								}
+								const endLine =
+									limit !== undefined ? Math.min(startLine + limit, allLines.length) : allLines.length;
+								if (limit !== undefined) userLimitedLines = endLine - startLine;
+								// Number lines so the model can cite file:line without counting.
+								const selectedContent =
+									textContent.length === 0
+										? ""
+										: allLines
+												.slice(startLine, endLine)
+												.map((line, index) => formatNumberedLine(startLine + index + 1, line))
+												.join("\n");
 								// Apply truncation, respecting both line and byte limits.
 								const truncation = truncateHead(selectedContent);
 								let outputText: string;

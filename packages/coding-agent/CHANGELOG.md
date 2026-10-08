@@ -25,6 +25,7 @@
 ### Changed
 
 - Shortened the default system prompt and the `edit` tool definition by removing guidance that the tool snippets, descriptions, and schemas already state, and by replacing the per-topic documentation map with a pointer to the docs directory. With the default tools, the fixed part of the system prompt drops from 620 to 416 tokens and the tool definitions from 588 to 542 tokens (o200k tokenizer).
+- The `read` tool now prefixes each text line with its line number and a tab (`12\t...`), so the model cites `file:line` correctly; the TUI shows the numbers as a dimmed gutter, and `edit` ignores numbers copied from `read` into `oldText`.
 
 ### Fixed
 

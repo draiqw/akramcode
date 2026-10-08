@@ -85,7 +85,8 @@ describe("Coding Agent Tools", () => {
 
 			const result = await readTool.execute("test-call-1", { path: testFile });
 
-			expect(getTextOutput(result)).toBe(content);
+			// Each line is prefixed with its number and a tab.
+			expect(getTextOutput(result)).toBe("1\tHello, world!\n2\tLine 2\n3\tLine 3");
 			// No truncation message since file fits within limits
 			expect(getTextOutput(result)).not.toContain("Use offset=");
 			expect(result.details).toBeUndefined();

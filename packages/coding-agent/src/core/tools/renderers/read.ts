@@ -24,6 +24,8 @@ interface CompactReadClassification {
 	label: string;
 }
 const COMPACT_RESOURCE_FILE_NAMES = new Set(["AGENTS.override.md", "AGENTS.md", "AGENTS.MD", "CLAUDE.md", "CLAUDE.MD"]);
+/** Same as `READ_LINE_NUMBER_PREFIX` in read.ts; kept here so rendering does not load the tool. */
+const LINE_NUMBER_PREFIX = /^ *(\d+)\t/;
 type ReadRenderArgs = { path?: string; file_path?: string; offset?: number; limit?: number };
 function formatReadLineRange(args: ReadRenderArgs | undefined, theme: Theme): string {
 	// Strict tool schemas make models send null for omitted optional fields.
@@ -125,12 +127,31 @@ function formatReadResult(
 	const rawPath = str(args?.file_path ?? args?.path);
 	const output = getTextOutput(result, showImages);
 	const lang = !isError && rawPath ? getLanguageFromPath(rawPath) : undefined;
-	const renderedLines = lang ? highlightCode(replaceTabs(output), lang) : output.split("\n");
+	// Highlight the file text without the line-number prefixes, then show the numbers dimmed.
+	const lineNumbers: (string | undefined)[] = [];
+	const code = isError
+		? output
+		: output
+				.split("\n")
+				.map((line) => {
+					const match = LINE_NUMBER_PREFIX.exec(line);
+					lineNumbers.push(match?.[1]);
+					return match ? line.slice(match[0].length) : line;
+				})
+				.join("\n");
+	const numberWidth = Math.max(0, ...lineNumbers.map((n) => n?.length ?? 0));
+	const renderedLines = lang ? highlightCode(replaceTabs(code), lang) : code.split("\n");
 	const lines = trimTrailingEmptyLines(renderedLines);
 	const maxLines = options.expanded ? lines.length : 10;
 	const displayLines = lines.slice(0, maxLines);
 	const remaining = lines.length - maxLines;
-	let text = `\n${displayLines.map((line) => (lang ? replaceTabs(line) : theme.fg("toolOutput", replaceTabs(line)))).join("\n")}`;
+	let text = `\n${displayLines
+		.map((line, index) => {
+			const number = lineNumbers[index];
+			const gutter = number ? `${theme.fg("dim", number.padStart(numberWidth))} ` : "";
+			return gutter + (lang ? replaceTabs(line) : theme.fg("toolOutput", replaceTabs(line)));
+		})
+		.join("\n")}`;
 	if (remaining > 0) {
 		text += `${theme.fg("muted", `\n... (${remaining} more lines,`)} ${keyHint("app.tools.expand", "to expand")}${theme.fg("muted", ")")}`;
 	}
