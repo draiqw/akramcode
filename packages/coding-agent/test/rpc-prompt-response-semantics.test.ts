@@ -325,6 +325,39 @@ describe("RPC prompt response semantics", () => {
 		}
 	});
 
+	it("rejects or queues a second prompt that arrives in the same stdin chunk", async () => {
+		const { lineHandler, cleanup } = await startRpcMode({ withAuth: true, responseDelayMs: 50 });
+
+		try {
+			// Both lines are handled before the first prompt's preflight finishes.
+			lineHandler(JSON.stringify({ id: "p1", type: "prompt", message: "say A" }));
+			lineHandler(JSON.stringify({ id: "p2", type: "prompt", message: "say B" }));
+			lineHandler(JSON.stringify({ id: "p3", type: "prompt", message: "say C", streamingBehavior: "followUp" }));
+
+			await vi.waitFor(() => {
+				expect(getPromptResponses(rpcIo.outputLines, "p1")).toMatchObject([{ data: { disposition: "started" } }]);
+				expect(getPromptResponses(rpcIo.outputLines, "p2")).toMatchObject([
+					{ success: false, error: expect.stringContaining("Agent is already processing") },
+				]);
+				expect(getPromptResponses(rpcIo.outputLines, "p3")).toMatchObject([{ data: { disposition: "queued" } }]);
+			});
+			await vi.waitFor(() => {
+				expect(parseOutputLines(rpcIo.outputLines).filter((line) => line.type === "agent_settled")).toHaveLength(1);
+			});
+			const events = parseOutputLines(rpcIo.outputLines).map((line) => line.type);
+			// One run that also handles the queued follow-up, and no settle before it ends.
+			expect(events.filter((type) => type === "agent_start")).toHaveLength(1);
+			expect(events.indexOf("agent_settled")).toBeGreaterThan(events.lastIndexOf("agent_end"));
+			const userTexts = parseOutputLines(rpcIo.outputLines).flatMap((line) => {
+				const message = line.message as { role?: string; content?: Array<{ text?: string }> } | undefined;
+				return line.type === "message_end" && message?.role === "user" ? [message.content?.[0]?.text] : [];
+			});
+			expect(userTexts).toEqual(["say A", "say C"]);
+		} finally {
+			await cleanup();
+		}
+	});
+
 	// #9803: a handler can consume A while independently queueing B; report A's outcome.
 	it.each(["steer", "follow_up"] as const)(
 		"reports %s as handled even when an extension queues another message",

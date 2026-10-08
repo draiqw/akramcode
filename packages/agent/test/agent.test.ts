@@ -1131,6 +1131,44 @@ describe("Agent", () => {
 		expect(agent.peekQueuedMessages()).toEqual([followUp]);
 	});
 
+	it("delivers adjacent batched follow-ups together in one-at-a-time mode", async () => {
+		const requests: string[][] = [];
+		const agent = new Agent({
+			initialState: { messages: [createUserMessage("existing"), createAssistantMessage("done")] },
+			followUpMode: "one-at-a-time",
+			streamFn: (_model, context) => {
+				requests.push(
+					context.messages.flatMap((message) =>
+						message.role === "user" && typeof message.content === "string" ? [message.content] : [],
+					),
+				);
+				const stream = new MockAssistantStream();
+				queueMicrotask(() =>
+					stream.push({ type: "done", reason: "stop", message: createAssistantMessage("done") }),
+				);
+				return stream;
+			},
+		});
+		const firstEvent = createUserMessage("event 1");
+		const secondEvent = createUserMessage("event 2");
+		const typed = createUserMessage("typed");
+		const thirdEvent = createUserMessage("event 3");
+		agent.followUp(firstEvent, { batch: true });
+		agent.followUp(secondEvent, { batch: true });
+		agent.followUp(typed);
+		agent.followUp(thirdEvent, { batch: true });
+		expect(agent.peekQueuedMessages()).toEqual([firstEvent, secondEvent]);
+
+		await agent.continue();
+
+		// Batched messages leave together; a plain message still gets its own turn, and order is kept.
+		expect(requests.map((request) => request.slice(1))).toEqual([
+			["event 1", "event 2"],
+			["event 1", "event 2", "typed"],
+			["event 1", "event 2", "typed", "event 3"],
+		]);
+	});
+
 	it("forwards provider stream event observers through AgentOptions", async () => {
 		const providerEvents: unknown[] = [];
 		const agent = new Agent({

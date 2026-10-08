@@ -380,6 +380,10 @@ export async function runRpcMode(runtimeHost: AgentSessionRuntime): Promise<neve
 	await rebindSession();
 	registerSignalHandlers();
 
+	// Settles when the latest prompt command finishes preflight. Prompts run their preflight one after
+	// another: two prompts in one stdin write would otherwise both pass the "not streaming" check.
+	let promptPreflight: Promise<void> = Promise.resolve();
+
 	// Handle a single command
 	const handleCommand = async (command: RpcCommand): Promise<RpcResponse | undefined> => {
 		const id = command.id;
@@ -392,21 +396,30 @@ export async function runRpcMode(runtimeHost: AgentSessionRuntime): Promise<neve
 			case "prompt": {
 				// See docs/adr/coding-agent/modes-rpc-rpc-mode.md#prompt-handling-behavior
 				let preflightSucceeded = false;
-				void session
-					.prompt(command.message, {
-						images: command.images,
-						streamingBehavior: command.streamingBehavior,
-						source: "rpc",
-						preflightResult: (disposition) => {
-							preflightSucceeded = true;
-							output(success(id, "prompt", { disposition }));
-						},
-					})
+				let releasePreflight = () => {};
+				const previousPreflight = promptPreflight;
+				promptPreflight = new Promise<void>((resolve) => {
+					releasePreflight = resolve;
+				});
+				void previousPreflight
+					.then(() =>
+						session.prompt(command.message, {
+							images: command.images,
+							streamingBehavior: command.streamingBehavior,
+							source: "rpc",
+							preflightResult: (disposition) => {
+								preflightSucceeded = true;
+								releasePreflight();
+								output(success(id, "prompt", { disposition }));
+							},
+						}),
+					)
 					.catch((e) => {
 						if (!preflightSucceeded) {
 							output(error(id, "prompt", e.message));
 						}
-					});
+					})
+					.finally(releasePreflight);
 				return undefined;
 			}
 

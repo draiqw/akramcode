@@ -4643,7 +4643,7 @@ export class InteractiveMode {
 		if (allQueued.length === 0) {
 			this.updatePendingMessagesDisplay();
 			if (options?.abort) {
-				void this.session.abort();
+				this.abortRun();
 			}
 			return 0;
 		}
@@ -4653,9 +4653,19 @@ export class InteractiveMode {
 		this.editor.setText(combinedText);
 		this.updatePendingMessagesDisplay();
 		if (options?.abort) {
-			void this.session.abort();
+			this.abortRun();
 		}
 		return allQueued.length;
+	}
+
+	/** Abort the current run and say what happens to background tasks that keep running. */
+	private abortRun(): void {
+		void this.session.abort().then(() => {
+			if (this.session.tasks.running().length === 0) return;
+			this.showStatus(
+				"Background tasks keep running. Their notifications wait for your next message; /tasks stops them.",
+			);
+		});
 	}
 
 	private queueCompactionMessage(text: string, mode: "steer" | "followUp"): void {

@@ -229,12 +229,15 @@ describe("InteractiveMode compaction events", () => {
 	});
 
 	// Regression test for #9340.
-	test("routes interactive response aborts through AgentSession", () => {
+	test("routes interactive response aborts through AgentSession", async () => {
 		const abort = vi.fn(async () => {});
+		const running: Array<{ id: string }> = [];
 		const ui = {
 			clearAllQueues: () => ({ steering: [], followUp: [] }),
 			updatePendingMessagesDisplay: vi.fn(),
-			session: { abort },
+			showStatus: vi.fn(),
+			abortRun: Reflect.get(InteractiveMode.prototype, "abortRun") as () => void,
+			session: { abort, tasks: { running: () => running } },
 		};
 		const restoreQueuedMessagesToEditor = Reflect.get(InteractiveMode.prototype, "restoreQueuedMessagesToEditor") as (
 			this: typeof ui,
@@ -242,8 +245,14 @@ describe("InteractiveMode compaction events", () => {
 		) => number;
 
 		restoreQueuedMessagesToEditor.call(ui, { abort: true });
+		await vi.waitFor(() => expect(abort).toHaveBeenCalledOnce());
+		expect(ui.showStatus).not.toHaveBeenCalled();
 
-		expect(abort).toHaveBeenCalledOnce();
+		// With background tasks still running, the user learns that their notifications wait.
+		running.push({ id: "m1" });
+		restoreQueuedMessagesToEditor.call(ui, { abort: true });
+		await vi.waitFor(() => expect(ui.showStatus).toHaveBeenCalledOnce());
+		expect(ui.showStatus.mock.calls[0][0]).toContain("notifications wait for your next message");
 	});
 
 	test("preserves steering behavior when flushing into an active agent run", async () => {

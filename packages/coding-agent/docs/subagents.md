@@ -129,6 +129,8 @@ A background task runs while the conversation continues. There are three kinds:
 
 Each task writes its output to `<task id>.output` in a private directory of the session under the temp directory (`akramcode-tasks-<random>`, mode 0700; files 0600, never written through an existing file or symlink). The directory is deleted when the session ends. The tool result names the file; the model reads it with the `read` tool. For background agents the file records the prompt, the subagent's tool calls, and the result.
 
+An output file holds at most 64 MiB; after that a note marks the limit and later output is discarded while the task keeps running. Output that arrives faster than the disk accepts it is dropped and replaced by a note with the number of dropped bytes, so a command like `yes` cannot fill memory.
+
 The `task_stop` tool stops a task by id. The model is not notified about tasks it stops itself.
 
 ### Monitor
@@ -137,7 +139,9 @@ A monitor is a background `bash` command with `monitor: true`. It delivers each 
 
 ### Task notifications
 
-When a task finishes, and for each monitor batch, the session receives a `task-notification` message. It names the task, its status (`completed`, `failed`, or `stopped`), and its output file, and carries the last 20 output lines of commands and the final message of agents. The message starts a turn when the agent is idle, or is delivered after the current turn when it is working, so the model reacts in both cases.
+When a task finishes, and for each monitor batch, the session receives a `task-notification` message. It names the task, its status (`completed`, `failed`, or `stopped`), and its output file, and carries the last 20 output lines of commands and the final message of agents. The message starts a turn when the agent is idle, or is delivered after the current turn when it is working, so the model reacts in both cases. Notifications that arrive during a turn are delivered together in the next turn.
+
+After you interrupt a run (`Escape`, or `abort` in RPC mode), notifications no longer start turns. They wait and are sent with your next prompt, which resumes normal delivery; of monitor output, only the newest five notifications are kept. Stop a task with `/tasks` if you no longer need it.
 
 In the transcript a notification is one line, for example `● task b1 (bash: npm test) completed · exit 0 · 12s`; expand tool output to see its content.
 

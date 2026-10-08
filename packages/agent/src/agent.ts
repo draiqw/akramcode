@@ -142,14 +142,17 @@ export interface AgentOptions {
 
 class PendingMessageQueue {
 	private messages: AgentMessage[] = [];
+	/** Messages that leave the queue together with adjacent batched messages, even in one-at-a-time mode. */
+	private readonly batched = new WeakSet<AgentMessage>();
 	public mode: QueueMode;
 
 	constructor(mode: QueueMode) {
 		this.mode = mode;
 	}
 
-	enqueue(message: AgentMessage): void {
+	enqueue(message: AgentMessage, batch = false): void {
 		this.messages.push(message);
+		if (batch) this.batched.add(message);
 	}
 
 	hasItems(): boolean {
@@ -159,7 +162,10 @@ class PendingMessageQueue {
 	peek(): AgentMessage[] {
 		if (this.mode === "all") return this.messages.slice();
 		const first = this.messages[0];
-		return first ? [first] : [];
+		if (!first) return [];
+		if (!this.batched.has(first)) return [first];
+		const end = this.messages.findIndex((message) => !this.batched.has(message));
+		return end === -1 ? this.messages.slice() : this.messages.slice(0, end);
 	}
 
 	drain(): AgentMessage[] {
@@ -300,9 +306,13 @@ export class Agent {
 		this.steeringQueue.enqueue(message);
 	}
 
-	/** Queue a message to run only after the agent would otherwise stop. */
-	followUp(message: AgentMessage): void {
-		this.followUpQueue.enqueue(message);
+	/**
+	 * Queue a message to run only after the agent would otherwise stop.
+	 * @param options.batch Deliver the message in one turn together with adjacent queued batched messages,
+	 * also in "one-at-a-time" mode. For machine-generated messages such as background task notifications.
+	 */
+	followUp(message: AgentMessage, options?: { batch?: boolean }): void {
+		this.followUpQueue.enqueue(message, options?.batch);
 	}
 
 	/** Remove all queued steering messages. */

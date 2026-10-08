@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added `Agent.followUp(message, { batch: true })`: adjacent batched follow-ups are delivered together in one turn, also in `"one-at-a-time"` mode, for machine-generated messages such as task notifications.
+
 ## [1.0.0] - 2026-10-01
 
 ### Breaking Changes

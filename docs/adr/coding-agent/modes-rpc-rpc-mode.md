@@ -25,3 +25,5 @@ Widget content in RPC mode accepts only string arrays, not factory functions. Co
 ## Prompt handling behavior
 
 Prompt commands emit success responses immediately after preflight validation, not after the entire agent run completes. This allows the client to know immediately whether the prompt was accepted or queued, while still receiving stream events as the agent processes.
+
+Preflight is asynchronous (input handlers, auth check, `before_agent_start`), so prompt commands wait for the previous prompt's preflight before starting their own. Without this, two prompts written in one stdin chunk both pass the "not streaming" check, both report `started`, and the second run fails silently because the agent is already busy. With it, the second prompt sees the first run and is rejected or queued according to `streamingBehavior`.

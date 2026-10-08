@@ -508,6 +508,82 @@ describe("AgentSession subagents and background tasks", () => {
 		expect(lastAssistantText(harness)).toBe("Monitor ended.");
 	});
 
+	it("delivers notifications queued during a turn together in the next turn", async () => {
+		const harness = await setup();
+		let releaseFirst = () => {};
+		const firstReleased = new Promise<void>((resolve) => {
+			releaseFirst = resolve;
+		});
+		const requests: string[] = [];
+		const respond =
+			(text: string, gate?: Promise<void>): FauxResponseFactory =>
+			async (context) => {
+				requests.push(context.messages.map((message) => getMessageText(message)).join("\n"));
+				await gate;
+				return fauxAssistantMessage(text);
+			};
+		harness.setResponses([respond("Working.", firstReleased), respond("Both seen.")]);
+
+		const running = harness.session.prompt("go");
+		await new Promise((resolve) => setTimeout(resolve, 20));
+		const monitor = harness.session.tasks.create({ kind: "monitor", description: "watch" });
+		monitor.emitOutput(["line 1"]);
+		await monitor.finish({ status: "completed", exitCode: 0 });
+		releaseFirst();
+		await running;
+		await harness.session.waitForIdle();
+
+		// One request carries the output and the completion; the model never sees m1 as still running alone.
+		expect(requests).toHaveLength(2);
+		expect(requests[1]).toContain("line 1");
+		expect(requests[1]).toContain("<status>completed</status>");
+		expect(notifications(harness).map((message) => message.details?.event)).toEqual(["output", "finished"]);
+		expect(lastAssistantText(harness)).toBe("Both seen.");
+	});
+
+	it("holds task notifications after an abort until the next prompt", async () => {
+		const harness = await setup();
+		const requests: string[] = [];
+		const waitForAbort: FauxResponseFactory = async (context, options) => {
+			requests.push(context.messages.map((message) => getMessageText(message)).join("\n"));
+			await new Promise<void>((resolve) => options?.signal?.addEventListener("abort", () => resolve()));
+			return fauxAssistantMessage("never shown");
+		};
+		const answer: FauxResponseFactory = (context) => {
+			requests.push(context.messages.map((message) => getMessageText(message)).join("\n"));
+			return fauxAssistantMessage("Answered.");
+		};
+		harness.setResponses([waitForAbort, answer]);
+
+		const running = harness.session.prompt("watch");
+		await new Promise((resolve) => setTimeout(resolve, 20));
+		await harness.session.abort();
+		await running;
+
+		const monitor = harness.session.tasks.create({ kind: "monitor", description: "watch" });
+		for (let i = 1; i <= 8; i++) monitor.emitOutput([`evt${i}`]);
+		await new Promise((resolve) => setTimeout(resolve, 50));
+		// No turn started: Escape returned control even though the monitor keeps producing output.
+		expect(requests).toHaveLength(1);
+		expect(harness.eventsOfType("agent_start")).toHaveLength(1);
+		expect(notifications(harness)).toHaveLength(0);
+
+		await harness.session.prompt("what happened?");
+		expect(requests).toHaveLength(2);
+		// Only the newest output notifications are kept; older lines stay in the output file.
+		expect(requests[1]).toContain("what happened?");
+		expect(requests[1]).toContain("evt8");
+		expect(requests[1]).toContain("evt4");
+		expect(requests[1]).not.toContain("evt3");
+		expect(notifications(harness)).toHaveLength(5);
+
+		// The prompt resumed automatic delivery.
+		harness.appendResponses([fauxAssistantMessage("Saw it.")]);
+		await monitor.finish({ status: "completed" });
+		await harness.session.waitForBackgroundTasks(5_000);
+		expect(lastAssistantText(harness)).toBe("Saw it.");
+	});
+
 	it("stops tasks at the wait timeout and when the session is disposed", async () => {
 		const harness = await setup();
 		harness.setResponses([

@@ -29,6 +29,10 @@
 - An unreachable or never-ready sandbox server now ends startup with one error line (`OpenSandbox is unavailable at <domain>: <reason>`) instead of a stack trace, and the half-started sandbox is deleted on the server.
 - Fixed the shrinkwrap shipping vulnerable `brace-expansion` 5.0.9 by pinning `brace-expansion` 5.0.12 as a direct dependency (GHSA-q2hr-2g5m-vwhr, GHSA-qhr7-859c-m2p7, GHSA-6j4f-fj2g-mc7p) ([#10288](https://github.com/draiqw/akramcode/issues/10288))
 - Fixed a trailing comma in `--models` adding an extra model to the model cycle ([#10334](https://github.com/draiqw/akramcode/issues/10334))
+- Fixed a background command that prints without pause (such as `yes`) filling memory and disk: its output file stops at 64 MiB, output the disk cannot keep up with is dropped instead of buffered, and a stopped task or an ended `-p` run closes the file at once instead of writing gigabytes into a deleted directory. Monitor lines past the per-event limit are counted instead of kept.
+- Fixed `Escape` not returning control while a monitor produces output: after an abort, task notifications no longer start turns; they wait and go out with the next prompt (the newest five monitor output notifications are kept), and the transcript says so when tasks are still running.
+- Fixed task notifications queued during a turn being delivered one per turn, so the model answered stale events (for example "m1 is still running" while its completion waited in the queue); they now go out together in the next turn, also with `followUpMode: "one-at-a-time"`.
+- Fixed RPC mode acknowledging a second `prompt` written in the same stdin chunk as `started` and then dropping it, with a spurious `agent_settled`; prompts now run their preflight in order, so the second one is rejected or queued according to `streamingBehavior`.
 
 ## [1.0.0] - 2026-10-01
 

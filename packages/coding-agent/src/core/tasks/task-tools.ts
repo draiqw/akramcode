@@ -72,6 +72,8 @@ export function createLineBatcher(options: LineBatcherOptions): LineBatcher {
 	const decoder = new TextDecoder();
 	let partialLine = "";
 	let pending: string[] = [];
+	// Lines past `maxLinesPerEvent` are only counted, so a fast command cannot grow `pending` without bound.
+	let omitted = 0;
 	let timer: NodeJS.Timeout | undefined;
 	let lastDeliveryAt = 0;
 
@@ -79,22 +81,30 @@ export function createLineBatcher(options: LineBatcherOptions): LineBatcher {
 		if (timer) clearTimeout(timer);
 		timer = undefined;
 		if (pending.length === 0) return;
-		const lines = pending.slice(0, maxLinesPerEvent);
-		const omitted = pending.length - lines.length;
+		const lines = pending;
+		const omittedLines = omitted;
 		pending = [];
+		omitted = 0;
 		lastDeliveryAt = Date.now();
-		options.deliver(lines, omitted);
+		options.deliver(lines, omittedLines);
 	};
 	const addLine = (line: string) => {
 		const trimmed = line.replace(/\r$/, "");
 		if (trimmed.length === 0) return;
-		pending.push(trimmed.length > MONITOR_MAX_LINE_CHARS ? `${trimmed.slice(0, MONITOR_MAX_LINE_CHARS)}…` : trimmed);
+		if (pending.length >= maxLinesPerEvent) omitted++;
+		else
+			pending.push(
+				trimmed.length > MONITOR_MAX_LINE_CHARS ? `${trimmed.slice(0, MONITOR_MAX_LINE_CHARS)}…` : trimmed,
+			);
 		timer ??= setTimeout(deliver, Math.max(batchWindowMs, lastDeliveryAt + minIntervalMs - Date.now()));
 	};
 	return {
 		push(data) {
 			const lines = (partialLine + decoder.decode(data, { stream: true })).split("\n");
 			partialLine = lines.pop() ?? "";
+			// An endless line (no newline) must not grow without bound either.
+			if (partialLine.length > MONITOR_MAX_LINE_CHARS)
+				partialLine = partialLine.slice(0, MONITOR_MAX_LINE_CHARS + 1);
 			for (const line of lines) addLine(line);
 		},
 		flush() {

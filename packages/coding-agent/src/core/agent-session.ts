@@ -179,6 +179,9 @@ import {
 	type VirtualModelStateData,
 } from "./virtual-models.ts";
 
+/** Monitor output notifications kept for the next prompt while notifications are paused after an abort. */
+const MAX_HELD_TASK_OUTPUT_NOTIFICATIONS = 5;
+
 // ============================================================================
 // Skill Block Parsing
 // ============================================================================
@@ -493,6 +496,12 @@ export class AgentSession {
 	private _unsubscribeTasks?: () => void;
 	/** Task notifications being delivered; `waitForBackgroundTasks()` waits for them. */
 	private readonly _pendingTaskNotifications = new Set<Promise<void>>();
+	/**
+	 * Set when the user aborts a run. Until the next prompt, task notifications do not start turns;
+	 * they wait and go out with that prompt. Otherwise a busy monitor would start a new turn every
+	 * few seconds and Escape could never return control.
+	 */
+	private _taskNotificationsPaused = false;
 	private _sessionStartEvent: SessionStartEvent;
 	private _extensionUIContext?: ExtensionUIContext;
 	private _extensionMode: ExtensionMode = "print";
@@ -2123,11 +2132,21 @@ export class AgentSession {
 			timestamp: Date.now(),
 		});
 
-		// Inject any pending "nextTurn" messages as context alongside the user message
+		// Another prompt may have started a run while this one awaited its preflight steps.
+		// Nothing below awaits, so this check holds until the run starts.
+		if (this.isStreaming) {
+			throw new Error(
+				"Agent is already processing. Specify streamingBehavior ('steer' or 'followUp') to queue the message.",
+			);
+		}
+
+		// Inject any pending "nextTurn" messages as context alongside the user message.
+		// They include task notifications held back since an abort, which this prompt resumes.
 		for (const msg of this._pendingNextTurnMessages) {
 			messages.push(msg);
 		}
 		this._pendingNextTurnMessages = [];
+		this._taskNotificationsPaused = false;
 
 		for (const msg of result.messages) {
 			messages.push({
@@ -2469,6 +2488,7 @@ export class AgentSession {
 	async abort(): Promise<void> {
 		if (this._isAgentRunActive) {
 			this._agentRunAbortRequested = true;
+			this._taskNotificationsPaused = true;
 		}
 		this.abortRetry();
 		this.abortCompaction();
@@ -3835,15 +3855,23 @@ export class AgentSession {
 			};
 		}
 		if (!message) return;
-		const delivery = this.sendCustomMessage(
-			{
-				customType: TASK_NOTIFICATION_CUSTOM_TYPE,
-				content: message.content,
-				display: true,
-				details: message.details,
-			},
-			{ triggerTurn: true, deliverAs: "followUp" },
-		)
+		const notification = {
+			customType: TASK_NOTIFICATION_CUSTOM_TYPE,
+			content: message.content,
+			display: true,
+			details: message.details,
+		};
+		if (this._taskNotificationsPaused) {
+			this._holdTaskNotification({ role: "custom", ...notification, timestamp: Date.now() });
+			return;
+		}
+		if (this.isStreaming) {
+			// Batched: notifications queued during a turn go out together in the next turn, so the model
+			// sees the current state of every task at once instead of one stale event per turn.
+			this.agent.followUp({ role: "custom", ...notification, timestamp: Date.now() }, { batch: true });
+			return;
+		}
+		const delivery = this.sendCustomMessage(notification, { triggerTurn: true, deliverAs: "followUp" })
 			.catch((error: unknown) => {
 				this._extensionRunner.emitError({
 					extensionPath: "<runtime>",
@@ -3855,6 +3883,26 @@ export class AgentSession {
 				this._pendingTaskNotifications.delete(delivery);
 			});
 		this._pendingTaskNotifications.add(delivery);
+	}
+
+	/**
+	 * Keep a task notification for the next prompt (notifications are paused after an abort).
+	 * Only the newest monitor output notifications are kept; their lines are also in the output file.
+	 */
+	private _holdTaskNotification(message: CustomMessage<TaskNotificationDetails>): void {
+		this._pendingNextTurnMessages.push(message);
+		const isHeldOutput = (held: CustomMessage) =>
+			held.customType === TASK_NOTIFICATION_CUSTOM_TYPE &&
+			(held.details as TaskNotificationDetails | undefined)?.event === "output";
+		let excess = this._pendingNextTurnMessages.filter(isHeldOutput).length - MAX_HELD_TASK_OUTPUT_NOTIFICATIONS;
+		if (excess <= 0) return;
+		this._pendingNextTurnMessages = this._pendingNextTurnMessages.filter((held) => {
+			if (excess > 0 && isHeldOutput(held)) {
+				excess--;
+				return false;
+			}
+			return true;
+		});
 	}
 
 	/**

@@ -93,9 +93,24 @@ interface TaskEntry {
 	stream: WriteStream | undefined;
 	notifyOnFinish: boolean;
 	finished: boolean;
+	/** Bytes accepted for the output file, including dropped-output notes. */
+	writtenBytes: number;
+	/** Bytes dropped since the last note because the file could not keep up. */
+	droppedBytes: number;
+	/** Set once the output file reached its size limit; later output is discarded. */
+	capped: boolean;
 }
 
 const ID_PREFIX: Record<TaskKind, string> = { bash: "b", agent: "a", monitor: "m" };
+
+/** Output file size limit. Output past it is discarded, so a command like `yes` cannot fill the disk. */
+const DEFAULT_MAX_OUTPUT_BYTES = 64 * 1024 * 1024;
+/**
+ * Output waiting to be written, at most. A process can print faster than the disk accepts it;
+ * past this limit output is dropped instead of buffered, so memory stays bounded and a stopped task
+ * closes its file at once instead of flushing gigabytes first.
+ */
+const DEFAULT_MAX_BUFFERED_BYTES = 4 * 1024 * 1024;
 
 /**
  * Background tasks of one session: background bash commands, background agents, and monitors.
@@ -107,13 +122,19 @@ export class TaskRegistry {
 	private readonly listeners = new Set<(event: TaskEvent) => void>();
 	private readonly counters: Record<TaskKind, number> = { bash: 0, agent: 0, monitor: 0 };
 	private readonly parentDir: string;
+	private readonly maxOutputBytes: number;
+	private readonly maxBufferedBytes: number;
 	private outputDir: string | undefined;
 
 	/**
 	 * @param options.parentDir Where the private output directory is created. Default: the temp directory.
+	 * @param options.maxOutputBytes Output file size limit per task. Default: 64 MiB.
+	 * @param options.maxBufferedBytes Unwritten output per task, at most. Default: 4 MiB.
 	 */
-	constructor(options?: { parentDir?: string }) {
+	constructor(options?: { parentDir?: string; maxOutputBytes?: number; maxBufferedBytes?: number }) {
 		this.parentDir = options?.parentDir ?? tmpdir();
+		this.maxOutputBytes = options?.maxOutputBytes ?? DEFAULT_MAX_OUTPUT_BYTES;
+		this.maxBufferedBytes = options?.maxBufferedBytes ?? DEFAULT_MAX_BUFFERED_BYTES;
 	}
 
 	/**
@@ -146,6 +167,9 @@ export class TaskRegistry {
 			stream: createWriteStream(outputFile, { flags: "wx", mode: 0o600 }),
 			notifyOnFinish: true,
 			finished: false,
+			writtenBytes: 0,
+			droppedBytes: 0,
+			capped: false,
 		};
 		// Output files are diagnostics; a failing write must not crash the session.
 		entry.stream?.on("error", () => {
@@ -159,7 +183,7 @@ export class TaskRegistry {
 			signal: entry.controller.signal,
 			outputFile,
 			write: (data) => {
-				if (!entry.finished) entry.stream?.write(data);
+				if (!entry.finished) this.writeOutput(entry, data);
 			},
 			update: (patch) => {
 				if (entry.finished) return;
@@ -228,10 +252,15 @@ export class TaskRegistry {
 		}
 	}
 
-	/** Stop all tasks and delete the output directory. */
+	/** Stop all tasks, close their output files, and delete the output directory. */
 	dispose(): void {
 		this.stopAll();
 		this.listeners.clear();
+		// Close the files now: an open stream would keep writing to a file whose directory is deleted below.
+		for (const entry of this.entries.values()) {
+			entry.stream?.destroy();
+			entry.stream = undefined;
+		}
 		if (this.outputDir) {
 			try {
 				rmSync(this.outputDir, { recursive: true, force: true });
@@ -261,6 +290,41 @@ export class TaskRegistry {
 				if (event.type === "output" || event.type === "finished") done();
 			});
 		});
+	}
+
+	/** Append output to the task file within the buffer and size limits. */
+	private writeOutput(entry: TaskEntry, data: string | Buffer): void {
+		const stream = entry.stream;
+		if (!stream || entry.capped) return;
+		const size = typeof data === "string" ? Buffer.byteLength(data) : data.length;
+		if (stream.writableLength + size > this.maxBufferedBytes) {
+			entry.droppedBytes += size;
+			return;
+		}
+		if (entry.droppedBytes > 0) {
+			this.writeNote(
+				entry,
+				stream,
+				`\n[${entry.droppedBytes} bytes dropped: output arrived faster than it could be written]\n`,
+			);
+			entry.droppedBytes = 0;
+		}
+		if (entry.writtenBytes + size > this.maxOutputBytes) {
+			entry.capped = true;
+			this.writeNote(
+				entry,
+				stream,
+				`\n[Output limit of ${this.maxOutputBytes} bytes reached; later output is discarded. The task keeps running.]\n`,
+			);
+			return;
+		}
+		entry.writtenBytes += size;
+		stream.write(data);
+	}
+
+	private writeNote(entry: TaskEntry, stream: WriteStream, note: string): void {
+		entry.writtenBytes += Buffer.byteLength(note);
+		stream.write(note);
 	}
 
 	private snapshot(entry: TaskEntry): TaskInfo {

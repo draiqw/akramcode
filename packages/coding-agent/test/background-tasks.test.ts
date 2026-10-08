@@ -19,7 +19,7 @@ import {
 	readTaskOutputTail,
 } from "../src/core/tasks/notifications.ts";
 import { type TaskEvent, type TaskInfo, TaskRegistry } from "../src/core/tasks/task-registry.ts";
-import { createTaskStopToolDefinition } from "../src/core/tasks/task-tools.ts";
+import { createLineBatcher, createTaskStopToolDefinition } from "../src/core/tasks/task-tools.ts";
 import { createBashToolDefinition } from "../src/core/tools/bash.ts";
 
 function waitForFinished(
@@ -283,6 +283,19 @@ describe("bash monitor mode", () => {
 		expect(readFileSync(task.outputFile, "utf-8")).toBe("line1\nline2\nline3\nline4\nline5\nlate\ntail");
 	});
 
+	it("counts lines past the batch limit instead of keeping them", () => {
+		const batches: Array<{ lines: string[]; omitted: number }> = [];
+		const batcher = createLineBatcher({
+			deliver: (lines, omitted) => batches.push({ lines, omitted }),
+			maxLinesPerEvent: 2,
+		});
+		batcher.push(Buffer.from("y\n".repeat(100_000)));
+		batcher.push(Buffer.from("x".repeat(10_000)));
+		batcher.flush();
+		expect(batches).toHaveLength(1);
+		expect(batches[0]).toEqual({ lines: ["y", "y"], omitted: 99_999 });
+	});
+
 	it("stops at the timeout and requires run_in_background", async () => {
 		const bash = createBashToolDefinition(dir, { backgroundTasks: tasks });
 		await bash.execute(
@@ -352,6 +365,61 @@ describe("task output files", () => {
 			}
 			tasks.dispose();
 			expect(existsSync(outputDir)).toBe(false);
+		} finally {
+			rmSync(parent, { recursive: true, force: true });
+		}
+	});
+
+	it("stop at the size limit and drop output the disk cannot keep up with", async () => {
+		const parent = mkdtempSync(join(tmpdir(), "akramcode-tasks-cap-"));
+		try {
+			const tasks = new TaskRegistry({ parentDir: parent, maxOutputBytes: 100 });
+			const capped = tasks.create({ kind: "bash", description: "x" });
+			for (let i = 0; i < 20; i++) {
+				capped.write("0123456789\n");
+				// Let the stream drain so only the size limit applies.
+				await new Promise((resolve) => setTimeout(resolve, 5));
+			}
+			await capped.finish({ status: "completed" });
+			const cappedText = readFileSync(capped.outputFile, "utf-8");
+			expect(cappedText.startsWith("0123456789\n".repeat(9))).toBe(true);
+			expect(cappedText).toContain("[Output limit of 100 bytes reached");
+			expect(cappedText.match(/0123456789/g)).toHaveLength(9);
+
+			// Synchronous writes outrun the stream: past 64 buffered bytes, chunks are dropped, not buffered.
+			const fastTasks = new TaskRegistry({ parentDir: parent, maxBufferedBytes: 64 });
+			const flooded = fastTasks.create({ kind: "bash", description: "y" });
+			for (let i = 0; i < 20; i++) flooded.write("abcdefghi\n");
+			await new Promise((resolve) => setTimeout(resolve, 50));
+			flooded.write("after\n");
+			await flooded.finish({ status: "completed" });
+			const floodedText = readFileSync(flooded.outputFile, "utf-8");
+			expect(floodedText).toMatch(/\[\d+ bytes dropped: output arrived faster than it could be written\]\nafter\n$/);
+			expect(floodedText.length).toBeLessThan(200);
+			tasks.dispose();
+			fastTasks.dispose();
+		} finally {
+			rmSync(parent, { recursive: true, force: true });
+		}
+	});
+
+	it("keep memory and the output file bounded for a command that prints without pause", async () => {
+		const parent = mkdtempSync(join(tmpdir(), "akramcode-tasks-yes-"));
+		try {
+			const tasks = new TaskRegistry({ parentDir: parent, maxOutputBytes: 1024 * 1024 });
+			const bash = createBashToolDefinition(parent, { backgroundTasks: tasks });
+			await bash.execute("call-1", { command: "yes", run_in_background: true }, undefined, undefined, noContext);
+			await new Promise((resolve) => setTimeout(resolve, 500));
+			const finished = waitForFinished(tasks, "b1", 5000);
+			const stoppedAt = Date.now();
+			tasks.stop("b1");
+			const { task } = await finished;
+			expect(Date.now() - stoppedAt).toBeLessThan(3000);
+			const size = statSync(task.outputFile).size;
+			await new Promise((resolve) => setTimeout(resolve, 200));
+			expect(statSync(task.outputFile).size).toBe(size);
+			expect(size).toBeLessThan(1024 * 1024 + 1024);
+			tasks.dispose();
 		} finally {
 			rmSync(parent, { recursive: true, force: true });
 		}
