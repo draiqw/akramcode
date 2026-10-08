@@ -18,12 +18,14 @@ import type { KeybindingsConfig } from "../keybindings.ts";
 import type { ModelRegistry } from "../model-registry.ts";
 import type { ScopedModel } from "../model-resolver.ts";
 import type { SessionManager } from "../session-manager.ts";
+import type { SubagentControl } from "../subagents/agent-tool.ts";
 import {
 	type BuildSystemPromptOptions,
 	buildSystemPrompt,
 	type NormalizedBuildSystemPromptOptions,
 	normalizeBuildSystemPromptOptions,
 } from "../system-prompt.ts";
+import type { TaskRegistry } from "../tasks/task-registry.ts";
 import type { VirtualModelDefinition } from "../virtual-models.ts";
 import type {
 	AgentBeforeSettleEvent,
@@ -375,6 +377,8 @@ export class ExtensionRunner {
 		normalizeBuildSystemPromptOptions({ cwd: this.cwd });
 	private executeToolFn: ExtensionContextActions["executeTool"];
 	private getCallableToolsFn: () => readonly AgentTool[] = () => [];
+	private getTasksFn: (() => TaskRegistry) | undefined;
+	private getSubagentsFn: (() => SubagentControl | undefined) | undefined;
 	/** Registered MCP servers already reported as unhandled. */
 	private readonly reportedMcpServers = new Set<string>();
 	private newSessionHandler: NewSessionHandler = async () => ({ cancelled: false });
@@ -449,6 +453,8 @@ export class ExtensionRunner {
 			contextActions.getSystemPromptOptions ?? (() => normalizeBuildSystemPromptOptions({ cwd: this.cwd }));
 		this.executeToolFn = contextActions.executeTool;
 		this.getCallableToolsFn = contextActions.getCallableTools ?? (() => []);
+		this.getTasksFn = contextActions.getTasks;
+		this.getSubagentsFn = contextActions.getSubagents;
 
 		// See docs/adr/coding-agent/core-extensions-runner.md#server-registration-timing-and-connection
 		this.runtime.mcpServers.setChangeListener(() => {
@@ -937,6 +943,14 @@ export class ExtensionRunner {
 			getSystemPrompt: () => {
 				runner.assertActive();
 				return runner.getSystemPromptFn();
+			},
+			get tasks() {
+				runner.assertActive();
+				return runner.getTasksFn?.();
+			},
+			get subagents() {
+				runner.assertActive();
+				return runner.getSubagentsFn?.();
 			},
 		};
 	}

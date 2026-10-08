@@ -14,6 +14,8 @@ import {
 	untrackDetachedChildPid,
 } from "../../utils/shell.ts";
 import type { ExtensionContext, ToolDefinition } from "../extensions/types.ts";
+import type { TaskRegistry } from "../tasks/task-registry.ts";
+import { createLineBatcher, type LineBatcherOptions } from "../tasks/task-tools.ts";
 import { OutputAccumulator } from "./output-accumulator.ts";
 import { BASH_UPDATE_THROTTLE_MS, createShellRenderers } from "./renderers/bash.ts";
 import { wrapToolDefinition } from "./tool-definition-wrapper.ts";
@@ -42,12 +44,24 @@ const bashSchema = Type.Object({
 	timeout: Type.Optional(Type.Number({ description: "Timeout in seconds (optional, no default timeout)" })),
 });
 
+/** Schema of shells that can run commands in the background. */
+const backgroundBashSchema = Type.Object({
+	...bashSchema.properties,
+	run_in_background: Type.Optional(Type.Boolean({ description: "Return at once; you are notified when it ends" })),
+	monitor: Type.Optional(
+		Type.Boolean({ description: "With run_in_background: each output line is sent to you as it is printed" }),
+	),
+});
+
+/** Default timeout of monitors without `timeout`, in seconds. */
+const DEFAULT_MONITOR_TIMEOUT_SECONDS = 300;
+
 export const bashToolSystemPromptContribution = {
 	snippet: "Execute bash commands (ls, grep, find, etc.)",
 	guidelines: ["You can inspect AKRAMCODE_* environment variables for current model and session details."],
 } as const;
 
-export type BashToolInput = Static<typeof bashSchema>;
+export type BashToolInput = Static<typeof backgroundBashSchema>;
 
 /**
  * Result for programmatic callers such as codemode scripts. A non-zero exit code is an error result for the model, but scripts still resolve to this value.
@@ -59,6 +73,8 @@ const bashOutputSchema = Type.Object({
 	full_output_path: Type.Optional(Type.String({ description: "Full output, when truncated" })),
 	exit_code: Type.Number(),
 	wall_time_seconds: Type.Number(),
+	task_id: Type.Optional(Type.String({ description: "Background task id, when run in the background" })),
+	output_file: Type.Optional(Type.String({ description: "Output file of the background task" })),
 });
 
 export type BashToolOutput = Static<typeof bashOutputSchema>;
@@ -66,6 +82,10 @@ export type BashToolOutput = Static<typeof bashOutputSchema>;
 export interface BashToolDetails {
 	truncation?: TruncationResult;
 	fullOutputPath?: string;
+	/** Background task id, when the command runs in the background. */
+	taskId?: string;
+	/** Output file of the background task. */
+	outputFile?: string;
 }
 
 /**
@@ -221,6 +241,10 @@ export interface BashToolOptions {
 	exposeSessionEnvironment?: boolean;
 	/** Hook to adjust command, cwd, or env before execution */
 	spawnHook?: BashSpawnHook;
+	/** Task registry for `run_in_background` and `monitor`. Without it the parameters are not offered. */
+	backgroundTasks?: TaskRegistry;
+	/** Batching of monitor lines, for tests. */
+	monitorBatching?: Omit<LineBatcherOptions, "deliver">;
 }
 
 export type BashRenderState = {
@@ -243,23 +267,25 @@ export function createShellToolDefinition(
 	cwd: string,
 	config: ShellToolConfig,
 	options?: BashToolOptions,
-): ToolDefinition<typeof bashSchema, BashToolDetails | undefined, BashRenderState> {
+): ToolDefinition<typeof backgroundBashSchema, BashToolDetails | undefined, BashRenderState> {
 	const ops = options?.operations ?? createLocalBashOperations({ shellPath: options?.shellPath });
 	const commandPrefix = options?.commandPrefix;
 	const exposeSessionEnvironment = options?.exposeSessionEnvironment ?? true;
 	const spawnHook = options?.spawnHook;
+	const backgroundTasks = options?.backgroundTasks;
 	return {
 		name: config.name,
 		label: config.label,
 		description: `Execute a ${config.shellName} command in the current working directory. Returns stdout and stderr. Output is truncated to last ${DEFAULT_MAX_LINES} lines or ${DEFAULT_MAX_BYTES / 1024}KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.`,
 		promptSnippet: config.promptSnippet,
 		promptGuidelines: exposeSessionEnvironment && config.promptGuidelines ? [...config.promptGuidelines] : undefined,
-		parameters: bashSchema,
+		// Without a task registry the model is not offered `run_in_background`.
+		parameters: (backgroundTasks ? backgroundBashSchema : bashSchema) as typeof backgroundBashSchema,
 		outputSchema: bashOutputSchema,
 		constrainedSampling: { type: "json_schema", strict: "prefer" },
 		async execute(
 			_toolCallId,
-			{ command, timeout }: { command: string; timeout?: number },
+			{ command, timeout, run_in_background, monitor }: BashToolInput,
 			signal?: AbortSignal,
 			onUpdate?,
 			ctx?: ExtensionContext,
@@ -272,6 +298,65 @@ export function createShellToolDefinition(
 				exposeSessionEnvironment,
 				ctx,
 			);
+			if (monitor && !run_in_background) throw new Error("monitor requires run_in_background");
+			if (run_in_background) {
+				if (!backgroundTasks) throw new Error("Background commands are not available in this session");
+				const effectiveTimeout = timeout ?? (monitor ? DEFAULT_MONITOR_TIMEOUT_SECONDS : undefined);
+				// Validate the timeout before the task exists.
+				resolveTimeoutMs(effectiveTimeout);
+				// The command runs through the same spawn pipeline (prefix, spawn hook, environment) as foreground calls.
+				const task = backgroundTasks.create({ kind: monitor ? "monitor" : "bash", description: command, command });
+				const batcher = monitor
+					? createLineBatcher({
+							...options?.monitorBatching,
+							deliver: (lines, omitted) => task.emitOutput(lines, omitted),
+						})
+					: undefined;
+				ops.exec(spawnContext.command, spawnContext.cwd, {
+					onData: (data) => {
+						task.write(data);
+						batcher?.push(data);
+					},
+					signal: task.signal,
+					timeout: effectiveTimeout,
+					env: spawnContext.env,
+				}).then(
+					({ exitCode }) => {
+						batcher?.flush();
+						return task.finish(
+							exitCode === 0
+								? { status: "completed", exitCode }
+								: { status: "failed", exitCode: exitCode ?? undefined },
+						);
+					},
+					(error: unknown) => {
+						batcher?.flush();
+						const message = error instanceof Error ? error.message : String(error);
+						if (!message.startsWith("timeout:")) return task.finish({ status: "failed", error: message });
+						return monitor
+							? task.finish({
+									status: "completed",
+									result: `Stopped watching after ${effectiveTimeout} seconds`,
+								})
+							: task.finish({ status: "failed", error: `timed out after ${effectiveTimeout} seconds` });
+					},
+				);
+				const text = monitor
+					? `Monitor ${task.id} started (timeout ${effectiveTimeout}s); output lines arrive as task notifications. Output file: ${task.outputFile}`
+					: `Command running in background with ID: ${task.id}. Output file: ${task.outputFile}\nYou will be notified when it finishes.`;
+				return {
+					content: [{ type: "text", text }],
+					details: { taskId: task.id, outputFile: task.outputFile },
+					structuredContent: {
+						output: "",
+						truncated: false,
+						exit_code: 0,
+						wall_time_seconds: 0,
+						task_id: task.id,
+						output_file: task.outputFile,
+					} satisfies BashToolOutput,
+				};
+			}
 			const output = new OutputAccumulator({ tempFilePrefix: config.tempFilePrefix });
 			let acceptingOutput = true;
 			let updateTimer: NodeJS.Timeout | undefined;
@@ -426,11 +511,11 @@ const bashToolConfig: ShellToolConfig = {
 export function createBashToolDefinition(
 	cwd: string,
 	options?: BashToolOptions,
-): ToolDefinition<typeof bashSchema, BashToolDetails | undefined, BashRenderState> {
+): ToolDefinition<typeof backgroundBashSchema, BashToolDetails | undefined, BashRenderState> {
 	return createShellToolDefinition(cwd, bashToolConfig, options);
 }
 
-export function createBashTool(cwd: string, options?: BashToolOptions): AgentTool<typeof bashSchema> {
+export function createBashTool(cwd: string, options?: BashToolOptions): AgentTool<typeof backgroundBashSchema> {
 	const definition = createBashToolDefinition(cwd, options);
 	const tool = wrapToolDefinition(definition);
 	Object.assign(tool, {

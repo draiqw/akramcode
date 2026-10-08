@@ -89,6 +89,10 @@
               "path": "mcp.md"
             },
             {
+              "title": "Use Subagents and Background Tasks",
+              "path": "subagents.md"
+            },
+            {
               "title": "Run Tools in a Sandbox",
               "path": "sandbox.md"
             }

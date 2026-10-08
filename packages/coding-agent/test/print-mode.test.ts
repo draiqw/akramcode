@@ -12,6 +12,8 @@ type FakeExtensionRunner = {
 
 type FakeSession = {
 	sessionManager: { getHeader: () => object | undefined };
+	settingsManager: { getBackgroundTasksPrintModeTimeoutMs: () => number };
+	waitForBackgroundTasks: ReturnType<typeof vi.fn<(timeoutMs: number) => Promise<boolean>>>;
 	agent: { waitForIdle: () => Promise<void>; subscribe: ReturnType<typeof vi.fn> };
 	state: { messages: AssistantMessage[] };
 	extensionRunner: FakeExtensionRunner;
@@ -65,6 +67,8 @@ function createRuntimeHost(assistantMessage: AssistantMessage): FakeRuntimeHost 
 
 	const session: FakeSession = {
 		sessionManager: { getHeader: () => undefined },
+		settingsManager: { getBackgroundTasksPrintModeTimeoutMs: () => 5000 },
+		waitForBackgroundTasks: vi.fn(async () => true),
 		agent: { waitForIdle: async () => {}, subscribe: vi.fn(() => () => {}) },
 		state,
 		extensionRunner,
@@ -138,5 +142,53 @@ describe("runPrintMode", () => {
 		expect(errorSpy).toHaveBeenCalledWith("provider failure");
 		expect(session.extensionRunner.emit).toHaveBeenCalledTimes(1);
 		expect(session.extensionRunner.emit).toHaveBeenCalledWith({ type: "session_shutdown", reason: "quit" });
+	});
+
+	it("waits for background tasks after the prompts and before printing the answer", async () => {
+		const runtimeHost = createRuntimeHost(createAssistantMessage({ text: "first" }));
+		const { session } = runtimeHost;
+		session.waitForBackgroundTasks.mockImplementation(async () => {
+			// A task notification triggered another turn with a new answer.
+			session.state.messages.push(createAssistantMessage({ text: "after background work" }));
+			return true;
+		});
+		const writes: string[] = [];
+		vi.spyOn(process.stdout, "write").mockImplementation(((
+			chunk: string | Uint8Array,
+			callback?: (error?: Error | null) => void,
+		) => {
+			writes.push(String(chunk));
+			callback?.();
+			return true;
+		}) as typeof process.stdout.write);
+
+		const exitCode = await runPrintMode(runtimeHost as unknown as Parameters<typeof runPrintMode>[0], {
+			mode: "text",
+			initialMessage: "start work",
+		});
+
+		expect(exitCode).toBe(0);
+		expect(session.waitForBackgroundTasks).toHaveBeenCalledWith(5000);
+		expect(session.prompt.mock.invocationCallOrder[0]).toBeLessThan(
+			session.waitForBackgroundTasks.mock.invocationCallOrder[0],
+		);
+		expect(writes.join("")).toContain("after background work");
+		expect(writes.join("")).not.toContain("first");
+	});
+
+	it("reports background tasks stopped by the print-mode timeout", async () => {
+		const runtimeHost = createRuntimeHost(createAssistantMessage({ text: "done" }));
+		runtimeHost.session.waitForBackgroundTasks.mockResolvedValue(false);
+		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+		const exitCode = await runPrintMode(runtimeHost as unknown as Parameters<typeof runPrintMode>[0], {
+			mode: "text",
+			initialMessage: "start work",
+		});
+
+		expect(exitCode).toBe(0);
+		expect(errorSpy).toHaveBeenCalledWith(
+			"Stopped background tasks still running after 5s (backgroundTasks.printModeTimeoutSeconds)",
+		);
 	});
 });

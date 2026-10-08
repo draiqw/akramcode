@@ -136,6 +136,15 @@ export async function runPrintMode(runtimeHost: AgentSessionRuntime, options: Pr
 			await session.prompt(message);
 		}
 
+		// Background tasks notify the session when they finish; wait for them and the turns they
+		// trigger so the printed answer includes their results.
+		const timeoutMs = session.settingsManager.getBackgroundTasksPrintModeTimeoutMs();
+		if (!(await session.waitForBackgroundTasks(timeoutMs))) {
+			console.error(
+				`Stopped background tasks still running after ${Math.round(timeoutMs / 1000)}s (backgroundTasks.printModeTimeoutSeconds)`,
+			);
+		}
+
 		if (mode === "text") {
 			const state = session.state;
 			const lastMessage = state.messages[state.messages.length - 1];
