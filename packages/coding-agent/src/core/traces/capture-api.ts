@@ -159,6 +159,7 @@ async function bodyView(capture: CaptureStore, fileKey: string, ref: BodyRef | u
 		...(ref.truncated ? { truncated: true } : {}),
 		...(ref.binary ? { binary: true } : {}),
 		...(ref.sameAs ? { sameAs: ref.sameAs } : {}),
+		...(ref.note ? { note: ref.note } : {}),
 		...(ref.blob ? { blob: ref.blob } : {}),
 		...(body?.text !== undefined ? { text: body.text } : {}),
 		...(body?.cut ? { cut: body.cut } : {}),
@@ -281,7 +282,7 @@ async function webSocketView(capture: CaptureStore, fileKey: string, record: Web
 }
 
 async function payloadOf(capture: CaptureStore, file: CaptureFileIndex, record: ModelRequestRecord) {
-	const body = await capture.readBody(file.key, record.payload);
+	const body = await capture.readBody(file.key, record.payload, MAX_PARSED_PAYLOAD_CHARS);
 	return parseJson(body?.text);
 }
 
@@ -289,10 +290,10 @@ export async function modelRequestDetail(capture: CaptureStore, id: string) {
 	const found = capture.getModelRequest(id);
 	if (!found) return undefined;
 	const { file, record } = found;
-	const payloadText = await capture.readBody(file.key, record.payload);
+	const payloadText = await capture.readBody(file.key, record.payload, MAX_PARSED_PAYLOAD_CHARS);
 	const payload = parseJson(payloadText?.text);
-	const events = await capture.readBody(file.key, record.events);
-	const message = await capture.readBody(file.key, record.message);
+	const events = await capture.readBody(file.key, record.events, DISPLAY_BODY_CHARS);
+	const message = await capture.readBody(file.key, record.message, DISPLAY_BODY_CHARS);
 
 	// The previous request of the same session, across the capture files of the session.
 	let previous: { file: CaptureFileIndex; record: ModelRequestRecord } | undefined;

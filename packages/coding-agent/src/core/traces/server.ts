@@ -25,6 +25,7 @@ const DEFAULT_POLL_INTERVAL_MS = 2000;
 const SSE_HEARTBEAT_MS = 25_000;
 const DEFAULT_PAGE_SIZE = 500;
 const MAX_PAGE_SIZE = 5000;
+const MAX_EVENT_CLIENTS = 32;
 
 const UI_FILES: Record<string, { file: string; type: string }> = {
 	"/": { file: "index.html", type: "text/html; charset=utf-8" },
@@ -76,6 +77,22 @@ function sendJson(res: ServerResponse, status: number, value: unknown): void {
 	send(res, status, "application/json; charset=utf-8", JSON.stringify(value));
 }
 
+/** Write a chunk and wait for the socket to drain when its buffer is full. */
+async function write(res: ServerResponse, chunk: string): Promise<void> {
+	if (res.destroyed) return;
+	if (!res.write(chunk)) {
+		await new Promise<void>((resolveDrain) => {
+			const done = () => {
+				res.off("drain", done);
+				res.off("close", done);
+				resolveDrain();
+			};
+			res.once("drain", done);
+			res.once("close", done);
+		});
+	}
+}
+
 function sendError(res: ServerResponse, status: number, message: string): void {
 	sendJson(res, status, { error: message });
 }
@@ -84,22 +101,11 @@ function attachmentName(name: string): string {
 	return `attachment; filename="${name.replace(/[^A-Za-z0-9._-]/g, "_")}"`;
 }
 
-export const TRACES_COOKIE = "akramcode_traces";
-
 function tokenMatches(candidate: string | undefined, token: Buffer): boolean {
 	if (!candidate) return false;
 	const given = Buffer.from(candidate);
 	// timingSafeEqual needs equal lengths; a length mismatch is a failure without comparing contents.
 	return given.length === token.length && timingSafeEqual(given, token);
-}
-
-function cookieValue(header: string | undefined, name: string): string | undefined {
-	if (!header) return undefined;
-	for (const part of header.split(";")) {
-		const index = part.indexOf("=");
-		if (index > 0 && part.slice(0, index).trim() === name) return part.slice(index + 1).trim();
-	}
-	return undefined;
 }
 
 /** Only accept the loopback host names this server is reachable under; blocks DNS rebinding. */
@@ -184,14 +190,23 @@ export async function startTracesServer(options: TracesServerOptions): Promise<T
 		let first = true;
 		for (const summary of summaries) {
 			if (res.destroyed) return;
-			const entries = await store.readEntries(summary.key);
-			if (!entries) continue;
-			const chunk = JSON.stringify({ summary: toListItem(summary), entries });
-			const ok = res.write(first ? chunk : `,${chunk}`);
+			if (!first) await write(res, ",");
 			first = false;
-			if (!ok) await new Promise<void>((resolveDrain) => res.once("drain", resolveDrain));
+			await writeSessionExport(res, summary.key, { summary: toListItem(summary) });
 		}
 		res.end("]}");
+	};
+
+	/** Write `{...prefix, "entries": [...]}` for one session, streaming its lines with backpressure. */
+	const writeSessionExport = async (res: ServerResponse, key: string, prefix: Record<string, unknown>) => {
+		await write(res, `${JSON.stringify(prefix).slice(0, -1)},"entries":[`);
+		let firstEntry = true;
+		for await (const line of store.entryLines(key)) {
+			if (res.destroyed) return;
+			await write(res, firstEntry ? line : `,${line}`);
+			firstEntry = false;
+		}
+		await write(res, "]}");
 	};
 
 	const handleApi = async (req: IncomingMessage, res: ServerResponse, url: URL): Promise<void> => {
@@ -233,6 +248,10 @@ export async function startTracesServer(options: TracesServerOptions): Promise<T
 			return;
 		}
 		if (path === "/api/events") {
+			if (clients.size >= MAX_EVENT_CLIENTS) {
+				sendError(res, 429, "Too many live-update connections");
+				return;
+			}
 			res.writeHead(200, {
 				...SECURITY_HEADERS,
 				"Content-Type": "text/event-stream; charset=utf-8",
@@ -254,12 +273,18 @@ export async function startTracesServer(options: TracesServerOptions): Promise<T
 				return;
 			}
 			if (action === "raw") {
+				// Serve only regular files whose real path is inside a session root.
+				const safePath = await store.resolveServablePath(key);
+				if (!safePath) {
+					sendError(res, 404, "Session not found");
+					return;
+				}
 				res.writeHead(200, {
 					...SECURITY_HEADERS,
-					"Content-Type": "application/x-ndjson; charset=utf-8",
+					"Content-Type": "application/octet-stream",
 					"Content-Disposition": attachmentName(basename(filePath)),
 				});
-				const stream = createReadStream(filePath);
+				const stream = createReadStream(safePath);
 				stream.on("error", () => res.destroy());
 				stream.pipe(res);
 				return;
@@ -280,14 +305,18 @@ export async function startTracesServer(options: TracesServerOptions): Promise<T
 				return;
 			}
 			if (action === "export") {
-				const entries = await store.readEntries(key);
 				const summary = store.getListItem(key);
-				if (!entries || !summary) {
+				if (!summary) {
 					sendError(res, 404, "Session not found");
 					return;
 				}
-				res.setHeader("Content-Disposition", attachmentName(`${basename(filePath, ".jsonl")}.json`));
-				sendJson(res, 200, { exportedAt: new Date().toISOString(), summary, entries });
+				res.writeHead(200, {
+					...SECURITY_HEADERS,
+					"Content-Type": "application/json; charset=utf-8",
+					"Content-Disposition": attachmentName(`${basename(filePath, ".jsonl")}.json`),
+				});
+				await writeSessionExport(res, key, { exportedAt: new Date().toISOString(), summary });
+				res.end();
 				return;
 			}
 			const detail = await store.getDetail(key);
@@ -355,15 +384,21 @@ export async function startTracesServer(options: TracesServerOptions): Promise<T
 			else sendError(res, 404, "Record not found");
 			return;
 		}
-		match = new RegExp(`^/api/capture/blob/${fileKey}/([A-Za-z0-9._-]{1,200})$`).exec(path);
+		match = new RegExp(`^/api/capture/blob/${fileKey}/([A-Za-z0-9_-][A-Za-z0-9._-]{0,199})$`).exec(path);
 		if (match) {
-			const text = await capture.readBlob(match[1], match[2]);
-			if (text === undefined) {
+			const blobPath = await capture.resolveBlobPath(match[1], match[2]);
+			if (!blobPath) {
 				sendError(res, 404, "Blob not found");
 				return;
 			}
-			res.setHeader("Content-Disposition", attachmentName(match[2]));
-			send(res, 200, "text/plain; charset=utf-8", text);
+			res.writeHead(200, {
+				...SECURITY_HEADERS,
+				"Content-Type": "application/octet-stream",
+				"Content-Disposition": attachmentName(match[2]),
+			});
+			const stream = createReadStream(blobPath);
+			stream.on("error", () => res.destroy());
+			stream.pipe(res);
 			return;
 		}
 		sendError(res, 404, "Not found");
@@ -380,36 +415,18 @@ export async function startTracesServer(options: TracesServerOptions): Promise<T
 			return;
 		}
 		const url = new URL(req.url ?? "/", `http://${TRACES_HOST}`);
-		// Other local users can reach 127.0.0.1, and the server serves full model payloads, so every
-		// request needs the per-run token: as ?token=, a Bearer header, or the cookie set from it.
-		const queryToken = url.searchParams.get("token") ?? undefined;
-		const bearer = /^Bearer\s+(\S+)$/i.exec(req.headers.authorization ?? "")?.[1];
-		const cookie = cookieValue(req.headers.cookie, TRACES_COOKIE);
-		if (queryToken !== undefined) {
-			if (!tokenMatches(queryToken, tokenBuffer)) {
-				sendError(res, 401, "Invalid token");
-				return;
-			}
-			if (!url.pathname.startsWith("/api/")) {
-				// Store the token in a cookie and drop it from the address bar and history.
-				url.searchParams.delete("token");
-				res.writeHead(302, {
-					...SECURITY_HEADERS,
-					"Set-Cookie": `${TRACES_COOKIE}=${token}; HttpOnly; SameSite=Strict; Path=/`,
-					Location: `${url.pathname}${url.search}`,
-				});
-				res.end();
-				return;
-			}
-		} else if (!tokenMatches(bearer, tokenBuffer) && !tokenMatches(cookie, tokenBuffer)) {
-			sendError(res, 401, `Missing or invalid token. Open the URL printed by akramcode traces.`);
+		// A token in the query string would land in history, logs, and Referer headers; the token
+		// travels only in the URL fragment (read by the page) and the Authorization header.
+		if (url.searchParams.has("token")) {
+			sendError(res, 400, "Tokens are not accepted in the query string. Open the URL printed by akramcode traces.");
 			return;
 		}
+		// The static shell holds no data and is served without a token.
 		const asset = UI_FILES[url.pathname];
 		if (asset) {
 			const body = readUiFile(uiDir, asset.file);
 			if (!body) {
-				sendError(res, 500, `Traces UI asset missing: ${join(uiDir, asset.file)}`);
+				sendError(res, 500, "Traces UI asset missing");
 				return;
 			}
 			send(res, 200, asset.type, body);
@@ -417,6 +434,14 @@ export async function startTracesServer(options: TracesServerOptions): Promise<T
 		}
 		if (!url.pathname.startsWith("/api/")) {
 			sendError(res, 404, "Not found");
+			return;
+		}
+		// Other local users can reach 127.0.0.1 and the API serves full model payloads, so every API
+		// request needs the per-run token as a Bearer header. No cookie: cookies are not scoped to a
+		// port, so a browser would send one to every other server on 127.0.0.1.
+		const bearer = /^Bearer\s+(\S+)$/i.exec(req.headers.authorization ?? "")?.[1];
+		if (!tokenMatches(bearer, tokenBuffer)) {
+			sendError(res, 401, "Missing or invalid token. Open the URL printed by akramcode traces.");
 			return;
 		}
 		handleApi(req, res, url).catch((error: unknown) => {
@@ -454,7 +479,7 @@ export async function startTracesServer(options: TracesServerOptions): Promise<T
 	heartbeat.unref();
 
 	return {
-		url: `http://${TRACES_HOST}:${port}/?token=${token}`,
+		url: `http://${TRACES_HOST}:${port}/#token=${token}`,
 		baseUrl: `http://${TRACES_HOST}:${port}/`,
 		token,
 		port,

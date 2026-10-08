@@ -48,6 +48,7 @@
 - Fixed `-p` without a prompt exiting 0 with no output; it now fails with an error.
 - Fixed `--render-markdown` wrapping long code lines, which broke copied commands, and ignoring `NO_COLOR`.
 - Removed the startup warning `Agent "explore": no tool matches grep, find, ls`: built-in agent types do not warn about optional tools that are off by default.
+- Fixed `akramcode traces` security: the access token now travels in the URL fragment and an Authorization header instead of a cookie (cookies are not port-scoped), query-string tokens are rejected, and `--open` keeps the token off the command line; capture limits now apply before buffering and to decompression (no decompression bombs), with a shared in-flight memory budget; raw, blob, and full-output reads are confined to the session, trace, and temp directories without following escaping symlinks.
 
 ## [1.0.0] - 2026-10-01
 

@@ -3,6 +3,8 @@
  * transcript, and their aggregates, to study runs and find where the agent struggles.
  */
 
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import chalk from "chalk";
 import { APP_NAME, ENV_SESSION_DIR, expandTildePath, getTracesUiDir } from "../../config.ts";
@@ -125,13 +127,37 @@ export async function runTracesCommand(args: readonly string[], options: TracesC
 	console.log(`${chalk.bold("akramcode traces")} ${server.url}`);
 	console.log(chalk.dim(`Reading: ${store.roots.join(", ")}`));
 	options.onListening?.(server);
-	if (parsed.open) openBrowser(server.url);
+	const launcher = parsed.open ? openWithoutTokenInArgs(server.url) : undefined;
 	void store.ready().then(
 		() => console.log(chalk.dim(`Indexed ${store.getSummaries().length} sessions. Press Ctrl+C to stop.`)),
 		() => {},
 	);
 
 	await (options.waitForStop ?? waitForSignal)();
+	launcher?.cleanup();
 	await server.close();
 	return 0;
+}
+
+/**
+ * Open the tokenized URL without putting the token on a command line, where other local users
+ * could read it from the process list: the browser opens a private (0600) local page that
+ * redirects to the URL, and the page is deleted shortly after.
+ */
+export function openWithoutTokenInArgs(
+	url: string,
+	open: (target: string) => void = openBrowser,
+): { file: string; cleanup(): void } {
+	const dir = mkdtempSync(join(tmpdir(), "akramcode-traces-open-"));
+	const file = join(dir, "open.html");
+	const target = url.replace(/[^A-Za-z0-9:/.#=_-]/g, "");
+	writeFileSync(
+		file,
+		`<!doctype html><meta charset="utf-8"><meta name="referrer" content="no-referrer"><meta http-equiv="refresh" content="0;url=${target}"><title>akramcode traces</title>`,
+		{ mode: 0o600, flag: "wx" },
+	);
+	open(file);
+	const cleanup = () => rmSync(dir, { recursive: true, force: true });
+	setTimeout(cleanup, 60_000).unref();
+	return { file, cleanup };
 }

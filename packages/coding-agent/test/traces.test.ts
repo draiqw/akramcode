@@ -1,4 +1,4 @@
-import { appendFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { request } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -491,7 +491,7 @@ describe("traces HTTP server", () => {
 	it("serves the UI and the JSON API on 127.0.0.1", async () => {
 		const { baseUrl: url, url: tokenUrl } = await start();
 		expect(url).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/$/);
-		expect(tokenUrl).toMatch(/\?token=[0-9a-f]{64}$/);
+		expect(tokenUrl).toMatch(/\/#token=[0-9a-f]{64}$/);
 
 		const page = await authFetch(url);
 		expect(page.status).toBe(200);
@@ -568,29 +568,56 @@ describe("traces HTTP server", () => {
 		expect((await httpGet(`${url}api/sessions`, { method: "POST", auth })).status).toBe(405);
 	});
 
-	it("requires the per-run token for every request", async () => {
+	it("serves only the static shell without a token and never uses cookies or query tokens", async () => {
 		const { baseUrl, url: tokenUrl, token } = await start();
-		for (const path of ["", "app.js", "app.css", "api/sessions", "api/events", "api/network"]) {
+		// Fragment token: never sent to the server, so it cannot reach logs, history, or Referer.
+		expect(tokenUrl).toBe(`${baseUrl}#token=${token}`);
+		for (const path of ["", "index.html", "app.js", "app.css"]) {
+			const res = await httpGet(`${baseUrl}${path}`);
+			expect(res.status).toBe(200);
+			expect(res.headers["set-cookie"]).toBeUndefined();
+			expect(res.headers["content-security-policy"]).toContain("script-src 'self'");
+			expect(res.headers["content-security-policy"]).toContain("connect-src 'self'");
+			expect(res.headers["content-security-policy"]).not.toContain("unsafe-inline");
+			expect(res.headers["referrer-policy"]).toBe("no-referrer");
+		}
+		const shell = await httpGet(baseUrl);
+		expect(shell.body).not.toContain("Fix the failing build");
+		for (const path of ["api/sessions", "api/events", "api/network", "api/version", "api/export"]) {
 			expect((await httpGet(`${baseUrl}${path}`)).status).toBe(401);
 			expect((await httpGet(`${baseUrl}${path}`, { auth: "Bearer wrong" })).status).toBe(401);
-			expect((await httpGet(`${baseUrl}${path}`, { cookie: "akramcode_traces=wrong" })).status).toBe(401);
+			expect((await httpGet(`${baseUrl}${path}`, { auth: `Bearer ${token}x` })).status).toBe(401);
+			// A cookie with the right value is not a credential.
+			expect((await httpGet(`${baseUrl}${path}`, { cookie: `akramcode_traces=${token}` })).status).toBe(401);
 		}
-		expect((await httpGet(`${baseUrl}?token=${"0".repeat(64)}`)).status).toBe(401);
-		expect((await httpGet(`${baseUrl}?token=short`)).status).toBe(401);
+		// Query tokens are rejected outright, valid or not, so they never become a working link.
+		expect((await httpGet(`${baseUrl}?token=${token}`)).status).toBe(400);
+		expect((await httpGet(`${baseUrl}api/sessions?token=${token}`)).status).toBe(400);
+		expect((await httpGet(`${baseUrl}api/sessions?token=${token}`, { auth: `Bearer ${token}` })).status).toBe(400);
 
-		// The tokenized URL sets an HttpOnly cookie and redirects to strip the token.
-		const first = await httpGet(tokenUrl);
-		expect(first.status).toBe(302);
-		expect(first.headers.location).toBe("/");
-		const setCookie = String(first.headers["set-cookie"]);
-		expect(setCookie).toContain(`akramcode_traces=${token}`);
-		expect(setCookie).toContain("HttpOnly");
-		expect(setCookie).toContain("SameSite=Strict");
-		const cookie = `akramcode_traces=${token}`;
-		expect((await httpGet(baseUrl, { cookie })).status).toBe(200);
-		expect((await httpGet(`${baseUrl}api/sessions`, { cookie })).status).toBe(200);
-		expect((await httpGet(`${baseUrl}api/sessions?token=${token}`)).status).toBe(200);
-		expect((await httpGet(`${baseUrl}api/sessions`, { auth: `Bearer ${token}` })).status).toBe(200);
+		const ok = await httpGet(`${baseUrl}api/sessions`, { auth: `Bearer ${token}` });
+		expect(ok.status).toBe(200);
+		expect(ok.headers["cache-control"]).toBe("no-store");
+		expect(ok.headers["x-content-type-options"]).toBe("nosniff");
+		expect(ok.headers["set-cookie"]).toBeUndefined();
+	});
+
+	it("serves raw downloads as attachments and only from inside the session roots", async () => {
+		const { baseUrl, token } = await start();
+		const auth = `Bearer ${token}`;
+		const key = traceKeyForPath(fixture.mainPath);
+		const raw = await httpGet(`${baseUrl}api/sessions/${key}/raw`, { auth });
+		expect(raw.status).toBe(200);
+		expect(raw.headers["content-type"]).toBe("application/octet-stream");
+		expect(raw.headers["content-disposition"]).toMatch(/^attachment; filename="/);
+		expect(raw.headers["x-content-type-options"]).toBe("nosniff");
+
+		// Swap the indexed file for a symlink that points outside the roots: refused.
+		const secret = join(fixture.root, "outside-secret.txt");
+		writeFileSync(secret, "top secret");
+		rmSync(fixture.mainPath);
+		symlinkSync(secret, fixture.mainPath);
+		expect((await httpGet(`${baseUrl}api/sessions/${key}/raw`, { auth })).status).toBe(404);
 	});
 
 	it("pushes a version event when a new session appears", async () => {

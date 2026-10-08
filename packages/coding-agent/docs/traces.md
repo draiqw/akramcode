@@ -3,7 +3,7 @@
 `akramcode traces` opens a local web UI with every stored session and everything AkramCode captured while running them, so you can study runs and find where the agent struggles. It shows which tools fail, which errors repeat, and where runs get aborted or retried. It also shows the exact payload each model call sent, the raw stream that came back, and the network details of every request.
 
 ```sh
-akramcode traces            # prints http://127.0.0.1:<port>/?token=<token>
+akramcode traces            # prints http://127.0.0.1:<port>/#token=<token>
 akramcode traces --open     # also opens the browser
 akramcode traces --port 4800
 ```
@@ -12,20 +12,23 @@ The server binds to `127.0.0.1` only, accepts only `GET` requests with a loopbac
 
 ## Access token
 
-Captured traces contain full model payloads, so the server requires a token. Other users on the same machine can also reach `127.0.0.1`. Each run generates a new random token (32 bytes) and prints it in the URL.
+Captured traces contain full model payloads, and other users on the same machine can reach `127.0.0.1`, so the API requires a token. Each run generates a new random token (32 bytes) and prints it in the URL fragment: `http://127.0.0.1:<port>/#token=<token>`.
 
-- Opening the printed URL stores the token in an `HttpOnly`, `SameSite=Strict` cookie and redirects to the same page without the token, so it does not stay in the address bar or history.
-- Every request without a valid token or cookie gets `401`. This covers the page, its scripts and styles, the API, and the live-update stream.
-- Scripts can send the token as `Authorization: Bearer <token>` or as `?token=<token>` on `/api/` URLs.
+- Browsers never send the fragment to a server, so the token stays out of server logs, history, and `Referer` headers. The page reads it, keeps it in `sessionStorage` for that tab, and removes it from the address bar.
+- The page sends the token as `Authorization: Bearer <token>` on every API request, including the live-update stream. Downloads are fetched the same way.
+- No cookie is used. Cookies are not scoped to a port, so a browser would also send one to any other server on `127.0.0.1` or `localhost`.
+- Without a valid token, the server only serves the empty page, its script, and its styles. Every `/api/` request gets `401`.
+- A token in the query string (`?token=`) is rejected with `400`, valid or not, so it never becomes a working link in history.
+- `--open` does not put the token on a command line, where other users could read it from the process list. It opens a private local page (readable only by you) that redirects to the URL, and deletes the page after a minute.
 
-The token stops working when the server stops.
+The token stops working when the server stops. Scripts can call the API with `curl -H "Authorization: Bearer <token>"`.
 
 ## Options
 
 | Option | Description |
 | --- | --- |
 | `--port <port>` | Port to listen on. Default: a free port |
-| `--open` | Open the URL with the token in the default browser |
+| `--open` | Open the UI in the default browser without passing the token on a command line |
 | `--session-dir <dir>` | Also read sessions from this directory. Repeatable |
 | `--poll <ms>` | Re-scan interval for live updates. Default `2000`; `0` disables live updates |
 
@@ -72,7 +75,7 @@ Agent-level retries are separate model requests, each linked to its own failed o
 
 ### Storage and retention
 
-Each process appends to JSONL files under `~/.akramcode/agent/traces/`: `sessions/<session id>/<start>_<pid>.jsonl` for a session and `process/<start>_<pid>.jsonl` for activity outside any session. Bodies over 16 KB are stored in a `.blobs` directory next to the file. Files and directories are created readable only by the owner.
+Each process appends to JSONL files under `~/.akramcode/agent/traces/`: `sessions/<session id>/<start>_<pid>.jsonl` for a session and `process/<start>_<pid>.jsonl` for activity outside any session. Bodies over 16 KB are stored in a `.blobs` directory next to the file. Directories are `0700` and files and blobs `0600`, readable only by you. The server reads only regular files inside the session and trace directories; links that point outside them are ignored.
 
 Every 30 minutes, and 10 seconds after start, AkramCode deletes trace files older than `traces.maxAgeDays` and then the oldest files until the directory fits `traces.maxTotalSizeMb`. Files the current process is writing are kept. See [Settings](settings.md#traces).
 
@@ -97,7 +100,7 @@ Redaction matches known formats. A secret in an unrecognized format inside a pro
 - Environment changes made by tools.
 - A request that is still running when the process is killed.
 
-Bodies larger than `traces.maxBodyMb` are cut and marked.
+Bodies larger than `traces.maxBodyMb` are cut and marked. The limit applies before anything is buffered: to request and response bodies, WebSocket frames, stream events, payloads, and tool output. Compressed responses are decompressed only up to the same limit; a response that would expand past it keeps its size and a note instead of the text. All captures in progress share a 256 MB memory budget. Past it, a capture keeps only metadata (status, sizes, timings) with a note.
 
 Overhead: capture adds a few milliseconds per model request for serializing, redacting, and writing. Measured locally, it added about 4 ms to a request with a 1 MB body and a 250 KB streamed response. Memory grows by the size of the request and response while a request runs.
 

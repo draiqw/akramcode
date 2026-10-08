@@ -5,8 +5,9 @@
  */
 
 import { closeSync, openSync, readSync } from "node:fs";
-import { readdir, readFile, stat } from "node:fs/promises";
-import { basename, join, resolve } from "node:path";
+import { lstat, open, readdir } from "node:fs/promises";
+import { join, resolve } from "node:path";
+import { StringDecoder } from "node:string_decoder";
 import type {
 	BodyRef,
 	CaptureRecord,
@@ -16,6 +17,7 @@ import type {
 	TraceHeaderRecord,
 	WebSocketRecord,
 } from "./capture/format.ts";
+import { isInside, MAX_LINE_BYTES, realpathOrUndefined, resolveContainedFile } from "./fs-safe.ts";
 import { traceKeyForPath } from "./store.ts";
 
 const MAX_SCAN_DEPTH = 3;
@@ -37,6 +39,9 @@ interface FileState extends CaptureFileIndex {
 	mtimeMs: number;
 	offset: number;
 	remainder: string;
+	decoder: StringDecoder;
+	/** Discarding the rest of a line longer than MAX_LINE_BYTES. */
+	skippingLine: boolean;
 }
 
 /** HTTP or WebSocket activity in list form, for the Network view. */
@@ -92,6 +97,7 @@ export class CaptureStore {
 	private byKey = new Map<string, FileState>();
 	private modelRequestIndex = new Map<string, { file: FileState; record: ModelRequestRecord }>();
 	private refreshing: Promise<boolean> | undefined;
+	private realDir: string | undefined;
 	version = 0;
 
 	constructor(dir: string) {
@@ -116,7 +122,8 @@ export class CaptureStore {
 			const path = join(dir, name);
 			if (name.endsWith(".blobs")) continue;
 			try {
-				const stats = await stat(path);
+				// lstat: links are never followed; only this process's own files belong here.
+				const stats = await lstat(path);
 				if (stats.isFile() && name.endsWith(".jsonl")) out.set(path, { size: stats.size, mtimeMs: stats.mtimeMs });
 				else if (stats.isDirectory() && depth < MAX_SCAN_DEPTH) await this.collect(path, depth + 1, out);
 			} catch {
@@ -127,7 +134,8 @@ export class CaptureStore {
 
 	private async doRefresh(): Promise<boolean> {
 		const found = new Map<string, { size: number; mtimeMs: number }>();
-		await this.collect(this.dir, 0, found);
+		this.realDir = await realpathOrUndefined(this.dir);
+		if (this.realDir) await this.collect(this.dir, 0, found);
 		let changed = false;
 		for (const path of this.files.keys()) {
 			if (!found.has(path)) {
@@ -151,6 +159,8 @@ export class CaptureStore {
 					mtimeMs: 0,
 					offset: 0,
 					remainder: "",
+					decoder: new StringDecoder("utf8"),
+					skippingLine: false,
 				};
 				this.files.set(path, state);
 			}
@@ -179,10 +189,22 @@ export class CaptureStore {
 				const bytesRead = readSync(fd, buffer, 0, Math.min(buffer.length, size - state.offset), state.offset);
 				if (bytesRead === 0) break;
 				state.offset += bytesRead;
-				const text = state.remainder + buffer.subarray(0, bytesRead).toString("utf8");
-				const lines = text.split("\n");
+				let text = state.decoder.write(buffer.subarray(0, bytesRead));
+				if (state.skippingLine) {
+					const newline = text.indexOf("\n");
+					if (newline === -1) continue;
+					text = text.slice(newline + 1);
+					state.skippingLine = false;
+				}
+				const lines = (state.remainder + text).split("\n");
 				state.remainder = lines.pop() ?? "";
 				for (const line of lines) this.addLine(state, line);
+				if (state.remainder.length > MAX_LINE_BYTES) {
+					// An oversized line is dropped instead of buffered until its end.
+					state.remainder = "";
+					state.skippingLine = true;
+					state.malformedLines++;
+				}
 			}
 		} catch {
 			// Unreadable file: keep what was read.
@@ -361,28 +383,55 @@ export class CaptureStore {
 		return { hosts: toList(hosts), providers: toList(providers) };
 	}
 
-	/** Text of a body, reading its blob if needed; cut at `maxChars` for display. */
+	/** Text of a body, reading at most `maxBytes` of its blob. `cut` is the number of bytes left out. */
 	async readBody(
 		fileKey: string,
 		ref: BodyRef | undefined,
-		maxChars = Number.POSITIVE_INFINITY,
+		maxBytes = Number.POSITIVE_INFINITY,
 	): Promise<{ text?: string; cut?: number } | undefined> {
 		if (!ref) return undefined;
-		let text = ref.text;
-		if (text === undefined && ref.blob) text = await this.readBlob(fileKey, ref.blob);
-		if (text === undefined) return {};
-		if (text.length > maxChars) return { text: text.slice(0, maxChars), cut: text.length - maxChars };
-		return { text };
+		if (ref.text !== undefined) {
+			const bytes = Buffer.byteLength(ref.text);
+			if (bytes <= maxBytes) return { text: ref.text };
+			return { text: Buffer.from(ref.text).subarray(0, maxBytes).toString("utf8"), cut: bytes - maxBytes };
+		}
+		if (!ref.blob) return {};
+		const blob = await this.readBlobPrefix(fileKey, ref.blob, maxBytes);
+		if (!blob) return {};
+		return blob.size > maxBytes ? { text: blob.text, cut: blob.size - maxBytes } : { text: blob.text };
 	}
 
-	async readBlob(fileKey: string, name: string): Promise<string | undefined> {
+	/**
+	 * Real path of a blob of a trace file. The name may not start with a dot, and the resolved
+	 * file must be a regular file inside the trace file's `.blobs` directory.
+	 */
+	async resolveBlobPath(fileKey: string, name: string): Promise<string | undefined> {
 		const file = this.byKey.get(fileKey);
-		if (!file || !/^[A-Za-z0-9._-]+$/.test(name)) return undefined;
-		const blobDir = `${file.path.slice(0, -".jsonl".length)}.blobs`;
+		if (!file || !/^[A-Za-z0-9_-][A-Za-z0-9._-]{0,199}$/.test(name)) return undefined;
+		const blobDir = await realpathOrUndefined(`${file.path.slice(0, -".jsonl".length)}.blobs`);
+		if (!blobDir || !this.realDir || !isInside(this.realDir, blobDir)) return undefined;
+		return resolveContainedFile(join(blobDir, name), [blobDir]);
+	}
+
+	async readBlobPrefix(
+		fileKey: string,
+		name: string,
+		maxBytes = Number.POSITIVE_INFINITY,
+	): Promise<{ text: string; size: number } | undefined> {
+		const path = await this.resolveBlobPath(fileKey, name);
+		if (!path) return undefined;
+		let handle: Awaited<ReturnType<typeof open>> | undefined;
 		try {
-			return await readFile(join(blobDir, basename(name)), "utf8");
+			handle = await open(path, "r");
+			const size = (await handle.stat()).size;
+			const length = Math.min(size, maxBytes);
+			const buffer = Buffer.alloc(length);
+			const { bytesRead } = await handle.read(buffer, 0, length, 0);
+			return { text: buffer.subarray(0, bytesRead).toString("utf8"), size };
 		} catch {
 			return undefined;
+		} finally {
+			await handle?.close();
 		}
 	}
 }

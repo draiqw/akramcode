@@ -5,10 +5,9 @@
  */
 
 import { createHash } from "node:crypto";
-import { createReadStream, type Dirent } from "node:fs";
+import type { Dirent } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
-import { createInterface } from "node:readline";
 import {
 	SessionAnalyzer,
 	type TraceEvent,
@@ -17,6 +16,7 @@ import {
 	type TraceSessionSummary,
 	toListItem,
 } from "./analyze.ts";
+import { isInside, readLinesBounded, realpathOrUndefined, resolveContainedFile } from "./fs-safe.ts";
 
 const SUBAGENT_DIR_SUFFIX = ".subagents";
 /** `sessions/<project>/<session>.subagents/<child>.jsonl` is depth 2; leave room for custom layouts. */
@@ -65,11 +65,16 @@ export async function readSessionLines(
 	onHeader: (entry: unknown) => boolean,
 	onEntry: (entry: unknown) => void,
 ): Promise<{ isSession: boolean; malformedLines: number }> {
-	const lines = createInterface({ input: createReadStream(path, { encoding: "utf8" }), crlfDelay: Infinity });
 	let malformedLines = 0;
 	let headerSeen = false;
+	const lines = readLinesBounded(path);
 	try {
 		for await (const line of lines) {
+			if (line === null) {
+				// Longer than MAX_LINE_BYTES: skipped without buffering it.
+				malformedLines++;
+				continue;
+			}
 			if (!line.trim()) continue;
 			let entry: unknown;
 			try {
@@ -86,7 +91,7 @@ export async function readSessionLines(
 			onEntry(entry);
 		}
 	} finally {
-		lines.close();
+		await lines.return(undefined);
 	}
 	return { isSession: headerSeen, malformedLines };
 }
@@ -136,6 +141,7 @@ export class TraceStore {
 	private keyToPath = new Map<string, string>();
 	private basenameToPath = new Map<string, string>();
 	private sessionIdToKey = new Map<string, string>();
+	private realRoots: string[] = [];
 	private sorted: TraceSessionSummary[] = [];
 	private readonly detailCache = new Map<string, { sizeBytes: number; mtimeMs: number; detail: TraceDetail }>();
 	private refreshing: Promise<boolean> | undefined;
@@ -160,7 +166,7 @@ export class TraceStore {
 		if (!this.refreshedOnce) await this.refresh();
 	}
 
-	private async collect(dir: string, depth: number, out: Map<string, Candidate>): Promise<void> {
+	private async collect(dir: string, depth: number, out: Map<string, Candidate>, realRoot: string): Promise<void> {
 		let entries: Dirent[];
 		try {
 			entries = await readdir(dir, { withFileTypes: true });
@@ -169,22 +175,39 @@ export class TraceStore {
 		}
 		for (const entry of entries) {
 			const path = join(dir, entry.name);
-			if (entry.isFile() && entry.name.endsWith(".jsonl")) {
+			if (entry.isSymbolicLink()) {
+				// Follow a link only when its target stays inside the root.
+				const real = await realpathOrUndefined(path);
+				if (!real || !isInside(realRoot, real)) continue;
+				try {
+					if (!(await stat(real)).isDirectory() || depth >= MAX_SCAN_DEPTH) continue;
+				} catch {
+					continue;
+				}
+				await this.collect(path, depth + 1, out, realRoot);
+			} else if (entry.isFile() && entry.name.endsWith(".jsonl")) {
 				try {
 					const stats = await stat(path);
 					out.set(path, { path, sizeBytes: stats.size, mtimeMs: stats.mtimeMs });
 				} catch {
 					// Deleted between readdir and stat.
 				}
-			} else if ((entry.isDirectory() || entry.isSymbolicLink()) && depth < MAX_SCAN_DEPTH) {
-				await this.collect(path, depth + 1, out);
+			} else if (entry.isDirectory() && depth < MAX_SCAN_DEPTH) {
+				await this.collect(path, depth + 1, out, realRoot);
 			}
 		}
 	}
 
 	private async doRefresh(): Promise<boolean> {
 		const candidates = new Map<string, Candidate>();
-		for (const root of this.roots) await this.collect(root, 0, candidates);
+		const realRoots: string[] = [];
+		for (const root of this.roots) {
+			const realRoot = await realpathOrUndefined(root);
+			if (!realRoot) continue;
+			realRoots.push(realRoot);
+			await this.collect(root, 0, candidates, realRoot);
+		}
+		this.realRoots = realRoots;
 
 		let changed = false;
 		const next = new Map<string, CachedFile>();
@@ -279,6 +302,12 @@ export class TraceStore {
 		return summary ? toListItem(summary) : undefined;
 	}
 
+	/** Real path of an indexed session file, only if it is a regular file inside a session root. */
+	async resolveServablePath(key: string): Promise<string | undefined> {
+		const path = this.keyToPath.get(key);
+		return path ? resolveContainedFile(path, this.realRoots) : undefined;
+	}
+
 	getPath(key: string): string | undefined {
 		return this.keyToPath.get(key);
 	}
@@ -318,23 +347,28 @@ export class TraceStore {
 		return detail;
 	}
 
-	/** Raw parsed entries (header first), for JSON export. Malformed lines are skipped. */
-	async readEntries(key: string): Promise<unknown[] | undefined> {
+	/**
+	 * Valid JSON lines of a session file (header first), streamed so an export never holds a whole
+	 * file in memory. Malformed and oversized lines are skipped. Yields nothing for a non-session.
+	 */
+	async *entryLines(key: string): AsyncGenerator<string> {
 		const path = this.keyToPath.get(key);
-		if (!path) return undefined;
-		const entries: unknown[] = [];
-		try {
-			const result = await readSessionLines(
-				path,
-				(entry) => {
-					entries.push(entry);
-					return true;
-				},
-				(entry) => entries.push(entry),
-			);
-			return result.isSession ? entries : undefined;
-		} catch {
-			return undefined;
+		if (!path) return;
+		let headerSeen = false;
+		for await (const line of readLinesBounded(path)) {
+			if (line === null || !line.trim()) continue;
+			let entry: unknown;
+			try {
+				entry = JSON.parse(line);
+			} catch {
+				continue;
+			}
+			if (!headerSeen) {
+				const header = entry as { type?: unknown; id?: unknown } | null;
+				if (header?.type !== "session" || typeof header.id !== "string") return;
+				headerSeen = true;
+			}
+			yield line.trim();
 		}
 	}
 }

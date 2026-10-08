@@ -636,3 +636,15 @@ tr.detail-row > td {
 	font-size: 12px;
 	margin: 0 0 6px;
 }
+
+button.link {
+	background: none;
+	border: none;
+	padding: 0;
+	color: var(--accent);
+}
+
+button.link:hover {
+	background: none;
+	text-decoration: underline;
+}

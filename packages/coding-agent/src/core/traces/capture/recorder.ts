@@ -7,11 +7,13 @@
 
 import { AsyncLocalStorage } from "node:async_hooks";
 import { randomBytes } from "node:crypto";
-import { closeSync, openSync, readSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { closeSync, constants as fsConstants, fstatSync, lstatSync, openSync, readSync, realpathSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { isAbsolute, join, relative } from "node:path";
 import type { AgentEvent } from "@akramcode/agent-core";
 import type { AssistantMessageEventStream, ModelsSimpleStreamOptions } from "@akramcode/ai";
 import {
+	type BodyRef,
 	CAPTURE_DIR_NAME,
 	CAPTURE_FORMAT_VERSION,
 	type ModelRequestRecord,
@@ -19,7 +21,7 @@ import {
 } from "./format.ts";
 import { NetworkCapture, type NetworkSink, type TraceContext } from "./network.ts";
 import { Redactor } from "./redact.ts";
-import { CaptureFile, enforceCaptureRetention, sha1 } from "./writer.ts";
+import { CaptureFile, capText, enforceCaptureRetention, MemoryBudget, sha1 } from "./writer.ts";
 
 export interface TraceCaptureSettings {
 	enabled: boolean;
@@ -61,6 +63,8 @@ export function resolveTraceCaptureSettings(
 const RETENTION_INTERVAL_MS = 30 * 60 * 1000;
 const RETENTION_START_DELAY_MS = 10_000;
 const RECENT_PAYLOADS_KEPT = 200;
+/** Bytes buffered across all in-flight captures before captures fall back to metadata only. */
+export const DEFAULT_IN_FLIGHT_BUDGET_BYTES = 256 * 1024 * 1024;
 
 export interface TraceRecorderOptions {
 	agentDir: string;
@@ -68,6 +72,8 @@ export interface TraceRecorderOptions {
 	appVersion?: string;
 	/** Override the capture directory (tests). Default: `<agentDir>/traces`. */
 	dir?: string;
+	/** Override the in-flight memory budget (tests). */
+	inFlightBudgetBytes?: number;
 }
 
 function fileTimestamp(time: number): string {
@@ -112,6 +118,7 @@ export class TraceRecorder implements NetworkSink {
 	readonly dir: string;
 	readonly redactor = new Redactor();
 	readonly maxBodyBytes: number;
+	readonly budget: MemoryBudget;
 	private readonly settings: TraceCaptureSettings;
 	private readonly appVersion: string | undefined;
 	private readonly storage = new AsyncLocalStorage<TraceContext>();
@@ -131,6 +138,7 @@ export class TraceRecorder implements NetworkSink {
 		this.settings = options.settings;
 		this.appVersion = options.appVersion;
 		this.maxBodyBytes = Math.max(1, options.settings.maxBodyMb) * 1024 * 1024;
+		this.budget = new MemoryBudget(options.inFlightBudgetBytes ?? DEFAULT_IN_FLIGHT_BUDGET_BYTES);
 		this.network = new NetworkCapture(this);
 	}
 
@@ -198,6 +206,7 @@ export class TraceRecorder implements NetworkSink {
 			if (!this.processFile) {
 				this.processFile = new CaptureFile(
 					join(this.dir, "process", `${fileTimestamp(this.startedAt)}_${process.pid}.jsonl`),
+					{ maxBodyBytes: this.maxBodyBytes, rootDir: this.dir },
 				);
 				this.processFile.append({
 					type: "trace_header",
@@ -214,6 +223,7 @@ export class TraceRecorder implements NetworkSink {
 		if (!file) {
 			file = new CaptureFile(
 				join(this.dir, "sessions", safeName(sessionId), `${fileTimestamp(Date.now())}_${process.pid}.jsonl`),
+				{ maxBodyBytes: this.maxBodyBytes, rootDir: this.dir },
 			);
 			const meta = this.sessionMeta.get(sessionId);
 			file.append({
@@ -258,6 +268,11 @@ interface PendingModelRequest {
 	eventBytes: number;
 	eventCount: number;
 	eventsTruncated: boolean;
+	payloadBytes?: number;
+	payloadTruncated?: boolean;
+	payloadNote?: string;
+	/** Bytes reserved from the in-flight budget, released when the request is written. */
+	reserved: number;
 	firstEventPerf?: number;
 	responsePerf?: number;
 }
@@ -268,18 +283,31 @@ interface PendingTool {
 	args: unknown;
 }
 
+/**
+ * Read at most `maxBytes` of a tool's full-output file. Only regular files in the temp directory
+ * are read (where tools write full output), never through a symlink, so a tool result naming an
+ * arbitrary path, a FIFO, or a device cannot make capture copy or block on it.
+ */
 function readFileCapped(
 	path: string,
 	maxBytes: number,
 ): { text: string; truncated: boolean; size: number } | undefined {
 	let fd: number | undefined;
 	try {
-		const size = statSync(path).size;
+		const real = realpathSync(path);
+		const tempRoot = realpathSync(tmpdir());
+		const rel = relative(tempRoot, real);
+		if (rel.startsWith("..") || isAbsolute(rel)) return undefined;
+		const linkStats = lstatSync(path);
+		if (!linkStats.isFile()) return undefined;
+		fd = openSync(real, fsConstants.O_RDONLY | (fsConstants.O_NOFOLLOW ?? 0) | (fsConstants.O_NONBLOCK ?? 0));
+		const stats = fstatSync(fd);
+		if (!stats.isFile()) return undefined;
+		const size = stats.size;
 		const length = Math.min(size, maxBytes);
 		const buffer = Buffer.alloc(length);
-		fd = openSync(path, "r");
-		readSync(fd, buffer, 0, length, 0);
-		return { text: buffer.toString("utf8"), truncated: length < size, size };
+		const bytesRead = readSync(fd, buffer, 0, length, 0);
+		return { text: buffer.subarray(0, bytesRead).toString("utf8"), truncated: length < size, size };
 	} catch {
 		return undefined;
 	} finally {
@@ -339,15 +367,26 @@ export class SessionTracer {
 			eventBytes: 0,
 			eventCount: 0,
 			eventsTruncated: false,
+			reserved: 0,
 		};
 		const wrapped: ModelsSimpleStreamOptions = {
 			...options,
 			onPayload: async (payload, requestModel) => {
 				const replaced = await options.onPayload?.(payload, requestModel);
 				try {
-					pending.payloadText = recorder.redactor.text(JSON.stringify(replaced ?? payload, null, 0) ?? "");
 					pending.payloadAt = Date.now();
-					recorder.rememberPayload(pending.id, sha1(pending.payloadText));
+					const serialized = JSON.stringify(replaced ?? payload, null, 0) ?? "";
+					pending.payloadBytes = Buffer.byteLength(serialized);
+					const capped = capText(serialized, recorder.maxBodyBytes);
+					const reserve = Buffer.byteLength(capped.text);
+					if (recorder.budget.tryReserve(reserve)) {
+						pending.reserved += reserve;
+						pending.payloadText = recorder.redactor.text(capped.text);
+						pending.payloadTruncated = capped.truncated;
+						if (!capped.truncated) recorder.rememberPayload(pending.id, sha1(pending.payloadText));
+					} else {
+						pending.payloadNote = "in-flight capture memory budget exceeded";
+					}
 				} catch {
 					// Unserializable payload; the network capture still has the bytes.
 				}
@@ -367,9 +406,12 @@ export class SessionTracer {
 				pending.eventCount++;
 				if (!pending.eventsTruncated) {
 					const line = safeJson({ t: Date.now(), data });
-					if (pending.eventBytes + line.length <= recorder.maxBodyBytes) {
+					const bytes = Buffer.byteLength(line);
+					// Checked before keeping the line, so one huge event cannot pass the limit.
+					if (pending.eventBytes + bytes <= recorder.maxBodyBytes && recorder.budget.tryReserve(bytes)) {
 						pending.events.push(line);
-						pending.eventBytes += line.length;
+						pending.eventBytes += bytes;
+						pending.reserved += bytes;
 					} else {
 						pending.eventsTruncated = true;
 					}
@@ -392,8 +434,8 @@ export class SessionTracer {
 		message: unknown,
 		error: unknown,
 	): void {
+		const recorder = this.recorder;
 		try {
-			const recorder = this.recorder;
 			recorder.flushModelRequest(pending.id);
 			const file = recorder.fileFor({ sessionId });
 			const final = (message ?? {}) as {
@@ -423,8 +465,20 @@ export class SessionTracer {
 				api: model.api,
 				model: final.model ?? model.id,
 				...(pending.payloadText !== undefined
-					? { payload: file.body(`${pending.id}-payload`, pending.payloadText), payloadAt: pending.payloadAt }
-					: {}),
+					? {
+							payload: file.body(`${pending.id}-payload`, pending.payloadText, {
+								...(pending.payloadTruncated
+									? { truncated: true, note: `cut from ${pending.payloadBytes} bytes at the capture limit` }
+									: {}),
+							}),
+							payloadAt: pending.payloadAt,
+						}
+					: pending.payloadBytes !== undefined
+						? {
+								payload: { bytes: pending.payloadBytes, truncated: true, note: pending.payloadNote },
+								payloadAt: pending.payloadAt,
+							}
+						: {}),
 				...(pending.response ? { response: pending.response } : {}),
 				...(pending.events.length > 0
 					? {
@@ -434,7 +488,9 @@ export class SessionTracer {
 								pending.eventsTruncated ? { truncated: true } : {},
 							),
 						}
-					: {}),
+					: pending.eventsTruncated
+						? { events: { bytes: 0, truncated: true, note: "first event exceeds the capture limit or budget" } }
+						: {}),
 				eventCount: pending.eventCount,
 				...(pending.firstEventPerf !== undefined
 					? { firstEventAt: pending.t + Math.round(pending.firstEventPerf - pending.perf) }
@@ -463,14 +519,23 @@ export class SessionTracer {
 				...(final.responseId ? { responseId: final.responseId } : {}),
 				...(final.responseModel ? { responseModel: final.responseModel } : {}),
 				...(typeof final.timestamp === "number" ? { messageTimestamp: final.timestamp } : {}),
-				...(message
-					? { message: file.body(`${pending.id}-message`, recorder.redactor.text(safeJson(message))) }
-					: {}),
+				...(message ? { message: this.cappedBody(file, `${pending.id}-message`, safeJson(message)) } : {}),
 			};
 			file.append(record);
 		} catch {
 			// Capture must never break the agent.
+		} finally {
+			recorder.budget.release(pending.reserved);
+			pending.reserved = 0;
+			pending.events = [];
+			pending.payloadText = undefined;
 		}
+	}
+
+	/** Cut to the body limit first, then redact, then store: redaction never runs on unbounded text. */
+	private cappedBody(file: CaptureFile, name: string, value: string): BodyRef {
+		const capped = capText(value, this.recorder.maxBodyBytes);
+		return file.body(name, this.recorder.redactor.text(capped.text), capped.truncated ? { truncated: true } : {});
 	}
 
 	/** Agent event listener: records tool executions. */
@@ -493,7 +558,6 @@ export class SessionTracer {
 		started: PendingTool | undefined,
 	): void {
 		const recorder = this.recorder;
-		const redactor = recorder.redactor;
 		const sessionId = this.sessionId();
 		const file = recorder.fileFor({ sessionId });
 		const id = recorder.newId("t");
@@ -503,6 +567,7 @@ export class SessionTracer {
 			structuredContent?: { exit_code?: unknown; full_output_path?: unknown };
 		};
 		const { text, images } = textContent(result.content);
+		const body = (name: string, value: string) => this.cappedBody(file, `${id}-${name}`, value);
 		const details = result.details as { fullOutputPath?: unknown; exitCode?: unknown } | undefined;
 		const fullOutputPath =
 			typeof details?.fullOutputPath === "string"
@@ -526,17 +591,15 @@ export class SessionTracer {
 			toolCallId: event.toolCallId,
 			toolName: event.toolName,
 			cwd: this.options.cwd,
-			...(started ? { args: file.body(`${id}-args`, redactor.text(safeJson(started.args))) } : {}),
-			content: file.body(`${id}-content`, redactor.text(text)),
+			...(started ? { args: body("args", safeJson(started.args)) } : {}),
+			content: body("content", text),
 			...(images ? { images } : {}),
-			...(result.details !== undefined
-				? { details: file.body(`${id}-details`, redactor.text(safeJson(result.details))) }
-				: {}),
+			...(result.details !== undefined ? { details: body("details", safeJson(result.details)) } : {}),
 			...(full
 				? {
 						fullOutput: file.body(
 							`${id}-full`,
-							redactor.text(full.text),
+							recorder.redactor.text(full.text),
 							full.truncated ? { truncated: true } : {},
 						),
 						fullOutputPath,

@@ -94,8 +94,79 @@ function oneLine(text, max) {
 	return line.length > max ? `${line.slice(0, max - 1)}…` : line;
 }
 
+// ---------------------------------------------------------------------------
+// Access token
+// ---------------------------------------------------------------------------
+
+// The token comes in the URL fragment (#token=...), which browsers never send to servers or in
+// Referer headers. It is kept in sessionStorage for this tab, removed from the address bar, and
+// sent as a Bearer header with every API request. No cookie: cookies are not scoped to a port.
+const TOKEN_STORAGE_KEY = "akramcode-traces-token";
+
+function takeTokenFromHash() {
+	const match = /^#token=([0-9a-f]{64})$/.exec(location.hash);
+	if (!match) return;
+	try {
+		sessionStorage.setItem(TOKEN_STORAGE_KEY, match[1]);
+	} catch {}
+	history.replaceState(null, "", `${location.pathname}${location.search}#/`);
+}
+
+function authToken() {
+	try {
+		return sessionStorage.getItem(TOKEN_STORAGE_KEY) || "";
+	} catch {
+		return "";
+	}
+}
+
+function authHeaders(extra) {
+	return { ...extra, Authorization: `Bearer ${authToken()}` };
+}
+
+function showAuthError() {
+	$("app").replaceChildren(
+		h(
+			"p",
+			{ class: "err" },
+			"Not authorized. Open the full URL printed by akramcode traces (it contains #token=…). Each run uses a new token.",
+		),
+	);
+}
+
+/** Download an API resource with the token: fetch it, then save it from an object URL. */
+async function download(url) {
+	const res = await fetch(url, { headers: authHeaders() });
+	if (!res.ok) {
+		if (res.status === 401) showAuthError();
+		return;
+	}
+	const disposition = res.headers.get("content-disposition") || "";
+	const name = /filename="([^"]+)"/.exec(disposition)?.[1] || "download";
+	const objectUrl = URL.createObjectURL(await res.blob());
+	const link = h("a", { href: objectUrl, download: name });
+	document.body.appendChild(link);
+	link.click();
+	link.remove();
+	setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+}
+
+function downloadButton(url, label, cls) {
+	return h("button", { type: "button", class: cls, onclick: (event) => { event.preventDefault(); event.stopPropagation(); void download(url); } }, label);
+}
+
+class AuthError extends Error {
+	constructor() {
+		super("Not authorized");
+	}
+}
+
 async function getJson(url) {
-	const res = await fetch(url, { headers: { Accept: "application/json" } });
+	const res = await fetch(url, { headers: authHeaders({ Accept: "application/json" }) });
+	if (res.status === 401) {
+		showAuthError();
+		throw new AuthError();
+	}
 	if (!res.ok) {
 		let message = `${res.status} ${res.statusText}`;
 		try {
@@ -141,7 +212,7 @@ function saveFilter() {
 	try {
 		sessionStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(readFilter()));
 	} catch {}
-	$("f-export").href = `/api/export?${filterQuery()}`;
+
 }
 
 function restoreFilter() {
@@ -215,7 +286,8 @@ async function render(options = {}) {
 		else if (route.name === "network") await renderNetwork(token);
 		else await renderSessions(token);
 	} catch (error) {
-		if (token === state.renderToken) {
+		// The auth message is already shown; keep it instead of a generic failure.
+		if (token === state.renderToken && !(error instanceof AuthError)) {
 			$("app").replaceChildren(h("p", { class: "err" }, `Failed to load: ${error.message}`));
 		}
 	}
@@ -684,8 +756,8 @@ function renderDetail(entryId, options = {}) {
 			h(
 				"div",
 				{ class: "actions" },
-				h("a", { class: "button", href: `/api/sessions/${s.key}/export`, download: true }, "Export JSON"),
-				h("a", { class: "button", href: `/api/sessions/${s.key}/raw`, download: true }, "Raw JSONL"),
+				downloadButton(`/api/sessions/${s.key}/export`, "Export JSON"),
+				downloadButton(`/api/sessions/${s.key}/raw`, "Raw JSONL"),
 				h("button", { onclick: () => setAllTools(true) }, "Expand all tools"),
 				h("button", { onclick: () => setAllTools(false) }, "Collapse all"),
 				toggle("Thinking", "thinking"),
@@ -1004,7 +1076,7 @@ function renderRequestPanel(r) {
 }
 
 function blobLink(fileKey, blob, label) {
-	return blob ? h("a", { href: `/api/capture/blob/${fileKey}/${encodeURIComponent(blob)}`, download: true }, label || "download full") : null;
+	return blob ? downloadButton(`/api/capture/blob/${fileKey}/${encodeURIComponent(blob)}`, label || "download full", "link") : null;
 }
 
 function jsonPre(value) {
@@ -1123,7 +1195,7 @@ function networkRows(n) {
 
 function bodyBlock(label, body, fileKey) {
 	if (!body) return null;
-	const note = [fmtBytes(body.bytes), body.wireBytes !== undefined && body.wireBytes !== body.bytes ? `${fmtBytes(body.wireBytes)} on the wire (${body.contentEncoding})` : null, body.truncated ? "cut at capture limit" : null].filter(Boolean).join(" · ");
+	const note = [fmtBytes(body.bytes), body.wireBytes !== undefined && body.wireBytes !== body.bytes ? `${fmtBytes(body.wireBytes)} on the wire (${body.contentEncoding})` : null, body.truncated ? "cut at capture limit" : null, body.note || null].filter(Boolean).join(" · ");
 	let content;
 	if (body.sameAs === "payload") content = h("div", { class: "muted" }, "Same bytes as the payload above.");
 	else if (body.binary) content = h("div", { class: "muted" }, "Binary body; only the size is kept.");
@@ -1358,33 +1430,54 @@ function scheduleRefresh() {
 	}, 300);
 }
 
+/**
+ * Live updates over a streamed fetch of /api/events (server-sent events format). EventSource
+ * cannot send an Authorization header, so the stream is read and parsed here.
+ */
 function connectLive() {
 	const live = $("live");
-	if (typeof EventSource === "undefined") {
-		live.textContent = "polling";
-		setInterval(async () => {
-			try {
-				const v = await getJson("/api/version");
-				if (v.version !== state.version) scheduleRefresh();
-			} catch {}
-		}, 5000);
-		return;
-	}
-	const source = new EventSource("/api/events");
-	source.addEventListener("open", () => {
-		live.textContent = "live";
-		live.className = "live on";
-	});
-	source.addEventListener("error", () => {
-		live.textContent = "reconnecting";
-		live.className = "live off";
-	});
-	source.addEventListener("version", (event) => {
+	const setStatus = (text, cls) => {
+		live.textContent = text;
+		live.className = `live ${cls}`;
+	};
+	const connect = async () => {
 		try {
-			const data = JSON.parse(event.data);
-			if (data.version !== state.version) scheduleRefresh();
+			const res = await fetch("/api/events", { headers: authHeaders({ Accept: "text/event-stream" }) });
+			if (res.status === 401) {
+				setStatus("not authorized", "off");
+				return;
+			}
+			if (!res.ok || !res.body) throw new Error(String(res.status));
+			setStatus("live", "on");
+			const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+			let buffer = "";
+			for (;;) {
+				const { value, done } = await reader.read();
+				if (done) break;
+				buffer += value;
+				let boundary = buffer.indexOf("\n\n");
+				while (boundary !== -1) {
+					const block = buffer.slice(0, boundary);
+					buffer = buffer.slice(boundary + 2);
+					const data = block
+						.split("\n")
+						.filter((line) => line.startsWith("data:"))
+						.map((line) => line.slice(5).trim())
+						.join("\n");
+					if (data && /^event: version$/m.test(block)) {
+						try {
+							if (JSON.parse(data).version !== state.version) scheduleRefresh();
+						} catch {}
+					}
+					boundary = buffer.indexOf("\n\n");
+				}
+				if (buffer.length > 1_000_000) buffer = "";
+			}
 		} catch {}
-	});
+		setStatus("reconnecting", "off");
+		setTimeout(connect, 3000);
+	};
+	void connect();
 }
 
 // ---------------------------------------------------------------------------
@@ -1392,7 +1485,9 @@ function connectLive() {
 // ---------------------------------------------------------------------------
 
 function init() {
+	takeTokenFromHash();
 	restoreFilter();
+	$("f-export").addEventListener("click", () => void download(`/api/export?${filterQuery()}`));
 	for (const id of ["f-q", "f-project", "f-model", "f-subagents", "f-errors", "f-from", "f-to"]) {
 		$(id).addEventListener(id === "f-q" ? "input" : "change", onFilterChange);
 	}

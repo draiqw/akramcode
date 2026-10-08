@@ -26,6 +26,8 @@ export interface BodyRef {
 	sameAs?: "payload";
 	/** Not text; only the size is kept. */
 	binary?: boolean;
+	/** Why the body is missing or cut, for example the in-flight memory budget or a decompression limit. */
+	note?: string;
 }
 
 export interface TraceHeaderRecord {

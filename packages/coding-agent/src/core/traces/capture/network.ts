@@ -8,10 +8,10 @@
  */
 
 import diagnosticsChannel from "node:diagnostics_channel";
-import { brotliDecompressSync, gunzipSync, inflateSync } from "node:zlib";
+import * as zlib from "node:zlib";
 import type { BodyRef, HttpRecord, NetworkInfo, WebSocketRecord } from "./format.ts";
 import type { Redactor } from "./redact.ts";
-import { type CaptureFile, sha1 } from "./writer.ts";
+import { type CaptureFile, type MemoryBudget, sha1 } from "./writer.ts";
 
 export interface TraceContext {
 	sessionId?: string;
@@ -21,6 +21,8 @@ export interface TraceContext {
 export interface NetworkSink {
 	readonly redactor: Redactor;
 	readonly maxBodyBytes: number;
+	/** Shared limit on bytes buffered by all in-flight captures. */
+	readonly budget: MemoryBudget;
 	context(): TraceContext | undefined;
 	fileFor(context: TraceContext | undefined): CaptureFile | undefined;
 	newId(prefix: string): string;
@@ -44,15 +46,20 @@ interface PendingHttp {
 	path: string;
 	headers: Record<string, string | string[]>;
 	requestChunks: Buffer[];
+	requestStored: number;
 	bytesOut: number;
 	requestTruncated: boolean;
 	initialBody?: Buffer;
+	/** Budget bytes held by this request; shared with the finalizer that releases them on GC. */
+	reservation: { bytes: number };
+	note?: string;
 	sendPerf?: number;
 	headersPerf?: number;
 	status?: number;
 	statusText?: string;
 	responseHeaders?: Record<string, string | string[]>;
 	responseChunks: Buffer[];
+	responseStored: number;
 	bytesIn: number;
 	responseTruncated: boolean;
 	network: NetworkInfo;
@@ -82,6 +89,7 @@ interface SocketLike {
 	getCipher?: () => { name?: string } | undefined;
 }
 
+const MAX_TRACKED_WEBSOCKETS = 256;
 const TEXT_CONTENT_TYPE = /json|text|xml|javascript|event-stream|x-www-form-urlencoded|graphql|ndjson/i;
 
 function toBuffer(chunk: unknown): Buffer | undefined {
@@ -129,18 +137,43 @@ function headerValue(headers: Record<string, string | string[]> | undefined, nam
 	return Array.isArray(value) ? value.join(", ") : value;
 }
 
-function decodeBody(data: Buffer, encoding: string | undefined): Buffer {
+type SyncDecompress = (data: Buffer, options: { maxOutputLength: number }) => Buffer;
+
+/** zstd exists in newer Node versions only. */
+const zstdDecompressSync = (zlib as unknown as { zstdDecompressSync?: SyncDecompress }).zstdDecompressSync;
+
+export class DecompressionLimitError extends Error {
+	constructor(limit: number) {
+		super(`decompressed body exceeds the capture limit of ${limit} bytes`);
+		this.name = "DecompressionLimitError";
+	}
+}
+
+/**
+ * Decode a content-encoded body. Output is capped with zlib's `maxOutputLength`, so a small
+ * compressed body cannot expand into gigabytes (a decompression bomb).
+ */
+export function decodeBody(data: Buffer, encoding: string | undefined, maxOutputBytes: number): Buffer {
 	const codings = (encoding ?? "")
 		.split(",")
 		.map((coding) => coding.trim().toLowerCase())
 		.filter((coding) => coding && coding !== "identity")
 		.reverse();
+	const options = { maxOutputLength: Math.max(1, Math.min(maxOutputBytes, 2 ** 31 - 1)) };
 	let result = data;
 	for (const coding of codings) {
-		if (coding === "gzip" || coding === "x-gzip") result = gunzipSync(result);
-		else if (coding === "deflate") result = inflateSync(result);
-		else if (coding === "br") result = brotliDecompressSync(result);
-		else throw new Error(`unsupported content-encoding ${coding}`);
+		try {
+			if (coding === "gzip" || coding === "x-gzip") result = zlib.gunzipSync(result, options);
+			else if (coding === "deflate") result = zlib.inflateSync(result, options);
+			else if (coding === "br") result = zlib.brotliDecompressSync(result, options);
+			else if (coding === "zstd" && zstdDecompressSync) result = zstdDecompressSync(result, options);
+			else throw new Error(`unsupported content-encoding ${coding}`);
+		} catch (error) {
+			if ((error as { code?: string }).code === "ERR_BUFFER_TOO_LARGE" || error instanceof RangeError) {
+				throw new DecompressionLimitError(maxOutputBytes);
+			}
+			throw error;
+		}
 	}
 	return result;
 }
@@ -178,6 +211,14 @@ function proxyFor(url: string, redactor: Redactor): string | undefined {
 export class NetworkCapture {
 	private readonly sink: NetworkSink;
 	private readonly pending = new WeakMap<object, PendingHttp>();
+	/**
+	 * Releases the budget of requests that never reported an end (a dropped request object is
+	 * garbage-collected without trailers or error), so the budget cannot leak.
+	 */
+	private readonly finalizer = new FinalizationRegistry<{ bytes: number }>((reservation) => {
+		this.sink.budget.release(reservation.bytes);
+		reservation.bytes = 0;
+	});
 	private readonly sockets = new WeakMap<object, SocketInfo>();
 	private readonly connecting = new Map<string, number>();
 	private readonly subscriptions: Array<[string, (message: unknown) => void]> = [];
@@ -246,16 +287,77 @@ export class NetworkCapture {
 			path,
 			headers: parseRequestHeaders(request.headers),
 			requestChunks: [],
+			requestStored: 0,
 			bytesOut: 0,
 			requestTruncated: false,
-			initialBody: toBuffer(request.body),
+			reservation: { bytes: 0 },
 			responseChunks: [],
+			responseStored: 0,
 			bytesIn: 0,
 			responseTruncated: false,
 			network: {},
 			...(request.upgrade ? { upgrade: true } : {}),
 		};
 		this.pending.set(request, pending);
+		this.finalizer.register(request, pending.reservation, pending);
+		// A string or buffer body may never be reported chunk by chunk; keep a bounded copy.
+		const body = request.body;
+		if (typeof body === "string" || body instanceof Uint8Array) {
+			const length = typeof body === "string" ? Buffer.byteLength(body) : body.byteLength;
+			const keep = Math.min(length, this.sink.maxBodyBytes);
+			if (this.reserve(pending, keep)) {
+				const head = typeof body === "string" ? body.slice(0, keep) : body.subarray(0, keep);
+				pending.initialBody = Buffer.from(Buffer.from(head).subarray(0, keep));
+				if (keep < length) pending.requestTruncated = true;
+			}
+		}
+	}
+
+	private reserve(pending: PendingHttp, bytes: number): boolean {
+		if (bytes <= 0) return true;
+		if (!this.sink.budget.tryReserve(bytes)) {
+			pending.note = "in-flight capture memory budget exceeded";
+			return false;
+		}
+		pending.reservation.bytes += bytes;
+		return true;
+	}
+
+	private releaseAll(pending: PendingHttp): void {
+		this.sink.budget.release(pending.reservation.bytes);
+		pending.reservation.bytes = 0;
+		this.finalizer.unregister(pending);
+		pending.requestChunks = [];
+		pending.responseChunks = [];
+		pending.initialBody = undefined;
+	}
+
+	/**
+	 * Keep a copy of a body chunk, within the per-body limit and the shared budget. The limits are
+	 * checked before keeping anything, so one oversized chunk cannot pass them.
+	 */
+	private keepChunk(pending: PendingHttp, kind: "request" | "response", chunk: Buffer): void {
+		const stored = kind === "request" ? pending.requestStored : pending.responseStored;
+		const room = this.sink.maxBodyBytes - stored;
+		const take = Math.min(room, chunk.length);
+		const truncate = () => {
+			if (kind === "request") pending.requestTruncated = true;
+			else pending.responseTruncated = true;
+		};
+		if (take <= 0 || !this.reserve(pending, take)) {
+			truncate();
+			return;
+		}
+		// Copy: undici may reuse the chunk's memory, and a slice would keep the whole chunk alive.
+		const piece = Buffer.from(chunk.subarray(0, take));
+		if (kind === "request") {
+			pending.requestChunks.push(piece);
+			pending.requestStored += take;
+		} else {
+			pending.responseChunks.push(piece);
+			pending.responseStored += take;
+		}
+		if (take < chunk.length) truncate();
 	}
 
 	private onBodySent(message: unknown): void {
@@ -263,9 +365,15 @@ export class NetworkCapture {
 		const pending = request ? this.pending.get(request) : undefined;
 		const buffer = toBuffer(chunk);
 		if (!pending || !buffer) return;
+		if (pending.initialBody) {
+			// Chunks are authoritative; drop the copy of the original body.
+			this.sink.budget.release(pending.initialBody.length);
+			pending.reservation.bytes -= pending.initialBody.length;
+			pending.initialBody = undefined;
+			pending.requestTruncated = false;
+		}
 		pending.bytesOut += buffer.length;
-		if (pending.bytesOut <= this.sink.maxBodyBytes) pending.requestChunks.push(buffer);
-		else pending.requestTruncated = true;
+		this.keepChunk(pending, "request", buffer);
 	}
 
 	private connectKey(params: unknown): string {
@@ -327,6 +435,7 @@ export class NetworkCapture {
 		if (pending.upgrade && request) {
 			// WebSocket handshake: keep the socket details for the WebSocket record, keyed by host and path.
 			this.pending.delete(request);
+			this.releaseAll(pending);
 			this.upgradeNetwork.set(hostPathKey(url), {
 				network: {
 					...pending.network,
@@ -357,8 +466,7 @@ export class NetworkCapture {
 		const buffer = toBuffer(chunk);
 		if (!pending || !buffer) return;
 		pending.bytesIn += buffer.length;
-		if (pending.bytesIn <= this.sink.maxBodyBytes) pending.responseChunks.push(buffer);
-		else pending.responseTruncated = true;
+		this.keepChunk(pending, "response", buffer);
 	}
 
 	private storeBody(
@@ -366,19 +474,28 @@ export class NetworkCapture {
 		name: string,
 		data: Buffer,
 		headers: Record<string, string | string[]> | undefined,
-		options: { truncated: boolean; wireBytes: number; payloadSha1?: string },
+		options: { truncated: boolean; wireBytes: number; payloadSha1?: string; note?: string },
 	): BodyRef | undefined {
 		if (data.length === 0 && options.wireBytes === 0) return undefined;
+		if (data.length === 0 && options.note) {
+			return { bytes: 0, truncated: true, wireBytes: options.wireBytes, note: options.note };
+		}
 		const encoding = headerValue(headers, "content-encoding");
 		let decoded = data;
 		const extra: Partial<BodyRef> = {};
 		if (encoding && !options.truncated) {
 			try {
-				decoded = decodeBody(data, encoding);
+				decoded = decodeBody(data, encoding, this.sink.maxBodyBytes);
 				extra.contentEncoding = encoding;
 				extra.wireBytes = options.wireBytes;
-			} catch {
-				return { bytes: data.length, binary: true, contentEncoding: encoding, wireBytes: options.wireBytes };
+			} catch (error) {
+				return {
+					bytes: data.length,
+					binary: true,
+					contentEncoding: encoding,
+					wireBytes: options.wireBytes,
+					...(error instanceof DecompressionLimitError ? { truncated: true, note: error.message } : {}),
+				};
 			}
 		}
 		const contentType = headerValue(headers, "content-type");
@@ -397,6 +514,14 @@ export class NetworkCapture {
 		const pending = request ? this.pending.get(request) : undefined;
 		if (!request || !pending) return;
 		this.pending.delete(request);
+		try {
+			this.writeHttp(pending, error);
+		} finally {
+			this.releaseAll(pending);
+		}
+	}
+
+	private writeHttp(pending: PendingHttp, error: unknown): void {
 		const file = this.sink.fileFor(pending.context);
 		if (!file) return;
 		const redactor = this.sink.redactor;
@@ -431,6 +556,7 @@ export class NetworkCapture {
 				truncated: pending.requestTruncated,
 				wireBytes: pending.bytesOut || requestData.length,
 				payloadSha1,
+				note: pending.note,
 			}),
 			...(pending.status !== undefined ? { status: pending.status } : {}),
 			...(pending.statusText ? { statusText: pending.statusText } : {}),
@@ -443,6 +569,7 @@ export class NetworkCapture {
 				{
 					truncated: pending.responseTruncated,
 					wireBytes: pending.bytesIn,
+					note: pending.note,
 				},
 			),
 			timing: {
@@ -526,6 +653,12 @@ export class NetworkCapture {
 		if (!exchange) {
 			exchange = new WebSocketExchange(this, socket);
 			this.webSockets.set(socket, exchange);
+			// Sockets that never report close would otherwise stay referenced forever.
+			if (this.webSockets.size > MAX_TRACKED_WEBSOCKETS) {
+				const [oldest, oldestExchange] = this.webSockets.entries().next().value ?? [];
+				oldestExchange?.flush();
+				if (oldest) this.webSockets.delete(oldest);
+			}
 		}
 		return exchange;
 	}
@@ -558,6 +691,10 @@ export class NetworkCapture {
 
 	get maxBodyBytes(): number {
 		return this.sink.maxBodyBytes;
+	}
+
+	get budget(): MemoryBudget {
+		return this.sink.budget;
 	}
 
 	newId(prefix: string): string {
@@ -597,6 +734,8 @@ interface ExchangeState {
 	bytesOut: number;
 	bytesIn: number;
 	storedBytes: number;
+	/** Bytes reserved from the shared in-flight budget. */
+	reserved: number;
 	truncated: boolean;
 }
 
@@ -650,6 +789,7 @@ class WebSocketExchange {
 			bytesOut: 0,
 			bytesIn: 0,
 			storedBytes: 0,
+			reserved: 0,
 			truncated: false,
 		};
 		return this.current;
@@ -657,13 +797,20 @@ class WebSocketExchange {
 
 	private add(state: ExchangeState, list: string[], data: unknown): number {
 		const frame = frameText(data);
-		const line = JSON.stringify({ t: Date.now(), data: frame.text });
-		if (state.storedBytes + line.length <= this.capture.maxBodyBytes) {
-			list.push(line);
-			state.storedBytes += line.length;
-		} else {
+		// Check the raw size first, so an oversized frame is never serialized or copied.
+		if (state.truncated || state.storedBytes + frame.bytes > this.capture.maxBodyBytes) {
 			state.truncated = true;
+			return frame.bytes;
 		}
+		const line = JSON.stringify({ t: Date.now(), data: frame.text });
+		const bytes = Buffer.byteLength(line);
+		if (state.storedBytes + bytes > this.capture.maxBodyBytes || !this.capture.budget.tryReserve(bytes)) {
+			state.truncated = true;
+			return frame.bytes;
+		}
+		list.push(line);
+		state.storedBytes += bytes;
+		state.reserved += bytes;
 		return frame.bytes;
 	}
 
@@ -691,7 +838,19 @@ class WebSocketExchange {
 	flush(closeCode?: number): void {
 		const state = this.current;
 		this.current = undefined;
-		if (!state || (state.framesSent === 0 && state.framesReceived === 0)) return;
+		if (!state) return;
+		try {
+			this.write(state, closeCode);
+		} finally {
+			this.capture.budget.release(state.reserved);
+			state.reserved = 0;
+			state.sent = [];
+			state.received = [];
+		}
+	}
+
+	private write(state: ExchangeState, closeCode: number | undefined): void {
+		if (state.framesSent === 0 && state.framesReceived === 0) return;
 		const redactor = this.capture.redactor;
 		let host = "";
 		try {
