@@ -429,6 +429,21 @@ export function getExportTemplateDir(): string {
 	return join(packageDir, srcOrDist, "core", "export-html");
 }
 
+/**
+ * Get path to the `akramcode traces` web UI directory (shipped with package)
+ * - For Bun binary: traces-ui/ next to executable
+ * - For Node.js (dist/): dist/core/traces/ui/
+ * - For source (src/): src/core/traces/ui/
+ */
+export function getTracesUiDir(): string {
+	if (isBunBinary) {
+		return join(getPackageDir(), "traces-ui");
+	}
+	const packageDir = getPackageDir();
+	const srcOrDist = existsSync(join(packageDir, "src")) ? "src" : "dist";
+	return join(packageDir, srcOrDist, "core", "traces", "ui");
+}
+
 /** Get path to package.json */
 export function getPackageJsonPath(): string {
 	return join(getPackageDir(), "package.json");

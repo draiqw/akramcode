@@ -9,7 +9,8 @@ export default mergeConfig(
 			environment: "node",
 			testTimeout: 30000,
 			// Tests run offline by default; opt in with allowNetwork() from test/test-network-env.ts.
-			env: { AKRAMCODE_OFFLINE: "1" },
+			// Trace capture stays off unless a test installs a recorder itself.
+			env: { AKRAMCODE_OFFLINE: "1", AKRAMCODE_TRACES: "0" },
 			unstubEnvs: true,
 			reporters: process.env.GITHUB_ACTIONS ? ["dot", "github-actions"] : ["dot"],
 			silent: "passed-only",

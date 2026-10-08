@@ -84,6 +84,7 @@ These variables are read by AkramCode itself:
 | `AKRAMCODE_OFFLINE` | Disable automatic network activity, including model catalog refreshes |
 | `AKRAMCODE_SKIP_VERSION_CHECK` | Disable the latest-version request |
 | `AKRAMCODE_TELEMETRY` | Override install/update telemetry and provider attribution headers: `1`/`true`/`yes` or `0`/`false`/`no` |
+| `AKRAMCODE_TRACES` | Override trace capture for [`akramcode traces`](traces.md#capture): `0`/`false`/`no`/`off` turns it off, any other value turns it on |
 | `AKRAMCODE_CACHE_RETENTION` | Set to `long` for extended provider prompt caching where supported |
 | `AKRAMCODE_SHARE_VIEWER_URL` | Override the base URL used by `/share` |
 | `AKRAMCODE_HARDWARE_CURSOR` | Set to `1` to show the hardware cursor; see [Terminal setup](terminal-setup.md) |

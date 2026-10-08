@@ -223,6 +223,17 @@ Resource arrays support glob exclusions with `!pattern`, exact inclusion with `+
 
 The built-in extensions are named `builtin:mcp`, `builtin:llama.cpp`, `builtin:codemode`, `builtin:tool-search`, `builtin:online-compact`, and `builtin:tasks` (`/tasks`, `/agents`, the running-task footer status, and task notification rendering) in `extensions`. They load by default; `-builtin:mcp` disables one. A `+builtin:<name>` or `-builtin:<name>` entry in project settings overrides the user setting. `akramcode config` lists them under Built-in. `--no-extensions` disables them too, and `-e builtin:<name>` loads one explicitly.
 
+## Traces
+
+Capture of model requests, network activity, and tool executions for [`akramcode traces`](traces.md#capture). **Can only be set in agent-directory settings.**
+
+| Setting | Type | Default | Description |
+|---|---|---|---|
+| `traces.enabled` | boolean | `true` | Record what each session sends to the model and receives, the HTTP and WebSocket activity of the process, and tool executions in `~/.akramcode/agent/traces/`. The `AKRAMCODE_TRACES` environment variable (`0` or `1`) overrides it. |
+| `traces.maxTotalSizeMb` | number | `2048` | Delete the oldest trace files when the directory grows past this size. |
+| `traces.maxAgeDays` | number | `30` | Delete trace files older than this. |
+| `traces.maxBodyMb` | number | `32` | Largest request body, response body, stream, or tool output kept per record; longer ones are cut and marked. |
+
 ## Updates and telemetry
 
 | Setting | Type | Default | Description |

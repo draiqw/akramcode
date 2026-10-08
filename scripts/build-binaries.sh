@@ -146,6 +146,7 @@ for platform in "${PLATFORMS[@]}"; do
     mkdir -p "$OUTPUT_DIR/$platform/theme"
     cp dist/modes/interactive/theme/*.json "$OUTPUT_DIR/$platform/theme/"
     cp -r dist/core/export-html "$OUTPUT_DIR/$platform/"
+    cp -r dist/core/traces/ui "$OUTPUT_DIR/$platform/traces-ui"
     cp -r docs "$OUTPUT_DIR/$platform/"
     cp -r examples "$OUTPUT_DIR/$platform/"
 

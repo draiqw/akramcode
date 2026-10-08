@@ -14,6 +14,7 @@ akramcode list
 akramcode config [options]
 akramcode auth <check|print-api-key|print-bearer-token> [options]
 akramcode mcp <list|login|logout> [options]
+akramcode traces [--port <port>] [--open]
 ```
 
 <a id="modes"></a>
@@ -144,6 +145,21 @@ Built-in extensions add two more tools. They are off by default; the MCP extensi
 |---|---|
 | `codemode` | Run JavaScript that calls the other tools, for example in parallel with `Promise.allSettled`; only the script's output reaches the model |
 | `tool_search` | Search tools that are not declared to the model (`codemode` and `deferred` exposure, such as MCP tools) and declare the matches for the next call |
+
+The built-in `question` extension tool is on by default; `--tools` without it or `--exclude-tools question` turns it off. See [Questions to the user](#questions-to-the-user).
+
+### Questions to the user
+
+`question` lets the model ask one to four multiple-choice questions when it is blocked on a decision that is yours to make. In the terminal it opens a dialog:
+
+- Each question has numbered options with optional descriptions. Several questions show as tabs, followed by a review step.
+- `multiSelect` questions use checkboxes: Enter or Space toggles, and the last row submits.
+- Every question accepts your own answer: start typing, or pick "Type something…". `@` completes file paths, as in the main editor. A written answer next to a chosen option is sent as a note.
+- Attach files and images with the paste key (`ctrl+v`; on macOS it pastes copied files), by dropping files onto the terminal, or with `@path` in the answer. Text files are inlined up to 64 KB; images are sent as images when the model supports them. Backspace on the option list removes the last attachment.
+- An option can carry a `preview`, such as a code snippet or layout, shown in a box while it is focused.
+- Escape cancels. From a written answer, Escape first returns to the options and keeps the text.
+
+RPC clients get one `select` (or `input` for multiple choice) dialog per question; see [RPC extension UI](rpc-extension-ui.md). In print and JSON modes there is nobody to ask, so the tool tells the model to choose itself and state the assumption.
 
 ### Enable codemode
 
@@ -317,3 +333,7 @@ These commands work outside a session, so agents can run them through `bash`. Se
 `add` and `remove` change `~/.akramcode/agent/mcp.json`, or `.akramcode/mcp.json` in the current directory with `--local` (`-l`). `add` also takes `--exposure <mode>` (see [Exposure](mcp.md#exposure)) and `--description <text>` and does not connect; run `akramcode mcp list` to check the server.
 
 Project `.akramcode/mcp.json` files are only read for projects that are already trusted.
+
+## Traces command
+
+`akramcode traces [--port <port>] [--open] [--session-dir <dir>] [--poll <ms>]` starts a local, read-only web UI on `127.0.0.1` with every stored session and subagent transcript: a filterable session list, a per-session timeline with the captured model requests, a network view, and aggregates of tool failures, grouped errors, retries, and latency. The printed URL carries a per-run access token. See [Traces](traces.md).

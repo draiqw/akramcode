@@ -61,6 +61,8 @@ import { assertValidSessionId, SessionManager } from "./core/session-manager.ts"
 import { collectSettingsDiagnostics, deduplicateDiagnostics } from "./core/settings-diagnostics.ts";
 import { SettingsManager } from "./core/settings-manager.ts";
 import { printTimings, resetTimings, time } from "./core/timings.ts";
+import { installTraceRecorder, resolveTraceCaptureSettings } from "./core/traces/capture/recorder.ts";
+import { runTracesCommand } from "./core/traces/cli.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "./core/trust-manager.ts";
 import { builtInExtensions } from "./extensions/index.ts";
 import { loadMcpCommand } from "./extensions/mcp/cli.lazy.ts";
@@ -575,6 +577,13 @@ export async function main(args: string[], options?: MainOptions) {
 	const bootstrapSettingsManager = SettingsManager.create(cwd, agentDir, { projectTrusted: false });
 	applyHttpProxySettings(bootstrapSettingsManager.getGlobalSettings().httpProxy);
 	configureHttpDispatcher();
+	if (args[0] !== "traces") {
+		installTraceRecorder({
+			agentDir,
+			settings: resolveTraceCaptureSettings(bootstrapSettingsManager.getGlobalSettings().traces),
+			appVersion: VERSION,
+		});
+	}
 
 	if (await handlePackageCommand(args, { extensionFactories })) {
 		const exitCode = process.exitCode ?? 0;
@@ -587,6 +596,14 @@ export async function main(args: string[], options?: MainOptions) {
 	}
 
 	if (await handleConfigCommand(args, { extensionFactories })) {
+		return;
+	}
+
+	if (args[0] === "traces") {
+		process.exitCode = await runTracesCommand(args.slice(1), {
+			agentDir,
+			settingsSessionDir: bootstrapSettingsManager.getSessionDir(),
+		});
 		return;
 	}
 

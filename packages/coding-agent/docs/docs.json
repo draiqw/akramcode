@@ -36,6 +36,10 @@
               "path": "sessions.md"
             },
             {
+              "title": "Study Session Traces",
+              "path": "traces.md"
+            },
+            {
               "title": "Run AkramCode Safely",
               "path": "security.md"
             },

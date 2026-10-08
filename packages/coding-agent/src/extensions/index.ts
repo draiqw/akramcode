@@ -3,6 +3,7 @@ import codemodeExtension from "./codemode/index.ts";
 import llamaExtension from "./llama/index.ts";
 import mcpExtension from "./mcp/index.ts";
 import onlineCompactExtension from "./online-compact/index.ts";
+import questionExtension from "./question/index.ts";
 import tasksExtension from "./tasks/index.ts";
 import toolSearchExtension from "./tool-search/index.ts";
 
@@ -17,4 +18,6 @@ export const builtInExtensions: InlineExtension[] = [
 	{ name: "online-compact", factory: onlineCompactExtension, replaceable: true, builtin: true },
 	// Footer status, `/tasks`, `/agents`, and the chat rendering of task notifications.
 	{ name: "tasks", factory: tasksExtension, replaceable: true, builtin: true },
+	// Replaceable: an extension that registers its own `question` tool takes over.
+	{ name: "question", factory: questionExtension, replaceable: true, builtin: true },
 ];

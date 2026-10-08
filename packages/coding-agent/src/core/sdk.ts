@@ -32,6 +32,7 @@ import {
 	createWriteTool,
 	withFileMutationQueue,
 } from "./tools/index.ts";
+import { getTraceRecorder } from "./traces/capture/recorder.ts";
 import { getBranchSelection } from "./virtual-models.ts";
 
 // See docs/adr/coding-agent/core-sdk.md#default-stream-function-fallback
@@ -388,6 +389,11 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 		});
 	};
 
+	const traceTracer = getTraceRecorder()?.createSessionTracer({
+		getSessionId: () => sessionManager.getSessionId(),
+		getSessionFile: () => sessionManager.getSessionFile(),
+		cwd,
+	});
 	const agent = new Agent({
 		initialState: {
 			systemPrompt: "",
@@ -407,7 +413,11 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 			if (options?.sessionId === sessionManager.getSessionId()) {
 				cacheWarmer.start({ model, context, options: requestOptions }, cacheContextIsCurrent(model));
 			}
-			return modelRuntime.streamSimple(model, context, requestOptions);
+			return traceTracer
+				? traceTracer.traceStream(model, requestOptions, (traced) =>
+						modelRuntime.streamSimple(model, context, traced),
+					)
+				: modelRuntime.streamSimple(model, context, requestOptions);
 		},
 		onPayload: transformProviderPayload,
 		onResponse: handleProviderResponse,
@@ -424,6 +434,7 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 		thinkingBudgets: settingsManager.getThinkingBudgets(),
 		maxRetryDelayMs: settingsManager.getProviderRetrySettings().maxRetryDelayMs,
 	});
+	if (traceTracer) agent.subscribe((event) => traceTracer.onAgentEvent(event));
 
 	// Restore missing settings metadata for older sessions.
 	if (hasExistingSession) {

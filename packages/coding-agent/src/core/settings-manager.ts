@@ -147,6 +147,14 @@ export type PackageSource =
 			themes?: string[];
 	  };
 
+/** `traces` setting: capture for `akramcode traces`. Read from agent-directory settings only. */
+export interface TraceCaptureSettingsInput {
+	enabled?: boolean; // default: true
+	maxTotalSizeMb?: number; // default: 2048
+	maxAgeDays?: number; // default: 30
+	maxBodyMb?: number; // default: 32 - longest body kept per request, response, or tool output
+}
+
 export interface Settings {
 	lastChangelogVersion?: string;
 	defaultProvider?: string;
@@ -201,6 +209,7 @@ export interface Settings {
 	backgroundTasks?: BackgroundTaskSettings;
 	sandbox?: SandboxSettings; // Global-only: where the built-in tools run (local machine or an OpenSandbox sandbox)
 	sessionDir?: string; // Custom session storage directory (same format as --session-dir CLI flag)
+	traces?: TraceCaptureSettingsInput; // Global-only: capture of model requests, network, and tool executions for `akramcode traces`
 	httpProxy?: string; // Proxy URL applied as HTTP_PROXY and HTTPS_PROXY for AkramCode-managed HTTP clients
 	httpIdleTimeoutMs?: number; // HTTP header/body idle timeout in milliseconds; 0 disables it
 	cacheWarming?: CacheWarmingMode; // See docs/adr/coding-agent/core-settings-manager.md#cache-warming-global-only-setting
