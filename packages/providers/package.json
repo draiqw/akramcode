@@ -1,6 +1,6 @@
 {
 	"name": "@akramcode/providers",
-	"version": "1.0.19",
+	"version": "1.0.20",
 	"description": "LLM providers, models, API protocols and provider authentication for AkramCode",
 	"type": "module",
 	"main": "./dist/index.js",
@@ -63,8 +63,8 @@
 		"http-proxy-agent": "9.1.0",
 		"https-proxy-agent": "9.1.0",
 		"openai": "7.19.0",
-		"@akramcode/ai": "^1.0.19",
-		"@akramcode/telemetry": "^1.0.19",
+		"@akramcode/ai": "^1.0.20",
+		"@akramcode/telemetry": "^1.0.20",
 		"partial-json": "0.1.7"
 	},
 	"keywords": [

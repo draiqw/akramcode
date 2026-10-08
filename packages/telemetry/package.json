@@ -1,6 +1,6 @@
 {
 	"name": "@akramcode/telemetry",
-	"version": "1.0.19",
+	"version": "1.0.20",
 	"description": "Vendor-neutral telemetry contracts and typed schema utilities for akramcode",
 	"type": "module",
 	"main": "./dist/index.js",
