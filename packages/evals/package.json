@@ -1,6 +1,6 @@
 {
 	"name": "@akramcode/evals",
-	"version": "1.0.15",
+	"version": "1.0.16",
 	"private": true,
 	"type": "module",
 	"scripts": {
@@ -12,9 +12,9 @@
 		"bench": "node src/bench/cli.ts"
 	},
 	"devDependencies": {
-		"@akramcode/ai": "^1.0.15",
-		"@akramcode/providers": "^1.0.15",
-		"@akramcode/coding-agent": "^1.0.15",
+		"@akramcode/ai": "^1.0.16",
+		"@akramcode/providers": "^1.0.16",
+		"@akramcode/coding-agent": "^1.0.16",
 		"@types/node": "22.19.19",
 		"@vitest-evals/core": "0.15.0",
 		"autoevals": "0.3.0",
