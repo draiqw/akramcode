@@ -284,6 +284,16 @@ describe("capture text limits", () => {
 		expect(Buffer.byteLength(capText("é".repeat(100), 51).text)).toBeLessThanOrEqual(51);
 	});
 
+	it("cuts long base64 bodies in linear time and keeps most of them", () => {
+		// A /[...]{8,}$/ regex took quadratic time on this input.
+		const base64 = "QUJD".repeat(4 * 1024 * 1024);
+		const started = performance.now();
+		const cut = capText(`${base64} `, 8 * 1024 * 1024);
+		expect(performance.now() - started).toBeLessThan(2000);
+		expect(cut.truncated).toBe(true);
+		expect(cut.text.length).toBe(8 * 1024 * 1024 - 4096);
+	});
+
 	it("skips lines longer than the limit without buffering them", async () => {
 		const dir = mkdtempSync(join(tmpdir(), "akramcode-lines-"));
 		try {

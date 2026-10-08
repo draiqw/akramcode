@@ -26,7 +26,37 @@ export function capText(text: string, maxBytes: number): { text: string; truncat
 	// Back up to a character boundary instead of leaving a broken multi-byte sequence.
 	while (end > 0 && end < buffer.length && (buffer[end] & 0xc0) === 0x80) end--;
 	const prefix = buffer.subarray(0, end).toString("utf8");
-	return { text: prefix.replace(/[A-Za-z0-9_\-+/=.~]{8,}$/, ""), truncated: true };
+	// A backward scan instead of /[...]{8,}$/: that regex is quadratic on long token-like runs
+	// (base64 bodies) that end in another character.
+	let runStart = prefix.length;
+	while (
+		runStart > 0 &&
+		prefix.length - runStart < MAX_DROPPED_TOKEN_CHARS &&
+		isTokenChar(prefix.charCodeAt(runStart - 1))
+	) {
+		runStart--;
+	}
+	const run = prefix.length - runStart;
+	return { text: run >= 8 ? prefix.slice(0, runStart) : prefix, truncated: true };
+}
+
+/** Longest token-like tail dropped at a cut; covers keys and JWTs without erasing whole base64 bodies. */
+const MAX_DROPPED_TOKEN_CHARS = 4096;
+
+/** `[A-Za-z0-9_\-+/=.~]` */
+function isTokenChar(code: number): boolean {
+	return (
+		(code >= 48 && code <= 57) ||
+		(code >= 65 && code <= 90) ||
+		(code >= 97 && code <= 122) ||
+		code === 95 ||
+		code === 45 ||
+		code === 43 ||
+		code === 47 ||
+		code === 61 ||
+		code === 46 ||
+		code === 126
+	);
 }
 
 /**
