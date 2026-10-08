@@ -557,6 +557,10 @@ describe("AgentSession subagents and background tasks", () => {
 
 		const running = harness.session.prompt("watch");
 		await new Promise((resolve) => setTimeout(resolve, 20));
+		const command = harness.session.tasks.create({ kind: "bash", description: "npm test" });
+		await command.finish({ status: "completed", exitCode: 0 });
+		// Escape clears the user's queued messages and aborts; the queued notification must survive both.
+		harness.session.clearQueue();
 		await harness.session.abort();
 		await running;
 
@@ -572,16 +576,82 @@ describe("AgentSession subagents and background tasks", () => {
 		expect(requests).toHaveLength(2);
 		// Only the newest output notifications are kept; older lines stay in the output file.
 		expect(requests[1]).toContain("what happened?");
+		expect(requests[1]).toContain('Background command "npm test" completed');
 		expect(requests[1]).toContain("evt8");
 		expect(requests[1]).toContain("evt4");
 		expect(requests[1]).not.toContain("evt3");
-		expect(notifications(harness)).toHaveLength(5);
+		expect(notifications(harness)).toHaveLength(6);
 
 		// The prompt resumed automatic delivery.
 		harness.appendResponses([fauxAssistantMessage("Saw it.")]);
 		await monitor.finish({ status: "completed" });
 		await harness.session.waitForBackgroundTasks(5_000);
 		expect(lastAssistantText(harness)).toBe("Saw it.");
+	});
+
+	it("queues a prompt when a notification starts a run during the prompt's preflight", async () => {
+		let releaseHook = () => {};
+		const hookReleased = new Promise<void>((resolve) => {
+			releaseHook = resolve;
+		});
+		let markHookStarted = () => {};
+		const hookStarted = new Promise<void>((resolve) => {
+			markHookStarted = resolve;
+		});
+		const harness = await setup(undefined, [
+			(akramcode) => {
+				akramcode.on("before_agent_start", async () => {
+					markHookStarted();
+					await hookReleased;
+				});
+			},
+		]);
+		const requests: string[] = [];
+		const respond =
+			(text: string): FauxResponseFactory =>
+			(context) => {
+				requests.push(context.messages.map((message) => getMessageText(message)).join("\n"));
+				return fauxAssistantMessage(text);
+			};
+		harness.setResponses([respond("Noted the task."), respond("Answered.")]);
+
+		const prompting = harness.session.prompt("my question");
+		await hookStarted;
+		const command = harness.session.tasks.create({ kind: "bash", description: "build" });
+		await command.finish({ status: "completed", exitCode: 0 });
+		await new Promise((resolve) => setTimeout(resolve, 10));
+		releaseHook();
+		await prompting;
+		await harness.session.waitForIdle();
+
+		expect(requests).toHaveLength(2);
+		expect(requests[0]).toContain('Background command "build" completed');
+		expect(requests[1]).toContain("my question");
+		expect(lastAssistantText(harness)).toBe("Answered.");
+	});
+
+	it("does not pause notifications for an abort that is not a user interrupt", async () => {
+		const harness = await setup(undefined, [
+			(akramcode) => {
+				akramcode.on("tool_call", (_event, ctx) => {
+					ctx.abort();
+				});
+			},
+		]);
+		harness.setResponses([
+			fauxAssistantMessage(fauxToolCall("bash", { command: "true" }), { stopReason: "toolUse" }),
+			// Taken by the aborted run.
+			fauxAssistantMessage("Aborted."),
+			fauxAssistantMessage("Saw the task."),
+		]);
+
+		await harness.session.prompt("go");
+		await harness.session.waitForIdle();
+		const command = harness.session.tasks.create({ kind: "bash", description: "build" });
+		await command.finish({ status: "completed", exitCode: 0 });
+		await harness.session.waitForBackgroundTasks(5_000);
+
+		expect(lastAssistantText(harness)).toBe("Saw the task.");
 	});
 
 	it("stops tasks at the wait timeout and when the session is disposed", async () => {

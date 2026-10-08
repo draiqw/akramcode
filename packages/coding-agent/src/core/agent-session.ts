@@ -182,6 +182,10 @@ import {
 /** Monitor output notifications kept for the next prompt while notifications are paused after an abort. */
 const MAX_HELD_TASK_OUTPUT_NOTIFICATIONS = 5;
 
+function isTaskNotificationMessage(message: AgentMessage): message is CustomMessage<TaskNotificationDetails> {
+	return message.role === "custom" && message.customType === TASK_NOTIFICATION_CUSTOM_TYPE;
+}
+
 // ============================================================================
 // Skill Block Parsing
 // ============================================================================
@@ -2132,12 +2136,14 @@ export class AgentSession {
 			timestamp: Date.now(),
 		});
 
-		// Another prompt may have started a run while this one awaited its preflight steps.
-		// Nothing below awaits, so this check holds until the run starts.
+		// A run may have started while this prompt awaited its preflight steps, for example one started
+		// by a task notification. Queue the prompt then (as a follow-up unless the caller chose steering)
+		// instead of failing it: the caller found the agent idle. Nothing below awaits, so the check holds.
 		if (this.isStreaming) {
-			throw new Error(
-				"Agent is already processing. Specify streamingBehavior ('steer' or 'followUp') to queue the message.",
-			);
+			if (options?.streamingBehavior === "steer") await this._queueSteer(expandedText, currentImages);
+			else await this._queueFollowUp(expandedText, currentImages);
+			preflightResult?.("queued");
+			return;
 		}
 
 		// Inject any pending "nextTurn" messages as context alongside the user message.
@@ -2458,7 +2464,8 @@ export class AgentSession {
 		const followUp = [...this._followUpMessages];
 		this._steeringMessages = [];
 		this._followUpMessages = [];
-		this.agent.clearAllQueues();
+		// Task notifications are not the user's queued input: they stay queued and are not lost.
+		this.agent.removeQueuedMessages((message) => !isTaskNotificationMessage(message));
 		this._emitQueueUpdate();
 		return { steering, followUp };
 	}
@@ -2484,11 +2491,23 @@ export class AgentSession {
 
 	/**
 	 * Abort current operation and wait for agent to become idle.
+	 * When this interrupts a run, task notifications are paused until the next prompt.
 	 */
 	async abort(): Promise<void> {
+		await this._abort(true);
+	}
+
+	/** @param pauseTaskNotifications false for aborts that are not user interrupts, such as manual compaction. */
+	private async _abort(pauseTaskNotifications: boolean): Promise<void> {
 		if (this._isAgentRunActive) {
 			this._agentRunAbortRequested = true;
-			this._taskNotificationsPaused = true;
+			if (pauseTaskNotifications) {
+				this._taskNotificationsPaused = true;
+				// Notifications queued for the interrupted run wait for the next prompt with the later ones.
+				for (const message of this.agent.removeQueuedMessages(isTaskNotificationMessage)) {
+					if (isTaskNotificationMessage(message)) this._holdTaskNotification(message);
+				}
+			}
 		}
 		this.abortRetry();
 		this.abortCompaction();
@@ -2812,7 +2831,7 @@ export class AgentSession {
 	 * @param customInstructions Optional instructions for the compaction summary
 	 */
 	async compact(customInstructions?: string): Promise<CompactionResult> {
-		await this.abort();
+		await this._abort(false);
 		this._compactionAbortController = new AbortController();
 		this._emit({ type: "compaction_start", reason: "manual" });
 		let fromExtension = false;
@@ -3507,7 +3526,7 @@ export class AgentSession {
 						this._extensionAbortHandler();
 						return;
 					}
-					void this.abort();
+					void this._abort(false);
 				},
 				hasPendingMessages: () => this.pendingMessageCount > 0,
 				shutdown: () => {

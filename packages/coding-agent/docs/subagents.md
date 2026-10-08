@@ -141,7 +141,7 @@ A monitor is a background `bash` command with `monitor: true`. It delivers each 
 
 When a task finishes, and for each monitor batch, the session receives a `task-notification` message. It names the task, its status (`completed`, `failed`, or `stopped`), and its output file, and carries the last 20 output lines of commands and the final message of agents. The message starts a turn when the agent is idle, or is delivered after the current turn when it is working, so the model reacts in both cases. Notifications that arrive during a turn are delivered together in the next turn.
 
-After you interrupt a run (`Escape`, or `abort` in RPC mode), notifications no longer start turns. They wait and are sent with your next prompt, which resumes normal delivery; of monitor output, only the newest five notifications are kept. Stop a task with `/tasks` if you no longer need it.
+After you interrupt a run (`Escape`, or `abort` in RPC mode), notifications no longer start turns; aborts by `/compact` or extensions do not pause them. They wait and are sent with your next prompt, which resumes normal delivery; of monitor output, only the newest five notifications are kept. Stop a task with `/tasks` if you no longer need it.
 
 In the transcript a notification is one line, for example `● task b1 (bash: npm test) completed · exit 0 · 12s`; expand tool output to see its content.
 

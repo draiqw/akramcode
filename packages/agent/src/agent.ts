@@ -177,6 +177,13 @@ class PendingMessageQueue {
 	clear(): void {
 		this.messages = [];
 	}
+
+	/** Remove the messages that match, oldest first. */
+	remove(predicate: (message: AgentMessage) => boolean): AgentMessage[] {
+		const removed = this.messages.filter(predicate);
+		this.messages = this.messages.filter((message) => !predicate(message));
+		return removed;
+	}
 }
 
 type ActiveRun = {
@@ -329,6 +336,11 @@ export class Agent {
 	clearAllQueues(): void {
 		this.clearSteeringQueue();
 		this.clearFollowUpQueue();
+	}
+
+	/** Remove the queued steering and follow-up messages that match; returns them, steering first. */
+	removeQueuedMessages(predicate: (message: AgentMessage) => boolean): AgentMessage[] {
+		return [...this.steeringQueue.remove(predicate), ...this.followUpQueue.remove(predicate)];
 	}
 
 	/** Returns true when either queue still contains pending messages. */
