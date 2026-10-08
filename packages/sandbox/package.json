@@ -1,6 +1,6 @@
 {
 	"name": "@akramcode/sandbox",
-	"version": "1.0.13",
+	"version": "1.0.14",
 	"description": "Run akramcode tools locally or inside OpenSandbox sandboxes with per-session reuse and cached workspaces",
 	"type": "module",
 	"main": "./dist/index.js",
