@@ -1,6 +1,6 @@
 {
 	"name": "@akramcode/chord",
-	"version": "1.0.16",
+	"version": "1.0.17",
 	"description": "Application composition runtime for services, replicated state, RPC, and plugins",
 	"type": "module",
 	"main": "./dist/index.js",
