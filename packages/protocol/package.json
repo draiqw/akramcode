@@ -1,6 +1,6 @@
 {
 	"name": "@akramcode/protocol",
-	"version": "1.0.18",
+	"version": "1.0.19",
 	"description": "Transport-neutral CBOR protocol for remote akramcode sessions",
 	"type": "module",
 	"main": "./dist/index.js",
@@ -39,7 +39,7 @@
 		"node": ">=22.19.0"
 	},
 	"dependencies": {
-		"@akramcode/chord": "^1.0.18",
+		"@akramcode/chord": "^1.0.19",
 		"typebox": "1.3.27"
 	},
 	"devDependencies": {
