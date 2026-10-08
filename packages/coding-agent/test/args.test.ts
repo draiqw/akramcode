@@ -230,6 +230,14 @@ describe("parseArgs", () => {
 		});
 	});
 
+	describe("--render-markdown flag", () => {
+		test("parses --render-markdown with --print", () => {
+			const result = parseArgs(["-p", "--render-markdown", "hello"]);
+			expect(result).toMatchObject({ print: true, renderMarkdown: true, messages: ["hello"] });
+			expect(parseArgs(["-p", "hello"]).renderMarkdown).toBeUndefined();
+		});
+	});
+
 	describe("--no-session flag", () => {
 		test("parses --no-session flag", () => {
 			const result = parseArgs(["--no-session"]);

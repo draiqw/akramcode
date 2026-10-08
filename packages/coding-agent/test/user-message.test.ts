@@ -43,6 +43,14 @@ describe("UserMessageComponent", () => {
 		expect(calls).toEqual(["formula", "suffix"]);
 	});
 
+	test("shows dollar signs as typed instead of rendering them as math", () => {
+		initTheme("dark");
+		const text = "for i in $(seq 1 40); do echo evt$i; done and $x^2$";
+		const component = new UserMessageComponent(text);
+
+		expect(stripAnsi(component.render(100).join("\n"))).toContain(text);
+	});
+
 	test("reapplies Markdown transformers when invalidated", () => {
 		initTheme("dark");
 		let suffix = "before";

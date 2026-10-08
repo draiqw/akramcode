@@ -52,6 +52,8 @@ export class UserMessageComponent extends Container {
 				{
 					preserveOrderedListMarkers: true,
 					preserveBackslashEscapes: true,
+					// Users type shell commands and prices far more often than math: show `$` as typed.
+					renderLatex: false,
 					transform: createMarkdownTransform("user", false, this.markdownTransformers),
 				},
 			),

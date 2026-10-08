@@ -36,6 +36,8 @@ export interface Args {
 	extensions?: string[];
 	noExtensions?: boolean;
 	print?: boolean;
+	/** Render the final answer of print mode as formatted Markdown instead of raw text. */
+	renderMarkdown?: boolean;
 	export?: string;
 	noSkills?: boolean;
 	skills?: string[];
@@ -130,6 +132,8 @@ export function parseArgs(args: string[]): Args {
 			}
 		} else if (arg === "--no-session") {
 			result.noSession = true;
+		} else if (arg === "--render-markdown") {
+			result.renderMarkdown = true;
 		} else if (arg === "--session" && i + 1 < args.length) {
 			result.session = args[++i];
 		} else if (arg === "--session-id" && i + 1 < args.length) {
@@ -296,6 +300,7 @@ ${chalk.bold("Options:")}
   --append-system-prompt <text>  Append text or file contents to the system prompt (can be used multiple times)
   --mode <mode>                  Output mode: text (default), json, or rpc
   --print, -p                    Non-interactive mode: process prompt and exit
+  --render-markdown              With --print: show the answer as formatted Markdown, not raw text
   --continue, -c                 Continue previous session
   --resume, -r                   Select a session to resume
   --session <path|id>            Use specific session file or partial UUID

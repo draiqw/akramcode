@@ -970,6 +970,7 @@ export async function main(args: string[], options?: MainOptions) {
 		printTimings();
 		const exitCode = await runPrintMode(runtime, {
 			mode: toPrintOutputMode(appMode),
+			renderMarkdown: parsed.renderMarkdown,
 			messages: parsed.messages,
 			initialMessage,
 			initialImages,

@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed `\pi` and `\Pi` not rendering in LaTeX math (they were renamed to `\akramcode` and `\AkramCode` by the project rename).
+- Fixed shell text such as `for i in $(seq 1 3); do echo n$i` rendering as inline math: a `$...$` pair whose content has `;`, `&&`, or `||`, or whose closing `$` starts a variable after spaced text, stays literal.
+
 ## [1.0.0] - 2026-10-01
 
 ### Added

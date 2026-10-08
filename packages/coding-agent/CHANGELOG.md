@@ -4,6 +4,7 @@
 
 ### Added
 
+- Added `--render-markdown` for print mode: `akramcode -p --render-markdown "..."` shows the answer as formatted Markdown (headings, tables, highlighted code, math) instead of raw text ([docs](docs/cli.md)).
 - Added restored context after compaction: the active request verbatim and recently read files follow the summary, so the agent continues from the original instructions; tags inside restored content are neutralized and file content is marked as data, not instructions ([docs](docs/compaction.md#restored-context)).
 - Added clearing of old tool results at the compaction threshold: when replacing old large results with placeholders frees enough context, no summary is generated ([docs](docs/compaction.md#clearing-old-tool-results)).
 - Added the built-in `online-compact` extension (Online Context Compact from SoL-Pi): with `"defaultTools": ["+update_plan"]` the context is compacted at completed plan steps when that saves more than the cache rewrite costs, priced from the active model's cache prices ([docs](docs/compaction.md#online-compaction-at-plan-steps)).
@@ -36,6 +37,7 @@
 - Fixed a task notification starting a turn while compaction runs, which then rewrote the context under that turn; notifications that arrive during compaction are delivered when it ends.
 - Fixed held task notifications after an interrupt: a user message queued during a run now also resumes them, an extension's `sendUserMessage()` no longer does, and they are sent before the user's message instead of after it, so the model answers the message.
 - Fixed cancelling compaction (`Escape`) or switching sessions during compaction starting a turn for the task notifications held during it; they now wait for the next message. A message submitted when compaction ends (for example one queued during it) now goes out in the same turn as those notifications, after them, and a steering message queued during a run is delivered after the held notifications instead of before.
+- Fixed user messages in the transcript dropping `$` signs: they are no longer rendered as LaTeX math, so shell commands and prices show as typed.
 
 ## [1.0.0] - 2026-10-01
 

@@ -69,16 +69,21 @@ function tokenizeInlineLatex(source: string): LatexToken | undefined {
 	}
 
 	const closingIndex = findClosingDelimiter(source, closing, opening.length);
-	if (
-		closingIndex >= 0 &&
-		opening === "$" &&
-		(/\s$/.test(source.slice(opening.length, closingIndex)) ||
-			/^\d/.test(source.slice(closingIndex + 1)) ||
-			(/^[A-Z_][A-Z0-9_]*(?:[^A-Za-z0-9_\s])?$/.test(source.slice(opening.length, closingIndex)) &&
-				/^[A-Za-z_][A-Za-z0-9_]*/.test(source.slice(closingIndex + 1))) ||
-			source.slice(opening.length, closingIndex).includes("`"))
-	) {
-		return undefined;
+	if (closingIndex >= 0 && opening === "$") {
+		const content = source.slice(opening.length, closingIndex);
+		const after = source.slice(closingIndex + 1);
+		if (
+			/\s$/.test(content) ||
+			/^\d/.test(after) ||
+			(/^[A-Z_][A-Z0-9_]*(?:[^A-Za-z0-9_\s])?$/.test(content) && /^[A-Za-z_][A-Za-z0-9_]*/.test(after)) ||
+			content.includes("`") ||
+			// Shell, not math: `$(seq 1 3); do echo n$i` pairs the `$` of `$(` with the `$` of `$i`.
+			// Command separators, or a closing `$` that starts a variable after spaced text, mark shell code.
+			/;|&&|\|\|/.test(content) ||
+			(/\s/.test(content) && /^[A-Za-z_{(]/.test(after))
+		) {
+			return undefined;
+		}
 	}
 
 	if (closingIndex < 0) {

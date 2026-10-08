@@ -43,6 +43,7 @@ AkramCode resolves `@path` from the current working directory. The working direc
 | Option | Behavior |
 |---|---|
 | `-p`, `--print` | Run the supplied prompts, write the final assistant text to stdout, then exit |
+| `--render-markdown` | With `--print`: write the final answer as formatted Markdown (colored headings, tables, highlighted code, rendered math) wrapped to the terminal width, instead of raw Markdown text |
 | `--mode text` | Select text output; still open the terminal UI when stdin and stdout are terminals |
 | `--mode json` | Run the supplied prompts, write JSONL events to stdout, then exit |
 | `--mode rpc` | Read JSONL commands from stdin and write responses and events to stdout until shutdown |

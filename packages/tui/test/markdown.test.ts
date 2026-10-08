@@ -839,8 +839,8 @@ after`,
 \[
 A=
 \begin{pmatrix}
-\akramcode & 0\\
-0 & \frac{1}{\akramcode}
+\pi & 0\\
+0 & \frac{1}{\pi}
 \end{pmatrix}.
 \]`,
 				0,
@@ -900,6 +900,23 @@ A=
 				.render(80)
 				.map((line) => stripAnsi(line).trimEnd());
 			assert.deepStrictEqual(shellLines, [shellVariables]);
+
+			// Command substitution and a later variable must not pair up into a formula.
+			for (const shell of [
+				"Run for i in $(seq 1 40); do echo evt$i; done",
+				"Use $(git rev-parse HEAD) and echo $HOME",
+				"Try $(ls dir) | wc && echo n$count",
+			]) {
+				const rendered = new Markdown(shell, 0, 0, defaultMarkdownTheme)
+					.render(80)
+					.map((line) => stripAnsi(line).trimEnd());
+				assert.deepStrictEqual(rendered, [shell]);
+			}
+			// Math right before a word still renders.
+			const math = new Markdown("the $n$th term and $(a+b)^2$", 0, 0, defaultMarkdownTheme)
+				.render(80)
+				.map((line) => stripAnsi(line).trimEnd());
+			assert.deepStrictEqual(math, ["the nth term and (a+b)²"]);
 		});
 
 		it("preserves unsupported and incomplete LaTeX exactly", () => {
