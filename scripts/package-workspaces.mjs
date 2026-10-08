@@ -1,7 +1,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
-const SKIPPED_DIRECTORIES = new Set(["dist", "node_modules"]);
+const SKIPPED_DIRECTORIES = new Set([".bench", "dist", "node_modules"]);
 
 export function findPackageDirectories(root = "packages") {
 	const packageDirectories = [];
