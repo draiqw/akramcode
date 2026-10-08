@@ -4,7 +4,7 @@ import { getCurrentSystemPrompt, getCurrentTools, type TranscriptContext } from 
 import { fauxAssistantMessage, fauxToolCall } from "@akramcode/providers";
 import type { AssistantMessage, FauxResponseFactory, ToolResultMessage } from "@akramcode/providers/compat";
 import { Type } from "typebox";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ExtensionAPI } from "../../src/core/extensions/types.ts";
 import type { CustomMessage } from "../../src/core/messages.ts";
 import { createAgentSession } from "../../src/core/sdk.ts";
@@ -580,6 +580,8 @@ describe("AgentSession subagents and background tasks", () => {
 		expect(requests[1]).toContain("evt8");
 		expect(requests[1]).toContain("evt4");
 		expect(requests[1]).not.toContain("evt3");
+		// The held notifications come before the prompt, so the model answers the prompt.
+		expect(requests[1].indexOf("evt8")).toBeLessThan(requests[1].lastIndexOf("what happened?"));
 		expect(notifications(harness)).toHaveLength(6);
 
 		// The prompt resumed automatic delivery.
@@ -628,6 +630,111 @@ describe("AgentSession subagents and background tasks", () => {
 		expect(requests[0]).toContain('Background command "build" completed');
 		expect(requests[1]).toContain("my question");
 		expect(lastAssistantText(harness)).toBe("Answered.");
+	});
+
+	it("ends the pause with a queued user prompt but not with an extension message", async () => {
+		const harness = await setup();
+		const requests: string[] = [];
+		let releaseRun = () => {};
+		const record =
+			(text: string, gate?: () => Promise<void>): FauxResponseFactory =>
+			async (context, options) => {
+				requests.push(context.messages.map((message) => getMessageText(message)).join("\n"));
+				if (gate) await gate();
+				else if (text === "aborted")
+					await new Promise<void>((resolve) => options?.signal?.addEventListener("abort", () => resolve()));
+				return fauxAssistantMessage(text);
+			};
+		harness.setResponses([
+			record("aborted"),
+			record("Extension answered."),
+			record(
+				"Busy.",
+				() =>
+					new Promise<void>((resolve) => {
+						releaseRun = resolve;
+					}),
+			),
+			record("Saw the build."),
+			record("Answered the user."),
+		]);
+
+		const running = harness.session.prompt("start");
+		await new Promise((resolve) => setTimeout(resolve, 20));
+		await harness.session.abort();
+		await running;
+		const command = harness.session.tasks.create({ kind: "bash", description: "build" });
+		await command.finish({ status: "completed", exitCode: 0 });
+
+		// An extension message runs a turn but leaves the notification held.
+		await harness.session.sendUserMessage("extension note");
+		expect(requests[1]).toContain("extension note");
+		expect(requests[1]).not.toContain('Background command "build"');
+
+		// A run not started by the user; the user's message is queued during it and ends the pause.
+		const busy = harness.session.sendCustomMessage(
+			{ customType: "test", content: "busy work", display: false },
+			{ triggerTurn: true },
+		);
+		await vi.waitFor(() => expect(requests).toHaveLength(3));
+		await harness.session.prompt("user question", { streamingBehavior: "followUp" });
+		releaseRun();
+		await busy;
+		await harness.session.waitForIdle();
+
+		expect(requests).toHaveLength(5);
+		expect(requests[3]).toContain('Background command "build" completed');
+		expect(requests[3]).not.toContain("user question");
+		expect(requests[4]).toContain("user question");
+		expect(lastAssistantText(harness)).toBe("Answered the user.");
+	});
+
+	it("holds notifications during manual compaction and delivers them afterwards", async () => {
+		let releaseCompaction = () => {};
+		const compactionReleased = new Promise<void>((resolve) => {
+			releaseCompaction = resolve;
+		});
+		let markCompactionStarted = () => {};
+		const compactionStarted = new Promise<void>((resolve) => {
+			markCompactionStarted = resolve;
+		});
+		const harness = await setup({ compaction: { keepRecentTokens: 1 } }, [
+			(akramcode) => {
+				akramcode.on("session_before_compact", async (event) => {
+					markCompactionStarted();
+					await compactionReleased;
+					return {
+						compaction: {
+							summary: "compacted",
+							firstKeptEntryId: event.preparation.firstKeptEntryId,
+							tokensBefore: event.preparation.tokensBefore,
+							details: {},
+						},
+					};
+				});
+			},
+		]);
+		const timestamp = Date.now();
+		harness.sessionManager.appendMessage({
+			role: "user",
+			content: [{ type: "text", text: "old user message" }],
+			timestamp: timestamp - 1000,
+		});
+		harness.sessionManager.appendMessage(fauxAssistantMessage("old answer", { timestamp: timestamp - 500 }));
+		harness.session.agent.state.messages = harness.sessionManager.buildSessionContext().messages;
+		harness.setResponses([fauxAssistantMessage("Saw the build.")]);
+
+		const compacting = harness.session.compact();
+		await compactionStarted;
+		const command = harness.session.tasks.create({ kind: "bash", description: "build" });
+		await command.finish({ status: "completed", exitCode: 0 });
+		await new Promise((resolve) => setTimeout(resolve, 20));
+		expect(harness.eventsOfType("agent_start")).toHaveLength(0);
+
+		releaseCompaction();
+		await compacting;
+		await vi.waitFor(() => expect(lastAssistantText(harness)).toBe("Saw the build."));
+		expect(notifications(harness)).toHaveLength(1);
 	});
 
 	it("does not pause notifications for an abort that is not a user interrupt", async () => {

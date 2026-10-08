@@ -33,6 +33,8 @@
 - Fixed `Escape` not returning control while a monitor produces output: after a user interrupt (`Escape`, RPC `abort`), task notifications no longer start turns; they wait and go out with the next prompt (the newest five monitor output notifications are kept), and the transcript says so when tasks are still running. Clearing the queue on `Escape` no longer discards queued task notifications, and a prompt submitted while a notification starts a turn is queued instead of failing.
 - Fixed task notifications queued during a turn being delivered one per turn, so the model answered stale events (for example "m1 is still running" while its completion waited in the queue); they now go out together in the next turn, also with `followUpMode: "one-at-a-time"`.
 - Fixed RPC mode acknowledging a second `prompt` written in the same stdin chunk as `started` and then dropping it, with a spurious `agent_settled`; prompts now run their preflight in order, so the second one is rejected or queued according to `streamingBehavior`.
+- Fixed a task notification starting a turn while compaction runs, which then rewrote the context under that turn; notifications that arrive during compaction are delivered when it ends.
+- Fixed held task notifications after an interrupt: a user message queued during a run now also resumes them, an extension's `sendUserMessage()` no longer does, and they are sent before the user's message instead of after it, so the model answers the message.
 
 ## [1.0.0] - 2026-10-01
 

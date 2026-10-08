@@ -506,6 +506,8 @@ export class AgentSession {
 	 * few seconds and Escape could never return control.
 	 */
 	private _taskNotificationsPaused = false;
+	/** Task notifications held while paused or while compaction runs. */
+	private _heldTaskNotifications: CustomMessage<TaskNotificationDetails>[] = [];
 	private _sessionStartEvent: SessionStartEvent;
 	private _extensionUIContext?: ExtensionUIContext;
 	private _extensionMode: ExtensionMode = "print";
@@ -1119,6 +1121,7 @@ export class AgentSession {
 	}
 
 	private _resolveIdleWaitIfIdle(): void {
+		this._releaseTaskNotificationsHeldForCompaction();
 		if (!this.isIdle || !this._resolveIdleWait) {
 			return;
 		}
@@ -2070,6 +2073,7 @@ export class AgentSession {
 					"Agent is already processing. Specify streamingBehavior ('steer' or 'followUp') to queue the message.",
 				);
 			}
+			this._resumeTaskNotificationsForQueuedPrompt(options.source);
 			if (options.streamingBehavior === "followUp") {
 				await this._queueFollowUp(expandedText, currentImages);
 			} else {
@@ -2140,19 +2144,22 @@ export class AgentSession {
 		// by a task notification. Queue the prompt then (as a follow-up unless the caller chose steering)
 		// instead of failing it: the caller found the agent idle. Nothing below awaits, so the check holds.
 		if (this.isStreaming) {
+			this._resumeTaskNotificationsForQueuedPrompt(options?.source);
 			if (options?.streamingBehavior === "steer") await this._queueSteer(expandedText, currentImages);
 			else await this._queueFollowUp(expandedText, currentImages);
 			preflightResult?.("queued");
 			return;
 		}
 
-		// Inject any pending "nextTurn" messages as context alongside the user message.
-		// They include task notifications held back since an abort, which this prompt resumes.
+		// Task notifications held back go first: they happened before the prompt, and the model should
+		// answer the prompt, not the notifications.
+		messages.unshift(...this._takeHeldTaskNotifications(options?.source));
+
+		// Inject any pending "nextTurn" messages as context alongside the user message
 		for (const msg of this._pendingNextTurnMessages) {
 			messages.push(msg);
 		}
 		this._pendingNextTurnMessages = [];
-		this._taskNotificationsPaused = false;
 
 		for (const msg of result.messages) {
 			messages.push({
@@ -3880,17 +3887,39 @@ export class AgentSession {
 			display: true,
 			details: message.details,
 		};
+		const appMessage: CustomMessage<TaskNotificationDetails> = {
+			role: "custom",
+			...notification,
+			timestamp: Date.now(),
+		};
 		if (this._taskNotificationsPaused) {
-			this._holdTaskNotification({ role: "custom", ...notification, timestamp: Date.now() });
+			this._holdTaskNotification(appMessage);
 			return;
 		}
 		if (this.isStreaming) {
 			// Batched: notifications queued during a turn go out together in the next turn, so the model
 			// sees the current state of every task at once instead of one stale event per turn.
-			this.agent.followUp({ role: "custom", ...notification, timestamp: Date.now() }, { batch: true });
+			this.agent.followUp(appMessage, { batch: true });
 			return;
 		}
-		const delivery = this.sendCustomMessage(notification, { triggerTurn: true, deliverAs: "followUp" })
+		if (this.isCompacting) {
+			// A turn now would run while compaction rewrites the context; deliver when compaction ends.
+			this._holdTaskNotification(appMessage);
+			return;
+		}
+		this._startTaskNotificationTurn([appMessage]);
+	}
+
+	/** Start a turn that delivers task notifications; `waitForBackgroundTasks()` waits for it. */
+	private _startTaskNotificationTurn(messages: CustomMessage<TaskNotificationDetails>[]): void {
+		const run = async () => {
+			if (this._isEmittingAgentSettled) {
+				this._deferredSettledActions.push(async () => await this._runAgentPrompt(messages));
+				return;
+			}
+			await this._runAgentPrompt(messages);
+		};
+		const delivery = run()
 			.catch((error: unknown) => {
 				this._extensionRunner.emitError({
 					extensionPath: "<runtime>",
@@ -3905,23 +3934,47 @@ export class AgentSession {
 	}
 
 	/**
-	 * Keep a task notification for the next prompt (notifications are paused after an abort).
-	 * Only the newest monitor output notifications are kept; their lines are also in the output file.
+	 * Hold a task notification: while notifications are paused after a user interrupt (until the next
+	 * user prompt), or while compaction runs (until it ends). Only the newest monitor output
+	 * notifications are kept; their lines are also in the output file.
 	 */
 	private _holdTaskNotification(message: CustomMessage<TaskNotificationDetails>): void {
-		this._pendingNextTurnMessages.push(message);
-		const isHeldOutput = (held: CustomMessage) =>
-			held.customType === TASK_NOTIFICATION_CUSTOM_TYPE &&
-			(held.details as TaskNotificationDetails | undefined)?.event === "output";
-		let excess = this._pendingNextTurnMessages.filter(isHeldOutput).length - MAX_HELD_TASK_OUTPUT_NOTIFICATIONS;
+		this._heldTaskNotifications.push(message);
+		const isOutput = (held: CustomMessage<TaskNotificationDetails>) => held.details?.event === "output";
+		let excess = this._heldTaskNotifications.filter(isOutput).length - MAX_HELD_TASK_OUTPUT_NOTIFICATIONS;
 		if (excess <= 0) return;
-		this._pendingNextTurnMessages = this._pendingNextTurnMessages.filter((held) => {
-			if (excess > 0 && isHeldOutput(held)) {
+		this._heldTaskNotifications = this._heldTaskNotifications.filter((held) => {
+			if (excess > 0 && isOutput(held)) {
 				excess--;
 				return false;
 			}
 			return true;
 		});
+	}
+
+	/**
+	 * Held task notifications that go out with a prompt. A user prompt ends the pause after an
+	 * interrupt; an extension's `sendUserMessage()` does not, so they stay held then.
+	 */
+	private _takeHeldTaskNotifications(source: InputSource | undefined): CustomMessage<TaskNotificationDetails>[] {
+		if (source === "extension" && this._taskNotificationsPaused) return [];
+		this._taskNotificationsPaused = false;
+		const held = this._heldTaskNotifications;
+		this._heldTaskNotifications = [];
+		return held;
+	}
+
+	/** A user prompt queued during a run also ends the pause; held notifications are queued before it. */
+	private _resumeTaskNotificationsForQueuedPrompt(source: InputSource | undefined): void {
+		for (const message of this._takeHeldTaskNotifications(source)) this.agent.followUp(message, { batch: true });
+	}
+
+	/** Deliver task notifications held during compaction once the session is idle again. */
+	private _releaseTaskNotificationsHeldForCompaction(): void {
+		if (this._taskNotificationsPaused || this._heldTaskNotifications.length === 0 || !this.isIdle) return;
+		const held = this._heldTaskNotifications;
+		this._heldTaskNotifications = [];
+		this._startTaskNotificationTurn(held);
 	}
 
 	/**
