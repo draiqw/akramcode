@@ -308,9 +308,12 @@ export class Agent {
 		return this.followUpQueue.mode;
 	}
 
-	/** Queue a message to be injected after the current assistant turn finishes. */
-	steer(message: AgentMessage): void {
-		this.steeringQueue.enqueue(message);
+	/**
+	 * Queue a message to be injected after the current assistant turn finishes.
+	 * @param options.batch Deliver it together with adjacent queued batched messages, as for `followUp`.
+	 */
+	steer(message: AgentMessage, options?: { batch?: boolean }): void {
+		this.steeringQueue.enqueue(message, options?.batch);
 	}
 
 	/**

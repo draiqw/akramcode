@@ -1159,6 +1159,14 @@ describe("Agent", () => {
 		agent.followUp(thirdEvent, { batch: true });
 		expect(agent.peekQueuedMessages()).toEqual([firstEvent, secondEvent]);
 
+		const steeredEvent = createUserMessage("steered event");
+		const secondSteeredEvent = createUserMessage("steered event 2");
+		agent.steer(steeredEvent, { batch: true });
+		agent.steer(secondSteeredEvent, { batch: true });
+		agent.steer(createUserMessage("steered typed"));
+		expect(agent.peekQueuedMessages()).toEqual([steeredEvent, secondSteeredEvent]);
+		agent.clearSteeringQueue();
+
 		await agent.continue();
 
 		// Batched messages leave together; a plain message still gets its own turn, and order is kept.

@@ -689,7 +689,8 @@ describe("AgentSession subagents and background tasks", () => {
 		expect(lastAssistantText(harness)).toBe("Answered the user.");
 	});
 
-	it("holds notifications during manual compaction and delivers them afterwards", async () => {
+	/** A session with history to compact whose compaction waits until `releaseCompaction()`. */
+	async function setupBlockedCompaction() {
 		let releaseCompaction = () => {};
 		const compactionReleased = new Promise<void>((resolve) => {
 			releaseCompaction = resolve;
@@ -722,19 +723,61 @@ describe("AgentSession subagents and background tasks", () => {
 		});
 		harness.sessionManager.appendMessage(fauxAssistantMessage("old answer", { timestamp: timestamp - 500 }));
 		harness.session.agent.state.messages = harness.sessionManager.buildSessionContext().messages;
-		harness.setResponses([fauxAssistantMessage("Saw the build.")]);
-
-		const compacting = harness.session.compact();
+		const requests: string[] = [];
+		const respond =
+			(text: string): FauxResponseFactory =>
+			(context) => {
+				requests.push(context.messages.map((message) => getMessageText(message)).join("\n"));
+				return fauxAssistantMessage(text);
+			};
+		const compacting = harness.session.compact().catch(() => undefined);
 		await compactionStarted;
 		const command = harness.session.tasks.create({ kind: "bash", description: "build" });
 		await command.finish({ status: "completed", exitCode: 0 });
 		await new Promise((resolve) => setTimeout(resolve, 20));
 		expect(harness.eventsOfType("agent_start")).toHaveLength(0);
+		return { harness, requests, respond, compacting, releaseCompaction };
+	}
+
+	it("holds notifications during manual compaction and delivers them afterwards", async () => {
+		const { harness, respond, compacting, releaseCompaction } = await setupBlockedCompaction();
+		harness.setResponses([respond("Saw the build.")]);
 
 		releaseCompaction();
 		await compacting;
 		await vi.waitFor(() => expect(lastAssistantText(harness)).toBe("Saw the build."));
 		expect(notifications(harness)).toHaveLength(1);
+	});
+
+	it("sends notifications held during compaction with a prompt submitted when compaction ends", async () => {
+		const { harness, requests, respond, compacting, releaseCompaction } = await setupBlockedCompaction();
+		harness.setResponses([respond("Answered."), respond("unexpected")]);
+
+		releaseCompaction();
+		await compacting;
+		await harness.session.prompt("queued during compaction");
+		await harness.session.waitForIdle();
+
+		// One turn: the notification first, then the user's message.
+		expect(requests).toHaveLength(1);
+		expect(requests[0].indexOf('Background command "build"')).toBeLessThan(
+			requests[0].lastIndexOf("queued during compaction"),
+		);
+	});
+
+	it("does not start a turn when the user cancels compaction", async () => {
+		const { harness, requests, respond, compacting, releaseCompaction } = await setupBlockedCompaction();
+		harness.setResponses([respond("Next."), respond("unexpected")]);
+
+		harness.session.abortCompaction();
+		releaseCompaction();
+		await compacting;
+		await new Promise((resolve) => setTimeout(resolve, 50));
+		expect(harness.eventsOfType("agent_start")).toHaveLength(0);
+
+		await harness.session.prompt("next");
+		expect(requests).toHaveLength(1);
+		expect(requests[0]).toContain('Background command "build" completed');
 	});
 
 	it("does not pause notifications for an abort that is not a user interrupt", async () => {

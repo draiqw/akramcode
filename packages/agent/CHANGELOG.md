@@ -5,6 +5,7 @@
 ### Added
 
 - Added `Agent.followUp(message, { batch: true })`: adjacent batched follow-ups are delivered together in one turn, also in `"one-at-a-time"` mode, for machine-generated messages such as task notifications.
+- Added the `batch` option to `Agent.steer()`, with the same meaning as for `followUp()`.
 - Added `Agent.removeQueuedMessages(predicate)`, which removes and returns matching queued steering and follow-up messages.
 
 ## [1.0.0] - 2026-10-01

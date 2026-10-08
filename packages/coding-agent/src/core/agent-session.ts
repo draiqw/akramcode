@@ -508,6 +508,9 @@ export class AgentSession {
 	private _taskNotificationsPaused = false;
 	/** Task notifications held while paused or while compaction runs. */
 	private _heldTaskNotifications: CustomMessage<TaskNotificationDetails>[] = [];
+	private _heldTaskNotificationReleaseScheduled = false;
+	/** Prompts between their start and the end of their run (or their queueing). */
+	private _promptsInProgress = 0;
 	private _sessionStartEvent: SessionStartEvent;
 	private _extensionUIContext?: ExtensionUIContext;
 	private _extensionMode: ExtensionMode = "print";
@@ -1121,7 +1124,7 @@ export class AgentSession {
 	}
 
 	private _resolveIdleWaitIfIdle(): void {
-		this._releaseTaskNotificationsHeldForCompaction();
+		if (this.isIdle) this._scheduleHeldTaskNotificationRelease();
 		if (!this.isIdle || !this._resolveIdleWait) {
 			return;
 		}
@@ -1437,8 +1440,8 @@ export class AgentSession {
 	dispose(): void {
 		try {
 			this.abortRetry();
-			this.abortCompaction();
-			this.abortBranchSummary();
+			this._cancelCompaction();
+			this._cancelBranchSummary();
 			this.abortBash();
 			this.agent.abort();
 		} catch {
@@ -2028,6 +2031,18 @@ export class AgentSession {
 			this._deferredSettledActions.push(async () => await this.prompt(text, options));
 			return;
 		}
+		// While a prompt prepares, held task notifications wait to go out with it instead of starting
+		// their own turn first.
+		this._promptsInProgress++;
+		try {
+			await this._prompt(text, options);
+		} finally {
+			this._promptsInProgress--;
+			this._scheduleHeldTaskNotificationRelease();
+		}
+	}
+
+	private async _prompt(text: string, options?: PromptOptions): Promise<void> {
 		const expandPromptTemplates = options?.expandPromptTemplates ?? true;
 		const preflightResult = options?.preflightResult;
 		// See docs/adr/coding-agent/core-agent-session.md#extension-commands-execute-immediately
@@ -2073,7 +2088,7 @@ export class AgentSession {
 					"Agent is already processing. Specify streamingBehavior ('steer' or 'followUp') to queue the message.",
 				);
 			}
-			this._resumeTaskNotificationsForQueuedPrompt(options.source);
+			this._resumeTaskNotificationsForQueuedPrompt(options.source, options.streamingBehavior);
 			if (options.streamingBehavior === "followUp") {
 				await this._queueFollowUp(expandedText, currentImages);
 			} else {
@@ -2144,7 +2159,7 @@ export class AgentSession {
 		// by a task notification. Queue the prompt then (as a follow-up unless the caller chose steering)
 		// instead of failing it: the caller found the agent idle. Nothing below awaits, so the check holds.
 		if (this.isStreaming) {
-			this._resumeTaskNotificationsForQueuedPrompt(options?.source);
+			this._resumeTaskNotificationsForQueuedPrompt(options?.source, options?.streamingBehavior ?? "followUp");
 			if (options?.streamingBehavior === "steer") await this._queueSteer(expandedText, currentImages);
 			else await this._queueFollowUp(expandedText, currentImages);
 			preflightResult?.("queued");
@@ -2506,19 +2521,12 @@ export class AgentSession {
 
 	/** @param pauseTaskNotifications false for aborts that are not user interrupts, such as manual compaction. */
 	private async _abort(pauseTaskNotifications: boolean): Promise<void> {
-		if (this._isAgentRunActive) {
-			this._agentRunAbortRequested = true;
-			if (pauseTaskNotifications) {
-				this._taskNotificationsPaused = true;
-				// Notifications queued for the interrupted run wait for the next prompt with the later ones.
-				for (const message of this.agent.removeQueuedMessages(isTaskNotificationMessage)) {
-					if (isTaskNotificationMessage(message)) this._holdTaskNotification(message);
-				}
-			}
-		}
+		// Interrupting a run or a compaction pauses notifications, so they do not start a turn right after.
+		if (pauseTaskNotifications && (this._isAgentRunActive || this.isCompacting)) this._pauseTaskNotifications();
+		if (this._isAgentRunActive) this._agentRunAbortRequested = true;
 		this.abortRetry();
-		this.abortCompaction();
-		this.abortBranchSummary();
+		this._cancelCompaction();
+		this._cancelBranchSummary();
 		if (this._isBeforeSettle) this._abortDuringBeforeSettle = true;
 		this.agent.abort();
 		await this.waitForIdle();
@@ -2988,6 +2996,12 @@ export class AgentSession {
 	 * Cancel in-progress compaction (manual or auto).
 	 */
 	abortCompaction(): void {
+		// A user cancel: notifications held during compaction must not start a turn right after it.
+		if (this._compactionAbortController || this._autoCompactionAbortController) this._pauseTaskNotifications();
+		this._cancelCompaction();
+	}
+
+	private _cancelCompaction(): void {
 		this._compactionAbortController?.abort();
 		this._autoCompactionAbortController?.abort();
 	}
@@ -2996,6 +3010,11 @@ export class AgentSession {
 	 * Cancel in-progress branch summarization.
 	 */
 	abortBranchSummary(): void {
+		if (this._branchSummaryAbortController) this._pauseTaskNotifications();
+		this._cancelBranchSummary();
+	}
+
+	private _cancelBranchSummary(): void {
 		this._branchSummaryAbortController?.abort();
 	}
 
@@ -3964,17 +3983,50 @@ export class AgentSession {
 		return held;
 	}
 
-	/** A user prompt queued during a run also ends the pause; held notifications are queued before it. */
-	private _resumeTaskNotificationsForQueuedPrompt(source: InputSource | undefined): void {
-		for (const message of this._takeHeldTaskNotifications(source)) this.agent.followUp(message, { batch: true });
+	/**
+	 * A user prompt queued during a run also ends the pause; held notifications are queued ahead of it,
+	 * in the same queue so they are delivered first.
+	 */
+	private _resumeTaskNotificationsForQueuedPrompt(
+		source: InputSource | undefined,
+		behavior: "steer" | "followUp",
+	): void {
+		for (const message of this._takeHeldTaskNotifications(source)) {
+			if (behavior === "steer") this.agent.steer(message, { batch: true });
+			else this.agent.followUp(message, { batch: true });
+		}
 	}
 
-	/** Deliver task notifications held during compaction once the session is idle again. */
-	private _releaseTaskNotificationsHeldForCompaction(): void {
-		if (this._taskNotificationsPaused || this._heldTaskNotifications.length === 0 || !this.isIdle) return;
-		const held = this._heldTaskNotifications;
-		this._heldTaskNotifications = [];
-		this._startTaskNotificationTurn(held);
+	/** Pause task notifications after a user interrupt; notifications queued for the run are held too. */
+	private _pauseTaskNotifications(): void {
+		this._taskNotificationsPaused = true;
+		for (const message of this.agent.removeQueuedMessages(isTaskNotificationMessage)) {
+			if (isTaskNotificationMessage(message)) this._holdTaskNotification(message);
+		}
+	}
+
+	/**
+	 * Deliver task notifications held during compaction once the session is idle again. Runs on a later
+	 * tick, so a prompt submitted when compaction ends (for example messages queued during compaction)
+	 * starts first and takes them along. Print mode waits for the scheduled release.
+	 */
+	private _scheduleHeldTaskNotificationRelease(): void {
+		if (this._heldTaskNotificationReleaseScheduled || this._heldTaskNotifications.length === 0) return;
+		if (this._taskNotificationsPaused) return;
+		this._heldTaskNotificationReleaseScheduled = true;
+		const release = new Promise<void>((resolve) => setTimeout(resolve, 0))
+			.then(() => {
+				this._heldTaskNotificationReleaseScheduled = false;
+				if (this._taskNotificationsPaused || this._heldTaskNotifications.length === 0) return;
+				if (!this.isIdle || this._promptsInProgress > 0) return;
+				const held = this._heldTaskNotifications;
+				this._heldTaskNotifications = [];
+				this._startTaskNotificationTurn(held);
+			})
+			.finally(() => {
+				this._pendingTaskNotifications.delete(release);
+			});
+		this._pendingTaskNotifications.add(release);
 	}
 
 	/**

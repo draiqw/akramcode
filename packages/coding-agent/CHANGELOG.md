@@ -35,6 +35,7 @@
 - Fixed RPC mode acknowledging a second `prompt` written in the same stdin chunk as `started` and then dropping it, with a spurious `agent_settled`; prompts now run their preflight in order, so the second one is rejected or queued according to `streamingBehavior`.
 - Fixed a task notification starting a turn while compaction runs, which then rewrote the context under that turn; notifications that arrive during compaction are delivered when it ends.
 - Fixed held task notifications after an interrupt: a user message queued during a run now also resumes them, an extension's `sendUserMessage()` no longer does, and they are sent before the user's message instead of after it, so the model answers the message.
+- Fixed cancelling compaction (`Escape`) or switching sessions during compaction starting a turn for the task notifications held during it; they now wait for the next message. A message submitted when compaction ends (for example one queued during it) now goes out in the same turn as those notifications, after them, and a steering message queued during a run is delivered after the held notifications instead of before.
 
 ## [1.0.0] - 2026-10-01
 
