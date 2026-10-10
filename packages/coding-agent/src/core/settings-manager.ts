@@ -177,6 +177,7 @@ export interface Settings {
 	shellCommandPrefix?: string; // Prefix prepended to every bash command (e.g., "shopt -s expand_aliases" for alias support)
 	npmCommand?: string[]; // Command used for npm package lookup/install operations, argv-style (e.g., ["mise", "exec", "node@20", "--", "npm"])
 	collapseChangelog?: boolean; // Show condensed changelog after update (use /changelog for full)
+	autoUpdate?: boolean; // default: true - standalone binary downloads new releases and installs them on exit; global setting only
 	enableInstallTelemetry?: boolean; // default: true - anonymous version/update ping after changelog-detected updates
 	enableAnalytics?: boolean; // default: false - opt-in analytics data sharing
 	trackingId?: string; // analytics tracking identifier, generated when analytics is enabled
@@ -1198,6 +1199,17 @@ export class SettingsManager {
 	setCollapseChangelog(collapse: boolean): void {
 		this.globalSettings.collapseChangelog = collapse;
 		this.markModified("collapseChangelog");
+		this.save();
+	}
+
+	/** Global-only: a project must not be able to replace the installed binary or keep it from updating. */
+	getAutoUpdate(): boolean {
+		return this.globalSettings.autoUpdate ?? true;
+	}
+
+	setAutoUpdate(autoUpdate: boolean): void {
+		this.globalSettings.autoUpdate = autoUpdate;
+		this.markModified("autoUpdate");
 		this.save();
 	}
 

@@ -56,6 +56,7 @@ import {
 	APP_NAME,
 	APP_TITLE,
 	CONFIG_DIR_NAME,
+	detectInstallMethod,
 	getAgentDir,
 	getAuthPath,
 	getDebugLogPath,
@@ -114,6 +115,7 @@ import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
 import { getUsageCostBreakdown } from "../../core/usage-totals.ts";
+import { canAutoUpdateBinary, startBinaryAutoUpdate } from "../../utils/binary-auto-update.ts";
 import { getChangelogPath, getNewEntries, normalizeChangelogLinks, parseChangelog } from "../../utils/changelog.ts";
 import { copyToClipboard, readClipboardFilePaths, readClipboardText } from "../../utils/clipboard.ts";
 import { extensionForImageMimeType, readClipboardImage } from "../../utils/clipboard-image.ts";
@@ -1102,9 +1104,32 @@ export class InteractiveMode {
 
 		// Start version check asynchronously
 		checkForNewAkramCodeVersion(this.version).then((newRelease) => {
-			if (newRelease) {
+			if (!newRelease) return;
+			const installDir = path.dirname(process.execPath);
+			const autoUpdate = canAutoUpdateBinary({
+				installMethod: detectInstallMethod(),
+				autoUpdate: this.settingsManager.getAutoUpdate(),
+				appMode: "interactive",
+				installDir,
+			});
+			if (!autoUpdate) {
 				this.showNewVersionNotification(newRelease);
+				return;
 			}
+			startBinaryAutoUpdate({
+				version: newRelease.version,
+				installDir,
+				onExit: (result) => {
+					if (result.installed) {
+						process.stdout.write(`${chalk.dim(`Installed ${APP_NAME} ${result.version}.`)}\n`);
+					} else if (result.error) {
+						process.stderr.write(`${chalk.dim(`${APP_NAME} update not installed: ${result.error}`)}\n`);
+					}
+				},
+			}).then(
+				() => this.showStagedUpdateNotification(newRelease.version),
+				() => this.showNewVersionNotification(newRelease),
+			);
 		});
 
 		// Start package update check asynchronously
@@ -4528,6 +4553,18 @@ export class InteractiveMode {
 		}
 		this.chatContainer.addChild(new ThemedText(changelogLine, 1, 0));
 		this.chatContainer.addChild(new DynamicBorder((text) => theme.fg("warning", text)));
+		this.ui.requestRender();
+	}
+
+	private showStagedUpdateNotification(version: string): void {
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(
+			new ThemedText(
+				() => theme.fg("dim", `${APP_NAME} ${version} downloaded; it will be installed when you exit.`),
+				1,
+				0,
+			),
+		);
 		this.ui.requestRender();
 	}
 

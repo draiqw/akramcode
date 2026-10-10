@@ -286,6 +286,8 @@ Add `--force` to reinstall AkramCode when the selected update includes AkramCode
 
 AkramCode checks the latest [GitHub release](https://github.com/draiqw/akramcode/releases/latest) at startup and shows a notice when a newer version exists; `AKRAMCODE_OFFLINE` or `AKRAMCODE_SKIP_VERSION_CHECK` turns the check off. For the standalone binary installed with `install.sh`, `akramcode update` downloads the release archive for your platform, verifies it against the release's `SHA256SUMS`, checks that the new binary runs and reports the expected version, and then replaces the install directory; the old directory is restored if the swap fails.
 
+The standalone binary also updates itself: in interactive mode, when the startup check finds a newer release, AkramCode downloads and verifies it in the background, says so in the transcript, and installs it when you exit. The next start shows what changed. It is skipped when the installed version is already newer (for example after another session installed an update), and only one session downloads or installs at a time. Set [`autoUpdate`](settings.md#updates-and-telemetry) to `false` to get only the notice.
+
 ### Aliases and command options
 
 - `akramcode uninstall <source>` is an alias for `akramcode remove <source>`.

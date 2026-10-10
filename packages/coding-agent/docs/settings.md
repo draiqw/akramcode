@@ -238,6 +238,7 @@ Capture of model requests, network activity, and tool executions for [`akramcode
 
 | Setting | Type | Default | Description |
 |---|---|---|---|
+| `autoUpdate` | boolean | `true` | For the standalone binary installed with `install.sh`: when the startup check finds a newer release, download and verify it in the background and install it when you exit interactive mode. With `false`, a notice tells you to run `akramcode update`. **Can only be set in agent-directory settings.** |
 | `collapseChangelog` | boolean | `false` | Show a condensed changelog after an update. |
 | `enableInstallTelemetry` | boolean | `true` | Enable anonymous install/update reporting and selected provider attribution headers. Does not control update checks. |
 | `enableAnalytics` | boolean | `false` | Opt in to analytics data sharing. Currently used only by the experimental first-run setup. |
