@@ -1,6 +1,6 @@
 {
 	"name": "@akramcode/coding-agent",
-	"version": "1.0.22",
+	"version": "1.0.23",
 	"description": "Coding agent CLI with read, bash, edit, write tools and session management",
 	"type": "module",
 	"akramCodeConfig": {
@@ -49,14 +49,14 @@
 		"prepublishOnly": "npm run clean && npm run build && npm run shrinkwrap"
 	},
 	"dependencies": {
-		"@akramcode/chord": "^1.0.22",
-		"@akramcode/agent-core": "^1.0.22",
-		"@akramcode/ai": "^1.0.22",
-		"@akramcode/providers": "^1.0.22",
-		"@akramcode/codemode": "^1.0.22",
-		"@akramcode/mcp": "^1.0.22",
-		"@akramcode/sandbox": "^1.0.22",
-		"@akramcode/tui": "^1.0.22",
+		"@akramcode/chord": "^1.0.23",
+		"@akramcode/agent-core": "^1.0.23",
+		"@akramcode/ai": "^1.0.23",
+		"@akramcode/providers": "^1.0.23",
+		"@akramcode/codemode": "^1.0.23",
+		"@akramcode/mcp": "^1.0.23",
+		"@akramcode/sandbox": "^1.0.23",
+		"@akramcode/tui": "^1.0.23",
 		"@silvia-odwyer/photon-node": "0.3.4",
 		"brace-expansion": "5.0.12",
 		"chalk": "6.0.0",
@@ -79,9 +79,9 @@
 		"protobufjs": "7.6.6"
 	},
 	"devDependencies": {
-		"@akramcode/client": "^1.0.22",
-		"@akramcode/protocol": "^1.0.22",
-		"@akramcode/server": "^1.0.22",
+		"@akramcode/client": "^1.0.23",
+		"@akramcode/protocol": "^1.0.23",
+		"@akramcode/server": "^1.0.23",
 		"@types/cross-spawn": "6.0.6",
 		"@types/hosted-git-info": "3.0.5",
 		"@types/node": "22.19.19",
