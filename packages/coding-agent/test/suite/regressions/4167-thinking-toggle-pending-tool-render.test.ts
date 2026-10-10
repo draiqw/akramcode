@@ -42,6 +42,7 @@ type RenderSessionContextThis = {
 		getShowImages(): boolean;
 		getImageWidthCells(): number;
 		getShowCacheMissNotices(): boolean;
+		getCollapseToolGroups(): boolean;
 	};
 	sessionManager: { getCwd(): string; getEntries(): SessionEntry[] };
 	session: { retryAttempt: number; modelRegistry: { find(provider: string, modelId: string): undefined } };
@@ -51,6 +52,7 @@ type RenderSessionContextThis = {
 	getRegisteredToolDefinition(toolName: string): undefined;
 	maybeShowAssistantDiagnostics(message: AssistantMessage): void;
 	addMessageToChat(message: AgentMessage, options?: { populateHistory?: boolean }): void;
+	addToolExecutionToChat(component: ToolExecutionComponent): void;
 	renderSessionItems: RenderSessionItems;
 };
 
@@ -73,6 +75,7 @@ function createFakeInteractiveModeThis(): RenderSessionContextThis {
 			getShowImages: () => false,
 			getImageWidthCells: () => 60,
 			getShowCacheMissNotices: () => false,
+			getCollapseToolGroups: () => false,
 		},
 		sessionManager: { getCwd: () => process.cwd(), getEntries: () => [] },
 		session: { retryAttempt: 0, modelRegistry: { find: () => undefined } },
@@ -83,6 +86,11 @@ function createFakeInteractiveModeThis(): RenderSessionContextThis {
 		maybeShowAssistantDiagnostics: vi.fn(),
 		renderSessionItems: (InteractiveMode.prototype as unknown as { renderSessionItems: RenderSessionItems })
 			.renderSessionItems,
+		addToolExecutionToChat: (
+			InteractiveMode.prototype as unknown as {
+				addToolExecutionToChat: RenderSessionContextThis["addToolExecutionToChat"];
+			}
+		).addToolExecutionToChat,
 		addMessageToChat(message: AgentMessage) {
 			chatContainer.addChild(new Text(message.role, 0, 0));
 		},

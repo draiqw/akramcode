@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Changed
+
+- After an update, a single line `Updated to vX · /changelog` replaces the full What's New listing (`collapseChangelog` now defaults to `true`).
+- Consecutive tool calls collapse to one line such as `Read 2 files, ran 1 shell command` and thinking to `Thought for 12s`; `ctrl+o` shows them in full (`collapseToolGroups`, `hideThinkingBlock`).
+
 ## [1.0.25] - 2026-10-10
 
 ### Added

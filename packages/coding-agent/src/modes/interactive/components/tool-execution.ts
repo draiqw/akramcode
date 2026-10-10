@@ -36,6 +36,7 @@ import { formatToolCallWithArgs, getTextOutput as getRenderedTextOutput } from "
 import { convertToPng } from "../../../utils/image-convert.ts";
 import { theme } from "../theme/theme.ts";
 import { keyHint } from "./keybinding-hints.ts";
+import type { ToolGroupItem } from "./tool-group-summary.ts";
 
 const FALLBACK_PREVIEW_LINES = 10;
 
@@ -242,6 +243,22 @@ export class ToolExecutionComponent extends Container {
 	setExpanded(expanded: boolean): void {
 		this.expanded = expanded;
 		this.updateDisplay();
+	}
+
+	/** State for a collapsed tool group summary, or undefined when this call renders nothing. */
+	getSummaryItem(): ToolGroupItem | undefined {
+		if (this.hideComponent) return undefined;
+		if (!this.result || this.isPartial) {
+			return { toolName: this.toolName, args: this.args, status: "running" };
+		}
+		if (!this.result.isError) {
+			return { toolName: this.toolName, args: this.args, status: "done" };
+		}
+		const errorText = this.getTextOutput()
+			.split("\n")
+			.map((line) => line.trim())
+			.find((line) => line.length > 0);
+		return { toolName: this.toolName, args: this.args, status: "error", ...(errorText ? { errorText } : {}) };
 	}
 
 	setShowImages(show: boolean): void {

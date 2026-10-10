@@ -127,7 +127,7 @@ import { checkForNewAkramCodeVersion, type LatestAkramCodeRelease } from "../../
 import { reportBug } from "./bug-report.ts";
 import { createChatViewport } from "./chat-viewport.ts";
 import { ArminComponent } from "./components/armin.ts";
-import { AssistantMessageComponent } from "./components/assistant-message.ts";
+import { AssistantMessageComponent, DEFAULT_HIDDEN_THINKING_LABEL } from "./components/assistant-message.ts";
 import { BashExecutionComponent } from "./components/bash-execution.ts";
 import { BranchSummaryMessageComponent } from "./components/branch-summary-message.ts";
 import { CompactionSummaryMessageComponent } from "./components/compaction-summary-message.ts";
@@ -164,6 +164,7 @@ import {
 import { ThemedText } from "./components/themed-text.ts";
 import { ThinkingSelectorComponent } from "./components/thinking-selector.ts";
 import { ToolExecutionComponent } from "./components/tool-execution.ts";
+import { ToolGroupComponent } from "./components/tool-group.ts";
 import { TreeSelectorComponent } from "./components/tree-selector.ts";
 import { TrustSelectorComponent } from "./components/trust-selector.ts";
 import { UserMessageComponent } from "./components/user-message.ts";
@@ -468,7 +469,7 @@ export class InteractiveMode {
 	private workingVisible = true;
 	private workingIndicatorOptions: WorkingIndicatorOptions | undefined = undefined;
 	private readonly defaultWorkingMessage = "Working";
-	private readonly defaultHiddenThinkingLabel = "Thinking...";
+	private readonly defaultHiddenThinkingLabel = DEFAULT_HIDDEN_THINKING_LABEL;
 	private hiddenThinkingLabel = this.defaultHiddenThinkingLabel;
 
 	private lastSigintTime = 0;
@@ -838,20 +839,21 @@ export class InteractiveMode {
 		if (this.chatContainer.children.length > 0) {
 			this.chatContainer.addChild(new Spacer(1));
 		}
-		this.chatContainer.addChild(new DynamicBorder());
 		if (this.settingsManager.getCollapseChangelog()) {
 			const versionMatch = this.changelogMarkdown.match(/##\s+\[?(\d+\.\d+\.\d+)\]?/);
 			const latestVersion = versionMatch ? versionMatch[1] : this.version;
-			const condensedText = `Updated to v${latestVersion}. Use ${theme.bold("/changelog")} to view full changelog.`;
-			this.chatContainer.addChild(new Text(condensedText, 1, 0));
-		} else {
-			this.chatContainer.addChild(new ThemedText(() => theme.bold(theme.fg("accent", "What's New")), 1, 0));
-			this.chatContainer.addChild(new Spacer(1));
 			this.chatContainer.addChild(
-				new Markdown(this.changelogMarkdown.trim(), 1, 0, this.getMarkdownThemeWithSettings()),
+				new ThemedText(() => theme.fg("dim", `Updated to v${latestVersion} · /changelog`), 1, 0),
 			);
-			this.chatContainer.addChild(new Spacer(1));
+			return;
 		}
+		this.chatContainer.addChild(new DynamicBorder());
+		this.chatContainer.addChild(new ThemedText(() => theme.bold(theme.fg("accent", "What's New")), 1, 0));
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(
+			new Markdown(this.changelogMarkdown.trim(), 1, 0, this.getMarkdownThemeWithSettings()),
+		);
+		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new DynamicBorder());
 	}
 
@@ -3305,6 +3307,7 @@ export class InteractiveMode {
 						this.outputPad,
 						this.getMarkdownTransformers(),
 					);
+					this.streamingComponent.setExpanded(this.toolOutputExpanded);
 					this.streamingMessage = event.message;
 					this.chatContainer.addChild(this.streamingComponent);
 					this.streamingComponent.updateContent(this.streamingMessage, true);
@@ -3334,7 +3337,7 @@ export class InteractiveMode {
 									this.sessionManager.getCwd(),
 								);
 								component.setExpanded(this.toolOutputExpanded);
-								this.chatContainer.addChild(component);
+								this.addToolExecutionToChat(component);
 								this.pendingTools.set(content.id, component);
 							} else {
 								const component = this.pendingTools.get(content.id);
@@ -3417,7 +3420,7 @@ export class InteractiveMode {
 						this.sessionManager.getCwd(),
 					);
 					component.setExpanded(this.toolOutputExpanded);
-					this.chatContainer.addChild(component);
+					this.addToolExecutionToChat(component);
 					this.pendingTools.set(event.toolCallId, component);
 				}
 				component.markExecutionStarted();
@@ -3765,6 +3768,7 @@ export class InteractiveMode {
 					this.outputPad,
 					this.getMarkdownTransformers(),
 				);
+				assistantComponent.setExpanded(this.toolOutputExpanded);
 				this.chatContainer.addChild(assistantComponent);
 				break;
 			}
@@ -3776,6 +3780,40 @@ export class InteractiveMode {
 				const _exhaustive: never = message;
 			}
 		}
+	}
+
+	/**
+	 * Add a tool call to the chat. It joins the preceding tool group unless text or thinking was rendered
+	 * after that group, so a run of calls shows as one summary line.
+	 */
+	private addToolExecutionToChat(component: ToolExecutionComponent): void {
+		if (!this.settingsManager.getCollapseToolGroups()) {
+			this.chatContainer.addChild(component);
+			return;
+		}
+		const children = this.chatContainer.children;
+		for (let i = children.length - 1; i >= 0; i--) {
+			const child = children[i];
+			if (child instanceof ToolGroupComponent) {
+				child.addTool(component);
+				return;
+			}
+			if (!(child instanceof AssistantMessageComponent) || child.hasVisibleContent()) break;
+		}
+		const group = new ToolGroupComponent(this.toolOutputExpanded, this.outputPad);
+		group.addTool(component);
+		this.chatContainer.addChild(group);
+	}
+
+	/** Tool components in the chat, including those inside tool groups. */
+	private getChatToolExecutions(): ToolExecutionComponent[] {
+		return this.chatContainer.children.flatMap((child) =>
+			child instanceof ToolExecutionComponent
+				? [child]
+				: child instanceof ToolGroupComponent
+					? [...child.getTools()]
+					: [],
+		);
 	}
 
 	private renderSessionItems(
@@ -3829,7 +3867,7 @@ export class InteractiveMode {
 							this.sessionManager.getCwd(),
 						);
 						component.setExpanded(this.toolOutputExpanded);
-						this.chatContainer.addChild(component);
+						this.addToolExecutionToChat(component);
 
 						if (message.stopReason === "aborted" || message.stopReason === "error") {
 							let errorMessage: string;
@@ -4336,7 +4374,7 @@ export class InteractiveMode {
 				}
 			}
 		}
-		this.showStatus(`Tool output: ${expanded ? "expanded" : "collapsed"}`);
+		this.ui.requestRender();
 	}
 
 	/** Update rendered assistant messages without rebuilding live tool components. */
@@ -4353,7 +4391,6 @@ export class InteractiveMode {
 		this.hideThinkingBlock = !this.hideThinkingBlock;
 		this.settingsManager.setHideThinkingBlock(this.hideThinkingBlock);
 		this.updateThinkingBlockVisibility();
-		this.showStatus(`Thinking blocks: ${this.hideThinkingBlock ? "hidden" : "visible"}`);
 	}
 
 	private async handleOpenExternalEditor(): Promise<void> {
@@ -4751,18 +4788,14 @@ export class InteractiveMode {
 					},
 					onShowImagesChange: (enabled) => {
 						this.settingsManager.setShowImages(enabled);
-						for (const child of this.chatContainer.children) {
-							if (child instanceof ToolExecutionComponent) {
-								child.setShowImages(enabled);
-							}
+						for (const tool of this.getChatToolExecutions()) {
+							tool.setShowImages(enabled);
 						}
 					},
 					onImageWidthCellsChange: (width) => {
 						this.settingsManager.setImageWidthCells(width);
-						for (const child of this.chatContainer.children) {
-							if (child instanceof ToolExecutionComponent) {
-								child.setImageWidthCells(width);
-							}
+						for (const tool of this.getChatToolExecutions()) {
+							tool.setImageWidthCells(width);
 						}
 					},
 					onAutoResizeImagesChange: (enabled) => {
@@ -4887,7 +4920,8 @@ export class InteractiveMode {
 								if (
 									child instanceof AssistantMessageComponent ||
 									child instanceof CustomMessageComponent ||
-									child instanceof UserMessageComponent
+									child instanceof UserMessageComponent ||
+									child instanceof ToolGroupComponent
 								) {
 									child.setOutputPad(padding);
 								}

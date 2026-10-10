@@ -168,7 +168,8 @@ export interface Settings {
 	compaction?: CompactionSettings;
 	branchSummary?: BranchSummarySettings;
 	retry?: RetrySettings;
-	hideThinkingBlock?: boolean;
+	hideThinkingBlock?: boolean; // default: true - collapse thinking to one line (app.thinking.toggle or app.tools.expand shows it)
+	collapseToolGroups?: boolean; // default: true - show consecutive tool calls as one summary line until app.tools.expand
 	showCacheMissNotices?: boolean; // default: false - show cache cost and provider recovery notices
 	externalEditor?: string; // Command for Ctrl+G external editor; takes precedence over VISUAL/EDITOR
 	shellPath?: string; // Custom shell path (e.g., for Cygwin users on Windows); supports leading ~ expansion
@@ -176,7 +177,7 @@ export interface Settings {
 	defaultProjectTrust?: DefaultProjectTrust; // default: "ask"; global setting only
 	shellCommandPrefix?: string; // Prefix prepended to every bash command (e.g., "shopt -s expand_aliases" for alias support)
 	npmCommand?: string[]; // Command used for npm package lookup/install operations, argv-style (e.g., ["mise", "exec", "node@20", "--", "npm"])
-	collapseChangelog?: boolean; // Show condensed changelog after update (use /changelog for full)
+	collapseChangelog?: boolean; // default: true - show one line after an update (use /changelog for full)
 	autoUpdate?: boolean; // default: true - standalone binary downloads new releases and installs them on exit; global setting only
 	enableInstallTelemetry?: boolean; // default: true - anonymous version/update ping after changelog-detected updates
 	enableAnalytics?: boolean; // default: false - opt-in analytics data sharing
@@ -1103,7 +1104,11 @@ export class SettingsManager {
 	}
 
 	getHideThinkingBlock(): boolean {
-		return this.settings.hideThinkingBlock ?? false;
+		return this.settings.hideThinkingBlock ?? true;
+	}
+
+	getCollapseToolGroups(): boolean {
+		return this.settings.collapseToolGroups ?? true;
 	}
 
 	getShowCacheMissNotices(): boolean {
@@ -1193,7 +1198,7 @@ export class SettingsManager {
 	}
 
 	getCollapseChangelog(): boolean {
-		return this.settings.collapseChangelog ?? false;
+		return this.settings.collapseChangelog ?? true;
 	}
 
 	setCollapseChangelog(collapse: boolean): void {

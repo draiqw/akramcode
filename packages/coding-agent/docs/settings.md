@@ -14,7 +14,8 @@ This reference lists user-configurable settings, their types, defaults, and purp
 | `modelThinkingLevels` | object | None | Per-model startup thinking levels keyed by exact `provider/modelId`. |
 | `thinkingBudgets` | object | Built-in budgets | Token budgets for `minimal`, `low`, `medium`, and `high` thinking levels. |
 | `enabledModels` | `string[]` | All available models | Model patterns used for startup selection and model cycling. Uses the same format as `--models`. |
-| `hideThinkingBlock` | boolean | `false` | Hide thinking blocks in the transcript. |
+| `hideThinkingBlock` | boolean | `true` | Collapse thinking blocks to one line such as `Thought for 12s`. `app.thinking.toggle` switches it; `app.tools.expand` (default `ctrl+o`) also shows them. |
+| `collapseToolGroups` | boolean | `true` | Show consecutive tool calls as one line such as `Read 2 files, ran 1 shell command`, with failed calls listed below it. `app.tools.expand` (default `ctrl+o`) or a click on the line shows the full tool output. |
 | `showCacheMissNotices` | boolean | `false` | Show notices for significant cache misses, successful cache warming, compaction usage, and provider recovery. |
 | `cacheWarming` | `"off" \| "streaming" \| "idle"` | `"streaming"` | Keep eligible provider prompt caches warm during active runs or, with `"idle"`, between runs. Global setting only. |
 
@@ -239,6 +240,6 @@ Capture of model requests, network activity, and tool executions for [`akramcode
 | Setting | Type | Default | Description |
 |---|---|---|---|
 | `autoUpdate` | boolean | `true` | For the standalone binary installed with `install.sh`: when the startup check finds a newer release, download and verify it in the background and install it when you exit interactive mode. With `false`, a notice tells you to run `akramcode update`. **Can only be set in agent-directory settings.** |
-| `collapseChangelog` | boolean | `false` | Show a condensed changelog after an update. |
+| `collapseChangelog` | boolean | `true` | After an update, show one line (`Updated to vX · /changelog`) instead of the full changelog. |
 | `enableInstallTelemetry` | boolean | `true` | Enable anonymous install/update reporting and selected provider attribution headers. Does not control update checks. |
 | `enableAnalytics` | boolean | `false` | Opt in to analytics data sharing. Currently used only by the experimental first-run setup. |

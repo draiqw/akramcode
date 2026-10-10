@@ -1,6 +1,6 @@
 import type { AssistantMessage } from "@akramcode/ai";
 import type { TuiMouseEvent } from "@akramcode/tui";
-import { describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { AssistantMessageComponent } from "../src/modes/interactive/components/assistant-message.ts";
 import { UserMessageComponent } from "../src/modes/interactive/components/user-message.ts";
 import { initTheme } from "../src/modes/interactive/theme/theme.ts";
@@ -70,7 +70,7 @@ describe("AssistantMessageComponent", () => {
 		);
 		const rendered = component.render(80).join("\n");
 
-		expect(rendered).toContain("Thinking...");
+		expect(stripAnsi(rendered)).toContain("Thought");
 		expect(rendered).toContain("Response was truncated before completion.");
 	});
 
@@ -88,7 +88,7 @@ describe("AssistantMessageComponent", () => {
 		);
 		const rendered = stripAnsi(component.render(80).join("\n"));
 
-		expect(rendered.match(/Thinking\.\.\./g)).toHaveLength(1);
+		expect(rendered.match(/Thought/g)).toHaveLength(1);
 		expect(rendered).toContain("answer");
 	});
 
@@ -123,7 +123,7 @@ describe("AssistantMessageComponent", () => {
 
 		const collapsed = stripAnsi(component.render(width).join("\n"));
 		expect(collapsed).not.toContain("first reasoning");
-		expect(collapsed).toContain("Thinking...");
+		expect(collapsed).toContain("Thought");
 		expect(collapsed).toContain("second reasoning");
 	});
 
@@ -273,5 +273,72 @@ describe("AssistantMessageComponent", () => {
 		const unpaddedComponent = new UserMessageComponent("hello", undefined, 0);
 		const unpaddedLines = unpaddedComponent.render(40).map((line) => stripAnsi(line));
 		expect(unpaddedLines.some((line) => line.startsWith("hello"))).toBe(true);
+	});
+});
+
+describe("AssistantMessageComponent collapsed thinking", () => {
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	test("shows Thinking… while the run streams and its duration after it ends", () => {
+		initTheme("dark");
+		const now = vi.spyOn(Date, "now").mockReturnValue(1_000);
+		const component = new AssistantMessageComponent(undefined, true);
+
+		component.updateContent(createAssistantMessage([{ type: "thinking", thinking: "plan" }]), true);
+		expect(stripAnsi(component.render(80).join("\n"))).toContain("Thinking…");
+
+		now.mockReturnValue(13_400);
+		component.updateContent(
+			createAssistantMessage([
+				{ type: "thinking", thinking: "plan" },
+				{ type: "text", text: "answer" },
+			]),
+			true,
+		);
+		const rendered = stripAnsi(component.render(80).join("\n"));
+		expect(rendered).toContain("Thought for 12s");
+		expect(rendered).not.toContain("plan");
+	});
+
+	test("shows hidden thinking in full while expanded", () => {
+		initTheme("dark");
+		const component = new AssistantMessageComponent(
+			createAssistantMessage([
+				{ type: "thinking", thinking: "private plan" },
+				{ type: "text", text: "answer" },
+			]),
+			true,
+		);
+		expect(stripAnsi(component.render(80).join("\n"))).not.toContain("private plan");
+
+		component.setExpanded(true);
+		expect(stripAnsi(component.render(80).join("\n"))).toContain("private plan");
+
+		component.setExpanded(false);
+		expect(stripAnsi(component.render(80).join("\n"))).toContain("Thought");
+	});
+
+	test("keeps an extension-provided hidden thinking label", () => {
+		initTheme("dark");
+		const component = new AssistantMessageComponent(
+			createAssistantMessage([{ type: "thinking", thinking: "plan" }]),
+			true,
+			undefined,
+			"Pondering",
+		);
+		expect(stripAnsi(component.render(80).join("\n"))).toContain("Pondering");
+	});
+
+	test("reports visible content only for text and thinking", () => {
+		initTheme("dark");
+		const toolOnly = new AssistantMessageComponent(
+			createAssistantMessage([{ type: "toolCall", id: "t1", name: "read", arguments: { path: "a.ts" } }]),
+		);
+		expect(toolOnly.hasVisibleContent()).toBe(false);
+
+		const withText = new AssistantMessageComponent(createAssistantMessage([{ type: "text", text: "hi" }]));
+		expect(withText.hasVisibleContent()).toBe(true);
 	});
 });
