@@ -45,9 +45,12 @@ describe("ProjectTrustStore", () => {
 			expect(hasTrustRequiringProjectResources(tempDir)).toBe(false);
 			expect(hasTrustRequiringProjectResources(cwd)).toBe(false);
 
+			// ~/.akramcode belongs to the user, so running from $HOME does not ask for trust.
 			writeFileSync(join(tempDir, ".akramcode", "settings.json"), "{}");
-			expect(hasTrustRequiringProjectResources(tempDir)).toBe(true);
+			mkdirSync(join(tempDir, ".akramcode", "skills"), { recursive: true });
+			expect(hasTrustRequiringProjectResources(tempDir)).toBe(false);
 			rmSync(join(tempDir, ".akramcode", "settings.json"), { force: true });
+			rmSync(join(tempDir, ".akramcode", "skills"), { recursive: true, force: true });
 
 			mkdirSync(join(cwd, ".akramcode"), { recursive: true });
 			writeFileSync(join(cwd, ".akramcode", "settings.json"), "{}");

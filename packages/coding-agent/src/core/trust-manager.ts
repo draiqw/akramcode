@@ -180,8 +180,8 @@ function withTrustFileLock<T>(path: string, fn: () => T): T {
  * Returns true when cwd has project-local resources that must be gated by
  * project trust: trust-requiring entries under cwd/.akramcode, or .agents/skills in
  * cwd or one of its ancestors. Returns false when no such project resources
- * exist. The user/global ~/.agents/skills directory is always treated as a
- * trusted user resource and is ignored here, even when cwd is $HOME.
+ * exist. The user/global ~/.agents/skills and ~/.akramcode directories are always
+ * treated as trusted user resources and are ignored here, even when cwd is $HOME.
  */
 export function hasTrustRequiringProjectResources(cwd: string): boolean {
 	const homeDir = canonicalizePath(resolvePath(process.env.HOME || homedir()));
@@ -189,7 +189,10 @@ export function hasTrustRequiringProjectResources(cwd: string): boolean {
 	let currentDir = canonicalizePath(resolvePath(cwd));
 
 	const configDir = join(currentDir, CONFIG_DIR_NAME);
-	if (TRUST_REQUIRING_PROJECT_CONFIG_RESOURCES.some((entry) => existsSync(join(configDir, entry)))) {
+	if (
+		currentDir !== homeDir &&
+		TRUST_REQUIRING_PROJECT_CONFIG_RESOURCES.some((entry) => existsSync(join(configDir, entry)))
+	) {
 		return true;
 	}
 

@@ -21,9 +21,11 @@
 - Added the `subagents.enabled` and `backgroundTasks.enabled` settings ([docs](docs/settings.md#tools)).
 - Added the built-in `question` tool, on by default: the model asks one to four multiple-choice questions and waits for the answers. The terminal dialog shows tabs, option descriptions and previews, checkboxes for `multiSelect`, a written answer with `@file` completion, and files or images attached by paste, drop, or `@path`, which reach the model as file contents and images. RPC clients get select/input dialogs; print and JSON modes tell the model to decide itself ([docs](docs/cli.md#questions-to-the-user)).
 - Added `akramcode traces`: a local read-only web UI over all stored sessions and subagent transcripts with a filterable session list, per-session timeline, aggregates of tool failures, grouped errors, retries, aborts and latency, JSON export, and live updates. Each run captures exact model request payloads, raw stream events, assembled responses, HTTP and WebSocket details (headers, bodies, timings, remote IP, TLS) for the process's network activity, and tool executions with full output; stored redacted under `~/.akramcode/agent/traces` with size and age retention (`traces` setting, `AKRAMCODE_TRACES`), shown per assistant turn with a diff against the previous request and in a Network view. The server requires a per-run access token ([docs](docs/traces.md)).
+- Added `akramcode update` for the standalone binary (macOS and Linux, arm64 and x64): it downloads the release archive from GitHub, verifies its SHA256 checksum and the new binary's version, and replaces the install directory, restoring it if the swap fails ([docs](docs/cli.md)).
 
 ### Changed
 
+- AkramCode now checks the latest GitHub release for a newer version by default; `AKRAMCODE_VERSION_CHECK_URL` still overrides the source, and `AKRAMCODE_OFFLINE` or `AKRAMCODE_SKIP_VERSION_CHECK` turns the check off ([docs](docs/cli.md)).
 - Shortened the default system prompt and the `edit` tool definition by removing guidance that the tool snippets, descriptions, and schemas already state, and by replacing the per-topic documentation map with a pointer to the docs directory. With the default tools, the fixed part of the system prompt drops from 620 to 416 tokens and the tool definitions from 588 to 542 tokens (o200k tokenizer).
 - The `read` tool now prefixes each text line with its line number and a tab (`12\t...`), so the model cites `file:line` correctly; the TUI shows the numbers as a dimmed gutter, and `edit` ignores numbers copied from `read` into `oldText`.
 
@@ -51,6 +53,7 @@
 - Removed the startup warning `Agent "explore": no tool matches grep, find, ls`: built-in agent types do not warn about optional tools that are off by default.
 - Fixed `akramcode traces` security: the access token now travels in the URL fragment and an Authorization header instead of a cookie (cookies are not port-scoped), query-string tokens are rejected, and `--open` keeps the token off the command line; capture limits now apply before buffering and to decompression (no decompression bombs), with a shared in-flight memory budget; raw, blob, and full-output reads are confined to the session, trace, and temp directories without following escaping symlinks.
 - Fixed `akramcode traces` capture taking quadratic time when cutting a large base64-like body at the size limit; the token-like tail at the cut is now found with a linear scan and limited to 4096 characters.
+- Fixed the project-trust prompt appearing when starting from the home directory: `~/.akramcode` is the user's own configuration directory, not project resources.
 
 ## [1.0.0] - 2026-10-01
 
