@@ -27,11 +27,44 @@ afterEach(() => {
 });
 
 describe("version checks", () => {
-	it("makes no request when no version check URL is configured", async () => {
+	it("reads the latest GitHub release when no version check URL is configured", async () => {
 		vi.stubEnv("AKRAMCODE_VERSION_CHECK_URL", "");
+		const fetchMock = vi.fn(async () => Response.json({ tag_name: "v1.2.4", name: "v1.2.4" }));
+		vi.stubGlobal("fetch", fetchMock);
+
+		await expect(getLatestAkramCodeRelease("1.2.3")).resolves.toEqual({ version: "1.2.4" });
+		expect(fetchMock).toHaveBeenCalledWith(
+			"https://api.github.com/repos/draiqw/akramcode/releases/latest",
+			expect.objectContaining({
+				headers: expect.objectContaining({
+					"User-Agent": expect.stringMatching(/^akramcode\/1\.2\.3 /),
+					accept: "application/vnd.github+json",
+				}),
+			}),
+		);
+	});
+
+	it("ignores GitHub release responses without a tag", async () => {
+		vi.stubEnv("AKRAMCODE_VERSION_CHECK_URL", "");
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => Response.json({ message: "Not Found" }, { status: 404 })),
+		);
+		await expect(getLatestAkramCodeRelease("1.2.3")).resolves.toBeUndefined();
+
+		vi.stubGlobal(
+			"fetch",
+			vi.fn(async () => Response.json({ name: "draft" })),
+		);
+		await expect(getLatestAkramCodeRelease("1.2.3")).resolves.toBeUndefined();
+	});
+
+	it("makes no request in offline mode", async () => {
+		vi.stubEnv("AKRAMCODE_VERSION_CHECK_URL", "");
+		vi.stubEnv("AKRAMCODE_OFFLINE", "1");
 		const fetchMock = vi.fn();
 		vi.stubGlobal("fetch", fetchMock);
-		await expect(getLatestAkramCodeRelease("1.0.0")).resolves.toBeUndefined();
+		await expect(getLatestAkramCodeRelease("1.2.3")).resolves.toBeUndefined();
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 

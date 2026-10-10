@@ -284,6 +284,8 @@ Running `akramcode update` without a target updates AkramCode itself.
 
 Add `--force` to reinstall AkramCode when the selected update includes AkramCode.
 
+AkramCode checks the latest [GitHub release](https://github.com/draiqw/akramcode/releases/latest) at startup and shows a notice when a newer version exists; `AKRAMCODE_OFFLINE` or `AKRAMCODE_SKIP_VERSION_CHECK` turns the check off. For the standalone binary installed with `install.sh`, `akramcode update` downloads the release archive for your platform, verifies it against the release's `SHA256SUMS`, checks that the new binary runs and reports the expected version, and then replaces the install directory; the old directory is restored if the swap fails.
+
 ### Aliases and command options
 
 - `akramcode uninstall <source>` is an alias for `akramcode remove <source>`.

@@ -83,6 +83,7 @@ These variables are read by AkramCode itself:
 | `AKRAMCODE_PACKAGE_DIR` | Override the package directory, useful for Nix/Guix store paths |
 | `AKRAMCODE_OFFLINE` | Disable automatic network activity, including model catalog refreshes |
 | `AKRAMCODE_SKIP_VERSION_CHECK` | Disable the latest-version request |
+| `AKRAMCODE_VERSION_CHECK_URL` | Replace the GitHub release lookup with a JSON API returning `{ "version": "x.y.z" }` (optional `packageName`, `note`) |
 | `AKRAMCODE_TELEMETRY` | Override install/update telemetry and provider attribution headers: `1`/`true`/`yes` or `0`/`false`/`no` |
 | `AKRAMCODE_TRACES` | Override trace capture for [`akramcode traces`](traces.md#capture): `0`/`false`/`no`/`off` turns it off, any other value turns it on |
 | `AKRAMCODE_CACHE_RETENTION` | Set to `long` for extended provider prompt caching where supported |

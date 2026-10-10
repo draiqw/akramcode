@@ -8,7 +8,7 @@ import {
 	rmSync,
 	writeFileSync,
 } from "node:fs";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { Markdown, type MarkdownTheme } from "@akramcode/tui";
 import chalk from "chalk";
 import lockfile from "proper-lockfile";
@@ -35,6 +35,7 @@ import { DefaultResourceLoader, isBuiltinExtension } from "./core/resource-loade
 import { SettingsManager } from "./core/settings-manager.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "./core/trust-manager.ts";
 import { getAkramCodeUserAgent } from "./utils/akramcode-user-agent.ts";
+import { BINARY_INSTALLER_COMMAND, runBinarySelfUpdate } from "./utils/binary-self-update.ts";
 import { spawnProcess, spawnProcessSync, waitForChildProcess } from "./utils/child-process.ts";
 import { canonicalizePath, getCwdRelativePath } from "./utils/paths.ts";
 import { formatVersionCheckError, getLatestAkramCodeRelease, isNewerPackageVersion } from "./utils/version-check.ts";
@@ -1062,6 +1063,26 @@ export async function handlePackageCommand(
 					}
 
 					const installMethod = detectInstallMethod();
+					if (installMethod === "bun-binary") {
+						if (selfUpdatePlan.note) {
+							printSelfUpdateNote(selfUpdatePlan.note);
+						}
+						try {
+							console.log(chalk.dim(`Downloading ${APP_NAME} ${selfUpdatePlan.version}...`));
+							await runBinarySelfUpdate({
+								version: selfUpdatePlan.version,
+								installDir: dirname(process.execPath),
+							});
+						} catch (error: unknown) {
+							const message = error instanceof Error ? error.message : "Unknown binary update error";
+							console.error(chalk.red(`Error: ${message}`));
+							console.error(chalk.dim(`If this keeps failing, reinstall with: ${BINARY_INSTALLER_COMMAND}`));
+							process.exitCode = 1;
+							return true;
+						}
+						console.log(chalk.green(`Updated ${APP_NAME} from ${VERSION} to ${selfUpdatePlan.version}`));
+						return true;
+					}
 					if (process.platform === "win32" && installMethod !== "npm" && installMethod !== "pnpm") {
 						console.error(
 							chalk.red(`${APP_NAME} self-update on Windows is only supported for npm and pnpm installs.`),

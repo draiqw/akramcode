@@ -8,6 +8,16 @@ This is the home of the AkramCode agent harness project including our self exten
 
 Documentation: [packages/coding-agent/docs](packages/coding-agent/docs). You can also ask the agent to explain itself.
 
+## Install
+
+macOS and Linux (arm64, x64):
+
+```bash
+curl -fsSL https://github.com/draiqw/akramcode/releases/latest/download/install.sh | sh
+```
+
+The script downloads the standalone binary for your platform from [GitHub Releases](https://github.com/draiqw/akramcode/releases), verifies it against `SHA256SUMS`, unpacks it to `~/.akramcode/bin-release`, and puts an `akramcode` launcher in `~/.local/bin`. Set `AKRAMCODE_VERSION=v1.0.20` to pin a release, or `AKRAMCODE_INSTALL_DIR` / `AKRAMCODE_BIN_DIR` to change the locations. Run the same command again to update.
+
 ## All Packages
 
 | Package | Description |

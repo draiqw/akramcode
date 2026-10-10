@@ -2,8 +2,10 @@ import { compare, valid } from "semver";
 import { getAkramCodeUserAgent } from "./akramcode-user-agent.ts";
 import { fetchWithRetry } from "./management-http.ts";
 
-/** No default endpoint: update checks stay off until AKRAMCODE_VERSION_CHECK_URL points at a JSON `{ version }` API. */
+/** Overrides the GitHub release lookup with a JSON `{ version, packageName?, note? }` API. */
 const VERSION_CHECK_URL_ENV = "AKRAMCODE_VERSION_CHECK_URL";
+/** Default source of the latest version: the newest published GitHub release; its tag is `v<version>`. */
+const GITHUB_LATEST_RELEASE_URL = "https://api.github.com/repos/draiqw/akramcode/releases/latest";
 const DEFAULT_VERSION_CHECK_TIMEOUT_MS = 10000;
 
 export interface LatestAkramCodeRelease {
@@ -55,14 +57,13 @@ export async function getLatestAkramCodeRelease(
 ): Promise<LatestAkramCodeRelease | undefined> {
 	if (process.env.AKRAMCODE_OFFLINE) return undefined;
 	const versionCheckUrl = process.env[VERSION_CHECK_URL_ENV]?.trim();
-	if (!versionCheckUrl) return undefined;
 
 	const response = await fetchWithRetry(
-		versionCheckUrl,
+		versionCheckUrl || GITHUB_LATEST_RELEASE_URL,
 		{
 			headers: {
 				"User-Agent": getAkramCodeUserAgent(currentVersion),
-				accept: "application/json",
+				accept: versionCheckUrl ? "application/json" : "application/vnd.github+json",
 			},
 		},
 		{
@@ -71,6 +72,12 @@ export async function getLatestAkramCodeRelease(
 		},
 	);
 	if (!response.ok) return undefined;
+
+	if (!versionCheckUrl) {
+		const release = (await response.json()) as { tag_name?: unknown };
+		const version = typeof release.tag_name === "string" ? release.tag_name.trim().replace(/^v/, "") : "";
+		return version ? { version } : undefined;
+	}
 
 	const data = (await response.json()) as {
 		packageName?: unknown;
