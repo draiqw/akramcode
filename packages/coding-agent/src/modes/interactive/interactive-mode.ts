@@ -48,8 +48,6 @@ import {
 	type TUI,
 	TuiAltScreen,
 	TuiMainScreen,
-	type TuiMouseEvent,
-	type TuiMouseEventResult,
 	visibleWidth,
 } from "@akramcode/tui";
 import chalk from "chalk";
@@ -127,7 +125,6 @@ import { ensureTool, type ToolStatus } from "../../utils/tools-manager.ts";
 import { checkForNewAkramCodeVersion, type LatestAkramCodeRelease } from "../../utils/version-check.ts";
 import { reportBug } from "./bug-report.ts";
 import { createChatViewport } from "./chat-viewport.ts";
-import { akramCodeLogoLines, akramCodeWordmark, supportsAkramCodeLogo } from "./components/akramcode-logo.ts";
 import { ArminComponent } from "./components/armin.ts";
 import { AssistantMessageComponent } from "./components/assistant-message.ts";
 import { BashExecutionComponent } from "./components/bash-execution.ts";
@@ -137,7 +134,7 @@ import { CustomEditor } from "./components/custom-editor.ts";
 import { CustomEntryComponent } from "./components/custom-entry.ts";
 import { CustomMessageComponent } from "./components/custom-message.ts";
 import { DynamicBorder } from "./components/dynamic-border.ts";
-import { playAkramCodeLogo3d, playArmin3d } from "./components/easter-egg-3d.lazy.ts";
+import { playArmin3d } from "./components/easter-egg-3d.lazy.ts";
 import { ExtensionEditorComponent } from "./components/extension-editor.ts";
 import { ExtensionInputComponent } from "./components/extension-input.ts";
 import { ExtensionSelectorComponent } from "./components/extension-selector.ts";
@@ -239,17 +236,6 @@ class ExpandableText extends ThemedText implements Expandable {
 	setExpanded(expanded: boolean): void {
 		this.state.expanded = expanded;
 		this.invalidate();
-	}
-}
-
-/** The built-in header. Clicking its logo (the first two lines, after one column of padding) plays an easter egg. */
-class BuiltInHeader extends ExpandableText {
-	onLogoClick: ((column: number, row: number) => void) | undefined;
-
-	handleMouse(event: TuiMouseEvent): TuiMouseEventResult | undefined {
-		if (event.type !== "click" || event.y > 1 || event.x < 1 || event.x > 4 || !this.onLogoClick) return undefined;
-		this.onLogoClick(event.screenX - event.x + 1, event.screenY - event.y);
-		return { handled: true };
 	}
 }
 
@@ -984,14 +970,9 @@ export class InteractiveMode {
 
 		// Add header with keybindings from config (unless silenced)
 		if (this.shouldShowStartupHeader()) {
-			const showDetails = this.shouldShowStartupDetails();
 			// See docs/adr/coding-agent/modes-interactive-interactive-mode.md#header-on-demand-rendering
-			const showLogo = supportsAkramCodeLogo();
-			const withLogo = (hints: string) => {
-				if (!showLogo) return `${akramCodeWordmark()} ${theme.fg("dim", `v${this.version}`)}\n${hints}`;
-				const [top, bottom] = akramCodeLogoLines();
-				return `${top} ${theme.fg("dim", `v${this.version}`)}\n${bottom} ${hints}`;
-			};
+			const withTitle = (hints: string) =>
+				`${theme.bold(APP_NAME)} ${theme.fg("dim", `v${this.version}`)}\n${hints}`;
 
 			// Build startup instructions using keybinding hint helpers
 			const hint = (keybinding: AppKeybinding, description: string) => keyHint(keybinding, description);
@@ -1029,25 +1010,13 @@ export class InteractiveMode {
 					rawKeyHint("!", "bash"),
 					hint("app.tools.expand", "more"),
 				].join(theme.fg("muted", " · "));
-			const compactOnboarding = () =>
-				theme.fg(
-					"dim",
-					`Press ${keyText("app.tools.expand")} to show full startup help${showDetails ? " and loaded resources" : ""}.`,
-				);
-			const onboarding = () =>
-				theme.fg(
-					"dim",
-					`AkramCode can explain its own features and look up its docs. Ask it how to use or extend AkramCode.`,
-				);
-			const header = new BuiltInHeader(
-				() => `${withLogo(compactInstructions())}\n${compactOnboarding()}\n\n${onboarding()}`,
-				() => `${withLogo(expandedInstructions())}\n\n${onboarding()}`,
+			this.builtInHeader = new ExpandableText(
+				() => withTitle(compactInstructions()),
+				() => withTitle(expandedInstructions()),
 				this.getStartupExpansionState(),
 				1,
 				0,
 			);
-			if (showLogo) header.onLogoClick = (column, row) => playAkramCodeLogo3d(this.renderer, column, row);
-			this.builtInHeader = header;
 
 			// Setup UI layout
 			this.headerContainer.addChild(new Spacer(1));

@@ -20,7 +20,7 @@ The header and startup notices must be built after the terminal reports its colo
 
 ## Header On-Demand Rendering
 
-The header is built on-demand so it follows theme changes. The logo line carries the version, second line carries key hints. Terminals without logo support get an alternate format.
+The header is built on-demand so it follows theme changes. The first line carries the name and version, the second line carries key hints.
 
 ## Tool Availability on Startup
 

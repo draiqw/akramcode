@@ -129,21 +129,6 @@ function createModel(
 	};
 }
 
-const CORAL: Rgb = [228, 138, 122];
-const BLUE: Rgb = [79, 142, 179];
-const YELLOW: Rgb = [234, 182, 93];
-const AKRAMCODE_LOGO_PIXELS = ["ccc.", "b.c.", "bb.y", "b..y"];
-const AKRAMCODE_LOGO_COLORS: Record<string, Rgb> = { c: CORAL, b: BLUE, y: YELLOW };
-
-function akramCodeLogoModel(origin: { column: number; row: number }): Model {
-	return createModel(4, 4, (column, row) => AKRAMCODE_LOGO_COLORS[AKRAMCODE_LOGO_PIXELS[row]![column]!], {
-		cameraDistance: 10,
-		widthShare: 0.35,
-		puzzleMoves: (random) => (random < 0.4 ? 2 : 1),
-		origin,
-	});
-}
-
 function arminModel(color: Rgb): Model {
 	return createModel(ARMIN_WIDTH, ARMIN_HEIGHT, (column, row) => (isArminPixel(column, row) ? color : undefined), {
 		// Far enough that the perspective stays mild for a figure about 36 blocks tall.
@@ -825,18 +810,13 @@ class BlockRaster {
 	}
 }
 
-/**
- * Which easter egg to play. The akramcode logo lifts off the header logo, whose top-left cell is at `column`, `row`.
- */
-export type EasterEgg3d = { kind: "akramcode-logo"; column: number; row: number } | { kind: "armin" };
-
 let playing = false;
 
 /**
  * Show the animation as a fullscreen overlay until it is dismissed. The overlay takes focus and mouse input and
  * returns focus when hidden, so the rest of the UI keeps running underneath untouched.
  */
-export async function playEasterEgg3d(tui: TUI, screen: readonly string[], egg: EasterEgg3d): Promise<void> {
+export async function playEasterEgg3d(tui: TUI, screen: readonly string[]): Promise<void> {
 	if (playing) return;
 	playing = true;
 	// Fading needs the terminal's actual default colors; the theme only knows its own.
@@ -852,10 +832,7 @@ export async function playEasterEgg3d(tui: TUI, screen: readonly string[], egg: 
 		playing = false;
 		return;
 	}
-	const model =
-		egg.kind === "armin"
-			? arminModel(toRgb(theme.colors.accent))
-			: akramCodeLogoModel({ column: egg.column, row: egg.row });
+	const model = arminModel(toRgb(theme.colors.accent));
 	const animation = new EasterEgg3dAnimation(tui, screen, model, colors, () => {
 		playing = false;
 		overlay.hide();
