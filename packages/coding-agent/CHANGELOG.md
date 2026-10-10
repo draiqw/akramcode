@@ -26,7 +26,10 @@
 
 ### Changed
 
-- The startup header is now one line with the name and version plus key hints; the logo and the onboarding text are removed.
+- The startup screen is now one line with the name and version; the logo, the onboarding text and the key hints are removed (key hints are shown after `ctrl+o`).
+- The loaded context files, skills, prompts and extensions are listed only after `ctrl+o` (`app.tools.expand`) instead of on every start.
+- User messages are shown without a background, under a dim line with the time they were sent.
+- The terminal title starts with `akramcode` instead of `π`.
 - AkramCode now checks the latest GitHub release for a newer version by default; `AKRAMCODE_VERSION_CHECK_URL` still overrides the source, and `AKRAMCODE_OFFLINE` or `AKRAMCODE_SKIP_VERSION_CHECK` turns the check off ([docs](docs/cli.md)).
 - Shortened the default system prompt and the `edit` tool definition by removing guidance that the tool snippets, descriptions, and schemas already state, and by replacing the per-topic documentation map with a pointer to the docs directory. With the default tools, the fixed part of the system prompt drops from 620 to 416 tokens and the tool definitions from 588 to 542 tokens (o200k tokenizer).
 - The `read` tool now prefixes each text line with its line number and a tab (`12\t...`), so the model cites `file:line` correctly; the TUI shows the numbers as a dimmed gutter, and `edit` ignores numbers copied from `read` into `oldText`.

@@ -34,7 +34,6 @@ type LoadedResourcesContext = {
 	getStartupExpansionState: () => boolean;
 	shouldShowStartupDetails: () => boolean;
 	formatDisplayPath: (resourcePath: string) => string;
-	formatContextPath: (resourcePath: string) => string;
 	getBuiltInCommandConflictDiagnostics: (extensionRunner: LoadedResourcesContext["session"]["extensionRunner"]) => [];
 };
 
@@ -211,7 +210,6 @@ function createLoadedResourcesContext(): LoadedResourcesContext {
 		getStartupExpansionState: () => false,
 		shouldShowStartupDetails: () => true,
 		formatDisplayPath: (resourcePath) => resourcePath,
-		formatContextPath: (resourcePath) => resourcePath.replace("/repo/", ""),
 		getBuiltInCommandConflictDiagnostics: () => [],
 	};
 }

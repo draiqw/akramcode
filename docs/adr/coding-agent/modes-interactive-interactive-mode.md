@@ -20,7 +20,7 @@ The header and startup notices must be built after the terminal reports its colo
 
 ## Header On-Demand Rendering
 
-The header is built on-demand so it follows theme changes. The first line carries the name and version, the second line carries key hints.
+The header is built on-demand so it follows theme changes. Collapsed, it is one line with the name and version; key hints appear only when the startup help is expanded.
 
 ## Tool Availability on Startup
 
@@ -56,7 +56,7 @@ On fresh install, the version is recorded but changelog is not shown, avoiding u
 
 ## Resource Listing On-Demand Rendering
 
-Resource listing bodies are built on-demand so the display follows theme changes and reflects current state.
+Resource listing bodies are built on-demand so the display follows theme changes and reflects current state. The listing renders nothing until the startup help is expanded, so the start screen shows only the header.
 
 ## Key Handler Setup Location
 

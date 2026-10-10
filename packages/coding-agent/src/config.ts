@@ -530,7 +530,7 @@ try {
 const akramCodeConfigName: string | undefined = pkg.akramCodeConfig?.name;
 export const PACKAGE_NAME: string = pkg.name || "@akramcode/coding-agent";
 export const APP_NAME: string = akramCodeConfigName || "akramcode";
-export const APP_TITLE: string = akramCodeConfigName ? APP_NAME : "π";
+export const APP_TITLE: string = APP_NAME;
 export const CONFIG_DIR_NAME: string = pkg.akramCodeConfig?.configDir || ".akramcode";
 export const VERSION: string = pkg.version || "0.0.0";
 
