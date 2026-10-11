@@ -1,6 +1,6 @@
 {
 	"name": "@akramcode/agent-core",
-	"version": "1.0.26",
+	"version": "1.0.27",
 	"description": "General-purpose agent with transport abstraction, state management, and attachment support",
 	"type": "module",
 	"main": "./dist/index.js",
@@ -23,8 +23,8 @@
 		"prepublishOnly": "npm run build"
 	},
 	"dependencies": {
-		"@akramcode/ai": "^1.0.26",
-		"@akramcode/providers": "^1.0.26",
+		"@akramcode/ai": "^1.0.27",
+		"@akramcode/providers": "^1.0.27",
 		"typebox": "1.3.27"
 	},
 	"keywords": [
