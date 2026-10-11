@@ -2,8 +2,6 @@
 
 AkramCode exposes named actions, such as `app.session.new`, that can be assigned keybindings. You can change default assignments or bind unassigned actions in AkramCode's [user configuration](configuration.md#agent-directory).
 
-Run `/hotkeys` to see the active shortcuts for the main editor and application.
-
 ## Assign keybindings
 
 Create `<agent-dir>/keybindings.json`. The agent directory defaults to `~/.akramcode/agent` and is described in [Agent directory](configuration.md#agent-directory).
@@ -13,7 +11,7 @@ Map each action identifier to one key or a list of keys:
 ```json
 {
   "app.session.new": "ctrl+shift+n",
-  "app.session.tree": ["ctrl+shift+t", "alt+shift+t"]
+  "app.session.fork": ["ctrl+shift+k", "alt+shift+k"]
 }
 ```
 
@@ -120,7 +118,7 @@ In fullscreen mode, these actions control the transcript and take precedence ove
 
 | Keybinding id | Default | Description |
 |--------|---------|-------------|
-| `app.interrupt` | `escape` | Cancel / abort. Pressed twice: clears editor text (`doubleEscapeClearsInput`) or, with an empty editor, runs `doubleEscapeAction` |
+| `app.interrupt` | `escape` | Cancel / abort. Pressed twice: clears editor text (`doubleEscapeClearsInput`) |
 | `app.clear` | `ctrl+c` | Clear editor (first) / exit (second) |
 | `app.exit` | `ctrl+d` | Exit (when editor empty) |
 | `app.suspend` | `ctrl+z` (None on Windows) | Suspend to background |
@@ -133,10 +131,9 @@ On native Windows, `app.suspend` has no default because Windows terminals do not
 
 | Keybinding id | Default | Description |
 |--------|---------|-------------|
-| `app.session.new` | None | Start a new session (`/new`) |
-| `app.session.tree` | None | Open session tree navigator (`/tree`) |
+| `app.session.new` | None | Start a new session (`/clear`) |
 | `app.session.fork` | None | Fork current session (`/fork`) |
-| `app.session.resume` | None | Open session resume picker (`/resume`) |
+| `app.session.resume` | None | Open session resume picker |
 | `app.session.togglePath` | `ctrl+p` | Toggle path display |
 | `app.session.toggleSort` | `ctrl+s` | Toggle sort mode |
 | `app.session.toggleNamedFilter` | `ctrl+n` | Toggle named-only filter |
@@ -151,7 +148,7 @@ On native Windows, `app.suspend` has no default because Windows terminals do not
 | `app.model.select` | `ctrl+l` | Open model selector |
 | `app.model.cycleForward` | `ctrl+p` | Cycle to next model |
 | `app.model.cycleBackward` | `shift+ctrl+p` (`alt+p` on Windows and WSL) | Cycle to previous model |
-| `app.models.save` | `ctrl+s` | Save the selected default model or scoped model configuration to settings |
+| `app.models.save` | `ctrl+s` | Save the selected default model to settings |
 | `app.thinking.cycle` | `shift+tab` | Cycle thinking level |
 | `app.thinking.save` | `ctrl+s` | Save current thinking level to settings |
 | `app.thinking.toggle` | `ctrl+t` | Collapse or expand thinking blocks |
@@ -161,34 +158,7 @@ On native Windows, `app.suspend` has no default because Windows terminals do not
 | Keybinding id | Default | Description |
 |--------|---------|-------------|
 | `app.tools.expand` | `ctrl+o` | Collapse or expand tool output |
-| `app.message.copy` | `ctrl+x` | Copy the selected message in `/tree`; in fullscreen mode, copy the active selection when `fullscreenCopyOnSelect` is `false`; otherwise copy the last assistant message. On OAuth sign-in screens, copy the sign-in URL |
+| `app.message.copy` | `ctrl+x` | Copy the last assistant message; in fullscreen mode, copy the active selection when `fullscreenCopyOnSelect` is `false`. On OAuth sign-in screens, copy the sign-in URL |
 | `app.message.followUp` | `alt+enter` (`ctrl+q` on Windows and WSL) | Queue follow-up message |
 | `app.message.dequeue` | `alt+up` (`alt+q` on Windows and WSL) | Restore queued messages to editor |
 
-### Tree Navigation
-
-| Keybinding id | Default | Description |
-|--------|---------|-------------|
-| `app.tree.foldOrUp` | `ctrl+left`, `alt+left` | Fold current branch segment, or jump to the previous segment start |
-| `app.tree.unfoldOrDown` | `ctrl+right`, `alt+right` | Unfold current branch segment, or jump to the next segment start or branch end |
-| `app.tree.editLabel` | `shift+l` | Edit the label on the selected tree node |
-| `app.tree.toggleLabelTimestamp` | `shift+t` | Toggle label timestamps in the tree |
-| `app.tree.filter.default` | `ctrl+d` | Set tree filter to default view |
-| `app.tree.filter.noTools` | `ctrl+t` | Toggle tree filter that hides tool results |
-| `app.tree.filter.userOnly` | `ctrl+u` | Toggle tree filter that shows only user messages |
-| `app.tree.filter.labeledOnly` | `ctrl+l` | Toggle tree filter that shows only labeled entries |
-| `app.tree.filter.all` | `ctrl+a` | Toggle tree filter that shows all entries |
-| `app.tree.filter.cycleForward` | `ctrl+o` | Cycle tree filter forward |
-| `app.tree.filter.cycleBackward` | `shift+ctrl+o` | Cycle tree filter backward |
-
-### Scoped Models Selector
-
-Used inside the scoped models selector (opened via `/scoped-models`).
-
-| Keybinding id | Default | Description |
-|--------|---------|-------------|
-| `app.models.enableAll` | `ctrl+a` | Enable all models (or all matching the current search) |
-| `app.models.clearAll` | `ctrl+x` | Clear all models (or all matching the current search) |
-| `app.models.toggleProvider` | `ctrl+p` | Toggle all models for the current provider |
-| `app.models.reorderUp` | `alt+up` | Move the selected model up in the cycle order |
-| `app.models.reorderDown` | `alt+down` | Move the selected model down in the cycle order |

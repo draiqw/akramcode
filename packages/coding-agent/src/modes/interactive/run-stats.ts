@@ -1,5 +1,5 @@
 import type { AssistantMessage, AssistantMessageEvent } from "@akramcode/ai";
-import { formatTokens, formatTokensPerSecond } from "./components/footer.ts";
+import { formatTokens } from "./components/footer.ts";
 
 /** Characters per token used for live estimates while a response streams (matches the chars / 4 heuristic used elsewhere). */
 const CHARS_PER_TOKEN = 4;
@@ -104,10 +104,9 @@ export function formatElapsed(ms: number): string {
 	return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, "0")}m`;
 }
 
-/** Working-indicator detail, e.g. `1m 05s · ↓ 1.2k tokens · 48.0 tok/s`. Token parts appear once output arrives. */
+/** Working-indicator detail, e.g. `1m 05s · ↓ 1.2k tokens`. The token part appears once output arrives. */
 export function formatRunStats(stats: RunStatsSnapshot): string {
 	const parts = [formatElapsed(stats.elapsedMs)];
 	if (stats.outputTokens > 0) parts.push(`↓ ${formatTokens(stats.outputTokens)} tokens`);
-	if (stats.tokensPerSecond !== undefined) parts.push(formatTokensPerSecond(stats.tokensPerSecond));
 	return parts.join(" · ");
 }

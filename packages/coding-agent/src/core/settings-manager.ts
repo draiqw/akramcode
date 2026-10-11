@@ -59,7 +59,6 @@ export type TuiMode = RendererTuiMode;
 export type FullscreenExitOutput = "transcript" | "resume-hint";
 
 export interface TerminalSettings {
-	showImages?: boolean; // default: true (only relevant if terminal supports images)
 	imageWidthCells?: number; // default: 60 (preferred inline image width in terminal cells)
 	clearOnShrink?: boolean; // default: false (clear empty rows when content shrinks)
 	showTerminalProgress?: boolean; // default: false (OSC 9;4 terminal progress indicators)
@@ -165,6 +164,7 @@ export interface Settings {
 	steeringMode?: "all" | "one-at-a-time";
 	followUpMode?: "all" | "one-at-a-time";
 	theme?: string;
+	accentColor?: string; // Accent color of the system theme, picked in /settings
 	compaction?: CompactionSettings;
 	branchSummary?: BranchSummarySettings;
 	retry?: RetrySettings;
@@ -177,7 +177,7 @@ export interface Settings {
 	defaultProjectTrust?: DefaultProjectTrust; // default: "ask"; global setting only
 	shellCommandPrefix?: string; // Prefix prepended to every bash command (e.g., "shopt -s expand_aliases" for alias support)
 	npmCommand?: string[]; // Command used for npm package lookup/install operations, argv-style (e.g., ["mise", "exec", "node@20", "--", "npm"])
-	collapseChangelog?: boolean; // default: true - show one line after an update (use /changelog for full)
+	collapseChangelog?: boolean; // default: true - show one line after an update instead of the new changelog entries
 	autoUpdate?: boolean; // default: true - standalone binary downloads new releases and installs them on exit; global setting only
 	enableInstallTelemetry?: boolean; // default: true - anonymous version/update ping after changelog-detected updates
 	enableAnalytics?: boolean; // default: false - opt-in analytics data sharing
@@ -188,18 +188,16 @@ export interface Settings {
 	skills?: string[]; // Array of local skill file paths or directories
 	prompts?: string[]; // Array of local prompt template paths or directories
 	themes?: string[]; // Array of local theme file paths or directories
-	enableSkillCommands?: boolean; // default: true - register skills as /skill:name commands
+	enableSkillCommands?: boolean; // default: true - enable /skills for running skills explicitly
 	terminal?: TerminalSettings;
 	images?: ImageSettings;
 	grep?: GrepSettings;
 	enabledModels?: string[]; // Model patterns for cycling (same format as --models CLI flag)
 	defaultTools?: string[]; // Initial tool selection; `+name`/`-name` entries add to or remove from the inherited selection
-	doubleEscapeAction?: "fork" | "tree" | "none"; // Action for double-escape with empty editor (default: "tree")
 	doubleEscapeClearsInput?: boolean; // default: true - double-escape with a non-empty editor clears it and saves the text to history
 	showWorkingStats?: boolean; // default: true - show elapsed time, output tokens, and tokens/s next to the working indicator
 	showContextGauge?: boolean; // default: true - show a context-fill bar and the latest tokens/s in the footer
-	showCacheStatus?: boolean; // default: true - show the prompt-cache status line (hit ratio, cached tokens, expiry countdown) in the footer
-	treeFilterMode?: "default" | "no-tools" | "user-only" | "labeled-only" | "all"; // Default filter when opening /tree
+	showCacheStatus?: boolean; // default: true - show the prompt-cache hit ratio and expiry countdown in the footer
 	thinkingBudgets?: ThinkingBudgetsSettings; // Custom token budgets for thinking levels
 	editorPaddingX?: number; // Horizontal padding for input editor (default: 0)
 	outputPad?: 0 | 1; // Horizontal padding for chat message output (default: 1)
@@ -216,7 +214,6 @@ export interface Settings {
 	httpIdleTimeoutMs?: number; // HTTP header/body idle timeout in milliseconds; 0 disables it
 	cacheWarming?: CacheWarmingMode; // See docs/adr/coding-agent/core-settings-manager.md#cache-warming-global-only-setting
 	websocketConnectTimeoutMs?: number; // WebSocket connect/open handshake timeout in milliseconds; 0 disables it
-	tuiMode?: TuiMode; // default: "fullscreen"
 	fullscreenExitOutput?: FullscreenExitOutput; // default: "transcript"; no effect in regular TUI mode
 	fullscreenScrollbar?: ScrollViewScrollbar; // default: "auto"; no effect in regular TUI mode
 	fullscreenCopyOnSelect?: boolean; // default: true; no effect in regular TUI mode
@@ -866,7 +863,7 @@ export class SettingsManager {
 	}
 
 	getSteeringMode(): "all" | "one-at-a-time" {
-		return this.settings.steeringMode || "one-at-a-time";
+		return this.settings.steeringMode || "all";
 	}
 
 	setSteeringMode(mode: "all" | "one-at-a-time"): void {
@@ -876,7 +873,7 @@ export class SettingsManager {
 	}
 
 	getFollowUpMode(): "all" | "one-at-a-time" {
-		return this.settings.followUpMode || "one-at-a-time";
+		return this.settings.followUpMode || "all";
 	}
 
 	setFollowUpMode(mode: "all" | "one-at-a-time"): void {
@@ -894,6 +891,16 @@ export class SettingsManager {
 	getTheme(): string | undefined {
 		const theme = this.getThemeSetting();
 		return theme?.includes("/") ? undefined : theme;
+	}
+
+	getAccentColor(): string | undefined {
+		return typeof this.settings.accentColor === "string" ? this.settings.accentColor : undefined;
+	}
+
+	setAccentColor(accent: string): void {
+		this.globalSettings.accentColor = accent;
+		this.markModified("accentColor");
+		this.save();
 	}
 
 	setTheme(theme: string): void {
@@ -1365,19 +1372,6 @@ export class SettingsManager {
 		};
 	}
 
-	getShowImages(): boolean {
-		return this.settings.terminal?.showImages ?? true;
-	}
-
-	setShowImages(show: boolean): void {
-		if (!this.globalSettings.terminal) {
-			this.globalSettings.terminal = {};
-		}
-		this.globalSettings.terminal.showImages = show;
-		this.markModified("terminal", "showImages");
-		this.save();
-	}
-
 	getImageWidthCells(): number {
 		const width = this.settings.terminal?.imageWidthCells;
 		if (typeof width !== "number" || !Number.isFinite(width)) {
@@ -1422,16 +1416,6 @@ export class SettingsManager {
 		}
 		this.globalSettings.terminal.showTerminalProgress = enabled;
 		this.markModified("terminal", "showTerminalProgress");
-		this.save();
-	}
-
-	getTuiMode(): TuiMode {
-		return this.settings.tuiMode === "regular" ? "regular" : "fullscreen";
-	}
-
-	setTuiMode(mode: TuiMode): void {
-		this.globalSettings.tuiMode = mode;
-		this.markModified("tuiMode");
 		this.save();
 	}
 
@@ -1533,16 +1517,6 @@ export class SettingsManager {
 		this.save();
 	}
 
-	getDoubleEscapeAction(): "fork" | "tree" | "none" {
-		return this.settings.doubleEscapeAction ?? "tree";
-	}
-
-	setDoubleEscapeAction(action: "fork" | "tree" | "none"): void {
-		this.globalSettings.doubleEscapeAction = action;
-		this.markModified("doubleEscapeAction");
-		this.save();
-	}
-
 	getDoubleEscapeClearsInput(): boolean {
 		return this.settings.doubleEscapeClearsInput ?? true;
 	}
@@ -1594,18 +1568,6 @@ export class SettingsManager {
 	setShowCacheStatus(enabled: boolean): void {
 		this.globalSettings.showCacheStatus = enabled;
 		this.markModified("showCacheStatus");
-		this.save();
-	}
-
-	getTreeFilterMode(): "default" | "no-tools" | "user-only" | "labeled-only" | "all" {
-		const mode = this.settings.treeFilterMode;
-		const valid = ["default", "no-tools", "user-only", "labeled-only", "all"];
-		return mode && valid.includes(mode) ? mode : "default";
-	}
-
-	setTreeFilterMode(mode: "default" | "no-tools" | "user-only" | "labeled-only" | "all"): void {
-		this.globalSettings.treeFilterMode = mode;
-		this.markModified("treeFilterMode");
 		this.save();
 	}
 

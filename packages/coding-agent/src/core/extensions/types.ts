@@ -338,8 +338,7 @@ export interface ExtensionContext {
 	/** Current model (may be undefined) */
 	model: Model<any> | undefined;
 	/** Models scoped to this session (resolved from `--models` /
-	 *  `enabledModels` settings against the available catalogue). Same set
-	 *  the `/scoped-models` command shows. Empty when no scoping is
+	 *  `enabledModels` settings against the available catalogue). Empty when no scoping is
 	 *  configured (all available models are usable). Read-only snapshot. */
 	scopedModels: readonly ScopedModel[];
 	/** Current thinking level, when provided by the session runtime. */

@@ -2,7 +2,7 @@ import { visibleWidth } from "@akramcode/tui";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { AgentSession } from "../src/core/agent-session.ts";
 import type { ReadonlyFooterDataProvider } from "../src/core/footer-data-provider.ts";
-import { FooterComponent, formatCwdForFooter, renderContextGauge } from "../src/modes/interactive/components/footer.ts";
+import { FooterComponent, renderContextGauge } from "../src/modes/interactive/components/footer.ts";
 import { initTheme } from "../src/modes/interactive/theme/theme.ts";
 import { stripAnsi } from "../src/utils/ansi.ts";
 
@@ -108,17 +108,6 @@ function createFooterData(providerCount: number): ReadonlyFooterDataProvider {
 	return provider;
 }
 
-describe("formatCwdForFooter", () => {
-	it("does not abbreviate sibling paths that share the home prefix", () => {
-		expect(formatCwdForFooter("/home/user2", "/home/user")).toBe("/home/user2");
-	});
-
-	it("abbreviates the home directory and descendants", () => {
-		expect(formatCwdForFooter("/home/user", "/home/user")).toBe("~");
-		expect(formatCwdForFooter("/home/user/project", "/home/user")).toBe("~/project");
-	});
-});
-
 describe("FooterComponent width handling", () => {
 	beforeAll(() => {
 		initTheme(undefined, false);
@@ -169,57 +158,9 @@ describe("FooterComponent width handling", () => {
 		});
 		const footer = new FooterComponent(session, createFooterData(1));
 
-		const statsLine = stripAnsi(footer.render(120)[1]);
+		const statsLine = stripAnsi(footer.render(120)[0]);
 
 		expect(statsLine).toContain("auto \u2022 high \u2192 gpt-5.6-luna \u2022 medium");
-	});
-
-	it("includes summary and tool result usage in the total cost", () => {
-		const session = createSession({
-			sessionName: "",
-			usage: {
-				input: 100,
-				output: 10,
-				cacheRead: 0,
-				cacheWrite: 0,
-				cost: { total: 0.5 },
-			},
-			branchUsage: {
-				input: 20,
-				output: 5,
-				cacheRead: 0,
-				cacheWrite: 0,
-				cost: { total: 0.25 },
-			},
-			compactionUsage: {
-				input: 5,
-				output: 2,
-				cacheRead: 0,
-				cacheWrite: 0,
-				cost: { total: 0.125 },
-			},
-			toolUsage: {
-				input: 15,
-				output: 3,
-				cacheRead: 0,
-				cacheWrite: 0,
-				cost: { total: 0.375 },
-			},
-		});
-		const footer = new FooterComponent(session, createFooterData(1));
-
-		const statsLine = stripAnsi(footer.render(120)[1]);
-		expect(statsLine).toContain("$1.250");
-	});
-
-	it("updates cached usage totals after an entry is appended", () => {
-		const usage = { input: 10, output: 1, cacheRead: 0, cacheWrite: 0, cost: { total: 0.5 } };
-		const session = createSession({ sessionName: "", usage });
-		const footer = new FooterComponent(session, createFooterData(1));
-		expect(stripAnsi(footer.render(120)[1])).toContain("$0.500");
-
-		session.sessionManager.getEntries().push({ type: "message", message: { role: "assistant", usage } } as never);
-		expect(stripAnsi(footer.render(120)[1])).toContain("$1.000");
 	});
 
 	it("shows the latest cache hit rate when cache usage is present", () => {
@@ -235,11 +176,13 @@ describe("FooterComponent width handling", () => {
 		});
 		const footer = new FooterComponent(session, createFooterData(1));
 
-		const statsLine = stripAnsi(footer.render(120)[1]);
+		const statsLine = stripAnsi(footer.render(120)[0]);
 		expect(statsLine).toContain("CH25.0%");
+		// Token totals are in /usage, not the footer.
+		expect(statsLine).not.toMatch(/[↑↓]|100\/50/);
 	});
 
-	it("marks Kimi Coding costs as subscription estimates", () => {
+	it("marks Kimi Coding as a subscription next to the model", () => {
 		const session = createSession({
 			sessionName: "",
 			provider: "kimi-coding",
@@ -252,34 +195,25 @@ describe("FooterComponent width handling", () => {
 			},
 		});
 		const footer = new FooterComponent(session, createFooterData(1));
+		const stats = stripAnsi(footer.render(120)[0]);
 
-		expect(stripAnsi(footer.render(120)[1])).toContain("$1.234 (sub)");
+		expect(stats).toMatch(/\(sub\)$/);
+		// Cost is in /usage, not the footer.
+		expect(stats).not.toContain("$");
 	});
 
 	it("marks explicitly identified subscription auth", () => {
 		const session = createSession({ sessionName: "", provider: "anthropic", usingSubscription: true });
 		const footer = new FooterComponent(session, createFooterData(1));
 
-		expect(stripAnsi(footer.render(120)[1])).toContain("$0.000 (sub)");
+		expect(stripAnsi(footer.render(120)[0])).toMatch(/\(sub\)$/);
 	});
 
 	it("does not mark generic OAuth sign-in as a subscription", () => {
-		const session = createSession({
-			sessionName: "",
-			provider: "openrouter",
-			usage: {
-				input: 100,
-				output: 10,
-				cacheRead: 0,
-				cacheWrite: 0,
-				cost: { total: 1.234 },
-			},
-		});
+		const session = createSession({ sessionName: "", provider: "openrouter" });
 		const footer = new FooterComponent(session, createFooterData(1));
-		const stats = stripAnsi(footer.render(120)[1]);
 
-		expect(stats).toContain("$1.234");
-		expect(stats).not.toContain("(sub)");
+		expect(stripAnsi(footer.render(120)[0])).not.toContain("(sub)");
 	});
 });
 
@@ -295,21 +229,20 @@ describe("FooterComponent context gauge and speed", () => {
 		expect(renderContextGauge(150)).toBe("█".repeat(10));
 	});
 
-	it("shows the gauge and latest tokens/s only when enabled", () => {
+	it("shows the gauge only when enabled, and never tokens/s", () => {
 		const footer = new FooterComponent(createSession({ sessionName: "" }), createFooterData(1));
-		footer.setGenerationSpeed(48.26);
-		const hidden = stripAnsi(footer.render(120)[1]);
+		const hidden = stripAnsi(footer.render(120)[0]);
 		expect(hidden).not.toContain("█");
 		expect(hidden).not.toContain("tok/s");
 
 		footer.setShowContextGauge(true);
-		const shown = stripAnsi(footer.render(120)[1]);
+		const shown = stripAnsi(footer.render(120)[0]);
 		expect(shown).toContain(`█${"░".repeat(9)} 12.3%/200k`);
-		expect(shown).toContain("48.3 tok/s");
+		expect(shown).not.toContain("tok/s");
 	});
 });
 
-describe("FooterComponent cache status line", () => {
+describe("FooterComponent cache status", () => {
 	const usage = { input: 2, output: 10, cacheRead: 390_000, cacheWrite: 69, cost: { total: 0.1 } };
 
 	beforeAll(() => {
@@ -320,7 +253,7 @@ describe("FooterComponent cache status line", () => {
 		vi.useRealTimers();
 	});
 
-	it("shows hit ratio, token split, and a live countdown from the latest request", () => {
+	it("shows hit ratio and a live countdown on the single footer line", () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(1_000_000);
 		const session = createSession({
@@ -332,15 +265,14 @@ describe("FooterComponent cache status line", () => {
 		footer.setShowCacheStatus(true);
 
 		const lines = footer.render(120).map(stripAnsi);
-		expect(lines).toHaveLength(3);
-		expect(lines[2]).toBe("cache ██████████ 100%  read 390k  wrote 69  new 2  ttl 59:58/1h · warm: keep going");
-		// The detailed line replaces the CH% figure on the stats line.
-		expect(lines[1]).not.toContain("CH");
+		expect(lines).toHaveLength(1);
+		expect(lines[0]).toContain("cache 100% 59:58");
+		// The cache status replaces the CH% figure.
+		expect(lines[0]).not.toContain("CH");
 		expect(footer.hasLiveCacheCountdown()).toBe(true);
 
 		vi.setSystemTime(1_000_000 + 3_600_000);
-		const expired = stripAnsi(footer.render(120)[2]);
-		expect(expired).toContain("ttl 0:00/1h · cold: next request rewrites the cache");
+		expect(stripAnsi(footer.render(120)[0])).toContain("cache 100% cold");
 		expect(footer.hasLiveCacheCountdown()).toBe(false);
 	});
 
@@ -353,7 +285,7 @@ describe("FooterComponent cache status line", () => {
 		const footer = new FooterComponent(session, createFooterData(1));
 		footer.setShowCacheStatus(true);
 
-		expect(stripAnsi(footer.render(120)[2])).toBe("cache ██████████ 100%  read 390k  wrote 69  new 2");
+		expect(stripAnsi(footer.render(120)[0])).toMatch(/cache 100%(?! \d)/);
 		for (const line of footer.render(30)) {
 			expect(visibleWidth(line)).toBeLessThanOrEqual(30);
 		}
@@ -361,13 +293,13 @@ describe("FooterComponent cache status line", () => {
 
 	it("is hidden when disabled or when the latest response used no cache", () => {
 		const cached = new FooterComponent(createSession({ sessionName: "", usage }), createFooterData(1));
-		expect(cached.render(120)).toHaveLength(2);
+		expect(stripAnsi(cached.render(120)[0])).not.toContain("cache ");
 
 		const uncached = new FooterComponent(
 			createSession({ sessionName: "", usage: { ...usage, cacheRead: 0, cacheWrite: 0 } }),
 			createFooterData(1),
 		);
 		uncached.setShowCacheStatus(true);
-		expect(uncached.render(120)).toHaveLength(2);
+		expect(stripAnsi(uncached.render(120)[0])).not.toContain("cache ");
 	});
 });

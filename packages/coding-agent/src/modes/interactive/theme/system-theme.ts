@@ -65,13 +65,26 @@ const FAMILIES = {
 
 type FamilyName = keyof typeof FAMILIES;
 
+/** Accent colors the user can pick with /theme; green is the default. */
+export const ACCENT_COLORS = ["green", "blue", "violet", "orange"] as const;
+export type AccentColor = (typeof ACCENT_COLORS)[number];
+
+/** Tokens that follow the chosen accent color. */
+const ACCENT_TOKENS: ReadonlySet<ThemeToken> = new Set<ThemeToken>([
+	"accent",
+	"borderAccent",
+	"border",
+	"customMessageLabel",
+	"mdListBullet",
+]);
+
 const TOKEN_FAMILIES: Record<ThemeToken, FamilyName> = {
 	selectedBg: "blue",
 	searchMatchBg: "orange",
-	userMessageBg: "blue",
+	userMessageBg: "neutral",
 	customMessageBg: "violet",
 	toolPendingBg: "neutral",
-	toolSuccessBg: "green",
+	toolSuccessBg: "neutral",
 	toolErrorBg: "red",
 
 	text: "neutral",
@@ -96,13 +109,13 @@ const TOKEN_FAMILIES: Record<ThemeToken, FamilyName> = {
 	searchMatchText: "neutral",
 	borderMuted: "neutral",
 
-	accent: "violet",
-	borderAccent: "violet",
-	customMessageLabel: "violet",
-	mdCode: "violet",
-	mdListBullet: "violet",
+	accent: "green",
+	borderAccent: "green",
+	customMessageLabel: "green",
+	mdCode: "blue",
+	mdListBullet: "green",
 	syntaxType: "violet",
-	border: "blue",
+	border: "green",
 	mdLink: "blue",
 	syntaxKeyword: "blue",
 	syntaxVariable: "calamine",
@@ -145,6 +158,11 @@ interface Curve {
 }
 
 const LEVELS = {
+	// User messages sit on the darkest panel that still stands apart from the background, like Claude Code.
+	messagePanel: {
+		dark: { coefficients: [0.2, 0.45], reachable: [0, 0.6] },
+		light: { coefficients: [-0.04, 1], reachable: [0.5, 1] },
+	},
 	panel: {
 		dark: { coefficients: [0.29131, -0.39746, 2.33185, -0.85524, -1.2076, 0.86276], reachable: [0, 0.979] },
 		light: { coefficients: [-3.74073, 27.94549, -78.44258, 112.6798, -79.60015, 22.11277], reachable: [0.348, 1] },
@@ -290,7 +308,12 @@ const each = (tokens: ThemeToken[], on: Surface[], level: Level): Rule[] =>
 	tokens.map((token) => ({ token, on, level }));
 
 const RULES: Rule[] = [
-	...each(PANELS, ["background"], "panel"),
+	...each(
+		PANELS.filter((panel) => panel !== "userMessageBg"),
+		["background"],
+		"panel",
+	),
+	{ token: "userMessageBg", on: ["background"], level: "messagePanel" },
 	{ token: "text", on: ["background"], level: "text" },
 	{ token: "text", on: ["selectedBg"], level: "textOnPanel" },
 	{ token: "userMessageText", on: ["userMessageBg"], level: "textOnPanel" },
@@ -377,6 +400,8 @@ export interface SystemThemeInput {
 	saturation?: number;
 	/** Appearance when the terminal did not report its background, e.g. from its light/dark report or COLORFGBG. */
 	appearanceHint?: ThemeAppearance;
+	/** Family of the accent tokens; green when omitted. */
+	accent?: AccentColor;
 }
 
 export interface SystemThemeColors {
@@ -465,7 +490,9 @@ function levelTarget(level: Level, appearance: ThemeAppearance, surfaceL: number
 export function generateSystemThemeColors(input: SystemThemeInput): SystemThemeColors {
 	const saturation = clamp(input.saturation ?? 1, 0, 1);
 	const { background, foreground } = input;
-	if (!background) return indexedColors(saturation, input.appearanceHint);
+	const familyOf = (token: ThemeToken): FamilyName =>
+		input.accent && ACCENT_TOKENS.has(token) ? input.accent : TOKEN_FAMILIES[token];
+	if (!background) return indexedColors(saturation, input.appearanceHint, familyOf);
 	const palette = input.palette?.length === 16 ? input.palette.map(sourceOf) : undefined;
 
 	const appearance = terminalAppearance(background, foreground);
@@ -479,7 +506,7 @@ export function generateSystemThemeColors(input: SystemThemeInput): SystemThemeC
 	 */
 	const paint = (token: ThemeToken, oklabL: number): RgbColor => {
 		const lightness = oklabToOkhslLightness(oklabL);
-		const family: Family = FAMILIES[TOKEN_FAMILIES[token]];
+		const family: Family = FAMILIES[familyOf(token)];
 		if (!palette) {
 			const { min, max } = family.saturation;
 			return okhslColor(family.hue, (min + (max - min) * bellWeight(lightness)) * saturation, lightness);
@@ -638,10 +665,15 @@ function withTextContrast(color: RgbColor, surfaces: RgbColor[], lighter: boolea
  * colors with its own theme, so they fit any background. Neutral tokens below body text are faint (SGR 2)
  * instead of bright black, which some themes make nearly invisible. Panels have no background.
  */
-function indexedColors(saturation: number, appearance: ThemeAppearance | undefined): SystemThemeColors {
+function indexedColors(
+	saturation: number,
+	appearance: ThemeAppearance | undefined,
+	familyOf: (token: ThemeToken) => FamilyName,
+): SystemThemeColors {
 	const colors = {} as Record<ThemeToken, string | number>;
 	const dim: ThemeColor[] = [];
-	for (const [token, familyName] of Object.entries(TOKEN_FAMILIES) as [ThemeToken, FamilyName][]) {
+	for (const token of Object.keys(TOKEN_FAMILIES) as ThemeToken[]) {
+		const familyName = familyOf(token);
 		if (PANELS.includes(token as ThemeBg)) {
 			colors[token] = "";
 			continue;

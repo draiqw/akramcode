@@ -24,7 +24,7 @@ AkramCode keeps the two pairs apart:
 
 Providers only receive physical models. Assistant messages name the physical model, so replaying a conversation across different physical models works the same as after a manual model switch. Resuming a session restores the virtual selection from its latest `model_change` entry. If the virtual model is no longer registered, AkramCode falls back to the physical model that answered last.
 
-In interactive mode, the footer shows the routed model next to the selection, for example `auto • high → gpt-5.6-luna • medium`. `/session` lists the cost for each physical model.
+In interactive mode, the footer shows the routed model next to the selection, for example `auto • high → gpt-5.6-luna • medium`. `/usage` lists the cost for each physical model.
 
 Context usage uses the limits of the physical model that produced the latest response, even if that response came before switching to the virtual model. Without such a response, it uses the limits declared on the virtual model, if any. Compaction checks the same limits, and again the limits of the model each request is routed to. If that model's context window is too small for the conversation, AkramCode compacts before sending the request; the route stays as the router chose it.
 
@@ -104,7 +104,7 @@ akramcode.registerVirtualModel<{ phase: "plan" | "build" }>({
 
 - State must be JSON-serializable. Returning `undefined` or `request.state` itself keeps the current state.
 - AkramCode stores any other returned object as new state, before the request is sent, even when it equals the current state. Return a new object only when the state changes. The state stays stored if the request later fails.
-- State follows the session tree, so forks and `/tree` navigation see the state of their branch. It survives compaction.
+- State follows the session tree, so forks and tree navigation see the state of their branch. It survives compaction.
 - `direct` requests have no state, and AkramCode ignores state they return.
 
 The transcript already records the selection and every dispatched model, and `ctx.sessionManager.getBranch()` exposes both.

@@ -74,13 +74,11 @@ describe("run stats formatting", () => {
 		expect(formatElapsed(3_720_000)).toBe("1h 02m");
 	});
 
-	it("adds token and speed parts once output arrives", () => {
+	it("adds the token part once output arrives", () => {
 		expect(formatRunStats({ elapsedMs: 12_000, outputTokens: 0, tokensPerSecond: undefined })).toBe("12s");
 		expect(formatRunStats({ elapsedMs: 65_000, outputTokens: 1_234, tokensPerSecond: 48.04 })).toBe(
-			"1m 05s · ↓ 1.2k tokens · 48.0 tok/s",
+			"1m 05s · ↓ 1.2k tokens",
 		);
-		expect(formatRunStats({ elapsedMs: 5_000, outputTokens: 900, tokensPerSecond: 180.6 })).toBe(
-			"5s · ↓ 900 tokens · 181 tok/s",
-		);
+		expect(formatRunStats({ elapsedMs: 5_000, outputTokens: 900, tokensPerSecond: 180.6 })).toBe("5s · ↓ 900 tokens");
 	});
 });

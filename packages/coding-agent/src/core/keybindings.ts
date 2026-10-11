@@ -30,31 +30,14 @@ export interface AppKeybindings {
 	"app.message.dequeue": true;
 	"app.clipboard.pasteImage": true;
 	"app.session.new": true;
-	"app.session.tree": true;
 	"app.session.fork": true;
 	"app.session.resume": true;
-	"app.tree.foldOrUp": true;
-	"app.tree.unfoldOrDown": true;
-	"app.tree.editLabel": true;
-	"app.tree.toggleLabelTimestamp": true;
 	"app.session.togglePath": true;
 	"app.session.toggleSort": true;
 	"app.session.rename": true;
 	"app.session.delete": true;
 	"app.session.deleteNoninvasive": true;
 	"app.models.save": true;
-	"app.models.enableAll": true;
-	"app.models.clearAll": true;
-	"app.models.toggleProvider": true;
-	"app.models.reorderUp": true;
-	"app.models.reorderDown": true;
-	"app.tree.filter.default": true;
-	"app.tree.filter.noTools": true;
-	"app.tree.filter.userOnly": true;
-	"app.tree.filter.labeledOnly": true;
-	"app.tree.filter.all": true;
-	"app.tree.filter.cycleForward": true;
-	"app.tree.filter.cycleBackward": true;
 }
 
 export type AppKeybinding = keyof AppKeybindings;
@@ -140,29 +123,13 @@ export const KEYBINDINGS = {
 		description: "Restore queued messages",
 	},
 	"app.clipboard.pasteImage": {
-		defaultKeys: windowsKeybindings ? "alt+v" : "ctrl+v",
+		// Cmd+V reaches the app only in terminals that forward it (e.g. with the kitty keyboard protocol).
+		defaultKeys: windowsKeybindings ? "alt+v" : process.platform === "darwin" ? ["ctrl+v", "super+v"] : "ctrl+v",
 		description: "Paste files on macOS, images, or text from clipboard",
 	},
 	"app.session.new": { defaultKeys: [], description: "Start a new session" },
-	"app.session.tree": { defaultKeys: [], description: "Open session tree" },
 	"app.session.fork": { defaultKeys: [], description: "Fork current session" },
 	"app.session.resume": { defaultKeys: [], description: "Resume a session" },
-	"app.tree.foldOrUp": {
-		defaultKeys: process.platform === "darwin" ? ["alt+left", "ctrl+left"] : ["ctrl+left", "alt+left"],
-		description: "Fold tree branch or move up",
-	},
-	"app.tree.unfoldOrDown": {
-		defaultKeys: process.platform === "darwin" ? ["alt+right", "ctrl+right"] : ["ctrl+right", "alt+right"],
-		description: "Unfold tree branch or move down",
-	},
-	"app.tree.editLabel": {
-		defaultKeys: "shift+l",
-		description: "Edit tree label",
-	},
-	"app.tree.toggleLabelTimestamp": {
-		defaultKeys: "shift+t",
-		description: "Toggle tree label timestamps",
-	},
 	"app.session.togglePath": {
 		defaultKeys: "ctrl+p",
 		description: "Toggle session path display",
@@ -186,54 +153,6 @@ export const KEYBINDINGS = {
 	"app.models.save": {
 		defaultKeys: "ctrl+s",
 		description: "Save model selection",
-	},
-	"app.models.enableAll": {
-		defaultKeys: "ctrl+a",
-		description: "Enable all models",
-	},
-	"app.models.clearAll": {
-		defaultKeys: "ctrl+x",
-		description: "Clear all models",
-	},
-	"app.models.toggleProvider": {
-		defaultKeys: "ctrl+p",
-		description: "Toggle all models for provider",
-	},
-	"app.models.reorderUp": {
-		defaultKeys: "alt+up",
-		description: "Move model up in order",
-	},
-	"app.models.reorderDown": {
-		defaultKeys: "alt+down",
-		description: "Move model down in order",
-	},
-	"app.tree.filter.default": {
-		defaultKeys: "ctrl+d",
-		description: "Tree filter: default view",
-	},
-	"app.tree.filter.noTools": {
-		defaultKeys: "ctrl+t",
-		description: "Tree filter: hide tool results",
-	},
-	"app.tree.filter.userOnly": {
-		defaultKeys: "ctrl+u",
-		description: "Tree filter: user messages only",
-	},
-	"app.tree.filter.labeledOnly": {
-		defaultKeys: "ctrl+l",
-		description: "Tree filter: labeled entries only",
-	},
-	"app.tree.filter.all": {
-		defaultKeys: "ctrl+a",
-		description: "Tree filter: show all entries",
-	},
-	"app.tree.filter.cycleForward": {
-		defaultKeys: "ctrl+o",
-		description: "Tree filter: cycle forward",
-	},
-	"app.tree.filter.cycleBackward": {
-		defaultKeys: "shift+ctrl+o",
-		description: "Tree filter: cycle backward",
 	},
 } as const satisfies KeybindingDefinitions;
 
@@ -285,13 +204,8 @@ const KEYBINDING_NAME_MIGRATIONS = {
 	dequeue: "app.message.dequeue",
 	pasteImage: "app.clipboard.pasteImage",
 	newSession: "app.session.new",
-	tree: "app.session.tree",
 	fork: "app.session.fork",
 	resume: "app.session.resume",
-	treeFoldOrUp: "app.tree.foldOrUp",
-	treeUnfoldOrDown: "app.tree.unfoldOrDown",
-	treeEditLabel: "app.tree.editLabel",
-	treeToggleLabelTimestamp: "app.tree.toggleLabelTimestamp",
 	toggleSessionPath: "app.session.togglePath",
 	toggleSessionSort: "app.session.toggleSort",
 	renameSession: "app.session.rename",

@@ -463,7 +463,6 @@ export {
 	ThinkingSelectorComponent,
 	ToolExecutionComponent,
 	type ToolExecutionOptions,
-	TreeSelectorComponent,
 	truncateToVisualLines,
 	UserMessageComponent,
 	UserMessageSelectorComponent,

@@ -17,7 +17,7 @@ By default, `<session-id>` is a UUID. Callers can supply a custom ID through the
 
 Sessions can be removed by deleting their `.jsonl` files under `~/.akramcode/agent/sessions/`.
 
-AkramCode also supports deleting sessions interactively from `/resume` (select a session and press `Ctrl+D`, then confirm). When available, akramcode uses the `trash` CLI to avoid permanent deletion.
+AkramCode also supports deleting sessions interactively from the session picker (`--resume`; select a session and press `Ctrl+D`, then confirm). When available, akramcode uses the `trash` CLI to avoid permanent deletion.
 
 ## Session Version
 
@@ -69,7 +69,7 @@ First line of the file. Metadata only, not part of the tree (no `id`/`parentId`)
 {"type":"session","version":3,"id":"uuid","timestamp":"2024-12-03T14:00:00.000Z","cwd":"/path/to/project"}
 ```
 
-For sessions with a parent (created via `/fork`, `/clone`, or `newSession({ parentSession })`):
+For sessions with a parent (created via `/fork` or `newSession({ parentSession })`):
 
 ```json
 {"type":"session","version":3,"id":"uuid","timestamp":"2024-12-03T14:00:00.000Z","cwd":"/path/to/project","parentSession":"/path/to/original/session.jsonl"}
@@ -148,7 +148,7 @@ Targets may be user, assistant, tool-result, or custom-message entries. `replace
 
 ### BranchSummaryEntry
 
-Created when switching branches via `/tree` with an LLM generated summary of the left branch up to the common ancestor. Captures context from the abandoned path.
+Created when switching branches via tree navigation (extensions or SDK `navigateTree`) with an LLM generated summary of the left branch up to the common ancestor. Captures context from the abandoned path.
 
 ```json
 {"type":"branch_summary","id":"g7h8i9j0","parentId":"a1b2c3d4","timestamp":"2024-12-03T14:15:00.000Z","fromId":"f6g7h8i9","summary":"Branch explored approach A..."}
@@ -198,13 +198,13 @@ Set `label` to `undefined` to clear a label.
 
 ### SessionInfoEntry
 
-Session metadata (e.g., user-defined display name). Set via `/name`, `--name` / `-n`, or `akramcode.setSessionName()` in extensions.
+Session metadata (e.g., user-defined display name). Set via `/rename`, `--name` / `-n`, or `akramcode.setSessionName()` in extensions.
 
 ```json
 {"type":"session_info","id":"k1l2m3n4","parentId":"j0k1l2m3","timestamp":"2024-12-03T14:35:00.000Z","name":"Refactor auth module"}
 ```
 
-The session name is displayed in the session selector (`/resume`) instead of the first message when set.
+The session name is displayed in the session selector (`--resume`) instead of the first message when set.
 
 ## Tree Structure
 

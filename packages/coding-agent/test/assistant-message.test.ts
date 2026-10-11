@@ -34,6 +34,23 @@ function createAssistantMessage(
 }
 
 describe("AssistantMessageComponent", () => {
+	test("shows the response time before the first line only", () => {
+		initTheme("dark");
+		const message = createAssistantMessage([{ type: "text", text: "first\n\n- second" }]);
+		message.timestamp = new Date(2026, 9, 11, 15, 3).getTime();
+
+		const lines = new AssistantMessageComponent(message, false, undefined, undefined, 1, [], true)
+			.render(40)
+			.map((line) =>
+				stripAnsi(line)
+					.replace(/\x1b\]133;[ABC]\x07/g, "")
+					.trimEnd(),
+			)
+			.filter(Boolean);
+
+		expect(lines).toEqual([" 15:03 first", " - second"]);
+	});
+
 	test("adds OSC 133 zone markers to assistant messages without tool calls", () => {
 		initTheme("dark");
 

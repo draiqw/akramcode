@@ -7,13 +7,12 @@ AkramCode saves a conversation as a session. The active branch of that session s
 AkramCode saves sessions automatically unless you start it with `--no-session`.
 
 ```bash
-akramcode --continue
 akramcode --resume
 ```
 
-`--continue` opens the most recent session for the current working directory. `--resume` opens the session picker. In interactive mode, `/resume` opens the same picker and `/new` starts a new session.
+`--resume` opens the session picker. In interactive mode, `/clear` starts a new session.
 
-Use `/name` or `--name` to assign a recognizable session name. Run `/session` to verify the current session file, ID, message count, token usage, and cost.
+Use `/rename` or `--name` to assign a recognizable session name. Run `/usage` to verify the current session file, ID, message count, token usage, and cost.
 
 The session picker lets you search, rename, and delete sessions. It can also show paths, change sorting, and limit results to named sessions. See [Keybindings](keybindings.md#sessions) for its shortcuts.
 
@@ -21,15 +20,9 @@ The session picker lets you search, rename, and delete sessions. It can also sho
 
 AkramCode stores entries as a tree, so returning to an earlier point does not erase the branch you leave.
 
-| Action | Result | Use it when |
-|---|---|---|
-| `/tree` | Moves within the current session file | Related alternatives should stay together |
-| `/fork` | Creates a new session from an earlier user message | The alternative should become separate work |
-| `/clone` | Copies the active branch into a new session | You want a separate copy of the current state |
+Use `/fork` to pick an earlier user message and start a new session from it. The original session stays unchanged.
 
-In `/tree`, select a user message to put its text back in the editor. Edit and submit it to create another branch. Selecting an assistant response or another entry continues after that entry with an empty editor.
-
-When you leave a branch, AkramCode can summarize it and attach that summary to the branch you enter. This preserves relevant work from the abandoned path without including every message from it.
+When tree navigation (extensions or SDK `navigateTree`) leaves a branch, AkramCode can summarize it and attach that summary to the branch it enters. This preserves relevant work from the abandoned path without including every message from it.
 
 For the persisted tree and entry types, see [Session Format](session-format.md).
 
@@ -55,7 +48,7 @@ Use `--session` when you already know the session path or ID. Use `--fork` to cr
 
 ## Export or share a session
 
-Use `/export` to write the current session as HTML or JSONL. Use `/share` to upload it and get a viewer link. AkramCode uses a private GitHub gist.
+Use `/share` to upload the current session as a private GitHub gist and get a viewer link, or to write it as HTML or JSONL. Run `akramcode --import <file.jsonl>` to copy an exported JSONL session into the current project and resume it.
 
 Review exported or shared sessions first. They can contain prompts, model responses, tool arguments, command output, file contents, and extension messages.
 

@@ -1,4 +1,3 @@
-import { isAbsolute, relative, resolve, sep } from "node:path";
 import { type Component, truncateToWidth, visibleWidth } from "@akramcode/tui";
 import type { AgentSession } from "../../../core/agent-session.ts";
 import { areExperimentalFeaturesEnabled } from "../../../core/experimental.ts";
@@ -44,20 +43,6 @@ export function renderContextGauge(percent: number, cells: number = CONTEXT_GAUG
 	return renderShareBar(percent, cells);
 }
 
-export function formatCwdForFooter(cwd: string, home: string | undefined): string {
-	if (!home) return cwd;
-
-	const resolvedCwd = resolve(cwd);
-	const resolvedHome = resolve(home);
-	const relativeToHome = relative(resolvedHome, resolvedCwd);
-	const isInsideHome =
-		relativeToHome === "" ||
-		(relativeToHome !== ".." && !relativeToHome.startsWith(`..${sep}`) && !isAbsolute(relativeToHome));
-
-	if (!isInsideHome) return cwd;
-	return relativeToHome === "" ? "~" : `~${sep}${relativeToHome}`;
-}
-
 interface SessionStats {
 	session: AgentSession;
 	sessionId: string;
@@ -72,13 +57,11 @@ interface SessionStats {
 }
 
 /**
- * Footer component that shows pwd, token stats, and context usage.
+ * Footer component that shows context usage, cache status, and the model.
  * Computes token/context stats from session, gets git branch and extension statuses from provider.
  */
 export class FooterComponent implements Component {
-	private autoCompactEnabled = true;
 	private showContextGauge = false;
-	private generationSpeed: number | undefined;
 	private showCacheStatus = false;
 	private cacheCountdownLive = false;
 	private session: AgentSession;
@@ -94,10 +77,6 @@ export class FooterComponent implements Component {
 		this.session = session;
 	}
 
-	setAutoCompactEnabled(enabled: boolean): void {
-		this.autoCompactEnabled = enabled;
-	}
-
 	/** Show the context-fill bar and the latest generation speed. */
 	setShowContextGauge(enabled: boolean): void {
 		this.showContextGauge = enabled;
@@ -111,11 +90,6 @@ export class FooterComponent implements Component {
 	/** True when the last render showed a running cache countdown, so the footer should be re-rendered each second. */
 	hasLiveCacheCountdown(): boolean {
 		return this.cacheCountdownLive;
-	}
-
-	/** Tokens per second of the latest response, or undefined to hide it. */
-	setGenerationSpeed(tokensPerSecond: number | undefined): void {
-		this.generationSpeed = tokensPerSecond;
 	}
 
 	/**
@@ -205,60 +179,32 @@ export class FooterComponent implements Component {
 			this.showCacheStatus &&
 			latestPromptUsage !== undefined &&
 			latestPromptUsage.cacheRead + latestPromptUsage.cacheWrite > 0
-				? renderCacheStatusLine(latestPromptUsage, this.session.promptCacheTouch, Date.now(), formatTokens)
+				? renderCacheStatusLine(latestPromptUsage, this.session.promptCacheTouch, Date.now())
 				: undefined;
 		this.cacheCountdownLive = cacheLine?.live ?? false;
 		const contextWindow = contextUsage?.contextWindow ?? state.model?.contextWindow ?? 0;
 		const contextPercentValue = contextUsage?.percent ?? 0;
 		const contextPercent = contextUsage?.percent !== null ? contextPercentValue.toFixed(1) : "?";
 
-		// Replace home directory with ~
-		let pwd = formatCwdForFooter(this.session.sessionManager.getCwd(), process.env.HOME || process.env.USERPROFILE);
-
-		// Add git branch if available
-		const branch = this.footerData.getGitBranch();
-		if (branch) {
-			pwd = `${pwd} (${branch})`;
-		}
-
-		// Add session name if set
+		// The working directory and git branch are left out; a session name, when set, leads the line.
 		const sessionName = this.session.sessionManager.getSessionName();
-		if (sessionName) {
-			pwd = `${pwd} • ${sessionName}`;
-		}
 
 		// Build stats line
 		const statsParts = [];
-		if (usageTotals.input) statsParts.push(`↑${formatTokens(usageTotals.input)}`);
-		if (usageTotals.output) statsParts.push(`↓${formatTokens(usageTotals.output)}`);
-		if (usageTotals.cacheRead) statsParts.push(`R${formatTokens(usageTotals.cacheRead)}`);
-		if (usageTotals.cacheWrite) statsParts.push(`W${formatTokens(usageTotals.cacheWrite)}`);
+		// Token totals and cost are in /usage; the footer keeps context and cache.
 		// The cache status line shows the hit ratio in more detail.
 		if (!cacheLine && (usageTotals.cacheRead > 0 || usageTotals.cacheWrite > 0) && latestCacheHitRate !== undefined) {
 			statsParts.push(`CH${latestCacheHitRate.toFixed(1)}%`);
 		}
 
-		// Kimi Coding is subscription-backed despite using API-key authentication.
-		const usingSubscription = state.model
-			? state.model.provider === "kimi-coding" || this.session.modelRuntime.isUsingSubscription(state.model.provider)
-			: false;
-		if (usageTotals.cost || usingSubscription) {
-			const costStr = `$${usageTotals.cost.toFixed(3)}${usingSubscription ? " (sub)" : ""}`;
-			statsParts.push(costStr);
-		}
-		if (this.showContextGauge && this.generationSpeed !== undefined) {
-			statsParts.push(formatTokensPerSecond(this.generationSpeed));
-		}
-
 		// Colorize context percentage based on usage
 		let contextPercentStr: string;
-		const autoIndicator = this.autoCompactEnabled ? " (auto)" : "";
 		const gauge =
 			this.showContextGauge && contextPercent !== "?" ? `${renderContextGauge(contextPercentValue)} ` : "";
 		const contextPercentDisplay =
 			contextPercent === "?"
-				? `?/${formatTokens(contextWindow)}${autoIndicator}`
-				: `${gauge}${contextPercent}%/${formatTokens(contextWindow)}${autoIndicator}`;
+				? `?/${formatTokens(contextWindow)}`
+				: `${gauge}${contextPercent}%/${formatTokens(contextWindow)}`;
 		if (contextPercentValue > 90) {
 			contextPercentStr = theme.fg("error", contextPercentDisplay);
 		} else if (contextPercentValue > 70) {
@@ -271,7 +217,9 @@ export class FooterComponent implements Component {
 			statsParts.push(`${theme.fg("dim", "•")} ${theme.bold(theme.fg("warning", "xp"))}`);
 		}
 
-		let statsLeft = statsParts.join(" ");
+		if (cacheLine) statsParts.push(cacheLine.text);
+
+		let statsLeft = sessionName ? `${sessionName}  ${statsParts.join(" ")}` : statsParts.join(" ");
 
 		// Add model name on the right side, plus thinking level if model supports it
 		const modelName = state.model?.id || "no-model";
@@ -294,6 +242,11 @@ export class FooterComponent implements Component {
 			rightSideWithoutProvider =
 				thinkingLevel === "off" ? `${modelName} • thinking off` : `${modelName} • ${thinkingLevel}`;
 		}
+		// Kimi Coding is subscription-backed despite using API-key authentication.
+		const usingSubscription = state.model
+			? state.model.provider === "kimi-coding" || this.session.modelRuntime.isUsingSubscription(state.model.provider)
+			: false;
+		if (usingSubscription) rightSideWithoutProvider += " (sub)";
 		// A virtual model routes each request; show where the latest response went.
 		const routed = this.session.routedModel;
 		if (routed) {
@@ -340,11 +293,7 @@ export class FooterComponent implements Component {
 		const remainder = statsLine.slice(statsLeft.length); // padding + rightSide
 		const dimRemainder = theme.fg("dim", remainder);
 
-		const pwdLine = truncateToWidth(theme.fg("dim", pwd), width, theme.fg("dim", "..."));
-		const lines = [pwdLine, dimStatsLeft + dimRemainder];
-		if (cacheLine) {
-			lines.push(truncateToWidth(cacheLine.text, width, theme.fg("dim", "...")));
-		}
+		const lines = [dimStatsLeft + dimRemainder];
 
 		// Add extension statuses on a single line, sorted by key alphabetically
 		const extensionStatuses = this.footerData.getExtensionStatuses();

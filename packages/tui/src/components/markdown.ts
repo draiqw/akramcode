@@ -484,7 +484,6 @@ export class Markdown implements Component {
 		switch (token.type) {
 			case "heading": {
 				const headingLevel = token.depth;
-				const headingPrefix = `${"#".repeat(headingLevel)} `;
 
 				// Build a heading-specific style context so inline tokens (codespan, bold, etc.)
 				// restore heading styling after their own ANSI resets instead of falling back to
@@ -502,7 +501,7 @@ export class Markdown implements Component {
 				};
 
 				const headingText = this.renderInlineTokens(token.tokens || [], headingStyleContext);
-				const styledHeading = headingLevel >= 3 ? headingStyleFn(headingPrefix) + headingText : headingText;
+				const styledHeading = headingText;
 				lines.push(styledHeading);
 				if (nextTokenType && nextTokenType !== "space") {
 					lines.push(""); // Add spacing after headings (unless space token follows)
@@ -528,10 +527,12 @@ export class Markdown implements Component {
 				const latexToken = token as LatexToken;
 				const rendered =
 					!latexToken.pending && this.options.renderLatex !== false
-						? (renderLatex(latexToken.text, { display: true }) ?? latexToken.raw.trim())
-						: latexToken.raw.trim();
-				for (const line of rendered.split("\n")) {
-					lines.push(this.applyDefaultStyle(line));
+						? renderLatex(latexToken.text, { display: true })
+						: undefined;
+				// Rendered math is indented and colored like code, so it stands apart from the prose.
+				const indent = this.theme.codeBlockIndent ?? "  ";
+				for (const line of (rendered ?? latexToken.raw.trim()).split("\n")) {
+					lines.push(rendered === undefined ? this.applyDefaultStyle(line) : indent + this.theme.code(line));
 				}
 				if (nextTokenType && nextTokenType !== "space") {
 					lines.push("");
@@ -666,10 +667,11 @@ export class Markdown implements Component {
 				case "latex": {
 					const latexToken = token as LatexToken;
 					const rendered =
-						!latexToken.pending && this.options.renderLatex !== false
-							? (renderLatex(latexToken.text) ?? latexToken.raw)
-							: latexToken.raw;
-					result += applyTextWithNewlines(rendered);
+						!latexToken.pending && this.options.renderLatex !== false ? renderLatex(latexToken.text) : undefined;
+					result +=
+						rendered === undefined
+							? applyTextWithNewlines(latexToken.raw)
+							: this.theme.code(rendered) + stylePrefix;
 					break;
 				}
 

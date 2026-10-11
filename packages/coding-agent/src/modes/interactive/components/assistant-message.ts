@@ -1,8 +1,9 @@
 import type { AssistantMessage } from "@akramcode/ai";
-import { Container, Markdown, type MarkdownTheme, MouseRegion, Spacer, Text } from "@akramcode/tui";
+import { type Component, Container, Markdown, type MarkdownTheme, MouseRegion, Spacer, Text } from "@akramcode/tui";
 import type { MarkdownTransformer } from "../../../core/extensions/types.ts";
 import { getMarkdownTheme, theme } from "../theme/theme.ts";
 import { createMarkdownTransform } from "./markdown-transform.ts";
+import { prefixMessageTime, TIME_PREFIX_WIDTH } from "./user-message.ts";
 
 const OSC133_ZONE_START = "\x1b]133;A\x07";
 const OSC133_ZONE_END = "\x1b]133;B\x07";
@@ -11,10 +12,36 @@ const OSC133_ZONE_FINAL = "\x1b]133;C\x07";
 /** Label of collapsed thinking when no extension overrides it; replaced by "Thinking…" or "Thought for 12s". */
 export const DEFAULT_HIDDEN_THINKING_LABEL = "Thinking...";
 
-function formatThinkingDuration(ms: number): string {
+export function formatThinkingDuration(ms: number): string {
 	const seconds = Math.max(1, Math.round(ms / 1000));
 	if (seconds < 60) return `${seconds}s`;
 	return `${Math.floor(seconds / 60)}m ${String(seconds % 60).padStart(2, "0")}s`;
+}
+
+/**
+ * Renders a child with the dim response time before its first line. Only the first line moves right; the child is
+ * rendered that much narrower so it still fits, and later lines keep the normal indent.
+ */
+class TimePrefixed implements Component {
+	private readonly child: Component;
+	private readonly outputPad: number;
+	private readonly timestamp: number;
+
+	constructor(child: Component, outputPad: number, timestamp: number) {
+		this.child = child;
+		this.outputPad = outputPad;
+		this.timestamp = timestamp;
+	}
+
+	invalidate(): void {
+		this.child.invalidate();
+	}
+
+	render(width: number): string[] {
+		const lines = [...this.child.render(Math.max(1, width - TIME_PREFIX_WIDTH))];
+		prefixMessageTime(lines, this.outputPad, this.timestamp, undefined, this.outputPad);
+		return lines;
+	}
 }
 
 /**
@@ -35,6 +62,13 @@ export class AssistantMessageComponent extends Container {
 	private expanded = false;
 	/** Start and end times of thinking runs seen while streaming, by run index. */
 	private thinkingTimes = new Map<number, { start: number; end?: number }>();
+	/** Show the response time before the first text line, aligned with user messages. */
+	private showTime: boolean;
+	/**
+	 * Set when a tool group summarizes this message's thinking. The message then renders nothing in its own place;
+	 * the expanded group shows it through renderInGroup(), next to the calls it led to.
+	 */
+	private foldedIntoGroup = false;
 
 	constructor(
 		message?: AssistantMessage,
@@ -43,8 +77,10 @@ export class AssistantMessageComponent extends Container {
 		hiddenThinkingLabel = DEFAULT_HIDDEN_THINKING_LABEL,
 		outputPad = 1,
 		markdownTransformers: readonly MarkdownTransformer[] = [],
+		showTime = false,
 	) {
 		super();
+		this.showTime = showTime;
 
 		this.hideThinkingBlock = hideThinkingBlock;
 		this.markdownTheme = markdownTheme;
@@ -93,6 +129,52 @@ export class AssistantMessageComponent extends Container {
 		);
 	}
 
+	/**
+	 * Whether a tool group can absorb this message: it holds only thinking and tool calls, and the thinking
+	 * would render as the default one-line label.
+	 */
+	canFoldIntoToolGroup(): boolean {
+		const content = this.lastMessage?.content;
+		if (!content || this.lastMessage?.stopReason === "length") return false;
+		if (!this.hideThinkingBlock || this.hiddenThinkingLabel !== DEFAULT_HIDDEN_THINKING_LABEL) return false;
+		return (
+			content.some((c) => c.type === "toolCall") &&
+			content.some((c) => c.type === "thinking" && c.thinking.trim()) &&
+			!content.some((c) => c.type === "text" && c.text.trim())
+		);
+	}
+
+	setFoldedIntoGroup(folded: boolean): void {
+		this.foldedIntoGroup = folded;
+	}
+
+	/** Total duration of finished thinking runs seen while streaming; undefined when none was timed. */
+	/**
+	 * Title of the latest thinking block, e.g. "Checking home disk usage" from a reasoning summary that starts
+	 * with `**Checking home disk usage**`. Undefined when the thinking has no such title.
+	 */
+	getThinkingTitle(): string | undefined {
+		const blocks = this.lastMessage?.content.filter((content) => content.type === "thinking") ?? [];
+		for (const block of blocks.reverse()) {
+			const title = /^\s*\*\*([^*\n]{1,120})\*\*/.exec(block.thinking)?.[1]?.trim();
+			if (title) return title;
+		}
+		return undefined;
+	}
+
+	getThinkingMs(): number | undefined {
+		let total: number | undefined;
+		for (const times of this.thinkingTimes.values()) {
+			if (times.end !== undefined) total = (total ?? 0) + times.end - times.start;
+		}
+		return total;
+	}
+
+	/** The message's content for an expanded tool group that folded it in. */
+	renderInGroup(width: number): string[] {
+		return super.render(width);
+	}
+
 	private getHiddenThinkingLabel(runIndex: number, inProgress: boolean): string {
 		if (this.hiddenThinkingLabel !== DEFAULT_HIDDEN_THINKING_LABEL) return this.hiddenThinkingLabel;
 		if (inProgress) return "Thinking…";
@@ -115,6 +197,7 @@ export class AssistantMessageComponent extends Container {
 	}
 
 	override render(width: number): string[] {
+		if (this.foldedIntoGroup) return [];
 		const lines = super.render(width);
 		if (this.hasToolCalls || lines.length === 0) {
 			return lines;
@@ -142,15 +225,20 @@ export class AssistantMessageComponent extends Container {
 
 		// Render content in order
 		let thinkingRunIndex = 0;
+		let timeShown = false;
 		for (let i = 0; i < message.content.length; i++) {
 			const content = message.content[i];
 			if (content.type === "text" && content.text.trim()) {
 				// See docs/adr/coding-agent/modes-interactive-components-assistant-message.md#assistant-text-message-rendering
-				this.contentContainer.addChild(
-					new Markdown(content.text.trim(), this.outputPad, 0, this.markdownTheme, undefined, {
-						transform: createMarkdownTransform("assistant", this.isStreaming, this.markdownTransformers),
-					}),
-				);
+				const markdown = new Markdown(content.text.trim(), this.outputPad, 0, this.markdownTheme, undefined, {
+					transform: createMarkdownTransform("assistant", this.isStreaming, this.markdownTransformers),
+				});
+				if (this.showTime && !timeShown) {
+					timeShown = true;
+					this.contentContainer.addChild(new TimePrefixed(markdown, this.outputPad, message.timestamp));
+				} else {
+					this.contentContainer.addChild(markdown);
+				}
 			} else if (content.type === "thinking") {
 				const thinkingBlocks: string[] = [];
 				for (; i < message.content.length; i++) {

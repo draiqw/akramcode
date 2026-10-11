@@ -70,7 +70,7 @@ Saved decisions use canonical directory paths and live in:
 ~/.akramcode/agent/trust.json
 ```
 
-Use `/trust` to save a decision for future AkramCode processes.
+AkramCode saves the decision you make at the startup prompt. To change it later, edit or delete the project's entry in that file.
 
 ### Project trust without an interactive prompt
 

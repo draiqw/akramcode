@@ -35,7 +35,11 @@ import { createProjectTrustContext } from "./cli/project-trust.ts";
 import { selectSession } from "./cli/session-picker.ts";
 import { shouldRunFirstTimeSetup, showFirstTimeSetup, showStartupSelector } from "./cli/startup-ui.ts";
 import { APP_NAME, ENV_SESSION_DIR, expandTildePath, getAgentDir, getPackageDir, VERSION } from "./config.ts";
-import { type CreateAgentSessionRuntimeFactory, createAgentSessionRuntime } from "./core/agent-session-runtime.ts";
+import {
+	type CreateAgentSessionRuntimeFactory,
+	createAgentSessionRuntime,
+	planSessionImport,
+} from "./core/agent-session-runtime.ts";
 import {
 	type AgentSessionRuntimeDiagnostic,
 	createAgentSessionFromServices,
@@ -57,7 +61,7 @@ import {
 	MissingSessionCwdError,
 	type SessionCwdIssue,
 } from "./core/session-cwd.ts";
-import { assertValidSessionId, SessionManager } from "./core/session-manager.ts";
+import { assertValidSessionId, getDefaultSessionDir, SessionManager } from "./core/session-manager.ts";
 import { collectSettingsDiagnostics, deduplicateDiagnostics } from "./core/settings-diagnostics.ts";
 import { SettingsManager } from "./core/settings-manager.ts";
 import { printTimings, resetTimings, time } from "./core/timings.ts";
@@ -285,7 +289,6 @@ function validateForkFlags(parsed: Args): void {
 
 	const conflictingFlags = [
 		parsed.session ? "--session" : undefined,
-		parsed.continue ? "--continue" : undefined,
 		parsed.resume ? "--resume" : undefined,
 		parsed.noSession ? "--no-session" : undefined,
 	].filter((flag): flag is string => flag !== undefined);
@@ -296,14 +299,29 @@ function validateForkFlags(parsed: Args): void {
 	}
 }
 
+function validateImportFlags(parsed: Args): void {
+	if (!parsed.import) return;
+
+	const conflictingFlags = [
+		parsed.fork ? "--fork" : undefined,
+		parsed.session ? "--session" : undefined,
+		parsed.sessionId !== undefined ? "--session-id" : undefined,
+		parsed.resume ? "--resume" : undefined,
+		parsed.noSession ? "--no-session" : undefined,
+	].filter((flag): flag is string => flag !== undefined);
+
+	if (conflictingFlags.length > 0) {
+		console.error(chalk.red(`Error: --import cannot be combined with ${conflictingFlags.join(", ")}`));
+		process.exit(1);
+	}
+}
+
 function validateSessionIdFlags(parsed: Args): void {
 	if (parsed.sessionId === undefined) return;
 
-	const conflictingFlags = [
-		parsed.session ? "--session" : undefined,
-		parsed.continue ? "--continue" : undefined,
-		parsed.resume ? "--resume" : undefined,
-	].filter((flag): flag is string => flag !== undefined);
+	const conflictingFlags = [parsed.session ? "--session" : undefined, parsed.resume ? "--resume" : undefined].filter(
+		(flag): flag is string => flag !== undefined,
+	);
 
 	if (conflictingFlags.length > 0) {
 		console.error(chalk.red(`Error: --session-id cannot be combined with ${conflictingFlags.join(", ")}`));
@@ -347,6 +365,18 @@ export async function createSessionManager(
 ): Promise<SessionManager> {
 	if (parsed.noSession || parsed.help || parsed.listModels !== undefined) {
 		return SessionManager.inMemory(cwd, parsed.sessionId !== undefined ? { id: parsed.sessionId } : undefined);
+	}
+
+	if (parsed.import) {
+		try {
+			const { destinationPath, copy } = planSessionImport(parsed.import, sessionDir ?? getDefaultSessionDir(cwd));
+			copy();
+			return openSessionOrExit(destinationPath, sessionDir);
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : String(error);
+			console.error(chalk.red(`Error: ${message}`));
+			process.exit(1);
+		}
 	}
 
 	if (parsed.fork) {
@@ -411,10 +441,6 @@ export async function createSessionManager(
 		} finally {
 			stopThemeWatcher();
 		}
-	}
-
-	if (parsed.continue) {
-		return SessionManager.continueRecent(cwd, sessionDir);
 	}
 
 	if (parsed.sessionId) {
@@ -656,6 +682,7 @@ export async function main(args: string[], options?: MainOptions) {
 	}
 
 	validateForkFlags(parsed);
+	validateImportFlags(parsed);
 	validateSessionIdFlags(parsed);
 
 	// Run migrations (pass cwd for project-local migrations)
@@ -979,7 +1006,6 @@ export async function main(args: string[], options?: MainOptions) {
 			initialImages,
 			initialMessages: parsed.messages,
 			verbose: parsed.verbose,
-			tuiMode: parsed.tuiMode,
 			initialThemeSetting: parsed.useTheme,
 		});
 		if (startupBenchmark) {

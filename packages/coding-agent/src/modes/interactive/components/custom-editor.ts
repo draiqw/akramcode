@@ -1,6 +1,7 @@
 import { Editor, type EditorOptions, type EditorTheme, type TUI, visibleWidth } from "@akramcode/tui";
 import type { AppKeybinding, KeybindingsManager } from "../../../core/keybindings.ts";
 import type { StatusIndicator } from "./status-indicator.ts";
+import { highlightAttachmentMarkers } from "./user-message.ts";
 
 export type CustomEditorOptions = EditorOptions & {
 	/** Render working, compaction, summarization, and retry status in the editor's top border. */
@@ -27,6 +28,10 @@ export class CustomEditor extends Editor {
 		super(tui, theme, options);
 		this.keybindings = keybindings;
 		this.embedWorkingStatus = options?.embedWorkingStatus ?? false;
+	}
+
+	override render(width: number): string[] {
+		return super.render(width).map((line) => highlightAttachmentMarkers(line, "\x1b[39m"));
 	}
 
 	setWorkingStatusIndicator(indicator: StatusIndicator | undefined): void {

@@ -27,11 +27,11 @@ import { SelectList, type SelectListLayoutOptions, type SelectListTheme } from "
 const graphemeSegmenter = getGraphemeSegmenter();
 const wordSegmenter = getWordSegmenter();
 
-/** Regex matching paste markers like `[paste #1 +123 lines]` or `[paste #2 1234 chars]`. */
-const PASTE_MARKER_REGEX = /\[paste #(\d+)( (\+\d+ lines|\d+ chars))?\]/g;
+/** Regex matching paste markers like `[Pasted text #1 +123 lines]` or `[Pasted text #2 1234 chars]`. */
+const PASTE_MARKER_REGEX = /\[Pasted text #(\d+)( (\+\d+ lines|\d+ chars))?\]/g;
 
 /** Non-global version for single-segment testing. */
-const PASTE_MARKER_SINGLE = /^\[paste #(\d+)( (\+\d+ lines|\d+ chars))?\]$/;
+const PASTE_MARKER_SINGLE = /^\[Pasted text #(\d+)( (\+\d+ lines|\d+ chars))?\]$/;
 
 /** Check if a segment is a paste marker (i.e. was merged by segmentWithMarkers). */
 function isPasteMarker(segment: string): boolean {
@@ -51,7 +51,7 @@ function segmentWithMarkers(
 	validIds: Set<number>,
 ): Iterable<Intl.SegmentData> {
 	// See docs/adr/tui/components-editor.md#paste-marker-segmentation
-	if (validIds.size === 0 || !text.includes("[paste #")) {
+	if (validIds.size === 0 || !text.includes("[Pasted text #")) {
 		return baseSegmenter.segment(text);
 	}
 
@@ -357,6 +357,10 @@ export class Editor implements Component, Focusable {
 	private undoStack = new UndoStack<EditorSnapshot>();
 
 	public onSubmit?: (text: string) => void;
+	/** Called for an empty bracketed paste, e.g. Cmd+V in a macOS terminal with an image in the clipboard. */
+	public onEmptyPaste?: () => void;
+	/** Wraps each pasted block when a submission expands its marker, e.g. so the transcript can collapse it again. */
+	public wrapPastedText?: (id: number, content: string) => string;
 	public onChange?: (text: string) => void;
 	public disableSubmit: boolean = false;
 
@@ -714,6 +718,8 @@ export class Editor implements Component, Focusable {
 				const pasteContent = this.pasteBuffer.substring(0, endIndex);
 				if (pasteContent.length > 0) {
 					this.handlePaste(pasteContent);
+				} else {
+					this.onEmptyPaste?.();
 				}
 				this.isInPaste = false;
 				const remaining = this.pasteBuffer.substring(endIndex + 6);
@@ -1076,11 +1082,11 @@ export class Editor implements Component, Focusable {
 		return this.state.lines.join("\n");
 	}
 
-	private expandPasteMarkers(text: string): string {
+	private expandPasteMarkers(text: string, wrap?: (id: number, content: string) => string): string {
 		let result = text;
 		for (const [pasteId, pasteContent] of this.pastes) {
-			const markerRegex = new RegExp(`\\[paste #${pasteId}( (\\+\\d+ lines|\\d+ chars))?\\]`, "g");
-			result = result.replace(markerRegex, () => pasteContent);
+			const markerRegex = new RegExp(`\\[Pasted text #${pasteId}( (\\+\\d+ lines|\\d+ chars))?\\]`, "g");
+			result = result.replace(markerRegex, () => (wrap ? wrap(pasteId, pasteContent) : pasteContent));
 		}
 		return result;
 	}
@@ -1286,11 +1292,11 @@ export class Editor implements Component, Focusable {
 			const pasteId = this.pasteCounter;
 			this.pastes.set(pasteId, filteredText);
 
-			// Insert marker like "[paste #1 +123 lines]" or "[paste #1 1234 chars]"
+			// Insert marker like "[Pasted text #1 +123 lines]" or "[Pasted text #1 1234 chars]"
 			const marker =
 				pastedLines.length > 10
-					? `[paste #${pasteId} +${pastedLines.length} lines]`
-					: `[paste #${pasteId} ${totalChars} chars]`;
+					? `[Pasted text #${pasteId} +${pastedLines.length} lines]`
+					: `[Pasted text #${pasteId} ${totalChars} chars]`;
 			this.insertTextAtCursorInternal(marker);
 			return;
 		}
@@ -1343,7 +1349,7 @@ export class Editor implements Component, Focusable {
 
 	private submitValue(): void {
 		this.cancelAutocomplete();
-		const result = this.expandPasteMarkers(this.state.lines.join("\n")).trim();
+		const result = this.expandPasteMarkers(this.state.lines.join("\n"), this.wrapPastedText).trim();
 
 		this.state = { lines: [""], cursorLine: 0, cursorCol: 0 };
 		this.pastes.clear();
@@ -1390,7 +1396,7 @@ export class Editor implements Component, Focusable {
 					line.replace(PASTE_MARKER_REGEX, (fullMatch, idGroup, suffixGroup) => {
 						const x = Number(idGroup);
 						if (x <= targetId) return fullMatch;
-						return `[paste #${x - 1}${suffixGroup}]`;
+						return `[Pasted text #${x - 1}${suffixGroup}]`;
 					}),
 				);
 			}

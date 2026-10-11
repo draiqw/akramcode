@@ -31,7 +31,6 @@ describe("issue #7269 CLI end-of-options delimiter", () => {
 
 		expect(parsed.unknownFlags.get("unknown-flag")).toBe("value");
 		expect(parsed.provider).toBeUndefined();
-		expect(parsed.continue).toBeUndefined();
 		expect(parsed.messages).toEqual(["--provider", "openai", "-c"]);
 		expect(parsed.fileArgs).toEqual(["prompt.md"]);
 		expect(parsed.diagnostics).toEqual([]);

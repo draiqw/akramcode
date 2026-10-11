@@ -144,7 +144,7 @@ describe("InteractiveMode.showManagedToolStatus", () => {
 });
 
 describe("InteractiveMode.setToolsExpanded", () => {
-	test("applies expansion state to the active header and chat entries", () => {
+	test("expands chat entries but leaves the startup header and resources alone", () => {
 		const header = { setExpanded: vi.fn() };
 		const loadedResourcesChild = { setExpanded: vi.fn() };
 		const chatChild = { setExpanded: vi.fn() };
@@ -161,8 +161,8 @@ describe("InteractiveMode.setToolsExpanded", () => {
 		(InteractiveMode as any).prototype.setToolsExpanded.call(fakeThis, true);
 
 		expect(fakeThis.toolOutputExpanded).toBe(true);
-		expect(header.setExpanded).toHaveBeenCalledWith(true);
-		expect(loadedResourcesChild.setExpanded).toHaveBeenCalledWith(true);
+		expect(header.setExpanded).not.toHaveBeenCalled();
+		expect(loadedResourcesChild.setExpanded).not.toHaveBeenCalled();
 		expect(chatChild.setExpanded).toHaveBeenCalledWith(true);
 		expect(fakeThis.showStatus).not.toHaveBeenCalled();
 		expect(fakeThis.ui.requestRender).toHaveBeenCalled();
@@ -715,7 +715,7 @@ describe("InteractiveMode.showLoadedResources", () => {
 	test("shows full resource listing when expanded", () => {
 		const fakeThis = createShowLoadedResourcesThis({
 			quietStartup: false,
-			toolOutputExpanded: true,
+			verbose: true,
 			skills: [{ filePath: "/tmp/skill/SKILL.md", name: "commit" }],
 		});
 
@@ -750,7 +750,7 @@ describe("InteractiveMode.showLoadedResources", () => {
 	test("captures mixed extension layouts in expanded output", () => {
 		const fakeThis = createShowLoadedResourcesThis({
 			quietStartup: false,
-			toolOutputExpanded: true,
+			verbose: true,
 			extensions: createExtensionFixtures(),
 			useRealScopeGroups: true,
 		});
@@ -782,7 +782,7 @@ describe("InteractiveMode.showLoadedResources", () => {
 		const cwd = path.join(home, "Development", "akramcode");
 		const fakeThis = createShowLoadedResourcesThis({
 			quietStartup: false,
-			toolOutputExpanded: true,
+			verbose: true,
 			cwd,
 			contextFiles: [
 				{ path: path.join(home, ".akramcode", "agent", "AGENTS.md") },

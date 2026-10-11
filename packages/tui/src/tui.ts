@@ -18,7 +18,8 @@ import { extractSegments, normalizeTerminalOutput, sliceByColumn, sliceWithWidth
 /**
  * Component interface - all components must implement this
  */
-export type TuiMouseEventType = "press" | "release" | "move" | "drag" | "click" | "wheel";
+/** `leave` goes to the component that handled the previous `move` once the pointer moves off it. */
+export type TuiMouseEventType = "press" | "release" | "move" | "leave" | "drag" | "click" | "wheel";
 export type TuiMouseButton = "left" | "middle" | "right" | "none";
 
 /** Normalized cell-based mouse event. Coordinates are zero-based. */

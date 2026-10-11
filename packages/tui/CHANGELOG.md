@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### Added
+
+- Mouse `leave` events: the component that handled the last pointer move is told when the pointer moves off it.
+- `Editor.onEmptyPaste` reports an empty bracketed paste, and `Editor.wrapPastedText` wraps pasted blocks when a submission expands their markers.
+
+### Changed
+
+- Large-paste markers read `[Pasted text #1 +40 lines]` instead of `[paste #1 +40 lines]`.
+- Rendered LaTeX is styled with the code color, display math is indented like code blocks, and stacked operators keep the space before them (`= ∫` instead of `=∫`).
+- Markdown headings of level 3 and deeper render without the `###` marks.
+
 ## [1.0.26] - 2026-10-10
 
 ## [1.0.25] - 2026-10-10

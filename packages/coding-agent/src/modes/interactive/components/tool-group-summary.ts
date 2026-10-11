@@ -86,8 +86,11 @@ function truncate(text: string, maxLength: number): string {
 	return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
 }
 
-/** Summarize a group of tool calls as one line, Claude Code style. */
-export function summarizeToolGroup(items: readonly ToolGroupItem[]): ToolGroupSummary {
+/**
+ * Summarize a group of tool calls as one line, Claude Code style.
+ * `thought` is collapsed thinking folded into the group, e.g. "thought for 3s"; it leads the line.
+ */
+export function summarizeToolGroup(items: readonly ToolGroupItem[], thought?: string): ToolGroupSummary {
 	const counts = new Map<string, { kind: ToolKind; count: number }>();
 	let failed = 0;
 	let active: string | undefined;
@@ -110,7 +113,7 @@ export function summarizeToolGroup(items: readonly ToolGroupItem[]): ToolGroupSu
 			counts.set(kind.key, { kind, count: 1 });
 		}
 	}
-	const parts = [...counts.values()].map(({ kind, count }) => kind.done(count));
+	const parts = [...(thought ? [thought] : []), ...[...counts.values()].map(({ kind, count }) => kind.done(count))];
 	const done = parts.join(", ");
 	return {
 		done: done ? done.charAt(0).toUpperCase() + done.slice(1) : "",

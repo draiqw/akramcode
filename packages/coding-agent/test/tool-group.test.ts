@@ -1,6 +1,7 @@
 import type { AssistantMessage } from "@akramcode/ai";
-import { Container, type TUI, type TuiMouseEvent } from "@akramcode/tui";
+import { Container, setKeybindings, type TUI, type TuiMouseEvent } from "@akramcode/tui";
 import { beforeAll, describe, expect, test } from "vitest";
+import { KeybindingsManager } from "../src/core/keybindings.ts";
 import { AssistantMessageComponent } from "../src/modes/interactive/components/assistant-message.ts";
 import { ToolExecutionComponent } from "../src/modes/interactive/components/tool-execution.ts";
 import { ToolGroupComponent } from "../src/modes/interactive/components/tool-group.ts";
@@ -38,6 +39,7 @@ function click(): TuiMouseEvent {
 describe("ToolGroupComponent", () => {
 	beforeAll(() => {
 		initTheme("dark");
+		setKeybindings(new KeybindingsManager());
 	});
 
 	test("collapses finished and running calls into one summary line", () => {
@@ -82,6 +84,20 @@ describe("ToolGroupComponent", () => {
 
 		expect(group.handleMouse(click())?.handled).toBe(true);
 		expect(render(group)).toContain("FILE_CONTENT");
+
+		// A click on the header folds it back.
+		expect(group.handleMouse(click())?.handled).toBe(true);
+		expect(render(group)).not.toContain("FILE_CONTENT");
+	});
+
+	test("shows how to collapse above expanded output", () => {
+		const group = new ToolGroupComponent(true);
+		const read = createTool("read", { path: "a.ts" });
+		read.updateResult({ content: [{ type: "text", text: "FILE_CONTENT" }], isError: false });
+		group.addTool(read);
+
+		const lines = group.render(100).map((line) => stripAnsi(line));
+		expect(lines.slice(0, 2)).toEqual(["", " Read 1 file · ctrl+o to collapse"]);
 	});
 
 	test("starts expanded when tool output is expanded", () => {
@@ -103,24 +119,27 @@ interface GroupingThis {
 	settingsManager: { getCollapseToolGroups(): boolean };
 }
 
-function assistant(content: AssistantMessage["content"]): AssistantMessageComponent {
-	return new AssistantMessageComponent({
-		role: "assistant",
-		content,
-		api: "openai-responses",
-		provider: "openai",
-		model: "gpt-4o-mini",
-		usage: {
-			input: 0,
-			output: 0,
-			cacheRead: 0,
-			cacheWrite: 0,
-			totalTokens: 0,
-			cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+function assistant(content: AssistantMessage["content"], hideThinkingBlock = false): AssistantMessageComponent {
+	return new AssistantMessageComponent(
+		{
+			role: "assistant",
+			content,
+			api: "openai-responses",
+			provider: "openai",
+			model: "gpt-4o-mini",
+			usage: {
+				input: 0,
+				output: 0,
+				cacheRead: 0,
+				cacheWrite: 0,
+				totalTokens: 0,
+				cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+			},
+			stopReason: "toolUse",
+			timestamp: Date.now(),
 		},
-		stopReason: "toolUse",
-		timestamp: Date.now(),
-	});
+		hideThinkingBlock,
+	);
 }
 
 describe("InteractiveMode.addToolExecutionToChat", () => {
@@ -151,6 +170,58 @@ describe("InteractiveMode.addToolExecutionToChat", () => {
 		const groups = fakeThis.chatContainer.children.filter((child) => child instanceof ToolGroupComponent);
 		expect(groups).toHaveLength(1);
 		expect((groups[0] as ToolGroupComponent).getTools()).toHaveLength(2);
+	});
+
+	test("folds collapsed thinking into the group summary", () => {
+		const fakeThis = createThis();
+		const thinking = (id: string, name: string) =>
+			assistant(
+				[
+					{ type: "thinking", thinking: "plan" },
+					{ type: "toolCall", id, name, arguments: {} },
+				],
+				true,
+			);
+		const first = thinking("1", "read");
+		fakeThis.chatContainer.addChild(first);
+		const read = createTool("read", { path: "a.ts" });
+		read.updateResult({ content: [{ type: "text", text: "x" }], isError: false });
+		addToolExecutionToChat.call(fakeThis, read);
+		fakeThis.chatContainer.addChild(thinking("2", "bash"));
+		const bash = createTool("bash", { command: "ls" });
+		bash.updateResult({ content: [{ type: "text", text: "a.ts" }], isError: false });
+		addToolExecutionToChat.call(fakeThis, bash);
+
+		const groups = fakeThis.chatContainer.children.filter((child) => child instanceof ToolGroupComponent);
+		expect(groups).toHaveLength(1);
+		const text = stripAnsi(fakeThis.chatContainer.render(100).join("\n"));
+		expect(text.trim()).toBe("Thought, read 1 file, ran 1 shell command");
+
+		// Expanded, the group shows the thinking after its header, before the call it led to.
+		first.setExpanded(true);
+		(groups[0] as ToolGroupComponent).setExpanded(true);
+		const expanded = stripAnsi(fakeThis.chatContainer.render(100).join("\n"));
+		expect(expanded.indexOf("ctrl+o to collapse")).toBeLessThan(expanded.indexOf("plan"));
+		expect(expanded.indexOf("plan")).toBeLessThan(expanded.indexOf("a.ts"));
+	});
+
+	test("labels the group with the latest reasoning summary title", () => {
+		const fakeThis = createThis();
+		fakeThis.chatContainer.addChild(
+			assistant(
+				[
+					{ type: "thinking", thinking: "**Checking home disk usage**\n\nLooking at ~" },
+					{ type: "toolCall", id: "1", name: "bash", arguments: {} },
+				],
+				true,
+			),
+		);
+		const bash = createTool("bash", { command: "du -sh ~" });
+		bash.updateResult({ content: [{ type: "text", text: "1G" }], isError: false });
+		addToolExecutionToChat.call(fakeThis, bash);
+
+		const text = stripAnsi(fakeThis.chatContainer.render(100).join("\n"));
+		expect(text.trim()).toBe("Checking home disk usage, ran 1 shell command");
 	});
 
 	test("starts a new group after assistant text", () => {

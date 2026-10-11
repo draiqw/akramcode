@@ -152,7 +152,7 @@ In the transcript a notification is one line, for example `● task b1 (bash: np
 
 ### Lifecycle
 
-- All running tasks are stopped when the session ends: on exit, `/new`, `/resume`, `/fork`, and other session switches.
+- All running tasks are stopped when the session ends: on exit, `/clear`, `/fork`, and other session switches.
 - In print mode (`-p`, `--mode json`), AkramCode waits for running tasks after the prompt and lets the model react to their notifications, so the printed answer includes their results. After `backgroundTasks.printModeTimeoutSeconds` (default 600) it stops the remaining tasks and exits.
 
 ## Extensions

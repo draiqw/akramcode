@@ -230,6 +230,8 @@ export class TuiAltScreen extends TuiBase implements ViewportTUI {
 	private selectionDragged = false;
 	private mouseCapture?: TuiMouseDispatchTarget;
 	private mousePressTarget?: TuiMouseDispatchTarget;
+	/** Component that handled the last pointer move; it gets a `leave` event when the pointer moves off it. */
+	private hoverTarget?: TuiMouseDispatchTarget;
 	private mousePressPoint?: { x: number; y: number };
 	private mousePressMoved = false;
 	private lastComponentClick?: {
@@ -935,6 +937,15 @@ export class TuiAltScreen extends TuiBase implements ViewportTUI {
 		}
 
 		const result = overlay.result ?? (overlay.hit ? undefined : this.dispatchMouseToLayout(event));
+		if (type === "move" && this.hoverTarget && this.hoverTarget.component !== result?.target.component) {
+			const leave = this.dispatchMouseToTarget(
+				this.createMouseEvent("leave", raw.button, raw.x, raw.y),
+				this.hoverTarget,
+			);
+			this.hoverTarget = undefined;
+			if (leave?.render) this.requestRender();
+		}
+		if (type === "move" && result) this.hoverTarget = result.target;
 		if (result) {
 			const render = this.applyMouseDispatchResult(event, result);
 			if (type === "press") {

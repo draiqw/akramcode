@@ -21,13 +21,15 @@ afterEach(() => vi.unstubAllEnvs());
 
 test("native image errors abort paste without reading text or changing the editor", async () => {
 	vi.stubEnv("TERMUX_VERSION", "");
+	const prototype = InteractiveMode.prototype as unknown as {
+		handleClipboardPaste(this: object): Promise<void>;
+		pasteClipboardImage(this: object): Promise<boolean>;
+	};
 	const context = {
 		editor: { insertTextAtCursor: vi.fn() },
 		showError: vi.fn(),
 		ui: { requestRender: vi.fn() },
-	};
-	const prototype = InteractiveMode.prototype as unknown as {
-		handleClipboardPaste(this: typeof context): Promise<void>;
+		pasteClipboardImage: prototype.pasteClipboardImage,
 	};
 	await prototype.handleClipboardPaste.call(context);
 	expect(readClipboardText).not.toHaveBeenCalled();

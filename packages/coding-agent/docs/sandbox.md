@@ -69,7 +69,7 @@ The `sandbox` block is read from user settings only (`~/.akramcode/agent/setting
 - **Sandbox per session.** A sandbox is labelled with the session id, the owner, the workspace mode and the folder. When a session starts, a matching running or paused sandbox is attached instead of created: about 40 ms against about 1 s for a new one on a Mac. A paused sandbox is resumed, and one whose workspace is not writable is deleted and replaced.
 - **Lease.** Only one AkramCode process drives a session's reusable sandbox. A second process on the same session gets a throwaway sandbox that is deleted on release. A lease whose process has died is taken over.
 - **Persistent shell.** Commands of a session run in one shell session of the sandbox, so a command is one request rather than a process start.
-- **Volumes.** In `volume` mode the workspace survives the sandbox: it is mounted again whenever the session resumes (`akramcode --continue`). Volumes untouched for `volumeRetentionDays` are removed.
+- **Volumes.** In `volume` mode the workspace survives the sandbox: it is mounted again whenever the session resumes (`akramcode --resume`). Volumes untouched for `volumeRetentionDays` are removed.
 - **Eviction.** On release the sandbox stays for `idleMinutes`; beyond `maxLive` the longest idle are deleted.
 
 ## Limits

@@ -15,11 +15,11 @@ This reference lists user-configurable settings, their types, defaults, and purp
 | `thinkingBudgets` | object | Built-in budgets | Token budgets for `minimal`, `low`, `medium`, and `high` thinking levels. |
 | `enabledModels` | `string[]` | All available models | Model patterns used for startup selection and model cycling. Uses the same format as `--models`. |
 | `hideThinkingBlock` | boolean | `true` | Collapse thinking blocks to one line such as `Thought for 12s`. `app.thinking.toggle` switches it; `app.tools.expand` (default `ctrl+o`) also shows them. |
-| `collapseToolGroups` | boolean | `true` | Show consecutive tool calls as one line such as `Read 2 files, ran 1 shell command`, with failed calls listed below it. `app.tools.expand` (default `ctrl+o`) or a click on the line shows the full tool output. |
+| `collapseToolGroups` | boolean | `true` | Show consecutive tool calls as one line such as `Read 2 files, ran 1 shell command`, with failed calls listed below it. `app.tools.expand` (default `ctrl+o`) or a click on the line shows the full tool output, under a header that collapses it again. Collapsed thinking before the calls joins the line as `Thought for 2s`. |
 | `showCacheMissNotices` | boolean | `false` | Show notices for significant cache misses, successful cache warming, compaction usage, and provider recovery. |
 | `cacheWarming` | `"off" \| "streaming" \| "idle"` | `"streaming"` | Keep eligible provider prompt caches warm during active runs or, with `"idle"`, between runs. Global setting only. |
 
-Cache warming runs only when the model declares a cache lifetime and AkramCode estimates at least $0.05 in avoided cache-miss cost. Refresh usage counts toward session totals but does not enter model context. `/session` shows the next decision; extensions can override it with `cache_warming_decision`. See [Prompt Cache Lifetimes](models.md#prompt-cache-lifetimes).
+Cache warming runs only when the model declares a cache lifetime and AkramCode estimates at least $0.05 in avoided cache-miss cost. Refresh usage counts toward session totals but does not enter model context. `/usage` shows the next decision; extensions can override it with `cache_warming_decision`. See [Prompt Cache Lifetimes](models.md#prompt-cache-lifetimes).
 
 See [Choose a Model](models.md) for model selection and thinking controls.
 
@@ -27,12 +27,10 @@ See [Choose a Model](models.md) for model selection and thinking controls.
 
 | Setting | Type | Default | Description |
 |---|---|---|---|
-| `steeringMode` | `"all" \| "one-at-a-time"` | `"one-at-a-time"` | How queued steering messages are delivered. |
-| `followUpMode` | `"all" \| "one-at-a-time"` | `"one-at-a-time"` | How queued follow-up messages are delivered. |
+| `steeringMode` | `"all" \| "one-at-a-time"` | `"all"` | How queued steering messages are delivered. |
+| `followUpMode` | `"all" \| "one-at-a-time"` | `"all"` | How queued follow-up messages are delivered. |
 | `externalEditor` | string | `$VISUAL`, `$EDITOR`, then platform default | Command opened by the external-editor keybinding. |
-| `doubleEscapeAction` | `"tree" \| "fork" \| "none"` | `"tree"` | Action for double Escape with an empty editor. |
 | `doubleEscapeClearsInput` | boolean | `true` | Double Escape with text in the editor clears it. The text is saved to prompt history, so `Up` restores it. |
-| `treeFilterMode` | `"default" \| "no-tools" \| "user-only" \| "labeled-only" \| "all"` | `"default"` | Initial filter used by `/tree`. |
 | `defaultProjectTrust` | `"ask" \| "always" \| "never"` | `"ask"` | Fallback project-trust behavior. **Can only be set in agent-directory settings.** |
 
 ## Tools
@@ -143,7 +141,6 @@ See [Compaction Reference](compaction.md) for trigger, summarization, and valida
 |---|---|---|---|
 | `theme` | string | `"system"` | Built-in or custom theme name. `system` derives colors from the terminal theme. |
 | `quietStartup` | boolean \| `"header"` | `false` | `true` hides the startup header and loaded-resource listing. `"header"` keeps the header (version and key hints) but hides the model scope line and loaded-resource listing. The loaded-resource listing (context files, skills, prompts, extensions) is shown only after `app.tools.expand` (default `ctrl+o`). |
-| `tuiMode` | `"regular" \| "fullscreen"` | `"fullscreen"` | Interactive terminal UI mode. |
 | `fullscreenExitOutput` | `"transcript" \| "resume-hint"` | `"transcript"` | Output printed when fullscreen mode exits. |
 | `fullscreenScrollbar` | `"auto" \| "always" \| "hidden"` | `"auto"` | Fullscreen transcript scrollbar behavior. |
 | `fullscreenCopyOnSelect` | boolean | `true` | Copy selected text automatically in fullscreen mode. |
@@ -152,7 +149,6 @@ See [Compaction Reference](compaction.md) for trigger, summarization, and valida
 | `outputPad` | `0 \| 1` | `1` | Horizontal transcript padding. |
 | `autocompleteMaxVisible` | number | `5` | Visible autocomplete entries, from 3 to 20. |
 | `showHardwareCursor` | boolean | `false` | Show the terminal cursor while AkramCode positions it for input methods. |
-| `terminal.showImages` | boolean | `true` | Display inline images when supported. |
 | `terminal.imageWidthCells` | number | `60` | Preferred inline image width in terminal cells. |
 | `terminal.clearOnShrink` | boolean | `false` | Clear empty rows when rendered content shrinks. |
 | `terminal.showTerminalProgress` | boolean | `false` | Show OSC 9;4 progress in the terminal tab. |
@@ -165,7 +161,7 @@ See [Compaction Reference](compaction.md) for trigger, summarization, and valida
 | `markdown.mermaid` | `"off" \| "final" \| "streaming"` | `"streaming"` | Mermaid rendering mode. |
 | `showWorkingStats` | boolean | `true` | Show elapsed time, output tokens, and tokens per second next to the working indicator. See [Follow AkramCode's work](usage.md#follow-akramcodes-work). |
 | `showContextGauge` | boolean | `true` | Show a context-fill bar and the latest response's tokens per second in the footer. |
-| `showCacheStatus` | boolean | `true` | Show a footer line with the latest prompt's cache hit ratio, cached tokens, and a countdown to the end of the cache lifetime. |
+| `showCacheStatus` | boolean | `true` | Show the latest prompt's cache hit ratio and a countdown to the end of the cache lifetime in the footer, e.g. `cache 83% 4:12`. |
 
 See [Themes](themes.md) and [Terminal Setup](terminal-setup.md) for format and platform details.
 
@@ -218,7 +214,7 @@ Resource paths in user settings resolve from the agent directory. Paths in proje
 | `skills` | `string[]` | `[]` | Skill files or directories. |
 | `prompts` | `string[]` | `[]` | Prompt-template files or directories. |
 | `themes` | `string[]` | `[]` | Theme files or directories. |
-| `enableSkillCommands` | boolean | `true` | Register skills as `/skill:name` commands. |
+| `enableSkillCommands` | boolean | `true` | Enable the `/skills` command for running skills explicitly. |
 
 Resource arrays support glob exclusions with `!pattern`, exact inclusion with `+path`, and exact exclusion with `-path`. AkramCode loads resources listed in both user-level and project settings.
 
@@ -240,6 +236,6 @@ Capture of model requests, network activity, and tool executions for [`akramcode
 | Setting | Type | Default | Description |
 |---|---|---|---|
 | `autoUpdate` | boolean | `true` | For the standalone binary installed with `install.sh`: when the startup check finds a newer release, download and verify it in the background and install it when you exit interactive mode. With `false`, a notice tells you to run `akramcode update`. **Can only be set in agent-directory settings.** |
-| `collapseChangelog` | boolean | `true` | After an update, show one line (`Updated to vX · /changelog`) instead of the full changelog. |
+| `collapseChangelog` | boolean | `true` | After an update, show one line (`Updated to vX`) instead of the full changelog. |
 | `enableInstallTelemetry` | boolean | `true` | Enable anonymous install/update reporting and selected provider attribution headers. Does not control update checks. |
 | `enableAnalytics` | boolean | `false` | Opt in to analytics data sharing. Currently used only by the experimental first-run setup. |

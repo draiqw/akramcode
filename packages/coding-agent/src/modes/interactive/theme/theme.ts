@@ -28,7 +28,13 @@ import type { SourceInfo } from "../../../core/source-info.ts";
 import { closeWatcher, watchWithErrorHandler } from "../../../utils/fs-watch.ts";
 import { highlight, supportsLanguage } from "../../../utils/syntax-highlight.ts";
 import { stripBom } from "../../../utils/text.ts";
-import { generateSystemThemeColors, SYSTEM_THEME_NAME, terminalAppearance } from "./system-theme.ts";
+import {
+	ACCENT_COLORS,
+	type AccentColor,
+	generateSystemThemeColors,
+	SYSTEM_THEME_NAME,
+	terminalAppearance,
+} from "./system-theme.ts";
 
 export { SYSTEM_THEME_NAME } from "./system-theme.ts";
 
@@ -606,12 +612,20 @@ function createTheme(themeJson: ThemeJson, mode?: TerminalColorMode, sourcePath?
 	});
 }
 
+let systemThemeAccent: AccentColor | undefined;
+
+/** Accent color of the system theme; takes effect the next time the theme is generated. */
+export function setSystemThemeAccent(accent: string | undefined): void {
+	systemThemeAccent = ACCENT_COLORS.find((color) => color === accent);
+}
+
 /** Generate the system theme from the terminal's reported colors (grayscale while they are pending). */
 function createSystemTheme(mode?: TerminalColorMode): Theme {
 	const generated = generateSystemThemeColors({
 		...terminalColors,
 		saturation: terminalColorsPending ? 0 : 1,
 		appearanceHint: getTerminalTheme(),
+		accent: systemThemeAccent,
 	});
 	const { fgColors, bgColors } = splitThemeColors(generated.colors);
 	return new Theme(fgColors, bgColors, mode ?? getTerminalColorMode(), {

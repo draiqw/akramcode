@@ -28,17 +28,17 @@ Keep `auth.json` and any credential commands private. Project settings and exten
 
 Run `/model` to search available models. The picker shows models whose providers have usable authentication. Press `Ctrl+S` on a model to save it as the default for new sessions.
 
-Run `/thinking` to select the thinking level for the current model. Press `Ctrl+S` there to save the startup level. AkramCode limits the choices to levels supported by the selected model.
+After you select a model in `/model`, select its thinking level. Press `Ctrl+S` there to save the startup level. AkramCode limits the choices to levels supported by the selected model.
 
-`Ctrl+P` cycles through available models. Use `/scoped-models` to control that cycle and save the selection, or configure model patterns through [Settings](settings.md#model-cycling).
+`Ctrl+P` cycles through available models. Limit that cycle with `--models` or model patterns in [Settings](settings.md#model-cycling).
 
 A session records model and thinking-level changes. Resuming the session restores them without changing defaults for new sessions.
 
 ## Connect local models
 
-AkramCode integrates directly with the llama.cpp router. The router discovers GGUF files and loads models on demand. AkramCode's `/llama` command manages the router, while `/model` selects one of its loaded models.
+AkramCode integrates directly with the llama.cpp router. The router discovers GGUF files and loads models on demand. `/model` selects one of its loaded models.
 
-Follow [Local Models with llama.cpp](llama-cpp.md) for server startup, model layout, downloads, and connection troubleshooting.
+Follow [Local Models with llama.cpp](llama-cpp.md) for server startup, model layout, and connection troubleshooting.
 
 For LM Studio, vLLM, SGLang, and other compatible servers, [configure a compatible endpoint](#configure-a-compatible-endpoint) in `models.json`.
 
@@ -167,7 +167,7 @@ return result.answers;
 
 [Codemode](codemode.md#classify) describes the question and answer types.
 
-When the service reports token counts, as all System One services do, `result.usage` carries them with their cost. AkramCode adds the usage of a script's classifier calls to the `codemode` tool result, so it counts toward the session cost in the footer and `/session`. The cost uses the model's catalog price; models without one, such as TypeSafe's direct `jev-latest`, report tokens at no cost.
+When the service reports token counts, as all System One services do, `result.usage` carries them with their cost. AkramCode adds the usage of a script's classifier calls to the `codemode` tool result, so it counts toward the session cost in the footer and `/usage`. The cost uses the model's catalog price; models without one, such as TypeSafe's direct `jev-latest`, report tokens at no cost.
 
 Extensions call classifiers through `ctx.modelRegistry.classify()`, without codemode. [Virtual models](virtual-models.md#route-requests) can use them to route requests; see the `jev-router.ts` example.
 

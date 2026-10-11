@@ -751,7 +751,8 @@ function renderLayout(source: string, nodes: readonly LayoutNode[]): Layout {
 				const sliced = sourceLine.slice(position, index);
 				const trimmed = (previousNode ? sliced.trimStart() : sliced).trimEnd();
 				const preserveLeadingSpace = previousNode?.type === "matrix" && /^\s/.test(sliced);
-				const preserveTrailingSpace = node.type === "matrix" && /\s$/.test(sliced);
+				// Stacked operators stand apart from the text before them, e.g. "= ∫".
+				const preserveTrailingSpace = (node.type === "matrix" || node.type === "operator") && /\s$/.test(sliced);
 				const text = trimmed
 					? `${preserveLeadingSpace ? " " : ""}${trimmed}${preserveTrailingSpace ? " " : ""}`
 					: preserveLeadingSpace || preserveTrailingSpace

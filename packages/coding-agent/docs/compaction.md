@@ -18,7 +18,7 @@ AkramCode has two summarization mechanisms:
 | Mechanism | Trigger | Purpose |
 |-----------|---------|---------|
 | Compaction | Context exceeds threshold, or `/compact` | Summarize old messages to free up context |
-| Branch summarization | `/tree` navigation | Preserve context when switching branches |
+| Branch summarization | Tree navigation (extensions or SDK `navigateTree`) | Preserve context when switching branches |
 
 Both use closely related structured formats and track file operations cumulatively. Summarization requests disable prompt-cache writes because these one-off prompts are unlikely to be reused.
 
@@ -189,7 +189,7 @@ See [`prepareCompaction()`](https://github.com/draiqw/akramcode/blob/main/packag
 
 ### When It Triggers
 
-When you use `/tree` to navigate to a different branch, AkramCode offers to summarize the work you're leaving. This injects context from the left branch into the new branch.
+When tree navigation (extensions or SDK `navigateTree`) moves to a different branch, AkramCode can summarize the work you're leaving. This injects context from the left branch into the new branch.
 
 ### How It Works
 
@@ -403,7 +403,7 @@ akramcode.on("session_compact_failed", async (event, ctx) => {
 
 ### session_before_tree
 
-Fired before `/tree` navigation. Always fires regardless of whether user chose to summarize. Can cancel navigation or provide custom summary.
+Fired before tree navigation (`navigateTree`). Always fires regardless of whether a summary was requested. Can cancel navigation or provide custom summary.
 
 ```typescript
 akramcode.on("session_before_tree", async (event, ctx) => {

@@ -53,7 +53,6 @@ export class ModelSelectorComponent extends Container implements Focusable {
 	private onCancelCallback: () => void;
 	private errorMessage?: string;
 	private refreshStatusMessage = "Refreshing model catalogs…";
-	private refreshStatusSuccess = false;
 	private tui: TUI;
 	private scopedModels: ReadonlyArray<ScopedModelItem>;
 	private defaultModel?: DefaultModelReference;
@@ -97,11 +96,8 @@ export class ModelSelectorComponent extends Container implements Focusable {
 			this.addChild(this.scopeText);
 			this.scopeHintText = new Text(this.getScopeHintText(), 0, 0);
 			this.addChild(this.scopeHintText);
-		} else {
-			const hintText = "Only showing models from configured providers. Use /login to add providers.";
-			this.addChild(new Text(theme.fg("warning", hintText), 0, 0));
+			this.addChild(new Spacer(1));
 		}
-		this.addChild(new Spacer(1));
 
 		// Create search input
 		this.searchInput = new Input();
@@ -126,16 +122,7 @@ export class ModelSelectorComponent extends Container implements Focusable {
 
 		// Hint
 		if (this.onSelectAsDefaultCallback) {
-			this.addChild(
-				new Text(
-					theme.fg(
-						"dim",
-						`  ${keyDisplayText("tui.select.confirm")} to select · ${keyDisplayText("app.models.save")} to set as default · ${keyDisplayText("tui.select.cancel")} to cancel`,
-					),
-					0,
-					0,
-				),
-			);
+			this.addChild(new Text(theme.fg("dim", `  ${keyDisplayText("app.models.save")} to set as default`), 0, 0));
 		}
 
 		// Add bottom border
@@ -191,10 +178,6 @@ export class ModelSelectorComponent extends Container implements Focusable {
 				this.errorMessage = `Could not refresh ${result.errors.size} model catalogs (${[...result.errors.keys()].join(", ")}); showing cached models.`;
 			} else {
 				this.errorMessage = this.modelRuntime.getError();
-				if (!this.errorMessage) {
-					this.refreshStatusMessage = "Model catalogs refreshed.";
-					this.refreshStatusSuccess = true;
-				}
 			}
 			this.loadModelsFromSnapshot();
 			this.filterModels(this.searchInput.getValue());
@@ -335,16 +318,10 @@ export class ModelSelectorComponent extends Container implements Focusable {
 			}
 		} else if (this.filteredModels.length === 0) {
 			this.listContainer.addChild(new Text(theme.fg("muted", "  No matching models"), 0, 0));
-		} else {
-			const selected = this.filteredModels[this.selectedIndex];
-			this.listContainer.addChild(new Spacer(1));
-			this.listContainer.addChild(new Text(theme.fg("muted", `  Model Name: ${selected.model.name}`), 0, 0));
 		}
 		if (this.refreshStatusMessage) {
 			this.listContainer.addChild(new Spacer(1));
-			this.listContainer.addChild(
-				new Text(theme.fg(this.refreshStatusSuccess ? "success" : "muted", `  ${this.refreshStatusMessage}`), 0, 0),
-			);
+			this.listContainer.addChild(new Text(theme.fg("muted", `  ${this.refreshStatusMessage}`), 0, 0));
 		}
 	}
 

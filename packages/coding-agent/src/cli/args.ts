@@ -6,7 +6,6 @@ import type { ThinkingLevel } from "@akramcode/agent-core";
 import chalk from "chalk";
 import { APP_NAME, CONFIG_DIR_NAME, ENV_AGENT_DIR, ENV_SESSION_DIR } from "../config.ts";
 import type { ExtensionFlag } from "../core/extensions/types.ts";
-import type { TuiMode } from "../core/settings-manager.ts";
 
 export type Mode = "text" | "json" | "rpc";
 
@@ -17,7 +16,6 @@ export interface Args {
 	systemPrompt?: string;
 	appendSystemPrompt?: string[];
 	thinking?: ThinkingLevel;
-	continue?: boolean;
 	resume?: boolean;
 	help?: boolean;
 	version?: boolean;
@@ -27,6 +25,7 @@ export interface Args {
 	session?: string;
 	sessionId?: string;
 	fork?: string;
+	import?: string;
 	sessionDir?: string;
 	models?: string[];
 	tools?: string[];
@@ -49,7 +48,6 @@ export interface Args {
 	noContextFiles?: boolean;
 	listModels?: string | true;
 	offline?: boolean;
-	tuiMode?: TuiMode;
 	verbose?: boolean;
 	projectTrustOverride?: boolean;
 	messages: string[];
@@ -109,8 +107,6 @@ export function parseArgs(args: string[]): Args {
 				continue;
 			}
 			result.mode = mode;
-		} else if (arg === "--continue" || arg === "-c") {
-			result.continue = true;
 		} else if (arg === "--resume" || arg === "-r") {
 			result.resume = true;
 		} else if (arg === "--provider" && i + 1 < args.length) {
@@ -140,6 +136,8 @@ export function parseArgs(args: string[]): Args {
 			result.sessionId = args[++i];
 		} else if (arg === "--fork" && i + 1 < args.length) {
 			result.fork = args[++i];
+		} else if (arg === "--import" && i + 1 < args.length) {
+			result.import = args[++i];
 		} else if (arg === "--session-dir" && i + 1 < args.length) {
 			result.sessionDir = args[++i];
 		} else if (arg === "--models" && i + 1 < args.length) {
@@ -217,20 +215,6 @@ export function parseArgs(args: string[]): Args {
 			} else {
 				result.listModels = true;
 			}
-		} else if (arg === "--tui-mode") {
-			const mode = args[i + 1];
-			if (mode === "regular" || mode === "fullscreen") {
-				result.tuiMode = mode;
-				i++;
-			} else if (mode === undefined || mode.startsWith("-")) {
-				result.diagnostics.push({ type: "error", message: "--tui-mode requires regular or fullscreen" });
-			} else {
-				i++;
-				result.diagnostics.push({
-					type: "error",
-					message: `Invalid TUI mode "${mode}". Valid values: regular, fullscreen`,
-				});
-			}
 		} else if (arg === "--verbose") {
 			result.verbose = true;
 		} else if (arg === "--approve" || arg === "-a") {
@@ -302,11 +286,11 @@ ${chalk.bold("Options:")}
   --mode <mode>                  Output mode: text (default), json, or rpc
   --print, -p                    Non-interactive mode: process prompt and exit
   --render-markdown              With --print: show the answer as formatted Markdown, not raw text
-  --continue, -c                 Continue previous session
   --resume, -r                   Select a session to resume
   --session <path|id>            Use specific session file or partial UUID
   --session-id <id>              Use exact project session ID, creating it if missing
   --fork <path|id>               Fork specific session file or partial UUID into a new session
+  --import <path.jsonl>          Copy a session JSONL file into this project's sessions and resume it
   --session-dir <dir>            Directory for session storage and lookup
   --no-session                   Don't save session (ephemeral)
   --name, -n <name>              Set session display name
@@ -332,7 +316,6 @@ ${chalk.bold("Options:")}
   --export <file>                Export session file to HTML and exit
   --list-models [search]         List available models (with optional fuzzy search)
   --verbose                      Force verbose startup (overrides quietStartup setting)
-  --tui-mode <mode>              TUI mode: fullscreen (default) or regular
   --approve, -a                  Trust project-local files for this run
   --no-approve, -na              Ignore project-local files for this run
   --offline                      Disable startup network operations (same as AKRAMCODE_OFFLINE=1)
@@ -366,9 +349,6 @@ ${chalk.bold("Examples:")}
 
   # Multiple messages (interactive)
   ${APP_NAME} "Read package.json" "What dependencies do we have?"
-
-  # Continue previous session
-  ${APP_NAME} --continue "What did we discuss?"
 
   # Start a named session
   ${APP_NAME} --name "Refactor auth module"

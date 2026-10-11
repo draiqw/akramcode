@@ -810,7 +810,7 @@ after`,
 
 			const lines = markdown.render(80).map((line) => stripAnsi(line).trimEnd());
 
-			assert.deepStrictEqual(lines, ["Before", "", "{3x+2y, x ∈ {0, ± 1}}", "", "after"]);
+			assert.deepStrictEqual(lines, ["Before", "", "  {3x+2y, x ∈ {0, ± 1}}", "", "after"]);
 		});
 
 		it("renders display bracket delimiters", () => {
@@ -829,7 +829,15 @@ after`,
 
 			const lines = markdown.render(80).map((line) => stripAnsi(line).trimEnd());
 
-			assert.deepStrictEqual(lines, ["Before", "", "    0.1 lux", "E ≈ ────────", "    100 lm/W", "", "after"]);
+			assert.deepStrictEqual(lines, [
+				"Before",
+				"",
+				"      0.1 lux",
+				"  E ≈ ────────",
+				"      100 lm/W",
+				"",
+				"after",
+			]);
 		});
 
 		it("aligns matrix rows with the opening delimiter", () => {
@@ -850,7 +858,7 @@ A=
 
 			const lines = markdown.render(80).map((line) => stripAnsi(line).trimEnd());
 
-			assert.deepStrictEqual(lines, ["Consider the matrix", "", "A = ⎛ π │ 0   ⎞", "    ⎝ 0 │ 1/π ⎠."]);
+			assert.deepStrictEqual(lines, ["Consider the matrix", "", "  A = ⎛ π │ 0   ⎞", "      ⎝ 0 │ 1/π ⎠."]);
 		});
 
 		it("renders lower limits beneath display operators", () => {
@@ -865,7 +873,7 @@ A=
 
 			const lines = markdown.render(80).map((line) => stripAnsi(line).trimEnd());
 
-			assert.deepStrictEqual(lines, ["     (sin x)/x-1", "lim  ─────────── = 0", "x→0  (eˣ-1)/x-1"]);
+			assert.deepStrictEqual(lines, ["       (sin x)/x-1", "  lim  ─────────── = 0", "  x→0  (eˣ-1)/x-1"]);
 		});
 
 		it("renders math inside lists and tables", () => {
@@ -1254,6 +1262,12 @@ again, hello world`,
 	});
 
 	describe("Spacing after headings", () => {
+		it("renders deep headings without the hash marks", () => {
+			const markdown = new Markdown("### Section\n\ntext", 0, 0, defaultMarkdownTheme);
+			const plainLines = markdown.render(80).map((line) => line.replace(/\x1b\[[0-9;]*m/g, "").trimEnd());
+			assert.strictEqual(plainLines[0], "Section");
+		});
+
 		it("should have only one blank line between heading and following paragraph", () => {
 			const markdown = new Markdown(
 				`# Hello

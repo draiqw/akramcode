@@ -59,7 +59,7 @@ describe("model selector filter resets selection to top", () => {
 
 		await vi.waitFor(() => {
 			const rendered = stripAnsi(selector.render(120).join("\n"));
-			expect(rendered).toContain("Model catalogs refreshed.");
+			expect(rendered).not.toContain("Refreshing model catalogs");
 		});
 
 		// Current model (alpha-1) is sorted first, so selection starts on row 0.
@@ -109,7 +109,7 @@ describe("model selector filter resets selection to top", () => {
 
 		await vi.waitFor(() => {
 			const rendered = stripAnsi(selector.render(120).join("\n"));
-			expect(rendered).toContain("Model catalogs refreshed.");
+			expect(rendered).not.toContain("Refreshing model catalogs");
 		});
 
 		// Selection starts on the current model (alpha-1), which is row 2 here.

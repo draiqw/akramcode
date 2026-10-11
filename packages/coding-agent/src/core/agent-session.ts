@@ -372,7 +372,7 @@ export interface ModelCycleResult {
 	isScoped: boolean;
 }
 
-/** Session statistics for /session command */
+/** Session statistics for the /usage command */
 export interface SessionStats {
 	sessionFile: string | undefined;
 	sessionId: string;
@@ -4760,7 +4760,7 @@ export class AgentSession {
 
 	/**
 	 * Get text content of last assistant message.
-	 * Useful for /copy command.
+	 * Used by the copy shortcut.
 	 * @returns Text content, or undefined if no assistant message exists
 	 */
 	getLastAssistantText(): string | undefined {

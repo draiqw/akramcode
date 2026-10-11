@@ -33,6 +33,7 @@ test("Finder file paths take precedence over their icon image", async () => {
 		editor: { insertTextAtCursor },
 		showError: vi.fn(),
 		ui: { requestRender: vi.fn() },
+		pasteImageFiles: async () => false,
 	};
 	const prototype = InteractiveMode.prototype as unknown as {
 		handleClipboardPaste(this: typeof context): Promise<void>;
@@ -51,6 +52,7 @@ test("clipboard file paths containing terminal control characters are rejected",
 		editor: { insertTextAtCursor },
 		showError,
 		ui: { requestRender: vi.fn() },
+		pasteImageFiles: async () => false,
 	};
 	const prototype = InteractiveMode.prototype as unknown as {
 		handleClipboardPaste(this: typeof context): Promise<void>;
@@ -72,6 +74,7 @@ test("native file-path errors are shown without falling through to the icon imag
 		editor: { insertTextAtCursor: vi.fn() },
 		showError,
 		ui: { requestRender: vi.fn() },
+		pasteImageFiles: async () => false,
 	};
 	const prototype = InteractiveMode.prototype as unknown as {
 		handleClipboardPaste(this: typeof context): Promise<void>;
@@ -100,6 +103,7 @@ test.each([
 		},
 		showError: vi.fn(),
 		ui: { requestRender: vi.fn() },
+		pasteImageFiles: async () => false,
 	};
 	const prototype = InteractiveMode.prototype as unknown as {
 		handleClipboardPaste(this: typeof context): Promise<void>;
@@ -127,6 +131,7 @@ test("bash mode shell-quotes file paths and inserts them as arguments", async ()
 		isBashMode: true,
 		showError: vi.fn(),
 		ui: { requestRender: vi.fn() },
+		pasteImageFiles: async () => false,
 	};
 	const prototype = InteractiveMode.prototype as unknown as {
 		handleClipboardPaste(this: typeof context): Promise<void>;
@@ -138,4 +143,25 @@ test("bash mode shell-quotes file paths and inserts them as arguments", async ()
 		" '/tmp/My Photos/photo.png' '/tmp/$(touch hacked).png' /tmp/plain.png ",
 	);
 	expect(mocks.readClipboardImage).not.toHaveBeenCalled();
+});
+
+test("clipboard text is pasted like a terminal paste, so large text becomes a marker", async () => {
+	mocks.readClipboardFilePaths.mockResolvedValue(null);
+	mocks.readClipboardImage.mockResolvedValue(null);
+	mocks.readClipboardText.mockResolvedValue("line 1\nline 2");
+	const handleInput = vi.fn<(data: string) => void>();
+	const context = {
+		editor: { insertTextAtCursor: vi.fn(), handleInput },
+		showError: vi.fn(),
+		ui: { requestRender: vi.fn() },
+		pasteImageFiles: async () => false,
+		pasteClipboardImage: async () => false,
+	};
+	const prototype = InteractiveMode.prototype as unknown as {
+		handleClipboardPaste(this: typeof context): Promise<void>;
+	};
+
+	await prototype.handleClipboardPaste.call(context);
+	expect(handleInput).toHaveBeenCalledExactlyOnceWith("\x1b[200~line 1\nline 2\x1b[201~");
+	expect(context.editor.insertTextAtCursor).not.toHaveBeenCalled();
 });

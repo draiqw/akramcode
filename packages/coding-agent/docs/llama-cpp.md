@@ -22,7 +22,7 @@ llama-server \
 Important options:
 
 - `--models-dir ~/models` discovers local GGUF files.
-- `--no-models-autoload` keeps loading explicit through `/llama`.
+- `--no-models-autoload` keeps loading explicit: load models on the router before selecting them.
 - `--jinja` enables compatible chat templates and tool calling.
 - `-ngl 999` offloads as many layers as possible to the GPU.
 - `-c 32768` sets the context window for each loaded model. Omit it to use the model's native context, which may require substantially more memory.
@@ -53,7 +53,7 @@ Start AkramCode and configure the provider:
 
 Enter the router URL and optional API key. The default URL is `http://127.0.0.1:8080`.
 
-If you start the router with `--no-models-autoload`, `/login llama.cpp` only stores the connection. Run `/llama` to load a model, then `/model` to select the loaded model for the current session.
+If you start the router with `--no-models-autoload`, `/login llama.cpp` only stores the connection. Load a model on the router, then select it with `/model`.
 
 Environment variables can configure the same values without `/login`:
 
@@ -67,24 +67,14 @@ If the server uses an API key, start `llama-server` with the matching `--api-key
 
 ## Manage models
 
-Run:
+Load and unload models on the router itself, for example through its API:
 
-```text
-/llama
+```bash
+curl -X POST http://127.0.0.1:8080/models/load -H 'Content-Type: application/json' -d '{"model":"<id>"}'
+curl -X POST http://127.0.0.1:8080/models/unload -H 'Content-Type: application/json' -d '{"model":"<id>"}'
 ```
 
-- Select an unloaded model to load it.
-- Select a loaded model to unload it.
-- Select **Download model…**, search Hugging Face, then choose a repository and quantization. Exact `owner/repository[:quant]` values also work.
-- Press Escape during a load or download to confirm cancellation.
-
-Hugging Face search uses `HF_TOKEN` when set, then checks `$HF_TOKEN_PATH`, `$HF_HOME/token`, `$XDG_CACHE_HOME/huggingface/token`, and `~/.cache/huggingface/token`. Search also works without authentication, subject to lower rate limits. AkramCode warns before downloading gated repositories and links to their access page. The llama.cpp server performs the download, so its process must also have `HF_TOKEN` when the selected repository requires access.
-
-If other models are loaded, AkramCode asks whether to unload them first or keep them loaded. AkramCode does not silently unload models and never deletes model files. The router may be shared with other clients, so `/llama` always displays the router's current state.
-
-Loaded and sleeping models appear in `/model`. Sleeping models wake automatically when selected. With router autoload enabled, unloaded preset models also appear and load when selected. With `--no-models-autoload`, load a model through `/llama` before selecting it.
-
-If the router disconnects, `/llama` shows **Retry** and **Close**. Retry reconnects and refreshes model state without replaying the interrupted operation.
+Loaded and sleeping models appear in `/model`. Sleeping models wake automatically when selected. With router autoload enabled, unloaded preset models also appear and load when selected.
 
 ## Classification
 
@@ -106,9 +96,9 @@ curl http://127.0.0.1:8080/health
 curl http://127.0.0.1:8080/models
 ```
 
-- **No models in `/llama`:** Check `--models-dir`, the directory layout, and restart the router.
-- **Model missing from `/model` with `--no-models-autoload`:** Load it with `/llama` first.
+- **No models on the router:** Check `--models-dir`, the directory layout, and restart the router.
+- **Model missing from `/model` with `--no-models-autoload`:** Load it on the router first.
 - **Load fails or uses too much memory:** Lower `-c` or unload another model.
 - **Server is not in router mode:** Start it without `--model`, `-m`, or `-hf`.
 
-To remove the `llama.cpp` provider and `/llama`, disable `llama.cpp` under Built-in in `akramcode config`, or set `"extensions": ["-builtin:llama.cpp"]` in [settings](settings.md#resources).
+To remove the `llama.cpp` provider, disable `llama.cpp` under Built-in in `akramcode config`, or set `"extensions": ["-builtin:llama.cpp"]` in [settings](settings.md#resources).

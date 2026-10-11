@@ -80,13 +80,11 @@ See [Choose a Model](models.md) for model selection and [Providers](providers.md
 ## Sessions
 
 ```sh
-akramcode --continue
+akramcode --resume
 ```
 
 See [Sessions and Context](sessions.md) for resuming, forking, naming, and storing sessions.
 
-- `-c`, `--continue`<br>
-  Continues the most recent session for the current project.
 - `-r`, `--resume`<br>
   Opens the session selector.
 - `--session <path|id>`<br>
@@ -95,6 +93,8 @@ See [Sessions and Context](sessions.md) for resuming, forking, naming, and stori
   Opens the exact project session ID or creates it if absent. IDs accept letters, numbers, `.`, `_`, and `-`.
 - `--fork <path|id>`<br>
   Forks an existing session into a new session for the current project.
+- `--import <path.jsonl>`<br>
+  Copies a session JSONL file, such as one saved by `/share`, into the current project's sessions and resumes it. The original file is not changed.
 - `--session-dir <dir>`<br>
   Overrides storage and lookup. It takes precedence over `AKRAMCODE_CODING_AGENT_SESSION_DIR` and the `sessionDir` setting.
 - `--no-session`<br>
@@ -105,8 +105,9 @@ See [Sessions and Context](sessions.md) for resuming, forking, naming, and stori
 Constraints:
 
 - Session IDs must start and end with a letter or number.
-- `--fork` cannot be combined with `--session`, `--continue`, `--resume`, or `--no-session`.
-- `--session-id` cannot be combined with `--session`, `--continue`, or `--resume`. Combine it with `--fork` to choose the new ID.
+- `--fork` cannot be combined with `--session`, `--resume`, or `--no-session`.
+- `--import` cannot be combined with `--fork`, `--session`, `--session-id`, `--resume`, or `--no-session`.
+- `--session-id` cannot be combined with `--session` or `--resume`. Combine it with `--fork` to choose the new ID.
 
 <a id="tool-options"></a>
 
@@ -234,8 +235,6 @@ See [Configuration](configuration.md) for saved configuration, [Security](securi
   Replaces the default system prompt with text or the contents of an existing file.
 - `--append-system-prompt <text|path>`<br>
   Appends text or an existing file to the system prompt and is repeatable.
-- `--tui-mode <mode>`<br>
-  Uses `fullscreen` (default) or `regular` terminal mode.
 - `--verbose`<br>
   Shows verbose interactive startup information, overriding `quietStartup`.
 - `-a`, `--approve`<br>

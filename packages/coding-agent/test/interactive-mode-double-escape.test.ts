@@ -17,7 +17,6 @@ function createEscapeUI(text: string, settings: Parameters<typeof SettingsManage
 			}),
 			addToHistory: vi.fn(),
 		},
-		showTreeSelector: vi.fn(),
 		showUserMessageSelector: vi.fn(),
 		showStatus: vi.fn(),
 	};
@@ -45,7 +44,7 @@ describe("InteractiveMode double escape", () => {
 		expect(text()).toBe("");
 		expect(ui.editor.addToHistory).toHaveBeenCalledWith("half-written prompt");
 		expect(ui.showStatus).toHaveBeenCalledWith(expect.stringContaining("Input cleared"));
-		expect(ui.showTreeSelector).not.toHaveBeenCalled();
+		expect(ui.showUserMessageSelector).not.toHaveBeenCalled();
 	});
 
 	it("keeps the draft when presses are too far apart or the setting is off", () => {
@@ -62,10 +61,10 @@ describe("InteractiveMode double escape", () => {
 		expect(off.ui.editor.addToHistory).not.toHaveBeenCalled();
 	});
 
-	it("still opens the tree on an empty editor", () => {
+	it("does nothing on an empty editor", () => {
 		const { ui, press } = createEscapeUI("");
 		press();
 		press();
-		expect(ui.showTreeSelector).toHaveBeenCalledOnce();
+		expect(ui.showUserMessageSelector).not.toHaveBeenCalled();
 	});
 });

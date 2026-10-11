@@ -201,7 +201,7 @@ AkramCode activates `codemode` when a server with `codemode` exposure connects. 
 
 `akramcode mcp list` marks tools whose exposure differs from their server. The Tools view in `/mcp` also shows the effective exposure.
 
-Tools with `codemode` or `deferred` exposure can be reached through either indirect mechanism: codemode scripts can call them, and `tool_search` can load them. Codemode calls do not depend on the active tool set, so they remain available after `/tree`, resume, and fork. Tools loaded by `tool_search` are recorded in the transcript and remain declared on that branch.
+Tools with `codemode` or `deferred` exposure can be reached through either indirect mechanism: codemode scripts can call them, and `tool_search` can load them. Codemode calls do not depend on the active tool set, so they remain available after tree navigation, resume, and fork. Tools loaded by `tool_search` are recorded in the transcript and remain declared on that branch.
 
 To keep `codemode` active without MCP servers, add `"defaultTools": ["+codemode"]` to [settings](settings.md#tools). To prevent automatic codemode activation, set `"autoEnableCodemode": false` beside `mcpServers`. A project value overrides the user-level value. AkramCode warns once when neither `codemode` nor `tool_search` is active and non-direct tools cannot be called.
 

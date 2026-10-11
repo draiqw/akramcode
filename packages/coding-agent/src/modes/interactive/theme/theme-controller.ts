@@ -7,6 +7,7 @@ import {
 	parseAutoThemeSetting,
 	resolveThemeSetting,
 	SYSTEM_THEME_NAME,
+	setSystemThemeAccent,
 	setTerminalColorScheme,
 	setTerminalColors,
 	setTheme,
@@ -84,6 +85,7 @@ export class InteractiveThemeController {
 		this.onChanged = options.onChanged;
 		this.currentThemeSetting = options.initialThemeSetting;
 		this.activeThemeName = this.resolveThemeName();
+		setSystemThemeAccent(this.getSettingsManager().getAccentColor());
 		// The system theme starts in grayscale; color follows once the terminal reports its colors.
 		markTerminalColorsPending();
 		initTheme(this.activeThemeName, true);
@@ -128,6 +130,14 @@ export class InteractiveThemeController {
 			this.currentThemeSetting = themeName;
 		}
 		return result;
+	}
+
+	/** Change the system theme's accent color and regenerate the theme when it is active. */
+	setAccent(accent: string): void {
+		setSystemThemeAccent(accent);
+		if (this.activeThemeName === SYSTEM_THEME_NAME) this.applyThemeName(SYSTEM_THEME_NAME);
+		this.ui.invalidate();
+		this.ui.requestRender();
 	}
 
 	setThemeSetting(themeSetting: string): void {

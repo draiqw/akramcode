@@ -94,10 +94,10 @@ describe("generateSystemThemeColors", () => {
 		};
 		const chroma = ({ r, g, b }: RgbColor) => colorToOklch(rgbColor(r, g, b)).c;
 		const pink = frappe.palette![5];
-		const accent = resolved(frappe, "accent");
-		// The accent is darker than the pink, but must not gain chroma (it was 2x before the cap).
-		expect(lightness(accent)).toBeLessThan(lightness(pink) - 0.05);
-		expect(chroma(accent)).toBeLessThanOrEqual(chroma(pink) * 1.03);
+		const label = resolved(frappe, "syntaxType");
+		// The violet syntax color is darker than the pink, but must not gain chroma (it was 2x before the cap).
+		expect(lightness(label)).toBeLessThan(lightness(pink) - 0.05);
+		expect(chroma(label)).toBeLessThanOrEqual(chroma(pink) * 1.03);
 		for (const panel of ["userMessageBg", "customMessageBg"] as const) {
 			expect(chroma(resolved(frappe, panel)), panel).toBeLessThanOrEqual(0.1);
 		}
@@ -114,6 +114,18 @@ describe("generateSystemThemeColors", () => {
 		expect([colors.error, colors.text, colors.userMessageBg]).toEqual([1, "", ""]);
 		expect(dim).toContain("muted");
 		expect(generateSystemThemeColors({ saturation: 0 }).colors.error).toBe("");
+	});
+
+	it("moves only the accent tokens to the chosen accent color", () => {
+		const green = generateSystemThemeColors(DRACULA).colors;
+		const violet = generateSystemThemeColors({ ...DRACULA, accent: "violet" }).colors;
+		expect(violet.accent).not.toBe(green.accent);
+		expect(violet.border).not.toBe(green.border);
+		expect(violet.success).toBe(green.success);
+		expect(violet.mdLink).toBe(green.mdLink);
+
+		// Without reported colors the accent follows the family's ANSI slot.
+		expect(generateSystemThemeColors({ accent: "blue" }).colors.accent).toBe(4);
 	});
 });
 

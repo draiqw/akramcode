@@ -16,7 +16,7 @@ AkramCode uses extended-key protocols so terminals can distinguish combinations 
 | An IME candidate window appears in the wrong place | [WezTerm](#wezterm) or [IntelliJ IDEA](#intellij-idea-integrated-terminal) |
 | Modified keys fail only inside tmux | [Run AkramCode in tmux](tmux.md) |
 
-Use `/hotkeys` to inspect AkramCode's active shortcuts. See [Keybindings](keybindings.md) to change them.
+See [Keybindings](keybindings.md) for AkramCode's shortcuts and how to change them.
 
 ## Kitty
 

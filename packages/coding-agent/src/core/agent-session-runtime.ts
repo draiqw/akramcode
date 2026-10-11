@@ -41,7 +41,7 @@ export type CreateAgentSessionRuntimeFactory = (options: {
 }) => Promise<CreateAgentSessionRuntimeResult>;
 
 /**
- * Thrown when /import references a JSONL file path that does not exist.
+ * Thrown when an imported JSONL file path does not exist.
  */
 export class SessionImportFileNotFoundError extends Error {
 	readonly filePath: string;
@@ -51,6 +51,36 @@ export class SessionImportFileNotFoundError extends Error {
 		this.name = "SessionImportFileNotFoundError";
 		this.filePath = filePath;
 	}
+}
+
+/**
+ * Where an imported session file goes: `sessionDir` under the file's name, with a numeric suffix when taken.
+ * `copy` stores it there, unless the file already is in `sessionDir`.
+ *
+ * @throws {SessionImportFileNotFoundError} When the input path does not exist.
+ */
+export function planSessionImport(
+	inputPath: string,
+	sessionDir: string,
+): { destinationPath: string; copy: () => void } {
+	const resolvedPath = resolvePath(inputPath);
+	if (!existsSync(resolvedPath)) {
+		throw new SessionImportFileNotFoundError(resolvedPath);
+	}
+	if (!existsSync(sessionDir)) {
+		mkdirSync(sessionDir, { recursive: true });
+	}
+
+	let destinationPath = join(sessionDir, basename(resolvedPath));
+	if (resolve(destinationPath) === resolvedPath) {
+		return { destinationPath, copy: () => {} };
+	}
+	const { name, ext } = parse(destinationPath);
+	let suffix = 1;
+	while (existsSync(destinationPath)) {
+		destinationPath = join(sessionDir, `${name}-${suffix++}${ext}`);
+	}
+	return { destinationPath, copy: () => copyFileSync(resolvedPath, destinationPath, constants.COPYFILE_EXCL) };
 }
 
 function extractUserMessageText(content: string | Array<{ type: string; text?: string }>): string {
@@ -357,34 +387,15 @@ export class AgentSessionRuntime {
 	 * @throws {MissingSessionCwdError} When the imported session cwd cannot be resolved and no override is provided.
 	 */
 	async importFromJsonl(inputPath: string, cwdOverride?: string): Promise<{ cancelled: boolean }> {
-		const resolvedPath = resolvePath(inputPath);
-		if (!existsSync(resolvedPath)) {
-			throw new SessionImportFileNotFoundError(resolvedPath);
-		}
-
 		const sessionDir = this.session.sessionManager.getSessionDir();
-		if (!existsSync(sessionDir)) {
-			mkdirSync(sessionDir, { recursive: true });
-		}
-
-		let destinationPath = join(sessionDir, basename(resolvedPath));
-		const sourceAlreadyStored = resolve(destinationPath) === resolvedPath;
-		if (!sourceAlreadyStored) {
-			const { name, ext } = parse(destinationPath);
-			let suffix = 1;
-			while (existsSync(destinationPath)) {
-				destinationPath = join(sessionDir, `${name}-${suffix++}${ext}`);
-			}
-		}
+		const { destinationPath, copy } = planSessionImport(inputPath, sessionDir);
 		const beforeResult = await this.emitBeforeSwitch("resume", destinationPath);
 		if (beforeResult.cancelled) {
 			return beforeResult;
 		}
 
 		const previousSessionFile = this.session.sessionFile;
-		if (!sourceAlreadyStored) {
-			copyFileSync(resolvedPath, destinationPath, constants.COPYFILE_EXCL);
-		}
+		copy();
 
 		const sessionManager = SessionManager.open(destinationPath, sessionDir, cwdOverride);
 		assertSessionCwdExists(sessionManager, this.cwd);

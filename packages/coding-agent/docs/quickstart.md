@@ -76,13 +76,13 @@ Type `@` in the editor to search for a file instead of entering its full path. W
 
 ## Continue later
 
-AkramCode saves sessions automatically. Exit AkramCode, then resume the most recent session for the same working folder with:
+AkramCode saves sessions automatically. Exit AkramCode, then choose a saved session to continue with:
 
 ```bash
-akramcode --continue
+akramcode --resume
 ```
 
-Use `/resume` to choose another saved session. See [Continue or branch a session](sessions.md) for session naming, branching, compaction, export, and sharing.
+See [Continue or branch a session](sessions.md) for session naming, branching, compaction, export, and sharing.
 
 ## Next steps
 

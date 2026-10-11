@@ -2,6 +2,54 @@
 
 ## [Unreleased]
 
+### Added
+
+- Pasting an image (Ctrl+V; Cmd+V where the terminal passes it on) or image files copied in Finder inserts an `[Image #1]` marker and sends the image itself to the model; the image shows under the message when tool output is expanded (Ctrl+O). Large pastes show as `[Pasted text #1 +40 lines]` in the transcript and expand the same way, verbatim inside a frame labeled with their character count. Image numbers run through the session, markers are highlighted in the editor and transcript, and expanded images sit between accent rules labeled with their marker, format, and size.
+- The working line shows background tasks still running, e.g. `Working · 30s · ↓ 550 tokens · 2 tasks running`.
+- `/clear` starts a new session.
+- `/usage` shows the session, a GitHub-style daily activity graph, and token and cost totals over 7, 30, 90 days and all time, at API prices also for subscription use.
+
+### Removed
+
+- `/session`; its details are in `/usage`.
+- `/copy`; `Ctrl+X` still copies the last response.
+- `/new`; use `/clear`.
+- `/export` and `/import`; `/share` without a path asks for a secret gist, an HTML file, or a JSONL file, `/share <path>` exports to that file, and `akramcode --import <file.jsonl>` resumes an exported session.
+- The `tuiMode` setting and `--tui-mode` flag; the interface is always fullscreen.
+- The `doubleEscapeAction` setting; double Escape on an empty editor does nothing.
+- `/changelog`; release notes are on the GitHub releases page.
+- `/tree`, its keybindings, and the `treeFilterMode` setting.
+- `/llama`; manage llama.cpp models on the router itself. The llama.cpp provider stays.
+- `/trust`; trust is decided at the startup prompt or with `--approve`.
+- `/hotkeys`; see the keybindings docs.
+- `/scoped-models`; limit `Ctrl+P` cycling with `--models` or the `enabledModels` setting.
+- `--continue` (`-c`); use `--resume` to pick the session.
+- `/clone`, `/resume` (use `--resume`), `/quit` (use `Ctrl+D`), and `/thinking`; `/model` now asks for the thinking level after the model.
+
+### Changed
+
+- Tokens per second moved out of the footer and the working line into `/usage` (speed of the latest response).
+- Images always show inline when the terminal supports them; the `terminal.showImages` setting is gone.
+- A collapsed tool group is labeled with the latest reasoning summary title, e.g. `Checking home disk usage, ran 1 shell command`, instead of `Thought for 1s`.
+- The footer no longer shows the working directory and git branch.
+- The tool group summary brightens under the mouse pointer to show it can be clicked.
+- Ctrl+O expands only the conversation; the startup key hints and loaded resource list stay collapsed (shown in full with `--verbose`).
+- `steeringMode` and `followUpMode` default to `all`: messages queued while the agent works are delivered together.
+- Finished tool calls keep the same gray background as running ones instead of turning green.
+- `/settings` keeps only the accent color (green, blue, violet, orange; replaces the theme picker), auto-compact, and show images. Other settings stay available in `settings.json`.
+- Choice dialogs no longer show the `navigate / select / cancel` hint line.
+- Rendered math formulas are indented and colored like code, and stacked operators keep their space, e.g. `= ∫`.
+- `/name` is now `/rename`.
+- Skills no longer fill the `/` command menu. Run them with `/skills name`, which completes skill names; `/skills` alone opens a skill picker.
+- The `/model` selector shows only the model list and the `Ctrl+S` default hint; the provider note, model name line, and refresh confirmation are gone.
+- Footer fits on one line: path, context, cache hit ratio, and model with `(sub)` on subscriptions; the `(auto)` compaction marker is gone. Token totals and cost moved to `/usage`.
+- User messages sit on a dark gray background with the send time on the same line; replies show their time the same way.
+- Green is the main theme color; inline code is blue.
+- Editor border is a muted gray line instead of colored by thinking level.
+- Collapsed thinking joins the tool summary, e.g. `Thought for 2s, read 1 file`; expanded, it shows inside the group next to its calls.
+- Markdown headings render without `###` marks.
+- Expanded tool groups show a `ctrl+o to collapse` header; clicking it collapses the group.
+
 ## [1.0.26] - 2026-10-10
 
 ### Changed
