@@ -10,7 +10,7 @@
 #   --skip-install       Skip npm ci
 #   --skip-build         Skip the package build
 #   --offline-model-data Build with bundled model data instead of refreshing it
-#   --platform <name>    Build only for specified platform (darwin-arm64, darwin-x64, linux-x64, linux-arm64, windows-x64, windows-arm64)
+#   --platform <name>    Build only for specified platform (darwin-arm64, darwin-x64, linux-x64, linux-arm64)
 #   --out <dir>          Output directory (default: packages/coding-agent/binaries)
 #
 # Output:
@@ -19,8 +19,6 @@
 #     akramcode-darwin-x64.tar.gz
 #     akramcode-linux-x64.tar.gz
 #     akramcode-linux-arm64.tar.gz
-#     akramcode-windows-x64.zip
-#     akramcode-windows-arm64.zip
 
 set -euo pipefail
 
@@ -64,11 +62,11 @@ done
 # Validate platform if specified
 if [[ -n "$PLATFORM" ]]; then
     case "$PLATFORM" in
-        darwin-arm64|darwin-x64|linux-x64|linux-arm64|windows-x64|windows-arm64)
+        darwin-arm64|darwin-x64|linux-x64|linux-arm64)
             ;;
         *)
             echo "Invalid platform: $PLATFORM"
-            echo "Valid platforms: darwin-arm64, darwin-x64, linux-x64, linux-arm64, windows-x64, windows-arm64"
+            echo "Valid platforms: darwin-arm64, darwin-x64, linux-x64, linux-arm64"
             exit 1
             ;;
     esac
@@ -105,13 +103,13 @@ cd packages/coding-agent
 
 # Clean previous builds
 rm -rf "$OUTPUT_DIR"
-mkdir -p "$OUTPUT_DIR"/{darwin-arm64,darwin-x64,linux-x64,linux-arm64,windows-x64,windows-arm64}
+mkdir -p "$OUTPUT_DIR"/{darwin-arm64,darwin-x64,linux-x64,linux-arm64}
 
 # Determine which platforms to build
 if [[ -n "$PLATFORM" ]]; then
     PLATFORMS=("$PLATFORM")
 else
-    PLATFORMS=(darwin-arm64 darwin-x64 linux-x64 linux-arm64 windows-x64 windows-arm64)
+    PLATFORMS=(darwin-arm64 darwin-x64 linux-x64 linux-arm64)
 fi
 
 for platform in "${PLATFORMS[@]}"; do
@@ -128,11 +126,7 @@ for platform in "${PLATFORMS[@]}"; do
     #
     # Disable cwd bunfig.toml autoload so project preload scripts cannot crash the
     # standalone binary before akramcode starts (see #7684).
-    if [[ "$platform" == windows-* ]]; then
-        bun build --compile --no-compile-autoload-bunfig --target="$bun_target" ./dist/bun/cli.js ./src/utils/image-resize-worker.ts ./src/extensions/codemode/worker.ts --outfile "$OUTPUT_DIR/$platform/akramcode.exe"
-    else
-        bun build --compile --no-compile-autoload-bunfig --target="$bun_target" ./dist/bun/cli.js ./src/utils/image-resize-worker.ts ./src/extensions/codemode/worker.ts --outfile "$OUTPUT_DIR/$platform/akramcode"
-    fi
+    bun build --compile --no-compile-autoload-bunfig --target="$bun_target" ./dist/bun/cli.js ./src/utils/image-resize-worker.ts ./src/extensions/codemode/worker.ts --outfile "$OUTPUT_DIR/$platform/akramcode"
 done
 
 echo "==> Creating release archives..."
@@ -151,48 +145,33 @@ for platform in "${PLATFORMS[@]}"; do
     cp -r examples "$OUTPUT_DIR/$platform/"
 
     # Copy the selected architecture's native platform helpers next to the executable.
-    native_platform="${platform/windows-/win32-}"
-    native_path="native/${native_platform%-*}/prebuilds"
+    native_path="native/${platform%-*}/prebuilds"
     mkdir -p "$OUTPUT_DIR/$platform/$native_path"
-    cp -R "../tui/$native_path/$native_platform" "$OUTPUT_DIR/$platform/$native_path/"
+    cp -R "../tui/$native_path/$platform" "$OUTPUT_DIR/$platform/$native_path/"
 done
 
 # Create archives
 cd "$OUTPUT_DIR"
 
 for platform in "${PLATFORMS[@]}"; do
-    if [[ "$platform" == windows-* ]]; then
-        # Windows (zip)
-        echo "Creating akramcode-$platform.zip..."
-        (cd "$platform" && zip -r ../akramcode-$platform.zip .)
-    else
-        # Unix platforms (tar.gz) - use wrapper directory for mise compatibility
-        echo "Creating akramcode-$platform.tar.gz..."
-        mv "$platform" akramcode && tar -czf akramcode-$platform.tar.gz akramcode && mv akramcode "$platform"
-    fi
+    # Use a wrapper directory for mise compatibility
+    echo "Creating akramcode-$platform.tar.gz..."
+    mv "$platform" akramcode && tar -czf akramcode-$platform.tar.gz akramcode && mv akramcode "$platform"
 done
 
 # Extract archives for easy local testing
 echo "==> Extracting archives for testing..."
 for platform in "${PLATFORMS[@]}"; do
     rm -rf "$platform"
-    if [[ "$platform" == windows-* ]]; then
-        mkdir -p "$platform" && (cd "$platform" && unzip -q ../akramcode-$platform.zip)
-    else
-        tar -xzf akramcode-$platform.tar.gz && mv akramcode "$platform"
-    fi
+    tar -xzf akramcode-$platform.tar.gz && mv akramcode "$platform"
 done
 
 echo ""
 echo "==> Build complete!"
 echo "Archives available in $OUTPUT_DIR/"
-ls -lh *.tar.gz *.zip 2>/dev/null || true
+ls -lh *.tar.gz 2>/dev/null || true
 echo ""
 echo "Extracted directories for testing:"
 for platform in "${PLATFORMS[@]}"; do
-    if [[ "$platform" == windows-* ]]; then
-        echo "  $OUTPUT_DIR/$platform/akramcode.exe"
-    else
-        echo "  $OUTPUT_DIR/$platform/akramcode"
-    fi
+    echo "  $OUTPUT_DIR/$platform/akramcode"
 done
