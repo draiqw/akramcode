@@ -57,7 +57,7 @@ State-changing actions report what measurably changed: URL, title, element count
 | No window | `"browser": { "headless": true }`. Many sites block headless Chrome. |
 | Another Chrome or Chromium | `"browser": { "executablePath": "/path/to/chrome" }` |
 | A browser you started | `"browser": { "cdpUrl": "http://127.0.0.1:9222" }` attaches to it instead of starting one. Chrome 136 and later do not allow CDP on the default profile, so start it with `--user-data-dir`. |
-| Only some sites | `"browser": { "allowedDomains": ["example.com"] }`. Subdomains match too. Every document request is checked before it is sent, including redirects, links, form posts, and frames, so a page cannot send the browser elsewhere. |
+| Only some sites | `"browser": { "allowedDomains": ["example.com"] }`. Subdomains match too. Every document request is checked before it is sent, including redirects, links, form posts, new tabs, popups, and frames (new tabs and frames start paused until the check is in place), so a page cannot send the browser elsewhere. Scripts, images, and other resources a page loads are not restricted. |
 | Subagent model | `"subagents": { "models": { "browser": "openai-codex/gpt-6-luna" } }`. Default: the main agent's model. |
 | Subagent instructions or tools | An agent file `~/.akramcode/agent/agents/browser.md` replaces the built-in type (see [Subagents](subagents.md#custom-agent-types)). |
 

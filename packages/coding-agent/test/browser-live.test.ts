@@ -81,7 +81,11 @@ describe.skipIf(!chrome)("browser live smoke", () => {
 			if (request.url === "/secret") secretHits++;
 			response.setHeader("content-type", "text/html");
 			if (request.url === "/leave") {
-				response.end(`<title>Leave</title><a href="http://localhost:${port}/secret">Out</a>`);
+				const secret = `http://localhost:${port}/secret`;
+				response.end(
+					`<title>Leave</title><a href="${secret}">Out</a> <a href="${secret}" target="_blank">New tab</a>` +
+						`<button onclick="window.open('${secret}')">Popup</button><iframe src="${secret}"></iframe>`,
+				);
 				return;
 			}
 			response.end(request.url === "/next" ? "<title>Next</title><p>Second page</p>" : PAGE);
@@ -194,6 +198,13 @@ describe.skipIf(!chrome)("browser live smoke", () => {
 				expect(await call("browser_click", { index: index(state, /link "Out"/) })).toContain(
 					"blocked: http://localhost:",
 				);
+				// New tabs, popups, and cross-origin frames are checked from their first request.
+				await call("browser_navigate", { url: `${base}/leave` });
+				const leave = await call("browser_state");
+				await call("browser_click", { index: index(leave, /link "New tab"/) });
+				await call("browser_navigate", { url: `${base}/leave` });
+				await call("browser_click", { index: index(await call("browser_state"), /button "Popup"/) });
+				await new Promise((resolve) => setTimeout(resolve, 500));
 				expect(secretHits).toBe(0);
 			} finally {
 				browserSettings.allowedDomains = undefined;

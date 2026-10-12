@@ -39,6 +39,11 @@ export interface BrowserConnector {
 
 const MAX_FINGERPRINTS = 5000;
 
+/** Attach to new targets paused, with flat sessions, so they can be prepared before they run. */
+const AUTO_ATTACH = { autoAttach: true, waitForDebuggerOnStart: true, flatten: true };
+/** Document requests: navigations, redirects, form posts, and frames. */
+const DOCUMENT_REQUESTS = { patterns: [{ urlPattern: "*", resourceType: "Document" }] };
+
 export function isAllowedUrl(url: string, allowedDomains: readonly string[] | undefined): boolean {
 	if (!allowedDomains || allowedDomains.length === 0) return true;
 	if (url === "about:blank") return true;
@@ -64,6 +69,8 @@ export class Browser {
 	/** Tabs opened by this session, or by its tabs (popups). */
 	private readonly owned = new Set<string>();
 	private readonly tabs = new Map<string, Tab>();
+	/** Sessions of pages Chrome attached on creation, by target id; `attach()` reuses them. */
+	private readonly autoSessions = new Map<string, string>();
 	private current: string | undefined;
 	/** Set when the connection dropped, reported once with the next result. */
 	private lostNotice: string | undefined;
@@ -90,6 +97,7 @@ export class Browser {
 		const connection = await this.connector.connect(url);
 		if (this.owned.size > 0) this.lostNotice = "The browser was restarted; earlier tabs are gone.";
 		this.targets.clear();
+		this.autoSessions.clear();
 		this.owned.clear();
 		this.tabs.clear();
 		this.current = undefined;
@@ -142,11 +150,36 @@ export class Browser {
 			const tab = this.tabBySession(sessionId);
 			if (tab && (params as { frameId: string }).frameId === tab.targetId) tab.loading = false;
 		});
+		// New pages, popups, and cross-origin frames start paused, so request checks are in place before
+		// their first request.
+		connection.on("Target.attachedToTarget", (params) => {
+			const { sessionId, targetInfo, waitingForDebugger } = params as {
+				sessionId: string;
+				targetInfo: { targetId: string; type: string };
+				waitingForDebugger: boolean;
+			};
+			void this.prepareSession(connection, sessionId, targetInfo, waitingForDebugger);
+		});
+		await connection.send("Target.setAutoAttach", AUTO_ATTACH);
 		await connection.send("Target.setDiscoverTargets", { discover: true });
 		const { targetInfos } = await connection.send<{ targetInfos: TargetInfo[] }>("Target.getTargets");
 		for (const info of targetInfos) this.onTarget(info);
 		this.connection = connection;
 		return connection;
+	}
+
+	private async prepareSession(
+		connection: CdpClient,
+		sessionId: string,
+		target: { targetId: string; type: string },
+		waiting: boolean,
+	): Promise<void> {
+		if (target.type === "page" || target.type === "iframe") {
+			if (target.type === "page") this.autoSessions.set(target.targetId, sessionId);
+			await connection.send("Fetch.enable", DOCUMENT_REQUESTS, sessionId).catch(() => {});
+			await connection.send("Target.setAutoAttach", AUTO_ATTACH, sessionId).catch(() => {});
+		}
+		if (waiting) await connection.send("Runtime.runIfWaitingForDebugger", {}, sessionId).catch(() => {});
 	}
 
 	private tabBySession(sessionId: string | undefined): Tab | undefined {
@@ -168,6 +201,7 @@ export class Browser {
 
 	private onTargetGone(targetId: string): void {
 		this.targets.delete(targetId);
+		this.autoSessions.delete(targetId);
 		this.owned.delete(targetId);
 		this.tabs.delete(targetId);
 		if (this.current === targetId) this.current = undefined;
@@ -227,7 +261,10 @@ export class Browser {
 			return existing;
 		}
 		const cdp = await this.cdp();
-		const { sessionId } = await cdp.send<{ sessionId: string }>("Target.attachToTarget", { targetId, flatten: true });
+		const auto = this.autoSessions.get(targetId);
+		const sessionId =
+			auto ??
+			(await cdp.send<{ sessionId: string }>("Target.attachToTarget", { targetId, flatten: true })).sessionId;
 		const info = this.targets.get(targetId);
 		const tab: Tab = {
 			targetId,
@@ -240,7 +277,11 @@ export class Browser {
 			elements: new Map(),
 		};
 		this.tabs.set(targetId, tab);
-		await cdp.send("Fetch.enable", { patterns: [{ urlPattern: "*", resourceType: "Document" }] }, sessionId);
+		if (!auto) {
+			// A page that existed before this connection: check its requests and its new frames from now on.
+			await cdp.send("Fetch.enable", DOCUMENT_REQUESTS, sessionId);
+			await cdp.send("Target.setAutoAttach", AUTO_ATTACH, sessionId).catch(() => {});
+		}
 		await cdp.send("Page.enable", {}, sessionId);
 		// The page believes it has focus even though the window is in the background.
 		await cdp.send("Emulation.setFocusEmulationEnabled", { enabled: true }, sessionId).catch(() => {});
