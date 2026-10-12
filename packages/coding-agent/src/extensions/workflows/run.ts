@@ -16,7 +16,7 @@
  */
 
 import type { AgentToolResult } from "@akramcode/agent-core";
-import type { Api, Model, TextContent, Usage } from "@akramcode/ai";
+import type { Api, Message, Model, TextContent, Usage } from "@akramcode/ai";
 import type { CodemodeResult, CodemodeTool } from "@akramcode/codemode";
 import { toCodemodeIdentifier } from "@akramcode/codemode/declarations";
 import type { TSchema } from "typebox";
@@ -39,6 +39,8 @@ export const WORKFLOW_RUN_CUSTOM_TYPE = "workflow-run";
 
 /** Characters of script output kept in the run record. */
 const MAX_OUTPUT_CHARS = 20_000;
+
+const MIN_SECRET_LENGTH = 6;
 
 export type WorkflowStepStatus = "running" | "ok" | "error";
 
@@ -159,7 +161,7 @@ export async function resolveWorkflowParams(
 	ask?: (name: string, param: WorkflowParam) => Promise<string | undefined>,
 ): Promise<ResolvedParams> {
 	for (const name of Object.keys(supplied)) {
-		if (!manifest.params[name]) throw new Error(`Unknown parameter ${name}`);
+		if (!Object.hasOwn(manifest.params, name)) throw new Error(`Unknown parameter ${name}`);
 	}
 	const values: Record<string, WorkflowParamValue> = {};
 	const secrets = new Map<string, string>();
@@ -170,6 +172,10 @@ export async function resolveWorkflowParams(
 			if (value === undefined || value === "") {
 				if (param.required) throw new Error(`Secret parameter ${name} needs the environment variable ${param.env}`);
 				continue;
+			}
+			// Masking a very short value would replace it everywhere it occurs and reveal it.
+			if (value.length < MIN_SECRET_LENGTH) {
+				throw new Error(`Secret parameter ${name} is shorter than ${MIN_SECRET_LENGTH} characters`);
 			}
 			values[name] = value;
 			secrets.set(name, value);
@@ -185,18 +191,18 @@ export async function resolveWorkflowParams(
 	return { values, secrets };
 }
 
-/** Replace each secret value, also in its JSON-escaped form, with `***<name>***`. */
+/** Replace each secret value, also its JSON-escaped, URL-encoded, and base64 forms, with `***<name>***`. */
 export function createMasker(secrets: ReadonlyMap<string, string>): (text: string) => string {
 	const entries = [...secrets]
 		.filter(([, value]) => value.length > 0)
 		.flatMap(([name, value]): Array<[string, string]> => {
-			const escaped = JSON.stringify(value).slice(1, -1);
-			return escaped === value
-				? [[name, value]]
-				: [
-						[name, value],
-						[name, escaped],
-					];
+			const forms = new Set([
+				value,
+				JSON.stringify(value).slice(1, -1),
+				encodeURIComponent(value),
+				Buffer.from(value).toString("base64").replace(/=+$/, ""),
+			]);
+			return [...forms].map((form): [string, string] => [name, form]);
 		})
 		.sort((a, b) => b[1].length - a[1].length);
 	if (entries.length === 0) return (text) => text;
@@ -349,29 +355,46 @@ export async function runWorkflow(file: WorkflowFile, options: WorkflowRunOption
 			execute: async (request, { signal: callSignal }) => {
 				const { prompt, input, schema, model: ref } = parseLlmRequest(request);
 				const model = resolveModel(ctx, ref);
-				const message = await ctx.modelRegistry
-					.streamSimple(
-						model,
-						{
-							...(schema
-								? {
-										systemPrompt: `Reply with only a JSON value that matches this JSON Schema, with no code fence or other text:\n${JSON.stringify(schema)}`,
-									}
-								: {}),
-							messages: [{ role: "user", content: fillPrompt(prompt, input), timestamp: Date.now() }],
-						},
-						{ signal: callSignal },
-					)
-					.result();
-				if (message.usage) usage = usage ? combineUsage(usage, message.usage) : message.usage;
-				if (message.stopReason === "error" || message.stopReason === "aborted") {
-					throw new Error(`llm() failed: ${message.errorMessage ?? message.stopReason}`);
+				// Models follow a format request in the user message more reliably than in the system prompt.
+				const format = schema
+					? `Reply with only a JSON value that matches this JSON Schema, with no code fence or other text:\n${JSON.stringify(schema)}`
+					: undefined;
+				const messages: Message[] = [
+					{
+						role: "user",
+						content: format ? `${fillPrompt(prompt, input)}\n\n${format}` : fillPrompt(prompt, input),
+						timestamp: Date.now(),
+					},
+				];
+				// A reply that is not valid JSON gets one retry with the parse error.
+				for (let attempt = 1; ; attempt++) {
+					const message = await ctx.modelRegistry
+						.streamSimple(
+							model,
+							{ ...(format ? { systemPrompt: format } : {}), messages },
+							{ signal: callSignal },
+						)
+						.result();
+					if (message.usage) usage = usage ? combineUsage(usage, message.usage) : message.usage;
+					if (message.stopReason === "error" || message.stopReason === "aborted") {
+						throw new Error(`llm() failed: ${message.errorMessage ?? message.stopReason}`);
+					}
+					const text = message.content
+						.filter((block): block is TextContent => block.type === "text")
+						.map((block) => block.text)
+						.join("");
+					if (!schema) return text;
+					try {
+						return parseJsonReply(text, schema);
+					} catch (error) {
+						if (attempt >= 2) throw error;
+						messages.push(message, {
+							role: "user",
+							content: `${errorMessage(error)}. ${format}`,
+							timestamp: Date.now(),
+						});
+					}
 				}
-				const text = message.content
-					.filter((block): block is TextContent => block.type === "text")
-					.map((block) => block.text)
-					.join("");
-				return schema ? parseJsonReply(text, schema) : text;
 			},
 		},
 		{
@@ -426,6 +449,13 @@ export async function runWorkflow(file: WorkflowFile, options: WorkflowRunOption
 				if (!allowed.has(tool.name)) {
 					throw new Error(`tools.${toCodemodeIdentifier(tool.name)} is not in the workflow's "tools" list`);
 				}
+				// Background task notifications and subagent transcripts are recorded outside the run, unmasked.
+				if (resolved.secrets.size > 0) {
+					if (tool.name === "agent") throw new Error("A workflow with secret parameters cannot start subagents");
+					if (isRecord(args) && args.run_in_background === true) {
+						throw new Error("A workflow with secret parameters cannot run tools in the background");
+					}
+				}
 				if (dry && options.getAnnotations(tool.name)?.readOnlyHint !== true) {
 					return { value: { dry_run: true, tool: tool.name, arguments: args } };
 				}
@@ -451,7 +481,12 @@ export async function runWorkflow(file: WorkflowFile, options: WorkflowRunOption
 	}
 	if (result?.ok) {
 		details.status = "completed";
-	} else if (needsInput !== undefined) {
+	} else if (
+		needsInput !== undefined &&
+		result &&
+		!result.ok &&
+		result.error.message.includes(`needs input: ${needsInput}`)
+	) {
 		details.status = "needs_input";
 		details.error = mask(`needs input: ${needsInput}`);
 	} else if (result && !result.ok && result.error.kind === "aborted") {

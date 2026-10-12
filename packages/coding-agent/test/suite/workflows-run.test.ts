@@ -80,6 +80,19 @@ const SPILL = `/* @workflow {
 await step("print", () => tools.bash({ command: \`seq 1 2000; echo \${params.token}\` }));
 `;
 
+const BACKGROUND = `/* @workflow {
+  "description": "Runs a command with a secret in the background",
+  "params": { "token": { "type": "string", "secret": true, "env": "WF_TEST_TOKEN" } },
+  "tools": ["bash"]
+} */
+await step("bg", () => tools.bash({ command: \`echo \${params.token}\`, run_in_background: true }));
+`;
+
+const CAUGHT_ASK = `/* @workflow { "description": "Catches a needs-input error, then fails", "tools": [] } */
+try { await ask({ question: "Name?" }); } catch {}
+check(false, "later failure");
+`;
+
 interface Setup {
 	harness: Harness;
 	toolCalls: ToolCallEvent[];
@@ -96,6 +109,7 @@ describe("workflows", () => {
 	afterEach(() => {
 		while (cleanups.length > 0) cleanups.pop()?.();
 		delete process.env.WF_TEST_TOKEN;
+		process.exitCode = undefined;
 	});
 
 	async function setup(ui: Partial<ExtensionUIContext> | false = {}): Promise<Setup> {
@@ -112,6 +126,8 @@ describe("workflows", () => {
 			leaky: LEAKY,
 			"fake-read-only": FAKE_READ_ONLY,
 			spill: SPILL,
+			background: BACKGROUND,
+			"caught-ask": CAUGHT_ASK,
 		})) {
 			writeFileSync(join(agentDir, "workflows", `${name}.workflow.js`), text);
 		}
@@ -437,5 +453,60 @@ describe("workflows", () => {
 			"completed",
 		);
 		expect(readFileSync(join(harness.tempDir, "out.txt"), "utf-8")).toBe(`hello Bo ${SECRET}`);
+	});
+
+	it("retries an llm() reply that is not valid JSON once", async () => {
+		process.env.WF_TEST_TOKEN = SECRET;
+		const { harness, run } = await setup();
+		harness.setResponses([fauxAssistantMessage("Here is a summary."), fauxAssistantMessage('{"summary":"ok"}')]);
+		const details = await run("/workflow run demo name=Ada");
+		expect(details.status).toBe("completed");
+		expect(details.output).toBe("ok ***token***");
+		expect(harness.getPendingResponseCount()).toBe(0);
+	});
+
+	it("does not let a workflow with secrets run tools in the background", async () => {
+		process.env.WF_TEST_TOKEN = SECRET;
+		const { run, toolCalls } = await setup();
+		const details = await run("/workflow run background");
+		expect(details.status).toBe("failed");
+		expect(details.error).toContain("cannot run tools in the background");
+		expect(toolCalls).toEqual([]);
+	});
+
+	it("rejects secrets too short to mask", async () => {
+		process.env.WF_TEST_TOKEN = "e";
+		const { harness } = await setup();
+		const notices: string[] = [];
+		await harness.session.bindExtensions({
+			mode: "tui",
+			uiContext: createTestUiContext({ notify: (text) => notices.push(text) }),
+		});
+		await harness.session.prompt("/workflow run leaky");
+		expect(notices.join("\n")).toContain("Secret parameter token is shorter than 6 characters");
+	});
+
+	it("reports a later failure, not needs input, after a caught ask() error", async () => {
+		const { run } = await setup(false);
+		const details = await run("/workflow run caught-ask");
+		expect(details.status).toBe("failed");
+		expect(details.error).toContain("later failure");
+	});
+
+	it("prints the result in print mode and fails the exit code when the run fails", async () => {
+		const { run } = await setup(false);
+		const written: string[] = [];
+		const original = process.stderr.write.bind(process.stderr);
+		process.stderr.write = ((chunk: string) => {
+			written.push(String(chunk));
+			return true;
+		}) as typeof process.stderr.write;
+		try {
+			await run("/workflow run check-stops");
+		} finally {
+			process.stderr.write = original;
+		}
+		expect(written.join("")).toContain("workflow check-stops failed");
+		expect(process.exitCode).toBe(1);
 	});
 });

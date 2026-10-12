@@ -165,13 +165,16 @@ describe("workflow parameters", () => {
 		await expect(resolveWorkflowParams(manifest, { since: "v1", token: "x" }, { WF_TOKEN: "x" })).rejects.toThrow(
 			"read from $WF_TOKEN",
 		);
+		await expect(resolveWorkflowParams(manifest, { since: "v1" }, { WF_TOKEN: "x" })).rejects.toThrow(
+			"shorter than 6 characters",
+		);
 		expect(() => coerceParamValue("count", { type: "number", required: false, secret: false }, "many")).toThrow(
 			'Parameter count must be a number, got "many"',
 		);
 	});
 
 	it("asks for a missing required value when it can", async () => {
-		const resolved = await resolveWorkflowParams(manifest, {}, { WF_TOKEN: "x" }, async (name) =>
+		const resolved = await resolveWorkflowParams(manifest, {}, { WF_TOKEN: "secret-x" }, async (name) =>
 			name === "since" ? "v2" : undefined,
 		);
 		expect(resolved.values.since).toBe("v2");
@@ -182,6 +185,10 @@ describe("workflow helpers", () => {
 	it("masks secret values", () => {
 		const mask = createMasker(new Map([["token", "abc123"]]));
 		expect(mask('{"auth":"abc123"} abc123')).toBe('{"auth":"***token***"} ***token***');
+		const encoded = createMasker(new Map([["token", "a b/c+d"]]));
+		expect(encoded(`q=${encodeURIComponent("a b/c+d")} ${Buffer.from("a b/c+d").toString("base64")}`)).toBe(
+			"q=***token*** ***token***==",
+		);
 	});
 
 	it("fills only known placeholders", () => {

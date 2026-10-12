@@ -12,7 +12,7 @@
  */
 
 import { randomBytes } from "node:crypto";
-import { Text } from "@akramcode/tui";
+import { getKeybindings, Text } from "@akramcode/tui";
 import { Type } from "typebox";
 import type {
 	ExtensionAPI,
@@ -22,6 +22,7 @@ import type {
 	ExtensionToolContext,
 	ToolAnnotations,
 } from "../../core/extensions/types.ts";
+import { writeRawStdout } from "../../core/output-guard.ts";
 import { checkWorkflow, formatCheckResult } from "./check.ts";
 import { discoverWorkflows, type WorkflowFile } from "./format.ts";
 import { renderWorkflowRun } from "./renderer.ts";
@@ -98,6 +99,20 @@ const workflowRunSchema = Type.Object({
 	),
 	dry: Type.Optional(Type.Boolean({ description: "Dry run: tools that may write are not called." })),
 });
+
+/**
+ * Show a command's message. Print mode has no UI, so it writes to stdout, or to stderr for
+ * problems; errors also set a failing exit code.
+ */
+function report(ctx: ExtensionCommandContext, text: string, level: "info" | "warning" | "error"): void {
+	if (ctx.mode !== "print") {
+		ctx.ui.notify(text, level);
+		return;
+	}
+	if (level === "info") writeRawStdout(`${text}\n`);
+	else process.stderr.write(`${text}\n`);
+	if (level === "error") process.exitCode = 1;
+}
 
 /** A tool context whose calls run through the command's `executeTool()` under `parentToolCallId`. */
 function createCommandToolContext(ctx: ExtensionCommandContext, parentToolCallId: string): ExtensionToolContext {
@@ -207,6 +222,12 @@ export function createWorkflowsExtension(options: WorkflowsExtensionOptions = {}
 		) => {
 			const runId = `workflow:${file.name}:${randomBytes(4).toString("hex")}`;
 			const setStatus = (details: WorkflowRunDetails) => ctx.ui.setStatus(STATUS_KEY, formatRunLine(details));
+			// No agent turn runs, so nothing else cancels the run: the interrupt key does.
+			const controller = new AbortController();
+			const stopListening = ctx.ui.onTerminalInput((data) => {
+				if (getKeybindings().matches(data, "app.interrupt")) controller.abort();
+				return undefined;
+			});
 			try {
 				const result = await runWorkflow(file, {
 					params,
@@ -214,6 +235,7 @@ export function createWorkflowsExtension(options: WorkflowsExtensionOptions = {}
 					ctx: createCommandToolContext(ctx, runId),
 					runId,
 					getAnnotations,
+					signal: controller.signal,
 					onUpdate: (details) => {
 						if (details.status === "running") setStatus(details);
 					},
@@ -222,9 +244,13 @@ export function createWorkflowsExtension(options: WorkflowsExtensionOptions = {}
 					{ customType: WORKFLOW_RUN_CUSTOM_TYPE, content: result.text, display: true, details: result.details },
 					{ triggerTurn: false },
 				);
+				if (ctx.mode === "print") {
+					report(ctx, result.text, result.details.status === "completed" ? "info" : "error");
+				}
 			} catch (error) {
-				ctx.ui.notify(`workflow ${file.name}: ${error instanceof Error ? error.message : String(error)}`, "error");
+				report(ctx, `workflow ${file.name}: ${error instanceof Error ? error.message : String(error)}`, "error");
 			} finally {
+				stopListening();
 				ctx.ui.setStatus(STATUS_KEY, undefined);
 			}
 		};
@@ -234,7 +260,8 @@ export function createWorkflowsExtension(options: WorkflowsExtensionOptions = {}
 			const file = workflows.find((candidate) => candidate.name === name);
 			if (!file) {
 				const names = workflows.map((candidate) => candidate.name);
-				ctx.ui.notify(
+				report(
+					ctx,
 					`Unknown workflow "${name}".${names.length > 0 ? ` Workflows: ${names.join(", ")}` : " No workflows found."}`,
 					"warning",
 				);
@@ -246,14 +273,14 @@ export function createWorkflowsExtension(options: WorkflowsExtensionOptions = {}
 			const callable = new Set(ctx.tools.map((tool) => tool.name));
 			const registered = akramcode.getAllTools().map((tool) => tool.name);
 			const result = checkWorkflow(file, [...callable], registered);
-			ctx.ui.notify(formatCheckResult(file.name, result), result.status === "ok" ? "info" : "warning");
+			report(ctx, formatCheckResult(file.name, result), result.status === "ok" ? "info" : "warning");
 		};
 
 		const pick = async (ctx: ExtensionCommandContext) => {
 			const { workflows, diagnostics } = discover(ctx);
-			for (const diagnostic of diagnostics) ctx.ui.notify(`${diagnostic.path}: ${diagnostic.message}`, "warning");
+			for (const diagnostic of diagnostics) report(ctx, `${diagnostic.path}: ${diagnostic.message}`, "warning");
 			if (workflows.length === 0) {
-				ctx.ui.notify("No workflows. Add <name>.workflow.js files; see docs/workflows.md.", "info");
+				report(ctx, "No workflows. Add <name>.workflow.js files; see docs/workflows.md.", "info");
 				return;
 			}
 			const items = workflows.map(
@@ -278,23 +305,23 @@ export function createWorkflowsExtension(options: WorkflowsExtensionOptions = {}
 				}
 				if (subcommand === "check") {
 					const file = rest[0] ? findFile(ctx, rest[0]) : undefined;
-					if (!rest[0]) ctx.ui.notify("Usage: /workflow check <name>", "warning");
+					if (!rest[0]) report(ctx, "Usage: /workflow check <name>", "warning");
 					if (file) check(ctx, file);
 					return;
 				}
 				if (subcommand !== "run") {
-					ctx.ui.notify("Usage: /workflow [run <name> [param=value ...] [--dry] | check <name>]", "warning");
+					report(ctx, "Usage: /workflow [run <name> [param=value ...] [--dry] | check <name>]", "warning");
 					return;
 				}
 				const parsed = parseRunArgs(rest);
 				if ("error" in parsed) {
-					ctx.ui.notify(parsed.error, "warning");
+					report(ctx, parsed.error, "warning");
 					return;
 				}
 				const file = findFile(ctx, parsed.name);
 				if (!file) return;
 				if (!file.manifest) {
-					ctx.ui.notify(`Workflow ${file.name} is invalid: ${file.errors.join("; ")}`, "error");
+					report(ctx, `Workflow ${file.name} is invalid: ${file.errors.join("; ")}`, "error");
 					return;
 				}
 				await runFromCommand(ctx, file, parsed.params, parsed.dry);

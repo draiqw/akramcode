@@ -22,11 +22,13 @@ The file starts with a `/* @workflow { ... } */` comment that holds a JSON manif
 } */
 const log = await step("git-log", () =>
   tools.bash({ command: `git log --oneline -n ${params.max} ${params.since}..HEAD` }));
-check(log.output.trim() !== "", `no commits since ${params.since}`);
+// In a dry run, bash is not called and returns a stub.
+const commits = log.dry_run ? "(dry run)" : log.output.trim();
+check(commits !== "", `no commits since ${params.since}`);
 const notes = await step("summarize", () =>
   llm({
     prompt: "Group these commits under Added, Changed, and Fixed as Markdown:\n{log}",
-    input: { log: log.output },
+    input: { log: commits },
     schema: { type: "object", required: ["markdown"], properties: { markdown: { type: "string" } } },
   }));
 if ((await ask({ question: "Write NOTES.md?", options: ["yes", "no"], default: "no" })) === "yes") {
@@ -43,7 +45,7 @@ Manifest fields:
 | `params` | Parameters by name. Each has `type` (`string`, `number`, `boolean`, or `list`), and optionally `required`, `default`, `label`, and `description`. A required parameter has no default. |
 | `tools` | The tools the script may call, by name, for example `mcp__github__create_release`. Calls to other tools fail. The tools must be callable in the session, as for codemode. |
 
-A parameter with `"secret": true` and `"env": "GITHUB_TOKEN"` is read from that environment variable and cannot have a default. Its value is replaced with `***<name>***` (also in its JSON-escaped form) in the run record, step names, the output, and the arguments, results, and errors of tool calls as the session records them and reports them in `tool_execution_*` events. Tools still receive the real value.
+A parameter with `"secret": true` and `"env": "GITHUB_TOKEN"` is read from that environment variable and cannot have a default. Its value must be at least 6 characters. It is replaced with `***<name>***` (also in its JSON-escaped, URL-encoded, and base64 forms) in the run record, step names, the output, and the arguments, results, and errors of tool calls as the session records them and reports them in `tool_execution_*` events. Tools still receive the real value. Such a workflow cannot start subagents or run tools in the background, because their transcripts and notifications are recorded outside the run.
 
 ## Script globals
 
@@ -53,7 +55,7 @@ Scripts have everything codemode scripts have, plus:
 |---|---|
 | `params` | The parameter values, converted to their types. |
 | `step(id, fn)` | Runs `fn` as a named step. The run record lists each step with its status and duration. |
-| `llm({ prompt, input?, schema?, model? })` | One model call without tools. `{name}` in `prompt` is replaced with `input.name`. With a JSON `schema`, the reply is parsed and checked and the value is returned; otherwise the text. `model` is `"provider/id"`; the default is the session's model. |
+| `llm({ prompt, input?, schema?, model? })` | One model call without tools. `{name}` in `prompt` is replaced with `input.name`. With a JSON `schema`, the reply is parsed and checked and the value is returned, with one retry when it is not valid; otherwise the text. `model` is `"provider/id"`; the default is the session's model. |
 | `check(condition, message)` | Fails the run, and the current step, when `condition` is falsy. |
 | `ask({ question, options?, default? })` | Asks the user and returns the answer. Without a UI it returns `default`, or the run ends with `needs input`. |
 
@@ -70,9 +72,9 @@ A tool call that fails, including a `bash` command with a non-zero exit code, re
 
 Values with spaces are quoted: `title="Release 2"`. Lists are comma-separated: `tags=a,b`. A missing required value is asked for when there is a UI.
 
-While a workflow runs, the footer shows its current step. The result is one line in the conversation, such as `workflow release-notes completed · 3 steps · 4.2s`; press `Ctrl+O` to see the steps, tool calls, and output. The result is also sent to the agent, so you can continue from it in the chat. `akramcode -p "/workflow run release-notes since=v1.0.26"` runs a workflow without the interactive UI.
+While a workflow runs, the footer shows its current step. The result is one line in the conversation, such as `workflow release-notes completed · 3 steps · 4.2s`; press `Ctrl+O` to see the steps, tool calls, and output. The result is also sent to the agent, so you can continue from it in the chat. Press `Esc` to cancel a run. `akramcode -p "/workflow run release-notes since=v1.0.26"` runs a workflow without the interactive UI and prints the result; a run that does not complete exits with code 1.
 
-`--dry` does not call tools that may change anything: a tool without `readOnlyHint: true` (see [tool annotations](extensions.md#tool-exposure)) returns `{ dry_run: true, tool, arguments }` instead. `read`, `grep`, `find`, and `ls` are read-only; `bash` and `write` are not. MCP tools always count as writing, because their annotations come from the server. `llm()` and `ask()` still run.
+`--dry` does not call tools that may change anything: a tool without `readOnlyHint: true` (see [tool annotations](extensions.md#tool-exposure)) returns `{ dry_run: true, tool, arguments }` instead. `read`, `grep`, `find`, and `ls` are read-only; `bash` and `write` are not. Tools from MCP servers (`mcp__*`) always count as writing, because their annotations come from the server. `llm()` and `ask()` still run.
 
 `/workflow check` reports, without running anything:
 
