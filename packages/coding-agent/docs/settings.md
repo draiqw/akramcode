@@ -43,6 +43,7 @@ See [Choose a Model](models.md) for model selection and thinking controls.
 | `grep.backend` | `"rg"` \| `"tgrep"` | `"rg"` | Search program of the `grep` tool. See [Grep backend](#grep-backend). |
 | `grep.tgrepPath` | string | `tgrep` from `PATH` | tgrep executable for `grep.backend: "tgrep"`. Supports a leading `~`. |
 | `subagents.enabled` | boolean | `true` | Offer the `agent` tool, which delegates tasks to subagents, and the `/agents` command. See [Subagents](subagents.md). |
+| `subagents.models` | object | `{}` | Model by agent type name, replacing the type's own model, for example `{ "browser": "openai-codex/gpt-6-luna" }`. See [Subagents](subagents.md#custom-agent-types). |
 | `backgroundTasks.enabled` | boolean | `true` | Offer `run_in_background` on `bash` and `agent`, monitor mode on `bash`, and the `task_stop` tool. See [Background tasks](subagents.md#background-tasks). |
 | `backgroundTasks.printModeTimeoutSeconds` | number | `600` | How long print mode (`-p`) waits for running background tasks before it stops them. |
 
@@ -100,6 +101,17 @@ Results can differ from ripgrep:
 - tgrep skips files over 64 MiB and files with known binary extensions, and it never searches `.tgrep/`.
 - Lines with invalid UTF-8 are matched as text with replacement characters.
 - When the match limit cuts the result, the first matches can come from other files, because neither program returns files in a fixed order.
+
+## Browser
+
+Settings of the built-in [browser](browser.md) extension.
+
+| Setting | Type | Default | Description |
+|---|---|---|---|
+| `browser.headless` | boolean | `false` | Run Chrome without a window. Many sites block headless Chrome. |
+| `browser.executablePath` | string | found automatically | Chrome or Chromium executable, or a macOS `.app` bundle. Supports a leading `~`. |
+| `browser.cdpUrl` | string | unset | Attach to a browser already listening for CDP (`http://127.0.0.1:9222` or a `ws://` URL) instead of starting one. |
+| `browser.allowedDomains` | `string[]` | `[]` | Hosts the browser may visit; subdomains match too. Empty: any host. |
 
 ## Sessions and context
 
@@ -218,7 +230,7 @@ Resource paths in user settings resolve from the agent directory. Paths in proje
 
 Resource arrays support glob exclusions with `!pattern`, exact inclusion with `+path`, and exact exclusion with `-path`. AkramCode loads resources listed in both user-level and project settings.
 
-The built-in extensions are named `builtin:mcp`, `builtin:llama.cpp`, `builtin:codemode`, `builtin:tool-search`, `builtin:online-compact`, and `builtin:tasks` (`/tasks`, `/agents`, the running-task footer status, and task notification rendering) in `extensions`. They load by default; `-builtin:mcp` disables one. A `+builtin:<name>` or `-builtin:<name>` entry in project settings overrides the user setting. `akramcode config` lists them under Built-in. `--no-extensions` disables them too, and `-e builtin:<name>` loads one explicitly.
+The built-in extensions are named `builtin:mcp`, `builtin:llama.cpp`, `builtin:codemode`, `builtin:tool-search`, `builtin:online-compact`, `builtin:tasks` (`/tasks`, `/agents`, the running-task footer status, and task notification rendering), and `builtin:browser` (see [Browser](browser.md)) in `extensions`. They load by default; `-builtin:mcp` disables one. A `+builtin:<name>` or `-builtin:<name>` entry in project settings overrides the user setting. `akramcode config` lists them under Built-in. `--no-extensions` disables them too, and `-e builtin:<name>` loads one explicitly.
 
 ## Traces
 

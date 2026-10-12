@@ -114,6 +114,20 @@ export interface CodemodeSettings {
 export interface SubagentSettings {
 	/** Offer the `agent` tool. Default: true. */
 	enabled?: boolean;
+	/** Model pattern by agent type name, replacing the type's own model, e.g. `{ "browser": "openai/gpt-5-mini" }`. */
+	models?: Record<string, string>;
+}
+
+/** Settings of the built-in browser extension. */
+export interface BrowserSettings {
+	/** Run Chrome without a window. Default: false (many sites block headless Chrome). */
+	headless?: boolean;
+	/** Chrome or Chromium executable, or a macOS `.app` bundle. Default: found automatically. */
+	executablePath?: string;
+	/** Attach to a running browser at this CDP URL (`http://host:port` or `ws://...`) instead of launching one. */
+	cdpUrl?: string;
+	/** Hosts the browser may visit; subdomains match too. Empty or unset: any host. */
+	allowedDomains?: string[];
 }
 
 export interface BackgroundTaskSettings {
@@ -207,6 +221,7 @@ export interface Settings {
 	codemode?: CodemodeSettings;
 	subagents?: SubagentSettings;
 	backgroundTasks?: BackgroundTaskSettings;
+	browser?: BrowserSettings;
 	sandbox?: SandboxSettings; // Global-only: where the built-in tools run (local machine or an OpenSandbox sandbox)
 	sessionDir?: string; // Custom session storage directory (same format as --session-dir CLI flag)
 	traces?: TraceCaptureSettingsInput; // Global-only: capture of model requests, network, and tool executions for `akramcode traces`
@@ -1539,6 +1554,15 @@ export class SettingsManager {
 
 	getSubagentsEnabled(): boolean {
 		return this.settings.subagents?.enabled ?? true;
+	}
+
+	/** `subagents.models`: model pattern by agent type name. */
+	getSubagentModels(): Record<string, string> {
+		const models = this.settings.subagents?.models;
+		if (typeof models !== "object" || models === null) return {};
+		return Object.fromEntries(
+			Object.entries(models).filter((entry): entry is [string, string] => typeof entry[1] === "string"),
+		);
 	}
 
 	getBackgroundTasksEnabled(): boolean {

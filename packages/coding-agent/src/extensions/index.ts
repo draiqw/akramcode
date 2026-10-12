@@ -1,4 +1,5 @@
 import type { InlineExtension } from "../core/extensions/types.ts";
+import browserExtension from "./browser/index.ts";
 import codemodeExtension from "./codemode/index.ts";
 import llamaExtension from "./llama/index.ts";
 import mcpExtension from "./mcp/index.ts";
@@ -23,4 +24,6 @@ export const builtInExtensions: InlineExtension[] = [
 	{ name: "question", factory: questionExtension, replaceable: true, builtin: true },
 	// `/workflow` and the `workflow_run` tool. Replaceable: an extension that registers either takes over.
 	{ name: "workflows", factory: workflowsExtension, replaceable: true, builtin: true },
+	// Browser tools over CDP and the `browser` subagent; Chrome starts on first use. Off with `-builtin:browser`.
+	{ name: "browser", factory: browserExtension, builtin: true },
 ];

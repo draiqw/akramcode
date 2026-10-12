@@ -7,6 +7,9 @@
 - Workflows: `<name>.workflow.js` files in `~/.akramcode/agent/workflows/` or a trusted project's `.akramcode/workflows/` are codemode scripts with a JSON manifest of parameters and allowed tools, plus `params`, `step()`, `llm()`, `check()`, and `ask()`. `/workflow run <name> [k=v ...] [--dry]` runs one and records the result in the session, `/workflow check <name>` checks it without running, and the agent can run workflows with the `workflow_run` tool. See [docs/workflows.md](docs/workflows.md).
 - Extension commands can run tools through the session's tool pipeline with `ctx.executeTool()`. Its `redact` option, also for tools, masks strings in the recorded nested call and its `tool_execution_*` events.
 - `read`, `grep`, `find`, and `ls` declare `readOnlyHint: true`.
+- Browser: the built-in `browser` extension drives a real Chrome over the DevTools Protocol with a separate profile, started in the background on first use, and adds a `browser` subagent with `browser_*` tools (navigate, state, click, type, select, hover, scroll, keys, back, tabs, screenshot, find text, wait). Stale element indices are found again or fail without acting, actions report what changed or `no_effect`, and dialogs are dismissed. Settings: `browser.headless`, `browser.executablePath`, `browser.cdpUrl`, `browser.allowedDomains`. See [docs/browser.md](docs/browser.md).
+- Extensions can register subagent types with `akramcode.registerAgentType()`.
+- `subagents.models` sets the model of an agent type by name.
 
 ### Fixed
 
@@ -15,6 +18,7 @@
 ### Changed
 
 - `bash` output the model sees is capped at the last 400 lines or 16KB (was 2000 lines or 50KB); the full output stays in a temp file. On the quality benchmark this cut total tokens by 24% with no drop in pass rate.
+- Agent types that list `deferred` tools get them without `tool_search` being active.
 
 ## [1.0.27] - 2026-10-11
 

@@ -23,6 +23,7 @@ import type { ModelRouteRequest, VirtualModelDefinition } from "../virtual-model
 import type {
 	EntryRenderer,
 	Extension,
+	ExtensionAgentType,
 	ExtensionAPI,
 	ExtensionFactory,
 	ExtensionRuntime,
@@ -177,6 +178,7 @@ export function createExtensionRuntime(): ExtensionRuntime {
 		pendingProviderRegistrations: [],
 		pendingNativeProviderRegistrations: [],
 		mcpServers: new McpServerRegistry(),
+		agentTypes: new Map(),
 		pendingVirtualModelRegistrations: [],
 		createContext: notInitialized,
 		assertActive,
@@ -478,6 +480,15 @@ function createExtensionAPI(
 		getMcpServers() {
 			assertActive();
 			return runtime.mcpServers.list();
+		},
+
+		registerAgentType(type: ExtensionAgentType) {
+			assertActive();
+			if (!/^[A-Za-z0-9._-]+$/.test(type.name)) {
+				throw new Error(`Invalid agent type name "${type.name}": use letters, digits, "-", "_", and "."`);
+			}
+			if (!type.description.trim()) throw new Error(`Agent type "${type.name}" needs a description`);
+			runtime.agentTypes.set(type.name, { ...structuredClone(type), source: "extension" });
 		},
 
 		registerVirtualModel<TState>(model: ExtensionVirtualModel<TState>) {

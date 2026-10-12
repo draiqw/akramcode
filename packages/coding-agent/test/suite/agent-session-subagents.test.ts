@@ -402,10 +402,10 @@ describe("AgentSession subagents and background tasks", () => {
 		const control = harness.session.subagents;
 		control?.reload();
 		const triager = control?.listTypes().types.find((type) => type.name === "triager");
-		// mcp__gh__pulls (deferred) and mcp__slack__post (codemode) are not reachable: neither
-		// tool_search nor codemode is active in the parent.
+		// mcp__slack__post (codemode) is not reachable: codemode is not active in the parent. Deferred
+		// tools such as mcp__gh__pulls are loaded by naming them.
 		expect(triager && control?.resolveTools(triager)).toEqual({
-			tools: ["read", "mcp__gh__issues"],
+			tools: ["read", "mcp__gh__issues", "mcp__gh__pulls"],
 			unknown: ["nope"],
 		});
 		expect(harness.session.agent.state.tools.find((tool) => tool.name === "agent")?.description).toContain(
@@ -428,7 +428,7 @@ describe("AgentSession subagents and background tasks", () => {
 		);
 		await harness.session.prompt("go");
 
-		expect(childRequests[0].tools.sort()).toEqual(["mcp__gh__issues", "read"]);
+		expect(childRequests[0].tools.sort()).toEqual(["mcp__gh__issues", "mcp__gh__pulls", "read"]);
 		expect(childRequests[0].systemPrompt).toContain("Triage issues.");
 		// The parent's MCP tool really runs for the child.
 		expect(executed).toEqual(["mcp__gh__issues"]);

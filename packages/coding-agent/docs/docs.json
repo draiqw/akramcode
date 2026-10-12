@@ -101,6 +101,10 @@
               "path": "workflows.md"
             },
             {
+              "title": "Use a Browser",
+              "path": "browser.md"
+            },
+            {
               "title": "Run Tools in a Sandbox",
               "path": "sandbox.md"
             }

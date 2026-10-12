@@ -606,6 +606,11 @@ export function getProjectWorkflowsDir(cwd: string): string {
 	return join(cwd, CONFIG_DIR_NAME, "workflows");
 }
 
+/** Get path to the Chrome profile of the built-in browser extension (`<agentDir>/browser-profile`). */
+export function getBrowserProfileDir(agentDir: string = getAgentDir()): string {
+	return join(agentDir, "browser-profile");
+}
+
 /** Get path to sessions directory */
 export function getSessionsDir(): string {
 	return join(getAgentDir(), "sessions");

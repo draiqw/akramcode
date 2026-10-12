@@ -81,6 +81,7 @@ Automatic retries, recovery, compaction, or queued work can continue afterward.
 | Change active tools, model, or thinking level | Session control methods on `akramcode` |
 | Add a model provider | `akramcode.registerProvider()` |
 | Add an MCP server | `akramcode.registerMcpServer()` |
+| Add a subagent type | `akramcode.registerAgentType()` |
 | Route each request to a model | [`akramcode.registerVirtualModel()`](virtual-models.md) |
 | Add terminal rendering | Renderer registration and `ctx.ui` |
 | Communicate with another extension | `akramcode.events` |
@@ -195,6 +196,19 @@ akramcode.unregisterMcpServer("jira");
 ```
 
 Servers registered while the extension loads connect when the session starts, together with the `mcp.json` servers; servers registered later connect right away, and `akramcode.unregisterMcpServer()` closes the connection and makes the server's tools unreachable. Registrations are not saved: register again on every load, for example based on the extension's own settings. A server in `mcp.json` with the same name takes precedence, and `/mcp` shows the override. Registering the same name again replaces the extension's earlier registration; names registered by another extension, invalid names, and invalid configs throw.
+
+### Agent types
+
+`akramcode.registerAgentType({ name, description, tools?, disallowedTools?, model?, thinking?, systemPrompt })` adds a [subagent](subagents.md) type for the `agent` tool, with the fields of an agent file. Register it while the extension loads. It replaces a built-in type of the same name; an agent file of that name in `~/.akramcode/agent/agents/` replaces it (a project file cannot), and `subagents.models` in settings can change its model.
+
+```typescript
+akramcode.registerAgentType({
+  name: "docs",
+  description: "Answers questions from the docs server. Use for documentation lookups.",
+  tools: ["mcp__docs__*"],
+  systemPrompt: "Search the docs and answer with links.",
+});
+```
 
 The built-in MCP support connects registered servers. When nothing does, because another extension replaced it (see [MCP](mcp.md#other-mcp-extensions)), each registration is reported as an extension error. Other MCP extensions can connect registered servers too: read them with `akramcode.getMcpServers()` on `session_start` and handle the `mcp_servers_change` event for later changes.
 

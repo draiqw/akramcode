@@ -81,6 +81,7 @@ import type { Settings } from "../settings-manager.ts";
 import type { SlashCommandInfo } from "../slash-commands.ts";
 import type { SourceInfo } from "../source-info.ts";
 import type { SubagentControl } from "../subagents/agent-tool.ts";
+import type { AgentTypeDefinition } from "../subagents/agent-types.ts";
 import type { BuildSystemPromptOptions, NormalizedBuildSystemPromptOptions } from "../system-prompt.ts";
 import type { TaskRegistry } from "../tasks/task-registry.ts";
 import type { BashOperations } from "../tools/bash.ts";
@@ -730,6 +731,9 @@ export interface ResourcesDiscoverResult {
 	promptPaths?: string[];
 	themePaths?: string[];
 }
+
+/** A subagent type registered with {@link ExtensionAPI.registerAgentType}. */
+export type ExtensionAgentType = Omit<AgentTypeDefinition, "source" | "filePath">;
 
 /**
  * Fired when an extension registers or unregisters an MCP server after the extensions are bound
@@ -1858,6 +1862,26 @@ export interface ExtensionAPI {
 	/** Every MCP server registered by extensions. For extensions that connect MCP servers. */
 	getMcpServers(): RegisteredMcpServer[];
 
+	// =========================================================================
+	// Agent types
+	// =========================================================================
+
+	/**
+	 * Register a subagent type for the `agent` tool, like an agent file in `~/.akramcode/agent/agents/`.
+	 * It replaces a built-in type of the same name; a user or project agent file of that name
+	 * replaces it, and `subagents.models` can change its model. Registering a name again replaces
+	 * the earlier registration. Register during extension load.
+	 *
+	 * @example
+	 * akramcode.registerAgentType({
+	 *   name: "docs",
+	 *   description: "Answers questions from the docs server. Use for documentation lookups.",
+	 *   tools: ["mcp__docs__*"],
+	 *   systemPrompt: "Search the docs and answer with links.",
+	 * });
+	 */
+	registerAgentType(type: ExtensionAgentType): void;
+
 	/**
 	 * Register a virtual model: a selectable catalog entry that routes each request to a physical
 	 * model. The selection (`ctx.model`, `model_change` entries) names the virtual model; assistant
@@ -2134,6 +2158,8 @@ export interface ExtensionRuntimeState {
 	unregisterProvider: (name: string, extensionPath?: string) => void;
 	/** Servers registered with `akramcode.registerMcpServer()`. */
 	mcpServers: McpServerRegistry;
+	/** Types registered with `akramcode.registerAgentType()`, by name. */
+	agentTypes: Map<string, AgentTypeDefinition>;
 	registerVirtualModel: (definition: VirtualModelDefinition, extensionPath?: string) => void;
 	unregisterVirtualModel: (provider: string, id: string) => void;
 }

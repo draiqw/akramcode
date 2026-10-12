@@ -19,6 +19,7 @@ import type { ModelRegistry } from "../model-registry.ts";
 import type { ScopedModel } from "../model-resolver.ts";
 import type { SessionManager } from "../session-manager.ts";
 import type { SubagentControl } from "../subagents/agent-tool.ts";
+import type { AgentTypeDefinition } from "../subagents/agent-types.ts";
 import {
 	type BuildSystemPromptOptions,
 	buildSystemPrompt,
@@ -623,6 +624,11 @@ export class ExtensionRunner {
 
 	hasUI(): boolean {
 		return this.uiContext !== noOpUIContext;
+	}
+
+	/** Agent types registered with `akramcode.registerAgentType()`. */
+	getRegisteredAgentTypes(): AgentTypeDefinition[] {
+		return [...this.runtime.agentTypes.values()];
 	}
 
 	getExtensionPaths(): string[] {

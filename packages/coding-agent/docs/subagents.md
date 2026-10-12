@@ -43,7 +43,7 @@ An agent type is a Markdown file with YAML frontmatter. The body is the type's s
 | `~/.akramcode/agent/agents/*.md` | User agents, in every project |
 | `.akramcode/agents/*.md` | Project agents, loaded only when the project is [trusted](security.md) |
 
-A user agent can replace a built-in type with the same name. A project agent cannot replace a built-in or user agent: it is skipped and reported as a warning, so a repository cannot change what an agent type you rely on does. Project agents are dropped as soon as the project is no longer trusted.
+Extensions can add types too (see [Extensions](extensions.md#agent-types)), such as the built-in [`browser`](browser.md) type. A user agent can replace a built-in or extension type with the same name. `subagents.models` in [settings](settings.md) sets the model of any type by name, for example `"subagents": { "models": { "browser": "openai-codex/gpt-6-luna" } }`. A project agent cannot replace a built-in or user agent: it is skipped and reported as a warning, so a repository cannot change what an agent type you rely on does. Project agents are dropped as soon as the project is no longer trusted.
 
 | Field | Required | Description |
 |---|---|---|
@@ -57,9 +57,10 @@ A user agent can replace a built-in type with the same name. A project agent can
 Tool names refer to tools of the main session: built-in tools, extension tools, and MCP tools (named `mcp__<server>__<tool>`). `*` matches any characters, so `mcp__github__*` selects every tool of the `github` server. The allowlist only selects among the tools the main session can call itself:
 
 - tools active in the main session (disabled with `--tools`, `defaultTools`, or `excludeTools`, or registered inactive, such as `update_plan`, they are not available);
-- MCP tools with `codemode` exposure while `codemode` is active, and with `deferred` exposure while `tool_search` or `codemode` is active.
+- tools with `codemode` exposure while `codemode` is active;
+- tools with `deferred` exposure, such as the [browser](browser.md) tools and MCP tools of `deferred` servers. They are never active, so only types that list them get them.
 
-`codemode`, `tool_search`, `agent`, `task_stop`, and hidden tools are never given. The subagent gets exactly the resolved tools: the list is enforced when its session is created, not only described in its prompt. Names that match no available tool are ignored and reported as warnings at startup and in `/agents`. Built-in types are not reported for missing tools, because they name optional tools on purpose (`explore` lists `grep`, `find`, and `ls`, which are off by default). MCP servers connect after startup, so unmatched `mcp__` names are reported only in `/agents`. Starting a type whose `tools` name a server's tools (such as `mcp__browser__*`) waits until that server has connected or failed, so the subagent does not start without them.
+`codemode`, `tool_search`, `agent`, `task_stop`, and hidden tools are never given. The subagent gets exactly the resolved tools: the list is enforced when its session is created, not only described in its prompt. Names that match no available tool are ignored and reported as warnings at startup and in `/agents`. Built-in types are not reported for missing tools, because they name optional tools on purpose (`explore` lists `grep`, `find`, and `ls`, which are off by default). MCP servers connect after startup, so unmatched `mcp__` names are reported only in `/agents`. Starting a type whose `tools` name a server's tools (such as `mcp__github__*`) waits until that server has connected or failed, so the subagent does not start without them.
 
 Example: a read-only reviewer.
 

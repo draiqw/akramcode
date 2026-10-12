@@ -493,7 +493,7 @@ export class AgentSession {
 	/** Built-in tools that need this session: `agent` and `task_stop`. */
 	private _sessionToolDefinitions: ToolDefinition[] = [];
 	/** Agent types, read on first use after each runtime build, and the project trust they were read with. */
-	private _agentTypes: { trusted: boolean; discovery: AgentTypeDiscovery } | undefined;
+	private _agentTypes: { key: string; discovery: AgentTypeDiscovery } | undefined;
 	/** Private temp directory for transcripts of sessions without a file. */
 	private _subagentTempDir: string | undefined;
 	/** Background tasks of this session. Stopped when the session is disposed. */
@@ -3870,12 +3870,23 @@ export class AgentSession {
 	}
 
 	private _getAgentTypes(): AgentTypeDiscovery {
-		// Read again when project trust changed, so revoking trust drops project agents at once.
+		// Read again when project trust, extension types, or model overrides changed, so revoking
+		// trust drops project agents at once.
 		const trusted = this.settingsManager.isProjectTrusted();
-		if (this._agentTypes?.trusted !== trusted) {
+		// The agent tool describes the types before the extension runner exists.
+		const extensionTypes = (this._extensionRunner as ExtensionRunner | undefined)?.getRegisteredAgentTypes() ?? [];
+		const models = this.settingsManager.getSubagentModels();
+		const key = JSON.stringify({ trusted, extensionTypes, models });
+		if (this._agentTypes?.key !== key) {
 			this._agentTypes = {
-				trusted,
-				discovery: discoverAgentTypes({ cwd: this._cwd, agentDir: this._agentDir, projectTrusted: trusted }),
+				key,
+				discovery: discoverAgentTypes({
+					cwd: this._cwd,
+					agentDir: this._agentDir,
+					projectTrusted: trusted,
+					extensionTypes,
+					models,
+				}),
 			};
 		}
 		return this._agentTypes.discovery;
@@ -3883,15 +3894,16 @@ export class AgentSession {
 
 	/**
 	 * Tools a subagent can get: only tools this session can call itself. These are its active direct
-	 * tools, its `codemode` tools while `codemode` is active, and its `deferred` tools while
-	 * `tool_search` or `codemode` is active. Tools that orchestrate other tools (codemode, tool
-	 * search) and the agent and background-control tools are never given. Subagent calls run through
-	 * this session's tool pipeline (`ctx.executeTool()`), so its hooks and checks apply to them.
+	 * tools, its `codemode` tools while `codemode` is active, and its `deferred` tools. Deferred
+	 * tools are never active, so only types that list them get them: a type's `tools` entry loads
+	 * them the way `tool_search` does for the main agent. Tools that orchestrate other tools
+	 * (codemode, tool search) and the agent and background-control tools are never given. Subagent
+	 * calls run through this session's tool pipeline (`ctx.executeTool()`), so its hooks and checks
+	 * apply to them.
 	 */
 	private _getSubagentToolSources(): SubagentToolSource[] {
 		const active = new Set(this.getActiveToolNames());
 		const viaCodemode = active.has("codemode");
-		const viaSearch = viaCodemode || active.has("tool_search");
 		return [...this._toolDefinitions.values()].flatMap(({ definition }) => {
 			const name = definition.name;
 			if (SUBAGENT_EXCLUDED_TOOL_NAMES.includes(name) || definition.prepareLoadout) return [];
@@ -3899,7 +3911,7 @@ export class AgentSession {
 			const reachable =
 				(exposure === "direct" && active.has(name)) ||
 				(exposure === "codemode" && viaCodemode) ||
-				(exposure === "deferred" && viaSearch);
+				exposure === "deferred";
 			return reachable ? [{ name, active: active.has(name), definition }] : [];
 		});
 	}

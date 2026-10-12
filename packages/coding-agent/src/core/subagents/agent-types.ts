@@ -22,7 +22,7 @@ export interface AgentTypeDefinition {
 	thinking?: ThinkingLevel;
 	/** Type-specific system prompt. */
 	systemPrompt: string;
-	source: "builtin" | "user" | "project";
+	source: "builtin" | "extension" | "user" | "project";
 	filePath?: string;
 }
 
@@ -161,8 +161,13 @@ export function discoverAgentTypes(options: {
 	cwd: string;
 	agentDir: string;
 	projectTrusted: boolean;
+	/** Types registered by extensions. They replace built-ins; user and project files replace them. */
+	extensionTypes?: readonly AgentTypeDefinition[];
+	/** Model pattern by type name (`subagents.models`), replacing the type's own `model`. */
+	models?: Readonly<Record<string, string>>;
 }): AgentTypeDiscovery {
 	const byName = new Map<string, AgentTypeDefinition>(BUILTIN_AGENT_TYPES.map((type) => [type.name, type]));
+	for (const type of options.extensionTypes ?? []) byName.set(type.name, type);
 	const user: AgentTypeDiscovery = { types: [], diagnostics: [] };
 	loadAgentTypesFromDir(getUserAgentsDir(options.agentDir), "user", user);
 	for (const type of user.types) byName.set(type.name, type);
@@ -183,7 +188,9 @@ export function discoverAgentTypes(options: {
 			byName.set(type.name, type);
 		}
 	}
-	return { types: [...byName.values()], diagnostics };
+	const models = options.models ?? {};
+	const types = [...byName.values()].map((type) => (models[type.name] ? { ...type, model: models[type.name] } : type));
+	return { types, diagnostics };
 }
 
 function matchesToolPattern(pattern: string, name: string): boolean {
