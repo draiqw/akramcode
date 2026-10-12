@@ -1,5 +1,5 @@
 import { applyPatch } from "diff";
-import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -863,6 +863,17 @@ describe("Coding Agent Tools", () => {
 			const fullOutput = readFileSync(fullOutputPath!, "utf-8");
 			expect(fullOutput).toContain("1\n2\n3");
 			expect(fullOutput).toContain("2998\n2999\n3000");
+		});
+
+		it("executeBash caps output like the bash tool and keeps the full output private", async () => {
+			const result = await executeBashWithOperations("seq 1000", process.cwd(), createLocalBashOperations());
+			expect(result.truncated).toBe(true);
+			expect(result.output.trim().split("\n")).toHaveLength(400);
+			expect(result.output.trim().endsWith("1000")).toBe(true);
+			for (let i = 0; i < 20 && !existsSync(result.fullOutputPath!); i++) {
+				await new Promise((resolve) => setTimeout(resolve, 10));
+			}
+			expect(statSync(result.fullOutputPath!).mode & 0o777).toBe(0o600);
 		});
 	});
 

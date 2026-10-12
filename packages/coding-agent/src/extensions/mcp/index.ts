@@ -1052,7 +1052,8 @@ export function createMcpExtension(options: McpExtensionOptions = {}): Extension
 			} else if (tool.name === "agent") {
 				// A subagent gets its tools when it starts, so a type listing a server's tools waits for it.
 				const { subagent_type } = event.input as { subagent_type?: unknown };
-				const typeName = typeof subagent_type === "string" ? subagent_type : "general-purpose";
+				// Resolved like the agent tool does, so the type that runs is the one waited for.
+				const typeName = (typeof subagent_type === "string" && subagent_type.trim()) || "general-purpose";
 				const patterns = ctx.subagents?.listTypes().types.find((type) => type.name === typeName)?.tools ?? [];
 				waiting = pendingServers.filter((server) => toolPatternsNeedServer(patterns, server.entry.name));
 			}

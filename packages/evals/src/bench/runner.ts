@@ -195,8 +195,10 @@ let authWriteBack: Promise<void> = Promise.resolve();
 /**
  * OAuth refresh tokens rotate: if one run refreshes the token, copies held by other runs go stale.
  * After each run, copy a newer token back to the shared auth file so later runs start from it.
+ * Encrypted text is copied back only when the shared file's key exists: a key the run created
+ * itself is deleted with the run, and the shared file would become unreadable.
  */
-function syncAuthBack(runAuth: string, sharedAuth: string): Promise<void> {
+export function syncAuthBack(runAuth: string, sharedAuth: string): Promise<void> {
 	authWriteBack = authWriteBack.then(async () => {
 		try {
 			const [mine, shared] = await Promise.all([readFile(runAuth, "utf8"), readFile(sharedAuth, "utf8")]);
@@ -205,7 +207,11 @@ function syncAuthBack(runAuth: string, sharedAuth: string): Promise<void> {
 			const newer = Object.keys(mineJson).some(
 				(provider) => (mineJson[provider]?.expires ?? 0) > (sharedJson[provider]?.expires ?? 0),
 			);
-			if (newer) await writeFile(sharedAuth, mine, { mode: 0o600 });
+			const readable =
+				!mine.includes("enc:v1:") ||
+				!!process.env.AKRAMCODE_SECRETS_KEY ||
+				existsSync(join(dirname(sharedAuth), "secrets.key"));
+			if (newer && readable) await writeFile(sharedAuth, mine, { mode: 0o600 });
 		} catch {}
 	});
 	return authWriteBack;
@@ -264,9 +270,11 @@ export async function executeRun(run: PlannedRun, options: RunOptions): Promise<
 			options.model,
 		];
 		if (options.thinking) argv.push("--thinking", options.thinking);
+		// The agent needs the key of an encrypted auth.json; the task tests do not.
+		const secretsKeyEnv = process.env.AKRAMCODE_SECRETS_KEY;
 		const outcome = await runProcess(argv, {
 			cwd: workspace,
-			env,
+			env: secretsKeyEnv ? { ...env, AKRAMCODE_SECRETS_KEY: secretsKeyEnv } : env,
 			stdoutPath: eventsPath,
 			stderrPath: join(options.artifactDir, "stderr.txt"),
 			timeoutMs: task.timeoutSec * 1000 * options.timeoutScale,

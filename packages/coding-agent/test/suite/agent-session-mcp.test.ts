@@ -739,37 +739,43 @@ return { docs, sameForAliases: aliases.every((alias) => JSON.stringify(alias) ==
 		expect(getMessageText(toolResult(harness, "codemode")).split("\n").at(-1)).toBe("2");
 	});
 
-	it("waits for the servers a subagent type lists before starting it", async () => {
-		const { harness } = await setupSlow({ exposure: "deferred" }, 30, undefined, true);
-		const agentsDir = join(harness.tempDir, "agent", "agents");
-		mkdirSync(agentsDir, { recursive: true });
-		writeFileSync(
-			join(agentsDir, "docs.md"),
-			"---\nname: docs\ndescription: Docs\ntools: mcp__slow__*\n---\nRead docs.\n",
-		);
-		harness.session.subagents?.reload();
-		const childTools: string[][] = [];
-		const parentSteps = [
-			fauxAssistantMessage(fauxToolCall("agent", { description: "Docs", prompt: "find", subagent_type: "docs" }), {
-				stopReason: "toolUse",
-			}),
-			fauxAssistantMessage("done"),
-		];
-		const respond: FauxResponseFactory = (context) => {
-			if (getCurrentSystemPrompt(context.messages).includes("You are a subagent")) {
-				childTools.push(getCurrentTools(context.messages).map((tool) => tool.name));
-				return fauxAssistantMessage("found");
-			}
-			return parentSteps.shift() ?? fauxAssistantMessage("extra");
-		};
-		harness.setResponses([respond, respond, respond]);
+	it.each(["docs", " docs "])(
+		"waits for the servers a subagent type lists before starting it (%j)",
+		async (subagentType) => {
+			const { harness } = await setupSlow({ exposure: "deferred" }, 30, undefined, true);
+			const agentsDir = join(harness.tempDir, "agent", "agents");
+			mkdirSync(agentsDir, { recursive: true });
+			writeFileSync(
+				join(agentsDir, "docs.md"),
+				"---\nname: docs\ndescription: Docs\ntools: mcp__slow__*\n---\nRead docs.\n",
+			);
+			harness.session.subagents?.reload();
+			const childTools: string[][] = [];
+			const parentSteps = [
+				fauxAssistantMessage(
+					fauxToolCall("agent", { description: "Docs", prompt: "find", subagent_type: subagentType }),
+					{
+						stopReason: "toolUse",
+					},
+				),
+				fauxAssistantMessage("done"),
+			];
+			const respond: FauxResponseFactory = (context) => {
+				if (getCurrentSystemPrompt(context.messages).includes("You are a subagent")) {
+					childTools.push(getCurrentTools(context.messages).map((tool) => tool.name));
+					return fauxAssistantMessage("found");
+				}
+				return parentSteps.shift() ?? fauxAssistantMessage("extra");
+			};
+			harness.setResponses([respond, respond, respond]);
 
-		await harness.session.prompt("go");
+			await harness.session.prompt("go");
 
-		expect(childTools[0]).toEqual(
-			expect.arrayContaining(["mcp__slow__search", "mcp__slow__fail", "mcp__slow__shot"]),
-		);
-	});
+			expect(childTools[0]).toEqual(
+				expect.arrayContaining(["mcp__slow__search", "mcp__slow__fail", "mcp__slow__shot"]),
+			);
+		},
+	);
 
 	it("waits for servers before tool_search searches", async () => {
 		const { harness } = await setupSlow({ exposure: "deferred" }, 30);

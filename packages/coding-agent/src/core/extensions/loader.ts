@@ -13,11 +13,13 @@ import type { createJiti } from "jiti";
 import { CONFIG_DIR_NAME, getAgentDir, isBunBinary, isBundledNode } from "../../config.ts";
 import { resolvePath } from "../../utils/paths.ts";
 import { readAkramCodeManifest } from "../akramcode-manifest.ts";
+import { THINKING_LEVEL_OPTIONS } from "../defaults.ts";
 import { createEventBus, type EventBus } from "../event-bus.ts";
 import type { ExecOptions } from "../exec.ts";
 import { execCommand } from "../exec.ts";
 import { type McpServerConfig, McpServerRegistry, mcpNamespace, validateMcpServerConfig } from "../mcp-servers.ts";
 import { createSyntheticSourceInfo, getSyntheticPathSource, isSyntheticPath } from "../source-info.ts";
+import { isValidAgentTypeName } from "../subagents/agent-types.ts";
 import { time } from "../timings.ts";
 import type { ModelRouteRequest, VirtualModelDefinition } from "../virtual-models.ts";
 import type {
@@ -484,10 +486,27 @@ function createExtensionAPI(
 
 		registerAgentType(type: ExtensionAgentType) {
 			assertActive();
-			if (!/^[A-Za-z0-9._-]+$/.test(type.name)) {
-				throw new Error(`Invalid agent type name "${type.name}": use letters, digits, "-", "_", and "."`);
+			if (typeof type.name !== "string" || !isValidAgentTypeName(type.name)) {
+				throw new Error(
+					`Invalid agent type name "${type.name}": start with a letter or digit, then use letters, digits, "-", "_", and "."`,
+				);
 			}
-			if (!type.description.trim()) throw new Error(`Agent type "${type.name}" needs a description`);
+			if (typeof type.description !== "string" || !type.description.trim()) {
+				throw new Error(`Agent type "${type.name}" needs a description`);
+			}
+			if (typeof type.systemPrompt !== "string") throw new Error(`Agent type "${type.name}" needs a systemPrompt`);
+			for (const key of ["tools", "disallowedTools"] as const) {
+				const list = type[key];
+				if (list !== undefined && !(Array.isArray(list) && list.every((item) => typeof item === "string"))) {
+					throw new Error(`Agent type "${type.name}": ${key} must be an array of strings`);
+				}
+			}
+			if (type.model !== undefined && typeof type.model !== "string") {
+				throw new Error(`Agent type "${type.name}": model must be a string`);
+			}
+			if (type.thinking !== undefined && !THINKING_LEVEL_OPTIONS.includes(type.thinking)) {
+				throw new Error(`Agent type "${type.name}": thinking must be one of ${THINKING_LEVEL_OPTIONS.join(", ")}`);
+			}
 			runtime.agentTypes.set(type.name, { ...structuredClone(type), source: "extension" });
 		},
 

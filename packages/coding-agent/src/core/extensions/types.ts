@@ -1868,8 +1868,8 @@ export interface ExtensionAPI {
 
 	/**
 	 * Register a subagent type for the `agent` tool, like an agent file in `~/.akramcode/agent/agents/`.
-	 * It replaces a built-in type of the same name; a user or project agent file of that name
-	 * replaces it, and `subagents.models` can change its model. Registering a name again replaces
+	 * It replaces a built-in type of the same name; a user agent file of that name replaces it, a
+	 * project agent file cannot, and `subagents.models` can change its model. Registering a name again replaces
 	 * the earlier registration. Register during extension load.
 	 *
 	 * @example

@@ -58,7 +58,7 @@ Tool names refer to tools of the main session: built-in tools, extension tools, 
 
 - tools active in the main session (disabled with `--tools`, `defaultTools`, or `excludeTools`, or registered inactive, such as `update_plan`, they are not available);
 - tools with `codemode` exposure while `codemode` is active;
-- tools with `deferred` exposure, such as the [browser](browser.md) tools and MCP tools of `deferred` servers. They are never active, so only types that list them get them.
+- tools with `deferred` exposure, such as the [browser](browser.md) tools and MCP tools of `deferred` servers. Types that list them get them. Types without a `tools` list get only those that `tool_search` has already loaded in the main session.
 
 `codemode`, `tool_search`, `agent`, `task_stop`, and hidden tools are never given. The subagent gets exactly the resolved tools: the list is enforced when its session is created, not only described in its prompt. Names that match no available tool are ignored and reported as warnings at startup and in `/agents`. Built-in types are not reported for missing tools, because they name optional tools on purpose (`explore` lists `grep`, `find`, and `ls`, which are off by default). MCP servers connect after startup, so unmatched `mcp__` names are reported only in `/agents`. Starting a type whose `tools` name a server's tools (such as `mcp__github__*`) waits until that server has connected or failed, so the subagent does not start without them.
 

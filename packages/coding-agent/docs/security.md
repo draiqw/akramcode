@@ -1,6 +1,6 @@
 # Run AkramCode safely
 
-Treat model-generated commands and code as untrusted. AkramCode can read, change, and execute files with the permissions of the account that started it, and it does not ask for approval before every tool call. Extensions, package installers, language servers, and other child processes run with those same permissions unless an operating-system or virtualization boundary restricts them.
+Treat model-generated commands and code as untrusted. AkramCode can read, change, and execute files with the permissions of the account that started it, and it does not ask for approval before every tool call. It asks only before [commands that cannot be undone](#commands-that-always-ask). Extensions, package installers, language servers, and other child processes run with those same permissions unless an operating-system or virtualization boundary restricts them.
 
 Files, comments, instructions, command output, and model responses can steer the model through prompt injection. Project trust controls which project resources load at startup, but it does not make that content or the resulting actions safe.
 
@@ -21,6 +21,16 @@ The working folder controls resource discovery and the default location for tool
 Whichever option you choose, only provide the files and services required for the task. Keep credentials outside the environment where possible, or use narrowly scoped, short-lived credentials. Restrict network access when commands do not need it.
 
 For setup instructions and the limitations of each isolation method, see [Run AkramCode in an isolated environment](containerization.md).
+
+## Commands that always ask
+
+Before the `bash` tool runs one of these commands, AkramCode asks you to confirm it. No setting, project, or extension can turn this off. Without a UI (`-p`, JSON mode) the command is blocked.
+
+- deleting files: `rm`, `rmdir`, `unlink`, `shred`, `find -delete`;
+- rewriting git history or discarding changes: `git push --force` (also `-f`, `--force-with-lease`, `+branch`), `git reset --hard`, `git clean -f`, `git checkout -- <path>` or `.`, `git restore`, `git branch -D`, `git stash drop` or `clear`;
+- system-level: `sudo`, `dd of=`, `mkfs`, `diskutil erase`.
+
+It applies to every `bash` call, including calls made by subagents, codemode scripts, and workflows. Commands you run yourself with `!` are not checked. The check matches command text, so it errs toward asking (`echo rm` asks too), and it does not catch a program that deletes files on its own, such as a Python script. It reduces accidents; it is not a security boundary.
 
 <a id="project-trust"></a>
 

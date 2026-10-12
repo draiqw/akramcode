@@ -133,6 +133,14 @@ describe("agent type discovery", () => {
 		expect(explore).toMatchObject({ description: "My explorer", tools: ["read"], source: "user" });
 	});
 
+	it("does not take a model for a type named after an Object.prototype member", () => {
+		writeAgent(join(agentDir, "agents"), "toString.md", "---\nname: toString\ndescription: Odd name\n---\nBody.\n");
+		const type = discoverAgentTypes({ cwd, agentDir, projectTrusted: false }).types.find(
+			(candidate) => candidate.name === "toString",
+		);
+		expect(type?.model).toBeUndefined();
+	});
+
 	it("serializes definitions that discovery reads back", () => {
 		const content = serializeAgentType({
 			name: "reviewer",

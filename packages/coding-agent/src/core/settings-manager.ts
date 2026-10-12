@@ -120,7 +120,7 @@ export interface SubagentSettings {
 
 /** Settings of the built-in browser extension. */
 export interface BrowserSettings {
-	/** Run Chrome without a window. Default: false (many sites block headless Chrome). */
+	/** Run Chrome without a window. Default: true, so it never takes focus; some sites block headless Chrome. */
 	headless?: boolean;
 	/** Chrome or Chromium executable, or a macOS `.app` bundle. Default: found automatically. */
 	executablePath?: string;

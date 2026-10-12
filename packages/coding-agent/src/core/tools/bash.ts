@@ -22,8 +22,9 @@ import { wrapToolDefinition } from "./tool-definition-wrapper.ts";
 import { formatSize, type TruncationResult } from "./truncate.ts";
 
 /** Bash output stays in context for every later request, so it is kept smaller than file reads. */
-const BASH_MAX_LINES = 400;
-const BASH_MAX_BYTES = 16 * 1024;
+/** Output the model sees from a command: the last 400 lines or 16KB, whichever is hit first. */
+export const BASH_MAX_LINES = 400;
+export const BASH_MAX_BYTES = 16 * 1024;
 
 const MAX_TIMEOUT_MS = 2_147_483_647;
 /** Output limit of `structuredContent.output`, which programmatic callers such as codemode scripts receive. */

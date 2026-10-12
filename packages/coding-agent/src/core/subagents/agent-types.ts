@@ -161,7 +161,7 @@ export function discoverAgentTypes(options: {
 	cwd: string;
 	agentDir: string;
 	projectTrusted: boolean;
-	/** Types registered by extensions. They replace built-ins; user and project files replace them. */
+	/** Types registered by extensions. They replace built-ins; user files replace them, project files cannot. */
 	extensionTypes?: readonly AgentTypeDefinition[];
 	/** Model pattern by type name (`subagents.models`), replacing the type's own `model`. */
 	models?: Readonly<Record<string, string>>;
@@ -189,7 +189,9 @@ export function discoverAgentTypes(options: {
 		}
 	}
 	const models = options.models ?? {};
-	const types = [...byName.values()].map((type) => (models[type.name] ? { ...type, model: models[type.name] } : type));
+	const types = [...byName.values()].map((type) =>
+		Object.hasOwn(models, type.name) ? { ...type, model: models[type.name] } : type,
+	);
 	return { types, diagnostics };
 }
 

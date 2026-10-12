@@ -12,7 +12,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { stripAnsi } from "../utils/ansi.ts";
 import { sanitizeBinaryOutput } from "../utils/shell.ts";
-import type { BashOperations } from "./tools/bash.ts";
+import { BASH_MAX_BYTES, BASH_MAX_LINES, type BashOperations } from "./tools/bash.ts";
 import { DEFAULT_MAX_BYTES, truncateTail } from "./tools/truncate.ts";
 
 // ============================================================================
@@ -67,7 +67,7 @@ export async function executeBashWithOperations(
 		}
 		const id = randomBytes(8).toString("hex");
 		tempFilePath = join(tmpdir(), `akramcode-bash-${id}.log`);
-		tempFileStream = createWriteStream(tempFilePath);
+		tempFileStream = createWriteStream(tempFilePath, { mode: 0o600 });
 		for (const chunk of outputChunks) {
 			tempFileStream.write(chunk);
 		}
@@ -82,7 +82,7 @@ export async function executeBashWithOperations(
 		const text = sanitizeBinaryOutput(stripAnsi(decoder.decode(data, { stream: true }))).replace(/\r/g, "");
 
 		// Start writing to temp file if exceeds threshold
-		if (totalBytes > DEFAULT_MAX_BYTES) {
+		if (totalBytes > BASH_MAX_BYTES) {
 			ensureTempFile();
 		}
 
@@ -111,7 +111,7 @@ export async function executeBashWithOperations(
 		});
 
 		const fullOutput = outputChunks.join("");
-		const truncationResult = truncateTail(fullOutput);
+		const truncationResult = truncateTail(fullOutput, { maxLines: BASH_MAX_LINES, maxBytes: BASH_MAX_BYTES });
 		if (truncationResult.truncated) {
 			ensureTempFile();
 		}
@@ -131,7 +131,7 @@ export async function executeBashWithOperations(
 		// Check if it was an abort
 		if (options?.signal?.aborted) {
 			const fullOutput = outputChunks.join("");
-			const truncationResult = truncateTail(fullOutput);
+			const truncationResult = truncateTail(fullOutput, { maxLines: BASH_MAX_LINES, maxBytes: BASH_MAX_BYTES });
 			if (truncationResult.truncated) {
 				ensureTempFile();
 			}

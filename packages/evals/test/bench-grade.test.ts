@@ -2,7 +2,14 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { countChangedFiles, gradeWorkspace, isolatedEnv, prepareWorkspace, verifyTask } from "../src/bench/runner.ts";
+import {
+	countChangedFiles,
+	gradeWorkspace,
+	isolatedEnv,
+	prepareWorkspace,
+	syncAuthBack,
+	verifyTask,
+} from "../src/bench/runner.ts";
 import type { TaskSpec } from "../src/bench/tasks.ts";
 
 let root: string;
@@ -56,5 +63,28 @@ describe("grading", () => {
 
 	it("verifies fail-before and pass-after with the reference solution", async () => {
 		expect(await verifyTask(task)).toEqual({ instanceId: "tiny", failsBefore: true, passesAfter: true, error: null });
+	});
+});
+
+describe("auth write-back", () => {
+	it("does not write encrypted auth back where its key does not exist", async () => {
+		const shared = join(root, "shared", "auth.json");
+		const run = join(root, "run", "auth.json");
+		await mkdir(join(root, "shared"));
+		await mkdir(join(root, "run"));
+		const plain = JSON.stringify({ codex: { access: "a", expires: 1 } });
+		await writeFile(shared, plain);
+		await writeFile(run, JSON.stringify({ codex: { access: "enc:v1:xyz", expires: 2 } }));
+		const saved = process.env.AKRAMCODE_SECRETS_KEY;
+		delete process.env.AKRAMCODE_SECRETS_KEY;
+		try {
+			await syncAuthBack(run, shared);
+			expect(await readFile(shared, "utf8")).toBe(plain);
+			await writeFile(join(root, "shared", "secrets.key"), "key\n");
+			await syncAuthBack(run, shared);
+			expect(await readFile(shared, "utf8")).toContain("enc:v1:xyz");
+		} finally {
+			if (saved !== undefined) process.env.AKRAMCODE_SECRETS_KEY = saved;
+		}
 	});
 });

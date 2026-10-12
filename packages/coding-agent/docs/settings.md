@@ -108,7 +108,7 @@ Settings of the built-in [browser](browser.md) extension. They are read from the
 
 | Setting | Type | Default | Description |
 |---|---|---|---|
-| `browser.headless` | boolean | `false` | Run Chrome without a window. Many sites block headless Chrome. |
+| `browser.headless` | boolean | `true` | Run Chrome without a window, so it never takes focus. Set `false` for sites that block headless Chrome. |
 | `browser.executablePath` | string | found automatically | Chrome or Chromium executable, or a macOS `.app` bundle. Supports a leading `~`. |
 | `browser.cdpUrl` | string | unset | Attach to a browser already listening for CDP (`http://127.0.0.1:9222` or a `ws://` URL) instead of starting one. |
 | `browser.allowedDomains` | `string[]` | `[]` | Hosts the browser may visit; subdomains match too. Empty: any host. |

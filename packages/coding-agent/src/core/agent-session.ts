@@ -82,6 +82,7 @@ import {
 	prepareCompaction,
 	shouldCompact,
 } from "./compaction/index.ts";
+import { findDangerousCommands } from "./dangerous-commands.ts";
 import { DEFAULT_THINKING_LEVEL, THINKING_LEVEL_OPTIONS } from "./defaults.ts";
 import { exportSessionToHtml, type ToolHtmlRenderer } from "./export-html/index.ts";
 import { createToolHtmlRenderer } from "./export-html/tool-renderer.ts";
@@ -182,6 +183,8 @@ import {
 
 /** Monitor output notifications kept for the next prompt while notifications are paused after an abort. */
 const MAX_HELD_TASK_OUTPUT_NOTIFICATIONS = 5;
+/** Command callers whose nested call records are kept; far more than commands running at once. */
+const MAX_COMMAND_CALL_PARENTS = 32;
 
 function isTaskNotificationMessage(message: AgentMessage): message is CustomMessage<TaskNotificationDetails> {
 	return message.role === "custom" && message.customType === TASK_NOTIFICATION_CUSTOM_TYPE;
@@ -531,6 +534,8 @@ export class AgentSession {
 	private _nestedToolCalls: NestedToolCallRunner | undefined;
 	/** Created on the first command `ctx.executeTool()` call. Never cleared by `agent_end`, so a command's ids stay unique. */
 	private _commandToolCalls: NestedToolCallRunner | undefined;
+	/** Parent ids of command calls, oldest first; only the latest records are kept. */
+	private _commandCallParents: string[] = [];
 	/** Declared tools whose declarations requests leave out, from `prepareLoadout` hooks. */
 	private _hiddenDeclarations: ReadonlySet<string> = new Set();
 	private _toolDefinitions: Map<string, ToolDefinitionEntry> = new Map();
@@ -721,6 +726,20 @@ export class AgentSession {
 		parentToolCallId?: string,
 	): Promise<BeforeToolCallResult | undefined> {
 		const runner = this._extensionRunner;
+		const command = (args as { command?: unknown } | undefined)?.command;
+		const dangerous = toolCall.name === "bash" && typeof command === "string" ? findDangerousCommands(command) : [];
+		if (dangerous.length > 0) {
+			const approved =
+				runner.hasUI() && (await runner.getUIContext().confirm(`Run ${dangerous.join(", ")}?`, command as string));
+			if (!approved) {
+				return {
+					block: true,
+					reason: runner.hasUI()
+						? `The user did not approve this command (${dangerous.join(", ")}).`
+						: `Blocked: ${dangerous.join(", ")} needs the user's confirmation, and there is no UI to ask.`,
+				};
+			}
+		}
 		if (!runner.hasHandlers("tool_call")) {
 			return undefined;
 		}
@@ -825,6 +844,13 @@ export class AgentSession {
 			stopReason: "toolUse",
 			timestamp: Date.now(),
 		}));
+		// Nothing reads a command's record, so drop the oldest instead of keeping every run's calls.
+		if (!this._commandCallParents.includes(parentToolCallId)) {
+			this._commandCallParents.push(parentToolCallId);
+			if (this._commandCallParents.length > MAX_COMMAND_CALL_PARENTS) {
+				this._commandToolCalls.takeRecord(this._commandCallParents.shift()!);
+			}
+		}
 		return this._commandToolCalls.execute(parentToolCallId, name, args, options);
 	}
 
@@ -3895,8 +3921,8 @@ export class AgentSession {
 	/**
 	 * Tools a subagent can get: only tools this session can call itself. These are its active direct
 	 * tools, its `codemode` tools while `codemode` is active, and its `deferred` tools. Deferred
-	 * tools are never active, so only types that list them get them: a type's `tools` entry loads
-	 * them the way `tool_search` does for the main agent. Tools that orchestrate other tools
+	 * tools are inactive until `tool_search` loads them, so until then only types that list them get
+	 * them: a type's `tools` entry loads them the way `tool_search` does for the main agent. Tools that orchestrate other tools
 	 * (codemode, tool search) and the agent and background-control tools are never given. Subagent
 	 * calls run through this session's tool pipeline (`ctx.executeTool()`), so its hooks and checks
 	 * apply to them.
