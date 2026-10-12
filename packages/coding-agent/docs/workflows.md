@@ -43,7 +43,7 @@ Manifest fields:
 | `params` | Parameters by name. Each has `type` (`string`, `number`, `boolean`, or `list`), and optionally `required`, `default`, `label`, and `description`. A required parameter has no default. |
 | `tools` | The tools the script may call, by name, for example `mcp__github__create_release`. Calls to other tools fail. The tools must be callable in the session, as for codemode. |
 
-A parameter with `"secret": true` and `"env": "GITHUB_TOKEN"` is read from that environment variable and cannot have a default. Its value is replaced with `***<name>***` in the run record, the output, and recorded tool call arguments.
+A parameter with `"secret": true` and `"env": "GITHUB_TOKEN"` is read from that environment variable and cannot have a default. Its value is replaced with `***<name>***` (also in its JSON-escaped form) in the run record, step names, the output, and the arguments, results, and errors of tool calls as the session records them and reports them in `tool_execution_*` events. Tools still receive the real value.
 
 ## Script globals
 
@@ -72,7 +72,7 @@ Values with spaces are quoted: `title="Release 2"`. Lists are comma-separated: `
 
 While a workflow runs, the footer shows its current step. The result is one line in the conversation, such as `workflow release-notes completed · 3 steps · 4.2s`; press `Ctrl+O` to see the steps, tool calls, and output. The result is also sent to the agent, so you can continue from it in the chat. `akramcode -p "/workflow run release-notes since=v1.0.26"` runs a workflow without the interactive UI.
 
-`--dry` does not call tools that may change anything: a tool without `readOnlyHint: true` (see [tool annotations](extensions.md#tool-exposure)) returns `{ dry_run: true, tool, arguments }` instead. `read`, `grep`, `find`, and `ls` are read-only; `bash` and `write` are not. `llm()` and `ask()` still run.
+`--dry` does not call tools that may change anything: a tool without `readOnlyHint: true` (see [tool annotations](extensions.md#tool-exposure)) returns `{ dry_run: true, tool, arguments }` instead. `read`, `grep`, `find`, and `ls` are read-only; `bash` and `write` are not. MCP tools always count as writing, because their annotations come from the server. `llm()` and `ask()` still run.
 
 `/workflow check` reports, without running anything:
 
@@ -84,4 +84,4 @@ A listed `mcp__` tool whose server is not connected is reported as `not checked`
 
 ## Workflows from the agent
 
-When workflows exist, the agent gets a `workflow_run` tool whose description lists them, and can run one with parameters or as a dry run. In the interactive UI, running a workflow that lists a tool without `readOnlyHint` asks you first, unless it is a dry run. Without a UI (print and JSON modes) it runs without asking. The list is read when the session starts; run `/reload` after adding a workflow.
+When workflows exist, the agent gets a `workflow_run` tool whose description lists them, and can run one with parameters or as a dry run. In the interactive UI, running a workflow that lists a tool without `readOnlyHint` asks you first, showing the parameters, unless it is a dry run. Without a UI (print and JSON modes) it runs without asking. The list in the tool description is read when the session starts, so run `/reload` after adding a workflow; edits to an existing workflow apply on its next run.

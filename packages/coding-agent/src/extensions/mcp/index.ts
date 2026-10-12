@@ -1046,6 +1046,9 @@ export function createMcpExtension(options: McpExtensionOptions = {}): Extension
 				waiting = pendingServers.filter((server) => scriptNeedsServer(source, server.entry.name));
 			} else if (isToolSearchTool(tool) || RESOURCE_TOOL_NAMES.has(tool.name)) {
 				waiting = pendingServers;
+			} else if (tool.name === "workflow_run") {
+				// A workflow can list MCP tools; its script resolves them when it starts.
+				waiting = pendingServers;
 			} else if (tool.name === "agent") {
 				// A subagent gets its tools when it starts, so a type listing a server's tools waits for it.
 				const { subagent_type } = event.input as { subagent_type?: unknown };

@@ -80,8 +80,6 @@ export interface WorkflowRunOptions {
 	getAnnotations: (toolName: string) => ToolAnnotations | undefined;
 	signal?: AbortSignal;
 	onUpdate?: (details: WorkflowRunDetails) => void;
-	/** Receives the function that masks this run's secrets, once parameters are resolved. */
-	onMask?: (mask: (text: string) => string) => void;
 }
 
 export interface WorkflowRunResult {
@@ -187,9 +185,20 @@ export async function resolveWorkflowParams(
 	return { values, secrets };
 }
 
-/** Replace each secret value with `***<name>***`. */
+/** Replace each secret value, also in its JSON-escaped form, with `***<name>***`. */
 export function createMasker(secrets: ReadonlyMap<string, string>): (text: string) => string {
-	const entries = [...secrets].filter(([, value]) => value.length > 0).sort((a, b) => b[1].length - a[1].length);
+	const entries = [...secrets]
+		.filter(([, value]) => value.length > 0)
+		.flatMap(([name, value]): Array<[string, string]> => {
+			const escaped = JSON.stringify(value).slice(1, -1);
+			return escaped === value
+				? [[name, value]]
+				: [
+						[name, value],
+						[name, escaped],
+					];
+		})
+		.sort((a, b) => b[1].length - a[1].length);
 	if (entries.length === 0) return (text) => text;
 	return (text) => {
 		let masked = text;
@@ -287,7 +296,6 @@ export async function runWorkflow(file: WorkflowFile, options: WorkflowRunOption
 		ctx.hasUI ? (name, param) => ctx.ui.input(param.label ?? name, param.description) : undefined,
 	);
 	const mask = createMasker(resolved.secrets);
-	options.onMask?.(mask);
 	const maskedParams: Record<string, WorkflowParamValue> = {};
 	for (const [name, value] of Object.entries(resolved.values)) {
 		maskedParams[name] = resolved.secrets.has(name) ? `***${name}***` : value;
@@ -317,7 +325,7 @@ export async function runWorkflow(file: WorkflowFile, options: WorkflowRunOption
 		{
 			name: "__workflow.stepStart",
 			execute: (args) => {
-				const id = isRecord(args) && typeof args.id === "string" ? args.id : "step";
+				const id = mask(isRecord(args) && typeof args.id === "string" ? args.id : "step");
 				details.steps.push({ id, status: "running" });
 				stepStartedAt.push(performance.now());
 				publish();
@@ -413,6 +421,7 @@ export async function runWorkflow(file: WorkflowFile, options: WorkflowRunOption
 		{
 			globals,
 			rejectToolErrors: true,
+			redact: mask,
 			beforeToolCall: async (tool, args) => {
 				if (!allowed.has(tool.name)) {
 					throw new Error(`tools.${toCodemodeIdentifier(tool.name)} is not in the workflow's "tools" list`);

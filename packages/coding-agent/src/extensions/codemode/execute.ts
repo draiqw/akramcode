@@ -29,6 +29,7 @@ import {
 } from "@akramcode/codemode";
 import { getCodemodeWorkerSpecifier, getQuickJSWasmPath } from "../../config.ts";
 import type { ExtensionToolContext, ToolNamespace } from "../../core/extensions/types.ts";
+import { redactDeep } from "../../core/nested-tool-calls.ts";
 import type { SessionEntry } from "../../core/session-manager.ts";
 import { combineUsage } from "../../core/usage-totals.ts";
 import { Bm25Ranker, createToolSearchDocument, DEFAULT_TOOL_SEARCH_LIMIT } from "../tool-search/tool.ts";
@@ -263,7 +264,7 @@ function formatError(result: Extract<CodemodeResult, { ok: false }>, calls: read
 async function spillOutput(text: string): Promise<{ path: string } | { error: string }> {
 	const path = join(tmpdir(), `akramcode-codemode-${randomBytes(8).toString("hex")}.txt`);
 	try {
-		await writeFile(path, text);
+		await writeFile(path, text, { mode: 0o600 });
 		return { path };
 	} catch (error) {
 		return { error: error instanceof Error ? error.message : String(error) };
@@ -342,6 +343,8 @@ export async function executeCodemode(
 		modelUsage = modelUsage ? combineUsage(modelUsage, usage) : usage;
 	};
 
+	const { redact } = options;
+	const redactText = (text: string) => (redact ? redact(text) : text);
 	const snapshot = (): CodemodeToolDetails => ({ calls: calls.map((call) => ({ ...call })) });
 	const publish = () => onUpdate?.({ content: [], details: snapshot() });
 
@@ -355,7 +358,7 @@ export async function executeCodemode(
 			const record: CodemodeNestedCall = {
 				id: `${toolCallId}/?`,
 				name: tool.name,
-				args: previewArgs(args),
+				args: previewArgs(redact ? redactDeep(args, redact) : args),
 				status: "running",
 			};
 			calls.push(record);
@@ -367,7 +370,10 @@ export async function executeCodemode(
 			} catch (error) {
 				record.status = "error";
 				record.durationMs = performance.now() - callStartedAt;
-				record.error = truncateText(error instanceof Error ? error.message : String(error), ERROR_PREVIEW_CHARS);
+				record.error = truncateText(
+					redactText(error instanceof Error ? error.message : String(error)),
+					ERROR_PREVIEW_CHARS,
+				);
 				publish();
 				throw error;
 			}
@@ -380,12 +386,15 @@ export async function executeCodemode(
 			}
 			// Only tools from ctx.tools are callable, so ctx is set here.
 			if (!ctx) throw new Error("Tool calls need a session");
-			const outcome = await ctx.executeTool(tool.name, args, { signal: callSignal });
+			const outcome = await ctx.executeTool(tool.name, args, { signal: callSignal, ...(redact ? { redact } : {}) });
 			record.id = outcome.toolCall.id;
 			record.durationMs = performance.now() - callStartedAt;
 			if (outcome.isError) {
 				record.status = callSignal.aborted ? "cancelled" : "error";
-				record.error = truncateText(textOf(outcome.result) || `Tool "${tool.name}" failed`, ERROR_PREVIEW_CHARS);
+				record.error = truncateText(
+					redactText(textOf(outcome.result) || `Tool "${tool.name}" failed`),
+					ERROR_PREVIEW_CHARS,
+				);
 			} else {
 				record.status = "ok";
 			}
@@ -423,7 +432,7 @@ export async function executeCodemode(
 	options.onResult?.(result);
 
 	const items: (TextContent | ImageContent)[] = result.output.map((item) =>
-		item.type === "text" ? { type: "text", text: item.text } : item,
+		item.type === "text" ? { type: "text", text: redactText(item.text) } : item,
 	);
 	if (result.ok) {
 		const { set, delete: deleted } = result.storeWrites;
@@ -431,9 +440,9 @@ export async function executeCodemode(
 			options.appendEntry?.(CODEMODE_STORE_ENTRY_TYPE, { set, delete: deleted });
 		}
 		// akramcode extension: a returned value is appended like text().
-		if (result.value !== undefined) items.push({ type: "text", text: valueText(result.value) });
+		if (result.value !== undefined) items.push({ type: "text", text: redactText(valueText(result.value)) });
 	} else {
-		items.push({ type: "text", text: `Script error:\n${formatError(result, calls)}` });
+		items.push({ type: "text", text: redactText(`Script error:\n${formatError(result, calls)}`) });
 	}
 	if (generatedImages > 0 && !items.some((item) => item.type === "image")) {
 		items.push({

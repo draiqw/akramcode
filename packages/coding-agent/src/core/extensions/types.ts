@@ -373,6 +373,12 @@ export interface ExecuteToolOptions {
 	signal?: AbortSignal;
 	/** Receives partial results of the nested tool, in addition to `tool_execution_update` events. */
 	onUpdate?: AgentToolUpdateCallback;
+	/**
+	 * Rewrites every string of the call's arguments and results in the session's record of the call
+	 * and in its `tool_execution_*` events, for example to mask secrets. The tool still gets the
+	 * original arguments and the caller the original result. Calls the nested tool makes inherit it.
+	 */
+	redact?: (text: string) => string;
 }
 
 /**

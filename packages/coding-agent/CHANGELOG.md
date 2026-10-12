@@ -5,7 +5,7 @@
 ### Added
 
 - Workflows: `<name>.workflow.js` files in `~/.akramcode/agent/workflows/` or a trusted project's `.akramcode/workflows/` are codemode scripts with a JSON manifest of parameters and allowed tools, plus `params`, `step()`, `llm()`, `check()`, and `ask()`. `/workflow run <name> [k=v ...] [--dry]` runs one and records the result in the session, `/workflow check <name>` checks it without running, and the agent can run workflows with the `workflow_run` tool. See [docs/workflows.md](docs/workflows.md).
-- Extension commands can run tools through the session's tool pipeline with `ctx.executeTool()`.
+- Extension commands can run tools through the session's tool pipeline with `ctx.executeTool()`. Its `redact` option, also for tools, masks strings in the recorded nested call and its `tool_execution_*` events.
 - `read`, `grep`, `find`, and `ls` declare `readOnlyHint: true`.
 
 ### Fixed

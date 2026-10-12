@@ -105,6 +105,22 @@ export interface NestedToolCallOptions {
 	signal?: AbortSignal;
 	/** Receives partial results of the nested tool, in addition to `tool_execution_update` events. */
 	onUpdate?: AgentToolUpdateCallback;
+	/**
+	 * Rewrites every string of the call's arguments and results in the record and the
+	 * `tool_execution_*` events, for example to mask secrets. The tool still receives the original
+	 * arguments, and the caller the original outcome. Calls the nested tool makes inherit it.
+	 */
+	redact?: (text: string) => string;
+}
+
+/** `value` with `redact` applied to every string in it. */
+export function redactDeep<T>(value: T, redact: (text: string) => string): T {
+	if (typeof value === "string") return redact(value) as T;
+	if (Array.isArray(value)) return value.map((item) => redactDeep(item, redact)) as T;
+	if (typeof value === "object" && value !== null) {
+		return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, redactDeep(item, redact)])) as T;
+	}
+	return value;
 }
 
 /** `tool_execution_*` events of nested calls. */
@@ -148,6 +164,8 @@ interface CallScope {
 	nextId: number;
 	/** Set inside a call that holds the exclusive queue, so its own nested calls do not wait on it. */
 	holdsQueue: boolean;
+	/** Inherited {@link NestedToolCallOptions.redact}. */
+	redact?: (text: string) => string;
 }
 
 function textOf(result: AgentToolResult<unknown>): string {
@@ -189,12 +207,15 @@ export class NestedToolCallRunner {
 			name,
 			arguments: (args ?? {}) as AgentToolCall["arguments"],
 		};
-		const record = scope.recorder.start(toolCall);
+		const redact = options.redact ?? scope.redact;
+		const visible = <T>(value: T): T => (redact ? redactDeep(value, redact) : value);
+		const visibleArgs = visible(toolCall.arguments);
+		const record = scope.recorder.start({ ...toolCall, arguments: visibleArgs });
 		await this.host.emit({
 			type: "tool_execution_start",
 			toolCallId: toolCall.id,
 			toolName: name,
-			args: toolCall.arguments,
+			args: visibleArgs,
 			parentToolCallId: callerId,
 		});
 
@@ -214,6 +235,7 @@ export class NestedToolCallRunner {
 			recorder: scope.recorder,
 			nextId: 1,
 			holdsQueue: scope.holdsQueue || exclusive,
+			...(redact ? { redact } : {}),
 		});
 		let outcome: AgentToolCallOutcome;
 		try {
@@ -223,8 +245,8 @@ export class NestedToolCallRunner {
 					type: "tool_execution_update",
 					toolCallId: toolCall.id,
 					toolName: name,
-					args: toolCall.arguments,
-					partialResult,
+					args: visibleArgs,
+					partialResult: visible(partialResult),
 					parentToolCallId: callerId,
 				});
 			});
@@ -233,14 +255,14 @@ export class NestedToolCallRunner {
 			release?.();
 		}
 
-		scope.recorder.finish(record, outcome.isError, textOf(outcome.result));
+		scope.recorder.finish(record, outcome.isError, visible(textOf(outcome.result)));
 		// See docs/adr/coding-agent/core-nested-tool-calls.md#usage-counting-for-nested-results
 		if (outcome.result.usage) scope.recorder.addUsage(outcome.result.usage);
 		await this.host.emit({
 			type: "tool_execution_end",
 			toolCallId: toolCall.id,
 			toolName: name,
-			result: outcome.result,
+			result: visible(outcome.result),
 			isError: outcome.isError,
 			parentToolCallId: callerId,
 		});

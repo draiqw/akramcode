@@ -96,6 +96,12 @@ export interface CodemodeRunHooks {
 	rejectToolErrors?: boolean;
 	/** Receives the sandbox result before it becomes the tool result. */
 	onResult?: (result: CodemodeResult) => void;
+	/**
+	 * Rewrites strings before they are recorded, shown, or written to the output file: call
+	 * arguments and errors, nested call records and events, and the script output. Tools still get
+	 * the original arguments. Used to mask secrets.
+	 */
+	redact?: (text: string) => string;
 }
 
 const TEXT_OUTPUT_SCHEMA: CodemodeJsonSchema = { type: "string" };

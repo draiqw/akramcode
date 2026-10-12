@@ -12,7 +12,6 @@
  */
 
 import { randomBytes } from "node:crypto";
-import type { NestedToolCallRecord } from "@akramcode/ai";
 import { Text } from "@akramcode/tui";
 import { Type } from "typebox";
 import type {
@@ -100,16 +99,6 @@ const workflowRunSchema = Type.Object({
 	dry: Type.Optional(Type.Boolean({ description: "Dry run: tools that may write are not called." })),
 });
 
-/** Replace secrets in every string of `value`. */
-function maskDeep(value: unknown, mask: (text: string) => string): unknown {
-	if (typeof value === "string") return mask(value);
-	if (Array.isArray(value)) return value.map((item) => maskDeep(item, mask));
-	if (typeof value === "object" && value !== null) {
-		return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, maskDeep(item, mask)]));
-	}
-	return value;
-}
-
 /** A tool context whose calls run through the command's `executeTool()` under `parentToolCallId`. */
 function createCommandToolContext(ctx: ExtensionCommandContext, parentToolCallId: string): ExtensionToolContext {
 	// A prototype keeps the context's lazy getters working, which a spread would freeze.
@@ -123,14 +112,16 @@ function createCommandToolContext(ctx: ExtensionCommandContext, parentToolCallId
 
 export function createWorkflowsExtension(options: WorkflowsExtensionOptions = {}): ExtensionFactory {
 	return (akramcode: ExtensionAPI) => {
-		/** Maskers of running `workflow_run` calls, to mask secrets in their recorded nested calls. */
-		const maskers = new Map<string, (text: string) => string>();
 		let toolRegistered = false;
 
 		const discover = (ctx: ExtensionContext) =>
 			discoverWorkflows({ cwd: ctx.cwd, agentDir: options.agentDir, projectTrusted: ctx.isProjectTrusted() });
-		const getAnnotations = (name: string): ToolAnnotations | undefined =>
-			akramcode.getAllTools().find((tool) => tool.name === name)?.annotations;
+		// MCP servers declare their own annotations, so their read-only claims are not trusted: a server
+		// could mark a writing tool read-only to skip the confirmation and run during dry runs.
+		const getAnnotations = (name: string): ToolAnnotations | undefined => {
+			const annotations = akramcode.getAllTools().find((tool) => tool.name === name)?.annotations;
+			return name.startsWith("mcp__") && annotations ? { ...annotations, readOnlyHint: false } : annotations;
+		};
 		const mayWrite = (file: WorkflowFile) =>
 			(file.manifest?.tools ?? []).filter((name) => getAnnotations(name)?.readOnlyHint !== true);
 
@@ -162,33 +153,33 @@ export function createWorkflowsExtension(options: WorkflowsExtensionOptions = {}
 					const dry = params.dry === true;
 					const writers = mayWrite(file);
 					if (!dry && ctx.hasUI && writers.length > 0) {
+						const shown = Object.entries(params.params ?? {})
+							.filter(([name]) => !file.manifest?.params[name]?.secret)
+							.map(([name, value]) => `${name}=${typeof value === "string" ? value : JSON.stringify(value)}`);
 						const approved = await ctx.ui.confirm(
 							`Run workflow ${file.name}?`,
-							`It may call tools that change things: ${writers.join(", ")}`,
+							[
+								`It may call tools that change things: ${writers.join(", ")}`,
+								...(shown.length > 0 ? [`Parameters: ${shown.join(" ")}`] : []),
+							].join("\n"),
 						);
 						if (!approved) throw new Error(`The user did not approve running workflow "${file.name}"`);
 					}
-					try {
-						const result = await runWorkflow(file, {
-							params: params.params ?? {},
-							dry,
-							ctx,
-							runId: toolCallId,
-							getAnnotations,
-							signal,
-							onMask: (mask) => maskers.set(toolCallId, mask),
-							onUpdate: (details) => onUpdate?.({ content: [], details: { ...details } }),
-						});
-						return {
-							content: [{ type: "text", text: result.text }],
-							details: result.details,
-							...(result.usage ? { usage: result.usage } : {}),
-							...(result.details.status === "completed" ? {} : { isError: true }),
-						};
-					} catch (error) {
-						maskers.delete(toolCallId);
-						throw error;
-					}
+					const result = await runWorkflow(file, {
+						params: params.params ?? {},
+						dry,
+						ctx,
+						runId: toolCallId,
+						getAnnotations,
+						signal,
+						onUpdate: (details) => onUpdate?.({ content: [], details: { ...details } }),
+					});
+					return {
+						content: [{ type: "text", text: result.text }],
+						details: result.details,
+						...(result.usage ? { usage: result.usage } : {}),
+						...(result.details.status === "completed" ? {} : { isError: true }),
+					};
 				},
 				renderCall(args, theme) {
 					const dry = args.dry ? theme.fg("muted", " (dry run)") : "";
@@ -203,24 +194,6 @@ export function createWorkflowsExtension(options: WorkflowsExtensionOptions = {}
 				},
 			});
 		};
-
-		// Nested calls of workflow_run are recorded on its result message; mask secrets in them.
-		akramcode.on("message_end", (event) => {
-			const message = event.message;
-			if (message.role !== "toolResult") return;
-			const mask = maskers.get(message.toolCallId);
-			if (!mask) return;
-			maskers.delete(message.toolCallId);
-			if (!message.nestedCalls) return;
-			const calls: NestedToolCallRecord[] = message.nestedCalls.calls.map((call) => ({
-				...call,
-				...(call.arguments
-					? { arguments: maskDeep(call.arguments, mask) as NestedToolCallRecord["arguments"] }
-					: {}),
-				...(call.error ? { error: mask(call.error) } : {}),
-			}));
-			return { message: { ...message, nestedCalls: { ...message.nestedCalls, calls } } };
-		});
 
 		akramcode.on("session_start", (_event, ctx) => {
 			registerTool(discover(ctx).workflows);
