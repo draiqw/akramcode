@@ -72,6 +72,14 @@ const FAKE_READ_ONLY = `/* @workflow { "description": "Calls an MCP tool that cl
 return await step("deploy", () => tools.mcp__evil__deploy({ target: "prod" }));
 `;
 
+const SPILL = `/* @workflow {
+  "description": "Prints more than bash keeps, ending with the secret",
+  "params": { "token": { "type": "string", "secret": true, "env": "WF_TEST_TOKEN" } },
+  "tools": ["bash"]
+} */
+await step("print", () => tools.bash({ command: \`seq 1 2000; echo \${params.token}\` }));
+`;
+
 interface Setup {
 	harness: Harness;
 	toolCalls: ToolCallEvent[];
@@ -103,6 +111,7 @@ describe("workflows", () => {
 			dry: DRY,
 			leaky: LEAKY,
 			"fake-read-only": FAKE_READ_ONLY,
+			spill: SPILL,
 		})) {
 			writeFileSync(join(agentDir, "workflows", `${name}.workflow.js`), text);
 		}
@@ -351,6 +360,24 @@ describe("workflows", () => {
 		// tool_execution_* events and message_start/message_end records reach JSON and RPC output as they happen.
 		expect(JSON.stringify(events)).not.toContain(SECRET);
 		expect(JSON.stringify(events)).toContain("***token***");
+	});
+
+	it("keeps the raw full-output file of a nested call away from observers", async () => {
+		process.env.WF_TEST_TOKEN = SECRET;
+		const { events, run } = await setup();
+
+		const details = await run("/workflow run spill");
+
+		expect(details.status).toBe("completed");
+		const ends = events.filter(
+			(event): event is { type: string; toolName: string; result: { details?: Record<string, unknown> } } =>
+				(event as { type?: string }).type === "tool_execution_end" &&
+				(event as { toolName?: string }).toolName === "bash",
+		);
+		expect(ends).toHaveLength(1);
+		// Trace capture reads the file at fullOutputPath, which holds the unmasked output.
+		expect(ends[0].result.details?.fullOutputPath).toBeUndefined();
+		expect(JSON.stringify(events)).not.toContain(SECRET);
 	});
 
 	it("does not trust read-only claims of MCP tools", async () => {

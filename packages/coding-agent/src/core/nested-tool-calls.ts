@@ -168,6 +168,22 @@ interface CallScope {
 	redact?: (text: string) => string;
 }
 
+/** `result` without the path of a file with its full output, which redaction cannot reach. */
+function withoutFullOutputPath(result: AgentToolResult<unknown>): AgentToolResult<unknown> {
+	const strip = (value: unknown): unknown => {
+		if (typeof value !== "object" || value === null || Array.isArray(value)) return value;
+		const { fullOutputPath: _full, full_output_path: _fullSnake, ...rest } = value as Record<string, unknown>;
+		return rest;
+	};
+	return {
+		...result,
+		details: strip(result.details),
+		...(result.structuredContent !== undefined
+			? { structuredContent: strip(result.structuredContent) as AgentToolResult<unknown>["structuredContent"] }
+			: {}),
+	};
+}
+
 function textOf(result: AgentToolResult<unknown>): string {
 	return (result.content ?? [])
 		.filter((block): block is TextContent => block.type === "text")
@@ -209,6 +225,9 @@ export class NestedToolCallRunner {
 		};
 		const redact = options.redact ?? scope.redact;
 		const visible = <T>(value: T): T => (redact ? redactDeep(value, redact) : value);
+		// A full-output file holds the raw output, and observers such as trace capture read it.
+		const visibleResult = (result: AgentToolResult<unknown>): AgentToolResult<unknown> =>
+			redact ? withoutFullOutputPath(visible(result)) : result;
 		const visibleArgs = visible(toolCall.arguments);
 		const record = scope.recorder.start({ ...toolCall, arguments: visibleArgs });
 		await this.host.emit({
@@ -246,7 +265,7 @@ export class NestedToolCallRunner {
 					toolCallId: toolCall.id,
 					toolName: name,
 					args: visibleArgs,
-					partialResult: visible(partialResult),
+					partialResult: visibleResult(partialResult),
 					parentToolCallId: callerId,
 				});
 			});
@@ -262,7 +281,7 @@ export class NestedToolCallRunner {
 			type: "tool_execution_end",
 			toolCallId: toolCall.id,
 			toolName: name,
-			result: visible(outcome.result),
+			result: visibleResult(outcome.result),
 			isError: outcome.isError,
 			parentToolCallId: callerId,
 		});
