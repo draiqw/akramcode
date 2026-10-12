@@ -14,15 +14,28 @@
 const SAME = "[^;&|\\n]*";
 
 /**
+ * A program name in any case: macOS file systems ignore case, so `RM` runs `rm`. Options keep their
+ * case, since `git branch -d` is safe and `-D` is not.
+ */
+function anyCase(pattern: string): string {
+	return pattern.replace(/(?<!\\)[a-z]/g, (c) => `[${c}${c.toUpperCase()}]`);
+}
+
+/**
  * A program in command position: at the start, after a separator, or after a wrapper such as
  * `sudo`, `xargs`, `env`, a variable assignment, `-exec`, or `-c`; a path before it is allowed.
  */
 function program(name: string): RegExp {
 	const start = "(?:^|[;&|(`{!\\n]|\\$\\(|-exec\\s|-[a-z]*c\\s)";
+	const wrapperWords =
+		"sudo|doas|command|exec|eval|nohup|time|nice|ionice|stdbuf|watch|env|busybox|xargs|if|elif|while|until|then|do|else";
+	// An option value or ssh host: not an option, a wrapper, or an assignment, so every word has one
+	// reading. Words that could be read two ways make the pattern backtrack exponentially.
+	const word = `(?!(?:${wrapperWords}|timeout|ssh)(?![\\w.-])|[A-Za-z_]\\w*=)[^-\\s;&|]\\S*`;
 	// Options may take a value, as in `sudo -u bob` or `nice -n 5`; `ssh host cmd` runs cmd remotely.
-	const option = "(?:\\s+-\\S+(?:\\s+[^-\\s;&|]\\S*)?)*";
-	const wrappers = `(?:(?:sudo|doas|command|exec|eval|nohup|time|nice|ionice|stdbuf|watch|env|busybox|xargs|if|elif|while|until|then|do|else)${option}\\s+|(?:timeout|ssh)${option}\\s+\\S+\\s+|[A-Za-z_]\\w*=\\S*\\s+)*`;
-	return new RegExp(`${start}\\s*${wrappers}(?:[^\\s;&|]*/)?${name}(?![\\w.-])`);
+	const option = `(?:\\s+-\\S+(?:\\s+${word})?)*`;
+	const wrappers = `(?:(?:${wrapperWords})${option}\\s+|(?:timeout|ssh)${option}\\s+${word}\\s+|[A-Za-z_]\\w*=\\S*\\s+)*`;
+	return new RegExp(`${start}\\s*${wrappers}(?:[^\\s;&|]*/)?${anyCase(name)}(?![\\w.-])`);
 }
 
 /**
@@ -31,9 +44,12 @@ function program(name: string): RegExp {
  * as in `ssh host git ...` or `docker exec c git ...`.
  */
 function git(subcommand: string, rest = ""): RegExp {
-	const value = "(?:\"[^\"]*\"|'[^']*'|\\S+)";
+	// A quoted value, or an unquoted one that does not start with a quote: one reading per value.
+	const value = "(?:\"[^\"]*\"|'[^']*'|[^\\s\"']\\S*)";
 	const options = `(?:\\s+(?:-[Cc]\\s+${value}|--(?:git-dir|work-tree|namespace)\\s+${value}|-[^\\s=]+(?:=${value})?))*`;
-	return new RegExp(`(?<![\\w.-])git${options}\\s+${subcommand}(?![\\w-])${rest ? `${SAME}${rest}` : ""}`);
+	return new RegExp(
+		`(?<![\\w.-])${anyCase("git")}${options}\\s+${subcommand}(?![\\w-])${rest ? `${SAME}${rest}` : ""}`,
+	);
 }
 
 /** Text after the first match of `pattern`, up to the end of that simple command. */
