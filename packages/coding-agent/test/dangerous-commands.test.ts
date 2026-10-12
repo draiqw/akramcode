@@ -69,7 +69,7 @@ describe("findDangerousCommands", () => {
 		['git --git-dir="/x y/.git" push -f', "git push --force"],
 		["RM -rf x", "rm"],
 		["GIT push -f", "git push --force"],
-		["sudo -u nice ".repeat(30) + "x", "sudo"],
+		[`${"sudo -u nice ".repeat(30)}x`, "sudo"],
 	])("asks for %s", (command, label) => {
 		expect(findDangerousCommands(command)).toContain(label);
 	});
