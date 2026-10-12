@@ -11,9 +11,9 @@
  * and painting (screenshots of a throttled window hang).
  */
 
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readlinkSync, rmSync, statSync } from "node:fs";
-import { homedir } from "node:os";
+import { homedir, hostname } from "node:os";
 import { delimiter, join } from "node:path";
 
 const START_TIMEOUT_MS = 30_000;
@@ -92,19 +92,41 @@ async function runningInstance(profileDir: string): Promise<string | undefined> 
 	return url && (!path.trim() || url.endsWith(path.trim())) ? url : undefined;
 }
 
-/** Whether a live process holds the profile's `SingletonLock` (a symlink to `<host>-<pid>`). */
-function lockOwnerAlive(profileDir: string): boolean {
-	let target: string;
-	try {
-		target = readlinkSync(join(profileDir, "SingletonLock"));
-	} catch {
-		return false;
-	}
-	const pid = Number.parseInt(target.slice(target.lastIndexOf("-") + 1), 10);
-	if (!Number.isFinite(pid)) return false;
+/** Name of the running process `pid`, or undefined when there is none. */
+function processName(pid: number): string | undefined {
 	try {
 		process.kill(pid, 0);
-		return true;
+	} catch {
+		return undefined;
+	}
+	try {
+		return execFileSync("ps", ["-p", String(pid), "-o", "comm="], { encoding: "utf8", timeout: 2000 }).trim();
+	} catch {
+		// Alive, but `ps` is unavailable: assume it is Chrome rather than break its profile.
+		return "chrome";
+	}
+}
+
+/**
+ * Whether the `SingletonLock` target (`<host>-<pid>`) names a running Chrome on this host. After a
+ * crash and reboot the pid often belongs to an unrelated process, which must not count.
+ */
+export function lockHeldByChrome(
+	target: string,
+	host = hostname(),
+	nameOf: (pid: number) => string | undefined = processName,
+): boolean {
+	const dash = target.lastIndexOf("-");
+	const pid = Number.parseInt(target.slice(dash + 1), 10);
+	if (dash <= 0 || !Number.isFinite(pid) || target.slice(0, dash) !== host) return false;
+	// Chromium-based browsers that `browser.executablePath` may name.
+	return /chrom|brave|edge|vivaldi|opera/i.test(nameOf(pid) ?? "");
+}
+
+/** Whether a running Chrome holds the profile's `SingletonLock` (a symlink to `<host>-<pid>`). */
+function lockOwnerAlive(profileDir: string): boolean {
+	try {
+		return lockHeldByChrome(readlinkSync(join(profileDir, "SingletonLock")));
 	} catch {
 		return false;
 	}

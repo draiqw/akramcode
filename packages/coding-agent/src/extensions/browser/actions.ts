@@ -113,14 +113,16 @@ const withoutHash = (url: string) => url.split("#")[0];
 /**
  * Candidates for a stale fingerprint in a fresh state, level by level. The first level with
  * candidates decides: one candidate is the element, several are ambiguous. Only elements of the
- * same frame and document URL are candidates, so a stale index never acts on another page.
+ * same frame are candidates, and of the same document URL unless the document stayed the same
+ * (`sameDocument`, as after `pushState`), so a stale index never acts on another page.
  */
 export function reidentify(
 	old: ElementFingerprint,
 	fresh: Iterable<ElementFingerprint>,
+	sameDocument = false,
 ): { level: string; matches: ElementFingerprint[] } | undefined {
 	const candidates = [...fresh].filter(
-		(c) => c.frameId === old.frameId && withoutHash(c.documentUrl) === withoutHash(old.documentUrl),
+		(c) => c.frameId === old.frameId && (sameDocument || withoutHash(c.documentUrl) === withoutHash(old.documentUrl)),
 	);
 	const alike = (c: ElementFingerprint) => c.role === old.role && c.name === old.name && tagCompatible(c, old);
 	const levels: Array<[string, (candidate: ElementFingerprint) => boolean]> = [
@@ -136,18 +138,23 @@ export function reidentify(
 				c.attributes[key] === value && (key === "id" || key === "name" ? c.tag === old.tag : tagCompatible(c, old)),
 		]);
 	}
+	// A position proves nothing when other elements look the same: when a list row is removed, the
+	// next row's button takes its place. Then only a stable attribute can tell them apart.
+	let lookalikes: ElementFingerprint[] | undefined;
 	for (const [level, test] of levels) {
+		if (lookalikes && level === "role and name") continue;
 		const matches = candidates.filter(test);
 		if (matches.length === 0) continue;
-		// A position proves nothing when other elements look the same: when a list row is removed, the
-		// next row's button takes its place.
-		if (level === "position and name") {
-			const lookalikes = candidates.filter(alike);
-			if (lookalikes.length > 1) return { level: "role and name", matches: lookalikes };
+		if (level === "position and name" && old.name !== "") {
+			const alikeCandidates = candidates.filter(alike);
+			if (alikeCandidates.length > 1) {
+				lookalikes = alikeCandidates;
+				continue;
+			}
 		}
 		return { level, matches };
 	}
-	return undefined;
+	return lookalikes ? { level: "role and name", matches: lookalikes } : undefined;
 }
 
 function describeFingerprint(f: ElementFingerprint): string {
@@ -208,7 +215,7 @@ export async function resolveElement(
 
 	const fresh = await captureState(cdp, tab.sessionId, 1_000_000);
 	remember(fresh);
-	const found = reidentify(fingerprint, fresh.tree.elements.values());
+	const found = reidentify(fingerprint, fresh.tree.elements.values(), sameDocument);
 	const reason = sameDocument ? "the element was removed or re-rendered" : "the page loaded a new document";
 	if (!found) {
 		throw new BrowserActionError(
@@ -522,6 +529,31 @@ const MODIFIERS: Record<string, number> = {
 	shift: 8,
 };
 /** Code and Windows key code of the unshifted punctuation keys of a US layout. */
+/** Characters of digit and punctuation keys with Shift, US layout. */
+const SHIFTED: Record<string, string> = {
+	"1": "!",
+	"2": "@",
+	"3": "#",
+	"4": "$",
+	"5": "%",
+	"6": "^",
+	"7": "&",
+	"8": "*",
+	"9": "(",
+	"0": ")",
+	"-": "_",
+	"=": "+",
+	"[": "{",
+	"]": "}",
+	"\\": "|",
+	";": ":",
+	"'": '"',
+	",": "<",
+	".": ">",
+	"/": "?",
+	"`": "~",
+};
+
 const PUNCTUATION_KEYS: Record<string, [string, number]> = {
 	";": ["Semicolon", 186],
 	"=": ["Equal", 187],
@@ -567,12 +599,13 @@ export function parseKeyCombo(combo: string): { definition: KeyDefinition; modif
 		const isLetter = /[A-Z]/.test(upper);
 		const isDigit = /\d/.test(keyName);
 		const punctuation = PUNCTUATION_KEYS[keyName];
+		const shifted = isLetter ? upper : (SHIFTED[keyName] ?? keyName);
 		definition = {
-			key: modifiers & 8 ? upper : keyName,
+			key: modifiers & 8 ? shifted : keyName,
 			code: isLetter ? `Key${upper}` : isDigit ? `Digit${keyName}` : (punctuation?.[0] ?? ""),
 			// Character codes of other characters are codes of other keys: "." is 46, Delete.
 			keyCode: isLetter || isDigit ? upper.charCodeAt(0) : (punctuation?.[1] ?? 0),
-			text: modifiers & ~8 ? undefined : modifiers & 8 ? upper : keyName,
+			text: modifiers & ~8 ? undefined : modifiers & 8 ? shifted : keyName,
 		};
 	}
 	const commandKey = modifiers & (2 | 4) && !(modifiers & ~(2 | 4)) ? COMMANDS[lower] : undefined;
@@ -614,9 +647,18 @@ export async function typeInto(
 	try {
 		await cdp.send("DOM.focus", { backendNodeId: element.backendNodeId }, tab.sessionId);
 	} catch {
-		throw new BrowserActionError(
-			`NOT EDITABLE [${element.backendNodeId}]: the element cannot take focus; nothing was typed. Pick a text field from browser_state.`,
-		);
+		// A shadow host that delegates focus is not focusable itself, but focus() reaches its field.
+		const delegated = await callOn<boolean>(
+			cdp,
+			tab.sessionId,
+			element.objectId,
+			"function() { if (!this.shadowRoot) return false; this.focus(); return !!this.shadowRoot.activeElement; }",
+		).catch(() => false);
+		if (!delegated) {
+			throw new BrowserActionError(
+				`NOT EDITABLE [${element.backendNodeId}]: the element cannot take focus; nothing was typed. Pick a text field from browser_state.`,
+			);
+		}
 	}
 	const prepared = await callOn<string>(
 		cdp,
@@ -626,7 +668,9 @@ export async function typeInto(
   let active = document.activeElement;
   while (active && active.shadowRoot && active.shadowRoot.activeElement) active = active.shadowRoot.activeElement;
   const editable = (el) => !!el && (el.isContentEditable || el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && !/^(checkbox|radio|button|submit|reset|image|file|range|color|hidden)$/i.test(el.type)));
-  const focused = active === this || this.contains(active);
+  // A field inside this element's shadow root is not reached by contains().
+  const inside = (node) => { for (let n = node; n; n = n.parentNode || n.host) if (n === this) return true; return false; };
+  const focused = inside(active);
   if (!editable(focused ? active : this)) return 'noedit';
   if (!focused) return 'nofocus';
   if (!clear) {
@@ -825,8 +869,10 @@ export async function screenshot(
 		cssVisualViewport: { pageX: number; pageY: number; clientWidth: number; clientHeight: number };
 	}>("Page.getLayoutMetrics", {}, tab.sessionId);
 	const scale = Math.min(1, maxDim / Math.max(v.clientWidth, v.clientHeight));
-	// The capture is in device pixels, so on a HiDPI screen `scale` alone gives twice the size.
-	const ratio = await evaluate<number>(cdp, tab.sessionId, "window.devicePixelRatio", 3000).catch(() => 1);
+	// The capture is in device pixels, so on a HiDPI screen `scale` alone gives twice the size. The page
+	// can replace `window.devicePixelRatio`, so the value is clamped to keep the capture small.
+	const reported = await evaluate<number>(cdp, tab.sessionId, "window.devicePixelRatio", 3000).catch(() => 1);
+	const ratio = typeof reported === "number" && Number.isFinite(reported) ? Math.min(4, Math.max(0.5, reported)) : 1;
 	const { data } = await cdp.send<{ data: string }>(
 		"Page.captureScreenshot",
 		{
@@ -836,7 +882,7 @@ export async function screenshot(
 				y: v.pageY,
 				width: v.clientWidth,
 				height: v.clientHeight,
-				scale: scale / (typeof ratio === "number" && ratio > 0 ? ratio : 1),
+				scale: scale / ratio,
 			},
 		},
 		tab.sessionId,

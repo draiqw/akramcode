@@ -46,7 +46,7 @@ The `browser` subagent:
 
 The tools are `deferred`: the main agent does not carry their schemas. A [custom agent type](subagents.md#custom-agent-types) that lists them (for example `tools: browser_*`) gets them too.
 
-Elements are indexed by Chrome's node id, so an element keeps its index while it lives. Before acting, the tools check that the element still exists in the same document. When the page re-rendered it, they look for it again on the same page (same frame and URL) by position, role and name, or stable attributes, and act only on a single match; a position counts only when no other element has the same role and name, so a removed list row never shifts the action to the next row. Otherwise the call fails with `STALE ELEMENT HANDLE` or `AMBIGUOUS ELEMENT HANDLE` and nothing happens. A click on an element covered by another one, such as a cookie banner, fails with `ELEMENT COVERED` and names the covering element.
+Elements are indexed by Chrome's node id, so an element keeps its index while it lives. Before acting, the tools check that the element still exists in the same document. When the page re-rendered it, they look for it again on the same page (same frame, and the same URL unless the document stayed the same, as after `pushState`) by position, role and name, or stable attributes, and act only on a single match; a named element's position counts only when no other element has the same role and name, so a removed list row never shifts the action to the next row. Otherwise the call fails with `STALE ELEMENT HANDLE` or `AMBIGUOUS ELEMENT HANDLE` and nothing happens. A click on an element covered by another one, such as a cookie banner, fails with `ELEMENT COVERED` and names the covering element.
 
 State-changing actions report what measurably changed: URL, title, element count, content and form values, focus, dialogs, and new tabs. `no_effect: true` means nothing changed, so the step did not work. JavaScript dialogs (`alert`, `confirm`, `prompt`) are dismissed at once and reported.
 
@@ -61,7 +61,7 @@ State-changing actions report what measurably changed: URL, title, element count
 | Subagent model | `"subagents": { "models": { "browser": "openai-codex/gpt-6-luna" } }`. Default: the main agent's model. |
 | Subagent instructions or tools | An agent file `~/.akramcode/agent/agents/browser.md` replaces the built-in type (see [Subagents](subagents.md#custom-agent-types)). |
 
-With or without `allowedDomains`, only `http`, `https`, and `about:blank` pages open: `file:`, `chrome:`, and `view-source:` URLs are blocked, so neither a page nor the model can read local files or browser internals. Downloads are denied: each session sets this when it connects, and with `cdpUrl` it applies to the whole browser.
+With or without `allowedDomains`, only `http`, `https`, and `about:blank` pages open: `file:`, `chrome:`, and `view-source:` URLs are blocked, so neither a page nor the model can read local files or browser internals. Downloads are denied in the Chrome AkramCode starts; a `cdpUrl` browser keeps its own download settings.
 
 These settings are read from `~/.akramcode/agent/settings.json` only; project settings cannot set them. `headless` and `executablePath` apply when Chrome is started; a Chrome already running on the profile is reused as it is.
 

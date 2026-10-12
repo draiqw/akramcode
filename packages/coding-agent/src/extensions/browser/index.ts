@@ -101,15 +101,18 @@ export function createBrowserExtension(options: BrowserExtensionOptions = {}): E
 		const settings = (): BrowserSettings => akramcode.getSettings().browser ?? {};
 		const connector =
 			options.connector ??
-			defaultConnector(() => {
-				const current = settings();
-				return ensureChrome({
-					profileDir: options.profileDir ?? getBrowserProfileDir(),
-					headless: current.headless !== false,
-					executablePath: current.executablePath,
-					cdpUrl: current.cdpUrl,
-				});
-			});
+			defaultConnector(
+				() => {
+					const current = settings();
+					return ensureChrome({
+						profileDir: options.profileDir ?? getBrowserProfileDir(),
+						headless: current.headless !== false,
+						executablePath: current.executablePath,
+						cdpUrl: current.cdpUrl,
+					});
+				},
+				() => Boolean(settings().cdpUrl),
+			);
 		const browser = new Browser(connector, (url) => blockedReason(url, settings().allowedDomains));
 
 		const blocked = (url: string) => {

@@ -34,6 +34,10 @@ const PAGE = `<!doctype html>
 <div id="slot"><button id="target" onclick="document.getElementById('hits').textContent = 'hit ' + (++window.hits)">Target</button></div>
 <p id="hits"></p>
 <button id="rerender" onclick="window.hits = window.hits || 0; document.getElementById('slot').innerHTML = document.getElementById('slot').innerHTML">Rerender</button>
+<div id="spa"><button onclick="window.spaCount = (window.spaCount || 0) + 1; history.pushState({}, '', '/?page=' + window.spaCount); document.getElementById('spa').innerHTML = document.getElementById('spa').innerHTML; document.getElementById('spahits').textContent = 'spa ' + window.spaCount">More</button></div>
+<p id="spahits"></p>
+<shadow-field role="textbox" aria-label="Shadow field" tabindex="0"></shadow-field>
+<script>customElements.define('shadow-field', class extends HTMLElement { constructor() { super(); this.attachShadow({ mode: 'open', delegatesFocus: true }).innerHTML = '<input id="inner">'; } });</script>
 <button id="gone">Gone</button>
 <button id="remove" onclick="document.getElementById('gone').remove()">Remove</button>
 <button id="later" onclick="setTimeout(() => { document.getElementById('late').textContent = 'Arrived late' }, 300)">Later</button>
@@ -118,7 +122,8 @@ describe.skipIf(!chrome)("browser live smoke", () => {
 			// Chrome never started.
 		}
 		await new Promise<void>((resolve) => server.close(() => resolve()));
-		rmSync(profileDir, { recursive: true, force: true });
+		// Chrome may still be writing to the profile while it exits.
+		rmSync(profileDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
 	});
 
 	it("reads, fills, clicks, and reports effects", { timeout: 120_000 }, async () => {
@@ -166,6 +171,15 @@ describe.skipIf(!chrome)("browser live smoke", () => {
 		await call("browser_click", { index: index(state, /button "Rerender"/) });
 		expect(await call("browser_click", { index: target })).toMatch(
 			/was stale; found again as \[\d+\] by position and name/,
+		);
+		// pushState changes the URL but not the document: the re-rendered button is still found.
+		const more = index(state, /button "More"/);
+		await call("browser_click", { index: more });
+		expect(await call("browser_click", { index: more })).toMatch(/was stale; found again as \[\d+\]/);
+		expect(await call("browser_find_text", { query: "spa 2" })).toContain("1 matches");
+		// A field inside the shadow root of the element takes the text.
+		expect(await call("browser_type", { index: index(state, /textbox "Shadow field"/), text: "deep" })).not.toMatch(
+			/NOT EDITABLE/,
 		);
 		await call("browser_click", { index: index(state, /button "Remove"/) });
 		await expect(call("browser_click", { index: index(state, /button "Gone"/) })).rejects.toThrow(

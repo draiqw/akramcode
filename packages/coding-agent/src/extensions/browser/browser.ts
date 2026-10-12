@@ -35,6 +35,8 @@ export interface BrowserConnector {
 	/** Browser WebSocket URL; launches Chrome when needed. */
 	resolveUrl(): Promise<string>;
 	connect(url: string): Promise<CdpClient & { onClose(handler: () => void): () => void; close(): void }>;
+	/** Whether the browser is the user's own (`browser.cdpUrl`), whose browser-wide settings are left alone. */
+	isUserBrowser?(): boolean;
 }
 
 const MAX_FINGERPRINTS = 5000;
@@ -199,11 +201,12 @@ export class Browser {
 				this.owned.has(targetInfo.targetId) ||
 				(targetInfo.openerId !== undefined && this.owned.has(targetInfo.openerId));
 			if (owned && targetInfo.type === "page") this.owned.add(targetInfo.targetId);
-			if (owned || (targetInfo.type !== "page" && targetInfo.type !== "iframe")) {
+			if (owned) {
 				void this.prepareSession(connection, sessionId, targetInfo, waitingForDebugger);
 				return;
 			}
-			// Not ours (or a tab of ours whose id is not known yet; attach() checks it before use).
+			// Not ours, such as the user's tabs and workers, or a tab of ours whose id is not known yet
+			// (attach() checks it before use): let it run and stay out of it.
 			void (async () => {
 				if (waitingForDebugger) {
 					await connection.send("Runtime.runIfWaitingForDebugger", {}, sessionId).catch(() => {});
@@ -213,7 +216,10 @@ export class Browser {
 		});
 		await connection.send("Target.setAutoAttach", AUTO_ATTACH);
 		await connection.send("Target.setDiscoverTargets", { discover: true });
-		await connection.send("Browser.setDownloadBehavior", { behavior: "deny" }).catch(() => {});
+		// Without a browser context this applies to the whole browser, so not to the user's own.
+		if (!this.connector.isUserBrowser?.()) {
+			await connection.send("Browser.setDownloadBehavior", { behavior: "deny" }).catch(() => {});
+		}
 		const { targetInfos } = await connection.send<{ targetInfos: TargetInfo[] }>("Target.getTargets");
 		for (const info of targetInfos) {
 			if (previous.includes(info.targetId)) {
@@ -411,6 +417,6 @@ export class Browser {
 	}
 }
 
-export function defaultConnector(resolveUrl: () => Promise<string>): BrowserConnector {
-	return { resolveUrl, connect: (url) => CdpConnection.connect(url) };
+export function defaultConnector(resolveUrl: () => Promise<string>, isUserBrowser?: () => boolean): BrowserConnector {
+	return { resolveUrl, connect: (url) => CdpConnection.connect(url), ...(isUserBrowser ? { isUserBrowser } : {}) };
 }

@@ -8,6 +8,7 @@ import {
 	parseKeyCombo,
 	reidentify,
 	resolveElement,
+	screenshot,
 } from "../src/extensions/browser/actions.ts";
 import { Browser, blockedReason, type Tab } from "../src/extensions/browser/browser.ts";
 import type { CdpClient } from "../src/extensions/browser/cdp.ts";
@@ -173,6 +174,46 @@ describe("browser element resolution", () => {
 				row(31, "html/body/div/button", "https://shop.test/cart#top"),
 			]),
 		).toMatchObject({ level: "role and name", matches: [{ backendNodeId: 31 }] });
+		// pushState changed the URL, but the document is the same.
+		expect(
+			reidentify(
+				row(10, "html/body/ul/li[2]/button"),
+				[row(32, "html/body/ul/li[2]/button", "https://shop.test/cart?page=2")],
+				true,
+			),
+		).toMatchObject({ level: "position and name", matches: [{ backendNodeId: 32 }] });
+		// Lookalike rows with a stable attribute are told apart by it.
+		const tagged = (id: number, path: string, testid: string) => ({
+			...row(id, path),
+			attributes: { "data-testid": testid },
+		});
+		expect(
+			reidentify(tagged(10, "html/body/ul/li[2]/button", "delete-2"), [
+				tagged(20, "html/body/ul/li[1]/button", "delete-1"),
+				tagged(21, "html/body/ul/li[2]/button", "delete-3"),
+				tagged(22, "html/body/ul/li[3]/button", "delete-2"),
+			]),
+		).toMatchObject({ level: 'data-testid="delete-2"', matches: [{ backendNodeId: 22 }] });
+	});
+
+	it("finds a re-rendered unnamed icon button by position", () => {
+		const icon = (id: number, path: string): ElementFingerprint => ({
+			backendNodeId: id,
+			frameId: "main",
+			tag: "button",
+			role: "button",
+			name: "",
+			attributes: {},
+			path,
+			documentUrl: "https://app.test/",
+		});
+		expect(
+			reidentify(icon(10, "html/body/header/button[2]"), [
+				icon(20, "html/body/header/button[1]"),
+				icon(21, "html/body/header/button[2]"),
+				icon(22, "html/body/header/button[3]"),
+			]),
+		).toMatchObject({ level: "position and name", matches: [{ backendNodeId: 21 }] });
 	});
 
 	it("re-identifies by stable attributes but not by generated ids", () => {
@@ -308,6 +349,19 @@ describe("browser dialogs and tabs", () => {
 			"Runtime.runIfWaitingForDebugger",
 		]);
 		expect(cdp.methods()).not.toContain("Target.closeTarget");
+		// The user's service workers are resumed and detached too, not kept alive by this session.
+		cdp.emit("Target.attachedToTarget", {
+			sessionId: "WORKER",
+			targetInfo: { targetId: "WORKER0005", type: "service_worker" },
+			waitingForDebugger: true,
+		});
+		await vi.waitFor(() =>
+			expect(
+				cdp.calls.filter((call) => call.method === "Target.detachFromTarget").map((call) => call.params),
+			).toContainEqual({
+				sessionId: "WORKER",
+			}),
+		);
 		// Frames attached from a session of an owned page are checked.
 		cdp.emit(
 			"Target.attachedToTarget",
@@ -333,6 +387,18 @@ describe("browser dialogs and tabs", () => {
 		const browser = new Browser({ resolveUrl: async () => "ws://fake", connect: async () => failing });
 		await expect(browser.cdp()).rejects.toThrow("boom");
 		expect(failing.closed).toBe(true);
+	});
+
+	it("leaves downloads of the user's own browser alone", async () => {
+		const cdp = new FakeCdp();
+		cdp.handlers.set("Target.getTargets", () => ({ targetInfos: [] }));
+		const browser = new Browser({
+			resolveUrl: async () => "ws://fake",
+			connect: async () => cdp,
+			isUserBrowser: () => true,
+		});
+		await browser.cdp();
+		expect(cdp.methods()).not.toContain("Browser.setDownloadBehavior");
 	});
 
 	it("tracks owned tabs, popups, and loading", async () => {
@@ -375,6 +441,9 @@ describe("browser input parsing and policy", () => {
 			definition: { code: "KeyA" },
 		});
 		expect(parseKeyCombo("Shift+Tab")).toMatchObject({ modifiers: 8, definition: { key: "Tab" } });
+		expect(parseKeyCombo("Shift+1")).toMatchObject({ definition: { key: "!", code: "Digit1", text: "!" } });
+		expect(parseKeyCombo("Shift+.")).toMatchObject({ definition: { key: ">", code: "Period", text: ">" } });
+		expect(parseKeyCombo("Shift+a")).toMatchObject({ definition: { key: "A", text: "A" } });
 		expect(() => parseKeyCombo("Hyper+A")).toThrow(/Unknown modifier/);
 		expect(() => parseKeyCombo("Banana")).toThrow(/Unknown key/);
 		// Character codes of punctuation are other keys' codes: "." is 46, Delete.
@@ -408,5 +477,22 @@ describe("browser input parsing and policy", () => {
 	it("adds https to URLs without a scheme", () => {
 		expect(normalizeUrl("example.com/a")).toBe("https://example.com/a");
 		expect(normalizeUrl("http://localhost:3000")).toBe("http://localhost:3000");
+	});
+});
+
+describe("browser screenshot", () => {
+	it("keeps the capture small when the page reports an absurd devicePixelRatio", async () => {
+		const cdp = new FakeCdp();
+		cdp.handlers.set("Page.getLayoutMetrics", () => ({
+			cssVisualViewport: { pageX: 0, pageY: 0, clientWidth: 1000, clientHeight: 600 },
+		}));
+		cdp.handlers.set("Runtime.evaluate", () => ({ result: { value: 0.0001 } }));
+		cdp.handlers.set("Page.captureScreenshot", () => ({ data: "" }));
+		const shot = await screenshot(cdp, { sessionId: "S1" } as Tab, 400);
+		expect(shot).toMatchObject({ width: 400, height: 240 });
+		// 0.4 of the CSS size, divided by the ratio clamped to 0.5.
+		expect(cdp.calls.find((call) => call.method === "Page.captureScreenshot")?.params.clip).toMatchObject({
+			scale: 0.8,
+		});
 	});
 });
