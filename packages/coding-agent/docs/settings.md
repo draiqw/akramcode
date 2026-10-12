@@ -104,7 +104,7 @@ Results can differ from ripgrep:
 
 ## Browser
 
-Settings of the built-in [browser](browser.md) extension.
+Settings of the built-in [browser](browser.md) extension. They are read from the global settings only: a project cannot choose the browser executable, attach to another browser, or change where it may go.
 
 | Setting | Type | Default | Description |
 |---|---|---|---|

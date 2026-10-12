@@ -57,11 +57,11 @@ State-changing actions report what measurably changed: URL, title, element count
 | No window | `"browser": { "headless": true }`. Many sites block headless Chrome. |
 | Another Chrome or Chromium | `"browser": { "executablePath": "/path/to/chrome" }` |
 | A browser you started | `"browser": { "cdpUrl": "http://127.0.0.1:9222" }` attaches to it instead of starting one. Chrome 136 and later do not allow CDP on the default profile, so start it with `--user-data-dir`. |
-| Only some sites | `"browser": { "allowedDomains": ["example.com"] }`. Subdomains match too; navigation elsewhere is refused, and a tab that ends up elsewhere is sent to `about:blank`. |
+| Only some sites | `"browser": { "allowedDomains": ["example.com"] }`. Subdomains match too. Every document request is checked before it is sent, including redirects, links, form posts, and frames, so a page cannot send the browser elsewhere. |
 | Subagent model | `"subagents": { "models": { "browser": "openai-codex/gpt-6-luna" } }`. Default: the main agent's model. |
 | Subagent instructions or tools | An agent file `~/.akramcode/agent/agents/browser.md` replaces the built-in type (see [Subagents](subagents.md#custom-agent-types)). |
 
-`headless` and `executablePath` apply when Chrome is started; a Chrome already running on the profile is reused as it is.
+These settings are read from `~/.akramcode/agent/settings.json` only; project settings cannot set them. `headless` and `executablePath` apply when Chrome is started; a Chrome already running on the profile is reused as it is.
 
 ## Limits
 

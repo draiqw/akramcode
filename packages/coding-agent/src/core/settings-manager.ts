@@ -221,7 +221,7 @@ export interface Settings {
 	codemode?: CodemodeSettings;
 	subagents?: SubagentSettings;
 	backgroundTasks?: BackgroundTaskSettings;
-	browser?: BrowserSettings;
+	browser?: BrowserSettings; // Global-only: which browser is launched or attached, and where it may go
 	sandbox?: SandboxSettings; // Global-only: where the built-in tools run (local machine or an OpenSandbox sandbox)
 	sessionDir?: string; // Custom session storage directory (same format as --session-dir CLI flag)
 	traces?: TraceCaptureSettingsInput; // Global-only: capture of model requests, network, and tool executions for `akramcode traces`
@@ -297,6 +297,18 @@ function resolveDefaultTools(entries: string[]): string[] {
 }
 
 /** Deep merge settings: project/overrides take precedence, nested objects merge recursively */
+/**
+ * Settings a project cannot set: `browser` chooses the executable AkramCode launches and the
+ * browser it drives, so a repository must not be able to point it elsewhere.
+ */
+const GLOBAL_ONLY_KEYS = ["browser"] as const satisfies readonly (keyof Settings)[];
+
+function mergeGlobalAndProject(global: Settings, project: Settings): Settings {
+	const allowed = { ...project };
+	for (const key of GLOBAL_ONLY_KEYS) delete allowed[key];
+	return deepMergeSettings(global, allowed);
+}
+
 function deepMergeSettings(base: Settings, overrides: Settings): Settings {
 	const merged = deepMergeObjects(base as Record<string, unknown>, overrides as Record<string, unknown>) as Settings;
 	const defaultTools = mergeDefaultTools(base.defaultTools, overrides.defaultTools);
@@ -460,7 +472,7 @@ export class SettingsManager {
 		this.projectSettingsLoadError = projectLoadError;
 		this.errors = [...initialErrors];
 		this.settingsPaths = settingsPaths;
-		this.settings = deepMergeSettings(this.globalSettings, this.projectSettings);
+		this.settings = mergeGlobalAndProject(this.globalSettings, this.projectSettings);
 	}
 
 	/** Create a SettingsManager that loads from files */
@@ -641,7 +653,7 @@ export class SettingsManager {
 		if (!trusted) {
 			this.projectSettings = {};
 			this.projectSettingsLoadError = null;
-			this.settings = deepMergeSettings(this.globalSettings, this.projectSettings);
+			this.settings = mergeGlobalAndProject(this.globalSettings, this.projectSettings);
 			return;
 		}
 
@@ -651,7 +663,7 @@ export class SettingsManager {
 		if (projectLoad.error) {
 			this.recordError("project", projectLoad.error);
 		}
-		this.settings = deepMergeSettings(this.globalSettings, this.projectSettings);
+		this.settings = mergeGlobalAndProject(this.globalSettings, this.projectSettings);
 	}
 
 	async reload(): Promise<void> {
@@ -679,7 +691,7 @@ export class SettingsManager {
 			this.recordError("project", projectLoad.error);
 		}
 
-		this.settings = deepMergeSettings(this.globalSettings, this.projectSettings);
+		this.settings = mergeGlobalAndProject(this.globalSettings, this.projectSettings);
 	}
 
 	/** Apply additional overrides on top of current settings */
@@ -784,7 +796,7 @@ export class SettingsManager {
 	}
 
 	private save(): void {
-		this.settings = deepMergeSettings(this.globalSettings, this.projectSettings);
+		this.settings = mergeGlobalAndProject(this.globalSettings, this.projectSettings);
 
 		if (this.globalSettingsLoadError) {
 			return;
@@ -802,7 +814,7 @@ export class SettingsManager {
 	private saveProjectSettings(settings: Settings): void {
 		this.assertProjectTrustedForWrite();
 		this.projectSettings = structuredClone(settings);
-		this.settings = deepMergeSettings(this.globalSettings, this.projectSettings);
+		this.settings = mergeGlobalAndProject(this.globalSettings, this.projectSettings);
 
 		if (this.projectSettingsLoadError) {
 			return;

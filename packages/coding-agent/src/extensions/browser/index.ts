@@ -110,7 +110,7 @@ export function createBrowserExtension(options: BrowserExtensionOptions = {}): E
 					cdpUrl: current.cdpUrl,
 				});
 			});
-		const browser = new Browser(connector);
+		const browser = new Browser(connector, (url) => isAllowedUrl(url, settings().allowedDomains));
 
 		const blocked = (url: string) =>
 			isAllowedUrl(url, settings().allowedDomains)
@@ -215,7 +215,12 @@ export function createBrowserExtension(options: BrowserExtensionOptions = {}): E
 					navigation,
 					new Promise<undefined>((resolve) => setTimeout(() => resolve(undefined), NAVIGATION_TIMEOUT_MS)),
 				]);
-				if (result?.errorText) throw new BrowserActionError(`Navigation to ${url} failed: ${result.errorText}`);
+				if (result?.errorText) {
+					const notices = tab.dialogs.splice(0);
+					throw new BrowserActionError(
+						[`Navigation to ${url} failed: ${result.errorText}`, ...notices].join("\n"),
+					);
+				}
 				const loaded = result !== undefined && (await waitForLoad(cdp, tab, loads, NAVIGATION_TIMEOUT_MS));
 				const state = await stateText(cdp, tab, params.max_chars ?? DEFAULT_MAX_CHARS);
 				return text(

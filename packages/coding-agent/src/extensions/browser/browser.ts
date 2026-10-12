@@ -68,8 +68,12 @@ export class Browser {
 	/** Set when the connection dropped, reported once with the next result. */
 	private lostNotice: string | undefined;
 
-	constructor(connector: BrowserConnector) {
+	/** Whether a page may load `url`; checked before every document request, redirects included. */
+	private readonly isAllowed: (url: string) => boolean;
+
+	constructor(connector: BrowserConnector, isAllowed: (url: string) => boolean = () => true) {
 		this.connector = connector;
+		this.isAllowed = isAllowed;
 	}
 
 	/** The connection, opening it (and launching Chrome) when needed. */
@@ -112,6 +116,20 @@ export class Browser {
 				`${dialog.type}: ${JSON.stringify(dialog.message.slice(0, 300))} (${accept ? "accepted" : "dismissed"})`,
 			);
 			connection.send("Page.handleJavaScriptDialog", { accept }, sessionId).catch(() => {});
+		});
+		// Document requests (navigations, form posts, redirects, frames) pause here before they are sent.
+		connection.on("Fetch.requestPaused", (params, sessionId) => {
+			const { requestId, request } = params as { requestId: string; request: { url: string } };
+			let allowed = false;
+			try {
+				allowed = this.isAllowed(request.url);
+			} catch {}
+			if (allowed) {
+				connection.send("Fetch.continueRequest", { requestId }, sessionId).catch(() => {});
+				return;
+			}
+			this.tabBySession(sessionId)?.dialogs.push(`blocked: ${request.url} is outside browser.allowedDomains`);
+			connection.send("Fetch.failRequest", { requestId, errorReason: "BlockedByClient" }, sessionId).catch(() => {});
 		});
 		connection.on("Page.frameStartedLoading", (params, sessionId) => {
 			const tab = this.tabBySession(sessionId);
@@ -222,6 +240,7 @@ export class Browser {
 			elements: new Map(),
 		};
 		this.tabs.set(targetId, tab);
+		await cdp.send("Fetch.enable", { patterns: [{ urlPattern: "*", resourceType: "Document" }] }, sessionId);
 		await cdp.send("Page.enable", {}, sessionId);
 		// The page believes it has focus even though the window is in the background.
 		await cdp.send("Emulation.setFocusEmulationEnabled", { enabled: true }, sessionId).catch(() => {});

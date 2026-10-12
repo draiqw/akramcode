@@ -724,4 +724,19 @@ describe("SettingsManager", () => {
 			expect(manager.getShellPath()).toBe(homedir());
 		});
 	});
+
+	it("ignores browser settings in project settings", () => {
+		writeFileSync(join(agentDir, "settings.json"), JSON.stringify({ browser: { headless: true } }));
+		writeFileSync(
+			join(projectDir, ".akramcode", "settings.json"),
+			JSON.stringify({
+				browser: { executablePath: "/tmp/evil", cdpUrl: "http://evil.example:9222" },
+				theme: "light",
+			}),
+		);
+		const manager = SettingsManager.create(projectDir, agentDir);
+		manager.setProjectTrusted(true);
+		expect(manager.getSettings().browser).toEqual({ headless: true });
+		expect(manager.getSettings().theme).toBe("light");
+	});
 });

@@ -53,6 +53,9 @@ describe.skipIf(!chrome)("browser live smoke", () => {
 	let profileDir = "";
 	const tools = new Map<string, Tool>();
 	const shutdown: Array<() => Promise<void> | void> = [];
+	const browserSettings: { headless: boolean; allowedDomains?: string[] } = { headless: true };
+	/** Requests that reached the server for the page outside the allowlist. */
+	let secretHits = 0;
 
 	const call = async (name: string, params: Record<string, unknown> = {}): Promise<string> => {
 		const tool = tools.get(name);
@@ -68,14 +71,26 @@ describe.skipIf(!chrome)("browser live smoke", () => {
 
 	beforeAll(async () => {
 		server = createServer((request, response) => {
+			const port = (server.address() as AddressInfo).port;
+			if (request.url === "/redirect") {
+				// Same server under another host name, which the allowlist does not include.
+				response.writeHead(302, { location: `http://localhost:${port}/secret` });
+				response.end();
+				return;
+			}
+			if (request.url === "/secret") secretHits++;
 			response.setHeader("content-type", "text/html");
+			if (request.url === "/leave") {
+				response.end(`<title>Leave</title><a href="http://localhost:${port}/secret">Out</a>`);
+				return;
+			}
 			response.end(request.url === "/next" ? "<title>Next</title><p>Second page</p>" : PAGE);
 		});
 		await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
 		base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 		profileDir = mkdtempSync(join(tmpdir(), "akramcode-browser-live-"));
 		const api = {
-			getSettings: () => ({ browser: { headless: true } }),
+			getSettings: () => ({ browser: browserSettings }),
 			registerTool: (tool: Tool) => tools.set(tool.name, tool),
 			registerAgentType: () => {},
 			on: (event: string, handler: () => Promise<void>) => {
@@ -165,6 +180,26 @@ describe.skipIf(!chrome)("browser live smoke", () => {
 
 		expect(await call("browser_tabs", { action: "list" })).toMatch(/\(current\) "Smoke form"/);
 	});
+
+	it(
+		"blocks redirects and links outside browser.allowedDomains before the request is sent",
+		{ timeout: 60_000 },
+		async () => {
+			browserSettings.allowedDomains = ["127.0.0.1"];
+			try {
+				await expect(call("browser_navigate", { url: `${base}/redirect` })).rejects.toThrow(
+					/ERR_BLOCKED_BY_CLIENT\nblocked: http:\/\/localhost:\d+\/secret is outside browser\.allowedDomains/,
+				);
+				const state = await call("browser_navigate", { url: `${base}/leave` });
+				expect(await call("browser_click", { index: index(state, /link "Out"/) })).toContain(
+					"blocked: http://localhost:",
+				);
+				expect(secretHits).toBe(0);
+			} finally {
+				browserSettings.allowedDomains = undefined;
+			}
+		},
+	);
 
 	it("fails on unknown indices without acting", { timeout: 60_000 }, async () => {
 		await expect(call("browser_click", { index: 999_999 })).rejects.toThrow(/^UNKNOWN ELEMENT \[999999\]/);
