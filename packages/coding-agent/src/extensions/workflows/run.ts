@@ -42,6 +42,9 @@ const MAX_OUTPUT_CHARS = 20_000;
 
 const MIN_SECRET_LENGTH = 6;
 
+/** Tool calls listed in the model-facing text; the run record keeps them all. */
+const MAX_LISTED_CALLS = 30;
+
 export type WorkflowStepStatus = "running" | "ok" | "error";
 
 export interface WorkflowStep {
@@ -191,17 +194,32 @@ export async function resolveWorkflowParams(
 	return { values, secrets };
 }
 
+/**
+ * The base64 and base64url text of `value` wherever it sits in a longer encoded string, as in
+ * `Basic base64("user:" + secret)`: for each of the 3 byte offsets, the 4-character groups that
+ * encode only bytes of `value`.
+ */
+function base64Forms(value: string): string[] {
+	const bytes = Buffer.from(value);
+	const forms: string[] = [];
+	for (let offset = 0; offset < 3; offset++) {
+		const encoded = Buffer.concat([Buffer.alloc(offset), bytes]).toString("base64");
+		const first = offset === 0 ? 0 : 1;
+		const last = Math.floor((offset + bytes.length) / 3);
+		const form = encoded.slice(first * 4, last * 4);
+		if (form.length < 8) continue;
+		forms.push(form, form.replace(/\+/g, "-").replace(/\//g, "_"));
+	}
+	return forms;
+}
+
 /** Replace each secret value, also its JSON-escaped, URL-encoded, and base64 forms, with `***<name>***`. */
 export function createMasker(secrets: ReadonlyMap<string, string>): (text: string) => string {
 	const entries = [...secrets]
 		.filter(([, value]) => value.length > 0)
 		.flatMap(([name, value]): Array<[string, string]> => {
-			const forms = new Set([
-				value,
-				JSON.stringify(value).slice(1, -1),
-				encodeURIComponent(value),
-				Buffer.from(value).toString("base64").replace(/=+$/, ""),
-			]);
+			const forms = new Set([value, JSON.stringify(value).slice(1, -1), encodeURIComponent(value)]);
+			for (const form of base64Forms(value)) forms.add(form);
 			return [...forms].map((form): [string, string] => [name, form]);
 		})
 		.sort((a, b) => b[1].length - a[1].length);
@@ -369,11 +387,7 @@ export async function runWorkflow(file: WorkflowFile, options: WorkflowRunOption
 				// A reply that is not valid JSON gets one retry with the parse error.
 				for (let attempt = 1; ; attempt++) {
 					const message = await ctx.modelRegistry
-						.streamSimple(
-							model,
-							{ ...(format ? { systemPrompt: format } : {}), messages },
-							{ signal: callSignal },
-						)
+						.streamSimple(model, { messages }, { signal: callSignal })
 						.result();
 					if (message.usage) usage = usage ? combineUsage(usage, message.usage) : message.usage;
 					if (message.stopReason === "error" || message.stopReason === "aborted") {
@@ -387,7 +401,8 @@ export async function runWorkflow(file: WorkflowFile, options: WorkflowRunOption
 					try {
 						return parseJsonReply(text, schema);
 					} catch (error) {
-						if (attempt >= 2) throw error;
+						// A reply cut off at the output limit would be cut off again.
+						if (attempt >= 2 || message.stopReason === "length") throw error;
 						messages.push(message, {
 							role: "user",
 							content: `${errorMessage(error)}. ${format}`,
@@ -560,9 +575,11 @@ export function formatRunText(details: WorkflowRunDetails): string {
 		);
 	}
 	if (details.calls.length > 0) {
-		lines.push(
-			`Tool calls: ${details.calls.map((call) => `${call.name} (${call.stubbed ? "dry run, not called" : call.status})`).join(", ")}`,
-		);
+		const shown = details.calls
+			.slice(0, MAX_LISTED_CALLS)
+			.map((call) => `${call.name} (${call.stubbed ? "dry run, not called" : call.status})`);
+		const more = details.calls.length - shown.length;
+		lines.push(`Tool calls: ${shown.join(", ")}${more > 0 ? `, and ${more} more` : ""}`);
 	}
 	if (details.error && details.status !== "completed") lines.push(`Error: ${details.error}`);
 	if (details.output) lines.push(`Output:\n${details.output}`);

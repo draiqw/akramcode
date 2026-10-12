@@ -102,4 +102,35 @@ describe("workflow check", () => {
 	it("strips comments but keeps strings and line breaks", () => {
 		expect(stripComments('a // x\nb /* y\nz */ c "// not a comment"')).toBe('a \nb \n c "// not a comment"');
 	});
+
+	it("counts optional chaining and whole-object uses as reads, and keeps regex literals", () => {
+		const manifest = {
+			description: "x",
+			params: { a: { type: "string" }, b: { type: "string" } },
+			tools: ["read"],
+		};
+		expect(
+			codes(
+				checkWorkflow(file(manifest, 'const x = params?.a + params?.["b"];\nawait tools.read({ path: x });'), [
+					"read",
+				]),
+			),
+		).toEqual([]);
+		expect(
+			codes(
+				checkWorkflow(file(manifest, "const all = { ...params };\nawait tools.read({ path: all.a });"), ["read"]),
+			),
+		).toEqual([]);
+		expect(
+			codes(
+				checkWorkflow(
+					file(
+						manifest,
+						'const ok = /https?:\\/\\//.test(params.a + params.b) && (await tools.read({ path: "x" }));',
+					),
+					["read"],
+				),
+			),
+		).toEqual([]);
+	});
 });

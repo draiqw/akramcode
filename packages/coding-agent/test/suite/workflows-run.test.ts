@@ -2,9 +2,11 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fauxAssistantMessage, fauxToolCall } from "@akramcode/providers";
+import { setKeybindings } from "@akramcode/tui";
 import { Type } from "typebox";
 import { afterEach, describe, expect, it } from "vitest";
 import type { ExtensionAPI, ExtensionUIContext, ToolCallEvent } from "../../src/core/extensions/types.ts";
+import { KeybindingsManager } from "../../src/core/keybindings.ts";
 import type { CustomMessageEntry } from "../../src/core/session-manager.ts";
 import { createWorkflowsExtension } from "../../src/extensions/workflows/index.ts";
 import { WORKFLOW_RUN_CUSTOM_TYPE, type WorkflowRunDetails } from "../../src/extensions/workflows/run.ts";
@@ -88,6 +90,20 @@ const BACKGROUND = `/* @workflow {
 await step("bg", () => tools.bash({ command: \`echo \${params.token}\`, run_in_background: true }));
 `;
 
+const RM_SECRET = `/* @workflow {
+  "description": "Deletes a file named after a secret",
+  "params": { "token": { "type": "string", "secret": true, "env": "WF_TEST_TOKEN" } },
+  "tools": ["bash"]
+} */
+await step("rm", () => tools.bash({ command: \`rm -f \${params.token}.txt\` }));
+`;
+
+const INPUT_THEN_WAIT = `/* @workflow { "description": "Asks, then runs a slow command", "tools": ["bash"] } */
+const name = await ask({ question: "Name?" });
+await step("wait", () => tools.bash({ command: "sleep 2" }));
+return name;
+`;
+
 const CAUGHT_ASK = `/* @workflow { "description": "Catches a needs-input error, then fails", "tools": [] } */
 try { await ask({ question: "Name?" }); } catch {}
 check(false, "later failure");
@@ -128,6 +144,8 @@ describe("workflows", () => {
 			spill: SPILL,
 			background: BACKGROUND,
 			"caught-ask": CAUGHT_ASK,
+			"rm-secret": RM_SECRET,
+			"input-then-wait": INPUT_THEN_WAIT,
 		})) {
 			writeFileSync(join(agentDir, "workflows", `${name}.workflow.js`), text);
 		}
@@ -508,5 +526,38 @@ describe("workflows", () => {
 		}
 		expect(written.join("")).toContain("workflow check-stops failed");
 		expect(process.exitCode).toBe(1);
+	});
+
+	it("masks secrets in the dangerous-command confirmation", async () => {
+		process.env.WF_TEST_TOKEN = SECRET;
+		const prompts: string[] = [];
+		const { run } = await setup({
+			select: async (title) => {
+				prompts.push(title);
+				return "Yes";
+			},
+		});
+		expect((await run("/workflow run rm-secret")).status).toBe("completed");
+		expect(prompts).toEqual(["Run rm?\nrm -f ***token***.txt"]);
+	});
+
+	it("Esc in a dialog closes the dialog only; Esc while running cancels the run", async () => {
+		// The interactive mode installs the app keybindings, which define the interrupt key.
+		setKeybindings(new KeybindingsManager());
+		let onInput: ((data: string) => unknown) | undefined;
+		const { run } = await setup({
+			onTerminalInput: (handler) => {
+				onInput = handler;
+				return () => {};
+			},
+			input: async () => {
+				onInput?.("\x1b");
+				setTimeout(() => onInput?.("\x1b"), 300);
+				return "Ada";
+			},
+		});
+		const details = await run("/workflow run input-then-wait");
+		expect(details.status).toBe("cancelled");
+		expect(details.steps.map((step) => step.id)).toEqual(["wait"]);
 	});
 });

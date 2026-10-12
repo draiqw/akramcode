@@ -185,10 +185,14 @@ describe("workflow helpers", () => {
 	it("masks secret values", () => {
 		const mask = createMasker(new Map([["token", "abc123"]]));
 		expect(mask('{"auth":"abc123"} abc123')).toBe('{"auth":"***token***"} ***token***');
-		const encoded = createMasker(new Map([["token", "a b/c+d"]]));
-		expect(encoded(`q=${encodeURIComponent("a b/c+d")} ${Buffer.from("a b/c+d").toString("base64")}`)).toBe(
-			"q=***token*** ***token***==",
-		);
+		const encoded = createMasker(new Map([["token", "s3cr3tvalue/x"]]));
+		expect(encoded(`q=${encodeURIComponent("s3cr3tvalue/x")}`)).toBe("q=***token***");
+		// Basic auth puts the secret at any byte offset of a longer base64 string.
+		for (const prefix of ["", "u:", "user:", "ab:"]) {
+			const basic = Buffer.from(`${prefix}s3cr3tvalue/x`).toString("base64");
+			expect(encoded(`Authorization: Basic ${basic}`)).toContain("***token***");
+			expect(encoded(`Authorization: Basic ${basic}`)).not.toContain(basic);
+		}
 	});
 
 	it("fills only known placeholders", () => {

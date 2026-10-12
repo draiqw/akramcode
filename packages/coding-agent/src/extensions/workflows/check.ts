@@ -35,13 +35,27 @@ export interface WorkflowCheckResult {
 	diagnostics: WorkflowCheckDiagnostic[];
 }
 
-/** Remove `//` and `/* *\/` comments, keeping strings, template literals, and line breaks. */
+/** Remove `//` and `/* *\/` comments, keeping strings, template literals, regex literals, and line breaks. */
 export function stripComments(code: string): string {
 	let out = "";
 	let i = 0;
 	while (i < code.length) {
 		const char = code[i];
 		const next = code[i + 1];
+		// A `/` where an expression starts begins a regex literal, which may contain `//`.
+		if (char === "/" && next !== "/" && next !== "*" && /(^|[(,=:[!&|?{};+\-*%<>~^]|\breturn)\s*$/.test(out)) {
+			let j = i + 1;
+			let inClass = false;
+			while (j < code.length && code[j] !== "\n" && (inClass || code[j] !== "/")) {
+				if (code[j] === "\\") j++;
+				else if (code[j] === "[") inClass = true;
+				else if (code[j] === "]") inClass = false;
+				j++;
+			}
+			out += code.slice(i, j + 1);
+			i = j + 1;
+			continue;
+		}
 		if (char === "/" && next === "/") {
 			while (i < code.length && code[i] !== "\n") i++;
 			continue;
@@ -75,11 +89,22 @@ export function findToolReferences(code: string): string[] {
 	return [...names];
 }
 
-/** Parameter names the script reads as `params.X`, `params["X"]`, or `{ X } = params`. */
+/**
+ * Parameter names the script reads as `params.X`, `params?.X`, `params["X"]`, or `{ X } = params`.
+ * `"*"` when `params` is used as a whole, as in `{ ...params }` or `Object.entries(params)`.
+ */
 export function findParamReferences(code: string): Set<string> {
 	const names = new Set<string>();
-	for (const match of code.matchAll(/\bparams\s*(?:\.\s*([A-Za-z_$][\w$]*)|\[\s*(["'`])([^"'`]+)\2\s*\])/g)) {
+	for (const match of code.matchAll(
+		/\bparams\s*(?:\??\.\s*([A-Za-z_$][\w$]*)|(?:\?\.)?\[\s*(["'`])([^"'`]+)\2\s*\])/g,
+	)) {
 		names.add(match[1] ?? match[3]);
+	}
+	// Any other use, such as a spread, an argument, or a computed key, may read every parameter.
+	for (const match of code.matchAll(
+		/(?<![\w$])(?<!(?<!\.)\.)params\b(?!\s*(?:\??\.\s*[A-Za-z_$]|(?:\?\.)?\[\s*["'`]))/g,
+	)) {
+		if (!/\}\s*=\s*$/.test(code.slice(0, match.index))) names.add("*");
 	}
 	for (const match of code.matchAll(/\{([^{}]*)\}\s*=\s*params\b/g)) {
 		for (const part of match[1].split(",")) {
@@ -167,7 +192,7 @@ export function checkWorkflow(
 
 	const read = findParamReferences(code);
 	for (const name of Object.keys(manifest.params)) {
-		if (!read.has(name)) {
+		if (!read.has(name) && !read.has("*")) {
 			diagnostics.push({
 				code: "PARAM_NOT_USED",
 				severity: "error",

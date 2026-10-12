@@ -105,19 +105,46 @@ const workflowRunSchema = Type.Object({
  * problems; errors also set a failing exit code.
  */
 function report(ctx: ExtensionCommandContext, text: string, level: "info" | "warning" | "error"): void {
-	if (ctx.mode !== "print") {
+	if (ctx.mode !== "print" && ctx.mode !== "json") {
 		ctx.ui.notify(text, level);
 		return;
 	}
-	if (level === "info") writeRawStdout(`${text}\n`);
+	// JSON mode keeps stdout for its event stream.
+	if (level === "info" && ctx.mode === "print") writeRawStdout(`${text}\n`);
 	else process.stderr.write(`${text}\n`);
 	if (level === "error") process.exitCode = 1;
 }
 
-/** A tool context whose calls run through the command's `executeTool()` under `parentToolCallId`. */
-function createCommandToolContext(ctx: ExtensionCommandContext, parentToolCallId: string): ExtensionToolContext {
+/**
+ * A tool context whose calls run through the command's `executeTool()` under `parentToolCallId`.
+ * Its dialogs count themselves in `openDialogs`, so the interrupt key closes a dialog without also
+ * cancelling the run.
+ */
+function createCommandToolContext(
+	ctx: ExtensionCommandContext,
+	parentToolCallId: string,
+	openDialogs: { count: number },
+): ExtensionToolContext {
+	const counted =
+		<A extends unknown[], R>(dialog: (...args: A) => Promise<R>) =>
+		async (...args: A): Promise<R> => {
+			openDialogs.count++;
+			try {
+				return await dialog(...args);
+			} finally {
+				openDialogs.count--;
+			}
+		};
+	const ui = Object.create(ctx.ui, {
+		input: { value: counted(ctx.ui.input.bind(ctx.ui)) },
+		select: { value: counted(ctx.ui.select.bind(ctx.ui)) },
+		confirm: { value: counted(ctx.ui.confirm.bind(ctx.ui)) },
+		editor: { value: counted(ctx.ui.editor.bind(ctx.ui)) },
+		custom: { value: counted(ctx.ui.custom.bind(ctx.ui)) },
+	});
 	// A prototype keeps the context's lazy getters working, which a spread would freeze.
 	return Object.create(ctx, {
+		ui: { value: ui },
 		executeTool: {
 			value: (name: string, args: unknown, options?: Parameters<ExtensionToolContext["executeTool"]>[2]) =>
 				ctx.executeTool(name, args, { ...options, parentToolCallId }),
@@ -220,19 +247,22 @@ export function createWorkflowsExtension(options: WorkflowsExtensionOptions = {}
 			params: Record<string, string>,
 			dry: boolean,
 		) => {
+			// Commands run at once even mid-turn; tool calls of the run must not interleave with the agent's.
+			await ctx.waitForIdle();
 			const runId = `workflow:${file.name}:${randomBytes(4).toString("hex")}`;
 			const setStatus = (details: WorkflowRunDetails) => ctx.ui.setStatus(STATUS_KEY, formatRunLine(details));
 			// No agent turn runs, so nothing else cancels the run: the interrupt key does.
 			const controller = new AbortController();
+			const openDialogs = { count: 0 };
 			const stopListening = ctx.ui.onTerminalInput((data) => {
-				if (getKeybindings().matches(data, "app.interrupt")) controller.abort();
+				if (openDialogs.count === 0 && getKeybindings().matches(data, "app.interrupt")) controller.abort();
 				return undefined;
 			});
 			try {
 				const result = await runWorkflow(file, {
 					params,
 					dry,
-					ctx: createCommandToolContext(ctx, runId),
+					ctx: createCommandToolContext(ctx, runId, openDialogs),
 					runId,
 					getAnnotations,
 					signal: controller.signal,
