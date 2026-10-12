@@ -596,6 +596,16 @@ export function getPromptsDir(): string {
 	return join(getAgentDir(), "prompts");
 }
 
+/** Get path to the user's workflows directory (`<agentDir>/workflows`). */
+export function getUserWorkflowsDir(agentDir: string = getAgentDir()): string {
+	return join(agentDir, "workflows");
+}
+
+/** Get path to a project's workflows directory (`<cwd>/.akramcode/workflows`). */
+export function getProjectWorkflowsDir(cwd: string): string {
+	return join(cwd, CONFIG_DIR_NAME, "workflows");
+}
+
 /** Get path to sessions directory */
 export function getSessionsDir(): string {
 	return join(getAgentDir(), "sessions");

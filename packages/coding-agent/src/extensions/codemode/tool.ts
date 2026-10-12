@@ -23,7 +23,7 @@
 
 import { join } from "node:path";
 import type { AgentTool } from "@akramcode/agent-core";
-import type { CodemodeJsonSchema, CodemodeTool } from "@akramcode/codemode";
+import type { CodemodeJsonSchema, CodemodeResult, CodemodeTool } from "@akramcode/codemode";
 import {
 	MCP_TYPESCRIPT_PREAMBLE,
 	mcpStructuredContentSchema,
@@ -82,6 +82,22 @@ export interface CodemodeToolOptions {
 	getInlineBudget?: () => number | undefined;
 }
 
+/** Hooks for hosts that run scripts with `executeCodemode()` directly, such as workflows. */
+export interface CodemodeRunHooks {
+	/** Extra sandbox globals, next to the built-in ones. */
+	globals?: CodemodeTool[];
+	/**
+	 * Called before each nested tool call. Return `{ value }` to resolve the call with `value`
+	 * without running the tool (the call row gets `stubbed: true`), `undefined` to run it, or throw
+	 * to fail the call with the error.
+	 */
+	beforeToolCall?: (tool: AgentTool<any>, args: unknown) => Promise<{ value: unknown } | undefined>;
+	/** Reject every nested call whose result has `isError`, also for tools with an output schema. */
+	rejectToolErrors?: boolean;
+	/** Receives the sandbox result before it becomes the tool result. */
+	onResult?: (result: CodemodeResult) => void;
+}
+
 const TEXT_OUTPUT_SCHEMA: CodemodeJsonSchema = { type: "string" };
 
 export const codemodeSchema = Type.Object({
@@ -114,6 +130,8 @@ export interface CodemodeNestedCall {
 	error?: string;
 	/** Cost in USD of a `models.*` call that reported usage. */
 	cost?: number;
+	/** The call was resolved by {@link CodemodeRunHooks.beforeToolCall} without running the tool. */
+	stubbed?: boolean;
 }
 
 export interface CodemodeToolDetails {

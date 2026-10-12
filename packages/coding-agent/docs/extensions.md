@@ -210,6 +210,8 @@ Use `ctx.modelRegistry.streamSimple()` for provider-neutral nested model calls.
 Command handlers receive `ExtensionCommandContext`, which adds operations for waiting until idle, reloading, tree navigation, and session replacement.
 These operations are command-only because calling them from lifecycle handlers can deadlock the runtime.
 
+A command can run tools with `ctx.executeTool(name, args, { parentToolCallId, signal, onUpdate })`, against the same tools as a tool's `ctx.executeTool()` (`ctx.tools`). No assistant message is needed. The calls go through argument validation, the `tool_call` and `tool_result` handlers, and permission checks, and their events carry `parentToolCallId`, a synthetic id the command picks (default `command`); call ids are `<parentToolCallId>/<n>`. Nothing reaches the transcript, so record the outcome yourself, for example with `akramcode.sendMessage()`. `/workflow` uses this.
+
 Session replacement invalidates the old context. Capture only plain data before switching, then use the fresh context supplied to `withSession` for session-bound work.
 
 <a id="state-management"></a>

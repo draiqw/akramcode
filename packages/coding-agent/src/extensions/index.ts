@@ -6,6 +6,7 @@ import onlineCompactExtension from "./online-compact/index.ts";
 import questionExtension from "./question/index.ts";
 import tasksExtension from "./tasks/index.ts";
 import toolSearchExtension from "./tool-search/index.ts";
+import workflowsExtension from "./workflows/index.ts";
 
 export const builtInExtensions: InlineExtension[] = [
 	{ name: "llama.cpp", factory: llamaExtension, builtin: true },
@@ -20,4 +21,6 @@ export const builtInExtensions: InlineExtension[] = [
 	{ name: "tasks", factory: tasksExtension, replaceable: true, builtin: true },
 	// Replaceable: an extension that registers its own `question` tool takes over.
 	{ name: "question", factory: questionExtension, replaceable: true, builtin: true },
+	// `/workflow` and the `workflow_run` tool. Replaceable: an extension that registers either takes over.
+	{ name: "workflows", factory: workflowsExtension, replaceable: true, builtin: true },
 ];

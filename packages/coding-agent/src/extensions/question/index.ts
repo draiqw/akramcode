@@ -203,6 +203,18 @@ async function askWithDialogs(ctx: ExtensionContext, questions: QuestionSpec[]):
 	return { answers };
 }
 
+/**
+ * Ask `questions` with the dialog the mode supports: the question dialog in the TUI, one
+ * select or input per question in RPC. Resolves to `null` when the user cancels. Needs `ctx.hasUI`.
+ */
+export function askQuestions(
+	ctx: ExtensionContext,
+	questions: QuestionSpec[],
+	signal?: AbortSignal,
+): Promise<QuestionDialogResult> {
+	return ctx.mode === "tui" ? askInTui(ctx, questions, signal) : askWithDialogs(ctx, questions);
+}
+
 function answerSummary(answer: QuestionAnswer | undefined): string {
 	if (!answer) return "(no answer)";
 	const parts = [...answer.selected];
@@ -279,8 +291,7 @@ export function createQuestionToolDefinition(): ToolDefinition<typeof questionSc
 				return { content: [{ type: "text", text: NO_USER_TEXT }], details: { questions, unavailable: true } };
 			}
 
-			const result =
-				ctx.mode === "tui" ? await askInTui(ctx, questions, signal) : await askWithDialogs(ctx, questions);
+			const result = await askQuestions(ctx, questions, signal);
 			if (!result) {
 				return { content: [{ type: "text", text: CANCELLED_TEXT }], details: { questions, cancelled: true } };
 			}

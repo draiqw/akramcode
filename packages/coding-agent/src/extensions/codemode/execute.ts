@@ -37,6 +37,7 @@ import {
 	CODEMODE_STORE_ENTRY_TYPE,
 	type CodemodeModelRuntime,
 	type CodemodeNestedCall,
+	type CodemodeRunHooks,
 	type CodemodeStoreEntryData,
 	type CodemodeToolDetails,
 	type CodemodeToolInput,
@@ -303,11 +304,13 @@ async function truncateOutput(
  * The value a script receives for a nested call: a tool that declares
  * `outputSchema` resolves to its `structuredContent`, also for error results that carry one (such
  * as MCP results with `isError`); any other tool resolves to its text content. Other failures
- * reject with the tool's error text.
+ * reject with the tool's error text. With `rejectErrors`, every error result rejects.
  */
-function toScriptValue(tool: AgentTool<any>, outcome: AgentToolCallOutcome): unknown {
+function toScriptValue(tool: AgentTool<any>, outcome: AgentToolCallOutcome, rejectErrors: boolean): unknown {
 	const { result } = outcome;
-	if (tool.outputSchema && result.structuredContent !== undefined) return result.structuredContent;
+	if (!(rejectErrors && outcome.isError) && tool.outputSchema && result.structuredContent !== undefined) {
+		return result.structuredContent;
+	}
 	const text = textOf(result);
 	if (outcome.isError) throw new Error(text || `Tool "${tool.name}" failed`);
 	return text;
@@ -323,7 +326,7 @@ export async function executeCodemode(
 	signal: AbortSignal | undefined,
 	onUpdate: ((result: AgentToolResult<CodemodeToolDetails>) => void) | undefined,
 	ctx: ExtensionToolContext | undefined,
-	options: CodemodeToolOptions = {},
+	options: CodemodeToolOptions & CodemodeRunHooks = {},
 ): Promise<AgentToolResult<CodemodeToolDetails>> {
 	const startedAt = performance.now();
 	const { code, options: sourceOptions } = parseCodemodeSource(input.code);
@@ -358,6 +361,23 @@ export async function executeCodemode(
 			calls.push(record);
 			publish();
 			const callStartedAt = performance.now();
+			let stub: { value: unknown } | undefined;
+			try {
+				stub = await options.beforeToolCall?.(tool, args);
+			} catch (error) {
+				record.status = "error";
+				record.durationMs = performance.now() - callStartedAt;
+				record.error = truncateText(error instanceof Error ? error.message : String(error), ERROR_PREVIEW_CHARS);
+				publish();
+				throw error;
+			}
+			if (stub) {
+				record.status = "ok";
+				record.stubbed = true;
+				record.durationMs = performance.now() - callStartedAt;
+				publish();
+				return stub.value;
+			}
 			// Only tools from ctx.tools are callable, so ctx is set here.
 			if (!ctx) throw new Error("Tool calls need a session");
 			const outcome = await ctx.executeTool(tool.name, args, { signal: callSignal });
@@ -370,7 +390,7 @@ export async function executeCodemode(
 				record.status = "ok";
 			}
 			publish();
-			return toScriptValue(tool, outcome);
+			return toScriptValue(tool, outcome, options.rejectToolErrors === true);
 		},
 	}));
 
@@ -381,6 +401,7 @@ export async function executeCodemode(
 			...(options.models && ctx
 				? createModelGlobals(ctx.modelRegistry, toolCallId, calls, publish, addModelUsage, addGeneratedImages)
 				: []),
+			...(options.globals ?? []),
 		],
 		timeoutMs: sourceOptions.timeoutMs ?? Number.POSITIVE_INFINITY,
 		memoryLimitBytes: CODEMODE_MEMORY_LIMIT_BYTES,
@@ -399,6 +420,7 @@ export async function executeCodemode(
 	for (const call of calls) {
 		if (call.status === "running") call.status = "cancelled";
 	}
+	options.onResult?.(result);
 
 	const items: (TextContent | ImageContent)[] = result.output.map((item) =>
 		item.type === "text" ? { type: "text", text: item.text } : item,

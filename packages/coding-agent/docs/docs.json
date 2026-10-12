@@ -97,6 +97,10 @@
               "path": "subagents.md"
             },
             {
+              "title": "Run Workflows",
+              "path": "workflows.md"
+            },
+            {
               "title": "Run Tools in a Sandbox",
               "path": "sandbox.md"
             }

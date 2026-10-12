@@ -25,6 +25,7 @@ import {
 	type AgentMessage,
 	type AgentState,
 	type AgentTool,
+	type AgentToolCall,
 	type AgentToolCallOutcome,
 	type BeforeToolCallContext,
 	type BeforeToolCallResult,
@@ -528,6 +529,8 @@ export class AgentSession {
 	private _toolRegistry: Map<string, AgentTool> = new Map();
 	/** Created on the first `ctx.executeTool()` call. */
 	private _nestedToolCalls: NestedToolCallRunner | undefined;
+	/** Created on the first command `ctx.executeTool()` call. Never cleared by `agent_end`, so a command's ids stay unique. */
+	private _commandToolCalls: NestedToolCallRunner | undefined;
 	/** Declared tools whose declarations requests leave out, from `prepareLoadout` hooks. */
 	private _hiddenDeclarations: ReadonlySet<string> = new Set();
 	private _toolDefinitions: Map<string, ToolDefinitionEntry> = new Map();
@@ -791,11 +794,48 @@ export class AgentSession {
 		args: unknown,
 		options: ExecuteToolOptions,
 	): Promise<AgentToolCallOutcome> {
-		this._nestedToolCalls ??= new NestedToolCallRunner({
+		this._nestedToolCalls ??= this._createNestedToolCallRunner(() => this._findLastAssistantMessage());
+		return this._nestedToolCalls.execute(parentToolCallId, name, args, options);
+	}
+
+	/**
+	 * Run a call a command made through `ExtensionCommandContext.executeTool()`. No assistant message
+	 * issued it, so the hooks get a synthetic one that contains only the call.
+	 */
+	private async _executeCommandToolCall(
+		parentToolCallId: string,
+		name: string,
+		args: unknown,
+		options: ExecuteToolOptions,
+	): Promise<AgentToolCallOutcome> {
+		this._commandToolCalls ??= this._createNestedToolCallRunner((toolCall) => ({
+			role: "assistant",
+			content: [toolCall],
+			api: this.model?.api ?? "unknown",
+			provider: this.model?.provider ?? "unknown",
+			model: this.model?.id ?? "unknown",
+			usage: {
+				input: 0,
+				output: 0,
+				cacheRead: 0,
+				cacheWrite: 0,
+				totalTokens: 0,
+				cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+			},
+			stopReason: "toolUse",
+			timestamp: Date.now(),
+		}));
+		return this._commandToolCalls.execute(parentToolCallId, name, args, options);
+	}
+
+	private _createNestedToolCallRunner(
+		getAssistantMessage: (toolCall: AgentToolCall) => AssistantMessage | undefined,
+	): NestedToolCallRunner {
+		return new NestedToolCallRunner({
 			getTools: () => this._getCallableTools(),
 			isSequential: () => this.agent.toolExecution === "sequential",
 			runToolCall: (toolCall, parentId, signal, onUpdate) => {
-				const assistantMessage = this._findLastAssistantMessage();
+				const assistantMessage = getAssistantMessage(toolCall);
 				if (!assistantMessage) {
 					return Promise.resolve({
 						toolCall,
@@ -818,7 +858,6 @@ export class AgentSession {
 				this._emit(event);
 			},
 		});
-		return this._nestedToolCalls.execute(parentToolCallId, name, args, options);
 	}
 
 	/** Whether `projection`, the current session projection, exceeds the compaction threshold of `model`. */
@@ -3589,6 +3628,8 @@ export class AgentSession {
 				getSystemPrompt: () => this.systemPrompt,
 				getSystemPromptOptions: () => this._baseSystemPromptOptions,
 				executeTool: (callerId, name, args, options) => this._executeNestedToolCall(callerId, name, args, options),
+				executeCommandTool: (parentId, name, args, options) =>
+					this._executeCommandToolCall(parentId, name, args, options),
 				getCallableTools: () => this._getCallableTools(),
 				getTasks: () => this.tasks,
 				getSubagents: () => this.subagents,

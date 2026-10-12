@@ -397,11 +397,32 @@ export interface ExtensionToolContext extends ExtensionContext {
 	executeTool(name: string, args: unknown, options?: ExecuteToolOptions): Promise<AgentToolCallOutcome>;
 }
 
+/** Options for {@link ExtensionCommandContext.executeTool}. */
+export interface CommandExecuteToolOptions extends ExecuteToolOptions {
+	/**
+	 * Synthetic parent call id the command chooses, for example `workflow:<run id>`. Calls get the id
+	 * `<parentToolCallId>/<n>`, numbered per parent id. Default: `command`.
+	 */
+	parentToolCallId?: string;
+}
+
 /**
  * Extended context for command handlers.
  * Includes session control methods only safe in user-initiated commands.
  */
 export interface ExtensionCommandContext extends ExtensionContext {
+	/** Tools {@link executeTool} can call: the same set as {@link ExtensionToolContext.tools}. */
+	readonly tools: readonly AgentTool[];
+
+	/**
+	 * Run a tool from a command through the session's tool pipeline: argument validation, the
+	 * `tool_call` and `tool_result` handlers (and so permission checks), and `tool_execution_*`
+	 * events, all with `parentToolCallId` set to `options.parentToolCallId`. No assistant message
+	 * is needed, and nothing is added to the transcript; record the outcome yourself, for example
+	 * with `akramcode.sendMessage()`. Never rejects for tool failures: they come back as `isError: true`.
+	 */
+	executeTool(name: string, args: unknown, options?: CommandExecuteToolOptions): Promise<AgentToolCallOutcome>;
+
 	/** Get the current base system-prompt construction options. */
 	getSystemPromptOptions(): BuildSystemPromptOptions;
 
@@ -2157,7 +2178,14 @@ export interface ExtensionContextActions {
 		args: unknown,
 		options: ExecuteToolOptions,
 	) => Promise<AgentToolCallOutcome>;
-	/** Backs `ExtensionToolContext.tools`. */
+	/** Backs `ExtensionCommandContext.executeTool()`. Without it, command tool calls fail. */
+	executeCommandTool?: (
+		parentToolCallId: string,
+		name: string,
+		args: unknown,
+		options: ExecuteToolOptions,
+	) => Promise<AgentToolCallOutcome>;
+	/** Backs `ExtensionToolContext.tools` and `ExtensionCommandContext.tools`. */
 	getCallableTools?: () => readonly AgentTool[];
 	/** Backs `ExtensionContext.tasks`. */
 	getTasks?: () => TaskRegistry;

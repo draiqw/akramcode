@@ -376,6 +376,7 @@ export class ExtensionRunner {
 	private getSystemPromptOptionsFn: () => BuildSystemPromptOptions = () =>
 		normalizeBuildSystemPromptOptions({ cwd: this.cwd });
 	private executeToolFn: ExtensionContextActions["executeTool"];
+	private executeCommandToolFn: ExtensionContextActions["executeCommandTool"];
 	private getCallableToolsFn: () => readonly AgentTool[] = () => [];
 	private getTasksFn: (() => TaskRegistry) | undefined;
 	private getSubagentsFn: (() => SubagentControl | undefined) | undefined;
@@ -452,6 +453,7 @@ export class ExtensionRunner {
 		this.getSystemPromptOptionsFn =
 			contextActions.getSystemPromptOptions ?? (() => normalizeBuildSystemPromptOptions({ cwd: this.cwd }));
 		this.executeToolFn = contextActions.executeTool;
+		this.executeCommandToolFn = contextActions.executeCommandTool;
 		this.getCallableToolsFn = contextActions.getCallableTools ?? (() => []);
 		this.getTasksFn = contextActions.getTasks;
 		this.getSubagentsFn = contextActions.getSubagents;
@@ -1023,6 +1025,28 @@ export class ExtensionRunner {
 		context.reload = () => {
 			this.assertActive();
 			return this.reloadHandler();
+		};
+		const runner = this;
+		Object.defineProperty(context, "tools", {
+			get() {
+				runner.assertActive();
+				return runner.getCallableToolsFn();
+			},
+		});
+		context.executeTool = async (name, args, options = {}) => {
+			this.assertActive();
+			const { parentToolCallId = "command", ...rest } = options;
+			if (!this.executeCommandToolFn) {
+				return {
+					toolCall: { type: "toolCall", id: `${parentToolCallId}/0`, name, arguments: {} },
+					result: {
+						content: [{ type: "text", text: "Tool calls from commands are not available in this context" }],
+						details: {},
+					},
+					isError: true,
+				};
+			}
+			return this.executeCommandToolFn(parentToolCallId, name, args, rest);
 		};
 		return context;
 	}
