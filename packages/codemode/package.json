@@ -1,6 +1,6 @@
 {
 	"name": "@akramcode/codemode",
-	"version": "1.0.27",
+	"version": "1.0.28",
 	"description": "Sandboxed JavaScript execution where the only capability is calling injected tools",
 	"type": "module",
 	"main": "./dist/index.js",
