@@ -151,6 +151,39 @@ describe("browser state", () => {
 		expect([...result.elements.keys()]).toEqual([100, 101, 102]);
 	});
 
+	it("cuts a line longer than the budget instead of showing nothing, and breaks lines at <br>", () => {
+		const links = (withBreaks: boolean) =>
+			Array.from({ length: 50 }, (_, i): Parameters<typeof buildSnapshot>[0] => [
+				{
+					id: 1000 + i,
+					tag: "a",
+					display: "inline",
+					attrs: { href: `/item/${i}` },
+					role: "link",
+					name: `Item ${i}`,
+					box: [0, i, 50, 10],
+				},
+				...(withBreaks
+					? [
+							{
+								id: 5000 + i,
+								tag: "br",
+								display: "inline",
+								box: [0, i, 0, 10] as [number, number, number, number],
+							},
+						]
+					: []),
+			]).flat();
+		const oneLine = tree([{ id: 10, tag: "div", children: links(false) }], 200);
+		expect(oneLine.lines).toHaveLength(1);
+		expect(oneLine.lines[0]).toMatch(/^\[1000\] link "Item 0" -> \/item\/0 .*…$/);
+		expect(oneLine.lines[0].length).toBeLessThanOrEqual(200);
+		expect(oneLine.truncatedLines).toBe(1);
+		expect(oneLine.elements.has(1000)).toBe(true);
+		const broken = tree([{ id: 10, tag: "div", children: links(true) }], 200);
+		expect(broken.lines.slice(0, 2)).toEqual(['[1000] link "Item 0" -> /item/0', '[1001] link "Item 1" -> /item/1']);
+	});
+
 	it("formats the header with scroll position, tabs, dialogs, and markers", () => {
 		const result = tree([{ id: 10, tag: "button", role: "button", name: "Go" }]);
 		const text = formatState(

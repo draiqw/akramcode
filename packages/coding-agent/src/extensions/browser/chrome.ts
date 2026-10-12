@@ -6,8 +6,8 @@
  * untouched. It listens on a free port (`--remote-debugging-port=0`) and writes the port to
  * `DevToolsActivePort` in the profile, which later sessions read to reuse the running instance.
  *
- * On macOS a windowed Chrome is started with `open -g -n`, so it opens behind the current app
- * instead of taking focus. The anti-throttling flags keep pages in that background window running
+ * Chrome is headless by default: a windowed Chrome on macOS takes focus when it opens windows, even
+ * when started with `open -g`. The anti-throttling flags keep pages in a background window running
  * and painting (screenshots of a throttled window hang).
  */
 
@@ -26,6 +26,8 @@ export interface ChromeOptions {
 	executablePath?: string;
 	/** Attach here instead of launching. `http://host:port` or a `ws://` browser URL. */
 	cdpUrl?: string;
+	/** How long to wait for Chrome to answer. Default: 30s. */
+	startTimeoutMs?: number;
 }
 
 const MAC_APPS = ["Google Chrome.app", "Chromium.app", "Google Chrome Canary.app"];
@@ -76,38 +78,35 @@ async function browserWsUrl(httpUrl: string): Promise<string | undefined> {
 	}
 }
 
-/** The browser WebSocket URL of a Chrome already running on this profile, if any. */
+/**
+ * The browser WebSocket URL of a Chrome already running on this profile, if any. The file outlives
+ * Chrome, so the endpoint must also be the browser it names: another program may own the port now.
+ */
 async function runningInstance(profileDir: string): Promise<string | undefined> {
 	const file = join(profileDir, "DevToolsActivePort");
 	if (!existsSync(file)) return undefined;
-	const port = Number.parseInt(readFileSync(file, "utf8").split("\n")[0] ?? "", 10);
+	const [portLine = "", path = ""] = readFileSync(file, "utf8").split("\n");
+	const port = Number.parseInt(portLine, 10);
 	if (!Number.isFinite(port) || port <= 0) return undefined;
-	return browserWsUrl(`http://127.0.0.1:${port}`);
+	const url = await browserWsUrl(`http://127.0.0.1:${port}`);
+	return url && (!path.trim() || url.endsWith(path.trim())) ? url : undefined;
 }
 
-/**
- * A stale `SingletonLock` from a crashed Chrome makes the next start show "Something went wrong
- * when opening your profile". Remove it when its owner process is gone.
- */
-function clearStaleLock(profileDir: string): void {
-	const lock = join(profileDir, "SingletonLock");
+/** Whether a live process holds the profile's `SingletonLock` (a symlink to `<host>-<pid>`). */
+function lockOwnerAlive(profileDir: string): boolean {
 	let target: string;
 	try {
-		target = readlinkSync(lock);
+		target = readlinkSync(join(profileDir, "SingletonLock"));
 	} catch {
-		return;
+		return false;
 	}
 	const pid = Number.parseInt(target.slice(target.lastIndexOf("-") + 1), 10);
-	if (Number.isFinite(pid)) {
-		try {
-			process.kill(pid, 0);
-			return;
-		} catch {
-			// Owner is gone.
-		}
-	}
-	for (const name of ["SingletonLock", "SingletonCookie", "SingletonSocket"]) {
-		rmSync(join(profileDir, name), { force: true });
+	if (!Number.isFinite(pid)) return false;
+	try {
+		process.kill(pid, 0);
+		return true;
+	} catch {
+		return false;
 	}
 }
 
@@ -127,12 +126,22 @@ export function chromeArgs(profileDir: string, headless: boolean): string[] {
 	return args;
 }
 
-function launch(chrome: string, args: string[], headless: boolean): void {
+/** Start Chrome detached; rejects when it cannot be started (for example a non-executable path). */
+function launch(chrome: string, args: string[], headless: boolean): Promise<void> {
+	const start = (command: string, commandArgs: string[]) =>
+		new Promise<void>((resolve, reject) => {
+			const child = spawn(command, commandArgs, { detached: true, stdio: "ignore" });
+			// Without a listener a spawn error is an uncaught exception that ends the process.
+			child.once("error", (error) => reject(new Error(`Could not start ${chrome}: ${error.message}`)));
+			child.once("spawn", () => {
+				child.unref();
+				resolve();
+			});
+		});
 	const isAppBundle = chrome.endsWith(".app") && statSync(chrome).isDirectory();
 	if (process.platform === "darwin" && isAppBundle && !headless) {
 		// -g: do not bring it to the front; -n: a new instance even when the user's Chrome runs.
-		spawn("open", ["-g", "-n", "-a", chrome, "--args", ...args], { detached: true, stdio: "ignore" }).unref();
-		return;
+		return start("open", ["-g", "-n", "-a", chrome, "--args", ...args]);
 	}
 	const executable = isAppBundle
 		? join(
@@ -145,7 +154,7 @@ function launch(chrome: string, args: string[], headless: boolean): void {
 					.replace(/\.app$/, ""),
 			)
 		: chrome;
-	spawn(executable, args, { detached: true, stdio: "ignore" }).unref();
+	return start(executable, args);
 }
 
 /**
@@ -161,6 +170,7 @@ export async function ensureChrome(options: ChromeOptions): Promise<string> {
 	}
 	const running = await runningInstance(options.profileDir);
 	if (running) return running;
+	const timeoutMs = options.startTimeoutMs ?? START_TIMEOUT_MS;
 
 	const chrome = findChrome(options.executablePath);
 	if (!chrome) {
@@ -170,16 +180,32 @@ export async function ensureChrome(options: ChromeOptions): Promise<string> {
 				: "Chrome or Chromium is not installed. Install it or set browser.executablePath.",
 		);
 	}
-	mkdirSync(options.profileDir, { recursive: true });
-	clearStaleLock(options.profileDir);
-	rmSync(join(options.profileDir, "DevToolsActivePort"), { force: true });
-	launch(chrome, chromeArgs(options.profileDir, options.headless), options.headless);
-
-	const deadline = Date.now() + START_TIMEOUT_MS;
-	while (Date.now() < deadline) {
-		await new Promise((resolve) => setTimeout(resolve, POLL_MS));
-		const url = await runningInstance(options.profileDir);
+	const waitForEndpoint = async (): Promise<string | undefined> => {
+		const deadline = Date.now() + timeoutMs;
+		while (Date.now() < deadline) {
+			await new Promise((resolve) => setTimeout(resolve, POLL_MS));
+			const url = await runningInstance(options.profileDir);
+			if (url) return url;
+		}
+		return undefined;
+	};
+	// A Chrome holds the profile (starting, or too busy to answer): a second one would hand over to it
+	// and exit, so wait for it instead of launching.
+	if (lockOwnerAlive(options.profileDir)) {
+		const url = await waitForEndpoint();
 		if (url) return url;
+		throw new Error(
+			`A Chrome is running on ${options.profileDir} but does not answer over DevTools. Quit it and retry.`,
+		);
 	}
-	throw new Error(`Chrome did not start within ${START_TIMEOUT_MS / 1000}s (profile ${options.profileDir})`);
+	mkdirSync(options.profileDir, { recursive: true, mode: 0o700 });
+	// A stale lock from a crashed Chrome makes the next start show "Something went wrong when opening
+	// your profile"; its owner is gone, so remove it.
+	for (const name of ["SingletonLock", "SingletonCookie", "SingletonSocket", "DevToolsActivePort"]) {
+		rmSync(join(options.profileDir, name), { force: true });
+	}
+	await launch(chrome, chromeArgs(options.profileDir, options.headless), options.headless);
+	const url = await waitForEndpoint();
+	if (url) return url;
+	throw new Error(`Chrome did not start within ${timeoutMs / 1000}s (profile ${options.profileDir})`);
 }

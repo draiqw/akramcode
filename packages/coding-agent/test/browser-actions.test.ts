@@ -9,7 +9,7 @@ import {
 	reidentify,
 	resolveElement,
 } from "../src/extensions/browser/actions.ts";
-import { Browser, isAllowedUrl, type Tab } from "../src/extensions/browser/browser.ts";
+import { Browser, blockedReason, type Tab } from "../src/extensions/browser/browser.ts";
 import type { CdpClient } from "../src/extensions/browser/cdp.ts";
 import { normalizeUrl } from "../src/extensions/browser/index.ts";
 import { type CapturedState, captureState, type ElementFingerprint } from "../src/extensions/browser/state.ts";
@@ -143,6 +143,38 @@ describe("browser element resolution", () => {
 		await expect(resolveElement(cdp, newTab(), 99, "clicked", () => {})).rejects.toThrow(/^UNKNOWN ELEMENT \[99\]/);
 	});
 
+	it("does not move a stale index to the next row or to another page", () => {
+		const row = (id: number, path: string, documentUrl = "https://shop.test/cart"): ElementFingerprint => ({
+			backendNodeId: id,
+			frameId: "main",
+			tag: "button",
+			role: "button",
+			name: "Delete",
+			attributes: {},
+			path,
+			documentUrl,
+		});
+		// Row 2's Delete was shown; row 1 was removed, so row 3's Delete now sits at li[2].
+		expect(
+			reidentify(row(10, "html/body/ul/li[2]/button"), [
+				row(20, "html/body/ul/li[1]/button"),
+				row(21, "html/body/ul/li[2]/button"),
+			]),
+		).toMatchObject({ level: "role and name", matches: [{ backendNodeId: 20 }, { backendNodeId: 21 }] });
+		// After a navigation to another page, its only Delete button is not the one that was shown.
+		expect(
+			reidentify(row(10, "html/body/ul/li[2]/button"), [
+				row(30, "html/body/form/button", "https://shop.test/account"),
+			]),
+		).toBeUndefined();
+		// The same page with another hash is the same document.
+		expect(
+			reidentify(row(10, "html/body/ul/li[2]/button"), [
+				row(31, "html/body/div/button", "https://shop.test/cart#top"),
+			]),
+		).toMatchObject({ level: "role and name", matches: [{ backendNodeId: 31 }] });
+	});
+
 	it("re-identifies by stable attributes but not by generated ids", () => {
 		const base: ElementFingerprint = {
 			backendNodeId: 1,
@@ -237,7 +269,7 @@ describe("browser dialogs and tabs", () => {
 		});
 		cdp.emit("Target.attachedToTarget", {
 			sessionId: "POPUP",
-			targetInfo: { targetId: "POPUP00002", type: "page" },
+			targetInfo: { targetId: "POPUP00002", type: "page", openerId: "TARGET0001" },
 			waitingForDebugger: true,
 		});
 		await vi.waitFor(() => expect(cdp.methods()).toContain("Target.closeTarget"));
@@ -252,7 +284,7 @@ describe("browser dialogs and tabs", () => {
 		const { cdp } = await connected();
 		cdp.emit("Target.attachedToTarget", {
 			sessionId: "POPUP",
-			targetInfo: { targetId: "POPUP00002", type: "page" },
+			targetInfo: { targetId: "POPUP00002", type: "page", openerId: "TARGET0001" },
 			waitingForDebugger: true,
 		});
 		await vi.waitFor(() =>
@@ -262,6 +294,45 @@ describe("browser dialogs and tabs", () => {
 				"Runtime.runIfWaitingForDebugger",
 			]),
 		);
+	});
+
+	it("leaves pages of others alone: no request checks, resumed and detached", async () => {
+		const { cdp } = await connected();
+		cdp.emit("Target.attachedToTarget", {
+			sessionId: "USER",
+			targetInfo: { targetId: "USERTAB003", type: "page" },
+			waitingForDebugger: true,
+		});
+		await vi.waitFor(() => expect(cdp.methods()).toContain("Target.detachFromTarget"));
+		expect(cdp.calls.filter((call) => call.sessionId === "USER").map((call) => call.method)).toEqual([
+			"Runtime.runIfWaitingForDebugger",
+		]);
+		expect(cdp.methods()).not.toContain("Target.closeTarget");
+		// Frames attached from a session of an owned page are checked.
+		cdp.emit(
+			"Target.attachedToTarget",
+			{ sessionId: "FRAME", targetInfo: { targetId: "FRAME00004", type: "iframe" }, waitingForDebugger: true },
+			"S1",
+		);
+		await vi.waitFor(() =>
+			expect(cdp.calls.filter((call) => call.sessionId === "FRAME").map((call) => call.method)).toEqual([
+				"Fetch.enable",
+				"Target.setAutoAttach",
+				"Runtime.runIfWaitingForDebugger",
+			]),
+		);
+	});
+
+	it("denies downloads and closes the connection when setting it up fails", async () => {
+		const { cdp } = await connected();
+		expect(cdp.methods()).toContain("Browser.setDownloadBehavior");
+		const failing = new FakeCdp();
+		failing.handlers.set("Target.getTargets", () => {
+			throw new Error("boom");
+		});
+		const browser = new Browser({ resolveUrl: async () => "ws://fake", connect: async () => failing });
+		await expect(browser.cdp()).rejects.toThrow("boom");
+		expect(failing.closed).toBe(true);
 	});
 
 	it("tracks owned tabs, popups, and loading", async () => {
@@ -306,15 +377,32 @@ describe("browser input parsing and policy", () => {
 		expect(parseKeyCombo("Shift+Tab")).toMatchObject({ modifiers: 8, definition: { key: "Tab" } });
 		expect(() => parseKeyCombo("Hyper+A")).toThrow(/Unknown modifier/);
 		expect(() => parseKeyCombo("Banana")).toThrow(/Unknown key/);
+		// Character codes of punctuation are other keys' codes: "." is 46, Delete.
+		expect(parseKeyCombo(".").definition).toMatchObject({ code: "Period", keyCode: 190, text: "." });
+		expect(parseKeyCombo("$").definition).toMatchObject({ keyCode: 0, text: "$" });
+		expect(parseKeyCombo("7").definition).toMatchObject({ code: "Digit7", keyCode: 55 });
 	});
 
 	it("enforces allowed domains", () => {
-		expect(isAllowedUrl("https://evil.test/", [])).toBe(true);
-		expect(isAllowedUrl("https://docs.example.com/x", ["example.com"])).toBe(true);
-		expect(isAllowedUrl("https://example.com.evil.test/", ["example.com"])).toBe(false);
-		expect(isAllowedUrl("https://a.example.com/", ["*.example.com"])).toBe(true);
-		expect(isAllowedUrl("about:blank", ["example.com"])).toBe(true);
-		expect(isAllowedUrl("file:///etc/passwd", ["example.com"])).toBe(false);
+		expect(blockedReason("https://evil.test/", [])).toBeUndefined();
+		expect(blockedReason("https://docs.example.com/x", ["example.com"])).toBeUndefined();
+		expect(blockedReason("https://example.com.evil.test/", ["example.com"])).toBe(
+			"is outside browser.allowedDomains (example.com)",
+		);
+		expect(blockedReason("https://a.example.com/", ["*.example.com"])).toBeUndefined();
+		expect(blockedReason("about:blank", ["example.com"])).toBeUndefined();
+	});
+
+	it("allows only http and https pages, with or without an allowlist", () => {
+		for (const url of [
+			"file:///etc/passwd",
+			"view-source:file:///etc/passwd",
+			"chrome://settings",
+			"data:text/html,x",
+		]) {
+			expect(blockedReason(url, undefined)).toBe("is not an http or https page");
+			expect(blockedReason(url, ["example.com"])).toBe("is not an http or https page");
+		}
 	});
 
 	it("adds https to URLs without a scheme", () => {

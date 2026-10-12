@@ -8,12 +8,12 @@ None, as long as Google Chrome or Chromium is installed. The built-in `browser` 
 
 - with its own profile in `~/.akramcode/agent/browser-profile`, never your everyday profile, so your tabs and sign-ins are untouched;
 - on a free local port for the DevTools Protocol (CDP);
-- with a window, but in the background: on macOS it does not take focus;
-- once per machine: later sessions reuse the running Chrome. Close it like any app.
+- headless, without a window, so it never takes focus;
+- once per machine: later sessions reuse the running Chrome. Stop it with `pkill -f akramcode/agent/browser-profile`.
 
 Turn the extension off with `"extensions": ["-builtin:browser"]` in [settings](settings.md).
 
-To sign in to a site for later tasks, sign in once in the automation Chrome window; the profile keeps the cookies.
+To sign in to a site for later tasks, stop Chrome, set `"browser": { "headless": false }`, let the agent open the site, sign in in that window, then remove the setting and stop Chrome again. The profile keeps the cookies. A windowed Chrome can take focus when it opens windows.
 
 ## Use
 
@@ -46,7 +46,7 @@ The `browser` subagent:
 
 The tools are `deferred`: the main agent does not carry their schemas. A [custom agent type](subagents.md#custom-agent-types) that lists them (for example `tools: browser_*`) gets them too.
 
-Elements are indexed by Chrome's node id, so an element keeps its index while it lives. Before acting, the tools check that the element still exists in the same document. When the page re-rendered it, they look for it again by position, role and name, or stable attributes, and act only on a single match; otherwise the call fails with `STALE ELEMENT HANDLE` or `AMBIGUOUS ELEMENT HANDLE` and nothing happens. A click on an element covered by another one, such as a cookie banner, fails with `ELEMENT COVERED` and names the covering element.
+Elements are indexed by Chrome's node id, so an element keeps its index while it lives. Before acting, the tools check that the element still exists in the same document. When the page re-rendered it, they look for it again on the same page (same frame and URL) by position, role and name, or stable attributes, and act only on a single match; a position counts only when no other element has the same role and name, so a removed list row never shifts the action to the next row. Otherwise the call fails with `STALE ELEMENT HANDLE` or `AMBIGUOUS ELEMENT HANDLE` and nothing happens. A click on an element covered by another one, such as a cookie banner, fails with `ELEMENT COVERED` and names the covering element.
 
 State-changing actions report what measurably changed: URL, title, element count, content and form values, focus, dialogs, and new tabs. `no_effect: true` means nothing changed, so the step did not work. JavaScript dialogs (`alert`, `confirm`, `prompt`) are dismissed at once and reported.
 
@@ -54,17 +54,19 @@ State-changing actions report what measurably changed: URL, title, element count
 
 | What | How |
 |---|---|
-| No window | `"browser": { "headless": true }`. Many sites block headless Chrome. |
+| A visible window | `"browser": { "headless": false }`. For sites that block headless Chrome or to watch the agent. The window can take focus. |
 | Another Chrome or Chromium | `"browser": { "executablePath": "/path/to/chrome" }` |
 | A browser you started | `"browser": { "cdpUrl": "http://127.0.0.1:9222" }` attaches to it instead of starting one. Chrome 136 and later do not allow CDP on the default profile, so start it with `--user-data-dir`. |
-| Only some sites | `"browser": { "allowedDomains": ["example.com"] }`. Subdomains match too. Every document request is checked before it is sent, including redirects, links, form posts, new tabs, popups, and frames (new tabs and frames start paused until the check is in place), so a page cannot send the browser elsewhere. Scripts, images, and other resources a page loads are not restricted. |
+| Only some sites | `"browser": { "allowedDomains": ["example.com"] }`. Subdomains match too. Every document request of the session's tabs is checked before it is sent, including redirects, links, form posts, new tabs, popups, and frames (new tabs and frames start paused until the check is in place), so a page cannot send the browser elsewhere. Scripts, images, and other resources a page loads are not restricted. Tabs the session did not open, such as your own in a `cdpUrl` browser, are not checked. |
 | Subagent model | `"subagents": { "models": { "browser": "openai-codex/gpt-6-luna" } }`. Default: the main agent's model. |
 | Subagent instructions or tools | An agent file `~/.akramcode/agent/agents/browser.md` replaces the built-in type (see [Subagents](subagents.md#custom-agent-types)). |
+
+With or without `allowedDomains`, only `http`, `https`, and `about:blank` pages open: `file:`, `chrome:`, and `view-source:` URLs are blocked, so neither a page nor the model can read local files or browser internals. Downloads are denied: each session sets this when it connects, and with `cdpUrl` it applies to the whole browser.
 
 These settings are read from `~/.akramcode/agent/settings.json` only; project settings cannot set them. `headless` and `executablePath` apply when Chrome is started; a Chrome already running on the profile is reused as it is.
 
 ## Limits
 
-- Cross-origin iframes are not read; same-origin iframes and open shadow roots are.
+- `browser_state` reads open shadow roots and iframes that run in the page's process (same site); iframes of other sites are not read. `browser_find_text` and `browser_wait_for` see only same-origin iframes.
 - Several `browser` subagents running at once share the current tab.
-- No file uploads or downloads yet.
+- No file uploads or downloads.

@@ -32,7 +32,7 @@ import {
 	waitFor,
 	waitForLoad,
 } from "./actions.ts";
-import { Browser, type BrowserConnector, defaultConnector, isAllowedUrl, type Tab } from "./browser.ts";
+import { Browser, type BrowserConnector, blockedReason, defaultConnector, type Tab } from "./browser.ts";
 import type { CdpClient } from "./cdp.ts";
 import { ensureChrome } from "./chrome.ts";
 import { type CapturedState, captureState, formatState } from "./state.ts";
@@ -105,17 +105,17 @@ export function createBrowserExtension(options: BrowserExtensionOptions = {}): E
 				const current = settings();
 				return ensureChrome({
 					profileDir: options.profileDir ?? getBrowserProfileDir(),
-					headless: current.headless === true,
+					headless: current.headless !== false,
 					executablePath: current.executablePath,
 					cdpUrl: current.cdpUrl,
 				});
 			});
-		const browser = new Browser(connector, (url) => isAllowedUrl(url, settings().allowedDomains));
+		const browser = new Browser(connector, (url) => blockedReason(url, settings().allowedDomains));
 
-		const blocked = (url: string) =>
-			isAllowedUrl(url, settings().allowedDomains)
-				? undefined
-				: `BLOCKED: ${url} is outside browser.allowedDomains (${(settings().allowedDomains ?? []).join(", ")}).`;
+		const blocked = (url: string) => {
+			const reason = blockedReason(url, settings().allowedDomains);
+			return reason ? `BLOCKED: ${url} ${reason}.` : undefined;
+		};
 
 		const requireTab = async (): Promise<{ cdp: CdpClient; tab: Tab }> => {
 			const cdp = await browser.cdp();
@@ -211,10 +211,13 @@ export function createBrowserExtension(options: BrowserExtensionOptions = {}): E
 				const navigation = cdp
 					.send<{ errorText?: string }>("Page.navigate", { url }, tab.sessionId, 120_000)
 					.catch((error: unknown) => ({ errorText: error instanceof Error ? error.message : String(error) }));
+				let timer: NodeJS.Timeout | undefined;
 				const result = await Promise.race([
 					navigation,
-					new Promise<undefined>((resolve) => setTimeout(() => resolve(undefined), NAVIGATION_TIMEOUT_MS)),
-				]);
+					new Promise<undefined>((resolve) => {
+						timer = setTimeout(() => resolve(undefined), NAVIGATION_TIMEOUT_MS);
+					}),
+				]).finally(() => clearTimeout(timer));
 				if (result?.errorText) {
 					const notices = tab.dialogs.splice(0);
 					throw new BrowserActionError(

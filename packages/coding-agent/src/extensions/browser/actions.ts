@@ -108,21 +108,24 @@ function tagCompatible(a: ElementFingerprint, b: ElementFingerprint): boolean {
 	return editable(a) && editable(b);
 }
 
+const withoutHash = (url: string) => url.split("#")[0];
+
 /**
  * Candidates for a stale fingerprint in a fresh state, level by level. The first level with
- * candidates decides: one candidate is the element, several are ambiguous.
+ * candidates decides: one candidate is the element, several are ambiguous. Only elements of the
+ * same frame and document URL are candidates, so a stale index never acts on another page.
  */
 export function reidentify(
 	old: ElementFingerprint,
 	fresh: Iterable<ElementFingerprint>,
 ): { level: string; matches: ElementFingerprint[] } | undefined {
-	const candidates = [...fresh];
+	const candidates = [...fresh].filter(
+		(c) => c.frameId === old.frameId && withoutHash(c.documentUrl) === withoutHash(old.documentUrl),
+	);
+	const alike = (c: ElementFingerprint) => c.role === old.role && c.name === old.name && tagCompatible(c, old);
 	const levels: Array<[string, (candidate: ElementFingerprint) => boolean]> = [
-		[
-			"position and name",
-			(c) => c.path === old.path && c.tag === old.tag && c.name === old.name && c.documentUrl === old.documentUrl,
-		],
-		["role and name", (c) => old.name !== "" && c.role === old.role && c.name === old.name && tagCompatible(c, old)],
+		["position and name", (c) => c.path === old.path && c.tag === old.tag && c.name === old.name],
+		["role and name", (c) => old.name !== "" && alike(c)],
 	];
 	for (const key of ["data-testid", "id", "name", "aria-label"]) {
 		const value = old.attributes[key];
@@ -135,7 +138,14 @@ export function reidentify(
 	}
 	for (const [level, test] of levels) {
 		const matches = candidates.filter(test);
-		if (matches.length > 0) return { level, matches };
+		if (matches.length === 0) continue;
+		// A position proves nothing when other elements look the same: when a list row is removed, the
+		// next row's button takes its place.
+		if (level === "position and name") {
+			const lookalikes = candidates.filter(alike);
+			if (lookalikes.length > 1) return { level: "role and name", matches: lookalikes };
+		}
+		return { level, matches };
 	}
 	return undefined;
 }
@@ -322,7 +332,9 @@ export function diffProbes(
 export async function probe(cdp: CdpClient, tab: Tab, tabs: number): Promise<Probe | undefined> {
 	try {
 		const value = await evaluate<Omit<Probe, "tabs">>(cdp, tab.sessionId, DELTA_PROBE, 3000);
-		return value && typeof value === "object" ? { ...value, tabs } : undefined;
+		if (!value || typeof value !== "object") return undefined;
+		// The page controls the focused element's label; it must not add lines to the result.
+		return { ...value, focus: String(value.focus).replace(/\s+/g, " "), tabs };
 	} catch {
 		return undefined;
 	}
@@ -509,6 +521,20 @@ const MODIFIERS: Record<string, number> = {
 	command: 4,
 	shift: 8,
 };
+/** Code and Windows key code of the unshifted punctuation keys of a US layout. */
+const PUNCTUATION_KEYS: Record<string, [string, number]> = {
+	";": ["Semicolon", 186],
+	"=": ["Equal", 187],
+	",": ["Comma", 188],
+	"-": ["Minus", 189],
+	".": ["Period", 190],
+	"/": ["Slash", 191],
+	"`": ["Backquote", 192],
+	"[": ["BracketLeft", 219],
+	"\\": ["Backslash", 220],
+	"]": ["BracketRight", 221],
+	"'": ["Quote", 222],
+};
 /** Editing commands for shortcuts that macOS Chrome does not run from synthetic key events. */
 const COMMANDS: Record<string, string> = { a: "selectAll", c: "copy", v: "paste", x: "cut", z: "undo" };
 
@@ -539,10 +565,13 @@ export function parseKeyCombo(combo: string): { definition: KeyDefinition; modif
 		}
 		const upper = keyName.toUpperCase();
 		const isLetter = /[A-Z]/.test(upper);
+		const isDigit = /\d/.test(keyName);
+		const punctuation = PUNCTUATION_KEYS[keyName];
 		definition = {
 			key: modifiers & 8 ? upper : keyName,
-			code: isLetter ? `Key${upper}` : /\d/.test(keyName) ? `Digit${keyName}` : "",
-			keyCode: upper.charCodeAt(0),
+			code: isLetter ? `Key${upper}` : isDigit ? `Digit${keyName}` : (punctuation?.[0] ?? ""),
+			// Character codes of other characters are codes of other keys: "." is 46, Delete.
+			keyCode: isLetter || isDigit ? upper.charCodeAt(0) : (punctuation?.[1] ?? 0),
 			text: modifiers & ~8 ? undefined : modifiers & 8 ? upper : keyName,
 		};
 	}
@@ -596,8 +625,10 @@ export async function typeInto(
 		`function(clear) {
   let active = document.activeElement;
   while (active && active.shadowRoot && active.shadowRoot.activeElement) active = active.shadowRoot.activeElement;
-  const editable = this.isContentEditable || this.tagName === 'INPUT' || this.tagName === 'TEXTAREA';
-  if (active !== this && !this.contains(active)) return editable ? 'nofocus' : 'noedit';
+  const editable = (el) => !!el && (el.isContentEditable || el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && !/^(checkbox|radio|button|submit|reset|image|file|range|color|hidden)$/i.test(el.type)));
+  const focused = active === this || this.contains(active);
+  if (!editable(focused ? active : this)) return 'noedit';
+  if (!focused) return 'nofocus';
   if (!clear) {
     if (this.setSelectionRange && typeof this.value === 'string') { try { this.setSelectionRange(this.value.length, this.value.length); } catch (e) {} }
     return 'ok';
@@ -636,6 +667,7 @@ export async function selectOption(
 		`function(wanted) {
   if (this.tagName !== 'SELECT') return { error: 'not-select' };
   const options = Array.from(this.options);
+  if (this.disabled) return { error: 'disabled-select', options: options.map((o) => o.text.trim()) };
   const norm = (s) => s.replace(/\\s+/g, ' ').trim().toLowerCase();
   const w = norm(wanted);
   let match = options.filter((o) => norm(o.text) === w || o.value === wanted);
@@ -643,7 +675,8 @@ export async function selectOption(
   if (match.length !== 1) return { error: match.length ? 'ambiguous' : 'not-found', options: options.map((o) => o.text.trim()) };
   const o = match[0];
   if (o.disabled) return { error: 'disabled', options: options.map((x) => x.text.trim()) };
-  Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(this, o.value);
+  // By index: options can share a value.
+  Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'selectedIndex').set.call(this, o.index);
   this.dispatchEvent(new Event('input', { bubbles: true }));
   this.dispatchEvent(new Event('change', { bubbles: true }));
   return { value: o.text.trim() };
@@ -661,7 +694,9 @@ export async function selectOption(
 				? "matches several options"
 				: result.error === "disabled"
 					? "is disabled"
-					: "is not an option";
+					: result.error === "disabled-select"
+						? "cannot be chosen: the select is disabled"
+						: "is not an option";
 		throw new BrowserActionError(
 			`OPTION ${JSON.stringify(option)} ${reason}; nothing was selected. Options: ${(result.options ?? []).slice(0, 30).join(" | ")}`,
 		);
@@ -790,11 +825,19 @@ export async function screenshot(
 		cssVisualViewport: { pageX: number; pageY: number; clientWidth: number; clientHeight: number };
 	}>("Page.getLayoutMetrics", {}, tab.sessionId);
 	const scale = Math.min(1, maxDim / Math.max(v.clientWidth, v.clientHeight));
+	// The capture is in device pixels, so on a HiDPI screen `scale` alone gives twice the size.
+	const ratio = await evaluate<number>(cdp, tab.sessionId, "window.devicePixelRatio", 3000).catch(() => 1);
 	const { data } = await cdp.send<{ data: string }>(
 		"Page.captureScreenshot",
 		{
 			format: "png",
-			clip: { x: v.pageX, y: v.pageY, width: v.clientWidth, height: v.clientHeight, scale },
+			clip: {
+				x: v.pageX,
+				y: v.pageY,
+				width: v.clientWidth,
+				height: v.clientHeight,
+				scale: scale / (typeof ratio === "number" && ratio > 0 ? ratio : 1),
+			},
 		},
 		tab.sessionId,
 		20_000,

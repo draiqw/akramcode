@@ -44,21 +44,27 @@ const AUTO_ATTACH = { autoAttach: true, waitForDebuggerOnStart: true, flatten: t
 /** Document requests: navigations, redirects, form posts, and frames. */
 const DOCUMENT_REQUESTS = { patterns: [{ urlPattern: "*", resourceType: "Document" }] };
 
-export function isAllowedUrl(url: string, allowedDomains: readonly string[] | undefined): boolean {
-	if (!allowedDomains || allowedDomains.length === 0) return true;
-	if (url === "about:blank") return true;
+/**
+ * Why a page may not load `url` (`is outside ...`), or undefined when it may. Only http(s) pages
+ * and `about:blank` are ever allowed: `file:`, `chrome:`, and `view-source:` would let a page or the
+ * model read local files and browser internals.
+ */
+export function blockedReason(url: string, allowedDomains: readonly string[] | undefined): string | undefined {
+	if (url === "about:blank") return undefined;
 	let host: string;
 	try {
 		const parsed = new URL(url);
-		if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
+		if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return "is not an http or https page";
 		host = parsed.hostname.toLowerCase();
 	} catch {
-		return false;
+		return "is not a valid URL";
 	}
-	return allowedDomains.some((entry) => {
+	if (!allowedDomains || allowedDomains.length === 0) return undefined;
+	const allowed = allowedDomains.some((entry) => {
 		const domain = entry.trim().toLowerCase().replace(/^\*\./, "");
 		return domain !== "" && (host === domain || host.endsWith(`.${domain}`));
 	});
+	return allowed ? undefined : `is outside browser.allowedDomains (${allowedDomains.join(", ")})`;
 }
 
 export class Browser {
@@ -71,16 +77,18 @@ export class Browser {
 	private readonly tabs = new Map<string, Tab>();
 	/** Sessions of pages Chrome attached on creation, by target id; `attach()` reuses them. */
 	private readonly autoSessions = new Map<string, Promise<string | undefined>>();
+	/** Target ids of those sessions, by session id. */
+	private readonly autoSessionTargets = new Map<string, string>();
 	private current: string | undefined;
 	/** Set when the connection dropped, reported once with the next result. */
 	private lostNotice: string | undefined;
 
-	/** Whether a page may load `url`; checked before every document request, redirects included. */
-	private readonly isAllowed: (url: string) => boolean;
+	/** Why a page may not load `url`; checked before every document request, redirects included. */
+	private readonly blocked: (url: string) => string | undefined;
 
-	constructor(connector: BrowserConnector, isAllowed: (url: string) => boolean = () => true) {
+	constructor(connector: BrowserConnector, blocked: (url: string) => string | undefined = () => undefined) {
 		this.connector = connector;
-		this.isAllowed = isAllowed;
+		this.blocked = blocked;
 	}
 
 	/** The connection, opening it (and launching Chrome) when needed. */
@@ -95,9 +103,24 @@ export class Browser {
 	private async open(): Promise<CdpClient> {
 		const url = await this.connector.resolveUrl();
 		const connection = await this.connector.connect(url);
-		if (this.owned.size > 0) this.lostNotice = "The browser was restarted; earlier tabs are gone.";
+		try {
+			await this.setUp(connection);
+		} catch (error) {
+			connection.close();
+			throw error;
+		}
+		this.connection = connection;
+		return connection;
+	}
+
+	private async setUp(
+		connection: CdpClient & { onClose(handler: () => void): () => void; close(): void },
+	): Promise<void> {
+		// Request checks of the old connection ended with it, so tabs opened before cannot be trusted.
+		const previous = [...this.owned];
 		this.targets.clear();
 		this.autoSessions.clear();
+		this.autoSessionTargets.clear();
 		this.owned.clear();
 		this.tabs.clear();
 		this.current = undefined;
@@ -111,15 +134,20 @@ export class Browser {
 			this.onTarget((params as { targetInfo: TargetInfo }).targetInfo),
 		);
 		connection.on("Target.targetDestroyed", (params) => this.onTargetGone((params as { targetId: string }).targetId));
+		// By session: a target can have several (a released auto-attach session and the tab's own).
 		connection.on("Target.detachedFromTarget", (params) => {
-			const { sessionId, targetId } = params as { sessionId?: string; targetId?: string };
+			const { sessionId } = params as { sessionId: string };
 			for (const [id, tab] of this.tabs) {
-				if (id === targetId || tab.sessionId === sessionId) {
+				if (tab.sessionId === sessionId) {
 					this.tabs.delete(id);
 					this.autoSessions.delete(id);
 				}
 			}
-			if (targetId) this.autoSessions.delete(targetId);
+			const autoTarget = this.autoSessionTargets.get(sessionId);
+			if (autoTarget !== undefined) {
+				this.autoSessionTargets.delete(sessionId);
+				this.autoSessions.delete(autoTarget);
+			}
 		});
 		connection.on("Page.javascriptDialogOpening", (params, sessionId) => {
 			const dialog = params as { type: string; message: string };
@@ -134,15 +162,15 @@ export class Browser {
 		// Document requests (navigations, form posts, redirects, frames) pause here before they are sent.
 		connection.on("Fetch.requestPaused", (params, sessionId) => {
 			const { requestId, request } = params as { requestId: string; request: { url: string } };
-			let allowed = false;
+			let reason: string | undefined = "could not be checked";
 			try {
-				allowed = this.isAllowed(request.url);
+				reason = this.blocked(request.url);
 			} catch {}
-			if (allowed) {
+			if (!reason) {
 				connection.send("Fetch.continueRequest", { requestId }, sessionId).catch(() => {});
 				return;
 			}
-			this.tabBySession(sessionId)?.dialogs.push(`blocked: ${request.url} is outside browser.allowedDomains`);
+			this.tabBySession(sessionId)?.dialogs.push(`blocked: ${request.url} ${reason}`);
 			connection.send("Fetch.failRequest", { requestId, errorReason: "BlockedByClient" }, sessionId).catch(() => {});
 		});
 		connection.on("Page.frameStartedLoading", (params, sessionId) => {
@@ -158,20 +186,43 @@ export class Browser {
 		});
 		// New pages, popups, and cross-origin frames start paused, so request checks are in place before
 		// their first request.
-		connection.on("Target.attachedToTarget", (params) => {
+		// Only this session's pages are checked: the user's own tabs in the same browser are left alone.
+		connection.on("Target.attachedToTarget", (params, parentSessionId) => {
 			const { sessionId, targetInfo, waitingForDebugger } = params as {
 				sessionId: string;
-				targetInfo: { targetId: string; type: string };
+				targetInfo: TargetInfo;
 				waitingForDebugger: boolean;
 			};
-			void this.prepareSession(connection, sessionId, targetInfo, waitingForDebugger);
+			// Frames and pages attached from a session prepared here belong to an owned page.
+			const owned =
+				parentSessionId !== undefined ||
+				this.owned.has(targetInfo.targetId) ||
+				(targetInfo.openerId !== undefined && this.owned.has(targetInfo.openerId));
+			if (owned && targetInfo.type === "page") this.owned.add(targetInfo.targetId);
+			if (owned || (targetInfo.type !== "page" && targetInfo.type !== "iframe")) {
+				void this.prepareSession(connection, sessionId, targetInfo, waitingForDebugger);
+				return;
+			}
+			// Not ours (or a tab of ours whose id is not known yet; attach() checks it before use).
+			void (async () => {
+				if (waitingForDebugger) {
+					await connection.send("Runtime.runIfWaitingForDebugger", {}, sessionId).catch(() => {});
+				}
+				await connection.send("Target.detachFromTarget", { sessionId }).catch(() => {});
+			})();
 		});
 		await connection.send("Target.setAutoAttach", AUTO_ATTACH);
 		await connection.send("Target.setDiscoverTargets", { discover: true });
+		await connection.send("Browser.setDownloadBehavior", { behavior: "deny" }).catch(() => {});
 		const { targetInfos } = await connection.send<{ targetInfos: TargetInfo[] }>("Target.getTargets");
-		for (const info of targetInfos) this.onTarget(info);
-		this.connection = connection;
-		return connection;
+		for (const info of targetInfos) {
+			if (previous.includes(info.targetId)) {
+				await connection.send("Target.closeTarget", { targetId: info.targetId }).catch(() => {});
+			} else {
+				this.onTarget(info);
+			}
+		}
+		if (previous.length > 0) this.lostNotice = "The browser connection was lost; tabs opened earlier were closed.";
 	}
 
 	private async prepareSession(
@@ -190,7 +241,10 @@ export class Browser {
 					return undefined;
 				}
 			})();
-			if (target.type === "page") this.autoSessions.set(target.targetId, secured);
+			if (target.type === "page") {
+				this.autoSessions.set(target.targetId, secured);
+				this.autoSessionTargets.set(sessionId, target.targetId);
+			}
 			if (!(await secured)) {
 				// Fail closed: a target whose requests cannot be checked never runs.
 				if (target.type === "page") {

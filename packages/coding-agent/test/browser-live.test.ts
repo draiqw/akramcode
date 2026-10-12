@@ -22,11 +22,12 @@ const PAGE = `<!doctype html>
   <label>Name <input name="name"></label>
   <label>Size <select name="size"><option>Small</option><option>Medium</option><option>Large</option></select></label>
   <label><input type="checkbox" name="bacon"> Bacon</label>
+  <label>Sauce <select name="sauce"><option value="x">Ketchup</option><option value="x">Mustard</option></select></label>
 </form>
 <button id="show" onclick="document.getElementById('out').textContent = 'Clicked!'">Show</button>
 <p id="out"></p>
 <button id="noop">Nothing</button>
-<button id="ask" onclick="document.getElementById('answer').textContent = confirm('Really?') ? 'yes' : 'no'">Ask</button>
+<button id="ask" onclick="document.getElementById('answer').textContent = 'answer: ' + (confirm('Really?') ? 'yes' : 'no')">Ask</button>
 <p id="answer"></p>
 <div style="position:relative"><button id="covered">Covered</button>
   <div style="position:absolute;inset:0;background:white" id="overlay">Cookie banner</div></div>
@@ -132,6 +133,10 @@ describe.skipIf(!chrome)("browser live smoke", () => {
 		await expect(call("browser_select", { index: size, option: "Huge" })).rejects.toThrow(
 			/is not an option.*Small \| Medium \| Large/,
 		);
+		// Options sharing a value are chosen by position, not by the first with that value.
+		expect(await call("browser_select", { index: index(state, /select "Sauce"/), option: "Mustard" })).toContain(
+			'Selected "Mustard"',
+		);
 		const bacon = index(state, /checkbox "Bacon"/);
 		expect(await call("browser_click", { index: bacon })).toContain("changed:");
 
@@ -139,6 +144,10 @@ describe.skipIf(!chrome)("browser live smoke", () => {
 		expect(state).toContain('textbox "Name" value="Ann"');
 		expect(state).toContain('select "Size" value="Large"');
 		expect(state).toMatch(/checkbox "Bacon" checked/);
+		expect(state).toContain('select "Sauce" value="Mustard"');
+		await expect(call("browser_type", { index: index(state, /button "Show"/), text: "x" })).rejects.toThrow(
+			/^NOT EDITABLE .*the element is not a text field; nothing was typed/,
+		);
 
 		expect(await call("browser_click", { index: index(state, /button "Show"/) })).toContain("changed:");
 		expect(await call("browser_find_text", { query: "clicked!" })).toContain("1 matches");
@@ -146,7 +155,7 @@ describe.skipIf(!chrome)("browser live smoke", () => {
 
 		const ask = await call("browser_click", { index: index(state, /button "Ask"/) });
 		expect(ask).toContain('dialog: confirm: "Really?" (dismissed)');
-		expect(await call("browser_find_text", { query: "no" })).not.toContain("No match");
+		expect(await call("browser_find_text", { query: "answer: no" })).toContain("1 matches");
 
 		await expect(call("browser_click", { index: index(state, /button "Covered"/) })).rejects.toThrow(
 			/ELEMENT COVERED .*<div#overlay> "Cookie banner"/,
@@ -204,7 +213,8 @@ describe.skipIf(!chrome)("browser live smoke", () => {
 				await call("browser_click", { index: index(leave, /link "New tab"/) });
 				await call("browser_navigate", { url: `${base}/leave` });
 				await call("browser_click", { index: index(await call("browser_state"), /button "Popup"/) });
-				await new Promise((resolve) => setTimeout(resolve, 500));
+				// Give the new tab, the popup, and the frames time to try their requests.
+				await new Promise((resolve) => setTimeout(resolve, 2000));
 				expect(secretHits).toBe(0);
 			} finally {
 				browserSettings.allowedDomains = undefined;
@@ -212,7 +222,15 @@ describe.skipIf(!chrome)("browser live smoke", () => {
 		},
 	);
 
+	it("never opens local files or browser pages", { timeout: 60_000 }, async () => {
+		await expect(call("browser_navigate", { url: "file:///etc/hosts" })).rejects.toThrow(
+			/^BLOCKED: file:\/\/\/etc\/hosts is not an http or https page/,
+		);
+		await expect(call("browser_navigate", { url: "chrome://version" })).rejects.toThrow(/^BLOCKED: /);
+	});
+
 	it("fails on unknown indices without acting", { timeout: 60_000 }, async () => {
+		await call("browser_navigate", { url: `${base}/`, new_tab: true });
 		await expect(call("browser_click", { index: 999_999 })).rejects.toThrow(/^UNKNOWN ELEMENT \[999999\]/);
 	});
 });

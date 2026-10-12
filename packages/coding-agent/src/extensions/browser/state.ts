@@ -439,6 +439,11 @@ export function buildTree(
 		if (type !== 1 && type !== 9 && type !== 11) return;
 		const tag = type === 1 ? str(nodes.nodeName[node]).toLowerCase() : "";
 		if (["script", "style", "noscript", "template", "head", "option", "optgroup"].includes(tag)) return;
+		// A line break ends the line, so links separated by <br> do not become one huge line.
+		if (tag === "br") {
+			flush();
+			return;
+		}
 
 		let display = "contents";
 		let interactive = false;
@@ -517,12 +522,21 @@ export function buildTree(
 
 	const kept: string[] = [];
 	let used = 0;
+	let cut = false;
 	for (const line of lines) {
-		if (used + line.length + 1 > maxChars) break;
+		if (used + line.length + 1 > maxChars) {
+			// Cut the line that does not fit rather than dropping it, so one long line cannot empty the state.
+			const room = maxChars - used - 2;
+			if (room >= 20) {
+				kept.push(`${line.slice(0, room)}…`);
+				cut = true;
+			}
+			break;
+		}
 		kept.push(line);
 		used += line.length + 1;
 	}
-	const truncatedLines = lines.length - kept.length;
+	const truncatedLines = lines.length - kept.length + (cut ? 1 : 0);
 	// Fingerprints only for elements the model can see.
 	const shown = new Set(kept.flatMap((line) => [...line.matchAll(/\[(\d+)\] /g)].map((match) => Number(match[1]))));
 	for (const id of elements.keys()) if (!shown.has(id)) elements.delete(id);
