@@ -35,7 +35,11 @@ function program(name: string): RegExp {
 	// Options may take a value, as in `sudo -u bob` or `nice -n 5`; `ssh host cmd` runs cmd remotely.
 	const option = `(?:\\s+-\\S+(?:\\s+${word})?)*`;
 	const wrappers = `(?:(?:${wrapperWords})${option}\\s+|(?:timeout|ssh)${option}\\s+${word}\\s+|[A-Za-z_]\\w*=\\S*\\s+)*`;
-	return new RegExp(`${start}\\s*${wrappers}(?:[^\\s;&|]*/)?${anyCase(name)}(?![\\w.-])`);
+	// Second reading with any word as a value, as in `env -u ssh rm`; bounded, so it cannot backtrack long.
+	const anyWord = "[^-\\s;&|]\\S*";
+	const anyOption = `(?:\\s+-\\S+(?:\\s+${anyWord})?){0,3}`;
+	const loose = `(?:(?:${wrapperWords})${anyOption}\\s+|(?:timeout|ssh)${anyOption}\\s+${anyWord}\\s+|[A-Za-z_]\\w*=\\S*\\s+){1,3}`;
+	return new RegExp(`${start}\\s*(?:${wrappers}|${loose})(?:[^\\s;&|]*/)?${anyCase(name)}(?![\\w.-])`);
 }
 
 /**

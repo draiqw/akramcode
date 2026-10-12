@@ -68,6 +68,7 @@ describe("findDangerousCommands", () => {
 		["timeout -s KILL 10 git push -f", "git push --force"],
 		['git --git-dir="/x y/.git" push -f', "git push --force"],
 		["RM -rf x", "rm"],
+		["env -u ssh rm x", "rm"],
 		["GIT push -f", "git push --force"],
 		[`${"sudo -u nice ".repeat(30)}x`, "sudo"],
 	])("asks for %s", (command, label) => {
