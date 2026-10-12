@@ -536,6 +536,8 @@ export class AgentSession {
 	private _commandToolCalls: NestedToolCallRunner | undefined;
 	/** Parent ids of command calls, oldest first; only the latest records are kept. */
 	private _commandCallParents: string[] = [];
+	/** Settles when the open dangerous-command dialog closes. */
+	private _dangerousConfirmTail: Promise<void> = Promise.resolve();
 	/** Declared tools whose declarations requests leave out, from `prepareLoadout` hooks. */
 	private _hiddenDeclarations: ReadonlySet<string> = new Set();
 	private _toolDefinitions: Map<string, ToolDefinitionEntry> = new Map();
@@ -716,47 +718,82 @@ export class AgentSession {
 	 * happens here instead of in wrappers.
 	 */
 	private _installAgentToolHooks(): void {
-		this.agent.beforeToolCall = (context) => this._beforeToolCall(context);
+		this.agent.beforeToolCall = (context, signal) => this._beforeToolCall(context, undefined, signal);
 		this.agent.afterToolCall = (context) => this._afterToolCall(context);
 	}
 
-	/** `tool_call` handlers. `parentToolCallId` is set for calls another tool made. */
+	/**
+	 * `tool_call` handlers, then the confirmation of dangerous `bash` commands (see
+	 * dangerous-commands.ts). The confirmation runs last, so a handler cannot change a command after
+	 * the user approved it. `parentToolCallId` is set for calls another tool made; `redact` masks the
+	 * command shown to the user.
+	 */
 	private async _beforeToolCall(
 		{ toolCall, args }: BeforeToolCallContext,
 		parentToolCallId?: string,
+		signal?: AbortSignal,
+		redact?: (text: string) => string,
 	): Promise<BeforeToolCallResult | undefined> {
 		const runner = this._extensionRunner;
-		const command = (args as { command?: unknown } | undefined)?.command;
-		const dangerous = toolCall.name === "bash" && typeof command === "string" ? findDangerousCommands(command) : [];
-		if (dangerous.length > 0) {
-			const approved =
-				runner.hasUI() && (await runner.getUIContext().confirm(`Run ${dangerous.join(", ")}?`, command as string));
-			if (!approved) {
-				return {
-					block: true,
-					reason: runner.hasUI()
-						? `The user did not approve this command (${dangerous.join(", ")}).`
-						: `Blocked: ${dangerous.join(", ")} needs the user's confirmation, and there is no UI to ask.`,
-				};
+		let hookResult: BeforeToolCallResult | undefined;
+		if (runner.hasHandlers("tool_call")) {
+			try {
+				hookResult = await runner.emitToolCall({
+					type: "tool_call",
+					toolName: toolCall.name,
+					toolCallId: toolCall.id,
+					...(parentToolCallId ? { parentToolCallId } : {}),
+					input: args as Record<string, unknown>,
+				});
+			} catch (err) {
+				if (err instanceof Error) {
+					throw err;
+				}
+				throw new Error(`Extension failed, blocking execution: ${String(err)}`);
 			}
 		}
-		if (!runner.hasHandlers("tool_call")) {
-			return undefined;
-		}
+		if (hookResult?.block) return hookResult;
+		return (await this._confirmDangerousCommand(toolCall.name, args, signal, redact)) ?? hookResult;
+	}
 
+	/** Ask before a `bash` command that cannot be undone; one dialog at a time. Blocks without a UI. */
+	private async _confirmDangerousCommand(
+		toolName: string,
+		args: unknown,
+		signal: AbortSignal | undefined,
+		redact: ((text: string) => string) | undefined,
+	): Promise<BeforeToolCallResult | undefined> {
+		const command = (args as { command?: unknown } | undefined)?.command;
+		if (toolName !== "bash" || typeof command !== "string") return undefined;
+		const dangerous = findDangerousCommands(command);
+		if (dangerous.length === 0) return undefined;
+		const labels = dangerous.join(", ");
+		const runner = this._extensionRunner;
+		if (!runner.hasUI()) {
+			return { block: true, reason: `Blocked: ${labels} needs the user's confirmation, and there is no UI to ask.` };
+		}
+		// Dialogs replace each other, so parallel calls (codemode, subagents) ask in turn.
+		const previous = this._dangerousConfirmTail;
+		let release!: () => void;
+		this._dangerousConfirmTail = new Promise((resolve) => {
+			release = resolve;
+		});
 		try {
-			return await runner.emitToolCall({
-				type: "tool_call",
-				toolName: toolCall.name,
-				toolCallId: toolCall.id,
-				...(parentToolCallId ? { parentToolCallId } : {}),
-				input: args as Record<string, unknown>,
-			});
-		} catch (err) {
-			if (err instanceof Error) {
-				throw err;
-			}
-			throw new Error(`Extension failed, blocking execution: ${String(err)}`);
+			await previous;
+			// "No" comes first, so a stray Enter does not approve.
+			const approved =
+				!signal?.aborted &&
+				(await runner
+					.getUIContext()
+					.select(`Run ${labels}?\n${redact ? redact(command) : command}`, ["No", "Yes"], { signal })) === "Yes";
+			if (approved) return undefined;
+			return {
+				block: true,
+				reason: signal?.aborted ? "Cancelled." : `The user did not approve this command (${labels}).`,
+				terminate: true,
+			};
+		} finally {
+			release();
 		}
 	}
 
@@ -860,7 +897,7 @@ export class AgentSession {
 		return new NestedToolCallRunner({
 			getTools: () => this._getCallableTools(),
 			isSequential: () => this.agent.toolExecution === "sequential",
-			runToolCall: (toolCall, parentId, signal, onUpdate) => {
+			runToolCall: (toolCall, parentId, signal, onUpdate, redact) => {
 				const assistantMessage = getAssistantMessage(toolCall);
 				if (!assistantMessage) {
 					return Promise.resolve({
@@ -873,7 +910,7 @@ export class AgentSession {
 					tools: this._getCallableTools(),
 					assistantMessage,
 					context: { messages: this.agent.state.messages, tools: this.agent.state.tools },
-					beforeToolCall: (context) => this._beforeToolCall(context, parentId),
+					beforeToolCall: (context, hookSignal) => this._beforeToolCall(context, parentId, hookSignal, redact),
 					afterToolCall: (context) => this._afterToolCall(context, parentId),
 					signal,
 					onUpdate,

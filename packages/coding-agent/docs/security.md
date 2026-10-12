@@ -26,11 +26,13 @@ For setup instructions and the limitations of each isolation method, see [Run Ak
 
 Before the `bash` tool runs one of these commands, AkramCode asks you to confirm it. No setting, project, or extension can turn this off. Without a UI (`-p`, JSON mode) the command is blocked.
 
-- deleting files: `rm`, `rmdir`, `unlink`, `shred`, `find -delete`;
-- rewriting git history or discarding changes: `git push --force` (also `-f`, `--force-with-lease`, `+branch`), `git reset --hard`, `git clean -f`, `git checkout -- <path>` or `.`, `git restore`, `git branch -D`, `git stash drop` or `clear`;
-- system-level: `sudo`, `dd of=`, `mkfs`, `diskutil erase`.
+- deleting or emptying files: `rm`, `rmdir`, `unlink`, `shred`, `truncate`, `find -delete`, `rsync --delete`;
+- rewriting git history, deleting refs, or discarding changes: `git push --force` (also `-f`, `--force-with-lease`, `+branch`, `--mirror`, `--prune`), `git push --delete` (also `:branch`), `git reset --hard`, `git clean -f`, `git checkout -- <path>`, `.`, `-f`, or `-B`, `git switch --discard-changes`, `git restore` (except `--staged` alone), `git rm` (except `--cached`), `git branch -D` or `-f`, `git stash drop` or `clear`, `git update-ref -d`, `git reflog expire`, `git gc --prune`, `git filter-branch` or `filter-repo`;
+- system-level: `sudo`, `doas`, `dd of=`, `mkfs`, `diskutil erase`.
 
-It applies to every `bash` call, including calls made by subagents, codemode scripts, and workflows. Commands you run yourself with `!` are not checked. The check matches command text, so it errs toward asking (`echo rm` asks too), and it does not catch a program that deletes files on its own, such as a Python script. It reduces accidents; it is not a security boundary.
+It applies to every `bash` call, including calls made by subagents, codemode scripts, and workflows, and it runs after extension hooks, so a hook cannot change a command after you approved it. Commands you run yourself with `!` are not checked, nor are tools under other names, such as an MCP server's shell tool. When you decline, the agent stops after its current tool calls, unless other calls among them went through.
+
+The check matches command text: line continuations are joined, and quotes and backslashes are ignored, so `r''m` and `bash -c "rm x"` ask too. A program that deletes files on its own, such as a Python script, is not caught. It reduces accidents; it is not a security boundary.
 
 <a id="project-trust"></a>
 

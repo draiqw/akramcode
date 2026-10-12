@@ -154,6 +154,8 @@ export interface NestedToolCallHost {
 		parentToolCallId: string,
 		signal: AbortSignal | undefined,
 		onUpdate: (partialResult: AgentToolResult<unknown>) => Promise<void>,
+		/** Masks the call's strings in what is shown to the user, such as a confirmation. */
+		redact?: (text: string) => string,
 	): Promise<AgentToolCallOutcome>;
 	emit(event: NestedToolExecutionEvent): Promise<void>;
 }
@@ -258,17 +260,23 @@ export class NestedToolCallRunner {
 		});
 		let outcome: AgentToolCallOutcome;
 		try {
-			outcome = await this.host.runToolCall(toolCall, callerId, options.signal, async (partialResult) => {
-				options.onUpdate?.(partialResult);
-				await this.host.emit({
-					type: "tool_execution_update",
-					toolCallId: toolCall.id,
-					toolName: name,
-					args: visibleArgs,
-					partialResult: visibleResult(partialResult),
-					parentToolCallId: callerId,
-				});
-			});
+			outcome = await this.host.runToolCall(
+				toolCall,
+				callerId,
+				options.signal,
+				async (partialResult) => {
+					options.onUpdate?.(partialResult);
+					await this.host.emit({
+						type: "tool_execution_update",
+						toolCallId: toolCall.id,
+						toolName: name,
+						args: visibleArgs,
+						partialResult: visibleResult(partialResult),
+						parentToolCallId: callerId,
+					});
+				},
+				redact,
+			);
 		} finally {
 			this.scopes.delete(toolCall.id);
 			release?.();
