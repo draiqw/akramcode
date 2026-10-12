@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- `bash` output the model sees is capped at the last 400 lines or 16KB (was 2000 lines or 50KB); the full output stays in a temp file. On the quality benchmark this cut total tokens by 24% with no drop in pass rate.
+
 ## [1.0.27] - 2026-10-11
 
 ### Added

@@ -777,10 +777,10 @@ describe("Coding Agent Tools", () => {
 			const output = getTextOutput(result);
 
 			expect(result.details?.truncation?.totalLines).toBe(4000);
-			expect(result.details?.truncation?.outputLines).toBe(2000);
-			expect(output).toContain("line-2001");
+			expect(result.details?.truncation?.outputLines).toBe(400);
+			expect(output).toContain("line-3601");
 			expect(output).toContain("line-4000");
-			expect(output).toMatch(/\[Showing lines 2001-4000 of 4000\. Full output: /);
+			expect(output).toMatch(/\[Showing lines 3601-4000 of 4000\. Full output: /);
 			expect(output).not.toContain("4001");
 		});
 
