@@ -11,6 +11,7 @@ import {
 	collectLoaderIds,
 	type ElementFingerprint,
 	type FrameTree,
+	peerKey,
 } from "./state.ts";
 
 export class BrowserActionError extends Error {}
@@ -139,22 +140,23 @@ export function reidentify(
 		]);
 	}
 	// A position proves nothing when other elements look the same: when a list row is removed, the
-	// next row's button takes its place. Then only a stable attribute can tell them apart.
-	let lookalikes: ElementFingerprint[] | undefined;
+	// next row's button takes its place. Then only a stable attribute can tell them apart. Named
+	// elements count as lookalikes when another one is or was near the viewport; unnamed ones (icon
+	// buttons) only when their number in the list changed, so a re-rendered toolbar still resolves.
+	const key = peerKey(old);
+	const peers = candidates.filter((c) => peerKey(c) === key);
+	const positionUnreliable =
+		old.name !== ""
+			? candidates.filter(alike).length > 1 || (old.peers ?? 1) > 1
+			: old.peers !== undefined && peers.length !== old.peers;
+	const lookalikes = old.name !== "" ? candidates.filter(alike) : peers;
 	for (const [level, test] of levels) {
-		if (lookalikes && level === "role and name") continue;
+		if (positionUnreliable && (level === "position and name" || level === "role and name")) continue;
 		const matches = candidates.filter(test);
-		if (matches.length === 0) continue;
-		if (level === "position and name" && old.name !== "") {
-			const alikeCandidates = candidates.filter(alike);
-			if (alikeCandidates.length > 1) {
-				lookalikes = alikeCandidates;
-				continue;
-			}
-		}
-		return { level, matches };
+		if (matches.length > 0) return { level, matches };
 	}
-	return lookalikes ? { level: "role and name", matches: lookalikes } : undefined;
+	// One lookalike left may be a neighbor that moved into the place of a removed element.
+	return positionUnreliable && lookalikes.length > 1 ? { level: "role and name", matches: lookalikes } : undefined;
 }
 
 function describeFingerprint(f: ElementFingerprint): string {

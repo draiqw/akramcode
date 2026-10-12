@@ -50,6 +50,12 @@ describe("findDangerousCommands", () => {
 		["dd if=/dev/zero of=/dev/disk2", "dd"],
 		["mkfs.ext4 /dev/sdb1", "mkfs"],
 		["diskutil eraseDisk APFS X disk2", "diskutil erase"],
+		["eval rm -rf x", "rm"],
+		["timeout 5 rm -rf x", "rm"],
+		["stdbuf -o0 rm x", "rm"],
+		["git -c core.x=1 --no-pager -C repo rm a", "git rm"],
+		["git worktree remove --force ../wt", "git worktree remove --force"],
+		['bash -c "git push -f"', "git push --force"],
 	])("asks for %s", (command, label) => {
 		expect(findDangerousCommands(command)).toContain(label);
 	});
@@ -80,6 +86,15 @@ describe("findDangerousCommands", () => {
 		"echo rm",
 		"./rm.sh",
 		"git branch --format=%(refname)",
+		'git commit -m "fix rm handling"',
+		'git commit -m "docs: push --force and reset --hard notes"',
+		'git commit -m "fix: branch -D handling"',
+		"git add rm.ts",
+		"git grep -n rm",
+		"git log -- rm.ts",
+		'git stash push -m "clear"',
+		"git worktree remove ../wt",
+		"echo git rm a",
 	])("does not ask for %s", (command) => {
 		expect(findDangerousCommands(command)).toEqual([]);
 	});

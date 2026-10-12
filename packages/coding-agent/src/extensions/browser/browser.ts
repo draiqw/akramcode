@@ -359,12 +359,18 @@ export class Browser {
 			elements: new Map(),
 		};
 		this.tabs.set(targetId, tab);
-		if (!auto) {
-			// A page that existed before this connection: check its requests and its new frames from now on.
-			await cdp.send("Fetch.enable", DOCUMENT_REQUESTS, sessionId);
-			await cdp.send("Target.setAutoAttach", AUTO_ATTACH, sessionId).catch(() => {});
+		try {
+			if (!auto) {
+				// A page that existed before this connection: check its requests and its new frames from now on.
+				await cdp.send("Fetch.enable", DOCUMENT_REQUESTS, sessionId);
+				await cdp.send("Target.setAutoAttach", AUTO_ATTACH, sessionId).catch(() => {});
+			}
+			await cdp.send("Page.enable", {}, sessionId);
+		} catch (error) {
+			// A cached tab is used as is, so one whose requests are not checked must not stay.
+			this.tabs.delete(targetId);
+			throw error;
 		}
-		await cdp.send("Page.enable", {}, sessionId);
 		// The page believes it has focus even though the window is in the background.
 		await cdp.send("Emulation.setFocusEmulationEnabled", { enabled: true }, sessionId).catch(() => {});
 		this.current = targetId;

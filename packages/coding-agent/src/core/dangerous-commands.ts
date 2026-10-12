@@ -20,13 +20,17 @@ const SAME = "[^;&|\\n]*";
 function program(name: string): RegExp {
 	const start = "(?:^|[;&|(`{!\\n]|\\$\\(|-exec\\s|-c\\s)";
 	const wrappers =
-		"(?:(?:sudo|doas|command|exec|nohup|time|nice|env|busybox|xargs|then|do|else)(?:\\s+-\\S+)*\\s+|[A-Za-z_]\\w*=\\S*\\s+)*";
+		"(?:(?:sudo|doas|command|exec|eval|nohup|time|nice|ionice|stdbuf|watch|env|busybox|xargs|then|do|else)(?:\\s+-\\S+)*\\s+|timeout(?:\\s+-\\S+)*\\s+\\S+\\s+|[A-Za-z_]\\w*=\\S*\\s+)*";
 	return new RegExp(`${start}\\s*${wrappers}(?:[^\\s;&|]*/)?${name}(?![\\w.-])`);
 }
 
-/** `git <subcommand> ...` within one simple command, with options such as `-C dir` before the subcommand. */
+/**
+ * `git <subcommand> ...` within one simple command. Only global options such as `-C dir` may come
+ * before the subcommand, so `git commit -m "fix rm"` is not `git rm`.
+ */
 function git(subcommand: string, rest = ""): RegExp {
-	return new RegExp(`\\bgit\\b${SAME}\\b${subcommand}\\b${rest ? `${SAME}${rest}` : ""}`);
+	const options = "(?:\\s+(?:-[Cc]\\s+\\S+|--(?:git-dir|work-tree|namespace)\\s+\\S+|-\\S+))*";
+	return new RegExp(`${program("git").source}${options}\\s+${subcommand}(?![\\w-])${rest ? `${SAME}${rest}` : ""}`);
 }
 
 /** Text after the first match of `pattern`, up to the end of that simple command. */
@@ -69,7 +73,7 @@ const DANGEROUS: ReadonlyArray<{ label: string; test: (command: string) => boole
 		// `--staged` alone only unstages; the working tree is untouched.
 		label: "git restore",
 		test: (c) => {
-			const rest = after(c, /\bgit\b[^;&|\n]*\brestore\b/);
+			const rest = after(c, git("restore"));
 			return rest !== undefined && (!/\s(--staged|-S)\b/.test(rest) || /\s(--worktree|-W)\b/.test(rest));
 		},
 	},
@@ -77,7 +81,7 @@ const DANGEROUS: ReadonlyArray<{ label: string; test: (command: string) => boole
 		// `git rm --cached` only untracks; the file stays.
 		label: "git rm",
 		test: (c) => {
-			const rest = after(c, /\bgit\b[^;&|\n]*\srm\b/);
+			const rest = after(c, git("rm"));
 			return rest !== undefined && !/\s--cached\b/.test(rest);
 		},
 	},
@@ -89,11 +93,15 @@ const DANGEROUS: ReadonlyArray<{ label: string; test: (command: string) => boole
 				"(\\s-[a-zA-Z]*D[a-zA-Z]*\\b|\\s-[a-zA-Z]*f[a-zA-Z]*\\b|\\s--force\\b|\\s--delete\\s[^;&|\\n]*--force\\b)",
 			).test(c),
 	},
-	{ label: "git stash drop/clear", test: (c) => new RegExp(`\\bgit\\b${SAME}\\bstash\\s+(drop|clear)\\b`).test(c) },
+	{ label: "git stash drop/clear", test: (c) => git("stash\\s+(drop|clear)").test(c) },
 	{ label: "git update-ref -d", test: (c) => git("update-ref", "\\s-d\\b").test(c) },
 	{ label: "git reflog expire", test: (c) => git("reflog", "\\bexpire\\b").test(c) },
 	{ label: "git gc --prune", test: (c) => git("gc", "\\s--prune\\b").test(c) },
-	{ label: "git filter-branch", test: (c) => /\bgit\b[^;&|\n]*\bfilter-(branch|repo)\b/.test(c) },
+	{ label: "git filter-branch", test: (c) => git("filter-(branch|repo)").test(c) },
+	{
+		label: "git worktree remove --force",
+		test: (c) => git("worktree", "\\sremove\\b[^;&|\\n]*\\s(-f|--force)\\b").test(c),
+	},
 	{ label: "sudo", test: (c) => program("sudo").test(c) || program("doas").test(c) },
 	{ label: "dd", test: (c) => new RegExp(`${program("dd").source}${SAME}\\bof=`).test(c) },
 	{ label: "mkfs", test: (c) => program("mkfs(\\.\\w+)?").test(c) },

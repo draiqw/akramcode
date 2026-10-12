@@ -214,6 +214,39 @@ describe("browser element resolution", () => {
 				icon(22, "html/body/header/button[3]"),
 			]),
 		).toMatchObject({ level: "position and name", matches: [{ backendNodeId: 21 }] });
+		// A row was removed: the next row's icon took the place of the stale one.
+		const counted = (id: number, path: string, peers?: number) => ({ ...icon(id, path), peers });
+		expect(
+			reidentify(counted(10, "html/body/ul/li[2]/button", 3), [
+				counted(20, "html/body/ul/li[1]/button"),
+				counted(21, "html/body/ul/li[2]/button"),
+			]),
+		).toMatchObject({ level: "role and name", matches: [{ backendNodeId: 20 }, { backendNodeId: 21 }] });
+		// The same number of icons: a re-render, so the position holds.
+		expect(
+			reidentify(counted(10, "html/body/ul/li[2]/button", 2), [
+				counted(20, "html/body/ul/li[1]/button"),
+				counted(21, "html/body/ul/li[2]/button"),
+			]),
+		).toMatchObject({ level: "position and name", matches: [{ backendNodeId: 21 }] });
+	});
+
+	it("does not trust a position when lookalikes were near the viewport before", () => {
+		const del = (id: number, path: string, peers?: number): ElementFingerprint => ({
+			backendNodeId: id,
+			frameId: "main",
+			tag: "button",
+			role: "button",
+			name: "Delete",
+			attributes: {},
+			path,
+			documentUrl: "https://app.test/",
+			peers,
+		});
+		// Row 1 scrolled out and row 2 was removed; only row 3 is left, now at row 2's path.
+		expect(
+			reidentify(del(10, "html/body/ul/li[2]/button", 3), [del(22, "html/body/ul/li[2]/button")]),
+		).toBeUndefined();
 	});
 
 	it("re-identifies by stable attributes but not by generated ids", () => {
@@ -477,6 +510,9 @@ describe("browser input parsing and policy", () => {
 	it("adds https to URLs without a scheme", () => {
 		expect(normalizeUrl("example.com/a")).toBe("https://example.com/a");
 		expect(normalizeUrl("http://localhost:3000")).toBe("http://localhost:3000");
+		expect(normalizeUrl("localhost:3000/app")).toBe("http://localhost:3000/app");
+		expect(normalizeUrl("example.com:8080")).toBe("https://example.com:8080");
+		expect(normalizeUrl("javascript:alert(1)")).toBe("javascript:alert(1)");
 	});
 });
 

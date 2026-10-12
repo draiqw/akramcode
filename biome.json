@@ -32,6 +32,7 @@
 			"packages/coding-agent/examples/**/*.ts",
 			"packages/agent/examples/**/*.ts",
 			"!!.worktrees",
+			"!!packages/evals/.bench",
 			"!**/node_modules/**/*",
 			"!**/test-sessions.ts",
 			"!**/models.generated.ts",

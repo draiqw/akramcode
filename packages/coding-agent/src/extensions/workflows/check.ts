@@ -106,7 +106,8 @@ export function findParamReferences(code: string): Set<string> {
 	)) {
 		if (!/\}\s*=\s*$/.test(code.slice(0, match.index))) names.add("*");
 	}
-	for (const match of code.matchAll(/\{([^{}]*)\}\s*=\s*params\b/g)) {
+	// One level of nested braces, for defaults such as `{ opts = {} } = params`.
+	for (const match of code.matchAll(/\{((?:[^{}]|\{[^{}]*\})*)\}\s*=\s*params\b/g)) {
 		for (const part of match[1].split(",")) {
 			const name = part.split(":")[0].split("=")[0].trim();
 			if (name) names.add(name);

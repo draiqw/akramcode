@@ -303,7 +303,11 @@ export function createWorkflowsExtension(options: WorkflowsExtensionOptions = {}
 			const callable = new Set(ctx.tools.map((tool) => tool.name));
 			const registered = akramcode.getAllTools().map((tool) => tool.name);
 			const result = checkWorkflow(file, [...callable], registered);
-			report(ctx, formatCheckResult(file.name, result), result.status === "ok" ? "info" : "warning");
+			report(
+				ctx,
+				formatCheckResult(file.name, result),
+				result.status === "ok" ? "info" : result.status === "failed" ? "error" : "warning",
+			);
 		};
 
 		const pick = async (ctx: ExtensionCommandContext) => {

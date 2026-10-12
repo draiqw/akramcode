@@ -92,8 +92,10 @@ function text(value: string): { content: TextContent[]; details: undefined } {
 
 export function normalizeUrl(url: string): string {
 	const trimmed = url.trim();
-	if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return trimmed;
-	return `https://${trimmed}`;
+	// `localhost:3000` is a host and a port, not a scheme.
+	if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed) && !/^[^/:]+:\d+(?:[/?#]|$)/.test(trimmed)) return trimmed;
+	// Local dev servers rarely serve https.
+	return /^(?:localhost|127\.\d+\.\d+\.\d+)(?:[:/?#]|$)/i.test(trimmed) ? `http://${trimmed}` : `https://${trimmed}`;
 }
 
 export function createBrowserExtension(options: BrowserExtensionOptions = {}): ExtensionFactory {
@@ -196,7 +198,7 @@ export function createBrowserExtension(options: BrowserExtensionOptions = {}): E
 			...common("browser_navigate", false),
 			description: `Open a URL in the current tab (or a new background tab) and return the page state. ${UNTRUSTED}`,
 			parameters: Type.Object({
-				url: Type.String({ description: "URL; https:// is added when no scheme is given" }),
+				url: Type.String({ description: "URL; https:// is added when no scheme is given, http:// for localhost" }),
 				new_tab: Type.Optional(
 					Type.Boolean({ description: "Open in a new tab. Default: false; true when no tab is open" }),
 				),

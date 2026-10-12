@@ -12,7 +12,7 @@
  */
 
 import { execFileSync, spawn } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, readlinkSync, rmSync, statSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, readlinkSync, rmSync, statSync } from "node:fs";
 import { homedir, hostname } from "node:os";
 import { delimiter, join } from "node:path";
 
@@ -221,6 +221,8 @@ export async function ensureChrome(options: ChromeOptions): Promise<string> {
 		);
 	}
 	mkdirSync(options.profileDir, { recursive: true, mode: 0o700 });
+	// The mode applies only to a new directory; the profile holds cookies and logins.
+	chmodSync(options.profileDir, 0o700);
 	// A stale lock from a crashed Chrome makes the next start show "Something went wrong when opening
 	// your profile"; its owner is gone, so remove it.
 	for (const name of ["SingletonLock", "SingletonCookie", "SingletonSocket", "DevToolsActivePort"]) {

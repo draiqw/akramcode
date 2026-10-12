@@ -82,11 +82,12 @@ describe("workflow check", () => {
 						a: { type: "string" },
 						b: { type: "string" },
 						c: { type: "string" },
+						d: { type: "string" },
 						unused: { type: "string" },
 					},
 					tools: [],
 				},
-				`// params.unused only appears in a comment\nconst { a } = params;\nconst text = \`\${params["b"]} \${params.c}\`;\nreturn a + text;`,
+				`// params.unused only appears in a comment\nconst { a, d = {} } = params;\nconst text = \`\${params["b"]} \${params.c}\`;\nreturn a + text;`,
 			),
 			[],
 		);

@@ -97,6 +97,13 @@ export interface ElementFingerprint {
 	documentUrl: string;
 	/** Loader id of that document, set when the model is shown the element. */
 	loaderId?: string;
+	/** Elements near the viewport with the same `peerKey`, this one included, when the state was taken. */
+	peers?: number;
+}
+
+/** Elements that look the same in one list: same frame, tag, role, and name, and a path that differs only in indices. */
+export function peerKey(f: ElementFingerprint): string {
+	return JSON.stringify([f.frameId, f.tag, f.role, f.name, f.path.replace(/\[\d+\]/g, "")]);
 }
 
 export interface Viewport {
@@ -537,6 +544,12 @@ export function buildTree(
 		used += line.length + 1;
 	}
 	const truncatedLines = lines.length - kept.length + (cut ? 1 : 0);
+	const peers = new Map<string, number>();
+	for (const fingerprint of elements.values()) {
+		const key = peerKey(fingerprint);
+		peers.set(key, (peers.get(key) ?? 0) + 1);
+	}
+	for (const fingerprint of elements.values()) fingerprint.peers = peers.get(peerKey(fingerprint));
 	// Fingerprints only for elements the model can see.
 	const shown = new Set(kept.flatMap((line) => [...line.matchAll(/\[(\d+)\] /g)].map((match) => Number(match[1]))));
 	for (const id of elements.keys()) if (!shown.has(id)) elements.delete(id);
