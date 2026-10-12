@@ -7,7 +7,7 @@ import { type ChildProcess, execFileSync, spawn } from "node:child_process";
 import { createWriteStream, existsSync } from "node:fs";
 import { cp, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { basename, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { createMetrics, metricsFromJsonl, type RunMetrics } from "./metrics.ts";
 import { HIDDEN_DIR_NAME, type PlannedRun, type SettingsObject, type TaskSpec } from "./tasks.ts";
 
@@ -244,6 +244,9 @@ export async function executeRun(run: PlannedRun, options: RunOptions): Promise<
 		await mkdir(agentDir, { recursive: true });
 		await mkdir(home, { recursive: true });
 		await cp(options.authFile, join(agentDir, "auth.json"));
+		// Encrypted auth.json files are unreadable without the key that sits next to them.
+		const secretsKey = join(dirname(options.authFile), "secrets.key");
+		if (existsSync(secretsKey)) await cp(secretsKey, join(agentDir, "secrets.key"));
 		await writeFile(join(agentDir, "settings.json"), `${JSON.stringify(options.settings, null, "\t")}\n`);
 		await writeFile(join(options.artifactDir, "settings.json"), `${JSON.stringify(options.settings, null, "\t")}\n`);
 		await prepareWorkspace(task, workspace);
