@@ -222,6 +222,15 @@ function scriptNeedsServer(code: string, server: string): boolean {
 	return code.includes(mcpNamespace(server));
 }
 
+/** Whether tool name patterns such as `mcp__browser__*` can select tools of `server`. */
+export function toolPatternsNeedServer(patterns: readonly string[], server: string): boolean {
+	const prefix = `mcp__${server}__`.replace(/[^A-Za-z0-9_]/g, "_");
+	return patterns.some((pattern) => {
+		const head = pattern.split("*")[0]!;
+		return head.startsWith(prefix) || (pattern.includes("*") && prefix.startsWith(head));
+	});
+}
+
 /** Short state for lists and the startup report. `withError` appends the first line of a failure. */
 function describeState(server: McpServer, withError = true): string {
 	if (!isEnabled(server)) return "disabled";
@@ -1037,6 +1046,12 @@ export function createMcpExtension(options: McpExtensionOptions = {}): Extension
 				waiting = pendingServers.filter((server) => scriptNeedsServer(source, server.entry.name));
 			} else if (isToolSearchTool(tool) || RESOURCE_TOOL_NAMES.has(tool.name)) {
 				waiting = pendingServers;
+			} else if (tool.name === "agent") {
+				// A subagent gets its tools when it starts, so a type listing a server's tools waits for it.
+				const { subagent_type } = event.input as { subagent_type?: unknown };
+				const typeName = typeof subagent_type === "string" ? subagent_type : "general-purpose";
+				const patterns = ctx.subagents?.listTypes().types.find((type) => type.name === typeName)?.tools ?? [];
+				waiting = pendingServers.filter((server) => toolPatternsNeedServer(patterns, server.entry.name));
 			}
 			await waitForServers(waiting, ctx.signal);
 		});

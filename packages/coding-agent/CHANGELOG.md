@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- A subagent whose type lists an MCP server's tools (e.g. `tools: mcp__browser__*`) waits for that server to connect instead of starting without its tools.
+
 ### Changed
 
 - `bash` output the model sees is capped at the last 400 lines or 16KB (was 2000 lines or 50KB); the full output stays in a temp file. On the quality benchmark this cut total tokens by 24% with no drop in pass rate.

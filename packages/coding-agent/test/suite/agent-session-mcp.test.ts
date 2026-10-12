@@ -1,10 +1,14 @@
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { getCurrentSystemPrompt, getCurrentTools } from "@akramcode/ai";
 import { type JsonRpcRequest, LATEST_PROTOCOL_VERSION } from "@akramcode/mcp";
 import { createInMemoryTransportPair } from "@akramcode/mcp/testing";
 import { fauxAssistantMessage, fauxToolCall } from "@akramcode/providers";
-import type { SystemMessage, ToolResultMessage } from "@akramcode/providers/compat";
+import type { FauxResponseFactory, SystemMessage, ToolResultMessage } from "@akramcode/providers/compat";
 import { Type } from "typebox";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ExtensionAPI, ExtensionFactory } from "../../src/core/extensions/types.ts";
+import { createAgentSession } from "../../src/core/sdk.ts";
 import type { SessionManager } from "../../src/core/session-manager.ts";
 import { createCodemodeExtension } from "../../src/extensions/codemode/index.ts";
 import type { McpExposure, McpServerEntry } from "../../src/extensions/mcp/config.ts";
@@ -586,13 +590,15 @@ return { docs, sameForAliases: aliases.every((alias) => JSON.stringify(alias) ==
 		},
 		initializeDelayMs: number,
 		startupWaitMs?: number,
+		withSubagents = false,
 	) {
 		const calls: string[] = [];
 		const notifications: string[] = [];
 		const { name = "slow", instructions, ...serverConfig } = config;
 		const entry: McpServerEntry = { name, config: { url: "http://unused.invalid", ...serverConfig }, source: "test" };
 		const harness = await createHarness({
-			initialActiveToolNames: [],
+			initialActiveToolNames: withSubagents ? ["agent"] : [],
+			...(withSubagents ? { createSubagentSession: createAgentSession } : {}),
 			extensionFactories: [
 				createCodemodeExtension(),
 				createToolSearchExtension(),
@@ -731,6 +737,38 @@ return { docs, sameForAliases: aliases.every((alias) => JSON.stringify(alias) ==
 		await harness.session.prompt("go");
 
 		expect(getMessageText(toolResult(harness, "codemode")).split("\n").at(-1)).toBe("2");
+	});
+
+	it("waits for the servers a subagent type lists before starting it", async () => {
+		const { harness } = await setupSlow({ exposure: "deferred" }, 30, undefined, true);
+		const agentsDir = join(harness.tempDir, "agent", "agents");
+		mkdirSync(agentsDir, { recursive: true });
+		writeFileSync(
+			join(agentsDir, "docs.md"),
+			"---\nname: docs\ndescription: Docs\ntools: mcp__slow__*\n---\nRead docs.\n",
+		);
+		harness.session.subagents?.reload();
+		const childTools: string[][] = [];
+		const parentSteps = [
+			fauxAssistantMessage(fauxToolCall("agent", { description: "Docs", prompt: "find", subagent_type: "docs" }), {
+				stopReason: "toolUse",
+			}),
+			fauxAssistantMessage("done"),
+		];
+		const respond: FauxResponseFactory = (context) => {
+			if (getCurrentSystemPrompt(context.messages).includes("You are a subagent")) {
+				childTools.push(getCurrentTools(context.messages).map((tool) => tool.name));
+				return fauxAssistantMessage("found");
+			}
+			return parentSteps.shift() ?? fauxAssistantMessage("extra");
+		};
+		harness.setResponses([respond, respond, respond]);
+
+		await harness.session.prompt("go");
+
+		expect(childTools[0]).toEqual(
+			expect.arrayContaining(["mcp__slow__search", "mcp__slow__fail", "mcp__slow__shot"]),
+		);
 	});
 
 	it("waits for servers before tool_search searches", async () => {
