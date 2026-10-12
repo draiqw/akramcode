@@ -118,6 +118,15 @@ describe.skipIf(!chrome)("browser live smoke", () => {
 			const cdp = await CdpConnection.connect(webSocketDebuggerUrl);
 			await cdp.send("Browser.close").catch(() => {});
 			cdp.close();
+			// Chrome writes to the profile until it exits; wait until its DevTools port stops answering.
+			for (let i = 0; i < 50; i++) {
+				const alive = await fetch(`http://127.0.0.1:${port}/json/version`).then(
+					() => true,
+					() => false,
+				);
+				if (!alive) break;
+				await new Promise((resolve) => setTimeout(resolve, 200));
+			}
 		} catch {
 			// Chrome never started.
 		}
