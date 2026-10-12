@@ -18,19 +18,22 @@ const SAME = "[^;&|\\n]*";
  * `sudo`, `xargs`, `env`, a variable assignment, `-exec`, or `-c`; a path before it is allowed.
  */
 function program(name: string): RegExp {
-	const start = "(?:^|[;&|(`{!\\n]|\\$\\(|-exec\\s|-c\\s)";
-	const wrappers =
-		"(?:(?:sudo|doas|command|exec|eval|nohup|time|nice|ionice|stdbuf|watch|env|busybox|xargs|then|do|else)(?:\\s+-\\S+)*\\s+|timeout(?:\\s+-\\S+)*\\s+\\S+\\s+|[A-Za-z_]\\w*=\\S*\\s+)*";
+	const start = "(?:^|[;&|(`{!\\n]|\\$\\(|-exec\\s|-[a-z]*c\\s)";
+	// Options may take a value, as in `sudo -u bob` or `nice -n 5`; `ssh host cmd` runs cmd remotely.
+	const option = "(?:\\s+-\\S+(?:\\s+[^-\\s;&|]\\S*)?)*";
+	const wrappers = `(?:(?:sudo|doas|command|exec|eval|nohup|time|nice|ionice|stdbuf|watch|env|busybox|xargs|if|elif|while|until|then|do|else)${option}\\s+|(?:timeout|ssh)${option}\\s+\\S+\\s+|[A-Za-z_]\\w*=\\S*\\s+)*`;
 	return new RegExp(`${start}\\s*${wrappers}(?:[^\\s;&|]*/)?${name}(?![\\w.-])`);
 }
 
 /**
  * `git <subcommand> ...` within one simple command. Only global options such as `-C dir` may come
- * before the subcommand, so `git commit -m "fix rm"` is not `git rm`.
+ * before the subcommand, so `git commit -m "fix rm"` is not `git rm`. `git` itself may be anywhere,
+ * as in `ssh host git ...` or `docker exec c git ...`.
  */
 function git(subcommand: string, rest = ""): RegExp {
-	const options = "(?:\\s+(?:-[Cc]\\s+\\S+|--(?:git-dir|work-tree|namespace)\\s+\\S+|-\\S+))*";
-	return new RegExp(`${program("git").source}${options}\\s+${subcommand}(?![\\w-])${rest ? `${SAME}${rest}` : ""}`);
+	const value = "(?:\"[^\"]*\"|'[^']*'|\\S+)";
+	const options = `(?:\\s+(?:-[Cc]\\s+${value}|--(?:git-dir|work-tree|namespace)\\s+${value}|-[^\\s=]+(?:=${value})?))*`;
+	return new RegExp(`(?<![\\w.-])git${options}\\s+${subcommand}(?![\\w-])${rest ? `${SAME}${rest}` : ""}`);
 }
 
 /** Text after the first match of `pattern`, up to the end of that simple command. */

@@ -57,7 +57,7 @@ Scripts have everything codemode scripts have, plus:
 | `step(id, fn)` | Runs `fn` as a named step. The run record lists each step with its status and duration. |
 | `llm({ prompt, input?, schema?, model? })` | One model call without tools. `{name}` in `prompt` is replaced with `input.name`. With a JSON `schema`, the reply is parsed and checked and the value is returned, with one retry when it is not valid; otherwise the text. `model` is `"provider/id"`; the default is the session's model. |
 | `check(condition, message)` | Fails the run, and the current step, when `condition` is falsy. |
-| `ask({ question, options?, default? })` | Asks the user and returns the answer. Without a UI it returns `default`, or the run ends with `needs input`. |
+| `ask({ question, options?, default? })` | Asks the user and returns the answer. Without a UI it returns `default`, or the run ends with `needs input`. When the user dismisses the dialog with `Esc`, it throws `ask() was cancelled`; catch it to continue. |
 
 A tool call that fails, including a `bash` command with a non-zero exit code, rejects, so the step and the run fail unless the script catches the error. Tool calls go through the normal tool pipeline: extension hooks, permission checks, and the sandbox apply as to the model's own calls.
 

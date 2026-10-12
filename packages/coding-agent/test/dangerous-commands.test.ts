@@ -56,6 +56,17 @@ describe("findDangerousCommands", () => {
 		["git -c core.x=1 --no-pager -C repo rm a", "git rm"],
 		["git worktree remove --force ../wt", "git worktree remove --force"],
 		['bash -c "git push -f"', "git push --force"],
+		['git -C "my dir" push -f', "git push --force"],
+		["if git reset --hard; then echo; fi", "git reset --hard"],
+		["until git push -f; do sleep 1; done", "git push --force"],
+		["nice -n 5 git push -f", "git push --force"],
+		["sudo -u bob rm x", "rm"],
+		["ssh host git push -f", "git push --force"],
+		["ssh host 'git reset --hard'", "git reset --hard"],
+		["docker exec c git reset --hard", "git reset --hard"],
+		["bash -lc 'git push -f'", "git push --force"],
+		["timeout -s KILL 10 git push -f", "git push --force"],
+		['git --git-dir="/x y/.git" push -f', "git push --force"],
 	])("asks for %s", (command, label) => {
 		expect(findDangerousCommands(command)).toContain(label);
 	});
@@ -94,7 +105,9 @@ describe("findDangerousCommands", () => {
 		"git log -- rm.ts",
 		'git stash push -m "clear"',
 		"git worktree remove ../wt",
-		"echo git rm a",
+		"if git diff --quiet; then echo clean; fi",
+		"ssh-keygen -t ed25519",
+		"nice -n 5 make",
 	])("does not ask for %s", (command) => {
 		expect(findDangerousCommands(command)).toEqual([]);
 	});

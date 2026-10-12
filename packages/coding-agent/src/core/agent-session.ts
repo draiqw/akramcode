@@ -775,11 +775,22 @@ export class AgentSession {
 		// Dialogs replace each other, so parallel calls (codemode, subagents) ask in turn.
 		const previous = this._dangerousConfirmTail;
 		let release!: () => void;
-		this._dangerousConfirmTail = new Promise((resolve) => {
+		const done = new Promise<void>((resolve) => {
 			release = resolve;
 		});
+		// A call that stops waiting on abort must not let the next one ask while an earlier dialog is open.
+		this._dangerousConfirmTail = Promise.all([previous, done]).then(() => {});
 		try {
-			await previous;
+			let onAbort = () => {};
+			const aborted = new Promise<void>((resolve) => {
+				onAbort = resolve;
+			});
+			signal?.addEventListener("abort", onAbort, { once: true });
+			try {
+				await (signal?.aborted ? undefined : Promise.race([previous, aborted]));
+			} finally {
+				signal?.removeEventListener("abort", onAbort);
+			}
 			// "No" comes first, so a stray Enter does not approve.
 			const approved =
 				!signal?.aborted &&

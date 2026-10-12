@@ -112,6 +112,48 @@ describe("dangerous bash commands", () => {
 		expect(exists()).toBe(true);
 	});
 
+	it("stops waiting for another call's dialog when its own call is aborted", async () => {
+		const order: string[] = [];
+		const pair = (akramcode: ExtensionAPI) => {
+			akramcode.registerTool({
+				name: "pair",
+				label: "pair",
+				description: "Runs two commands.",
+				parameters: Type.Object({}),
+				execute: async (_id, _params, _signal, _onUpdate, ctx) => {
+					const controller = new AbortController();
+					const first = ctx.executeTool("bash", { command: "rm a" }).then(() => order.push("first"));
+					const second = ctx
+						.executeTool("bash", { command: "rm b" }, { signal: controller.signal })
+						.then(() => order.push("second"));
+					setTimeout(() => controller.abort(), 10);
+					await Promise.all([first, second]);
+					return { content: [{ type: "text", text: "ok" }], details: undefined };
+				},
+			});
+		};
+		const harness = await createHarness({ initialActiveToolNames: ["bash", "pair"], extensionFactories: [pair] });
+		cleanups.push(() => harness.cleanup());
+		let prompts = 0;
+		await harness.session.bindExtensions({
+			mode: "tui",
+			uiContext: createTestUiContext({
+				select: async () => {
+					prompts++;
+					await new Promise((resolve) => setTimeout(resolve, 200));
+					return "No";
+				},
+			}),
+		});
+		harness.setResponses([
+			fauxAssistantMessage([fauxToolCall("pair", {})], { stopReason: "toolUse" }),
+			fauxAssistantMessage("done"),
+		]);
+		await harness.session.prompt("go");
+		expect(order).toEqual(["second", "first"]);
+		expect(prompts).toBe(1);
+	});
+
 	it("asks for parallel calls one at a time", async () => {
 		const { runTool, prompts, maxOpen } = await setup(false);
 		await runTool("outer", "rm a ;; rm b");
