@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
 	BrowserActionError,
 	deltaReport,
@@ -227,6 +227,41 @@ describe("browser dialogs and tabs", () => {
 		const handled = cdp.calls.filter((call) => call.method === "Page.handleJavaScriptDialog");
 		expect(handled.map((call) => call.params.accept)).toEqual([false, true]);
 		expect(tab.dialogs).toEqual(['confirm: "Delete everything?" (dismissed)', 'beforeunload: "" (accepted)']);
+	});
+
+	it("closes a new page whose requests cannot be checked instead of running it", async () => {
+		const { cdp } = await connected();
+		cdp.handlers.set("Fetch.enable", (_params, sessionId) => {
+			if (sessionId === "POPUP") throw new Error("Fetch domain unavailable");
+			return {};
+		});
+		cdp.emit("Target.attachedToTarget", {
+			sessionId: "POPUP",
+			targetInfo: { targetId: "POPUP00002", type: "page" },
+			waitingForDebugger: true,
+		});
+		await vi.waitFor(() => expect(cdp.methods()).toContain("Target.closeTarget"));
+		const forPopup = cdp.calls.filter((call) => call.sessionId === "POPUP").map((call) => call.method);
+		expect(forPopup).not.toContain("Runtime.runIfWaitingForDebugger");
+		expect(cdp.calls.find((call) => call.method === "Target.closeTarget")?.params).toEqual({
+			targetId: "POPUP00002",
+		});
+	});
+
+	it("resumes a new page only after its requests are checked", async () => {
+		const { cdp } = await connected();
+		cdp.emit("Target.attachedToTarget", {
+			sessionId: "POPUP",
+			targetInfo: { targetId: "POPUP00002", type: "page" },
+			waitingForDebugger: true,
+		});
+		await vi.waitFor(() =>
+			expect(cdp.calls.filter((call) => call.sessionId === "POPUP").map((call) => call.method)).toEqual([
+				"Fetch.enable",
+				"Target.setAutoAttach",
+				"Runtime.runIfWaitingForDebugger",
+			]),
+		);
 	});
 
 	it("tracks owned tabs, popups, and loading", async () => {

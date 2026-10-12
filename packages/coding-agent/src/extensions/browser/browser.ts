@@ -70,7 +70,7 @@ export class Browser {
 	private readonly owned = new Set<string>();
 	private readonly tabs = new Map<string, Tab>();
 	/** Sessions of pages Chrome attached on creation, by target id; `attach()` reuses them. */
-	private readonly autoSessions = new Map<string, string>();
+	private readonly autoSessions = new Map<string, Promise<string | undefined>>();
 	private current: string | undefined;
 	/** Set when the connection dropped, reported once with the next result. */
 	private lostNotice: string | undefined;
@@ -112,8 +112,14 @@ export class Browser {
 		);
 		connection.on("Target.targetDestroyed", (params) => this.onTargetGone((params as { targetId: string }).targetId));
 		connection.on("Target.detachedFromTarget", (params) => {
-			const { targetId } = params as { targetId?: string };
-			if (targetId) this.tabs.delete(targetId);
+			const { sessionId, targetId } = params as { sessionId?: string; targetId?: string };
+			for (const [id, tab] of this.tabs) {
+				if (id === targetId || tab.sessionId === sessionId) {
+					this.tabs.delete(id);
+					this.autoSessions.delete(id);
+				}
+			}
+			if (targetId) this.autoSessions.delete(targetId);
 		});
 		connection.on("Page.javascriptDialogOpening", (params, sessionId) => {
 			const dialog = params as { type: string; message: string };
@@ -175,9 +181,23 @@ export class Browser {
 		waiting: boolean,
 	): Promise<void> {
 		if (target.type === "page" || target.type === "iframe") {
-			if (target.type === "page") this.autoSessions.set(target.targetId, sessionId);
-			await connection.send("Fetch.enable", DOCUMENT_REQUESTS, sessionId).catch(() => {});
-			await connection.send("Target.setAutoAttach", AUTO_ATTACH, sessionId).catch(() => {});
+			const secured = (async () => {
+				try {
+					await connection.send("Fetch.enable", DOCUMENT_REQUESTS, sessionId);
+					await connection.send("Target.setAutoAttach", AUTO_ATTACH, sessionId);
+					return sessionId;
+				} catch {
+					return undefined;
+				}
+			})();
+			if (target.type === "page") this.autoSessions.set(target.targetId, secured);
+			if (!(await secured)) {
+				// Fail closed: a target whose requests cannot be checked never runs.
+				if (target.type === "page") {
+					await connection.send("Target.closeTarget", { targetId: target.targetId }).catch(() => {});
+				}
+				return;
+			}
 		}
 		if (waiting) await connection.send("Runtime.runIfWaitingForDebugger", {}, sessionId).catch(() => {});
 	}
@@ -261,7 +281,9 @@ export class Browser {
 			return existing;
 		}
 		const cdp = await this.cdp();
-		const auto = this.autoSessions.get(targetId);
+		const pending = this.autoSessions.get(targetId);
+		const auto = pending ? await pending : undefined;
+		if (pending && !auto) throw new Error("The tab was closed: its requests could not be checked.");
 		const sessionId =
 			auto ??
 			(await cdp.send<{ sessionId: string }>("Target.attachToTarget", { targetId, flatten: true })).sessionId;
