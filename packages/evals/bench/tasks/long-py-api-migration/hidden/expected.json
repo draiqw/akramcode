@@ -1,0 +1,1048 @@
+{
+ "call_sites": 101,
+ "distractors": {
+  "app/modules/cache_utils.py": "65e8f73f451ae31c050d3df9c936c254b12f0151ee74b7e8fd5beb65b0ca1204",
+  "app/modules/changelog_notes.py": "0ebb58efd28b396d4c90070b7aa04ee05b5f599a5b467d56b8d77d9255097487",
+  "app/modules/docs_helpers.py": "a725e0450885a91f187c8f90f392224ec3012189f3788aba621ff57d855f9024"
+ },
+ "migrated_modules": [
+  "app/modules/billing_01.py",
+  "app/modules/billing_02.py",
+  "app/modules/billing_03.py",
+  "app/modules/billing_04.py",
+  "app/modules/billing_05.py",
+  "app/modules/catalog_01.py",
+  "app/modules/catalog_03.py",
+  "app/modules/catalog_04.py",
+  "app/modules/catalog_05.py",
+  "app/modules/inventory_01.py",
+  "app/modules/inventory_02.py",
+  "app/modules/inventory_03.py",
+  "app/modules/inventory_04.py",
+  "app/modules/inventory_05.py",
+  "app/modules/notify_01.py",
+  "app/modules/notify_02.py",
+  "app/modules/notify_03.py",
+  "app/modules/notify_04.py",
+  "app/modules/notify_05.py",
+  "app/modules/orders_01.py",
+  "app/modules/orders_02.py",
+  "app/modules/orders_03.py",
+  "app/modules/orders_05.py",
+  "app/modules/payments_01.py",
+  "app/modules/payments_02.py",
+  "app/modules/payments_03.py",
+  "app/modules/payments_04.py",
+  "app/modules/payments_05.py",
+  "app/modules/reports_01.py",
+  "app/modules/reports_02.py",
+  "app/modules/reports_03.py",
+  "app/modules/reports_04.py",
+  "app/modules/reports_05.py",
+  "app/modules/search_02.py",
+  "app/modules/search_03.py",
+  "app/modules/search_04.py",
+  "app/modules/search_05.py",
+  "app/modules/shipping_01.py",
+  "app/modules/shipping_02.py",
+  "app/modules/shipping_03.py",
+  "app/modules/shipping_04.py",
+  "app/modules/shipping_05.py",
+  "app/modules/users_01.py",
+  "app/modules/users_02.py",
+  "app/modules/users_04.py",
+  "app/modules/users_05.py"
+ ],
+ "modules": {
+  "billing_01": {
+   "calls": [
+    [
+     "https://billing.internal/export/0",
+     2,
+     10
+    ],
+    [
+     "https://billing.internal/export/1/eu",
+     2,
+     3
+    ],
+    [
+     "https://billing.internal/status/2/eu",
+     5,
+     3
+    ]
+   ],
+   "result": [
+    "ok:https://billing.internal/export/0",
+    "ok:https://billing.internal/export/1/eu",
+    "ok:https://billing.internal/status/2/eu"
+   ]
+  },
+  "billing_02": {
+   "calls": [
+    [
+     "https://billing.internal/batch/0/ap",
+     2,
+     7
+    ],
+    [
+     "https://billing.internal/metrics/1",
+     1,
+     30
+    ],
+    [
+     "https://billing.internal/metrics/2/ap",
+     null,
+     5
+    ]
+   ],
+   "result": [
+    "ok:https://billing.internal/batch/0/ap",
+    "ok:https://billing.internal/metrics/1",
+    "ok:https://billing.internal/metrics/2/ap"
+   ]
+  },
+  "billing_03": {
+   "calls": [
+    [
+     "https://billing.internal/history/0",
+     2,
+     7
+    ],
+    [
+     "https://billing.internal/config/1/us",
+     null,
+     7
+    ],
+    [
+     "https://billing.internal/audit/2",
+     null,
+     7
+    ]
+   ],
+   "result": [
+    "ok:https://billing.internal/history/0",
+    "ok:https://billing.internal/config/1/us",
+    "ok:https://billing.internal/audit/2"
+   ]
+  },
+  "billing_04": {
+   "calls": [
+    [
+     "https://billing.internal/export/0",
+     5,
+     5
+    ],
+    [
+     "https://billing.internal/batch/1/us",
+     1,
+     null
+    ]
+   ],
+   "result": [
+    "ok:https://billing.internal/export/0",
+    "ok:https://billing.internal/batch/1/us"
+   ]
+  },
+  "billing_05": {
+   "calls": [
+    [
+     "https://billing.internal/items/0",
+     null,
+     15
+    ],
+    [
+     "https://billing.internal/batch/1/ap",
+     3,
+     null
+    ]
+   ],
+   "result": [
+    "ok:https://billing.internal/items/0",
+    "ok:https://billing.internal/batch/1/ap"
+   ]
+  },
+  "catalog_01": {
+   "calls": [
+    [
+     "https://catalog.internal/export/0",
+     null,
+     7
+    ],
+    [
+     "https://catalog.internal/batch/1",
+     3,
+     10
+    ],
+    [
+     "https://catalog.internal/history/2",
+     1,
+     10
+    ]
+   ],
+   "result": [
+    "ok:https://catalog.internal/export/0",
+    "ok:https://catalog.internal/batch/1",
+    "ok:https://catalog.internal/history/2"
+   ]
+  },
+  "catalog_02": {
+   "calls": [
+    [
+     "https://catalog.internal/export/0/us",
+     2,
+     null
+    ],
+    [
+     "https://catalog.internal/config/1",
+     1,
+     null
+    ],
+    [
+     "https://catalog.internal/status/2",
+     null,
+     null
+    ],
+    [
+     "https://catalog.internal/items/3/us",
+     null,
+     10
+    ]
+   ],
+   "result": [
+    "ok:https://catalog.internal/export/0/us",
+    "ok:https://catalog.internal/config/1",
+    "ok:https://catalog.internal/status/2",
+    "ok:https://catalog.internal/items/3/us"
+   ]
+  },
+  "catalog_03": {
+   "calls": [
+    [
+     "https://catalog.internal/config/0",
+     5,
+     null
+    ],
+    [
+     "https://catalog.internal/config/1/ap",
+     null,
+     2
+    ]
+   ],
+   "result": [
+    "ok:https://catalog.internal/config/0",
+    "ok:https://catalog.internal/config/1/ap"
+   ]
+  },
+  "catalog_04": {
+   "calls": [
+    [
+     "https://catalog.internal/audit/0/eu",
+     2,
+     null
+    ],
+    [
+     "https://catalog.internal/metrics/1",
+     2,
+     7
+    ],
+    [
+     "https://catalog.internal/items/2",
+     null,
+     null
+    ]
+   ],
+   "result": [
+    "ok:https://catalog.internal/audit/0/eu",
+    "ok:https://catalog.internal/metrics/1",
+    "ok:https://catalog.internal/items/2"
+   ]
+  },
+  "catalog_05": {
+   "calls": [
+    [
+     "https://catalog.internal/config/0",
+     1,
+     10
+    ],
+    [
+     "https://catalog.internal/export/1/eu",
+     null,
+     2
+    ],
+    [
+     "https://catalog.internal/batch/2/eu",
+     3,
+     10
+    ],
+    [
+     "https://catalog.internal/config/3/eu",
+     null,
+     30
+    ]
+   ],
+   "result": [
+    "ok:https://catalog.internal/config/0",
+    "ok:https://catalog.internal/export/1/eu",
+    "ok:https://catalog.internal/batch/2/eu",
+    "ok:https://catalog.internal/config/3/eu"
+   ]
+  },
+  "inventory_01": {
+   "calls": [
+    [
+     "https://inventory.internal/config/0/us",
+     null,
+     30
+    ],
+    [
+     "https://inventory.internal/status/1",
+     null,
+     15
+    ]
+   ],
+   "result": [
+    "ok:https://inventory.internal/config/0/us",
+    "ok:https://inventory.internal/status/1"
+   ]
+  },
+  "inventory_02": {
+   "calls": [
+    [
+     "https://inventory.internal/pending/0",
+     5,
+     5
+    ],
+    [
+     "https://inventory.internal/export/1/us",
+     5,
+     5
+    ]
+   ],
+   "result": [
+    "ok:https://inventory.internal/pending/0",
+    "ok:https://inventory.internal/export/1/us"
+   ]
+  },
+  "inventory_03": {
+   "calls": [
+    [
+     "https://inventory.internal/metrics/0",
+     3,
+     2
+    ],
+    [
+     "https://inventory.internal/summary/1/eu",
+     null,
+     null
+    ],
+    [
+     "https://inventory.internal/config/2",
+     3,
+     2
+    ]
+   ],
+   "result": [
+    "ok:https://inventory.internal/metrics/0",
+    "ok:https://inventory.internal/summary/1/eu",
+    "ok:https://inventory.internal/config/2"
+   ]
+  },
+  "inventory_04": {
+   "calls": [
+    [
+     "https://inventory.internal/items/0",
+     2,
+     null
+    ],
+    [
+     "https://inventory.internal/items/1/ap",
+     5,
+     5
+    ],
+    [
+     "https://inventory.internal/status/2/ap",
+     3,
+     7
+    ],
+    [
+     "https://inventory.internal/pending/3/ap",
+     2,
+     null
+    ]
+   ],
+   "result": [
+    "ok:https://inventory.internal/items/0",
+    "ok:https://inventory.internal/items/1/ap",
+    "ok:https://inventory.internal/status/2/ap",
+    "ok:https://inventory.internal/pending/3/ap"
+   ]
+  },
+  "inventory_05": {
+   "calls": [
+    [
+     "https://inventory.internal/history/0/ap",
+     3,
+     5
+    ],
+    [
+     "https://inventory.internal/history/1/ap",
+     null,
+     7
+    ]
+   ],
+   "result": [
+    "ok:https://inventory.internal/history/0/ap",
+    "ok:https://inventory.internal/history/1/ap"
+   ]
+  },
+  "notify_01": {
+   "calls": [
+    [
+     "https://notify.internal/batch/0/us",
+     null,
+     5
+    ]
+   ],
+   "result": [
+    "ok:https://notify.internal/batch/0/us"
+   ]
+  },
+  "notify_02": {
+   "calls": [
+    [
+     "https://notify.internal/history/0/eu",
+     null,
+     null
+    ],
+    [
+     "https://notify.internal/pending/1",
+     5,
+     10
+    ],
+    [
+     "https://notify.internal/pending/2/eu",
+     null,
+     7
+    ],
+    [
+     "https://notify.internal/audit/3",
+     null,
+     null
+    ]
+   ],
+   "result": [
+    "ok:https://notify.internal/history/0/eu",
+    "ok:https://notify.internal/pending/1",
+    "ok:https://notify.internal/pending/2/eu",
+    "ok:https://notify.internal/audit/3"
+   ]
+  },
+  "notify_03": {
+   "calls": [
+    [
+     "https://notify.internal/batch/0",
+     2,
+     30
+    ],
+    [
+     "https://notify.internal/batch/1",
+     null,
+     7
+    ]
+   ],
+   "result": [
+    "ok:https://notify.internal/batch/0",
+    "ok:https://notify.internal/batch/1"
+   ]
+  },
+  "notify_04": {
+   "calls": [
+    [
+     "https://notify.internal/items/0/ap",
+     1,
+     5
+    ]
+   ],
+   "result": [
+    "ok:https://notify.internal/items/0/ap"
+   ]
+  },
+  "notify_05": {
+   "calls": [
+    [
+     "https://notify.internal/summary/0",
+     3,
+     7
+    ]
+   ],
+   "result": [
+    "ok:https://notify.internal/summary/0"
+   ]
+  },
+  "orders_01": {
+   "calls": [
+    [
+     "https://orders.internal/pending/0/ap",
+     null,
+     7
+    ],
+    [
+     "https://orders.internal/config/1",
+     1,
+     null
+    ]
+   ],
+   "result": [
+    "ok:https://orders.internal/pending/0/ap",
+    "ok:https://orders.internal/config/1"
+   ]
+  },
+  "orders_02": {
+   "calls": [
+    [
+     "https://orders.internal/pending/0",
+     2,
+     30
+    ]
+   ],
+   "result": [
+    "ok:https://orders.internal/pending/0"
+   ]
+  },
+  "orders_03": {
+   "calls": [
+    [
+     "https://orders.internal/metrics/0",
+     1,
+     5
+    ],
+    [
+     "https://orders.internal/export/1",
+     3,
+     5
+    ]
+   ],
+   "result": [
+    "ok:https://orders.internal/metrics/0",
+    "ok:https://orders.internal/export/1"
+   ]
+  },
+  "orders_04": {
+   "calls": [
+    [
+     "https://orders.internal/audit/0",
+     null,
+     5
+    ],
+    [
+     "https://orders.internal/status/1/us",
+     2,
+     null
+    ],
+    [
+     "https://orders.internal/items/2",
+     4,
+     null
+    ]
+   ],
+   "result": [
+    "ok:https://orders.internal/audit/0",
+    "ok:https://orders.internal/status/1/us",
+    "ok:https://orders.internal/items/2"
+   ]
+  },
+  "orders_05": {
+   "calls": [
+    [
+     "https://orders.internal/pending/0",
+     1,
+     null
+    ]
+   ],
+   "result": [
+    "ok:https://orders.internal/pending/0"
+   ]
+  },
+  "payments_01": {
+   "calls": [
+    [
+     "https://payments.internal/config/0/us",
+     null,
+     15
+    ],
+    [
+     "https://payments.internal/batch/1/us",
+     5,
+     15
+    ],
+    [
+     "https://payments.internal/history/2/us",
+     null,
+     2
+    ]
+   ],
+   "result": [
+    "ok:https://payments.internal/config/0/us",
+    "ok:https://payments.internal/batch/1/us",
+    "ok:https://payments.internal/history/2/us"
+   ]
+  },
+  "payments_02": {
+   "calls": [
+    [
+     "https://payments.internal/summary/0/us",
+     null,
+     null
+    ]
+   ],
+   "result": [
+    "ok:https://payments.internal/summary/0/us"
+   ]
+  },
+  "payments_03": {
+   "calls": [
+    [
+     "https://payments.internal/pending/0",
+     3,
+     null
+    ],
+    [
+     "https://payments.internal/history/1",
+     3,
+     null
+    ],
+    [
+     "https://payments.internal/metrics/2",
+     null,
+     2
+    ]
+   ],
+   "result": [
+    "ok:https://payments.internal/pending/0",
+    "ok:https://payments.internal/history/1",
+    "ok:https://payments.internal/metrics/2"
+   ]
+  },
+  "payments_04": {
+   "calls": [
+    [
+     "https://payments.internal/config/0",
+     3,
+     2
+    ],
+    [
+     "https://payments.internal/batch/1",
+     2,
+     null
+    ]
+   ],
+   "result": [
+    "ok:https://payments.internal/config/0",
+    "ok:https://payments.internal/batch/1"
+   ]
+  },
+  "payments_05": {
+   "calls": [
+    [
+     "https://payments.internal/history/0/us",
+     4,
+     null
+    ]
+   ],
+   "result": [
+    "ok:https://payments.internal/history/0/us"
+   ]
+  },
+  "reports_01": {
+   "calls": [
+    [
+     "https://reports.internal/items/0",
+     null,
+     15
+    ],
+    [
+     "https://reports.internal/metrics/1/us",
+     1,
+     15
+    ]
+   ],
+   "result": [
+    "ok:https://reports.internal/items/0",
+    "ok:https://reports.internal/metrics/1/us"
+   ]
+  },
+  "reports_02": {
+   "calls": [
+    [
+     "https://reports.internal/export/0",
+     1,
+     3
+    ]
+   ],
+   "result": [
+    "ok:https://reports.internal/export/0"
+   ]
+  },
+  "reports_03": {
+   "calls": [
+    [
+     "https://reports.internal/history/0",
+     3,
+     30
+    ]
+   ],
+   "result": [
+    "ok:https://reports.internal/history/0"
+   ]
+  },
+  "reports_04": {
+   "calls": [
+    [
+     "https://reports.internal/batch/0",
+     1,
+     3
+    ],
+    [
+     "https://reports.internal/batch/1",
+     null,
+     3
+    ],
+    [
+     "https://reports.internal/status/2",
+     5,
+     null
+    ],
+    [
+     "https://reports.internal/pending/3/eu",
+     3,
+     3
+    ]
+   ],
+   "result": [
+    "ok:https://reports.internal/batch/0",
+    "ok:https://reports.internal/batch/1",
+    "ok:https://reports.internal/status/2",
+    "ok:https://reports.internal/pending/3/eu"
+   ]
+  },
+  "reports_05": {
+   "calls": [
+    [
+     "https://reports.internal/pending/0",
+     null,
+     5
+    ],
+    [
+     "https://reports.internal/metrics/1",
+     null,
+     null
+    ],
+    [
+     "https://reports.internal/export/2",
+     null,
+     5
+    ]
+   ],
+   "result": [
+    "ok:https://reports.internal/pending/0",
+    "ok:https://reports.internal/metrics/1",
+    "ok:https://reports.internal/export/2"
+   ]
+  },
+  "search_01": {
+   "calls": [
+    [
+     "https://search.internal/summary/0",
+     null,
+     3
+    ],
+    [
+     "https://search.internal/batch/1/ap",
+     2,
+     30
+    ],
+    [
+     "https://search.internal/batch/2/ap",
+     5,
+     2
+    ],
+    [
+     "https://search.internal/export/3/ap",
+     null,
+     3
+    ]
+   ],
+   "result": [
+    "ok:https://search.internal/summary/0",
+    "ok:https://search.internal/batch/1/ap",
+    "ok:https://search.internal/batch/2/ap",
+    "ok:https://search.internal/export/3/ap"
+   ]
+  },
+  "search_02": {
+   "calls": [
+    [
+     "https://search.internal/metrics/0/ap",
+     null,
+     30
+    ]
+   ],
+   "result": [
+    "ok:https://search.internal/metrics/0/ap"
+   ]
+  },
+  "search_03": {
+   "calls": [
+    [
+     "https://search.internal/metrics/0",
+     2,
+     5
+    ]
+   ],
+   "result": [
+    "ok:https://search.internal/metrics/0"
+   ]
+  },
+  "search_04": {
+   "calls": [
+    [
+     "https://search.internal/history/0",
+     1,
+     15
+    ]
+   ],
+   "result": [
+    "ok:https://search.internal/history/0"
+   ]
+  },
+  "search_05": {
+   "calls": [
+    [
+     "https://search.internal/items/0/ap",
+     5,
+     30
+    ]
+   ],
+   "result": [
+    "ok:https://search.internal/items/0/ap"
+   ]
+  },
+  "shipping_01": {
+   "calls": [
+    [
+     "https://shipping.internal/batch/0",
+     null,
+     2
+    ],
+    [
+     "https://shipping.internal/status/1/us",
+     1,
+     null
+    ],
+    [
+     "https://shipping.internal/export/2",
+     2,
+     null
+    ],
+    [
+     "https://shipping.internal/export/3/us",
+     5,
+     null
+    ]
+   ],
+   "result": [
+    "ok:https://shipping.internal/batch/0",
+    "ok:https://shipping.internal/status/1/us",
+    "ok:https://shipping.internal/export/2",
+    "ok:https://shipping.internal/export/3/us"
+   ]
+  },
+  "shipping_02": {
+   "calls": [
+    [
+     "https://shipping.internal/config/0/us",
+     2,
+     3
+    ],
+    [
+     "https://shipping.internal/export/1/us",
+     null,
+     null
+    ],
+    [
+     "https://shipping.internal/config/2",
+     5,
+     null
+    ]
+   ],
+   "result": [
+    "ok:https://shipping.internal/config/0/us",
+    "ok:https://shipping.internal/export/1/us",
+    "ok:https://shipping.internal/config/2"
+   ]
+  },
+  "shipping_03": {
+   "calls": [
+    [
+     "https://shipping.internal/status/0",
+     5,
+     30
+    ]
+   ],
+   "result": [
+    "ok:https://shipping.internal/status/0"
+   ]
+  },
+  "shipping_04": {
+   "calls": [
+    [
+     "https://shipping.internal/status/0",
+     3,
+     5
+    ],
+    [
+     "https://shipping.internal/export/1/us",
+     3,
+     10
+    ]
+   ],
+   "result": [
+    "ok:https://shipping.internal/status/0",
+    "ok:https://shipping.internal/export/1/us"
+   ]
+  },
+  "shipping_05": {
+   "calls": [
+    [
+     "https://shipping.internal/config/0",
+     4,
+     null
+    ]
+   ],
+   "result": [
+    "ok:https://shipping.internal/config/0"
+   ]
+  },
+  "users_01": {
+   "calls": [
+    [
+     "https://users.internal/items/0",
+     2,
+     2
+    ],
+    [
+     "https://users.internal/history/1/eu",
+     5,
+     2
+    ],
+    [
+     "https://users.internal/export/2/eu",
+     1,
+     30
+    ],
+    [
+     "https://users.internal/summary/3/eu",
+     3,
+     5
+    ]
+   ],
+   "result": [
+    "ok:https://users.internal/items/0",
+    "ok:https://users.internal/history/1/eu",
+    "ok:https://users.internal/export/2/eu",
+    "ok:https://users.internal/summary/3/eu"
+   ]
+  },
+  "users_02": {
+   "calls": [
+    [
+     "https://users.internal/audit/0/ap",
+     3,
+     7
+    ]
+   ],
+   "result": [
+    "ok:https://users.internal/audit/0/ap"
+   ]
+  },
+  "users_03": {
+   "calls": [
+    [
+     "https://users.internal/batch/0/us",
+     null,
+     null
+    ],
+    [
+     "https://users.internal/history/1/us",
+     3,
+     2
+    ],
+    [
+     "https://users.internal/items/2",
+     1,
+     3
+    ]
+   ],
+   "result": [
+    "ok:https://users.internal/batch/0/us",
+    "ok:https://users.internal/history/1/us",
+    "ok:https://users.internal/items/2"
+   ]
+  },
+  "users_04": {
+   "calls": [
+    [
+     "https://users.internal/pending/0",
+     null,
+     10
+    ],
+    [
+     "https://users.internal/pending/1",
+     3,
+     15
+    ],
+    [
+     "https://users.internal/config/2",
+     3,
+     null
+    ],
+    [
+     "https://users.internal/export/3",
+     2,
+     15
+    ]
+   ],
+   "result": [
+    "ok:https://users.internal/pending/0",
+    "ok:https://users.internal/pending/1",
+    "ok:https://users.internal/config/2",
+    "ok:https://users.internal/export/3"
+   ]
+  },
+  "users_05": {
+   "calls": [
+    [
+     "https://users.internal/summary/0",
+     1,
+     null
+    ],
+    [
+     "https://users.internal/items/1",
+     null,
+     2
+    ],
+    [
+     "https://users.internal/history/2/eu",
+     1,
+     3
+    ]
+   ],
+   "result": [
+    "ok:https://users.internal/summary/0",
+    "ok:https://users.internal/items/1",
+    "ok:https://users.internal/history/2/eu"
+   ]
+  }
+ }
+}

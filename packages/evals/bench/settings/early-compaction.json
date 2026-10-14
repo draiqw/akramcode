@@ -1,0 +1,4 @@
+{
+	"$compactAtTokens": 20000,
+	"compaction": { "keepRecentTokens": 6000 }
+}

@@ -1,0 +1,52 @@
+import type { Api, Context, Model, StreamOptions } from "@akramcode/ai/types";
+import { describe, expect, it } from "vitest";
+import { complete, getModel } from "../src/compat.ts";
+import { resolveApiKey } from "./oauth.ts";
+
+type StreamOptionsWithExtras = StreamOptions & Record<string, unknown>;
+
+const oauthTokens = await Promise.all([resolveApiKey("openai-codex")]);
+const [openaiCodexToken] = oauthTokens;
+
+async function expectResponseId<TApi extends Api>(model: Model<TApi>, options: StreamOptionsWithExtras = {}) {
+	const context: Context = {
+		systemPrompt: "You are a helpful assistant. Be concise.",
+		messages: [{ role: "user", content: "Reply with exactly: response id test", timestamp: Date.now() }],
+	};
+
+	const response = await complete(model, context, options);
+
+	expect(response.stopReason, response.errorMessage).not.toBe("error");
+	expect(response.responseId).toBeTruthy();
+	expect(typeof response.responseId).toBe("string");
+}
+
+describe("responseId E2E Tests", () => {
+	describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Completions Provider", () => {
+		const { compat: _compat, ...baseModel } = getModel("openai", "gpt-4o-mini");
+		void _compat;
+		const llm: Model<"openai-completions"> = {
+			...baseModel,
+			api: "openai-completions",
+		};
+
+		it("should expose responseId", { retry: 3, timeout: 30000 }, async () => {
+			await expectResponseId(llm);
+		});
+	});
+
+	describe.skipIf(!process.env.OPENAI_API_KEY)("OpenAI Responses Provider", () => {
+		const llm = getModel("openai", "gpt-5-mini");
+
+		it("should expose responseId", { retry: 3, timeout: 30000 }, async () => {
+			await expectResponseId(llm);
+		});
+	});
+
+	describe("OpenAI Codex Provider", () => {
+		it.skipIf(!openaiCodexToken)("should expose responseId", { retry: 3, timeout: 30000 }, async () => {
+			const llm = getModel("openai-codex", "gpt-6.1-sol");
+			await expectResponseId(llm, { apiKey: openaiCodexToken });
+		});
+	});
+});

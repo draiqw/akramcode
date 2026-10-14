@@ -1,0 +1,85 @@
+# Pushing a tag vX.Y.Z builds the standalone binaries and publishes the GitHub release.
+# The tag must match the version in packages/coding-agent/package.json.
+# Running it by hand with a tag rebuilds that tag with this workflow, e.g. after a failed run.
+
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag to release, e.g. v1.0.29
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
+
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - name: Check tag name
+        run: '[[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid tag: $TAG"; exit 1; }'
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: refs/tags/${{ env.TAG }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.3.11
+
+      - name: Check tag matches version
+        run: |
+          version=$(node -p "require('./packages/coding-agent/package.json').version")
+          if [ "v$version" != "$TAG" ]; then
+            echo "Tag $TAG does not match package version $version"
+            exit 1
+          fi
+
+      - run: npm ci --ignore-scripts
+
+      # The model data is not in git; fetch it the same way a local checkout does.
+      - run: npm run hydrate:model-data
+
+      - name: Build binaries
+        run: ./scripts/build-binaries.sh --skip-install --offline-model-data --out "$RUNNER_TEMP/binaries"
+
+      - name: Smoke test
+        run: |
+          out=$("$RUNNER_TEMP/binaries/darwin-arm64/akramcode" --version)
+          echo "$out"
+          case "$out" in *"${TAG#v}"*) ;; *) echo "Unexpected version"; exit 1 ;; esac
+
+      - name: Release notes
+        run: |
+          version=${TAG#v}
+          awk -v v="$version" '$0 ~ "^## \\[" v "\\]" {f=1; next} /^## \[/ {if (f) exit} f' \
+            packages/coding-agent/CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+          printf '\n## Install\n\n```sh\ncurl -fsSL https://github.com/draiqw/akramcode/releases/latest/download/install.sh | sh\n```\n\nUpdate an existing install with `akramcode update --self`.\n' >> "$RUNNER_TEMP/notes.md"
+          cat "$RUNNER_TEMP/notes.md"
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          dir="$RUNNER_TEMP/binaries"
+          cp scripts/install.sh "$dir/"
+          (cd "$dir" && shasum -a 256 akramcode-*.tar.gz > SHA256SUMS)
+          gh release create "$TAG" -R "$GITHUB_REPOSITORY" --title "$TAG" \
+            --notes-file "$RUNNER_TEMP/notes.md" --latest \
+            "$dir"/akramcode-*.tar.gz "$dir/SHA256SUMS" "$dir/install.sh"

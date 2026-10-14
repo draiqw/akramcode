@@ -1,0 +1,10 @@
+{
+	"name": "@akramcode/example-plugin",
+	"version": "1.0.0",
+	"private": true,
+	"type": "module",
+	"peerDependencies": {
+		"@akramcode/chord": "^0.84.4",
+		"@akramcode/coding-agent": "^0.84.4"
+	}
+}

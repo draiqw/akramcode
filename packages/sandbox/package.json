@@ -1,0 +1,49 @@
+{
+	"name": "@akramcode/sandbox",
+	"version": "1.0.29",
+	"description": "Run akramcode tools locally or inside OpenSandbox sandboxes with per-session reuse and cached workspaces",
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"source": "./src/index.ts",
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"sideEffects": false,
+	"files": [
+		"dist",
+		"README.md",
+		"CHANGELOG.md"
+	],
+	"scripts": {
+		"clean": "shx rm -rf dist",
+		"build": "tsc -p tsconfig.build.json",
+		"test": "vitest --run",
+		"prepublishOnly": "npm run clean && npm run build"
+	},
+	"keywords": [
+		"sandbox",
+		"opensandbox",
+		"agent"
+	],
+	"author": "AkramCode",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/draiqw/akramcode.git",
+		"directory": "packages/sandbox"
+	},
+	"engines": {
+		"node": ">=22.19.0"
+	},
+	"dependencies": {
+		"@alibaba-group/opensandbox": "0.1.11"
+	},
+	"devDependencies": {
+		"shx": "0.4.0",
+		"vitest": "4.1.11"
+	}
+}

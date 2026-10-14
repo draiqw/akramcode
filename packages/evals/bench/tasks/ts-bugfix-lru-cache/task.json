@@ -1,0 +1,9 @@
+{
+	"id": "ts-bugfix-lru-cache",
+	"title": "Fix LRU cache recency, eviction and size accounting",
+	"category": "bugfix",
+	"language": "typescript",
+	"prompt": "The `LRUCache` class in src/lru.ts is buggy, which also breaks `memoize` in src/memo.ts. Required behavior: `get(key)` returns the value and marks the key as most recently used (a missing key returns undefined and changes nothing); `has(key)` does NOT change recency; `set(key, value)` on an existing key updates the value and makes it most recently used without growing the size; inserting a new key when the cache is full evicts exactly the least recently used key; `delete(key)` returns true if the key existed and reduces `size`; `size` is always the number of stored entries; `keys()` returns the keys ordered from least to most recently used. The constructor throws RangeError for a capacity that is not a positive integer. Fix the implementation. Run the tests with `node --test test/*.test.ts` (or `npm test`).",
+	"test": ["node", "--test", "__hidden__/*.test.ts"],
+	"timeoutSec": 600
+}

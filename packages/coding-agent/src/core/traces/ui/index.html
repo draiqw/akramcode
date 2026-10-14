@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>akramcode traces</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<header class="topbar">
+	<a class="brand" href="#/">akramcode traces</a>
+	<nav class="tabs">
+		<a id="tab-sessions" href="#/">Sessions</a>
+		<a id="tab-insights" href="#/insights">Insights</a>
+		<a id="tab-network" href="#/network">Network</a>
+	</nav>
+	<span id="live" class="live" title="Live updates">connecting</span>
+</header>
+<section id="filters" class="filters">
+	<input id="f-q" type="search" placeholder="Search text, cwd, model, errors ( / )" autocomplete="off">
+	<select id="f-project" title="Project"><option value="">All projects</option></select>
+	<select id="f-model" title="Model"><option value="">All models</option></select>
+	<select id="f-subagents" title="Subagent transcripts">
+		<option value="include">Main + subagents</option>
+		<option value="exclude">Main sessions only</option>
+		<option value="only">Subagents only</option>
+	</select>
+	<label class="check"><input id="f-errors" type="checkbox"> Has errors</label>
+	<label class="date">From <input id="f-from" type="date"></label>
+	<label class="date">To <input id="f-to" type="date"></label>
+	<button id="f-reset" type="button">Reset</button>
+	<button id="f-export" type="button">Export JSON</button>
+</section>
+<main id="app"><p class="muted">Loading…</p></main>
+<script src="/app.js"></script>
+</body>
+</html>

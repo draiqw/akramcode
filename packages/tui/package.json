@@ -1,0 +1,57 @@
+{
+	"name": "@akramcode/tui",
+	"version": "1.0.29",
+	"description": "Terminal User Interface library with differential rendering for efficient text-based applications",
+	"type": "module",
+	"main": "dist/index.js",
+	"scripts": {
+		"clean": "shx rm -rf dist",
+		"build": "tsc -p tsconfig.build.json",
+		"build:native:darwin": "native/darwin/build.sh",
+		"build:native:linux": "native/linux/build.sh",
+		"test": "node --test --test-reporter=dot --test-reporter-destination=stdout test/*.test.ts",
+		"prepublishOnly": "npm run clean && npm run build"
+	},
+	"files": [
+		"dist/**/*",
+		"native/napi.h",
+		"native/clipboard.h",
+		"native/darwin/prebuilds/**/*.node",
+		"native/darwin/src/**/*.m",
+		"native/darwin/build.sh",
+		"native/darwin/README.md",
+		"native/linux/prebuilds/**/*.node",
+		"native/linux/src/**/*.{c,h}",
+		"native/linux/build.sh",
+		"native/linux/README.md",
+		"README.md"
+	],
+	"keywords": [
+		"tui",
+		"terminal",
+		"ui",
+		"text-editor",
+		"differential-rendering",
+		"typescript",
+		"cli"
+	],
+	"author": "Mario Zechner",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/draiqw/akramcode.git",
+		"directory": "packages/tui"
+	},
+	"engines": {
+		"node": ">=22.19.0"
+	},
+	"types": "./dist/index.d.ts",
+	"dependencies": {
+		"get-east-asian-width": "1.6.0",
+		"marked": "18.0.11"
+	},
+	"devDependencies": {
+		"@xterm/headless": "5.5.0",
+		"chalk": "6.0.0"
+	}
+}

@@ -1,0 +1,224 @@
+{
+  "navigation": [
+    {
+      "title": "Get Started",
+      "items": [
+        {
+          "title": "Overview",
+          "path": "index.md"
+        },
+        {
+          "title": "Quickstart",
+          "path": "quickstart.md"
+        },
+        {
+          "title": "How AkramCode Works",
+          "path": "how-akramcode-works.md"
+        }
+      ]
+    },
+    {
+      "title": "Guides",
+      "items": [
+        {
+          "title": "Run AkramCode",
+          "items": [
+            {
+              "title": "Use AkramCode in the Terminal",
+              "path": "usage.md"
+            },
+            {
+              "title": "Choose a Model",
+              "path": "models.md"
+            },
+            {
+              "title": "Manage Sessions and Context",
+              "path": "sessions.md"
+            },
+            {
+              "title": "Study Session Traces",
+              "path": "traces.md"
+            },
+            {
+              "title": "Run AkramCode Safely",
+              "path": "security.md"
+            },
+            {
+              "title": "Isolate AkramCode",
+              "path": "containerization.md"
+            },
+            {
+              "title": "Run Local Models",
+              "path": "llama-cpp.md"
+            },
+            {
+              "title": "Configure Your Terminal",
+              "path": "terminal-setup.md"
+            },
+            {
+              "title": "Configure Shell Commands",
+              "path": "shell-aliases.md"
+            },
+            {
+              "title": "Run AkramCode in tmux",
+              "path": "tmux.md"
+            }
+          ]
+        },
+        {
+          "title": "Customize AkramCode",
+          "items": [
+            {
+              "title": "Configure AkramCode",
+              "path": "configuration.md"
+            },
+            {
+              "title": "Create Prompt Templates",
+              "path": "prompt-templates.md"
+            },
+            {
+              "title": "Add Skills",
+              "path": "skills.md"
+            },
+            {
+              "title": "Create Themes",
+              "path": "themes.md"
+            },
+            {
+              "title": "Use AkramCode Packages",
+              "path": "packages.md"
+            },
+            {
+              "title": "Connect MCP Servers",
+              "path": "mcp.md"
+            },
+            {
+              "title": "Use Subagents and Background Tasks",
+              "path": "subagents.md"
+            },
+            {
+              "title": "Run Workflows",
+              "path": "workflows.md"
+            },
+            {
+              "title": "Use a Browser",
+              "path": "browser.md"
+            },
+            {
+              "title": "Run Tools in a Sandbox",
+              "path": "sandbox.md"
+            }
+          ]
+        },
+        {
+          "title": "Build on AkramCode",
+          "items": [
+            {
+              "title": "Build Extensions",
+              "path": "extensions.md"
+            },
+            {
+              "title": "Add Custom Providers",
+              "path": "custom-provider.md"
+            },
+            {
+              "title": "Route with Virtual Models",
+              "path": "virtual-models.md"
+            },
+            {
+              "title": "Build Terminal UI Components",
+              "path": "tui.md"
+            },
+            {
+              "title": "Integrate with the CLI",
+              "path": "cli-integration.md"
+            },
+            {
+              "title": "Use the SDK",
+              "path": "sdk.md"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Reference",
+      "items": [
+        {
+          "title": "CLI",
+          "path": "cli.md"
+        },
+        {
+          "title": "Codemode",
+          "path": "codemode.md"
+        },
+        {
+          "title": "Slash Commands",
+          "path": "slash-commands.md"
+        },
+        {
+          "title": "Settings",
+          "path": "settings.md"
+        },
+        {
+          "title": "Environment Variables",
+          "path": "environment-variables.md"
+        },
+        {
+          "title": "Keybindings",
+          "path": "keybindings.md"
+        },
+        {
+          "title": "Providers",
+          "path": "providers.md"
+        },
+        {
+          "title": "Session File Format",
+          "path": "session-format.md"
+        },
+        {
+          "title": "Compaction and Branch Summaries",
+          "path": "compaction.md"
+        },
+        {
+          "title": "JSON Event Stream",
+          "path": "json.md"
+        },
+        {
+          "title": "RPC Protocol",
+          "path": "rpc.md"
+        },
+        {
+          "title": "RPC Commands",
+          "path": "rpc-commands.md"
+        },
+        {
+          "title": "RPC Extension UI",
+          "path": "rpc-extension-ui.md"
+        },
+        {
+          "title": "Message Types",
+          "path": "message-types.md"
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    {
+      "from": "development.md",
+      "to": "index.md"
+    },
+    {
+      "from": "session.md",
+      "to": "session-format.md"
+    },
+    {
+      "from": "tree.md",
+      "to": "sessions.md"
+    },
+    {
+      "from": "process-integration.md",
+      "to": "cli-integration.md"
+    }
+  ]
+}

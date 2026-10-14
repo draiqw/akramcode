@@ -1,0 +1,47 @@
+node_modules/
+dist/
+.artifacts/
+*.log
+.DS_Store
+*.tsbuildinfo
+# packages/*/node_modules/
+packages/*/dist/
+packages/*/dist-chrome/
+packages/*/dist-firefox/
+packages/providers/src/providers/data/
+packages/providers/src/providers/.model-generation-*/
+*.cpuprofile
+
+# Environment
+.env
+
+# Editor files
+.vscode/
+.zed/
+.idea/
+.claude/
+*.swp
+*.swo
+*~
+
+# Package specific
+.npm/
+coverage/
+.nyc_output/
+tui-debug.log
+compaction-results/
+.opencode/
+syntax.jsonl
+out.jsonl
+akramcode-*.html
+out.html
+packages/coding-agent/binaries/
+todo.md
+plans/
+.akramcode/hf-sessions/
+.akramcode/hf-sessions-backup/
+collect.sh
+packages/agent/docs/extensions/akramcode-server-artifact/index.md
+
+# Git worktrees for parallel agents
+.worktrees/

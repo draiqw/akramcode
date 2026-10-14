@@ -1,0 +1,9 @@
+{
+	"id": "ts-bugfix-business-days",
+	"title": "Fix business-day calculator (UTC, holidays, negative offsets)",
+	"category": "bugfix",
+	"language": "typescript",
+	"prompt": "src/business-days.ts gives wrong answers for users outside UTC and has other bugs. Required behavior, with every calculation done on UTC calendar dates regardless of the process time zone: weekends are Saturday and Sunday (UTC); holidays are given as \"YYYY-MM-DD\" UTC date strings and are not business days. `isBusinessDay(date, holidays?)` reports whether the UTC date is a business day. `addBusinessDays(date, n, holidays?)` returns a new Date moved by n business days: forward for n > 0, backward for n < 0, an unchanged copy for n = 0; each step skips weekend days and holidays; the UTC time of day is preserved; the input Date is not mutated; a non-integer n throws RangeError. `businessDaysBetween(start, end, holidays?)` ignores time of day and counts the business days d with startDate < d <= endDate (UTC calendar dates); if end is before start it returns the negative of businessDaysBetween(end, start). Fix the module. Run the tests with `node --test test/*.test.ts` (one test file simulates a UTC+14 user via process.env.TZ).",
+	"test": ["node", "--test", "__hidden__/*.test.ts"],
+	"timeoutSec": 600
+}

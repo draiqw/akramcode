@@ -1,0 +1,13 @@
+{
+	"id": "ts-refactor-options-object",
+	"title": "Convert createServer positional parameters to an options object",
+	"category": "refactor",
+	"language": "typescript",
+	"prompt": "In src/server.ts, `createServer(host, port, tls, timeoutMs, logger)` takes five positional parameters. Change it to take a single optional options object instead: `createServer(options?: ServerOptions): ServerHandle`, and export the `ServerOptions` interface from src/server.ts with all-optional fields `host`, `port`, `tls`, `timeoutMs`, `logger`. Defaults: host \"127.0.0.1\", port 8080, tls false, timeoutMs 30000, logger `silentLogger` (from src/logger.ts). A default applies only when the field is undefined (explicit values such as port 0, timeoutMs 0 or tls false must be kept). Calling `createServer()` with no argument uses all defaults. The returned ServerHandle must stay exactly as it is now. Update every call site in src/ and test/ so each one keeps passing the same values it passes today; do not change `createServerLogger` or other functions. Run the tests with `node --test test/*.test.ts`.",
+	"test": [
+		"node",
+		"--test",
+		"__hidden__/*.test.ts"
+	],
+	"timeoutSec": 600
+}

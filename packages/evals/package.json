@@ -1,0 +1,25 @@
+{
+	"name": "@akramcode/evals",
+	"version": "1.0.29",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"clean": "shx rm -rf .eval",
+		"eval": "npm run eval:host && npm run eval:docs --",
+		"eval:host": "vitest run --config vitest.evals.config.ts --project host",
+		"eval:docs": "node --experimental-strip-types src/cli.ts",
+		"test": "vitest run --config vitest.test.config.ts",
+		"bench": "node src/bench/cli.ts"
+	},
+	"devDependencies": {
+		"@akramcode/ai": "^1.0.29",
+		"@akramcode/providers": "^1.0.29",
+		"@akramcode/coding-agent": "^1.0.29",
+		"@types/node": "22.19.19",
+		"@vitest-evals/core": "0.15.0",
+		"autoevals": "0.3.0",
+		"shx": "0.4.0",
+		"vitest": "4.1.11",
+		"vitest-evals": "0.15.0"
+	}
+}

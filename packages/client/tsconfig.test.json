@@ -1,0 +1,17 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"types": ["node", "vitest"],
+		"paths": {
+			"@akramcode/agent-core": ["../agent/src/index.ts"],
+			"@akramcode/ai": ["../ai/src/index.ts"],
+			"@akramcode/ai/*": ["../ai/src/*.ts", "../ai/src/providers/*.ts"],
+			"@akramcode/protocol": ["../protocol/src/index.ts"],
+			"@akramcode/telemetry": ["../telemetry/src/index.ts"]
+		}
+	},
+	"include": ["src/**/*.ts", "test/**/*.ts"]
+}

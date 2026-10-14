@@ -1,0 +1,9 @@
+{
+	"id": "ts-feature-cli-flags",
+	"title": "Add --json and --limit to the list command",
+	"category": "feature",
+	"language": "typescript",
+	"prompt": "This TypeScript project implements a small todo CLI; `main(argv, items)` in src/cli.ts returns `{ exitCode, stdout, stderr }`. Add two options to the `list` command. (1) `--json`: print the selected items as a JSON array of the full item objects, formatted with JSON.stringify(items, null, 2) followed by a newline (an empty selection prints \"[]\\n\"). (2) `--limit N`: show at most N items; both `--limit N` and `--limit=N` must work. N must be a positive integer written with decimal digits only; otherwise (missing value, non-integer, zero, negative, or anything else) `main` returns exitCode 2, stdout \"\" and stderr exactly \"error: --limit must be a positive integer\\n\". The limit applies after the existing done-filter (`--all`) and before formatting; both new options can be combined with each other and with `--all` in any order. Existing behavior (text format, `--all`, unknown-flag and unknown-command errors) must not change. Run the tests with `node --test test/*.test.ts` (or `npm test`).",
+	"test": ["node", "--test", "__hidden__/*.test.ts"],
+	"timeoutSec": 600
+}

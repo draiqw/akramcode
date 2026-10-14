@@ -1,0 +1,92 @@
+{
+	"name": "@akramcode/providers",
+	"version": "1.0.29",
+	"description": "LLM providers, models, API protocols and provider authentication for AkramCode",
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"sideEffects": [
+		"./dist/compat.js",
+		"./dist/images.js",
+		"./dist/providers/images/register-builtins.js"
+	],
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		},
+		"./compat": {
+			"types": "./dist/compat.d.ts",
+			"import": "./dist/compat.js"
+		},
+		"./providers/*": {
+			"types": "./dist/providers/*.d.ts",
+			"import": "./dist/providers/*.js"
+		},
+		"./api/*": {
+			"types": "./dist/api/*.d.ts",
+			"import": "./dist/api/*.js"
+		},
+		"./auth/*": {
+			"types": "./dist/auth/*.d.ts",
+			"import": "./dist/auth/*.js"
+		},
+		"./oauth": {
+			"types": "./dist/oauth.d.ts",
+			"import": "./dist/oauth.js"
+		},
+		"./bun-oauth": {
+			"types": "./dist/bun-oauth.d.ts",
+			"import": "./dist/bun-oauth.js"
+		}
+	},
+	"bin": {
+		"akramcode-ai": "dist/cli.js"
+	},
+	"files": [
+		"dist",
+		"README.md"
+	],
+	"scripts": {
+		"clean": "shx rm -rf dist",
+		"generate-models": "node scripts/generate-models.ts --strict",
+		"hydrate-model-data": "node scripts/generate-models.ts --strict --data-only",
+		"generate-model-catalog": "node scripts/generate-models.ts --strict --json-only --json-output ../../.artifacts/model-catalog",
+		"check:model-data": "node scripts/check-model-data.ts",
+		"build": "npm run generate-models && npm run build:offline",
+		"build:offline": "npm run check:model-data && tsc -p tsconfig.build.json && shx rm -rf dist/providers/data && shx cp -r src/providers/data dist/providers/data",
+		"test": "vitest --run",
+		"prepublishOnly": "npm run clean && npm run build"
+	},
+	"dependencies": {
+		"@anthropic-ai/sdk": "0.129.0",
+		"http-proxy-agent": "9.1.0",
+		"https-proxy-agent": "9.1.0",
+		"openai": "7.19.0",
+		"@akramcode/ai": "^1.0.29",
+		"@akramcode/telemetry": "^1.0.29",
+		"partial-json": "0.1.7"
+	},
+	"keywords": [
+		"ai",
+		"llm",
+		"openai",
+		"unified",
+		"api"
+	],
+	"author": "AkramCode",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/draiqw/akramcode.git",
+		"directory": "packages/providers"
+	},
+	"engines": {
+		"node": ">=22.19.0"
+	},
+	"devDependencies": {
+		"@types/node": "22.19.19",
+		"canvas": "3.2.3",
+		"vitest": "4.1.11"
+	}
+}

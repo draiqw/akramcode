@@ -1,0 +1,16 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"paths": {
+			"@akramcode/coding-agent": ["./src/index.ts"],
+			"@akramcode/coding-agent/hooks": ["./src/core/hooks/index.ts"],
+			"@akramcode/tui": ["../tui/src/index.ts"],
+			"@akramcode/ai": ["../ai/src/index.ts"],
+			"typebox": ["../../node_modules/typebox"]
+		},
+		"skipLibCheck": true
+	},
+	"include": ["examples/**/*.ts"],
+	"exclude": ["node_modules", "dist"]
+}

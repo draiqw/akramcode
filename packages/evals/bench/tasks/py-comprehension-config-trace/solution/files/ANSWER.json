@@ -1,0 +1,1 @@
+{"http.timeout_seconds": 25, "cache.ttl_seconds": 1200, "workers.max": 16}

@@ -1,0 +1,9 @@
+{
+	"id": "py-bugfix-csv-quoting",
+	"title": "Fix quoted-field handling in a hand-written CSV parser",
+	"category": "bugfix",
+	"language": "python",
+	"prompt": "The hand-written CSV parser in this project (`csvlite.parse_line`, used by `csvlite.read_records`) breaks on quoted fields. Do not switch to the `csv` module; fix `parse_line(line, delimiter=\",\")` so it follows these rules: a field is quoted only if its first character is a double quote; inside a quoted field the delimiter is literal and a doubled quote (\"\") stands for one literal quote; the surrounding quotes are removed; after the closing quote the next character must be the delimiter or the end of the line, otherwise raise ValueError; a quoted field that is never closed raises ValueError; in an unquoted field every character (including quotes and spaces) is kept verbatim; an empty line yields [\"\"]; a trailing delimiter yields a trailing empty field; empty fields are \"\". It returns a list of strings. Run the tests with `python3 -m unittest discover -s tests -v`.",
+	"test": ["python3", "-m", "unittest", "discover", "-s", "__hidden__", "-p", "test_*.py", "-v"],
+	"timeoutSec": 600
+}
