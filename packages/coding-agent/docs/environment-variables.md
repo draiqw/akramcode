@@ -6,7 +6,7 @@ AkramCode uses environment variables in three ways:
 - AkramCode sets process markers so child processes can identify AkramCode as the launching agent.
 - Commands run by the LLM-callable shell tools receive `AKRAMCODE_*` variables describing the current session.
 
-Provider API-key variables are documented separately in [Providers](providers.md#use-an-api-key-from-the-environment).
+Provider API-key variables are documented separately in [Providers](providers.md#environment-variables-are-ignored).
 
 ## Process Marker
 
@@ -96,4 +96,4 @@ These variables are read by AkramCode itself:
 | `VISUAL`, `EDITOR` | External editor fallback when `externalEditor` is unset |
 | `HTTP_PROXY`, `HTTPS_PROXY` | Proxy outbound HTTP requests |
 
-Provider credentials such as `OPENROUTER_API_KEY`, `OPENAI_API_KEY`, and provider-specific configuration are listed in [Providers](providers.md#use-an-api-key-from-the-environment).
+Provider credentials such as `OPENROUTER_API_KEY`, `OPENAI_API_KEY`, and provider-specific configuration are listed in [Providers](providers.md#environment-variables-are-ignored).

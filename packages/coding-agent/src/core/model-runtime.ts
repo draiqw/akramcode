@@ -25,6 +25,7 @@ import {
 	type DeferredCancelOptions,
 	type DeferredFetchOptions,
 	type DeferredHandle,
+	defaultProviderAuthContext,
 	type ImageApi,
 	type ImageModel,
 	type ImagesContext,
@@ -206,7 +207,13 @@ export class ModelRuntime implements Models {
 		this.modelsPath = modelsPath;
 		this.modelNetworkEnabled = modelNetworkEnabled;
 		for (const provider of providers) this.builtins.set(provider.id, provider);
-		this.models = createModels({ credentials, modelsStore });
+		// Keys come only from the agent directory (auth.json, models.json), never from the process environment.
+		const ambient = defaultProviderAuthContext();
+		this.models = createModels({
+			credentials,
+			modelsStore,
+			authContext: { env: async () => undefined, fileExists: (path) => ambient.fileExists(path) },
+		});
 		this.rebuildProviders();
 	}
 

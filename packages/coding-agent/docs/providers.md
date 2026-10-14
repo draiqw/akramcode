@@ -30,14 +30,9 @@ Any other OpenAI- or Anthropic-compatible service can be added as a custom provi
 
 The optional [Gemini subscription extension](gemini-subscription.md) adds Google sign-in through `/login gemini` and exposes its models in the same `/model` picker. It is an unofficial Antigravity integration with account restrictions described in that guide.
 
-## Use an API key from the environment
+## Environment variables are ignored
 
-Environment variables are useful in CI and anywhere AkramCode should not store the key. Set the variable before starting AkramCode:
-
-```bash
-export OPENAI_API_KEY=sk-...
-akramcode
-```
+Provider keys and models come only from the agent directory (`auth.json` and `models.json`). Variables such as `OPENAI_API_KEY` or `OPENROUTER_API_KEY` are not read, so a shell or project cannot add providers. Use `/login`, or `--api-key` for a single run.
 
 ## How stored credentials are protected
 

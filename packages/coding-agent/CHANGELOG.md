@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- Provider API keys and models come only from the agent directory (`auth.json`, `models.json`); environment variables such as `OPENROUTER_API_KEY` are no longer read. Use `/login` or `--api-key`.
+
 ## [1.0.29] - 2026-10-14
 
 ### Breaking Changes
