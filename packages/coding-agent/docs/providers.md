@@ -28,6 +28,8 @@ Run `/logout` and select a provider to remove its stored credential. This does n
 
 Any other OpenAI- or Anthropic-compatible service can be added as a custom provider. See [Models](models.md#configure-a-compatible-endpoint).
 
+The optional [Gemini subscription extension](gemini-subscription.md) adds Google sign-in through `/login gemini` and exposes its models in the same `/model` picker. It is an unofficial Antigravity integration with account restrictions described in that guide.
+
 ## Use an API key from the environment
 
 Environment variables are useful in CI and anywhere AkramCode should not store the key. Set the variable before starting AkramCode:

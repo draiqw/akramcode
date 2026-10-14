@@ -127,6 +127,7 @@ cp permission-gate.ts ~/.akramcode/agent/extensions/
 | Extension | Description |
 |-----------|-------------|
 | `custom-provider-gitlab-duo/` | GitLab Duo provider using akramcode-ai's built-in anthropic-messages/OpenAI streaming via proxy |
+| `gemini/` | Unofficial Google subscription provider with `/login gemini`, a live model catalog, and AkramCode's normal tool loop; see [setup and account restrictions](../../docs/gemini-subscription.md) |
 | `jev-router.ts` | Virtual model via `registerVirtualModel` that plans on Codex Sol or Terra (picked by the Jev classifier) and switches to Luna after the first edit |
 
 ### External Dependencies
