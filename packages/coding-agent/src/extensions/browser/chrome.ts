@@ -160,6 +160,9 @@ export function chromeArgs(profileDir: string, mode: LaunchMode): string[] {
 	// Without a startup window Chrome has nothing to bring to the front; tabs are opened over CDP.
 	if (mode === "headless") args.push("--headless=new");
 	else if (mode === "background") args.push("--no-startup-window");
+	// Tests run Chrome under a temporary HOME with no keychain; a mock one avoids the macOS keychain prompt.
+	// Never set this for a lasting profile: cookies and passwords saved with the real keychain become unreadable.
+	if (process.env.AKRAMCODE_CHROME_MOCK_KEYCHAIN === "1") args.push("--use-mock-keychain");
 	return args;
 }
 

@@ -62,6 +62,7 @@ test_env=(
 	"NPM_CONFIG_GLOBALCONFIG=$test_root/npm-globalconfig"
 	"NPM_CONFIG_CACHE=$test_root/cache/npm"
 	"AKRAMCODE_NO_LOCAL_LLM=1"
+	"AKRAMCODE_CHROME_MOCK_KEYCHAIN=1"
 	"AWS_EC2_METADATA_DISABLED=true"
 )
 

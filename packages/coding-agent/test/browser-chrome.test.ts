@@ -111,6 +111,19 @@ describe("chrome launch", () => {
 		expect(front.some((arg) => arg.startsWith("--headless") || arg === "--no-startup-window")).toBe(false);
 	});
 
+	it("uses a mock keychain only when asked to", () => {
+		const saved = process.env.AKRAMCODE_CHROME_MOCK_KEYCHAIN;
+		try {
+			delete process.env.AKRAMCODE_CHROME_MOCK_KEYCHAIN;
+			expect(chromeArgs("/p", "headless")).not.toContain("--use-mock-keychain");
+			process.env.AKRAMCODE_CHROME_MOCK_KEYCHAIN = "1";
+			expect(chromeArgs("/p", "headless")).toContain("--use-mock-keychain");
+		} finally {
+			if (saved === undefined) delete process.env.AKRAMCODE_CHROME_MOCK_KEYCHAIN;
+			else process.env.AKRAMCODE_CHROME_MOCK_KEYCHAIN = saved;
+		}
+	});
+
 	it("finds your own Chrome from the DevToolsActivePort it writes, or from its port", () => {
 		const dir = mkdtempSync(join(tmpdir(), "akramcode-my-chrome-"));
 		try {
