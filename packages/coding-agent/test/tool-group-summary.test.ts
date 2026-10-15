@@ -36,10 +36,7 @@ describe("summarizeToolGroup", () => {
 	});
 
 	test("counts failed calls and keeps them in the totals", () => {
-		const summary = summarizeToolGroup([
-			done("bash"),
-			{ toolName: "bash", args: {}, status: "error", errorText: "exit code 1" },
-		]);
+		const summary = summarizeToolGroup([done("bash"), { toolName: "bash", args: {}, status: "error" }]);
 
 		expect(summary.done).toBe("Ran 2 shell commands");
 		expect(summary.failed).toBe(1);

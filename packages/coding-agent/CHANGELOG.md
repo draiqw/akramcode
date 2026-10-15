@@ -6,6 +6,10 @@
 
 - Provider API keys and models come only from the agent directory (`auth.json`, `models.json`); environment variables such as `OPENROUTER_API_KEY` are no longer read. Use `/login` or `--api-key`.
 
+### Changed
+
+- A collapsed tool group shows only the failure count, not the error text. A click opens it as one line per call, a click on a call line shows that call's output, and `ctrl+o` expands everything.
+
 ## [1.0.29] - 2026-10-14
 
 ### Breaking Changes

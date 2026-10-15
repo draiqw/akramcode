@@ -13,9 +13,10 @@ import { summarizeToolGroup } from "./tool-group-summary.ts";
 
 /**
  * A run of consecutive tool calls. Collapsed, it renders one dim summary line such as
- * "Read 2 files, ran 1 shell command · Running npm test…", plus a line per failed call.
- * Expanded (app.tools.expand, or a click on the summary), it renders a header with the collapse hint, then the
- * folded thinking and tool components in the order they arrived. A click on the header collapses the group again.
+ * "Read 2 files, ran 1 shell command · Running npm test… · 1 failed".
+ * A click on the summary opens the group: a header with the collapse hint, then the folded thinking and one line
+ * per call; a click on a call line shows that call's full output. app.tools.expand opens every call at once.
+ * A click on the header collapses the group again.
  */
 export class ToolGroupComponent implements Component {
 	private readonly tools: ToolExecutionComponent[] = [];
@@ -33,6 +34,7 @@ export class ToolGroupComponent implements Component {
 	}
 
 	addTool(tool: ToolExecutionComponent): void {
+		tool.setCompact(true);
 		tool.setExpanded(this.expanded);
 		this.tools.push(tool);
 		this.toolsContainer.addChild(tool);
@@ -120,13 +122,7 @@ export class ToolGroupComponent implements Component {
 		if (summary.done) parts.push(theme.fg(tone, summary.done));
 		if (summary.active) parts.push(theme.fg(tone, `${summary.active}…`));
 		if (summary.failed > 0) parts.push(theme.fg("error", `${summary.failed} failed`));
-		const lines = ["", pad + truncateToWidth(parts.join(theme.fg(tone, " · ")), contentWidth, "…")];
-		for (const item of items) {
-			if (item.status !== "error") continue;
-			const detail = item.errorText ? `${item.toolName}: ${item.errorText}` : item.toolName;
-			lines.push(pad + truncateToWidth(theme.fg("error", `  ✗ ${detail}`), contentWidth, "…"));
-		}
-		return lines;
+		return ["", pad + truncateToWidth(parts.join(theme.fg(tone, " · ")), contentWidth, "…")];
 	}
 
 	handleMouse(event: TuiMouseEvent): TuiMouseEventResult | undefined {

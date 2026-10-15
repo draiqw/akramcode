@@ -10,6 +10,7 @@ import {
 	Text,
 	type TUI,
 	type TuiMouseEvent,
+	truncateToWidth,
 } from "@akramcode/tui";
 import type { ToolDefinition, ToolRenderContext, ToolRenderResultOptions } from "../../../core/extensions/types.ts";
 import type { Theme } from "../theme/theme.ts";
@@ -60,6 +61,10 @@ export class ToolExecutionComponent extends Container {
 	private toolCallId: string;
 	private args: any;
 	private expanded = false;
+	/** Inside an open tool group: while not expanded, render only the call as one line. */
+	private compact = false;
+	private callComponent?: Component;
+	private readonly compactRow = new Container();
 	private showImages: boolean;
 	private imageWidthCells: number;
 	private isPartial = true;
@@ -105,6 +110,13 @@ export class ToolExecutionComponent extends Container {
 		this.contentText = new Text("", 1, 1, (text: string) => theme.bg("toolPendingBg", text));
 		this.contentTextRegion = this.createResultRegion(this.contentText);
 		this.selfRenderContainer = new Container();
+		this.compactRow.addChild(
+			new MouseRegion({ render: (width) => [this.renderCompactLine(width)], invalidate: () => {} }, (event) => {
+				if (!this.result || event.type !== "click" || event.button !== "left") return undefined;
+				this.setExpanded(true);
+				return { handled: true };
+			}),
+		);
 
 		if (this.hasRendererDefinition()) {
 			this.addChild(this.getRenderShell() === "self" ? this.selfRenderContainer : this.contentBox);
@@ -245,20 +257,35 @@ export class ToolExecutionComponent extends Container {
 		this.updateDisplay();
 	}
 
+	setCompact(compact: boolean): void {
+		this.compact = compact;
+	}
+
+	private isCompactLine(): boolean {
+		return this.compact && !this.expanded;
+	}
+
+	/** One line: a status mark, then the first line of the call, e.g. "✗ read docs/a.md". */
+	private renderCompactLine(width: number): string {
+		const status = this.getSummaryItem()?.status;
+		const mark =
+			status === "error"
+				? theme.fg("error", "✗")
+				: status === "done"
+					? theme.fg("success", "✓")
+					: theme.fg("dim", "·");
+		const call = this.callComponent ?? this.createCallFallback();
+		const first = call.render(Math.max(1, width - 3)).find((line) => line.trim().length > 0) ?? this.toolName;
+		return truncateToWidth(` ${mark} ${first.trim()}`, width, "…");
+	}
+
 	/** State for a collapsed tool group summary, or undefined when this call renders nothing. */
 	getSummaryItem(): ToolGroupItem | undefined {
 		if (this.hideComponent) return undefined;
 		if (!this.result || this.isPartial) {
 			return { toolName: this.toolName, args: this.args, status: "running" };
 		}
-		if (!this.result.isError) {
-			return { toolName: this.toolName, args: this.args, status: "done" };
-		}
-		const errorText = this.getTextOutput()
-			.split("\n")
-			.map((line) => line.trim())
-			.find((line) => line.length > 0);
-		return { toolName: this.toolName, args: this.args, status: "error", ...(errorText ? { errorText } : {}) };
+		return { toolName: this.toolName, args: this.args, status: this.result.isError ? "error" : "done" };
 	}
 
 	setShowImages(show: boolean): void {
@@ -280,6 +307,7 @@ export class ToolExecutionComponent extends Container {
 		if (this.hideComponent) {
 			return [];
 		}
+		if (this.isCompactLine()) return this.compactRow.render(width);
 
 		if (this.hasRendererDefinition() && this.getRenderShell() === "self") {
 			const contentLines = this.selfRenderContainer.render(width);
@@ -310,6 +338,7 @@ export class ToolExecutionComponent extends Container {
 	}
 
 	override handleMouse(event: TuiMouseEvent): ReturnType<Container["handleMouse"]> {
+		if (this.isCompactLine()) return this.compactRow.handleMouse(event);
 		if (!this.hasRendererDefinition() || this.getRenderShell() !== "self") return super.handleMouse(event);
 		if (event.y <= 0 || event.y > this.selfRenderHeight) return undefined;
 		return this.selfRenderContainer.handleMouse({
@@ -337,20 +366,18 @@ export class ToolExecutionComponent extends Container {
 
 			const callRenderer = this.getCallRenderer();
 			if (!callRenderer) {
-				renderContainer.addChild(this.createResultRegion(this.createCallFallback()));
-				hasContent = true;
+				this.callComponent = this.createCallFallback();
 			} else {
 				try {
-					const component = callRenderer(this.args, theme, this.getRenderContext(this.callRendererComponent));
-					this.callRendererComponent = component;
-					renderContainer.addChild(this.createResultRegion(component));
-					hasContent = true;
+					this.callComponent = callRenderer(this.args, theme, this.getRenderContext(this.callRendererComponent));
+					this.callRendererComponent = this.callComponent;
 				} catch {
 					this.callRendererComponent = undefined;
-					renderContainer.addChild(this.createResultRegion(this.createCallFallback()));
-					hasContent = true;
+					this.callComponent = this.createCallFallback();
 				}
 			}
+			renderContainer.addChild(this.createResultRegion(this.callComponent));
+			hasContent = true;
 
 			if (this.result) {
 				const resultRenderer = this.getResultRenderer();

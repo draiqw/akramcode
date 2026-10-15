@@ -3,8 +3,6 @@ export interface ToolGroupItem {
 	toolName: string;
 	args: unknown;
 	status: "running" | "done" | "error";
-	/** First line of the error output, for failed calls. */
-	errorText?: string;
 }
 
 export interface ToolGroupSummary {

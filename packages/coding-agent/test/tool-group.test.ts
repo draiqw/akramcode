@@ -53,13 +53,13 @@ describe("ToolGroupComponent", () => {
 		expect(lines).toEqual(["", " Read 1 file · Running npm test…"]);
 	});
 
-	test("lists failed calls under the summary", () => {
+	test("counts failed calls without showing the error", () => {
 		const group = new ToolGroupComponent(false);
 		const bash = createTool("bash", { command: "false" });
 		bash.updateResult({ content: [{ type: "text", text: "\ncommand failed: exit 1\nmore" }], isError: true });
 		group.addTool(bash);
 
-		expect(render(group)).toBe("\n Ran 1 shell command · 1 failed\n   ✗ bash: command failed: exit 1");
+		expect(render(group)).toBe("\n Ran 1 shell command · 1 failed");
 	});
 
 	test("shows the full tool output when expanded and collapses again", () => {
@@ -76,18 +76,28 @@ describe("ToolGroupComponent", () => {
 		expect(render(group)).not.toContain("FILE_CONTENT");
 	});
 
-	test("opens a single group on click", () => {
+	test("a click opens the group as one line per call, a click on a line shows its output", () => {
 		const group = new ToolGroupComponent(false);
 		const read = createTool("read", { path: "a.ts" });
 		read.updateResult({ content: [{ type: "text", text: "FILE_CONTENT" }], isError: false });
 		group.addTool(read);
+		const bash = createTool("bash", { command: "false" });
+		bash.updateResult({ content: [{ type: "text", text: "exit 1" }], isError: true });
+		group.addTool(bash);
 
 		expect(group.handleMouse(click())?.handled).toBe(true);
-		expect(render(group)).toContain("FILE_CONTENT");
+		const lines = group.render(100).map((line) => stripAnsi(line).trimEnd());
+		expect(lines.slice(2)).toEqual([' ✓ read path="a.ts"', ' ✗ bash command="false"']);
+
+		// The second call line is on row 3: spacer, header, then one row per call.
+		expect(group.handleMouse({ ...click(), y: 3, height: lines.length })?.handled).toBe(true);
+		const opened = render(group);
+		expect(opened).toContain("exit 1");
+		expect(opened).not.toContain("FILE_CONTENT");
 
 		// A click on the header folds it back.
 		expect(group.handleMouse(click())?.handled).toBe(true);
-		expect(render(group)).not.toContain("FILE_CONTENT");
+		expect(render(group)).not.toContain("exit 1");
 	});
 
 	test("shows how to collapse above expanded output", () => {
