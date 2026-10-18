@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Added
+
+- When only one of `python` and `python3` is installed, shell commands can call it by either name (a link in `~/.akramcode/agent/python-aliases` is added to `PATH`).
+
+### Changed
+
+- The system prompt asks the model to think step by step, compute with code instead of in its head, verify results before reporting done, and try another approach before giving up.
+- A truncated `read` suggests querying data files with python3.
+
 ## [1.0.32] - 2026-10-18
 
 ### Breaking Changes

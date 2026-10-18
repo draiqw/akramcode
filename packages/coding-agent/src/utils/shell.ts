@@ -1,7 +1,7 @@
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, symlinkSync } from "node:fs";
 import { delimiter, join } from "node:path";
 import { spawn, spawnSync } from "child_process";
-import { getBinDir } from "../config.ts";
+import { getAgentDir, getBinDir } from "../config.ts";
 
 export interface ShellConfig {
 	shell: string;
@@ -119,13 +119,56 @@ export function getShellConfig(customShellPath?: string): ShellConfig {
 	return { shell: "sh", args: ["-c"] };
 }
 
+function isPython3(executable: string): boolean {
+	const result = spawnSync(executable, ["-c", "import sys; print(sys.version_info[0])"], {
+		encoding: "utf-8",
+		timeout: 5000,
+	});
+	return result.status === 0 && result.stdout.trim() === "3";
+}
+
+/**
+ * When only one of `python` / `python3` is installed, link the missing name to it in `aliasDir`,
+ * so commands written for either name work. `python3` is linked only to a Python 3 `python`.
+ * Returns whether `aliasDir` holds an alias and belongs on PATH.
+ */
+export function createPythonAliases(aliasDir: string): boolean {
+	if (process.platform === "win32") return false;
+	const python = findExecutableOnPath("python");
+	const python3 = findExecutableOnPath("python3");
+	let alias: { name: string; target: string } | undefined;
+	if (python3 && !python) alias = { name: "python", target: python3 };
+	else if (python && !python3 && isPython3(python)) alias = { name: "python3", target: python };
+	if (!alias) return false;
+	try {
+		mkdirSync(aliasDir, { recursive: true });
+		const link = join(aliasDir, alias.name);
+		rmSync(link, { force: true });
+		symlinkSync(alias.target, link);
+		return true;
+	} catch {
+		// A read-only agent dir only costs the alias.
+		return false;
+	}
+}
+
+let pythonAliasDir: string | null | undefined;
+
+function getPythonAliasDir(): string | null {
+	if (pythonAliasDir === undefined) {
+		const dir = join(getAgentDir(), "python-aliases");
+		pythonAliasDir = createPythonAliases(dir) ? dir : null;
+	}
+	return pythonAliasDir;
+}
+
 export function getShellEnv(): NodeJS.ProcessEnv {
 	const binDir = getBinDir();
 	const pathKey = Object.keys(process.env).find((key) => key.toLowerCase() === "path") ?? "PATH";
 	const currentPath = process.env[pathKey] ?? "";
 	const pathEntries = currentPath.split(delimiter).filter(Boolean);
-	const hasBinDir = pathEntries.includes(binDir);
-	const updatedPath = hasBinDir ? currentPath : [binDir, currentPath].filter(Boolean).join(delimiter);
+	const extraDirs = [binDir, getPythonAliasDir()].filter((dir): dir is string => !!dir && !pathEntries.includes(dir));
+	const updatedPath = [...extraDirs, currentPath].filter(Boolean).join(delimiter);
 
 	return {
 		...process.env,

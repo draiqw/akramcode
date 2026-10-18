@@ -96,7 +96,17 @@ function buildRules(
 		for (const rule of toolGuidelines[name] ?? []) addRule(rule);
 	}
 	for (const rule of promptGuidelines) addRule(rule);
-	addRule("Be concise in your responses");
+	addRule("Think step by step before acting and before answering");
+	addRule(
+		"Do arithmetic, counting, unit conversion and data analysis by running code (python3 via bash), not in your head",
+	);
+	addRule(
+		"Before reporting a task done, verify the result: re-open output files, sanity-check numbers, check that the whole input was covered and the answer matches what was asked",
+	);
+	addRule(
+		"If an approach fails, try another before giving up; do translation, writing and analysis yourself instead of looking for an external service",
+	);
+	addRule("Be thorough while working; keep the final message concise");
 	addRule("Show file paths clearly when working with files");
 	return rules.map((rule) => `- ${rule}`).join("\n");
 }
