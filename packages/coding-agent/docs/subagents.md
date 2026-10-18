@@ -20,6 +20,8 @@ Several `agent` calls in one assistant message run concurrently. Aborting the ma
 
 In the transcript an agent call shows as `agent(description)` with the subagent's latest tool calls while it runs, then a summary such as `Done (7 tool uses · 18k tokens · 42s)`. Expand tool output (`Ctrl+O`) to read the final message and the transcript path.
 
+Below the editor, a panel lists running subagents (foreground and background), one line each: type, description, elapsed time, tool uses, latest tool call, and tokens, for example `● explore: find config files · 1m 12s · 3 tool uses · read ~/src/x.ts · 12k tokens`. A finished agent shows `✓` or `✗` for a few seconds, then leaves; at most five lines are shown.
+
 Subagents:
 
 - can never do more than the main session: they get only tools the main session can call itself, and each of their tool calls runs in the main session as a nested call (`ctx.executeTool()`). Extension `tool_call` and `tool_result` hooks, permission checks, the working directory, and the [sandbox](sandbox.md) of the main session apply to them; hooks see the call with `parentToolCallId` set to the `agent` call;

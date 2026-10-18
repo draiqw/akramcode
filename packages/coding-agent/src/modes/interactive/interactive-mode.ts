@@ -151,6 +151,7 @@ import {
 	formatAuthSelectorProviderType,
 	OAuthSelectorComponent,
 } from "./components/oauth-selector.ts";
+import { RunningAgentsPanel, trackRunningAgents } from "./components/running-agents-panel.ts";
 import { SessionSelectorComponent } from "./components/session-selector.ts";
 import { SettingsSelectorComponent } from "./components/settings-selector.ts";
 import { SkillInvocationMessageComponent } from "./components/skill-invocation-message.ts";
@@ -484,6 +485,8 @@ export class InteractiveMode {
 	private readonly runStats = new RunStatsTracker();
 	/** Re-renders once a second while the footer shows a running prompt-cache countdown. */
 	private cacheCountdownTimer: NodeJS.Timeout | undefined;
+	/** Running subagents, listed below the editor. */
+	private runningAgents!: RunningAgentsPanel;
 	private changelogMarkdown: string | undefined = undefined;
 	private startupNoticesShown = false;
 
@@ -624,6 +627,7 @@ export class InteractiveMode {
 		this.statusContainer = new Container();
 		this.widgetContainerAbove = new Container();
 		this.widgetContainerBelow = new Container();
+		this.runningAgents = new RunningAgentsPanel(() => this.ui.requestRender());
 		this.keybindings = KeybindingsManager.create();
 		setKeybindings(this.keybindings);
 		const editorPaddingX = this.settingsManager.getEditorPaddingX();
@@ -2286,6 +2290,8 @@ export class InteractiveMode {
 		if (!this.widgetContainerAbove || !this.widgetContainerBelow) return;
 		this.renderWidgetContainer(this.widgetContainerAbove, this.extensionWidgetsAbove, true, true);
 		this.renderWidgetContainer(this.widgetContainerBelow, this.extensionWidgetsBelow, false, false);
+		// The agents panel sits right below the editor and renders nothing while no agent runs.
+		this.widgetContainerBelow.children.unshift(this.runningAgents);
 		this.ui.requestRender();
 	}
 
@@ -3162,9 +3168,14 @@ export class InteractiveMode {
 	}
 
 	private subscribeToAgent(): void {
-		this.unsubscribe = this.session.subscribe(async (event) => {
+		const unsubscribeEvents = this.session.subscribe(async (event) => {
 			await this.handleEvent(event);
 		});
+		const stopTrackingAgents = trackRunningAgents(this.session, this.runningAgents);
+		this.unsubscribe = () => {
+			unsubscribeEvents();
+			stopTrackingAgents();
+		};
 	}
 
 	private async handleEvent(event: AgentSessionEvent): Promise<void> {

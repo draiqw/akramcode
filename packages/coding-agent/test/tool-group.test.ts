@@ -110,6 +110,51 @@ describe("ToolGroupComponent", () => {
 		expect(lines.slice(0, 2)).toEqual(["", " Read 1 file · ctrl+o to collapse"]);
 	});
 
+	test("wraps a long summary at list boundaries instead of truncating it", () => {
+		const group = new ToolGroupComponent(false);
+		const done = (toolName: string, args: Record<string, unknown>, isError = false) => {
+			const tool = createTool(toolName, args);
+			tool.updateResult({ content: [{ type: "text", text: "x" }], isError });
+			group.addTool(tool);
+		};
+		done("read", { path: "a.ts" });
+		done("read", { path: "b.ts" });
+		done("bash", { command: "ls" });
+		done("edit", { path: "a.ts" });
+		done("bash", { command: "false" }, true);
+		group.addTool(createTool("bash", { command: "npm test" }));
+
+		const lines = group.render(31).map((line) => stripAnsi(line));
+		expect(lines).toEqual([
+			"",
+			" Read 2 files,",
+			" ran 2 shell commands,",
+			" edited 1 file ·",
+			" Running npm test… · 1 failed",
+		]);
+		for (const line of lines) expect(line.length).toBeLessThanOrEqual(31);
+		expect(stripAnsi(group.render(200).join("\n"))).toBe(
+			"\n Read 2 files, ran 2 shell commands, edited 1 file · Running npm test… · 1 failed",
+		);
+	});
+
+	test("wraps the expanded header and routes clicks below it to the calls", () => {
+		const group = new ToolGroupComponent(false);
+		const read = createTool("read", { path: "a.ts" });
+		read.updateResult({ content: [{ type: "text", text: "FILE_CONTENT" }], isError: false });
+		group.addTool(read);
+		const bash = createTool("bash", { command: "false" });
+		bash.updateResult({ content: [{ type: "text", text: "exit 1" }], isError: true });
+		group.addTool(bash);
+
+		expect(group.handleMouse({ ...click(), width: 24 })?.handled).toBe(true);
+		const lines = group.render(24).map((line) => stripAnsi(line).trimEnd());
+		expect(lines.slice(0, 4)).toEqual(["", " Read 1 file,", " ran 1 shell command ·", " ctrl+o to collapse"]);
+		const bashRow = lines.findIndex((line) => line.includes("✗ bash"));
+		expect(group.handleMouse({ ...click(), y: bashRow, width: 24, height: lines.length })?.handled).toBe(true);
+		expect(stripAnsi(group.render(24).join("\n"))).toContain("exit 1");
+	});
+
 	test("starts expanded when tool output is expanded", () => {
 		const group = new ToolGroupComponent(true);
 		const read = createTool("read", { path: "a.ts" });

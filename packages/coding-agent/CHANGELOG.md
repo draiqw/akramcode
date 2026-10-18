@@ -9,6 +9,11 @@
 ### Added
 
 - `tool_search` also finds skills: matches are listed as `skill:name` with their `SKILL.md` path and are not loaded as tools. Extensions can read the loaded skills with `akramcode.getSkills()`. See [docs/skills.md](docs/skills.md#understand-how-skills-load).
+- A panel below the editor lists running subagents with elapsed time, tool uses, latest tool call, and tokens; finished ones show a done or failed mark for a few seconds. See [docs/subagents.md](docs/subagents.md#subagents).
+
+### Changed
+
+- A collapsed tool group summary and an expanded group header wrap over several lines instead of being cut off.
 
 ### Removed
 
