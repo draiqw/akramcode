@@ -13,7 +13,6 @@ import { Markdown, type MarkdownTheme } from "@akramcode/tui";
 import chalk from "chalk";
 import lockfile from "proper-lockfile";
 import { selectConfig } from "./cli/config-selector.ts";
-import { createProjectTrustContext } from "./cli/project-trust.ts";
 import {
 	APP_NAME,
 	CONFIG_DIR_NAME,
@@ -29,11 +28,9 @@ import {
 } from "./config.ts";
 import type { InlineExtension } from "./core/extensions/types.ts";
 import { ModelRuntime } from "./core/model-runtime.ts";
-import { DefaultPackageManager } from "./core/package-manager.ts";
-import { type AppMode, resolveProjectTrusted } from "./core/project-trust.ts";
-import { DefaultResourceLoader, isBuiltinExtension } from "./core/resource-loader.ts";
+import { DefaultPackageManager, type ResolvedPaths, type ResolvedResource } from "./core/package-manager.ts";
+import { isBuiltinExtension } from "./core/resource-loader.ts";
 import { SettingsManager } from "./core/settings-manager.ts";
-import { hasTrustRequiringProjectResources, ProjectTrustStore } from "./core/trust-manager.ts";
 import { getAkramCodeUserAgent } from "./utils/akramcode-user-agent.ts";
 import { BINARY_INSTALLER_COMMAND, runBinarySelfUpdate } from "./utils/binary-self-update.ts";
 import { spawnProcess, spawnProcessSync, waitForChildProcess } from "./utils/child-process.ts";
@@ -251,7 +248,6 @@ interface PackageCommandOptions {
 	showExtensionsSkippedNote: boolean;
 	local: boolean;
 	force: boolean;
-	projectTrustOverride?: boolean;
 	help: boolean;
 	invalidOption?: string;
 	invalidArgument?: string;
@@ -272,17 +268,17 @@ function reportSettingsErrors(settingsManager: SettingsManager, context: string)
 function getPackageCommandUsage(command: PackageCommand): string {
 	switch (command) {
 		case "install":
-			return `${APP_NAME} install <source> [-l] [--approve|--no-approve]`;
+			return `${APP_NAME} install <source> [-l]`;
 		case "remove":
-			return `${APP_NAME} remove <source> [-l] [--approve|--no-approve]`;
+			return `${APP_NAME} remove <source> [-l]`;
 		case "update":
-			return `${APP_NAME} update [source|self|akramcode] [--self|--extensions|--models|--all] [--extension <source>] [--approve|--no-approve] [--force]`;
+			return `${APP_NAME} update [source|self|akramcode] [--self|--extensions|--models|--all] [--extension <source>] [--force]`;
 		case "list":
-			return `${APP_NAME} list [--approve|--no-approve]`;
+			return `${APP_NAME} list`;
 	}
 }
 
-const CONFIG_COMMAND_USAGE = `${APP_NAME} config [-l] [--approve|--no-approve]`;
+const CONFIG_COMMAND_USAGE = `${APP_NAME} config [-l]`;
 
 function printConfigCommandHelp(): void {
 	console.log(`${chalk.bold("Usage:")}
@@ -294,8 +290,6 @@ Press Tab in the TUI to switch between global and project-local modes.
 
 Options:
   -l, --local       Edit project overrides (${CONFIG_DIR_NAME}/settings.json)
-  -a, --approve     Trust project-local files for this command with -l
-  -na, --no-approve Ignore project-local files for this command with -l
 `);
 }
 
@@ -309,8 +303,6 @@ Install a package and add it to settings.
 
 Options:
   -l, --local       Install project-locally (${CONFIG_DIR_NAME}/settings.json)
-  -a, --approve     Trust project-local files for this command
-  -na, --no-approve Ignore project-local files for this command
 
 Examples:
   ${APP_NAME} install npm:@foo/bar
@@ -331,8 +323,6 @@ Alias: ${APP_NAME} uninstall <source> [-l]
 
 Options:
   -l, --local       Remove from project settings (${CONFIG_DIR_NAME}/settings.json)
-  -a, --approve     Trust project-local files for this command
-  -na, --no-approve Ignore project-local files for this command
 
 Examples:
   ${APP_NAME} remove npm:@foo/bar
@@ -352,8 +342,6 @@ Options:
   --models                Refresh model catalogs only
   --all                   Update akramcode and installed packages
   --extension <source>    Update one package only
-  -a, --approve           Trust project-local files for this command
-  -na, --no-approve       Ignore project-local files for this command
   --force                 Reinstall akramcode even if the current version is latest
 
 Short forms:
@@ -370,10 +358,6 @@ Short forms:
   ${getPackageCommandUsage("list")}
 
 List installed packages from user and project settings.
-
-Options:
-  -a, --approve      Trust project-local files for this command
-  -na, --no-approve  Ignore project-local files for this command
 `);
 			return;
 	}
@@ -393,7 +377,6 @@ function parsePackageCommand(args: string[]): PackageCommandOptions | undefined 
 
 	let local = false;
 	let force = false;
-	let projectTrustOverride: boolean | undefined;
 	let help = false;
 	let invalidOption: string | undefined;
 	let invalidArgument: string | undefined;
@@ -455,16 +438,6 @@ function parsePackageCommand(args: string[]): PackageCommandOptions | undefined 
 			} else {
 				invalidOption = invalidOption ?? arg;
 			}
-			continue;
-		}
-
-		if (arg === "--approve" || arg === "-a") {
-			projectTrustOverride = true;
-			continue;
-		}
-
-		if (arg === "--no-approve" || arg === "-na") {
-			projectTrustOverride = false;
 			continue;
 		}
 
@@ -570,7 +543,6 @@ function parsePackageCommand(args: string[]): PackageCommandOptions | undefined 
 		showExtensionsSkippedNote,
 		local,
 		force,
-		projectTrustOverride,
 		help,
 		invalidOption,
 		invalidArgument,
@@ -732,69 +704,6 @@ export interface PackageCommandRuntimeOptions {
 	extensionFactories?: InlineExtension[];
 }
 
-interface CommandSettingsResult {
-	settingsManager: SettingsManager;
-	projectTrustWarnings: string[];
-}
-
-function getCommandAppMode(): AppMode {
-	return process.stdin.isTTY && process.stdout.isTTY ? "interactive" : "print";
-}
-
-function reportProjectTrustWarnings(warnings: readonly string[]): void {
-	for (const warning of warnings) {
-		console.error(chalk.yellow(`Warning: ${warning}`));
-	}
-}
-
-async function createCommandSettingsManager(options: {
-	cwd: string;
-	agentDir: string;
-	projectTrustOverride?: boolean;
-	useSavedProjectTrustOnly?: boolean;
-	extensionFactories?: InlineExtension[];
-}): Promise<CommandSettingsResult> {
-	const settingsManager = SettingsManager.create(options.cwd, options.agentDir, { projectTrusted: false });
-	const projectTrustWarnings: string[] = [];
-	const trustStore = new ProjectTrustStore(options.agentDir);
-	if (options.useSavedProjectTrustOnly) {
-		const savedProjectTrusted = trustStore.get(options.cwd) === true;
-		settingsManager.setProjectTrusted(options.projectTrustOverride ?? savedProjectTrusted);
-		return { settingsManager, projectTrustWarnings };
-	}
-
-	const appMode = getCommandAppMode();
-	const extensionsResult =
-		options.projectTrustOverride === undefined && hasTrustRequiringProjectResources(options.cwd)
-			? await new DefaultResourceLoader({
-					cwd: options.cwd,
-					agentDir: options.agentDir,
-					settingsManager,
-					extensionFactories: options.extensionFactories,
-				}).loadProjectTrustExtensions()
-			: undefined;
-	for (const error of extensionsResult?.errors ?? []) {
-		projectTrustWarnings.push(`Failed to load extension "${error.path}": ${error.error}`);
-	}
-
-	const projectTrusted = await resolveProjectTrusted({
-		cwd: options.cwd,
-		trustStore,
-		trustOverride: options.projectTrustOverride,
-		defaultProjectTrust: settingsManager.getDefaultProjectTrust(),
-		extensionsResult,
-		projectTrustContext: createProjectTrustContext({
-			cwd: options.cwd,
-			mode: appMode,
-			settingsManager,
-			hasUI: appMode === "interactive",
-		}),
-		onExtensionError: (message) => projectTrustWarnings.push(message),
-	});
-	settingsManager.setProjectTrusted(projectTrusted);
-	return { settingsManager, projectTrustWarnings };
-}
-
 export async function handleConfigCommand(
 	args: string[],
 	runtimeOptions: PackageCommandRuntimeOptions = {},
@@ -810,14 +719,9 @@ export async function handleConfigCommand(
 	}
 
 	let local = false;
-	let projectTrustOverride: boolean | undefined;
 	for (const arg of rest) {
 		if (arg === "-l" || arg === "--local") {
 			local = true;
-		} else if (arg === "-a" || arg === "--approve") {
-			projectTrustOverride = true;
-		} else if (arg === "-na" || arg === "--no-approve") {
-			projectTrustOverride = false;
 		} else if (arg.startsWith("-")) {
 			console.error(chalk.red(`Unknown option ${arg} for "config".`));
 			console.error(chalk.dim(`Use "${APP_NAME} --help" or "${CONFIG_COMMAND_USAGE}".`));
@@ -833,32 +737,31 @@ export async function handleConfigCommand(
 
 	const cwd = process.cwd();
 	const agentDir = getAgentDir();
-	const { settingsManager, projectTrustWarnings } = await createCommandSettingsManager({
-		cwd,
-		agentDir,
-		projectTrustOverride,
-		extensionFactories: runtimeOptions.extensionFactories,
-	});
-	reportProjectTrustWarnings(projectTrustWarnings);
-	if (local && !settingsManager.isProjectTrusted()) {
-		console.error(chalk.red("Project is not trusted. Use --approve to modify local resource config."));
-		process.exitCode = 1;
-		return true;
-	}
+	const settingsManager = SettingsManager.create(cwd, agentDir);
 	reportSettingsErrors(settingsManager, "config command");
 	const builtinExtensions = (runtimeOptions.extensionFactories ?? [])
 		.filter(isBuiltinExtension)
 		.map((input) => input.name);
-	const globalSettingsManager = SettingsManager.create(cwd, agentDir, { projectTrusted: false });
-	const globalResolvedPaths = await new DefaultPackageManager({
+	// The global view leaves out project settings and the resources found in the project.
+	const globalOnlyPaths = await new DefaultPackageManager({
 		cwd,
 		agentDir,
-		settingsManager: globalSettingsManager,
+		settingsManager: SettingsManager.inMemory(settingsManager.getGlobalSettings()),
 		builtinExtensions,
 	}).resolve();
-	const projectResolvedPaths = settingsManager.isProjectTrusted()
-		? await new DefaultPackageManager({ cwd, agentDir, settingsManager, builtinExtensions }).resolve()
-		: globalResolvedPaths;
+	const isGlobal = (resource: ResolvedResource) => resource.metadata.scope !== "project";
+	const globalResolvedPaths: ResolvedPaths = {
+		extensions: globalOnlyPaths.extensions.filter(isGlobal),
+		skills: globalOnlyPaths.skills.filter(isGlobal),
+		prompts: globalOnlyPaths.prompts.filter(isGlobal),
+		themes: globalOnlyPaths.themes.filter(isGlobal),
+	};
+	const projectResolvedPaths = await new DefaultPackageManager({
+		cwd,
+		agentDir,
+		settingsManager,
+		builtinExtensions,
+	}).resolve();
 
 	await selectConfig({
 		resolvedPaths: { global: globalResolvedPaths, project: projectResolvedPaths },
@@ -866,16 +769,12 @@ export async function handleConfigCommand(
 		cwd,
 		agentDir,
 		writeScope: local ? "project" : "global",
-		projectModeAvailable: settingsManager.isProjectTrusted(),
 	});
 
 	process.exit(0);
 }
 
-export async function handlePackageCommand(
-	args: string[],
-	runtimeOptions: PackageCommandRuntimeOptions = {},
-): Promise<boolean> {
+export async function handlePackageCommand(args: string[]): Promise<boolean> {
 	const options = parsePackageCommand(args);
 	if (!options) {
 		return false;
@@ -935,20 +834,7 @@ export async function handlePackageCommand(
 
 	const cwd = process.cwd();
 	const agentDir = getAgentDir();
-	const writesProjectPackageConfig = (options.command === "install" || options.command === "remove") && options.local;
-	const { settingsManager, projectTrustWarnings } = await createCommandSettingsManager({
-		cwd,
-		agentDir,
-		projectTrustOverride: options.projectTrustOverride,
-		useSavedProjectTrustOnly: options.command === "update",
-		extensionFactories: runtimeOptions.extensionFactories,
-	});
-	reportProjectTrustWarnings(projectTrustWarnings);
-	if (!settingsManager.isProjectTrusted() && writesProjectPackageConfig) {
-		console.error(chalk.red("Project is not trusted. Use --approve to modify local package config."));
-		process.exitCode = 1;
-		return true;
-	}
+	const settingsManager = SettingsManager.create(cwd, agentDir);
 	reportSettingsErrors(settingsManager, "package command");
 	const selfUpdateNpmCommand = settingsManager.getGlobalSettings().npmCommand;
 

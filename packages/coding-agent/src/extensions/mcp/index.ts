@@ -67,7 +67,7 @@ import { type McpMenu, type McpUi, showMcpManager } from "./ui.ts";
 export type { McpTransportFactory } from "./runtime.ts";
 
 export interface McpExtensionOptions {
-	/** Defaults to reading `mcp.json` from the agent directory and the trusted project. */
+	/** Defaults to reading `mcp.json` from the agent directory and the project. */
 	loadConfig?: (ctx: ExtensionContext) => LoadedMcpConfig;
 	/** Defaults to stdio and streamable HTTP transports built from the server config. */
 	createTransport?: McpTransportFactory;
@@ -1191,7 +1191,7 @@ export function createMcpExtension(options: McpExtensionOptions = {}): Extension
 }
 
 function defaultLoadConfig(ctx: ExtensionContext): LoadedMcpConfig {
-	return loadMcpConfig({ agentDir: getAgentDir(), cwd: ctx.cwd, projectTrusted: ctx.isProjectTrusted() });
+	return loadMcpConfig({ agentDir: getAgentDir(), cwd: ctx.cwd });
 }
 
 export default createMcpExtension();

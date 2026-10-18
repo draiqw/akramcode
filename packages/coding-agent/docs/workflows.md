@@ -7,7 +7,7 @@ A workflow is a saved [codemode](codemode.md) script with parameters: the same t
 A workflow is a file `<name>.workflow.js` in one of these directories:
 
 - `~/.akramcode/agent/workflows/` for your own workflows.
-- `.akramcode/workflows/` in a project. These load only when the project is trusted, and a project workflow cannot replace one of yours with the same name.
+- `.akramcode/workflows/` in a project. A project workflow cannot replace one of yours with the same name.
 
 The file starts with a `/* @workflow { ... } */` comment that holds a JSON manifest, followed by the script:
 

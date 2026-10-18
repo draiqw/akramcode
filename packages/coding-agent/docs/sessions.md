@@ -35,7 +35,7 @@ Several sessions can work in one git project without changing each other's files
 - Uncommitted changes of the main checkout are not carried over. Ignored files such as `node_modules` are not copied; Node finds packages in the main checkout's `node_modules`.
 - `.worktrees/` is added to `.git/info/exclude` when it is not ignored yet.
 - Paths in the main checkout given to `read`, `edit`, `write`, `grep`, `find`, and `ls` are mapped to the worktree.
-- Settings, trust, and session storage stay with the main checkout, so `/resume` lists the session under the project. A resumed session returns to its worktree and recreates it from its branch if the directory was removed. A fork moves into its own worktree on its first change.
+- Settings and session storage stay with the main checkout, so `/resume` lists the session under the project. A resumed session returns to its worktree and recreates it from its branch if the directory was removed. A fork moves into its own worktree on its first change.
 - Worktrees stay after the session ends. Merge the branch, then remove the worktree with `git worktree remove .worktrees/<name>` and the branch with `git branch -d <name>`.
 
 Nothing moves outside a git repository, in a linked worktree, in subagents, or with a [sandbox](sandbox.md). Turn it off with the `worktrees.enabled` [setting](settings.md).

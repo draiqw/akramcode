@@ -2,7 +2,7 @@
 
 Prompt templates turn Markdown files into reusable `/` commands. Use one when you want to reuse the same prompt without adding executable behavior or a larger set of supporting instructions.
 
-A template can accept arguments and appear in command completion. AkramCode can load templates from personal configuration, project configuration, an explicit path, or a AkramCode package. Project configuration loads only after project trust is granted.
+A template can accept arguments and appear in command completion. AkramCode can load templates from personal configuration, project configuration, an explicit path, or a AkramCode package.
 
 ## Create a template
 
@@ -56,4 +56,4 @@ Place the template in your user or project prompt directory. Conventional prompt
 
 Settings and packages can select nested Markdown files; a package manifest can narrow discovery with explicit paths and globs. See [Settings](settings.md#resources) and [AkramCode Packages](packages.md) for these options.
 
-Project templates become commands in the editor after trust is granted. Review their content before trusting an unfamiliar project. See [Security](security.md#understand-project-trust).
+Project templates become commands in the editor without asking. See [Security](security.md#project-resources).

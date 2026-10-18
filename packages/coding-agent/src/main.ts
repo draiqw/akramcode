@@ -10,7 +10,7 @@ import { type ImageContent, modelsAreEqual } from "@akramcode/ai";
 import { SandboxUnavailableError } from "@akramcode/sandbox";
 import { setCapabilityOverrides } from "@akramcode/tui";
 import chalk from "chalk";
-import { type Args, type Mode, normalizeSessionName, parseArgs, printHelp } from "./cli/args.ts";
+import { type AppMode, type Args, type Mode, normalizeSessionName, parseArgs, printHelp } from "./cli/args.ts";
 import {
 	type AuthCheckResult,
 	checkProviderAuth,
@@ -31,7 +31,6 @@ import { resolveCredentialForPrint } from "./cli/credential-print.ts";
 import { processFileArguments } from "./cli/file-processor.ts";
 import { buildInitialMessage } from "./cli/initial-message.ts";
 import { listModels } from "./cli/list-models.ts";
-import { createProjectTrustContext } from "./cli/project-trust.ts";
 import { selectSession } from "./cli/session-picker.ts";
 import { shouldRunFirstTimeSetup, showFirstTimeSetup, showStartupSelector } from "./cli/startup-ui.ts";
 import { APP_NAME, ENV_SESSION_DIR, expandTildePath, getAgentDir, getPackageDir, VERSION } from "./config.ts";
@@ -53,7 +52,6 @@ import { applyHttpProxySettings, configureHttpDispatcher } from "./core/http-dis
 import { resolveCliModel, resolveModelScope, type ScopedModel } from "./core/model-resolver.ts";
 import { ModelRuntime } from "./core/model-runtime.ts";
 import { restoreStdout, takeOverStdout } from "./core/output-guard.ts";
-import { type AppMode, resolveProjectTrusted } from "./core/project-trust.ts";
 import type { CreateAgentSessionOptions } from "./core/sdk.ts";
 import {
 	formatMissingSessionCwdPrompt,
@@ -67,7 +65,6 @@ import { SettingsManager } from "./core/settings-manager.ts";
 import { printTimings, resetTimings, time } from "./core/timings.ts";
 import { installTraceRecorder, resolveTraceCaptureSettings } from "./core/traces/capture/recorder.ts";
 import { runTracesCommand } from "./core/traces/cli.ts";
-import { hasTrustRequiringProjectResources, ProjectTrustStore } from "./core/trust-manager.ts";
 import { builtInExtensions } from "./extensions/index.ts";
 import { loadMcpCommand } from "./extensions/mcp/cli.lazy.ts";
 import { runMigrations, showDeprecationWarnings } from "./migrations.ts";
@@ -600,7 +597,7 @@ export async function main(args: string[], options?: MainOptions) {
 
 	const cwd = process.cwd();
 	const agentDir = getAgentDir();
-	const bootstrapSettingsManager = SettingsManager.create(cwd, agentDir, { projectTrusted: false });
+	const bootstrapSettingsManager = SettingsManager.create(cwd, agentDir);
 	applyHttpProxySettings(bootstrapSettingsManager.getGlobalSettings().httpProxy);
 	configureHttpDispatcher();
 	if (args[0] !== "traces") {
@@ -611,7 +608,7 @@ export async function main(args: string[], options?: MainOptions) {
 		});
 	}
 
-	if (await handlePackageCommand(args, { extensionFactories })) {
+	if (await handlePackageCommand(args)) {
 		const exitCode = process.exitCode ?? 0;
 		if (process.platform === "win32" && exitCode === 0 && args[0] === "update") {
 			// See docs/adr/coding-agent/main.md#windows-process-exit-during-fetch-teardown
@@ -733,15 +730,6 @@ export async function main(args: string[], options?: MainOptions) {
 	}
 	time("createSessionManager");
 
-	const trustStore = new ProjectTrustStore(agentDir);
-	const sessionCwd = sessionManager.getCwd();
-	const autoTrustOnReloadCwd =
-		parsed.projectTrustOverride === undefined && !hasTrustRequiringProjectResources(sessionCwd)
-			? sessionCwd
-			: undefined;
-	const trustPromptMode: AppMode = parsed.help || parsed.listModels !== undefined ? "print" : appMode;
-	const projectTrustByCwd = new Map<string, boolean>();
-
 	const resolvedExtensionPaths = resolveCliPaths(cwd, parsed.extensions);
 	const resolvedSkillPaths = resolveCliPaths(cwd, parsed.skills);
 	const resolvedPromptTemplatePaths = resolveCliPaths(cwd, parsed.promptTemplates);
@@ -751,50 +739,14 @@ export async function main(args: string[], options?: MainOptions) {
 		agentDir,
 		sessionManager,
 		sessionStartEvent,
-		projectTrustContext,
 	}) => {
-		const isInitialRuntime = sessionStartEvent === undefined;
-		const projectTrustDiagnostics: AgentSessionRuntimeDiagnostic[] = [];
-		const cachedProjectTrust = projectTrustByCwd.get(cwd);
-		const hasTrustRequiringResources = hasTrustRequiringProjectResources(cwd);
-		const shouldResolveProjectTrust =
-			parsed.projectTrustOverride === undefined && cachedProjectTrust === undefined && hasTrustRequiringResources;
-		const projectTrusted = shouldResolveProjectTrust
-			? false
-			: (cachedProjectTrust ??
-				parsed.projectTrustOverride ??
-				(!hasTrustRequiringResources || trustStore.get(cwd) === true));
-		const runtimeSettingsManager = SettingsManager.create(cwd, agentDir, { projectTrusted });
+		const runtimeSettingsManager = SettingsManager.create(cwd, agentDir);
 		const services = await createAgentSessionServices({
 			cwd,
 			agentDir,
 			settingsManager: runtimeSettingsManager,
 			modelRuntimeSignal: AbortSignal.timeout(15_000),
 			extensionFlagValues: parsed.unknownFlags,
-			resourceLoaderReloadOptions: shouldResolveProjectTrust
-				? {
-						resolveProjectTrust: async ({ extensionsResult }) => {
-							const trusted = await resolveProjectTrusted({
-								cwd,
-								trustStore,
-								trustOverride: parsed.projectTrustOverride,
-								defaultProjectTrust: startupSettingsManager.getDefaultProjectTrust(),
-								extensionsResult,
-								projectTrustContext:
-									projectTrustContext ??
-									createProjectTrustContext({
-										cwd,
-										mode: isInitialRuntime ? trustPromptMode : appMode,
-										settingsManager: startupSettingsManager,
-										hasUI: isInitialRuntime && trustPromptMode === "interactive",
-									}),
-								onExtensionError: (message) => projectTrustDiagnostics.push({ type: "warning", message }),
-							});
-							projectTrustByCwd.set(cwd, trusted);
-							return trusted;
-						},
-					}
-				: undefined,
 			resourceLoaderOptions: {
 				additionalExtensionPaths: resolvedExtensionPaths,
 				additionalSkillPaths: resolvedSkillPaths,
@@ -812,7 +764,6 @@ export async function main(args: string[], options?: MainOptions) {
 		});
 		const { settingsManager, modelRuntime, resourceLoader } = services;
 		const diagnostics: AgentSessionRuntimeDiagnostic[] = [
-			...projectTrustDiagnostics,
 			...services.diagnostics,
 			...collectSettingsDiagnostics(settingsManager),
 			...resourceLoader.getExtensions().errors.map(({ path, error }) => ({
@@ -1001,7 +952,6 @@ export async function main(args: string[], options?: MainOptions) {
 			migratedProviders,
 			startupDiagnostics,
 			modelFallbackMessage,
-			autoTrustOnReloadCwd,
 			initialMessage,
 			initialImages,
 			initialMessages: parsed.messages,

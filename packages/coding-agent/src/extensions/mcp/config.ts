@@ -1,7 +1,7 @@
 /**
  * MCP server configuration.
  *
- * Servers are read from `mcp.json` in the agent directory and, for trusted projects, from
+ * Servers are read from `mcp.json` in the agent directory and from
  * `<project>/.akramcode/mcp.json`. Both use the `mcpServers` shape shared by other MCP clients, so
  * existing configurations can be copied over. Project entries replace global entries with the
  * same name.
@@ -109,13 +109,13 @@ function readConfigFile(path: string, scope: "global" | "project", state: McpCon
 }
 
 /**
- * Load global and (when trusted) project MCP configuration. Disabled servers are included with
+ * Load global and project MCP configuration. Disabled servers are included with
  * `enabled: false`, so they can be enabled again.
  */
-export function loadMcpConfig(options: { agentDir: string; cwd: string; projectTrusted: boolean }): LoadedMcpConfig {
+export function loadMcpConfig(options: { agentDir: string; cwd: string }): LoadedMcpConfig {
 	const state: McpConfigState = { servers: new Map(), errors: [] };
 	readConfigFile(join(options.agentDir, "mcp.json"), "global", state);
-	if (options.projectTrusted) readConfigFile(join(options.cwd, CONFIG_DIR_NAME, "mcp.json"), "project", state);
+	readConfigFile(join(options.cwd, CONFIG_DIR_NAME, "mcp.json"), "project", state);
 	return {
 		servers: [...state.servers.values()],
 		...(state.autoEnableCodemode === undefined ? {} : { autoEnableCodemode: state.autoEnableCodemode }),

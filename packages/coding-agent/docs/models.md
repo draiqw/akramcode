@@ -22,7 +22,7 @@ You can instead provide an API key through the provider's environment variable. 
 
 When several credential sources are configured, AkramCode uses a runtime `--api-key` first, then a stored `auth.json` credential, an `apiKey` from `models.json`, and finally the provider's environment variables or ambient cloud credentials. Provider extensions can define their own authentication behavior.
 
-Keep `auth.json` and any credential commands private. Project settings and extensions can execute inside the AkramCode process after you trust a project. Review [Security](security.md) before loading configuration from an untrusted directory.
+Keep `auth.json` and any credential commands private. Project settings and extensions load without asking and can execute inside the AkramCode process. Review [Security](security.md) before running AkramCode in an unfamiliar directory.
 
 ## Select a model
 

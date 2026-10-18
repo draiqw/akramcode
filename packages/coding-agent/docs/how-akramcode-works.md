@@ -44,6 +44,6 @@ Extensions are TypeScript modules loaded into the AkramCode process. Their facto
 
 Skills provide on-demand instructions and supporting files. Prompt templates provide reusable message text. Themes provide terminal colors. AkramCode packages distribute these resources through npm or git.
 
-## Trust and permissions
+## Permissions
 
-AkramCode resolves project trust before loading project settings and resources. After the trust decision and project-resource loading, AkramCode loads context files. Enabled tools use the operating-system permissions of the AkramCode process. Extensions execute inside that process.
+AkramCode loads project settings and resources without asking, then loads context files. Enabled tools use the operating-system permissions of the AkramCode process. Extensions execute inside that process.

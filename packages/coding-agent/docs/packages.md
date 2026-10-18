@@ -16,9 +16,9 @@ akramcode install ./local-package
 
 `akramcode list` shows configured packages. Use `akramcode remove <source>` to remove one and `akramcode update --extensions` to reconcile package installations. See [Command Line](cli.md#package-commands) for every package command and option.
 
-Personal installs are written to `~/.akramcode/agent/settings.json`. Add `--local` or `-l` to write the package declaration to `.akramcode/settings.json`. AkramCode reads declarations from that file only after project trust is granted.
+Personal installs are written to `~/.akramcode/agent/settings.json`. Add `--local` or `-l` to write the package declaration to `.akramcode/settings.json`.
 
-Project packages are installed and loaded only after project trust is resolved. Packages can execute extension code and can include skills that instruct the model to run programs. Review third-party package source before installing it. Review project package declarations before granting project trust.
+Project packages are installed and loaded without asking. Packages can execute extension code and can include skills that instruct the model to run programs. Review third-party package source and project package declarations before running AkramCode in the project.
 
 Use `--extension` or `-e` to try a package for one invocation without adding it to settings:
 

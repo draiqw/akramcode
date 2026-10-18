@@ -49,13 +49,13 @@ describe("agent type discovery", () => {
 	}
 
 	it("lists the built-in types without definition files", () => {
-		const { types, diagnostics } = discoverAgentTypes({ cwd, agentDir, projectTrusted: true });
+		const { types, diagnostics } = discoverAgentTypes({ cwd, agentDir });
 		expect(types.map((type) => type.name)).toEqual(["general-purpose", "explore"]);
 		expect(diagnostics).toEqual([]);
 		expect(resolveAgentTypeTools(types[1], candidates).tools).toEqual(["read", "grep", "find", "ls", "bash"]);
 	});
 
-	it("loads user and project definitions, project ones only when the project is trusted", () => {
+	it("loads user and project definitions", () => {
 		writeAgent(
 			join(agentDir, "agents"),
 			"reviewer.md",
@@ -81,9 +81,15 @@ describe("agent type discovery", () => {
 		writeAgent(join(agentDir, "agents"), "odd.md", "---\nname: odd\ndescription: x\nthinking: extreme\n---\nbody\n");
 		writeAgent(join(agentDir, "agents"), "notes.txt", "---\nname: notes\ndescription: not markdown\n---\n");
 
-		const untrusted = discoverAgentTypes({ cwd, agentDir, projectTrusted: false });
-		expect(untrusted.types.map((type) => type.name)).toEqual(["general-purpose", "explore", "odd", "reviewer"]);
-		expect(untrusted.types.find((type) => type.name === "reviewer")).toMatchObject({
+		const loaded = discoverAgentTypes({ cwd, agentDir });
+		expect(loaded.types.map((type) => type.name)).toEqual([
+			"general-purpose",
+			"explore",
+			"odd",
+			"reviewer",
+			"tester",
+		]);
+		expect(loaded.types.find((type) => type.name === "reviewer")).toMatchObject({
 			description: "Reviews diffs",
 			tools: ["read", "grep"],
 			model: "openai/gpt-x",
@@ -91,31 +97,14 @@ describe("agent type discovery", () => {
 			systemPrompt: "Review carefully.",
 			source: "user",
 		});
-		expect(untrusted.diagnostics.map((diagnostic) => diagnostic.message)).toEqual([
-			"Skipped: frontmatter needs a `name` of letters, digits, `-`, `_`, or `.`",
-			'Unknown thinking level "extreme"; using the parent\'s level',
-		]);
-
-		const trusted = discoverAgentTypes({ cwd, agentDir, projectTrusted: true });
-		expect(trusted.types.map((type) => type.name)).toEqual([
-			"general-purpose",
-			"explore",
-			"odd",
-			"reviewer",
-			"tester",
-		]);
-		expect(trusted.types.find((type) => type.name === "reviewer")).toMatchObject({
-			description: "Reviews diffs",
-			source: "user",
-		});
-		expect(trusted.types.find((type) => type.name === "explore")?.source).toBe("builtin");
-		expect(trusted.diagnostics.map((diagnostic) => diagnostic.message)).toEqual([
+		expect(loaded.types.find((type) => type.name === "explore")?.source).toBe("builtin");
+		expect(loaded.diagnostics.map((diagnostic) => diagnostic.message)).toEqual([
 			"Skipped: frontmatter needs a `name` of letters, digits, `-`, `_`, or `.`",
 			'Unknown thinking level "extreme"; using the parent\'s level',
 			'Skipped: a project agent cannot replace the builtin agent "explore"',
 			'Skipped: a project agent cannot replace the user agent "reviewer"',
 		]);
-		expect(trusted.types.find((type) => type.name === "tester")).toMatchObject({
+		expect(loaded.types.find((type) => type.name === "tester")).toMatchObject({
 			tools: ["bash", "read"],
 			disallowedTools: ["edit"],
 		});
@@ -127,17 +116,13 @@ describe("agent type discovery", () => {
 			"explore.md",
 			"---\nname: explore\ndescription: My explorer\ntools: read\n---\nMine.\n",
 		);
-		const explore = discoverAgentTypes({ cwd, agentDir, projectTrusted: false }).types.find(
-			(type) => type.name === "explore",
-		);
+		const explore = discoverAgentTypes({ cwd, agentDir }).types.find((type) => type.name === "explore");
 		expect(explore).toMatchObject({ description: "My explorer", tools: ["read"], source: "user" });
 	});
 
 	it("does not take a model for a type named after an Object.prototype member", () => {
 		writeAgent(join(agentDir, "agents"), "toString.md", "---\nname: toString\ndescription: Odd name\n---\nBody.\n");
-		const type = discoverAgentTypes({ cwd, agentDir, projectTrusted: false }).types.find(
-			(candidate) => candidate.name === "toString",
-		);
+		const type = discoverAgentTypes({ cwd, agentDir }).types.find((candidate) => candidate.name === "toString");
 		expect(type?.model).toBeUndefined();
 	});
 
@@ -153,9 +138,7 @@ describe("agent type discovery", () => {
 		});
 		writeFileSync(join(agentDir, "agents", "reviewer.md"), content);
 		expect(parseFrontmatter(content).body.trim()).toBe("Be strict.");
-		const [type] = discoverAgentTypes({ cwd, agentDir, projectTrusted: false }).types.filter(
-			(candidate) => candidate.source === "user",
-		);
+		const [type] = discoverAgentTypes({ cwd, agentDir }).types.filter((candidate) => candidate.source === "user");
 		expect(type).toMatchObject({
 			name: "reviewer",
 			description: 'Reviews: "diffs", carefully',

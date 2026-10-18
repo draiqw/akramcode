@@ -524,7 +524,7 @@ export class AgentSession {
 	private _createSubagentSession?: SubagentSessionFactory;
 	/** Built-in tools that need this session: `agent` and `task_stop`. */
 	private _sessionToolDefinitions: ToolDefinition[] = [];
-	/** Agent types, read on first use after each runtime build, and the project trust they were read with. */
+	/** Agent types, read on first use after each runtime build, and the inputs they were read with. */
 	private _agentTypes: { key: string; discovery: AgentTypeDiscovery } | undefined;
 	/** Private temp directory for transcripts of sessions without a file. */
 	private _subagentTempDir: string | undefined;
@@ -3869,7 +3869,6 @@ export class AgentSession {
 				getModel: () => this.model,
 				getScopedModels: () => this._scopedModels,
 				isIdle: () => this.isIdle,
-				isProjectTrusted: () => this.settingsManager.isProjectTrusted(),
 				getSignal: () => this.agent.signal,
 				abort: () => {
 					if (this._extensionAbortHandler) {
@@ -4143,20 +4142,17 @@ export class AgentSession {
 	}
 
 	private _getAgentTypes(): AgentTypeDiscovery {
-		// Read again when project trust, extension types, or model overrides changed, so revoking
-		// trust drops project agents at once.
-		const trusted = this.settingsManager.isProjectTrusted();
+		// Read again when extension types or model overrides changed.
 		// The agent tool describes the types before the extension runner exists.
 		const extensionTypes = (this._extensionRunner as ExtensionRunner | undefined)?.getRegisteredAgentTypes() ?? [];
 		const models = this.settingsManager.getSubagentModels();
-		const key = JSON.stringify({ trusted, extensionTypes, models });
+		const key = JSON.stringify({ extensionTypes, models });
 		if (this._agentTypes?.key !== key) {
 			this._agentTypes = {
 				key,
 				discovery: discoverAgentTypes({
 					cwd: this._cwd,
 					agentDir: this._agentDir,
-					projectTrusted: trusted,
 					extensionTypes,
 					models,
 				}),
@@ -4203,7 +4199,6 @@ export class AgentSession {
 				})),
 			userAgentsDir: getUserAgentsDir(this._agentDir),
 			projectAgentsDir: getProjectAgentsDir(this._cwd),
-			isProjectTrusted: () => this.settingsManager.isProjectTrusted(),
 			reload: () => {
 				this._agentTypes = undefined;
 				// Rebuild the active loadout so the agent tool lists the new types.

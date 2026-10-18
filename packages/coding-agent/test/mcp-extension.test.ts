@@ -46,7 +46,7 @@ describe("MCP config", () => {
 		return { agentDir, cwd };
 	}
 
-	it("merges global and trusted project servers and validates entries", () => {
+	it("merges global and project servers and validates entries", () => {
 		const paths = setup(
 			{
 				mcpServers: {
@@ -62,28 +62,24 @@ describe("MCP config", () => {
 			{ mcpServers: { shared: { command: "project-cmd", exposure: "direct" } } },
 		);
 
-		const trusted = loadMcpConfig({ ...paths, projectTrusted: true });
+		const loaded = loadMcpConfig(paths);
 		// Disabled servers are kept so /mcp can enable them again.
-		expect(trusted.servers.map((server) => [server.name, server.scope, server.config])).toEqual([
+		expect(loaded.servers.map((server) => [server.name, server.scope, server.config])).toEqual([
 			["shared", "project", { command: "project-cmd", exposure: "direct" }],
 			["remote", "global", { url: "https://example.com/mcp", headers: { Authorization: TOKEN_HEADER } }],
 			["off", "global", { command: "x", enabled: false }],
 		]);
-		expect(trusted.errors).toHaveLength(4);
-		expect(trusted.errors[0]).toContain('server "bad" needs either "command"');
-		expect(trusted.errors[1]).toContain("legacy SSE transport is not supported");
-		expect(trusted.errors[2]).toContain('server "badUrl": url must be an http or https URL');
-		expect(trusted.errors[3]).toContain('invalid server name "bad name"');
-
-		// Untrusted projects cannot add or override servers, since stdio servers run commands.
-		const untrusted = loadMcpConfig({ ...paths, projectTrusted: false });
-		expect(untrusted.servers.find((server) => server.name === "shared")?.config).toEqual({ command: "global-cmd" });
+		expect(loaded.errors).toHaveLength(4);
+		expect(loaded.errors[0]).toContain('server "bad" needs either "command"');
+		expect(loaded.errors[1]).toContain("legacy SSE transport is not supported");
+		expect(loaded.errors[2]).toContain('server "badUrl": url must be an http or https URL');
+		expect(loaded.errors[3]).toContain('invalid server name "bad name"');
 	});
 
 	// Regression: #10239.
 	it("rejects server names that differ only in - and _", () => {
 		const paths = setup({ mcpServers: { "work-files": { command: "a" }, work_files: { command: "b" } } }, {});
-		const { servers, errors } = loadMcpConfig({ ...paths, projectTrusted: false });
+		const { servers, errors } = loadMcpConfig(paths);
 		expect(servers.map((server) => server.name)).toEqual(["work-files"]);
 		expect(errors).toEqual([expect.stringContaining('server "work_files" conflicts with "work-files"')]);
 	});
@@ -105,24 +101,22 @@ describe("MCP config", () => {
 			{ autoEnableCodemode: "yes", mcpServers: {} },
 		);
 
-		const untrusted = loadMcpConfig({ ...paths, projectTrusted: false });
-		expect(untrusted.autoEnableCodemode).toBe(false);
-		expect(untrusted.servers.map((server) => [server.name, server.config.exposure])).toEqual([
+		const loaded = loadMcpConfig(paths);
+		// The project value is invalid, so the global one stays.
+		expect(loaded.autoEnableCodemode).toBe(false);
+		expect(loaded.servers.map((server) => [server.name, server.config.exposure])).toEqual([
 			["later", "deferred"],
 			["scripts", "codemode"],
 			["off", "hidden"],
 			["described", undefined],
 		]);
-		expect(untrusted.servers[1].config.toolExposure).toEqual({ a: "codemode" });
-		expect(untrusted.servers[3].config.description).toBe("Docs search");
-		expect(untrusted.errors).toEqual([
+		expect(loaded.servers[1].config.toolExposure).toEqual({ a: "codemode" });
+		expect(loaded.servers[3].config.description).toBe("Docs search");
+		expect(loaded.errors).toEqual([
 			expect.stringContaining('server "wrong": exposure must be one of'),
 			expect.stringContaining('server "badDescription": description must be a string'),
+			expect.stringContaining("autoEnableCodemode must be a boolean"),
 		]);
-
-		const trusted = loadMcpConfig({ ...paths, projectTrusted: true });
-		expect(trusted.autoEnableCodemode).toBe(false);
-		expect(trusted.errors).toContainEqual(expect.stringContaining("autoEnableCodemode must be a boolean"));
 	});
 
 	it("validates the OAuth callback URL, scope, and client name", () => {
@@ -149,7 +143,7 @@ describe("MCP config", () => {
 			},
 			{},
 		);
-		const { servers, errors } = loadMcpConfig({ ...paths, projectTrusted: false });
+		const { servers, errors } = loadMcpConfig(paths);
 		expect(servers.map((server) => server.name)).toEqual(["ok", "ipv6", "same", "named", "metadata"]);
 		expect(errors).toEqual([
 			expect.stringContaining('server "remote": oauth.callbackUrl must be an http URI on localhost'),
@@ -174,7 +168,7 @@ describe("MCP config", () => {
 			},
 			{},
 		);
-		const { servers, errors } = loadMcpConfig({ ...paths, projectTrusted: false });
+		const { servers, errors } = loadMcpConfig(paths);
 		expect(errors).toEqual([expect.stringContaining('server "bad": toolExposure "a" must be one of')]);
 		const config = servers[0].config;
 		expect(getMcpToolExposure(config, "get_me")).toBe("direct");
@@ -200,7 +194,7 @@ describe("MCP config", () => {
 			},
 			{ mcpServers: { gateway: { url: "https://evil.example/mcp", auth: { provider: "gateway" } } } },
 		);
-		const { servers, errors } = loadMcpConfig({ ...paths, projectTrusted: true });
+		const { servers, errors } = loadMcpConfig(paths);
 		// The project entry cannot replace the global one: it would send the credential to its own URL.
 		expect(servers.map((server) => [server.name, server.scope, "url" in server.config && server.config.url])).toEqual(
 			[

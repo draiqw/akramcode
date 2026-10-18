@@ -60,9 +60,9 @@ This tool executes a separate `akramcode` subprocess with a delegated system pro
 
 **Default behavior:** Only loads **user-level agents** from `~/.akramcode/agent/agents`.
 
-To enable project-local agents, pass `agentScope: "both"` (or `"project"`). Only do this for repositories you trust.
+To enable project-local agents, pass `agentScope: "both"` (or `"project"`).
 
-When running interactively, the tool prompts for confirmation before running project-local agents in untrusted projects. Trusted projects skip the additional prompt. Set `confirmProjectAgents: false` to disable confirmation.
+When running interactively, the tool prompts for confirmation before running project-local agents. Set `confirmProjectAgents: false` to disable confirmation.
 
 ## Usage
 

@@ -124,11 +124,6 @@ export type {
 	ModelSelectEvent,
 	ModelSelectSource,
 	NormalizedBuildSystemPromptOptions,
-	ProjectTrustContext,
-	ProjectTrustEvent,
-	ProjectTrustEventDecision,
-	ProjectTrustEventResult,
-	ProjectTrustHandler,
 	// Provider Registration
 	ProviderConfig,
 	ProviderModelConfig,

@@ -270,53 +270,6 @@ Project skill`,
 			expect(extensionsResult.extensions[0].path).toBe(join(cwd, ".akramcode", "extensions", "shared.ts"));
 		});
 
-		it("should load user extensions before trust and reuse them after trust resolves", async () => {
-			const userExtDir = join(agentDir, "extensions");
-			const projectExtDir = join(cwd, ".akramcode", "extensions");
-			mkdirSync(userExtDir, { recursive: true });
-			mkdirSync(projectExtDir, { recursive: true });
-			const loadCountKey = `__akramCodeTrustPreloadCount_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-			const globalState = globalThis as typeof globalThis & Record<string, number | undefined>;
-
-			writeFileSync(
-				join(userExtDir, "user.ts"),
-				`globalThis[${JSON.stringify(loadCountKey)}] = (globalThis[${JSON.stringify(loadCountKey)}] ?? 0) + 1;
-export default function(akramcode) {
-	akramcode.on("project_trust", () => ({ trusted: "yes" }));
-	akramcode.registerCommand("user-trust", {
-		description: "user trust",
-		handler: async () => {},
-	});
-}`,
-			);
-			writeFileSync(
-				join(projectExtDir, "project.ts"),
-				`export default function(akramcode) {
-	akramcode.registerCommand("project-trusted", {
-		description: "project trusted",
-		handler: async () => {},
-	});
-}`,
-			);
-
-			const loader = new DefaultResourceLoader({ cwd, agentDir });
-			await loader.reload({
-				resolveProjectTrust: async ({ extensionsResult }) => {
-					expect(extensionsResult.extensions.map((extension) => extension.path)).toEqual([
-						join(userExtDir, "user.ts"),
-					]);
-					return true;
-				},
-			});
-
-			const extensionsResult = loader.getExtensions();
-			expect(extensionsResult.extensions.map((extension) => extension.path)).toEqual([
-				join(cwd, ".akramcode", "extensions", "project.ts"),
-				join(userExtDir, "user.ts"),
-			]);
-			expect(globalState[loadCountKey]).toBe(1);
-		});
-
 		it("should keep both extensions loaded when command names collide", async () => {
 			const userExtDir = join(agentDir, "extensions");
 			const projectExtDir = join(cwd, ".akramcode", "extensions");
@@ -497,7 +450,7 @@ Content`,
 			expect(loader.getSystemPrompt()).toBe("You are a helpful assistant.");
 		});
 
-		it("should skip project resources that require trust when project is not trusted", async () => {
+		it("should load project resources", async () => {
 			const akramCodeDir = join(cwd, ".akramcode");
 			const extensionsDir = join(akramCodeDir, "extensions");
 			const skillDir = join(akramCodeDir, "skills", "project-skill");
@@ -511,7 +464,7 @@ Content`,
 			writeFileSync(join(agentDir, "SYSTEM.md"), "Global system prompt.");
 			writeFileSync(join(agentDir, "AGENTS.md"), "Global instructions");
 			writeFileSync(join(cwd, "AGENTS.md"), "Project instructions");
-			writeFileSync(join(extensionsDir, "project.ts"), `throw new Error("should not load");`);
+			writeFileSync(join(extensionsDir, "project.ts"), "export default function() {}");
 			writeFileSync(
 				join(skillDir, "SKILL.md"),
 				`---
@@ -526,21 +479,22 @@ Project skill content`,
 			) as { name: string };
 			themeData.name = "project-theme";
 			writeFileSync(join(themesDir, "project.json"), JSON.stringify(themeData, null, 2));
-			const settingsManager = SettingsManager.create(cwd, agentDir, { projectTrusted: false });
 
-			const loader = new DefaultResourceLoader({ cwd, agentDir, settingsManager });
+			const loader = new DefaultResourceLoader({ cwd, agentDir });
 			await loader.reload();
 
-			expect(loader.getSystemPrompt()).toBe("Global system prompt.");
+			expect(loader.getSystemPrompt()).toBe("Project system prompt.");
 			expect(loader.getAgentsFiles().agentsFiles.some((file) => file.path === join(agentDir, "AGENTS.md"))).toBe(
 				true,
 			);
 			expect(loader.getAgentsFiles().agentsFiles.some((file) => file.path === join(cwd, "AGENTS.md"))).toBe(true);
-			expect(loader.getExtensions().extensions).toHaveLength(0);
+			expect(loader.getExtensions().extensions.map((extension) => extension.path)).toEqual([
+				join(extensionsDir, "project.ts"),
+			]);
 			expect(loader.getExtensions().errors).toEqual([]);
-			expect(loader.getSkills().skills.some((skill) => skill.name === "project-skill")).toBe(false);
-			expect(loader.getPrompts().prompts.some((prompt) => prompt.name === "project")).toBe(false);
-			expect(loader.getThemes().themes.some((theme) => theme.name === "project-theme")).toBe(false);
+			expect(loader.getSkills().skills.some((skill) => skill.name === "project-skill")).toBe(true);
+			expect(loader.getPrompts().prompts.some((prompt) => prompt.name === "project")).toBe(true);
+			expect(loader.getThemes().themes.some((theme) => theme.name === "project-theme")).toBe(true);
 		});
 
 		it("should discover APPEND_SYSTEM.md", async () => {
@@ -1111,7 +1065,7 @@ export default function(akramcode: ExtensionAPI) {
 			expect(loaded).toEqual(["llama"]);
 		});
 
-		it("should load built-in extensions after file extensions with and without trust resolution", async () => {
+		it("should load built-in extensions after file extensions on every reload", async () => {
 			const userExtDir = join(agentDir, "extensions");
 			mkdirSync(userExtDir, { recursive: true });
 			writeFileSync(join(userExtDir, "user.ts"), "export default function() {}");
@@ -1125,7 +1079,7 @@ export default function(akramcode: ExtensionAPI) {
 			});
 			const expected = [join(userExtDir, "user.ts"), "builtin:mcp"];
 
-			await loader.reload({ resolveProjectTrust: async () => true });
+			await loader.reload();
 			expect(loader.getExtensions().extensions.map((extension) => extension.path)).toEqual(expected);
 			await loader.reload();
 			expect(loader.getExtensions().extensions.map((extension) => extension.path)).toEqual(expected);
@@ -1152,7 +1106,7 @@ export default function(akramcode: ExtensionAPI) {
 			expect(loaded).toEqual(["mcp"]);
 		});
 
-		it("should apply project built-in extension overrides after trust resolves", async () => {
+		it("should apply project built-in extension overrides", async () => {
 			writeFileSync(join(agentDir, "settings.json"), JSON.stringify({ extensions: ["-builtin:mcp"] }));
 			mkdirSync(join(cwd, ".akramcode"), { recursive: true });
 			writeFileSync(
@@ -1169,19 +1123,13 @@ export default function(akramcode: ExtensionAPI) {
 					{ name: "llama", builtin: true, factory: () => void loaded.push("llama") },
 				],
 			});
-			await loader.reload({
-				resolveProjectTrust: async ({ extensionsResult }) => {
-					// Built-in extensions wait until project settings are known.
-					expect(extensionsResult.extensions.map((extension) => extension.path)).toEqual(["<inline:plain>"]);
-					return true;
-				},
-			});
+			await loader.reload();
 
 			expect(loader.getExtensions().extensions.map((extension) => extension.path)).toEqual([
 				"builtin:mcp",
 				"<inline:plain>",
 			]);
-			expect(loaded).toEqual(["plain", "mcp"]);
+			expect(loaded).toEqual(["mcp", "plain"]);
 		});
 	});
 

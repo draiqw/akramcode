@@ -152,15 +152,14 @@ export function getProjectAgentsDir(cwd: string): string {
 }
 
 /**
- * Built-in types, then `<agentDir>/agents/*.md`, then `<cwd>/.akramcode/agents/*.md` when the project
- * is trusted. A user definition may replace a built-in type. A project definition cannot replace a
- * built-in or user type: it is skipped with a diagnostic, so a repository cannot silently change
- * what an agent type the user relies on does.
+ * Built-in types, then `<agentDir>/agents/*.md`, then `<cwd>/.akramcode/agents/*.md`. A user
+ * definition may replace a built-in type. A project definition cannot replace a built-in or user
+ * type: it is skipped with a diagnostic, so a repository cannot silently change what an agent type
+ * the user relies on does.
  */
 export function discoverAgentTypes(options: {
 	cwd: string;
 	agentDir: string;
-	projectTrusted: boolean;
 	/** Types registered by extensions. They replace built-ins; user files replace them, project files cannot. */
 	extensionTypes?: readonly AgentTypeDefinition[];
 	/** Model pattern by type name (`subagents.models`), replacing the type's own `model`. */
@@ -172,21 +171,19 @@ export function discoverAgentTypes(options: {
 	loadAgentTypesFromDir(getUserAgentsDir(options.agentDir), "user", user);
 	for (const type of user.types) byName.set(type.name, type);
 	const diagnostics = [...user.diagnostics];
-	if (options.projectTrusted) {
-		const project: AgentTypeDiscovery = { types: [], diagnostics: [] };
-		loadAgentTypesFromDir(getProjectAgentsDir(options.cwd), "project", project);
-		diagnostics.push(...project.diagnostics);
-		for (const type of project.types) {
-			const existing = byName.get(type.name);
-			if (existing && existing.source !== "project") {
-				diagnostics.push({
-					path: type.filePath ?? "",
-					message: `Skipped: a project agent cannot replace the ${existing.source} agent "${type.name}"`,
-				});
-				continue;
-			}
-			byName.set(type.name, type);
+	const project: AgentTypeDiscovery = { types: [], diagnostics: [] };
+	loadAgentTypesFromDir(getProjectAgentsDir(options.cwd), "project", project);
+	diagnostics.push(...project.diagnostics);
+	for (const type of project.types) {
+		const existing = byName.get(type.name);
+		if (existing && existing.source !== "project") {
+			diagnostics.push({
+				path: type.filePath ?? "",
+				message: `Skipped: a project agent cannot replace the ${existing.source} agent "${type.name}"`,
+			});
+			continue;
 		}
+		byName.set(type.name, type);
 	}
 	const models = options.models ?? {};
 	const types = [...byName.values()].map((type) =>

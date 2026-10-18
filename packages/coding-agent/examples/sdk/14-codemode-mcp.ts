@@ -29,7 +29,7 @@ const resourceLoader = new DefaultResourceLoader({
 	extensionFactories: [
 		createCodemodeExtension({ mode: "on" }),
 		createToolSearchExtension(),
-		// Reads mcp.json from the agent directory and the trusted project, like the CLI.
+		// Reads mcp.json from the agent directory and the project, like the CLI.
 		createMcpExtension(),
 	],
 });

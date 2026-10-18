@@ -1035,7 +1035,6 @@ export class DefaultPackageManager implements PackageManager {
 	async install(source: string, options?: { local?: boolean }): Promise<void> {
 		const parsed = this.parseSource(source);
 		const scope: SourceScope = options?.local ? "project" : "user";
-		this.assertProjectTrustedForScope(scope);
 		await this.withProgress("install", source, `Installing ${source}...`, async () => {
 			if (parsed.type === "npm") {
 				await this.installNpm(parsed, scope, false);
@@ -1064,7 +1063,6 @@ export class DefaultPackageManager implements PackageManager {
 	async remove(source: string, options?: { local?: boolean }): Promise<void> {
 		const parsed = this.parseSource(source);
 		const scope: SourceScope = options?.local ? "project" : "user";
-		this.assertProjectTrustedForScope(scope);
 		await this.withProgress("remove", source, `Removing ${source}...`, async () => {
 			if (parsed.type === "npm") {
 				await this.uninstallNpm(parsed, scope);
@@ -1771,12 +1769,6 @@ export class DefaultPackageManager implements PackageManager {
 		return { name, version };
 	}
 
-	private assertProjectTrustedForScope(scope: SourceScope): void {
-		if (scope === "project" && !this.settingsManager.isProjectTrusted()) {
-			throw new Error("Project is not trusted; refusing to access project package storage");
-		}
-	}
-
 	private getNpmCommand(): { command: string; args: string[] } {
 		const configuredCommand = this.settingsManager.getNpmCommand();
 		if (!configuredCommand || configuredCommand.length === 0) {
@@ -2082,7 +2074,6 @@ export class DefaultPackageManager implements PackageManager {
 			return this.getTemporaryDir("npm");
 		}
 		if (scope === "project") {
-			this.assertProjectTrustedForScope(scope);
 			return join(this.cwd, CONFIG_DIR_NAME, "npm");
 		}
 		return join(this.agentDir, "npm");
@@ -2123,7 +2114,6 @@ export class DefaultPackageManager implements PackageManager {
 			return join(this.getTemporaryDir("npm"), "node_modules", source.name);
 		}
 		if (scope === "project") {
-			this.assertProjectTrustedForScope(scope);
 			return join(this.cwd, CONFIG_DIR_NAME, "npm", "node_modules", source.name);
 		}
 		return join(this.agentDir, "npm", "node_modules", source.name);
@@ -2163,7 +2153,6 @@ export class DefaultPackageManager implements PackageManager {
 			return undefined;
 		}
 		if (scope === "project") {
-			this.assertProjectTrustedForScope(scope);
 			return join(this.cwd, CONFIG_DIR_NAME, "git");
 		}
 		return join(this.agentDir, "git");
@@ -2189,7 +2178,6 @@ export class DefaultPackageManager implements PackageManager {
 
 	private getBaseDirForScope(scope: SourceScope): string {
 		if (scope === "project") {
-			this.assertProjectTrustedForScope(scope);
 			return join(this.cwd, CONFIG_DIR_NAME);
 		}
 		if (scope === "user") {
@@ -2451,10 +2439,9 @@ export class DefaultPackageManager implements PackageManager {
 			themes: join(projectBaseDir, "themes"),
 		};
 		const userAgentsSkillsDir = join(getHomeDir(), ".agents", "skills");
-		const projectTrusted = this.settingsManager.isProjectTrusted();
-		const projectAgentsSkillDirs = projectTrusted
-			? collectAncestorAgentsSkillDirs(this.cwd).filter((dir) => resolve(dir) !== resolve(userAgentsSkillsDir))
-			: [];
+		const projectAgentsSkillDirs = collectAncestorAgentsSkillDirs(this.cwd).filter(
+			(dir) => resolve(dir) !== resolve(userAgentsSkillsDir),
+		);
 
 		const addResources = (
 			resourceType: ResourceType,
@@ -2470,25 +2457,23 @@ export class DefaultPackageManager implements PackageManager {
 			}
 		};
 
-		if (projectTrusted) {
-			// Project extensions from .akramcode/
-			addResources(
-				"extensions",
-				collectAutoExtensionEntries(projectDirs.extensions),
-				projectMetadata,
-				projectOverrides.extensions,
-				projectBaseDir,
-			);
+		// Project extensions from .akramcode/
+		addResources(
+			"extensions",
+			collectAutoExtensionEntries(projectDirs.extensions),
+			projectMetadata,
+			projectOverrides.extensions,
+			projectBaseDir,
+		);
 
-			// Project skills from .akramcode/
-			addResources(
-				"skills",
-				collectAutoSkillEntries(projectDirs.skills, "akramcode"),
-				projectMetadata,
-				projectOverrides.skills,
-				projectBaseDir,
-			);
-		}
+		// Project skills from .akramcode/
+		addResources(
+			"skills",
+			collectAutoSkillEntries(projectDirs.skills, "akramcode"),
+			projectMetadata,
+			projectOverrides.skills,
+			projectBaseDir,
+		);
 
 		// Project skills from .agents/ (each with its own baseDir)
 		for (const agentsSkillsDir of projectAgentsSkillDirs) {
@@ -2506,22 +2491,20 @@ export class DefaultPackageManager implements PackageManager {
 			);
 		}
 
-		if (projectTrusted) {
-			addResources(
-				"prompts",
-				collectAutoPromptEntries(projectDirs.prompts),
-				projectMetadata,
-				projectOverrides.prompts,
-				projectBaseDir,
-			);
-			addResources(
-				"themes",
-				collectAutoThemeEntries(projectDirs.themes),
-				projectMetadata,
-				projectOverrides.themes,
-				projectBaseDir,
-			);
-		}
+		addResources(
+			"prompts",
+			collectAutoPromptEntries(projectDirs.prompts),
+			projectMetadata,
+			projectOverrides.prompts,
+			projectBaseDir,
+		);
+		addResources(
+			"themes",
+			collectAutoThemeEntries(projectDirs.themes),
+			projectMetadata,
+			projectOverrides.themes,
+			projectBaseDir,
+		);
 
 		// User extensions from ~/.akramcode/agent/
 		addResources(

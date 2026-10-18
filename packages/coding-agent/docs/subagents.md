@@ -41,9 +41,9 @@ An agent type is a Markdown file with YAML frontmatter. The body is the type's s
 | Location | Scope |
 |---|---|
 | `~/.akramcode/agent/agents/*.md` | User agents, in every project |
-| `.akramcode/agents/*.md` | Project agents, loaded only when the project is [trusted](security.md) |
+| `.akramcode/agents/*.md` | Project agents |
 
-Extensions can add types too (see [Extensions](extensions.md#agent-types)), such as the built-in [`browser`](browser.md) type. A user agent can replace a built-in or extension type with the same name. `subagents.models` in [settings](settings.md) sets the model of any type by name, for example `"subagents": { "models": { "browser": "openai-codex/gpt-6-luna" } }`. A project agent cannot replace a built-in or user agent: it is skipped and reported as a warning, so a repository cannot change what an agent type you rely on does. Project agents are dropped as soon as the project is no longer trusted.
+Extensions can add types too (see [Extensions](extensions.md#agent-types)), such as the built-in [`browser`](browser.md) type. A user agent can replace a built-in or extension type with the same name. `subagents.models` in [settings](settings.md) sets the model of any type by name, for example `"subagents": { "models": { "browser": "openai-codex/gpt-6-luna" } }`. A project agent cannot replace a built-in or user agent: it is skipped and reported as a warning, so a repository cannot change what an agent type you rely on does.
 
 | Field | Required | Description |
 |---|---|---|
@@ -110,7 +110,7 @@ Read the issues you are given, find duplicates and related code, and propose lab
 
 **Create new agent** asks for:
 
-1. the scope: project (`.akramcode/agents`, trusted projects only) or user (`~/.akramcode/agent/agents`);
+1. the scope: project (`.akramcode/agents`) or user (`~/.akramcode/agent/agents`);
 2. the name and description;
 3. the tools, picked from the session's tool list (no selection gives the main agent's tools);
 4. an optional model and thinking level;

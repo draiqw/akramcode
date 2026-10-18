@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- Project trust is removed: project settings, MCP servers, extensions, skills, prompts, themes, agents, workflows, packages, and `SYSTEM.md` load from any folder without asking. `~/.akramcode/agent/trust.json` is no longer read.
+
+### Removed
+
+- The startup trust prompt, `--approve`/`-a` and `--no-approve`/`-na` (also on `install`, `remove`, `update`, `list`, `config`), the `defaultProjectTrust` setting, the `project_trust` extension event, `ctx.isProjectTrusted()`, and the SDK exports `ProjectTrustStore`, `hasTrustRequiringProjectResources`, `SettingsManager.isProjectTrusted()`/`setProjectTrusted()`, and the `projectTrusted` option.
+
 ## [1.0.31] - 2026-10-18
 
 ### Added

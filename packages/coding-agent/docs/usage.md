@@ -2,7 +2,7 @@
 
 Run `akramcode` from the folder you want to work in. AkramCode uses that folder to discover files, instructions, and configuration, and to group saved sessions. If you have not installed AkramCode or chosen a model yet, follow the [Quickstart](quickstart.md).
 
-AkramCode may ask whether you trust the working folder before loading its project resources. See [Project trust](security.md#understand-project-trust).
+AkramCode loads the folder's project resources without asking. See [Security](security.md#project-resources).
 
 <p align="center"><img src="images/interactive-mode.png" alt="AkramCode interactive mode showing a conversation, editor, and status information" width="750"></p>
 

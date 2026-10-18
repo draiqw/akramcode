@@ -53,7 +53,6 @@ import { spawn } from "child_process";
 import {
 	APP_NAME,
 	APP_TITLE,
-	CONFIG_DIR_NAME,
 	detectInstallMethod,
 	getAgentDir,
 	getAuthPath,
@@ -83,7 +82,6 @@ import type {
 	ExtensionUIDialogOptions,
 	ExtensionWidgetOptions,
 	MarkdownTransformer,
-	ProjectTrustContext,
 	UserBashEventResult,
 	WorkingIndicatorOptions,
 } from "../../core/extensions/index.ts";
@@ -108,7 +106,6 @@ import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
-import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
 import {
 	collectUsageRecords,
 	filterUsagePeriod,
@@ -422,8 +419,6 @@ export interface InteractiveModeOptions {
 	startupDiagnostics?: AgentSessionRuntimeDiagnostic[];
 	/** Warning message if session model couldn't be restored */
 	modelFallbackMessage?: string;
-	/** Cwd to trust after reload if it gained a .akramcode directory during this implicitly trusted session. */
-	autoTrustOnReloadCwd?: string;
 	/** Initial message to send on startup (can include @file content) */
 	initialMessage?: string;
 	/** Images to attach to the initial message */
@@ -578,7 +573,6 @@ export class InteractiveMode {
 	private readonly onRightClickPaste = (): void => {
 		void this.handleRightClickPaste();
 	};
-	private autoTrustOnReloadCwd: string | undefined;
 	private themeController: InteractiveThemeController;
 
 	// Convenience accessors
@@ -600,7 +594,6 @@ export class InteractiveMode {
 		setCapabilityOverrides(this.settingsManager.getTerminalCapabilityOverrides());
 		const tuiMode = options.tuiMode ?? "fullscreen";
 		this.options = { ...options, tuiMode };
-		this.autoTrustOnReloadCwd = options.autoTrustOnReloadCwd;
 		this.runtimeHost.setBeforeSessionInvalidate(() => {
 			this.resetExtensionUI();
 		});
@@ -2041,7 +2034,6 @@ export class InteractiveMode {
 			scopedModels: this.session.scopedModels,
 			thinkingLevel: this.session.thinkingLevel,
 			isIdle: () => this.session.isIdle,
-			isProjectTrusted: () => this.settingsManager.isProjectTrusted(),
 			signal: this.session.agent.signal,
 			abort: () => {
 				this.restoreQueuedMessagesToEditor({ abort: true });
@@ -2417,21 +2409,6 @@ export class InteractiveMode {
 	/**
 	 * Create the ExtensionUIContext for extensions.
 	 */
-	private createProjectTrustContext(cwd: string): ProjectTrustContext {
-		const ui = this.createExtensionUIContext();
-		return {
-			cwd,
-			mode: "tui",
-			hasUI: true,
-			ui: {
-				select: ui.select,
-				confirm: ui.confirm,
-				input: ui.input,
-				notify: ui.notify,
-			},
-		};
-	}
-
 	private createExtensionUIContext(): ExtensionUIContext {
 		return {
 			select: (title, options, opts) => this.showExtensionSelector(title, options, opts),
@@ -4043,7 +4020,6 @@ export class InteractiveMode {
 			updateFooter: true,
 			populateHistory: true,
 		});
-		this.renderProjectTrustWarningIfNeeded();
 
 		// Show compaction info if session was compacted
 		const allEntries = this.sessionManager.getEntries();
@@ -4052,27 +4028,6 @@ export class InteractiveMode {
 			const times = compactionCount === 1 ? "1 time" : `${compactionCount} times`;
 			this.showStatus(`Session compacted ${times}`);
 		}
-	}
-
-	private renderProjectTrustWarningIfNeeded(): void {
-		if (this.settingsManager.isProjectTrusted() || !hasTrustRequiringProjectResources(this.sessionManager.getCwd())) {
-			return;
-		}
-
-		if (this.chatContainer.children.length > 0) {
-			this.chatContainer.addChild(new Spacer(1));
-		}
-		this.chatContainer.addChild(
-			new ThemedText(
-				() =>
-					theme.fg(
-						"warning",
-						`This project is not trusted. Project ${CONFIG_DIR_NAME} resources and packages are ignored. Start akramcode with --approve to load them.`,
-					),
-				1,
-				0,
-			),
-		);
 	}
 
 	async getUserInput(): Promise<UserInput> {
@@ -4866,32 +4821,6 @@ export class InteractiveMode {
 		this.footerDataProvider.setAvailableProviderCount(uniqueProviders.size);
 	}
 
-	private maybeSaveImplicitProjectTrustAfterReload(): boolean {
-		const cwd = this.sessionManager.getCwd();
-		if (this.autoTrustOnReloadCwd !== cwd) {
-			return false;
-		}
-		if (!this.settingsManager.isProjectTrusted() || !hasTrustRequiringProjectResources(cwd)) {
-			return false;
-		}
-
-		const trustStore = new ProjectTrustStore(this.runtimeHost.services.agentDir);
-		try {
-			if (trustStore.get(cwd) !== null) {
-				this.autoTrustOnReloadCwd = undefined;
-				return false;
-			}
-			trustStore.set(cwd, true);
-			this.autoTrustOnReloadCwd = undefined;
-			return true;
-		} catch (error) {
-			this.showWarning(
-				`Could not save project trust after reload: ${error instanceof Error ? error.message : String(error)}`,
-			);
-			return false;
-		}
-	}
-
 	private showModelSelector(initialSearchInput?: string): void {
 		this.showSelector((done) => {
 			const selectModel = async (model: Model<any>, persist: boolean) => {
@@ -5017,7 +4946,6 @@ export class InteractiveMode {
 		try {
 			const result = await this.runtimeHost.switchSession(sessionPath, {
 				withSession: options?.withSession,
-				projectTrustContextFactory: (cwd) => this.createProjectTrustContext(cwd),
 			});
 			if (result.cancelled) {
 				return result;
@@ -5034,7 +4962,6 @@ export class InteractiveMode {
 				const result = await this.runtimeHost.switchSession(sessionPath, {
 					cwdOverride: selectedCwd,
 					withSession: options?.withSession,
-					projectTrustContextFactory: (cwd) => this.createProjectTrustContext(cwd),
 				});
 				if (result.cancelled) {
 					return result;
@@ -5662,16 +5589,11 @@ export class InteractiveMode {
 				force: false,
 				showDiagnosticsWhenQuiet: true,
 			});
-			const savedImplicitProjectTrust = this.maybeSaveImplicitProjectTrustAfterReload();
 			const modelsJsonError = this.session.modelRuntime.getError();
 			if (modelsJsonError) {
 				this.showError(`models.json error: ${modelsJsonError}`);
 			}
-			this.showStatus(
-				savedImplicitProjectTrust
-					? "Reloaded keybindings, extensions, skills, prompts, themes, and context files; saved project trust"
-					: "Reloaded keybindings, extensions, skills, prompts, themes, and context files",
-			);
+			this.showStatus("Reloaded keybindings, extensions, skills, prompts, themes, and context files");
 			dismissReloadBox(this.editor as Component);
 			reloadBoxDismissed = true;
 		} catch (error) {

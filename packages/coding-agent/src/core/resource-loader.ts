@@ -46,10 +46,6 @@ export interface ResourceExtensionPaths {
 	themePaths?: Array<{ path: string; metadata: PathMetadata }>;
 }
 
-export interface ResourceLoaderReloadOptions {
-	resolveProjectTrust?: (input: { extensionsResult: LoadExtensionsResult }) => Promise<boolean>;
-}
-
 const HOST_PROVIDED_EXTENSION_PACKAGES = new Set([
 	"@akramcode/agent-core",
 	"@akramcode/ai",
@@ -157,7 +153,7 @@ export interface ResourceLoader {
 	getAppendSystemPrompt(): string[];
 	getAppendSystemPromptSources(): Array<{ path: string }>;
 	extendResources(paths: ResourceExtensionPaths): void;
-	reload(options?: ResourceLoaderReloadOptions): Promise<void>;
+	reload(): Promise<void>;
 }
 
 function resolvePromptInput(input: string | undefined, description: string): string | undefined {
@@ -479,29 +475,13 @@ export class DefaultResourceLoader implements ResourceLoader {
 		}
 	}
 
-	async loadProjectTrustExtensions(): Promise<LoadExtensionsResult> {
-		// Force untrusted project settings for the bootstrap pass. This keeps project-local
-		// extensions/packages out while still loading user/global and temporary CLI extensions.
-		this.settingsManager.setProjectTrusted(false);
-		await this.settingsManager.reload();
-		return this.loadCurrentExtensionSet({ includeInlineFactories: true });
-	}
-
-	async reload(options?: ResourceLoaderReloadOptions): Promise<void> {
+	async reload(): Promise<void> {
 		resetTimings("extensions");
 
 		if (this.loaded) {
 			clearExtensionCache();
 		}
 
-		let preTrustExtensions: LoadExtensionsResult | undefined;
-		if (options?.resolveProjectTrust) {
-			preTrustExtensions = await this.loadProjectTrustExtensions();
-			const projectTrusted = await options.resolveProjectTrust({ extensionsResult: preTrustExtensions });
-			this.settingsManager.setProjectTrusted(projectTrusted);
-		}
-
-		// reload() preserves SettingsManager.projectTrusted and reloads settings for that trust state.
 		await this.settingsManager.reload();
 		const resolvedPaths = await this.packageManager.resolve();
 		const cliExtensionPaths = await this.packageManager.resolveExtensionSources(this.additionalExtensionPaths, {
@@ -556,7 +536,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 			: this.mergePaths(cliEnabledExtensions, enabledExtensions);
 
 		const packageWarnings = collectExtensionPackageWarnings(extensionPaths, metadataByPath);
-		const extensionsResult = await this.loadFinalExtensionSet(extensionPaths, preTrustExtensions);
+		const extensionsResult = await this.loadFinalExtensionSet(extensionPaths);
 		mergeExtensionWarnings(extensionsResult, packageWarnings);
 		for (const p of this.additionalExtensionPaths) {
 			if (isLocalPath(p)) {
@@ -650,52 +630,17 @@ export class DefaultResourceLoader implements ResourceLoader {
 		this.loaded = true;
 	}
 
-	private async loadCurrentExtensionSet(options: { includeInlineFactories: boolean }): Promise<LoadExtensionsResult> {
-		const resolvedPaths = await this.packageManager.resolve();
-		const cliExtensionPaths = await this.packageManager.resolveExtensionSources(this.additionalExtensionPaths, {
-			temporary: true,
-		});
-		const enabledExtensions = resolvedPaths.extensions.filter((r) => r.enabled).map((r) => r.path);
-		const cliEnabledExtensions = cliExtensionPaths.extensions.filter((r) => r.enabled).map((r) => r.path);
-		// Built-in extensions wait for the final pass: project settings can disable them, and a loaded
-		// extension cannot be unloaded.
-		const extensionPaths = (
-			this.noExtensions ? cliEnabledExtensions : this.mergePaths(cliEnabledExtensions, enabledExtensions)
-		).filter((path) => !path.startsWith(BUILTIN_PATH_PREFIX));
-		const metadataByPath = new Map(
-			[...resolvedPaths.extensions, ...cliExtensionPaths.extensions].map((resource) => [
-				resource.path,
-				resource.metadata,
-			]),
-		);
-		const packageWarnings = collectExtensionPackageWarnings(extensionPaths, metadataByPath);
-		const extensionsResult = await loadExtensionsCached(extensionPaths, this.cwd, this.eventBus);
-		mergeExtensionWarnings(extensionsResult, packageWarnings);
-		if (!options.includeInlineFactories) {
-			return extensionsResult;
-		}
-
-		const inlineExtensions = await this.loadExtensionFactories(extensionsResult.runtime);
-		extensionsResult.extensions.push(...inlineExtensions.extensions);
-		extensionsResult.errors.push(...inlineExtensions.errors);
-		const replacementWarnings: Array<{ path: string; warning: string }> = [];
-		extensionsResult.extensions = omitReplacedExtensions(extensionsResult.extensions, replacementWarnings);
-		mergeExtensionWarnings(extensionsResult, replacementWarnings);
-		return extensionsResult;
-	}
-
 	private resolveExtensionLoadPath(path: string): string {
 		return isSyntheticPath(path) ? path : resolvePath(path, this.cwd, { normalizeUnicodeSpaces: true });
 	}
 
 	/** Load extension paths: files from disk and `builtin:<name>` paths from the built-in extensions. */
-	private async loadExtensionPaths(paths: string[], runtime?: ExtensionRuntime): Promise<LoadExtensionsResult> {
+	private async loadExtensionPaths(paths: string[]): Promise<LoadExtensionsResult> {
 		const isBuiltinPath = (path: string) => path.startsWith(BUILTIN_PATH_PREFIX);
 		const result = await loadExtensionsCached(
 			paths.filter((path) => !isBuiltinPath(path)),
 			this.cwd,
 			this.eventBus,
-			runtime,
 		);
 		for (const path of paths.filter(isBuiltinPath)) {
 			const builtin = this.builtinExtensions.get(path.slice(BUILTIN_PATH_PREFIX.length));
@@ -721,33 +666,10 @@ export class DefaultResourceLoader implements ResourceLoader {
 		return result;
 	}
 
-	private async loadFinalExtensionSet(
-		extensionPaths: string[],
-		preTrustExtensions: LoadExtensionsResult | undefined,
-	): Promise<LoadExtensionsResult> {
-		// Without a pre-trust pass nothing is preloaded, and inline extensions load here.
-		const preloaded = preTrustExtensions?.extensions ?? [];
-		const preloadedByPath = new Map(
-			preloaded
-				.filter((extension) => !extension.path.startsWith("<inline:"))
-				.map((extension) => [extension.resolvedPath, extension]),
-		);
-		const failedPreloadPaths = new Set(
-			(preTrustExtensions?.errors ?? []).map((error) => this.resolveExtensionLoadPath(error.path)),
-		);
-		const remainingPaths = extensionPaths.filter((path) => {
-			const resolvedPath = this.resolveExtensionLoadPath(path);
-			return !preloadedByPath.has(resolvedPath) && !failedPreloadPaths.has(resolvedPath);
-		});
-		const remainingExtensions = await this.loadExtensionPaths(remainingPaths, preTrustExtensions?.runtime);
-		const loadedByPath = new Map(preloadedByPath);
-		for (const extension of remainingExtensions.extensions) {
-			loadedByPath.set(extension.resolvedPath, extension);
-		}
-
-		const inlineExtensions = preTrustExtensions
-			? { extensions: preloaded.filter((extension) => extension.path.startsWith("<inline:")), errors: [] }
-			: await this.loadExtensionFactories(remainingExtensions.runtime);
+	private async loadFinalExtensionSet(extensionPaths: string[]): Promise<LoadExtensionsResult> {
+		const pathExtensions = await this.loadExtensionPaths(extensionPaths);
+		const loadedByPath = new Map(pathExtensions.extensions.map((extension) => [extension.resolvedPath, extension]));
+		const inlineExtensions = await this.loadExtensionFactories(pathExtensions.runtime);
 		const orderedExtensions = extensionPaths
 			.map((path) => loadedByPath.get(this.resolveExtensionLoadPath(path)))
 			.filter((extension): extension is Extension => extension !== undefined);
@@ -756,9 +678,9 @@ export class DefaultResourceLoader implements ResourceLoader {
 		const replacementWarnings: Array<{ path: string; warning: string }> = [];
 		const extensionsResult: LoadExtensionsResult = {
 			extensions: omitReplacedExtensions(orderedExtensions, replacementWarnings),
-			errors: [...(preTrustExtensions?.errors ?? []), ...remainingExtensions.errors, ...inlineExtensions.errors],
-			warnings: [...(preTrustExtensions?.warnings ?? []), ...(remainingExtensions.warnings ?? [])],
-			runtime: remainingExtensions.runtime,
+			errors: [...pathExtensions.errors, ...inlineExtensions.errors],
+			warnings: pathExtensions.warnings ?? [],
+			runtime: pathExtensions.runtime,
 		};
 		mergeExtensionWarnings(extensionsResult, replacementWarnings);
 		this.addExtensionConflictDiagnostics(extensionsResult);
@@ -1185,7 +1107,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 
 	private discoverSystemPromptFile(): string | undefined {
 		const projectPath = join(this.cwd, CONFIG_DIR_NAME, "SYSTEM.md");
-		if (this.settingsManager.isProjectTrusted() && existsSync(projectPath)) {
+		if (existsSync(projectPath)) {
 			return projectPath;
 		}
 
@@ -1199,7 +1121,7 @@ export class DefaultResourceLoader implements ResourceLoader {
 
 	private discoverAppendSystemPromptFile(): string | undefined {
 		const projectPath = join(this.cwd, CONFIG_DIR_NAME, "APPEND_SYSTEM.md");
-		if (this.settingsManager.isProjectTrusted() && existsSync(projectPath)) {
+		if (existsSync(projectPath)) {
 			return projectPath;
 		}
 

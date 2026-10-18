@@ -436,18 +436,14 @@ describe("AgentSession subagents and background tasks", () => {
 		expect(details.activity).toEqual(["mcp__gh__issues {}"]);
 	});
 
-	it("lists project agents only while the project is trusted", async () => {
+	it("lists project agents", async () => {
 		const harness = await setup();
 		const projectAgents = join(harness.tempDir, ".akramcode", "agents");
 		mkdirSync(projectAgents, { recursive: true });
 		writeFileSync(join(projectAgents, "proj.md"), "---\nname: proj\ndescription: Project agent\n---\nDo it.\n");
 		const names = () => harness.session.subagents?.listTypes().types.map((type) => type.name);
-		harness.settingsManager.setProjectTrusted(true);
 		harness.session.subagents?.reload();
-		expect(names()).toContain("proj");
-		// Revoking trust drops project agents without a reload.
-		harness.settingsManager.setProjectTrusted(false);
-		expect(names()).toEqual(["general-purpose", "explore"]);
+		expect(names()).toEqual(["general-purpose", "explore", "proj"]);
 	});
 
 	it("runs a background agent and notifies the session with its result", async () => {

@@ -156,8 +156,7 @@ export function createWorkflowsExtension(options: WorkflowsExtensionOptions = {}
 	return (akramcode: ExtensionAPI) => {
 		let toolRegistered = false;
 
-		const discover = (ctx: ExtensionContext) =>
-			discoverWorkflows({ cwd: ctx.cwd, agentDir: options.agentDir, projectTrusted: ctx.isProjectTrusted() });
+		const discover = (ctx: ExtensionContext) => discoverWorkflows({ cwd: ctx.cwd, agentDir: options.agentDir });
 		// MCP servers declare their own annotations, so their read-only claims are not trusted: a server
 		// could mark a writing tool read-only to skip the confirmation and run during dry runs.
 		const getAnnotations = (name: string): ToolAnnotations | undefined => {

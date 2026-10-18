@@ -168,7 +168,7 @@ describe("akramcode mcp", () => {
 
 	it("adds and removes project servers", async () => {
 		const added = await run(["add", "-l", "local", "--", "node", "server.js"], undefined);
-		expect(added.output).toContain("The project is not trusted");
+		expect(added.output).toContain('Added project MCP server "local"');
 		const projectConfig = join(added.agentDir, ".akramcode", "mcp.json");
 		expect(readConfig(projectConfig)).toEqual({ mcpServers: { local: { command: "node", args: ["server.js"] } } });
 

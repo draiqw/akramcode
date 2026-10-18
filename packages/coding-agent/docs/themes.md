@@ -129,7 +129,7 @@ If `export` colors are omitted, AkramCode derives HTML page and panel background
 
 ## Load a theme from a project or package
 
-Place a project theme in `.akramcode/themes/`. Project themes load only after [project trust](security.md#understand-project-trust) is granted.
+Place a project theme in `.akramcode/themes/`.
 
 You can also load theme files and directories through the `themes` setting or distribute them in a AkramCode package. See [Configuration](configuration.md), [Settings](settings.md#resources), and [AkramCode Packages](packages.md).
 

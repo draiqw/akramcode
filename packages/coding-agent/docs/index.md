@@ -36,4 +36,4 @@ For platform-specific help, see [Terminal Setup](terminal-setup.md), [tmux](tmux
 
 ## Work safely
 
-AkramCode's tools and extensions run with the permissions of the AkramCode process. Project trust controls which project resources AkramCode loads, but it does not sandbox tool calls. Review [Security](security.md) before using untrusted files, repositories, extensions, or unattended automation.
+AkramCode's tools and extensions run with the permissions of the AkramCode process. Project resources load without asking, and tool calls are not sandboxed. Review [Security](security.md) before using untrusted files, repositories, extensions, or unattended automation.

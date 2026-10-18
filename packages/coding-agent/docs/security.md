@@ -2,9 +2,9 @@
 
 Treat model-generated commands and code as untrusted. AkramCode can read, change, and execute files with the permissions of the account that started it, and it does not ask for approval before every tool call. It asks only before [commands that cannot be undone](#commands-that-always-ask). Extensions, package installers, language servers, and other child processes run with those same permissions unless an operating-system or virtualization boundary restricts them.
 
-Files, comments, instructions, command output, and model responses can steer the model through prompt injection. Project trust controls which project resources load at startup, but it does not make that content or the resulting actions safe.
+Files, comments, instructions, command output, and model responses can steer the model through prompt injection.
 
-Safety comes from limiting the files, credentials, processes, and network services AkramCode can access and affect if a generated action is wrong or hostile. Watching the transcript, using project trust, and reviewing changes do not create a security boundary.
+Safety comes from limiting the files, credentials, processes, and network services AkramCode can access and affect if a generated action is wrong or hostile. Watching the transcript and reviewing changes do not create a security boundary.
 
 ## Choose how to run AkramCode
 
@@ -34,64 +34,19 @@ It applies to every `bash` call, including calls made by subagents, codemode scr
 
 The check matches command text: line continuations are joined, and quotes and backslashes are ignored, so `r''m` and `bash -c "rm x"` ask too. A program that deletes files on its own, such as a Python script, is not caught. It reduces accidents; it is not a security boundary.
 
-<a id="project-trust"></a>
+<a id="project-resources"></a>
 
-## Understand project trust
+## Project resources load without asking
 
-Project trust controls whether AkramCode loads most settings and resources supplied by a working folder. It prevents a folder from silently loading executable extensions before you approve it.
+AkramCode loads everything a working folder supplies, without a prompt:
 
-Project trust is not a complete startup boundary. AkramCode reads the project `sessionDir` setting while selecting or creating a session, before it resolves project trust. Declining trust prevents the remaining project settings and protected resources from loading, but it cannot undo that initial session-directory lookup.
-
-Project trust does not limit what tool calls can access or affect. After AkramCode starts, enabled tools still use the operating-system permissions of the AkramCode process. Instructions and other content in the folder can also influence the model.
-
-### Resources protected by project trust
-
-AkramCode requires a project-trust decision when it finds any of these resources from the current working directory:
-
-- `.akramcode/settings.json`
-- `.akramcode/mcp.json`
-- `.akramcode/extensions`, `.akramcode/skills`, `.akramcode/prompts`, or `.akramcode/themes`
-- `.akramcode/SYSTEM.md` or `.akramcode/APPEND_SYSTEM.md`
+- `.akramcode/settings.json` and `.akramcode/mcp.json`
+- extensions, skills, prompt templates, themes, agents, workflows, `SYSTEM.md`, and `APPEND_SYSTEM.md` under `.akramcode`
 - project `.agents/skills` in the current directory or an ancestor directory
+- packages configured in project settings, which are installed when missing
+- context files such as `AGENTS.md` and `CLAUDE.md`
 
-A bare `.akramcode` directory does not require project trust.
-
-Granting project trust allows AkramCode to load:
-
-- project settings
-- project MCP servers from `.akramcode/mcp.json`
-- extensions, skills, prompt templates, themes, and system-prompt files under `.akramcode`
-- missing packages configured through project settings
-- project-local and project-package extensions
-
-Declining project trust skips those protected resources, except for the initial `sessionDir` lookup described above.
-
-Context files such as `AGENTS.override.md`, `AGENTS.md`, and `CLAUDE.md` load regardless of project trust unless you disable context loading. Treat instructions in a folder as untrusted input even when you decline project trust.
-
-### How AkramCode chooses a trust decision
-
-A command-line `--approve` or `--no-approve` override applies first. When protected resources exist and there is no command-line override:
-
-1. User-level and command-line extensions can handle the `project_trust` event. The first extension that returns yes or no owns the decision.
-2. If no extension decides, AkramCode looks for a saved decision for the current directory or one of its parents. The closest decision applies.
-3. If no saved decision applies, AkramCode follows the global `defaultProjectTrust` setting, whose default is `"ask"`.
-
-Saved decisions use canonical directory paths and live in:
-
-```text
-~/.akramcode/agent/trust.json
-```
-
-AkramCode saves the decision you make at the startup prompt. To change it later, edit or delete the project's entry in that file.
-
-### Project trust without an interactive prompt
-
-Print, JSON, and RPC modes cannot show the built-in trust prompt. If no command-line override, extension, or saved decision applies:
-
-- `defaultProjectTrust: "always"` loads protected project resources.
-- `defaultProjectTrust: "ask"` or `"never"` skips them.
-
-Use `--approve` or `--no-approve` when an automated run needs an explicit one-time decision.
+Project extensions and packages run code in the AkramCode process, and project MCP servers can start commands. Start AkramCode only in folders whose `.akramcode` and `.agents` contents you accept, or run it in an [isolated environment](containerization.md).
 
 ## Reduce impact and improve recovery
 

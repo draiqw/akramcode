@@ -8,6 +8,7 @@ import { APP_NAME, CONFIG_DIR_NAME, ENV_AGENT_DIR, ENV_SESSION_DIR } from "../co
 import type { ExtensionFlag } from "../core/extensions/types.ts";
 
 export type Mode = "text" | "json" | "rpc";
+export type AppMode = "interactive" | "print" | "json" | "rpc";
 
 export interface Args {
 	provider?: string;
@@ -49,7 +50,6 @@ export interface Args {
 	listModels?: string | true;
 	offline?: boolean;
 	verbose?: boolean;
-	projectTrustOverride?: boolean;
 	messages: string[];
 	fileArgs: string[];
 	/** Unknown flags (potentially extension flags) - map of flag name to value */
@@ -217,10 +217,6 @@ export function parseArgs(args: string[]): Args {
 			}
 		} else if (arg === "--verbose") {
 			result.verbose = true;
-		} else if (arg === "--approve" || arg === "-a") {
-			result.projectTrustOverride = true;
-		} else if (arg === "--no-approve" || arg === "-na") {
-			result.projectTrustOverride = false;
 		} else if (arg === "--offline") {
 			result.offline = true;
 		} else if (arg.startsWith("@")) {
@@ -316,8 +312,6 @@ ${chalk.bold("Options:")}
   --export <file>                Export session file to HTML and exit
   --list-models [search]         List available models (with optional fuzzy search)
   --verbose                      Force verbose startup (overrides quietStartup setting)
-  --approve, -a                  Trust project-local files for this run
-  --no-approve, -na              Ignore project-local files for this run
   --offline                      Disable startup network operations (same as AKRAMCODE_OFFLINE=1)
   --                             End option parsing; treat remaining arguments as messages/files
   --help, -h                     Show this help

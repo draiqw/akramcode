@@ -517,12 +517,7 @@ export default function (akramcode: ExtensionAPI) {
 				};
 			}
 
-			if (
-				(agentScope === "project" || agentScope === "both") &&
-				confirmProjectAgents &&
-				ctx.hasUI &&
-				!ctx.isProjectTrusted()
-			) {
+			if ((agentScope === "project" || agentScope === "both") && confirmProjectAgents && ctx.hasUI) {
 				const requestedAgentNames = new Set<string>();
 				if (params.chain) for (const step of params.chain) requestedAgentNames.add(step.agent);
 				if (params.tasks) for (const t of params.tasks) requestedAgentNames.add(t.agent);
@@ -537,7 +532,7 @@ export default function (akramcode: ExtensionAPI) {
 					const dir = discovery.projectAgentsDir ?? "(unknown)";
 					const ok = await ctx.ui.confirm(
 						"Run project-local agents?",
-						`Agents: ${names}\nSource: ${dir}\n\nProject agents are repo-controlled. Only continue for trusted repositories.`,
+						`Agents: ${names}\nSource: ${dir}\n\nProject agents are repo-controlled.`,
 					);
 					if (!ok)
 						return {

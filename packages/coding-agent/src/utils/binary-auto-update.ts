@@ -1,5 +1,5 @@
+import type { AppMode } from "../cli/args.ts";
 import type { InstallMethod } from "../config.ts";
-import type { AppMode } from "../core/project-trust.ts";
 import {
 	applyStagedBinaryRelease,
 	assertReleaseInstallDir,

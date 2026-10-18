@@ -17,7 +17,6 @@ import { ENV_AGENT_DIR, PACKAGE_NAME, VERSION } from "../src/config.ts";
 import { ModelRuntime } from "../src/core/model-runtime.ts";
 import { DefaultPackageManager, type ResolvedPaths } from "../src/core/package-manager.ts";
 import { InMemorySettingsStorage, SettingsManager } from "../src/core/settings-manager.ts";
-import { ProjectTrustStore } from "../src/core/trust-manager.ts";
 import { main } from "../src/main.ts";
 import { ConfigSelectorComponent } from "../src/modes/interactive/components/config-selector.ts";
 import { initTheme } from "../src/modes/interactive/theme/theme.ts";
@@ -218,7 +217,7 @@ if (process.platform !== "win32") fs.chmodSync(akramCodePath, 0o755);
 		expect(removedSettings.packages ?? []).toHaveLength(0);
 	});
 
-	it("skips untrusted project package settings", async () => {
+	it("lists project packages", async () => {
 		mkdirSync(join(projectDir, ".akramcode"), { recursive: true });
 		writeFileSync(
 			join(projectDir, ".akramcode", "settings.json"),
@@ -230,26 +229,6 @@ if (process.platform !== "win32") fs.chmodSync(akramCodePath, 0o755);
 			await expect(main(["list"])).resolves.toBeUndefined();
 
 			const stdout = logSpy.mock.calls.map(([message]) => String(message)).join("\n");
-			expect(stdout).toContain("No packages installed.");
-			expect(stdout).not.toContain("Project packages:");
-		} finally {
-			logSpy.mockRestore();
-		}
-	});
-
-	it("uses remembered project trust for list", async () => {
-		mkdirSync(join(projectDir, ".akramcode"), { recursive: true });
-		writeFileSync(
-			join(projectDir, ".akramcode", "settings.json"),
-			JSON.stringify({ packages: ["npm:@project/pkg"] }),
-		);
-		new ProjectTrustStore(agentDir).set(projectDir, true);
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-
-		try {
-			await expect(main(["list"])).resolves.toBeUndefined();
-
-			const stdout = logSpy.mock.calls.map(([message]) => String(message)).join("\n");
 			expect(stdout).toContain("Project packages:");
 			expect(stdout).toContain("npm:@project/pkg");
 			expect(stdout).not.toContain("No packages installed.");
@@ -259,102 +238,8 @@ if (process.platform !== "win32") fs.chmodSync(akramCodePath, 0o755);
 		}
 	});
 
-	it("overrides remembered trust for list with --no-approve", async () => {
+	it("updates project packages", async () => {
 		mkdirSync(join(projectDir, ".akramcode"), { recursive: true });
-		writeFileSync(
-			join(projectDir, ".akramcode", "settings.json"),
-			JSON.stringify({ packages: ["npm:@project/pkg"] }),
-		);
-		new ProjectTrustStore(agentDir).set(projectDir, true);
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-
-		try {
-			await expect(main(["list", "--no-approve"])).resolves.toBeUndefined();
-
-			const stdout = logSpy.mock.calls.map(([message]) => String(message)).join("\n");
-			expect(stdout).toContain("No packages installed.");
-			expect(stdout).not.toContain("Project packages:");
-			expect(process.exitCode).toBeUndefined();
-		} finally {
-			logSpy.mockRestore();
-		}
-	});
-
-	it("approves project trust for list with --approve", async () => {
-		mkdirSync(join(projectDir, ".akramcode"), { recursive: true });
-		writeFileSync(
-			join(projectDir, ".akramcode", "settings.json"),
-			JSON.stringify({ packages: ["npm:@project/pkg"] }),
-		);
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-
-		try {
-			await expect(main(["list", "--approve"])).resolves.toBeUndefined();
-
-			const stdout = logSpy.mock.calls.map(([message]) => String(message)).join("\n");
-			expect(stdout).toContain("Project packages:");
-			expect(stdout).toContain("npm:@project/pkg");
-			expect(stdout).not.toContain("No packages installed.");
-			expect(process.exitCode).toBeUndefined();
-		} finally {
-			logSpy.mockRestore();
-		}
-	});
-
-	it("uses default project trust for list", async () => {
-		mkdirSync(join(projectDir, ".akramcode"), { recursive: true });
-		writeFileSync(join(agentDir, "settings.json"), JSON.stringify({ defaultProjectTrust: "always" }));
-		writeFileSync(
-			join(projectDir, ".akramcode", "settings.json"),
-			JSON.stringify({ packages: ["npm:@project/pkg"] }),
-		);
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-
-		try {
-			await expect(main(["list"])).resolves.toBeUndefined();
-
-			const stdout = logSpy.mock.calls.map(([message]) => String(message)).join("\n");
-			expect(stdout).toContain("Project packages:");
-			expect(stdout).toContain("npm:@project/pkg");
-			expect(stdout).not.toContain("No packages installed.");
-			expect(process.exitCode).toBeUndefined();
-		} finally {
-			logSpy.mockRestore();
-		}
-	});
-
-	it("uses project_trust extensions for package commands", async () => {
-		mkdirSync(join(projectDir, ".akramcode"), { recursive: true });
-		writeFileSync(
-			join(projectDir, ".akramcode", "settings.json"),
-			JSON.stringify({ packages: ["npm:@project/pkg"] }),
-		);
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-
-		try {
-			await expect(
-				main(["list"], {
-					extensionFactories: [
-						(akramcode) => {
-							akramcode.on("project_trust", () => ({ trusted: "yes" }));
-						},
-					],
-				}),
-			).resolves.toBeUndefined();
-
-			const stdout = logSpy.mock.calls.map(([message]) => String(message)).join("\n");
-			expect(stdout).toContain("Project packages:");
-			expect(stdout).toContain("npm:@project/pkg");
-			expect(stdout).not.toContain("No packages installed.");
-			expect(process.exitCode).toBeUndefined();
-		} finally {
-			logSpy.mockRestore();
-		}
-	});
-
-	it("does not prompt or ask extensions for project trust during update", async () => {
-		mkdirSync(join(projectDir, ".akramcode"), { recursive: true });
-		writeFileSync(join(agentDir, "settings.json"), JSON.stringify({ defaultProjectTrust: "always" }));
 		const fakeNpmPath = join(tempDir, "fake-project-npm.cjs");
 		const recordPath = join(tempDir, "project-update.json");
 		writeFileSync(
@@ -365,44 +250,6 @@ if (process.platform !== "win32") fs.chmodSync(akramCodePath, 0o755);
 			join(projectDir, ".akramcode", "settings.json"),
 			JSON.stringify({ packages: ["npm:fake-package"], npmCommand: [originalExecPath, fakeNpmPath] }),
 		);
-		let projectTrustCalled = false;
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-
-		try {
-			await expect(
-				main(["update", "--extensions"], {
-					extensionFactories: [
-						(akramcode) => {
-							akramcode.on("project_trust", () => {
-								projectTrustCalled = true;
-								return { trusted: "yes" };
-							});
-						},
-					],
-				}),
-			).resolves.toBeUndefined();
-
-			expect(projectTrustCalled).toBe(false);
-			expect(existsSync(recordPath)).toBe(false);
-			expect(process.exitCode).toBeUndefined();
-		} finally {
-			logSpy.mockRestore();
-		}
-	});
-
-	it("uses saved project trust during update", async () => {
-		mkdirSync(join(projectDir, ".akramcode"), { recursive: true });
-		const fakeNpmPath = join(tempDir, "fake-trusted-project-npm.cjs");
-		const recordPath = join(tempDir, "trusted-project-update.json");
-		writeFileSync(
-			fakeNpmPath,
-			`const fs=require("node:fs");fs.writeFileSync(${JSON.stringify(recordPath)},JSON.stringify(process.argv.slice(2)));`,
-		);
-		writeFileSync(
-			join(projectDir, ".akramcode", "settings.json"),
-			JSON.stringify({ packages: ["npm:fake-package"], npmCommand: [originalExecPath, fakeNpmPath] }),
-		);
-		new ProjectTrustStore(agentDir).set(projectDir, true);
 		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
 		try {
@@ -412,44 +259,6 @@ if (process.platform !== "win32") fs.chmodSync(akramCodePath, 0o755);
 			expect(process.exitCode).toBeUndefined();
 		} finally {
 			logSpy.mockRestore();
-		}
-	});
-
-	it("lets trust.json override default project trust", async () => {
-		mkdirSync(join(projectDir, ".akramcode"), { recursive: true });
-		writeFileSync(join(agentDir, "settings.json"), JSON.stringify({ defaultProjectTrust: "always" }));
-		writeFileSync(
-			join(projectDir, ".akramcode", "settings.json"),
-			JSON.stringify({ packages: ["npm:@project/pkg"] }),
-		);
-		new ProjectTrustStore(agentDir).set(projectDir, false);
-		const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-
-		try {
-			await expect(main(["list"])).resolves.toBeUndefined();
-
-			const stdout = logSpy.mock.calls.map(([message]) => String(message)).join("\n");
-			expect(stdout).toContain("No packages installed.");
-			expect(stdout).not.toContain("Project packages:");
-			expect(process.exitCode).toBeUndefined();
-		} finally {
-			logSpy.mockRestore();
-		}
-	});
-
-	it("blocks local package changes when project is untrusted", async () => {
-		mkdirSync(join(projectDir, ".akramcode"), { recursive: true });
-		writeFileSync(join(projectDir, ".akramcode", "settings.json"), "{}");
-		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-
-		try {
-			await expect(main(["install", "-l", "./local-package"])).resolves.toBeUndefined();
-
-			const stderr = errorSpy.mock.calls.map(([message]) => String(message)).join("\n");
-			expect(stderr).toContain("Project is not trusted. Use --approve to modify local package config.");
-			expect(process.exitCode).toBe(1);
-		} finally {
-			errorSpy.mockRestore();
 		}
 	});
 
@@ -522,7 +331,7 @@ if (process.platform !== "win32") fs.chmodSync(akramCodePath, 0o755);
 	it("cycles project package overrides in config local mode", async () => {
 		const storage = new InMemorySettingsStorage();
 		storage.withLock("global", () => JSON.stringify({ packages: ["npm:akramcode-tools"] }));
-		const settingsManager = SettingsManager.fromStorage(storage, { projectTrusted: true });
+		const settingsManager = SettingsManager.fromStorage(storage);
 		const resolvedPaths = extensionPaths(join(tempDir, "pkg"), "npm:akramcode-tools", "user", ["bar.ts"]);
 		const selector = new ConfigSelectorComponent(
 			{ global: resolvedPaths, project: resolvedPaths },
@@ -551,7 +360,7 @@ if (process.platform !== "win32") fs.chmodSync(akramCodePath, 0o755);
 	});
 
 	it("toggles built-in extensions in config global mode", async () => {
-		const settingsManager = SettingsManager.fromStorage(new InMemorySettingsStorage(), { projectTrusted: true });
+		const settingsManager = SettingsManager.fromStorage(new InMemorySettingsStorage());
 		const resolvedPaths = await new DefaultPackageManager({
 			cwd: projectDir,
 			agentDir,
@@ -583,7 +392,7 @@ if (process.platform !== "win32") fs.chmodSync(akramCodePath, 0o755);
 	it("cycles project built-in extension overrides in config local mode", async () => {
 		const storage = new InMemorySettingsStorage();
 		storage.withLock("global", () => JSON.stringify({ extensions: ["-builtin:mcp"] }));
-		const settingsManager = SettingsManager.fromStorage(storage, { projectTrusted: true });
+		const settingsManager = SettingsManager.fromStorage(storage);
 		const resolvedPaths = await new DefaultPackageManager({
 			cwd: projectDir,
 			agentDir,
@@ -619,9 +428,7 @@ if (process.platform !== "win32") fs.chmodSync(akramCodePath, 0o755);
 
 			const stderr = errorSpy.mock.calls.map(([message]) => String(message)).join("\n");
 			expect(stderr).toContain('Unknown option --unknown for "install".');
-			expect(stderr).toContain(
-				'Use "akramcode --help" or "akramcode install <source> [-l] [--approve|--no-approve]".',
-			);
+			expect(stderr).toContain('Use "akramcode --help" or "akramcode install <source> [-l]".');
 			expect(process.exitCode).toBe(1);
 		} finally {
 			errorSpy.mockRestore();

@@ -5,13 +5,11 @@
  * next turn.
  */
 
-import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { createInterface } from "node:readline/promises";
 import chalk from "chalk";
 import { APP_NAME, CONFIG_DIR_NAME } from "../../config.ts";
 import { validateMcpServerConfig } from "../../core/mcp-servers.ts";
-import { ProjectTrustStore } from "../../core/trust-manager.ts";
 import { openBrowser } from "../../utils/open-browser.ts";
 import {
 	addMcpServerConfig,
@@ -39,7 +37,7 @@ const HELP = `${chalk.bold("Usage:")}
   ${APP_NAME} mcp logout <server>
 
 Configure and check MCP servers and sign in to OAuth servers without starting a session.
-Reads ~/${CONFIG_DIR_NAME}/agent/mcp.json and, in trusted projects, ${CONFIG_DIR_NAME}/mcp.json.
+Reads ~/${CONFIG_DIR_NAME}/agent/mcp.json and ${CONFIG_DIR_NAME}/mcp.json.
 
 Commands:
   add <server>            Add or replace a server in mcp.json
@@ -195,12 +193,7 @@ export async function runMcpCommand(args: string[], options: McpCommandOptions):
 			? add(rest, projectConfig, options, log, error)
 			: remove(rest, projectConfig, options, log, error);
 	}
-	const projectTrusted = new ProjectTrustStore(options.agentDir).get(options.cwd) === true;
-	const loaded = loadMcpConfig({ agentDir: options.agentDir, cwd: options.cwd, projectTrusted });
-	const untrustedNote =
-		!projectTrusted && existsSync(projectConfig)
-			? `${projectConfig} is ignored because the project is not trusted. Start ${APP_NAME} in the project to trust it.`
-			: undefined;
+	const loaded = loadMcpConfig({ agentDir: options.agentDir, cwd: options.cwd });
 	const credentials = options.credentials ?? new McpOAuthCredentialStore();
 
 	switch (command) {
@@ -211,7 +204,7 @@ export async function runMcpCommand(args: string[], options: McpCommandOptions):
 				error(`Usage: ${APP_NAME} mcp list [--json]\n${HELP_HINT}`);
 				return 1;
 			}
-			return list(loaded, parsed.values.has("json"), untrustedNote, options, credentials, log);
+			return list(loaded, parsed.values.has("json"), options, credentials, log);
 		}
 		case "login":
 		case "logout": {
@@ -225,7 +218,7 @@ export async function runMcpCommand(args: string[], options: McpCommandOptions):
 			const entry = loaded.servers.find((server) => server.name === name);
 			if (!entry) {
 				error(
-					`No MCP server named "${name}".${untrustedNote ? ` ${untrustedNote}` : ""} Configured: ${loaded.servers.map((server) => server.name).join(", ") || "none"}.`,
+					`No MCP server named "${name}". Configured: ${loaded.servers.map((server) => server.name).join(", ") || "none"}.`,
 				);
 				return 1;
 			}
@@ -378,9 +371,6 @@ function add(
 		return 1;
 	}
 	log(`${replaced ? "Replaced" : "Added"} ${scope} MCP server "${name}" in ${path}.`);
-	if (project && new ProjectTrustStore(options.agentDir).get(options.cwd) !== true) {
-		log(`The project is not trusted, so ${path} is ignored until you start ${APP_NAME} in the project and trust it.`);
-	}
 	// HTTP servers without an Authorization header may use OAuth.
 	const mayNeedSignIn =
 		"url" in validated &&
@@ -420,7 +410,7 @@ function remove(
 		log(`Removed ${scope} MCP server "${name}" from ${path}.`);
 		return 0;
 	}
-	const other = loadMcpConfig({ agentDir: options.agentDir, cwd: options.cwd, projectTrusted: true }).servers.find(
+	const other = loadMcpConfig({ agentDir: options.agentDir, cwd: options.cwd }).servers.find(
 		(server) => server.name === name && server.scope !== scope,
 	);
 	error(
@@ -432,7 +422,6 @@ function remove(
 async function list(
 	loaded: LoadedMcpConfig,
 	json: boolean,
-	untrustedNote: string | undefined,
 	options: McpCommandOptions,
 	credentials: McpOAuthCredentialStore,
 	log: (line: string) => void,
@@ -475,13 +464,7 @@ async function list(
 	const failed = loaded.errors.length > 0 || reports.some((report) => report.enabled && report.state !== "connected");
 
 	if (json) {
-		log(
-			JSON.stringify(
-				{ servers: reports, errors: loaded.errors, ...(untrustedNote ? { note: untrustedNote } : {}) },
-				null,
-				2,
-			),
-		);
+		log(JSON.stringify({ servers: reports, errors: loaded.errors }, null, 2));
 		return failed ? 1 : 0;
 	}
 	if (reports.length === 0 && loaded.errors.length === 0) {
@@ -510,7 +493,6 @@ async function list(
 		if (report.error) log(`  ${report.error.split("\n").join("\n  ")}`);
 	}
 	for (const configError of loaded.errors) log(`config error: ${configError}`);
-	if (untrustedNote) log(untrustedNote);
 	return failed ? 1 : 0;
 }
 

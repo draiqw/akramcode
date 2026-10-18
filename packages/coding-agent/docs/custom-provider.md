@@ -14,7 +14,7 @@ Provider extensions run inside AkramCode and can inspect credentials, prompts, t
 | Add a `/login` flow | A provider with native or legacy OAuth configuration |
 | Implement an unsupported wire protocol | A provider with `stream` or `streamSimple` |
 
-A provider extension is an [extension](extensions.md), so it follows the same loading, trust, reload, and error behavior.
+A provider extension is an [extension](extensions.md), so it follows the same loading, reload, and error behavior.
 
 ## Register a provider
 

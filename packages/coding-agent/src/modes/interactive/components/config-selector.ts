@@ -192,11 +192,9 @@ type FlatEntry =
 
 class ConfigSelectorHeader implements Component {
 	private writeScope: ConfigWriteScope;
-	private projectModeAvailable: boolean;
 
-	constructor(writeScope: ConfigWriteScope, projectModeAvailable: boolean) {
+	constructor(writeScope: ConfigWriteScope) {
 		this.writeScope = writeScope;
-		this.projectModeAvailable = projectModeAvailable;
 	}
 
 	setWriteScope(writeScope: ConfigWriteScope): void {
@@ -208,7 +206,7 @@ class ConfigSelectorHeader implements Component {
 	render(width: number): string[] {
 		const title = theme.bold(this.writeScope === "project" ? "Project Local Resources" : "Global Resources");
 		const sep = theme.fg("muted", " · ");
-		const switchHint = this.projectModeAvailable ? keyHint("tui.input.tab", "switch mode") + sep : "";
+		const switchHint = keyHint("tui.input.tab", "switch mode") + sep;
 		const actionHint =
 			this.writeScope === "project" ? rawKeyHint("space", "cycle inherit/+/-") : rawKeyHint("space", "toggle");
 		const hint = switchHint + actionHint + sep + rawKeyHint("esc", "close");
@@ -896,7 +894,6 @@ export class ConfigSelectorComponent extends Container implements Focusable {
 		requestRender: () => void,
 		terminalHeight?: number,
 		writeScope: ConfigWriteScope = "global",
-		projectModeAvailable = true,
 	) {
 		super();
 
@@ -910,7 +907,7 @@ export class ConfigSelectorComponent extends Container implements Focusable {
 		this.addChild(new Spacer(1));
 		this.addChild(new DynamicBorder());
 		this.addChild(new Spacer(1));
-		this.header = new ConfigSelectorHeader(this.writeScope, projectModeAvailable);
+		this.header = new ConfigSelectorHeader(this.writeScope);
 		this.addChild(this.header);
 		this.addChild(new Spacer(1));
 
@@ -926,12 +923,10 @@ export class ConfigSelectorComponent extends Container implements Focusable {
 		this.resourceList.onCancel = onClose;
 		this.resourceList.onExit = onExit;
 		this.resourceList.onToggle = () => requestRender();
-		if (projectModeAvailable) {
-			this.resourceList.onSwitchMode = () => {
-				this.switchWriteScope();
-				requestRender();
-			};
-		}
+		this.resourceList.onSwitchMode = () => {
+			this.switchWriteScope();
+			requestRender();
+		};
 		this.addChild(this.resourceList);
 
 		// Bottom border

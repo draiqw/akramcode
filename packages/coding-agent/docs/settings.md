@@ -1,6 +1,6 @@
 # Settings Reference
 
-This reference lists user-configurable settings, their types, defaults, and purposes. Project settings override agent-directory settings. Resource lists are combined. See [Configuration](configuration.md) for file locations and trust behavior.
+This reference lists user-configurable settings, their types, defaults, and purposes. Project settings override agent-directory settings. Resource lists are combined. See [Configuration](configuration.md) for file locations.
 
 ## Model and thinking
 
@@ -31,7 +31,6 @@ See [Choose a Model](models.md) for model selection and thinking controls.
 | `followUpMode` | `"all" \| "one-at-a-time"` | `"all"` | How queued follow-up messages are delivered. |
 | `externalEditor` | string | `$VISUAL`, `$EDITOR`, then platform default | Command opened by the external-editor keybinding. |
 | `doubleEscapeClearsInput` | boolean | `true` | Double Escape with text in the editor clears it. The text is saved to prompt history, so `Up` restores it. |
-| `defaultProjectTrust` | `"ask" \| "always" \| "never"` | `"ask"` | Fallback project-trust behavior. **Can only be set in agent-directory settings.** |
 
 ## Tools
 

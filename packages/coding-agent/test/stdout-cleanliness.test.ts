@@ -97,8 +97,8 @@ describe("stdout cleanliness in non-interactive modes", () => {
 		expect(result.stderr).not.toContain("found 0 vulnerabilities");
 	});
 
-	it("keeps stdout empty for --mode json --help while routing trusted startup chatter to stderr", async () => {
-		const result = await runCli(["--mode", "json", "--help", "--approve"]);
+	it("keeps stdout empty for --mode json --help while routing startup chatter to stderr", async () => {
+		const result = await runCli(["--mode", "json", "--help"]);
 
 		expect(result.code).toBe(0);
 		expect(result.stdout).toBe("");

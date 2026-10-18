@@ -346,8 +346,6 @@ export interface ExtensionContext {
 	thinkingLevel?: ThinkingLevel;
 	/** Whether the agent is idle (not streaming) */
 	isIdle(): boolean;
-	/** Whether project-local trust is active for this context. */
-	isProjectTrusted(): boolean;
 	/** The current abort signal, or undefined when the agent is not streaming. */
 	signal: AbortSignal | undefined;
 	/** Abort the current agent operation */
@@ -693,30 +691,6 @@ export function defineTool<TParams extends TSchema, TDetails = unknown, TState =
 // ============================================================================
 // Startup/Resource Events
 // ============================================================================
-
-export interface ProjectTrustEvent {
-	type: "project_trust";
-	cwd: string;
-}
-
-export type ProjectTrustEventDecision = "yes" | "no" | "undecided";
-
-export interface ProjectTrustEventResult {
-	trusted: ProjectTrustEventDecision;
-	remember?: boolean;
-}
-
-export interface ProjectTrustContext {
-	cwd: string;
-	mode: ExtensionMode;
-	hasUI: boolean;
-	ui: Pick<ExtensionUIContext, "select" | "confirm" | "input" | "notify">;
-}
-
-export type ProjectTrustHandler = (
-	event: ProjectTrustEvent,
-	ctx: ProjectTrustContext,
-) => Promise<ProjectTrustEventResult> | ProjectTrustEventResult;
 
 /** Fired after session_start to allow extensions to provide additional resource paths. */
 export interface ResourcesDiscoverEvent {
@@ -1369,7 +1343,6 @@ export function isToolCallEventType(toolName: string, event: ToolCallEvent): boo
 
 /** Union of all event types */
 export type ExtensionEvent =
-	| ProjectTrustEvent
 	| ResourcesDiscoverEvent
 	| McpServersChangeEvent
 	| SessionEvent
@@ -1560,7 +1533,6 @@ export interface ExtensionAPI {
 	// Event Subscription
 	// =========================================================================
 
-	on(event: "project_trust", handler: ProjectTrustHandler): () => void;
 	on(
 		event: "resources_discover",
 		handler: ExtensionHandler<ResourcesDiscoverEvent, ResourcesDiscoverResult>,
@@ -2053,9 +2025,8 @@ export type InlineExtension =
 			 * Supply the code of the `builtin:<name>` extension instead of loading as an inline extension.
 			 * `builtin:<name>` is an extension resource like a file: it loads by default, `akramcode config` lists
 			 * it, `-builtin:<name>` in the `extensions` setting and `--no-extensions` disable it, and
-			 * `-e builtin:<name>` loads it explicitly. It is hidden from the startup Extensions list and
-			 * loads after project trust is resolved, so it cannot handle `project_trust`. The CLI's built-in
-			 * extensions use it.
+			 * `-e builtin:<name>` loads it explicitly. It is hidden from the startup Extensions list. The CLI's
+			 * built-in extensions use it.
 			 */
 			builtin?: boolean;
 	  };
@@ -2200,7 +2171,6 @@ export interface ExtensionContextActions {
 	getModel: () => Model<any> | undefined;
 	getScopedModels: () => readonly ScopedModel[];
 	isIdle: () => boolean;
-	isProjectTrusted: () => boolean;
 	getSignal: () => AbortSignal | undefined;
 	abort: () => void;
 	hasPendingMessages: () => boolean;

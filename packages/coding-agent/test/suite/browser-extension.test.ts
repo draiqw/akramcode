@@ -134,7 +134,6 @@ describe("browser extension", () => {
 		const withProject = discoverAgentTypes({
 			cwd: join(root, "project"),
 			agentDir: join(root, "agent"),
-			projectTrusted: true,
 			extensionTypes,
 		});
 		const byName = (types: AgentTypeDefinition[], name: string) => types.find((type) => type.name === name);
@@ -147,7 +146,6 @@ describe("browser extension", () => {
 		const withUser = discoverAgentTypes({
 			cwd: root,
 			agentDir: join(root, "agent"),
-			projectTrusted: false,
 			extensionTypes,
 		});
 		expect(byName(withUser.types, "browser")?.source).toBe("user");

@@ -13,7 +13,6 @@ export interface ConfigSelectorOptions {
 	cwd: string;
 	agentDir: string;
 	writeScope: "global" | "project";
-	projectModeAvailable: boolean;
 }
 
 /** Show TUI config selector and return when closed */
@@ -51,7 +50,6 @@ export async function selectConfig(options: ConfigSelectorOptions): Promise<void
 			() => ui.requestRender(),
 			ui.terminal.rows,
 			options.writeScope,
-			options.projectModeAvailable,
 		);
 
 		ui.addChild(selector);

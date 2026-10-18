@@ -104,7 +104,7 @@ describe("workflow discovery", () => {
 
 	it("prefers user workflows and skips a project workflow with the same name", () => {
 		const { agentDir, cwd } = setup();
-		const { workflows, diagnostics } = discoverWorkflows({ cwd, agentDir, projectTrusted: true });
+		const { workflows, diagnostics } = discoverWorkflows({ cwd, agentDir });
 		expect(workflows.map((file) => [file.name, file.source, file.manifest?.description])).toEqual([
 			["broken", "user", undefined],
 			["shared", "user", "user version"],
@@ -117,12 +117,6 @@ describe("workflow discovery", () => {
 				message: 'Skipped: a project workflow cannot replace the user workflow "shared"',
 			},
 		]);
-	});
-
-	it("ignores project workflows when the project is not trusted", () => {
-		const { agentDir, cwd } = setup();
-		const { workflows } = discoverWorkflows({ cwd, agentDir, projectTrusted: false });
-		expect(workflows.map((file) => file.name)).toEqual(["broken", "shared"]);
 	});
 });
 

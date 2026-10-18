@@ -24,7 +24,7 @@ The server accepts metadata values of at most 63 characters from `[A-Za-z0-9-_.]
 
 ## The `sandbox` setting is global-only
 
-A project settings file must not choose the server that executes commands, so `getSandboxSettings` reads global settings only, like `defaultProjectTrust`.
+A project settings file must not choose the server that executes commands, so `getSandboxSettings` reads global settings only.
 
 ## Volumes are deleted through fork endpoints
 

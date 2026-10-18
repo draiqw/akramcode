@@ -50,7 +50,6 @@ export interface SubagentControl {
 	listTools(): Array<{ name: string; description: string; active: boolean }>;
 	userAgentsDir: string;
 	projectAgentsDir: string;
-	isProjectTrusted(): boolean;
 	/** Read the agent definitions again, for example after writing one. */
 	reload(): void;
 }

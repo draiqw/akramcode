@@ -29,7 +29,7 @@ Use `/mcp` inside an interactive session to inspect connections, sign in, reconn
 
 ## Configure servers
 
-AkramCode reads user-level servers from `~/.akramcode/agent/mcp.json` and project servers from `.akramcode/mcp.json`. Project configuration is read only after [project trust](security.md#understand-project-trust) is granted. A project entry replaces a user-level entry with the same name.
+AkramCode reads user-level servers from `~/.akramcode/agent/mcp.json` and project servers from `.akramcode/mcp.json`. A project entry replaces a user-level entry with the same name.
 
 The format matches other MCP clients:
 
@@ -60,7 +60,7 @@ Both server types support:
 - `exposure` and `toolExposure`: control how tools reach the model (see [Control tool exposure](#control-tool-exposure)).
 - `description`: what the server offers, in a sentence. It lists the server in the system prompt (see [Control tool exposure](#control-tool-exposure)), tool search ranks the server's tools by it, and codemode's `describeNamespace()` returns it. Without it, the first line of the server instructions is used once the server connects.
 
-Keep personal servers and servers with credentials in the user-level file. Use the project file only for servers the project requires, and only in trusted projects.
+Keep personal servers and servers with credentials in the user-level file. Use the project file only for servers the project requires.
 
 ### Configuration rules
 

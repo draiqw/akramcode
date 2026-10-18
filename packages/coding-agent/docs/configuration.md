@@ -1,6 +1,6 @@
 # Configuration
 
-AkramCode supports user-level and project configuration. User-level configuration lives in the agent directory, which defaults to `~/.akramcode/agent`. Project configuration lives in `.akramcode` under the working directory and loads after [project trust](security.md#understand-project-trust) is granted. The only exception is `sessionDir`, which AkramCode reads before resolving trust so it can locate sessions.
+AkramCode supports user-level and project configuration. User-level configuration lives in the agent directory, which defaults to `~/.akramcode/agent`. Project configuration lives in `.akramcode` under the working directory and loads without asking; see [Security](security.md#project-resources).
 
 In interactive mode, use `/settings` to change common preferences. For other options, ask AkramCode to update the configuration or edit the relevant files directly. Run `/reload` after manually changing settings, keybindings, instructions, or resources.
 
@@ -36,12 +36,10 @@ The agent directory is shown as `<agent-dir>` below. Set its location with the `
 | `.akramcode/prompts/` | Project prompt templates exposed as slash commands. |
 | `.akramcode/themes/` | Project theme files. |
 
-For `SYSTEM.md` and `APPEND_SYSTEM.md`, the trusted project file takes precedence over the corresponding agent-directory file. Files with the same name are not combined.
+For `SYSTEM.md` and `APPEND_SYSTEM.md`, the project file takes precedence over the corresponding agent-directory file. Files with the same name are not combined.
 
 ## Context files
 
 Context files are separate from project `.akramcode` configuration. AkramCode loads them from the agent directory, the working directory, and its parent directories. A context file applies whenever AkramCode runs in its directory or anywhere below it.
 
 An `AGENTS.override.md` replaces `AGENTS.md` or `CLAUDE.md` only in the same directory. It does not suppress context files from the agent directory or other directories.
-
-Context-file discovery does not require project trust.

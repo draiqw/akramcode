@@ -5,7 +5,6 @@ import { areExperimentalFeaturesEnabled } from "../core/experimental.ts";
 import { KeybindingsManager } from "../core/keybindings.ts";
 import { DefaultPackageManager, type ResolvedResource } from "../core/package-manager.ts";
 import { SettingsManager } from "../core/settings-manager.ts";
-import { ExtensionInputComponent } from "../modes/interactive/components/extension-input.ts";
 import { ExtensionSelectorComponent } from "../modes/interactive/components/extension-selector.ts";
 import {
 	FirstTimeSetupComponent,
@@ -63,9 +62,7 @@ function loadThemes(resources: ResolvedResource[]): Theme[] {
 }
 
 async function loadStartupThemes(settingsManager: SettingsManager): Promise<Theme[]> {
-	const globalSettingsManager = SettingsManager.inMemory(settingsManager.getGlobalSettings(), {
-		projectTrusted: false,
-	});
+	const globalSettingsManager = SettingsManager.inMemory(settingsManager.getGlobalSettings());
 	const packageManager = new DefaultPackageManager({
 		cwd: process.cwd(),
 		agentDir: getAgentDir(),
@@ -208,39 +205,5 @@ export async function showFirstTimeSetup(settingsManager: SettingsManager): Prom
 		ui.requestRender();
 		// See docs/adr/coding-agent/cli-startup-ui.md#terminal-color-regeneration
 		queryStartupTerminalColors(ui, () => setTheme(previewTheme));
-	});
-}
-
-export async function showStartupInput(
-	settingsManager: SettingsManager,
-	title: string,
-	placeholder?: string,
-): Promise<string | undefined> {
-	const ui = await createStartupTui(settingsManager);
-	return new Promise((resolve) => {
-		let settled = false;
-		const finish = async (result: string | undefined) => {
-			if (settled) {
-				return;
-			}
-			settled = true;
-			input.dispose();
-			await clearStartupTui(ui);
-			ui.stop();
-			resolve(result);
-		};
-
-		const input = new ExtensionInputComponent(
-			title,
-			placeholder,
-			(value) => void finish(value),
-			() => void finish(undefined),
-			{
-				tui: ui,
-			},
-		);
-		ui.addChild(input);
-		ui.setFocus(input);
-		startStartupTui(ui, settingsManager);
 	});
 }

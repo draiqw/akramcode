@@ -64,7 +64,7 @@ AkramCode also supports the Agent Skills locations `~/.agents/skills/` and `.age
 
 AkramCode accepts some standalone Markdown skills, but a directory containing `SKILL.md` is the portable form and should be preferred. See [Settings](settings.md#resources) and [AkramCode Packages](packages.md) for additional locations.
 
-Project skills can instruct the model to run scripts or modify files. Review unfamiliar skills and their supporting files before granting project trust.
+Project skills can instruct the model to run scripts or modify files. Project skills load without asking, so review unfamiliar skills and their supporting files before running AkramCode in the project.
 
 ## Write portable frontmatter
 

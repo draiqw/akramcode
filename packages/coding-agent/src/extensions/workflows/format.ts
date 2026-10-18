@@ -11,7 +11,7 @@
  * return log.output;
  * ```
  *
- * Files live in `<agentDir>/workflows/` and, for trusted projects, `<cwd>/.akramcode/workflows/`.
+ * Files live in `<agentDir>/workflows/` and `<cwd>/.akramcode/workflows/`.
  * A project workflow cannot replace a user workflow of the same name.
  */
 
@@ -232,29 +232,23 @@ function loadWorkflowsFromDir(dir: string, source: WorkflowSource): WorkflowFile
 }
 
 /**
- * User workflows, then project workflows when the project is trusted. Files that do not parse
- * are kept with their `errors`, so `/workflow check` can report them. A project workflow with
- * the name of a user workflow is skipped with a diagnostic.
+ * User workflows, then project workflows. Files that do not parse are kept with their `errors`,
+ * so `/workflow check` can report them. A project workflow with the name of a user workflow is
+ * skipped with a diagnostic.
  */
-export function discoverWorkflows(options: {
-	cwd: string;
-	agentDir?: string;
-	projectTrusted: boolean;
-}): WorkflowDiscovery {
+export function discoverWorkflows(options: { cwd: string; agentDir?: string }): WorkflowDiscovery {
 	const workflows = loadWorkflowsFromDir(getUserWorkflowsDir(options.agentDir), "user");
 	const diagnostics: WorkflowDiagnostic[] = [];
-	if (options.projectTrusted) {
-		const names = new Set(workflows.map((workflow) => workflow.name));
-		for (const workflow of loadWorkflowsFromDir(getProjectWorkflowsDir(options.cwd), "project")) {
-			if (names.has(workflow.name)) {
-				diagnostics.push({
-					path: workflow.path,
-					message: `Skipped: a project workflow cannot replace the user workflow "${workflow.name}"`,
-				});
-				continue;
-			}
-			workflows.push(workflow);
+	const names = new Set(workflows.map((workflow) => workflow.name));
+	for (const workflow of loadWorkflowsFromDir(getProjectWorkflowsDir(options.cwd), "project")) {
+		if (names.has(workflow.name)) {
+			diagnostics.push({
+				path: workflow.path,
+				message: `Skipped: a project workflow cannot replace the user workflow "${workflow.name}"`,
+			});
+			continue;
 		}
+		workflows.push(workflow);
 	}
 	return { workflows, diagnostics };
 }

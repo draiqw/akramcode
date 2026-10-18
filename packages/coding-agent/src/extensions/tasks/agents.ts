@@ -198,8 +198,7 @@ function writeAgentFile(path: string, type: Omit<AgentTypeDefinition, "source" |
 async function createAgent(ctx: ExtensionCommandContext, control: SubagentControl): Promise<void> {
 	const userOption = `User (${control.userAgentsDir})`;
 	const projectOption = `Project (${control.projectAgentsDir})`;
-	const scopes = control.isProjectTrusted() ? [projectOption, userOption] : [userOption];
-	const scope = await ctx.ui.select("Where should the agent be saved?", scopes);
+	const scope = await ctx.ui.select("Where should the agent be saved?", [projectOption, userOption]);
 	if (!scope) return;
 	const dir = scope === projectOption ? control.projectAgentsDir : control.userAgentsDir;
 

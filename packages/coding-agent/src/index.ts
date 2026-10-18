@@ -131,11 +131,6 @@ export type {
 	ModelSelectEvent,
 	ModelSelectSource,
 	NormalizedBuildSystemPromptOptions,
-	ProjectTrustContext,
-	ProjectTrustEvent,
-	ProjectTrustEventDecision,
-	ProjectTrustEventResult,
-	ProjectTrustHandler,
 	ProviderConfig,
 	ProviderModelConfig,
 	ProviderStreamEvent,
@@ -303,14 +298,12 @@ export {
 	type CacheWarmingMode,
 	type CompactionModelOverride,
 	type CompactionSettings,
-	type DefaultProjectTrust,
 	type FullscreenExitOutput,
 	type ImageSettings,
 	type PackageSource,
 	type QuietStartup,
 	type RetrySettings,
 	SettingsManager,
-	type SettingsManagerCreateOptions,
 	type TuiMode,
 } from "./core/settings-manager.ts";
 // Skills
@@ -388,13 +381,6 @@ export {
 	type WriteToolOptions,
 	withFileMutationQueue,
 } from "./core/tools/index.ts";
-export {
-	hasTrustRequiringProjectResources,
-	type ProjectTrustDecision,
-	ProjectTrustStore,
-	type ProjectTrustStoreEntry,
-	type ProjectTrustUpdate,
-} from "./core/trust-manager.ts";
 export {
 	type ModelRoute,
 	type ModelRouteReason,

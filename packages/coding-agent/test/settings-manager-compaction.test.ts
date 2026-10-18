@@ -93,7 +93,8 @@ describe("compaction model overrides", () => {
 		});
 		await manager.reload();
 		expect(manager.getCompactionKeepRecentTokens(model)).toBe(2000);
-		manager.setProjectTrusted(false);
+		storage.withLock("project", () => "{}");
+		await manager.reload();
 		expect(manager.getCompactionKeepRecentTokens(model)).toBe(30000);
 	});
 

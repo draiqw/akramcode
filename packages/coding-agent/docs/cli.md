@@ -196,7 +196,7 @@ Scripts run in a QuickJS sandbox and reach the other tools through `tools.<name>
 akramcode --extension ./review.ts
 ```
 
-See [Configuration](configuration.md) for conventional directories and project trust, [Settings](settings.md#resources) for configured paths, and [AkramCode Packages](packages.md) for package sources.
+See [Configuration](configuration.md) for conventional directories, [Settings](settings.md#resources) for configured paths, and [AkramCode Packages](packages.md) for package sources.
 
 - `-e`, `--extension <path>`<br>
   Loads an extension file or directory, or a built-in extension such as `builtin:mcp`, and is repeatable.
@@ -229,7 +229,7 @@ Resource paths apply only to the current process. Relative paths resolve from th
 akramcode --append-system-prompt ./instructions.md
 ```
 
-See [Configuration](configuration.md) for saved configuration, [Security](security.md#understand-project-trust) for project trust, and [Environment Variables](environment-variables.md) for process controls.
+See [Configuration](configuration.md) for saved configuration, [Security](security.md#project-resources) for project resources, and [Environment Variables](environment-variables.md) for process controls.
 
 - `--system-prompt <text|path>`<br>
   Replaces the default system prompt with text or the contents of an existing file.
@@ -237,10 +237,6 @@ See [Configuration](configuration.md) for saved configuration, [Security](securi
   Appends text or an existing file to the system prompt and is repeatable.
 - `--verbose`<br>
   Shows verbose interactive startup information, overriding `quietStartup`.
-- `-a`, `--approve`<br>
-  Trusts project-local configuration and resources for this process.
-- `-na`, `--no-approve`<br>
-  Ignores trust-gated project-local configuration and resources for this process.
 - `--offline`<br>
   Disables automatic network activity, including model catalog refreshes. Equivalent to `AKRAMCODE_OFFLINE=1`.
 - `-h`, `--help`<br>
@@ -292,7 +288,6 @@ The standalone binary also updates itself: in interactive mode, when the startup
 - `akramcode uninstall <source>` is an alias for `akramcode remove <source>`.
 - `akramcode update --self`, `akramcode update self`, and `akramcode update akramcode` are aliases for `akramcode update`.
 - `akramcode update --extension <source>` is an alias for `akramcode update <source>`.
-- `-a`, `--approve` trusts project-local files for one command. `-na`, `--no-approve` ignores trust-gated project-local files.
 - Append `-h` or `--help` to a command for its exact usage and option constraints.
 
 ## Credential commands
@@ -334,8 +329,6 @@ These commands work outside a session, so agents can run them through `bash`. Se
 | `akramcode mcp logout <server>` | Delete the stored OAuth credentials of a server |
 
 `add` and `remove` change `~/.akramcode/agent/mcp.json`, or `.akramcode/mcp.json` in the current directory with `--local` (`-l`). `add` also takes `--exposure <mode>` (see [Exposure](mcp.md#exposure)) and `--description <text>` and does not connect; run `akramcode mcp list` to check the server.
-
-Project `.akramcode/mcp.json` files are only read for projects that are already trusted.
 
 ## Traces command
 

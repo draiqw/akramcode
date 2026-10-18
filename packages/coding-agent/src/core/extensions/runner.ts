@@ -62,14 +62,10 @@ import type {
 	InputEvent,
 	InputEventResult,
 	InputSource,
-	LoadExtensionsResult,
 	MarkdownTransformer,
 	MessageEndEvent,
 	MessageEndEventResult,
 	MessageRenderer,
-	ProjectTrustContext,
-	ProjectTrustEvent,
-	ProjectTrustEventResult,
 	ProviderConfig,
 	RegisteredCommand,
 	RegisteredTool,
@@ -176,7 +172,6 @@ interface BeforeAgentStartCombinedResult {
 type RunnerEmitEvent = Exclude<
 	ExtensionEvent,
 	| ToolCallEvent
-	| ProjectTrustEvent
 	| ToolResultEvent
 	| UserBashEvent
 	| ContextEvent
@@ -292,35 +287,6 @@ function restoreSystemMessages(
 	return head ? [head, ...returned] : returned;
 }
 
-export async function emitProjectTrustEvent(
-	extensionsResult: LoadExtensionsResult,
-	event: ProjectTrustEvent,
-	ctx: ProjectTrustContext,
-): Promise<{ result?: ProjectTrustEventResult; errors: ExtensionError[] }> {
-	const errors: ExtensionError[] = [];
-	for (const { ext, handlers } of snapshotEventHandlers(extensionsResult.extensions, "project_trust")) {
-		// A single extension may register multiple handlers for the same event.
-		// The first project_trust handler that returns yes/no wins; undecided falls through.
-		for (const handler of handlers) {
-			try {
-				const handlerResult = (await handler(event, ctx)) as ProjectTrustEventResult;
-				if (handlerResult.trusted === "undecided") {
-					continue;
-				}
-				return { result: handlerResult, errors };
-			} catch (error) {
-				errors.push({
-					extensionPath: ext.path,
-					event: event.type,
-					error: error instanceof Error ? error.message : String(error),
-					stack: error instanceof Error ? error.stack : undefined,
-				});
-			}
-		}
-	}
-	return { errors };
-}
-
 const noOpUIContext: ExtensionUIContext = {
 	select: async () => undefined,
 	confirm: async () => false,
@@ -366,7 +332,6 @@ export class ExtensionRunner {
 	private getModel: () => Model<any> | undefined = () => undefined;
 	private getScopedModels: () => readonly ScopedModel[] = () => [];
 	private isIdleFn: () => boolean = () => true;
-	private isProjectTrustedFn: () => boolean = () => true;
 	private getSignalFn: () => AbortSignal | undefined = () => undefined;
 	private waitForIdleFn: () => Promise<void> = async () => {};
 	private abortFn: () => void = () => {};
@@ -449,7 +414,6 @@ export class ExtensionRunner {
 		this.getModel = contextActions.getModel;
 		this.getScopedModels = contextActions.getScopedModels;
 		this.isIdleFn = contextActions.isIdle;
-		this.isProjectTrustedFn = contextActions.isProjectTrusted;
 		this.getSignalFn = contextActions.getSignal;
 		this.abortFn = contextActions.abort;
 		this.hasPendingMessagesFn = contextActions.hasPendingMessages;
@@ -925,10 +889,6 @@ export class ExtensionRunner {
 			isIdle: () => {
 				runner.assertActive();
 				return runner.isIdleFn();
-			},
-			isProjectTrusted: () => {
-				runner.assertActive();
-				return runner.isProjectTrustedFn();
 			},
 			get signal() {
 				runner.assertActive();
