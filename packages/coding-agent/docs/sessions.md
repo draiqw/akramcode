@@ -26,6 +26,20 @@ When tree navigation (extensions or SDK `navigateTree`) leaves a branch, AkramCo
 
 For the persisted tree and entry types, see [Session Format](session-format.md).
 
+## Isolated worktrees
+
+Several sessions can work in one git project without changing each other's files or branch. Before a session first changes code (an `edit` or `write`, or a `bash` git command such as `checkout`, `commit`, or `add`), it moves into its own worktree at `<repo root>/.worktrees/<name>` on a new branch `<name>`, created from `HEAD`. Sessions that only read and answer questions stay in the main checkout. The footer and the line `Working in .worktrees/<name>` show the move.
+
+`<name>` is the local date and a short task name, for example `2026-10-18-tool-group-compact-lines`. The task name comes from the session name if one is set, otherwise from the current model given the latest prompt, otherwise from the prompt's first words. A taken name gets `-2`, `-3`, and so on.
+
+- Uncommitted changes of the main checkout are not carried over. Ignored files such as `node_modules` are not copied; Node finds packages in the main checkout's `node_modules`.
+- `.worktrees/` is added to `.git/info/exclude` when it is not ignored yet.
+- Paths in the main checkout given to `read`, `edit`, `write`, `grep`, `find`, and `ls` are mapped to the worktree.
+- Settings, trust, and session storage stay with the main checkout, so `/resume` lists the session under the project. A resumed session returns to its worktree and recreates it from its branch if the directory was removed. A fork moves into its own worktree on its first change.
+- Worktrees stay after the session ends. Merge the branch, then remove the worktree with `git worktree remove .worktrees/<name>` and the branch with `git branch -d <name>`.
+
+Nothing moves outside a git repository, in a linked worktree, in subagents, or with a [sandbox](sandbox.md). Turn it off with the `worktrees.enabled` [setting](settings.md).
+
 ## Manage conversation context
 
 The model receives the active branch, not every branch in the session file. AkramCode combines that history with the system prompt, discovered context files, available tools, and loaded skill descriptions. [How AkramCode Works](how-akramcode-works.md#context) describes how those inputs are assembled.

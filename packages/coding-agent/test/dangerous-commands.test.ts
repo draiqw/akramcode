@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findDangerousCommands } from "../src/core/dangerous-commands.ts";
+import { changesGitState, findDangerousCommands } from "../src/core/dangerous-commands.ts";
 
 describe("findDangerousCommands", () => {
 	it.each([
@@ -114,5 +114,44 @@ describe("findDangerousCommands", () => {
 		"nice -n 5 make",
 	])("does not ask for %s", (command) => {
 		expect(findDangerousCommands(command)).toEqual([]);
+	});
+});
+
+describe("changesGitState", () => {
+	it.each([
+		"git checkout -b feature",
+		"git switch main",
+		'git commit -am "x"',
+		"git -C repo merge dev",
+		"git rebase main",
+		"git reset HEAD~1",
+		"git stash",
+		"git pull",
+		"git cherry-pick abc",
+		"git revert abc",
+		"git am patch.mbox",
+		"git apply fix.patch",
+		"git restore a.ts",
+		"git add .",
+		"git rm a",
+		"git mv a b",
+		"cd sub && git add a && git commit -m wip",
+	])("detects %s", (command) => {
+		expect(changesGitState(command)).toBe(true);
+	});
+
+	it.each([
+		"git status",
+		"git diff HEAD",
+		"git log --oneline",
+		"git show HEAD:a.ts",
+		"git branch",
+		"git grep add",
+		"git worktree list",
+		"git fetch origin",
+		"gitk --all",
+		"git log --grep=commit",
+	])("ignores %s", (command) => {
+		expect(changesGitState(command)).toBe(false);
 	});
 });

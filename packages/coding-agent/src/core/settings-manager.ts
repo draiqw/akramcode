@@ -118,6 +118,11 @@ export interface SubagentSettings {
 	models?: Record<string, string>;
 }
 
+export interface WorktreeSettings {
+	/** Move a session into its own git worktree before it first changes code. Default: true. */
+	enabled?: boolean;
+}
+
 /** Settings of the built-in browser extension. */
 export interface BrowserSettings {
 	/**
@@ -229,6 +234,7 @@ export interface Settings {
 	markdown?: MarkdownSettings;
 	codemode?: CodemodeSettings;
 	subagents?: SubagentSettings;
+	worktrees?: WorktreeSettings;
 	backgroundTasks?: BackgroundTaskSettings;
 	browser?: BrowserSettings; // Global-only: which browser is launched or attached, and where it may go
 	sandbox?: SandboxSettings; // Global-only: where the built-in tools run (local machine or an OpenSandbox sandbox)
@@ -1582,6 +1588,10 @@ export class SettingsManager {
 
 	getSubagentsEnabled(): boolean {
 		return this.settings.subagents?.enabled ?? true;
+	}
+
+	getWorktreesEnabled(): boolean {
+		return this.settings.worktrees?.enabled ?? true;
 	}
 
 	/** `subagents.models`: model pattern by agent type name. */

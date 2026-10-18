@@ -122,6 +122,7 @@ Use `toolCallId` to correlate the lifecycle. `partialResult` is the latest parti
 | `entry_appended` | `entry` | An extension appended a custom session entry through `akramcode.appendEntry()`. |
 | `session_info_changed` | `name` | The session display name changed. An absent `name` means it was cleared. |
 | `thinking_level_changed` | `level` | The active thinking level changed. |
+| `cwd_changed` | `cwd` | The session moved into another working directory, such as its own git worktree. |
 
 The `entry` value uses a persisted [session entry type](session-format.md#entry-types).
 

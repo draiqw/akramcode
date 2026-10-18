@@ -131,6 +131,19 @@ const DANGEROUS: ReadonlyArray<{ label: string; test: (command: string) => boole
 	{ label: "diskutil erase", test: (c) => /\bdiskutil\s+(erase\w*|zeroDisk|randomDisk|secureErase)\b/.test(c) },
 ];
 
+const GIT_STATE_CHANGE = git(
+	"(checkout|switch|commit|merge|rebase|reset|stash|pull|cherry-pick|revert|am|apply|restore|add|rm|mv)",
+);
+
+/**
+ * Whether `command` runs a git subcommand that changes the checkout: its branch, index, working
+ * tree, or history. Read-only subcommands such as `status`, `diff`, and `log` do not count.
+ */
+export function changesGitState(command: string): boolean {
+	const joined = command.replace(/\\\r?\n/g, " ");
+	return GIT_STATE_CHANGE.test(joined) || GIT_STATE_CHANGE.test(joined.replace(/['"\\]/g, ""));
+}
+
 /** Labels of the dangerous operations in `command`, in list order; empty when there are none. */
 export function findDangerousCommands(command: string): string[] {
 	const joined = command.replace(/\\\r?\n/g, " ");

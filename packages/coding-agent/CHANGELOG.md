@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Before a session first changes code in a git repository, it moves into its own worktree `.worktrees/<date>-<task>` on a branch of the same name, so several sessions in one project do not change each other's files. Setting `worktrees.enabled`. See [docs/sessions.md](docs/sessions.md#isolated-worktrees).
+
 ## [1.0.30] - 2026-10-15
 
 ### Breaking Changes

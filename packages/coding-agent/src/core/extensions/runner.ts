@@ -410,6 +410,11 @@ export class ExtensionRunner {
 		this.modelRegistry = modelRegistry;
 	}
 
+	/** Change the `cwd` that contexts report, for example when the session moves into a worktree. */
+	setCwd(cwd: string): void {
+		this.cwd = cwd;
+	}
+
 	bindCore(
 		actions: ExtensionActions,
 		contextActions: ExtensionContextActions,

@@ -33,7 +33,7 @@ import {
 	runToolCall,
 	type ThinkingLevel,
 } from "@akramcode/agent-core";
-import { contentText, getCurrentSystemMessage, retryDelayMs } from "@akramcode/ai";
+import { contentText, getCurrentSystemMessage, normalizeContext, retryDelayMs } from "@akramcode/ai";
 import type {
 	AssistantMessage,
 	AuthResult,
@@ -74,6 +74,7 @@ import {
 	calculateContextTokens,
 	collectEntriesForBranchSummary,
 	compact,
+	completeSummarization,
 	estimateContextTokens,
 	estimateProjectedContextTokens,
 	estimateTokens,
@@ -82,7 +83,7 @@ import {
 	prepareCompaction,
 	shouldCompact,
 } from "./compaction/index.ts";
-import { findDangerousCommands } from "./dangerous-commands.ts";
+import { changesGitState, findDangerousCommands } from "./dangerous-commands.ts";
 import { DEFAULT_THINKING_LEVEL, THINKING_LEVEL_OPTIONS } from "./defaults.ts";
 import { exportSessionToHtml, type ToolHtmlRenderer } from "./export-html/index.ts";
 import { createToolHtmlRenderer } from "./export-html/tool-renderer.ts";
@@ -170,6 +171,7 @@ import { type TaskEvent, TaskRegistry } from "./tasks/task-registry.ts";
 import { createTaskStopToolDefinition } from "./tasks/task-tools.ts";
 import { type BashOperations, createLocalBashOperations } from "./tools/bash.ts";
 import { createAllToolDefinitions, type ToolsOptions } from "./tools/index.ts";
+import { resolveToCwd } from "./tools/path-utils.ts";
 import { createToolDefinitionFromAgentTool } from "./tools/tool-definition-wrapper.ts";
 import { addUsageToTotals, combineUsage, createUsageTotals } from "./usage-totals.ts";
 import {
@@ -180,11 +182,30 @@ import {
 	VIRTUAL_MODEL_STATE_ENTRY,
 	type VirtualModelStateData,
 } from "./virtual-models.ts";
+import {
+	createSessionWorktree,
+	detectRepo,
+	formatWorktreePromptSection,
+	isWorktreeEntryData,
+	type RepoInfo,
+	remapToWorktree,
+	restoreSessionWorktree,
+	type SessionWorktree,
+	slugify,
+	WORKTREE_ENTRY_TYPE,
+	type WorktreeEntryData,
+} from "./worktree.ts";
 
 /** Monitor output notifications kept for the next prompt while notifications are paused after an abort. */
 const MAX_HELD_TASK_OUTPUT_NOTIFICATIONS = 5;
 /** Command callers whose nested call records are kept; far more than commands running at once. */
 const MAX_COMMAND_CALL_PARENTS = 32;
+/** Tools whose `path` argument is mapped from the main checkout into the session worktree. */
+const WORKTREE_PATH_TOOLS = new Set(["read", "edit", "write", "grep", "find", "ls"]);
+/** How long the model may take to name a worktree before the name comes from the prompt text. */
+const WORKTREE_NAME_TIMEOUT_MS = 10_000;
+const WORKTREE_NAME_PROMPT =
+	"Name the coding task the user describes. Reply with only a 2-4 word lowercase English kebab-case name, such as fix-login-redirect. No other text.";
 
 function isTaskNotificationMessage(message: AgentMessage): message is CustomMessage<TaskNotificationDetails> {
 	return message.role === "custom" && message.customType === TASK_NOTIFICATION_CUSTOM_TYPE;
@@ -243,6 +264,8 @@ export type AgentSessionEvent =
 	| { type: "tool_results_cleared"; count: number; tokensBefore: number; tokensAfter: number }
 	| { type: "entry_appended"; entry: SessionEntry }
 	| { type: "session_info_changed"; name: string | undefined }
+	/** The session moved into another working directory, such as its own git worktree. */
+	| { type: "cwd_changed"; cwd: string }
 	| { type: "thinking_level_changed"; level: ThinkingLevel }
 	| {
 			type: "compaction_end";
@@ -475,6 +498,12 @@ export class AgentSession {
 	private _customTools: ToolDefinition[];
 	private _baseToolDefinitions: Map<string, ToolDefinition> = new Map();
 	private _cwd: string;
+	/** The git worktree this session moved into. */
+	private _worktree: SessionWorktree | undefined;
+	/** The move into a worktree; set once it was attempted, so parallel calls wait for one move. */
+	private _worktreeMove: Promise<void> | undefined;
+	/** The checkout the session started in, for the `worktree` prompt section; read on first use. */
+	private _startRepo: { repo: RepoInfo | undefined } | undefined;
 	private _extensionRunnerRef?: { current?: ExtensionRunner };
 	private _initialActiveToolNames?: string[];
 	/**
@@ -591,6 +620,7 @@ export class AgentSession {
 			includeAllExtensionTools: true,
 		});
 		if (this._initialActiveToolNames === undefined) this._restoreToolsFromTranscript();
+		this._restoreWorktree();
 	}
 
 	get modelRuntime(): ModelRuntime {
@@ -723,7 +753,8 @@ export class AgentSession {
 	}
 
 	/**
-	 * `tool_call` handlers, then the confirmation of dangerous `bash` commands (see
+	 * The move into a session worktree and the mapping of paths into it, then `tool_call` handlers,
+	 * then the confirmation of dangerous `bash` commands (see
 	 * dangerous-commands.ts). The confirmation runs last, so a handler cannot change a command after
 	 * the user approved it. `parentToolCallId` is set for calls another tool made; `redact` masks the
 	 * command shown to the user.
@@ -734,6 +765,7 @@ export class AgentSession {
 		signal?: AbortSignal,
 		redact?: (text: string) => string,
 	): Promise<BeforeToolCallResult | undefined> {
+		await this._prepareWorktree(toolCall.name, args, signal);
 		const runner = this._extensionRunner;
 		let hookResult: BeforeToolCallResult | undefined;
 		if (runner.hasHandlers("tool_call")) {
@@ -809,6 +841,163 @@ export class AgentSession {
 		} finally {
 			release();
 		}
+	}
+
+	/**
+	 * Before the first change to a git checkout (`edit`, `write`, or a `bash` git command that changes
+	 * it), move the session into its own worktree. Once moved, paths of the main checkout given to
+	 * path tools are mapped into the worktree. `args` is the object the tool runs with, so it is
+	 * changed in place.
+	 */
+	private async _prepareWorktree(toolName: string, args: unknown, signal: AbortSignal | undefined): Promise<void> {
+		if (!this._worktreeMove && this._wantsWorktree(toolName, args)) {
+			this._worktreeMove = this._moveToWorktree(signal);
+		}
+		if (this._worktreeMove) await this._worktreeMove;
+		const worktree = this._worktree;
+		if (!worktree || !WORKTREE_PATH_TOOLS.has(toolName) || typeof args !== "object" || args === null) return;
+		const record = args as Record<string, unknown>;
+		if (typeof record.path !== "string" || record.path.length === 0) return;
+		const mapped = remapToWorktree(resolveToCwd(record.path, this._cwd), worktree.mainRoot, worktree.path);
+		if (mapped) record.path = mapped;
+	}
+
+	/** Whether worktrees apply to this session at all: not to subagents, sandboxes, or custom base tools. */
+	private _worktreesApply(): boolean {
+		return (
+			this.settingsManager.getWorktreesEnabled() && !this._isSubagent && !this._sandbox && !this._baseToolsOverride
+		);
+	}
+
+	private _wantsWorktree(toolName: string, args: unknown): boolean {
+		const command = (args as { command?: unknown } | undefined)?.command;
+		const changes =
+			toolName === "edit" ||
+			toolName === "write" ||
+			(toolName === "bash" && typeof command === "string" && changesGitState(command));
+		return changes && this._worktreesApply();
+	}
+
+	/** Create the session worktree and move into it. Outside a main git checkout, or when git fails, the session stays. */
+	private async _moveToWorktree(signal: AbortSignal | undefined): Promise<void> {
+		const repo = detectRepo(this._cwd);
+		if (!repo || repo.linked) return;
+		const slug = await this._worktreeSlug(signal);
+		let worktree: SessionWorktree;
+		try {
+			worktree = createSessionWorktree({ repo, cwd: this._cwd, sessionId: this.sessionId, slug, date: new Date() });
+		} catch (error) {
+			this._extensionRunner.emitError({
+				extensionPath: "<worktree>",
+				event: "worktree",
+				error: `Could not create a worktree: ${error instanceof Error ? error.message : String(error)}`,
+			});
+			return;
+		}
+		const data: WorktreeEntryData = {
+			sessionId: worktree.sessionId,
+			mainRoot: worktree.mainRoot,
+			path: worktree.path,
+			branch: worktree.branch,
+			base: worktree.base,
+			dirtyCount: worktree.dirtyCount,
+		};
+		const entry = this.sessionManager.getEntry(this.sessionManager.appendCustomEntry(WORKTREE_ENTRY_TYPE, data));
+		if (entry) this._emit({ type: "entry_appended", entry });
+		this._enterWorktree(worktree);
+	}
+
+	/**
+	 * The name part after the date: the session name, else a name the model gives the latest user
+	 * prompt, else the prompt's first words, else `task`.
+	 */
+	private async _worktreeSlug(signal: AbortSignal | undefined): Promise<string> {
+		const fromSessionName = slugify(this.sessionManager.getSessionName() ?? "");
+		if (fromSessionName) return fromSessionName;
+		const userMessage = this.agent.state.messages.findLast((message) => message.role === "user");
+		const text = userMessage ? contentText(userMessage.content, "") : "";
+		const skill = parseSkillBlock(text);
+		const prompt = (skill ? (skill.userMessage ?? skill.name) : text).trim().slice(0, 1000);
+		if (!prompt) return "task";
+		return (await this._generateWorktreeSlug(prompt, signal)) || slugify(prompt, 4) || "task";
+	}
+
+	/** Ask the session model for a short task name; undefined when it fails, times out, or is aborted. */
+	private async _generateWorktreeSlug(prompt: string, signal: AbortSignal | undefined): Promise<string | undefined> {
+		const model = this.model;
+		if (!model) return undefined;
+		const timeout = AbortSignal.timeout(WORKTREE_NAME_TIMEOUT_MS);
+		const requestSignal = signal ? AbortSignal.any([signal, timeout]) : timeout;
+		try {
+			const request = await this._getSummarizationRequestAuth(model, requestSignal);
+			const response = await completeSummarization(
+				request.model,
+				normalizeContext({
+					systemPrompt: WORKTREE_NAME_PROMPT,
+					messages: [{ role: "user", content: [{ type: "text", text: prompt }], timestamp: Date.now() }],
+				}),
+				{
+					maxTokens: Math.min(256, request.model.maxTokens > 0 ? request.model.maxTokens : 256),
+					signal: requestSignal,
+					apiKey: request.apiKey,
+					headers: request.headers,
+					env: request.env,
+				},
+				this.agent.streamFunction,
+			);
+			if (response.stopReason !== "stop") return undefined;
+			return slugify(contentText(response.content, ""), 5) || undefined;
+		} catch {
+			return undefined;
+		}
+	}
+
+	/** Work in `worktree` from now on: tools, extension contexts, `!` commands, and the system prompt. */
+	private _enterWorktree(worktree: SessionWorktree): void {
+		this._worktree = worktree;
+		this._cwd = worktree.cwd;
+		this._extensionRunner.setCwd(worktree.cwd);
+		this._rebuildSystemPrompt(this.getActiveToolNames());
+		// The running prompt is patched too, so the next request of this run sends the new sections.
+		const run = this._runSystemPromptOptions;
+		if (run) {
+			run.cwd = worktree.cwd;
+			run.sections.worktree = formatWorktreePromptSection(worktree);
+		}
+		this._emit({ type: "cwd_changed", cwd: worktree.cwd });
+	}
+
+	/** Re-enter the worktree this session recorded, for example on resume. Forks have another session id. */
+	private _restoreWorktree(): void {
+		if (this._isSubagent || this._sandbox || this._baseToolsOverride) return;
+		const entry = this.sessionManager
+			.getEntries()
+			.findLast((candidate) => candidate.type === "custom" && candidate.customType === WORKTREE_ENTRY_TYPE);
+		const data = entry?.type === "custom" ? entry.data : undefined;
+		if (!isWorktreeEntryData(data) || data.sessionId !== this.sessionId) return;
+		const worktree = restoreSessionWorktree(data, this._cwd);
+		if (!worktree) return;
+		this._worktreeMove = Promise.resolve();
+		this._enterWorktree(worktree);
+	}
+
+	/** The `worktree` prompt section, or undefined when the session cannot move into a worktree. */
+	private _worktreePromptSection(): string | undefined {
+		if (this._worktree) return formatWorktreePromptSection(this._worktree);
+		if (!this._worktreesApply()) return undefined;
+		this._startRepo ??= { repo: detectRepo(this._cwd) };
+		const repo = this._startRepo.repo;
+		return repo && !repo.linked ? formatWorktreePromptSection(undefined) : undefined;
+	}
+
+	/** Directory `!` commands run in: the session's directory, or its worktree once it moved into one. */
+	get userBashCwd(): string {
+		return this._worktree ? this._cwd : this.sessionManager.getCwd();
+	}
+
+	/** Directory the session works in; changes when the session moves into its worktree. */
+	get cwd(): string {
+		return this._cwd;
 	}
 
 	/** `tool_result` handlers and image normalization. `parentToolCallId` is set for calls another tool made. */
@@ -1890,8 +2079,10 @@ export class AgentSession {
 		const loadedSkills = this._resourceLoader.getSkills().skills;
 		const loadedContextFiles = this._resourceLoader.getAgentsFiles().agentsFiles;
 
+		const worktreeSection = this._worktreePromptSection();
 		this._baseSystemPromptOptions = normalizeBuildSystemPromptOptions({
 			cwd: this._cwd,
+			...(worktreeSection ? { sections: { worktree: worktreeSection } } : {}),
 			skills: loadedSkills,
 			contextFiles: loadedContextFiles,
 			customPrompt: loaderSystemPrompt,
@@ -3923,9 +4114,13 @@ export class AgentSession {
 		const definitions: ToolDefinition[] = [];
 		const createSession = this._createSubagentSession;
 		if (createSession && this.settingsManager.getSubagentsEnabled()) {
+			// Read at each run: the session can move into its worktree after the tool is created.
+			const getCwd = () => this._cwd;
 			definitions.push(
 				createAgentToolDefinition({
-					cwd: this._cwd,
+					get cwd() {
+						return getCwd();
+					},
 					agentDir: this._agentDir,
 					settingsManager: this.settingsManager,
 					modelRuntime: this._modelRuntime,
@@ -4409,7 +4604,7 @@ export class AgentSession {
 		try {
 			const result = await executeBashWithOperations(
 				resolvedCommand,
-				this.sessionManager.getCwd(),
+				this.userBashCwd,
 				options?.operations ?? this._sandbox?.bash ?? createLocalBashOperations({ shellPath }),
 				{
 					onChunk: (delta) => {

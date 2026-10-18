@@ -44,6 +44,7 @@ See [Choose a Model](models.md) for model selection and thinking controls.
 | `grep.tgrepPath` | string | `tgrep` from `PATH` | tgrep executable for `grep.backend: "tgrep"`. Supports a leading `~`. |
 | `subagents.enabled` | boolean | `true` | Offer the `agent` tool, which delegates tasks to subagents, and the `/agents` command. See [Subagents](subagents.md). |
 | `subagents.models` | object | `{}` | Model by agent type name, replacing the type's own model, for example `{ "browser": "openai-codex/gpt-6-luna" }`. See [Subagents](subagents.md#custom-agent-types). |
+| `worktrees.enabled` | boolean | `true` | Before a session first changes code in a git checkout, move it into its own worktree under `.worktrees/`. See [Isolated worktrees](sessions.md#isolated-worktrees). |
 | `backgroundTasks.enabled` | boolean | `true` | Offer `run_in_background` on `bash` and `agent`, monitor mode on `bash`, and the `task_stop` tool. See [Background tasks](subagents.md#background-tasks). |
 | `backgroundTasks.printModeTimeoutSeconds` | number | `600` | How long print mode (`-p`) waits for running background tasks before it stops them. |
 

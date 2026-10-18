@@ -643,7 +643,7 @@ export class InteractiveMode {
 		this.editor = this.defaultEditor;
 		this.editorContainer = new Container();
 		this.editorContainer.addChild(this.editor as Component);
-		this.footerDataProvider = new FooterDataProvider(this.sessionManager.getCwd());
+		this.footerDataProvider = new FooterDataProvider(this.session.cwd);
 		this.footer = new FooterComponent(this.session, this.footerDataProvider);
 		if (this.cacheCountdownTimer) clearInterval(this.cacheCountdownTimer);
 		this.cacheCountdownTimer = setInterval(() => {
@@ -1088,7 +1088,7 @@ export class InteractiveMode {
 	 * Update terminal title with session name and cwd.
 	 */
 	private updateTerminalTitle(): void {
-		const cwdBasename = path.basename(this.sessionManager.getCwd());
+		const cwdBasename = path.basename(this.session.cwd);
 		const sessionName = this.sessionManager.getSessionName();
 		if (sessionName) {
 			this.ui.terminal.setTitle(`${APP_TITLE} - ${sessionName} - ${cwdBasename}`);
@@ -1879,7 +1879,7 @@ export class InteractiveMode {
 		this.footer.setShowContextGauge(this.settingsManager.getShowContextGauge());
 		this.footer.setShowCacheStatus(this.settingsManager.getShowCacheStatus());
 		this.lastResponseSpeed = undefined;
-		this.footerDataProvider.setCwd(this.sessionManager.getCwd());
+		this.footerDataProvider.setCwd(this.session.cwd);
 		this.hideThinkingBlock = this.settingsManager.getHideThinkingBlock();
 		this.outputPad = this.settingsManager.getOutputPad();
 		this.ui.setShowHardwareCursor(this.settingsManager.getShowHardwareCursor());
@@ -2034,7 +2034,7 @@ export class InteractiveMode {
 			ui: this.createExtensionUIContext(),
 			mode: "tui",
 			hasUI: true,
-			cwd: this.sessionManager.getCwd(),
+			cwd: this.session.cwd,
 			sessionManager: this.sessionManager,
 			modelRegistry: extensionRunner.getModelRegistry(),
 			model: this.session.model,
@@ -3278,6 +3278,14 @@ export class InteractiveMode {
 				this.ui.requestRender();
 				break;
 
+			case "cwd_changed": {
+				this.footerDataProvider.setCwd(event.cwd);
+				const worktreeIndex = event.cwd.lastIndexOf(`${path.sep}.worktrees${path.sep}`);
+				this.showStatus(`Working in ${worktreeIndex === -1 ? event.cwd : event.cwd.slice(worktreeIndex + 1)}`);
+				this.updateTerminalTitle();
+				break;
+			}
+
 			case "thinking_level_changed":
 				this.footer.invalidate();
 				this.updateEditorBorderColor();
@@ -3327,7 +3335,7 @@ export class InteractiveMode {
 									},
 									this.getRegisteredToolDefinition(content.name),
 									this.ui,
-									this.sessionManager.getCwd(),
+									this.session.cwd,
 								);
 								component.setExpanded(this.toolOutputExpanded);
 								this.addToolExecutionToChat(component);
@@ -3409,7 +3417,7 @@ export class InteractiveMode {
 						},
 						this.getRegisteredToolDefinition(event.toolName),
 						this.ui,
-						this.sessionManager.getCwd(),
+						this.session.cwd,
 					);
 					component.setExpanded(this.toolOutputExpanded);
 					this.addToolExecutionToChat(component);
@@ -3863,7 +3871,7 @@ export class InteractiveMode {
 							},
 							this.getRegisteredToolDefinition(content.name),
 							this.ui,
-							this.sessionManager.getCwd(),
+							this.session.cwd,
 						);
 						component.setExpanded(this.toolOutputExpanded);
 						this.addToolExecutionToChat(component);
@@ -6053,7 +6061,7 @@ export class InteractiveMode {
 				type: "user_bash",
 				command,
 				excludeFromContext,
-				cwd: this.sessionManager.getCwd(),
+				cwd: this.session.userBashCwd,
 			});
 		} catch {
 			// The extension runner already reported the error. Do not fall back to local execution.
