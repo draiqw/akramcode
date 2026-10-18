@@ -54,6 +54,8 @@ Arguments after the skill name are appended to the loaded instructions as a user
 
 Set `disable-model-invocation: true` in frontmatter when a skill should be available only through its explicit command. The `enableSkillCommands` [setting](settings.md) controls whether `/skills` is available; manually entered `/skill:name` commands still work.
 
+When [`tool_search`](cli.md#tool-search) is active, it also finds skills by name and description. It returns matching skills as `skill:name` with their `SKILL.md` path; the model reads that file to use the skill. Skills with `disable-model-invocation: true` are not searched. Skills alone do not activate `tool_search`.
+
 <a id="choose-where-it-loads"></a>
 
 ## Add it to AkramCode

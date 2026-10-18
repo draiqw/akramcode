@@ -6,11 +6,15 @@
  * the model (`codemode` and `deferred` exposure) and loads the matches, so they are declared for the
  * next model call. Loading goes through the active tool set, so it is recorded in the transcript
  * like any other tool change and survives `/tree`, resume, and fork on that branch.
+ *
+ * It also ranks model-invocable skills in the same list. Skill matches are not loaded: the result
+ * gives their SKILL.md path, which the model reads to use the skill.
  */
 
 import { type Static, Type } from "typebox";
 import type {
 	ExtensionAPI,
+	SkillInfo,
 	ToolDefinition,
 	ToolExposure,
 	ToolInfo,
@@ -157,9 +161,9 @@ export class Bm25Ranker implements ToolRanker {
 }
 
 export const toolSearchSchema = Type.Object({
-	query: Type.String({ description: "Search query for deferred tools." }),
+	query: Type.String({ description: "Search query for deferred tools and skills." }),
 	limit: Type.Optional(
-		Type.Number({ description: `Maximum number of tools to return. Defaults to ${DEFAULT_TOOL_SEARCH_LIMIT}.` }),
+		Type.Number({ description: `Maximum number of results. Defaults to ${DEFAULT_TOOL_SEARCH_LIMIT}.` }),
 	),
 });
 
@@ -170,14 +174,16 @@ export function isToolSearchTool(tool: Pick<ToolInfo, "name" | "parameters">): b
 	return tool.name === TOOL_SEARCH_TOOL_NAME && tool.parameters === toolSearchSchema;
 }
 
-export interface ToolSearchResultTool {
-	name: string;
-	description: string;
-}
+/** A ranked match: a tool, which is loaded, or a skill, which the model reads at `filePath`. */
+export type ToolSearchResult =
+	| { kind: "tool"; name: string; description: string }
+	| { kind: "skill"; name: string; description: string; filePath: string };
 
 export interface ToolSearchToolDetails {
 	/** Tools loaded by this call. */
 	loaded: string[];
+	/** Skills found by this call. They are not loaded. */
+	skills: string[];
 }
 
 export interface ToolSearchToolOptions {
@@ -186,7 +192,15 @@ export interface ToolSearchToolOptions {
 	 * activates the matches. Without it, the tool finds nothing. An `ExtensionAPI` fits.
 	 */
 	tools?: Pick<ExtensionAPI, "getAllTools" | "getActiveTools" | "setActiveTools">;
+	/**
+	 * The session's skills. `tool_search` also ranks the skills without `disableModelInvocation`.
+	 * An `ExtensionAPI` fits.
+	 */
+	skills?: Pick<ExtensionAPI, "getSkills">;
 }
+
+/** Prefix of skill document names, so a skill and a tool of the same name stay apart. */
+const SKILL_PREFIX = "skill:";
 
 /** Whether `tool_search` can load a tool with this exposure. */
 function isSearchable(exposure: ToolExposure): boolean {
@@ -194,30 +208,58 @@ function isSearchable(exposure: ToolExposure): boolean {
 }
 
 /**
- * Rank the searchable tools that are not active yet and activate the matches, so the next model
- * call declares them. Activation is recorded in the transcript like any tool change.
+ * Rank the searchable tools that are not active yet together with the model-invocable skills, and
+ * activate the matching tools, so the next model call declares them. Activation is recorded in the
+ * transcript like any tool change. Skills are only returned.
  */
-function searchAndLoad(
-	tools: NonNullable<ToolSearchToolOptions["tools"]>,
-	query: string,
-	limit: number,
-): ToolSearchResultTool[] {
-	const active = tools.getActiveTools();
-	const candidates = tools.getAllTools().filter((tool) => isSearchable(tool.exposure) && !active.includes(tool.name));
-	const documents = candidates.map((tool) => createToolSearchDocument(tool, tool.namespace));
-	const matches = new Bm25Ranker().rank(query, documents, limit);
-	if (matches.length > 0) tools.setActiveTools([...active, ...matches.map((match) => match.name)]);
-	return matches.map((match) => ({
-		name: match.name,
-		description: candidates.find((tool) => tool.name === match.name)?.description ?? "",
-	}));
+function searchAndLoad(options: ToolSearchToolOptions, query: string, limit: number): ToolSearchResult[] {
+	const active = options.tools?.getActiveTools() ?? [];
+	const tools =
+		options.tools?.getAllTools().filter((tool) => isSearchable(tool.exposure) && !active.includes(tool.name)) ?? [];
+	const skills: SkillInfo[] = options.skills?.getSkills().filter((skill) => !skill.disableModelInvocation) ?? [];
+	const documents = [
+		...tools.map((tool) => createToolSearchDocument(tool, tool.namespace)),
+		...skills.map((skill) => ({ name: `${SKILL_PREFIX}${skill.name}`, text: `${skill.name} ${skill.description}` })),
+	];
+	const results = new Bm25Ranker().rank(query, documents, limit).map((match): ToolSearchResult => {
+		const skill = match.name.startsWith(SKILL_PREFIX)
+			? skills.find((entry) => `${SKILL_PREFIX}${entry.name}` === match.name)
+			: undefined;
+		if (skill) return { kind: "skill", name: skill.name, description: skill.description, filePath: skill.filePath };
+		return {
+			kind: "tool",
+			name: match.name,
+			description: tools.find((tool) => tool.name === match.name)?.description ?? "",
+		};
+	});
+	const loaded = results.filter((result) => result.kind === "tool").map((result) => result.name);
+	if (loaded.length > 0) options.tools?.setActiveTools([...active, ...loaded]);
+	return results;
+}
+
+/** The result text: the existing tool list, with skill lines and a hint when skills match. */
+export function formatToolSearchResults(results: readonly ToolSearchResult[]): string {
+	if (results.length === 0) return "No matching tools or skills found.";
+	const firstLine = (text: string) => text.trim().split(/\r?\n/)[0];
+	const lines = results.map((result) =>
+		result.kind === "tool"
+			? `- ${result.name}: ${firstLine(result.description)}`
+			: `- ${SKILL_PREFIX}${result.name}: ${firstLine(result.description)} (${result.filePath})`,
+	);
+	const toolCount = results.filter((result) => result.kind === "tool").length;
+	const headers: string[] = [];
+	if (toolCount > 0) {
+		headers.push(`Loaded ${toolCount} tool${toolCount === 1 ? "" : "s"}. They are available from your next call`);
+	}
+	if (toolCount < results.length) headers.push("To use a skill, read its file");
+	return `${headers.join(". ")}:\n${lines.join("\n")}`;
 }
 
 /**
  * The `tool_search` description. It does not list the searchable tools or their namespaces, so it
  * stays the same while tools are registered, for example when MCP servers connect.
  */
-export const TOOL_SEARCH_DESCRIPTION = `# Tool discovery\n\nSearches over deferred tool metadata with BM25 and exposes matching tools for the next model call.\n\nSome of the tools, such as tools of MCP servers, may not have been provided to you upfront, and you should use this tool (\`${TOOL_SEARCH_TOOL_NAME}\`) to search for the required tools. For MCP tool discovery, always use \`${TOOL_SEARCH_TOOL_NAME}\`.`;
+export const TOOL_SEARCH_DESCRIPTION = `# Tool discovery\n\nSearches over deferred tool metadata with BM25 and exposes matching tools for the next model call.\n\nSome of the tools, such as tools of MCP servers, may not have been provided to you upfront, and you should use this tool (\`${TOOL_SEARCH_TOOL_NAME}\`) to search for the required tools. For MCP tool discovery, always use \`${TOOL_SEARCH_TOOL_NAME}\`.\n\nIt also finds skills. A skill is not loaded as a tool: read its file to use it.`;
 
 export function createToolSearchToolDefinition(
 	options: ToolSearchToolOptions = {},
@@ -226,7 +268,7 @@ export function createToolSearchToolDefinition(
 		name: TOOL_SEARCH_TOOL_NAME,
 		label: TOOL_SEARCH_TOOL_NAME,
 		description: TOOL_SEARCH_DESCRIPTION,
-		promptSnippet: "Search for tools that are not loaded yet and load the matches",
+		promptSnippet: "Search for tools that are not loaded yet and load the matches; also finds skills",
 		parameters: toolSearchSchema,
 		// See docs/adr/coding-agent/extensions-tool-search-tool.md#model-only-exposure-for-tool-search
 		exposure: "model-only",
@@ -234,14 +276,14 @@ export function createToolSearchToolDefinition(
 			if (query.trim() === "") throw new Error("query must not be empty");
 			const max = limit ?? DEFAULT_TOOL_SEARCH_LIMIT;
 			if (!Number.isInteger(max) || max <= 0) throw new Error("limit must be a positive integer");
-			const tools = options.tools ? searchAndLoad(options.tools, query, max) : [];
-			const text =
-				tools.length === 0
-					? "No matching tools found."
-					: `Loaded ${tools.length} tool${tools.length === 1 ? "" : "s"}. They are available from your next call:\n${tools
-							.map((tool) => `- ${tool.name}: ${tool.description.trim().split(/\r?\n/)[0]}`)
-							.join("\n")}`;
-			return { content: [{ type: "text", text }], details: { loaded: tools.map((tool) => tool.name) } };
+			const results = searchAndLoad(options, query, max);
+			return {
+				content: [{ type: "text", text: formatToolSearchResults(results) }],
+				details: {
+					loaded: results.filter((result) => result.kind === "tool").map((result) => result.name),
+					skills: results.filter((result) => result.kind === "skill").map((result) => result.name),
+				},
+			};
 		},
 	};
 }

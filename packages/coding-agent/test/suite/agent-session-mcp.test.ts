@@ -914,7 +914,7 @@ return { docs, sameForAliases: aliases.every((alias) => JSON.stringify(alias) ==
 			fauxAssistantMessage("done"),
 		]);
 		await harness.session.prompt("go");
-		expect(getMessageText(toolResult(harness, "tool_search"))).toBe("No matching tools found.");
+		expect(getMessageText(toolResult(harness, "tool_search"))).toBe("No matching tools or skills found.");
 	});
 });
 

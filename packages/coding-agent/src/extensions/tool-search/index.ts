@@ -3,7 +3,8 @@
  * `createToolSearchExtension()` to their extension factories.
  *
  * `tool_search` is registered inactive. Activate it with `--tools`, the `defaultTools` setting, or
- * `setActiveTools()`.
+ * `setActiveTools()`. The MCP extension activates it for `deferred` servers; skills alone do not,
+ * since the system prompt already lists them.
  */
 
 import type { ExtensionFactory } from "../../core/extensions/types.ts";
@@ -11,7 +12,10 @@ import { createToolSearchToolDefinition } from "./tool.ts";
 
 export function createToolSearchExtension(): ExtensionFactory {
 	return (akramcode) => {
-		akramcode.registerTool({ ...createToolSearchToolDefinition({ tools: akramcode }), defaultActive: false });
+		akramcode.registerTool({
+			...createToolSearchToolDefinition({ tools: akramcode, skills: akramcode }),
+			defaultActive: false,
+		});
 	};
 }
 

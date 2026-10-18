@@ -179,7 +179,7 @@ Each server tool is registered as `mcp__<server>__<tool>`. The server's `exposur
 
 Servers with `codemode` or `deferred` tools are listed in the `mcp_servers` section of the system prompt, with how their tools are reached and one line from the configured `description` or, once connected, from the server instructions. AkramCode updates the section when a prompt starts, after waiting for servers with `direct` tools. When it changed, for example because a server connected and its summary became available, AkramCode appends the new section to the conversation instead of changing tool declarations, so earlier messages stay cached. `describeNamespace()` and the `namespace` option of `searchTools()` accept `mcp__dev-gateway`, `mcp__dev_gateway`, `dev-gateway`, or `dev_gateway`.
 
-AkramCode activates `codemode` when a server with `codemode` exposure connects. It activates `tool_search` for a server with `deferred` exposure. To make the model see a tool without searching, give it `direct` exposure with `toolExposure`.
+AkramCode activates `codemode` when a server with `codemode` exposure connects. It activates `tool_search` for a server with `deferred` exposure; `tool_search` also finds [skills](skills.md#understand-how-skills-load). To make the model see a tool without searching, give it `direct` exposure with `toolExposure`.
 
 `toolExposure` overrides the server exposure for individual tools. Keys are exact server tool names or patterns where `*` matches any characters. Exact names win over patterns; among patterns, the first match wins. A server with `hidden` exposure can expose only selected tools:
 

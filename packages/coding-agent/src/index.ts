@@ -155,6 +155,7 @@ export type {
 	SessionShutdownEvent,
 	SessionStartEvent,
 	SessionTreeEvent,
+	SkillInfo,
 	SlashCommandInfo,
 	SlashCommandSource,
 	SourceInfo,

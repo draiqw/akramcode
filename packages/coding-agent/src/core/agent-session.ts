@@ -3857,6 +3857,15 @@ export class AgentSession {
 				setActiveTools: (toolNames) => this.setActiveToolsByName(toolNames),
 				refreshTools: () => this._refreshToolRegistry(),
 				getCommands,
+				getSkills: () =>
+					this._resourceLoader
+						.getSkills()
+						.skills.map(({ name, description, filePath, disableModelInvocation }) => ({
+							name,
+							description,
+							filePath,
+							disableModelInvocation,
+						})),
 				setModel: async (model) => {
 					if (!this._modelRuntime.hasConfiguredAuth(model.provider)) return false;
 					await this.setModel(model);

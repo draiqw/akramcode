@@ -162,7 +162,7 @@ See [`hello.ts`](../examples/extensions/hello.ts), [`todo.ts`](../examples/exten
 
 `namespace: { name, description, instructions }` groups related tools, as MCP servers do. Codemode tools list a namespace under one heading with its `description`. `instructions` holds longer usage guidance; it is not listed, and codemode scripts read it with `describeNamespace(name)`.
 
-Registering a `direct` or `model-only` tool activates it; the other exposures are not activated on registration. The active set (`akramcode.getActiveTools()`, `akramcode.setActiveTools()`) is the set of tools declared to the model. `akramcode.getAllTools()` reports each tool's `exposure`, `namespace`, and `annotations`.
+Registering a `direct` or `model-only` tool activates it; the other exposures are not activated on registration. The active set (`akramcode.getActiveTools()`, `akramcode.setActiveTools()`) is the set of tools declared to the model. `akramcode.getAllTools()` reports each tool's `exposure`, `namespace`, and `annotations`. `akramcode.getSkills()` returns the loaded skills (`name`, `description`, `filePath`, `disableModelInvocation`).
 
 `annotations` are hints about what a tool does, with the meaning of MCP tool annotations: `readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint`. MCP tools carry the hints their server declares. Missing hints take the MCP defaults: a tool is not read-only, and may be destructive and reach an open world. The hints are not verified, but a permission extension can use them to decide which calls to confirm. This confirms the calls Codex asks approval for:
 

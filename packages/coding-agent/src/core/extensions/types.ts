@@ -78,6 +78,7 @@ import type {
 	SessionManager,
 } from "../session-manager.ts";
 import type { Settings } from "../settings-manager.ts";
+import type { Skill } from "../skills.ts";
 import type { SlashCommandInfo } from "../slash-commands.ts";
 import type { SourceInfo } from "../source-info.ts";
 import type { SubagentControl } from "../subagents/agent-tool.ts";
@@ -1718,6 +1719,9 @@ export interface ExtensionAPI {
 	/** Get available slash commands in the current session. */
 	getCommands(): SlashCommandInfo[];
 
+	/** Get the loaded skills, including those with `disableModelInvocation`. */
+	getSkills(): SkillInfo[];
+
 	// =========================================================================
 	// Model and Thinking Level
 	// =========================================================================
@@ -2091,6 +2095,11 @@ export type SetGlobalSettingHandler = <K extends keyof Settings>(key: K, value: 
 
 export type GetCommandsHandler = () => SlashCommandInfo[];
 
+/** A loaded skill. The model uses it by reading `filePath`. */
+export type SkillInfo = Pick<Skill, "name" | "description" | "filePath" | "disableModelInvocation">;
+
+export type GetSkillsHandler = () => SkillInfo[];
+
 export type SetActiveToolsHandler = (toolNames: string[]) => void;
 
 export type RefreshToolsHandler = () => void;
@@ -2158,6 +2167,7 @@ export interface ExtensionActions {
 	setActiveTools: SetActiveToolsHandler;
 	refreshTools: RefreshToolsHandler;
 	getCommands: GetCommandsHandler;
+	getSkills: GetSkillsHandler;
 	setModel: SetModelHandler;
 	getThinkingLevel: GetThinkingLevelHandler;
 	setThinkingLevel: SetThinkingLevelHandler;

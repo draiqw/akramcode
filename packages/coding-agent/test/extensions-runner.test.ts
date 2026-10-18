@@ -93,6 +93,7 @@ describe("ExtensionRunner", () => {
 		setActiveTools: () => {},
 		refreshTools: () => {},
 		getCommands: () => [],
+		getSkills: () => [],
 		setModel: async () => false,
 		getThinkingLevel: () => "off",
 		setThinkingLevel: () => {},

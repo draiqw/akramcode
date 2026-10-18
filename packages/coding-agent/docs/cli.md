@@ -145,7 +145,7 @@ Built-in extensions add two more tools. They are off by default; the MCP extensi
 | Built-in extension | Purpose |
 |---|---|
 | `codemode` | Run JavaScript that calls the other tools, for example in parallel with `Promise.allSettled`; only the script's output reaches the model |
-| `tool_search` | Search tools that are not declared to the model (`codemode` and `deferred` exposure, such as MCP tools) and declare the matches for the next call |
+| `tool_search` | Search tools that are not declared to the model (`codemode` and `deferred` exposure, such as MCP tools) and declare the matches for the next call; also finds skills |
 
 The built-in `question` extension tool is on by default; `--tools` without it or `--exclude-tools question` turns it off. See [Questions to the user](#questions-to-the-user).
 
@@ -186,7 +186,7 @@ Scripts run in a QuickJS sandbox and reach the other tools through `tools.<name>
 
 ### Tool search
 
-`tool_search` is off by default; enable it with `"defaultTools": ["+tool_search"]` or `--tools`. It uses the same ranking as `searchTools()` over tools that are not declared yet and declares the matches for the next model call. Loaded tools are recorded in the session like other tool changes, so they stay declared on that branch.
+`tool_search` is off by default; enable it with `"defaultTools": ["+tool_search"]` or `--tools`. It uses the same ranking as `searchTools()` over tools that are not declared yet and declares the matches for the next model call. Loaded tools are recorded in the session like other tool changes, so they stay declared on that branch. It also ranks [skills](skills.md#understand-how-skills-load) in the same list; a skill match gives its `SKILL.md` path to read and is not declared as a tool.
 
 <a id="resource-options"></a>
 
