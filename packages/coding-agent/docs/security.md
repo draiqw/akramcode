@@ -24,7 +24,7 @@ For setup instructions and the limitations of each isolation method, see [Run Ak
 
 ## Commands that always ask
 
-Before the `bash` tool runs one of these commands, AkramCode asks you to confirm it. No setting, project, or extension can turn this off. Without a UI (`-p`, JSON mode) the command is blocked.
+Before the `bash` tool runs one of these commands, AkramCode asks you to confirm it. No setting, project, or extension can turn this off. Without a UI (`-p`, JSON mode) the command runs without asking, since whoever starts such a run has handed it over; subagents without a UI still block it.
 
 - deleting or emptying files: `rm`, `rmdir`, `unlink`, `shred`, `truncate`, `find -delete`, `rsync --delete`;
 - rewriting git history, deleting refs, or discarding changes: `git push --force` (also `-f`, `--force-with-lease`, `+branch`, `--mirror`, `--prune`), `git push --delete` (also `:branch`), `git reset --hard`, `git clean -f`, `git checkout -- <path>`, `.`, `-f`, or `-B`, `git switch --discard-changes`, `git restore` (except `--staged` alone), `git rm` (except `--cached`), `git branch -D` or `-f`, `git stash drop` or `clear`, `git update-ref -d`, `git reflog expire`, `git gc --prune`, `git filter-branch` or `filter-repo`, `git worktree remove --force`;

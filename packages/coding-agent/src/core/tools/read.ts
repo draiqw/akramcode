@@ -19,7 +19,7 @@ const readSchema = Type.Object({
 
 export const readToolSystemPromptContribution = {
 	snippet: "Read file contents",
-	guidelines: ["Use read to examine files instead of cat or sed."],
+	guidelines: ["Use read to examine files instead of cat, sed or python one-liners."],
 } as const;
 
 export type ReadToolInput = Static<typeof readSchema>;

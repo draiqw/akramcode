@@ -788,7 +788,10 @@ export class AgentSession {
 		return (await this._confirmDangerousCommand(toolCall.name, args, signal, redact)) ?? hookResult;
 	}
 
-	/** Ask before a `bash` command that cannot be undone; one dialog at a time. Blocks without a UI. */
+	/**
+	 * Ask before a `bash` command that cannot be undone; one dialog at a time. Print and JSON modes
+	 * run it unasked, since whoever starts them has handed the run over; subagents without a UI block.
+	 */
 	private async _confirmDangerousCommand(
 		toolName: string,
 		args: unknown,
@@ -802,6 +805,7 @@ export class AgentSession {
 		const labels = dangerous.join(", ");
 		const runner = this._extensionRunner;
 		if (!runner.hasUI()) {
+			if (!this._isSubagent) return undefined;
 			return { block: true, reason: `Blocked: ${labels} needs the user's confirmation, and there is no UI to ask.` };
 		}
 		// Dialogs replace each other, so parallel calls (codemode, subagents) ask in turn.
@@ -862,10 +866,17 @@ export class AgentSession {
 		if (mapped) record.path = mapped;
 	}
 
-	/** Whether worktrees apply to this session at all: not to subagents, sandboxes, or custom base tools. */
+	/**
+	 * Whether worktrees apply to this session at all: only with a UI (print and JSON modes change files
+	 * in place, since scripts expect that), and not to subagents, sandboxes, or custom base tools.
+	 */
 	private _worktreesApply(): boolean {
 		return (
-			this.settingsManager.getWorktreesEnabled() && !this._isSubagent && !this._sandbox && !this._baseToolsOverride
+			this.settingsManager.getWorktreesEnabled() &&
+			this._extensionRunner.hasUI() &&
+			!this._isSubagent &&
+			!this._sandbox &&
+			!this._baseToolsOverride
 		);
 	}
 

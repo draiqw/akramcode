@@ -322,6 +322,11 @@ export function createQuestionToolDefinition(): ToolDefinition<typeof questionSc
 export function createQuestionExtension() {
 	return (akramcode: ExtensionAPI) => {
 		akramcode.registerTool(createQuestionToolDefinition());
+		// Without a UI nobody can answer, so the tool would only cost schema tokens on every request.
+		akramcode.on("session_start", (_event, ctx) => {
+			if (ctx.hasUI) return;
+			akramcode.setActiveTools(akramcode.getActiveTools().filter((name) => name !== "question"));
+		});
 	};
 }
 

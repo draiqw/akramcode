@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Print and JSON modes run dangerous `bash` commands (`rm`, `git checkout -- <path>`, ...) without asking instead of blocking them; subagents without a UI still block them.
+- Print and JSON modes leave out the `question` tool, since nobody can answer it.
+- System prompt rules: drop "think step by step"; compute with code only for numbers and aggregates; check results only when the result is data, numbers or a generated file, and do not re-read just-edited files; make independent tool calls in one response; be concise again. `read` is preferred over python one-liners for viewing files.
+
+### Fixed
+
+- Print and JSON modes (`-p`, `--mode json`) change files in place again instead of moving the session into a worktree under `.worktrees/`.
+
 ## [1.0.33] - 2026-10-19
 
 ### Added

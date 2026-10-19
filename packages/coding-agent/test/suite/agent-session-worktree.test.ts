@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { fauxAssistantMessage, fauxToolCall } from "@akramcode/providers";
 import { afterEach, describe, expect, it } from "vitest";
 import { formatWorktreeDate, slugify, WORKTREE_ENTRY_TYPE } from "../../src/core/worktree.ts";
-import { createHarness, type Harness, type HarnessOptions } from "./harness.ts";
+import { createHarness, createTestUiContext, type Harness, type HarnessOptions } from "./harness.ts";
 
 function git(cwd: string, ...args: string[]): string {
 	return execFileSync("git", args, { cwd, encoding: "utf-8", stdio: ["ignore", "pipe", "pipe"] }).trim();
@@ -28,9 +28,10 @@ describe("AgentSession worktrees", () => {
 		while (extraDirs.length > 0) rmSync(extraDirs.pop()!, { recursive: true, force: true });
 	});
 
-	const setup = async (options: HarnessOptions & { repo?: boolean } = {}) => {
+	const setup = async (options: HarnessOptions & { repo?: boolean; ui?: boolean } = {}) => {
 		const harness = await createHarness(options);
 		harnesses.push(harness);
+		if (options.ui !== false) await harness.session.bindExtensions({ uiContext: createTestUiContext() });
 		if (options.repo !== false) initRepo(harness.tempDir);
 		return harness;
 	};
@@ -177,6 +178,20 @@ describe("AgentSession worktrees", () => {
 
 		expect(readFileSync(join(harness.tempDir, "a.txt"), "utf-8")).toBe("x");
 		expect(worktrees(harness)).toEqual([]);
+	});
+
+	it("changes files in place without a UI, as in print and JSON modes", async () => {
+		const harness = await setup({ ui: false });
+		harness.setResponses([
+			fauxAssistantMessage(fauxToolCall("write", { path: "a.txt", content: "x" }), { stopReason: "toolUse" }),
+			fauxAssistantMessage("Done."),
+		]);
+
+		await harness.session.prompt("Write a file");
+
+		expect(readFileSync(join(harness.tempDir, "a.txt"), "utf-8")).toBe("x");
+		expect(worktrees(harness)).toEqual([]);
+		expect(harness.session.systemPrompt).not.toContain("git checkout is shared with other sessions");
 	});
 
 	it("creates one worktree for parallel writes", async () => {

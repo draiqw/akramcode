@@ -38,7 +38,7 @@ Several sessions can work in one git project without changing each other's files
 - Settings and session storage stay with the main checkout, so `/resume` lists the session under the project. A resumed session returns to its worktree and recreates it from its branch if the directory was removed. A fork moves into its own worktree on its first change.
 - Worktrees stay after the session ends. Merge the branch, then remove the worktree with `git worktree remove .worktrees/<name>` and the branch with `git branch -d <name>`.
 
-Nothing moves outside a git repository, in a linked worktree, in subagents, or with a [sandbox](sandbox.md). Turn it off with the `worktrees.enabled` [setting](settings.md).
+Nothing moves outside a git repository, in a linked worktree, in subagents, with a [sandbox](sandbox.md), or in print and JSON modes (`-p`, `--mode json`), where scripts expect files to change in place. Turn it off with the `worktrees.enabled` [setting](settings.md).
 
 ## Manage conversation context
 

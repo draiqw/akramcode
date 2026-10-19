@@ -81,12 +81,10 @@ describe("dangerous bash commands", () => {
 		};
 	};
 
-	it("blocks without a UI", async () => {
+	it("runs without asking in print mode, where there is no UI", async () => {
 		const { runTool, exists } = await setup("no-ui");
-		expect(await runTool("bash", "rm keep.txt")).toContain("Blocked: rm needs the user's confirmation");
-		expect(exists()).toBe(true);
-		expect(await runTool("outer", "rm -f keep.txt")).toContain("Blocked: rm needs the user's confirmation");
-		expect(exists()).toBe(true);
+		expect(await runTool("outer", "rm -f keep.txt")).not.toContain("Blocked");
+		expect(exists()).toBe(false);
 	});
 
 	it("asks the user and blocks when declined", async () => {
