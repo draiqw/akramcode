@@ -594,4 +594,4 @@ Benchmarks: `npm run bench:storage`, `npm run bench:storage:memory`, and `npm ru
 
 ## License
 
-MIT
+Proprietary. See `LICENSE`; third-party licenses are in `THIRD_PARTY_NOTICES.md`.

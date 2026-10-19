@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- akramcode is proprietary from this release on: `LICENSE` is no longer MIT, and packages declare `"license": "UNLICENSED"`. Release archives include `LICENSE` and `THIRD_PARTY_NOTICES.md` with the licenses of pi, bundled dependencies, and adapted code.
+
 ## [1.0.34] - 2026-10-19
 
 ### Changed

@@ -461,4 +461,4 @@ npm run check
 
 ## License
 
-MIT
+Proprietary. See `LICENSE`; third-party licenses are in `THIRD_PARTY_NOTICES.md`.

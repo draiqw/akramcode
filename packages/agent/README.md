@@ -561,4 +561,4 @@ These low-level streams are observational. They preserve event order, but they d
 
 ## License
 
-MIT
+Proprietary. See `LICENSE`; third-party licenses are in `THIRD_PARTY_NOTICES.md`.

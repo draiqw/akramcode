@@ -1786,4 +1786,4 @@ Add an entry to `packages/ai/CHANGELOG.md` under `## [Unreleased]`:
 
 ## License
 
-MIT
+Proprietary. See `LICENSE`; third-party licenses are in `THIRD_PARTY_NOTICES.md`.

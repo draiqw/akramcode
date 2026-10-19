@@ -58,4 +58,4 @@ Read [CONTRIBUTING.md](https://github.com/draiqw/akramcode/blob/main/CONTRIBUTIN
 
 ## License
 
-MIT
+Proprietary. See `LICENSE`; third-party licenses are in `THIRD_PARTY_NOTICES.md`.

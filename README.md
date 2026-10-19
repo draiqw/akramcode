@@ -83,4 +83,4 @@ We treat npm dependency changes as reviewed code changes.
 
 ## License
 
-MIT
+Proprietary. See `LICENSE`; third-party licenses are in `THIRD_PARTY_NOTICES.md`.

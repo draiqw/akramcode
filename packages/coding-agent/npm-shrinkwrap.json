@@ -7,7 +7,7 @@
 		"": {
 			"name": "@akramcode/coding-agent",
 			"version": "1.0.34",
-			"license": "MIT",
+			"license": "UNLICENSED",
 			"dependencies": {
 				"@akramcode/chord": "^1.0.34",
 				"@akramcode/agent-core": "^1.0.34",
@@ -45,7 +45,7 @@
 		"node_modules/@akramcode/agent-core": {
 			"version": "1.0.34",
 			"resolved": "https://registry.npmjs.org/@akramcode/agent-core/-/agent-core-1.0.34.tgz",
-			"license": "MIT",
+			"license": "UNLICENSED",
 			"dependencies": {
 				"@akramcode/ai": "^1.0.34",
 				"@akramcode/providers": "^1.0.34",
@@ -58,7 +58,7 @@
 		"node_modules/@akramcode/ai": {
 			"version": "1.0.34",
 			"resolved": "https://registry.npmjs.org/@akramcode/ai/-/ai-1.0.34.tgz",
-			"license": "MIT",
+			"license": "UNLICENSED",
 			"dependencies": {
 				"typebox": "1.3.27",
 				"@akramcode/telemetry": "^1.0.34",
@@ -71,7 +71,7 @@
 		"node_modules/@akramcode/chord": {
 			"version": "1.0.34",
 			"resolved": "https://registry.npmjs.org/@akramcode/chord/-/chord-1.0.34.tgz",
-			"license": "MIT",
+			"license": "UNLICENSED",
 			"dependencies": {
 				"esbuild": "0.28.2"
 			},
@@ -82,7 +82,7 @@
 		"node_modules/@akramcode/codemode": {
 			"version": "1.0.34",
 			"resolved": "https://registry.npmjs.org/@akramcode/codemode/-/codemode-1.0.34.tgz",
-			"license": "MIT",
+			"license": "UNLICENSED",
 			"dependencies": {
 				"quickjs-wasi": "3.6.2"
 			},
@@ -93,7 +93,7 @@
 		"node_modules/@akramcode/mcp": {
 			"version": "1.0.34",
 			"resolved": "https://registry.npmjs.org/@akramcode/mcp/-/mcp-1.0.34.tgz",
-			"license": "MIT",
+			"license": "UNLICENSED",
 			"dependencies": {
 				"cross-spawn": "7.0.6"
 			},
@@ -104,7 +104,7 @@
 		"node_modules/@akramcode/providers": {
 			"version": "1.0.34",
 			"resolved": "https://registry.npmjs.org/@akramcode/providers/-/providers-1.0.34.tgz",
-			"license": "MIT",
+			"license": "UNLICENSED",
 			"dependencies": {
 				"@anthropic-ai/sdk": "0.129.0",
 				"http-proxy-agent": "9.1.0",
@@ -184,7 +184,7 @@
 		"node_modules/@akramcode/sandbox": {
 			"version": "1.0.34",
 			"resolved": "https://registry.npmjs.org/@akramcode/sandbox/-/sandbox-1.0.34.tgz",
-			"license": "MIT",
+			"license": "UNLICENSED",
 			"dependencies": {
 				"@alibaba-group/opensandbox": "0.1.11"
 			},
@@ -195,7 +195,7 @@
 		"node_modules/@akramcode/telemetry": {
 			"version": "1.0.34",
 			"resolved": "https://registry.npmjs.org/@akramcode/telemetry/-/telemetry-1.0.34.tgz",
-			"license": "MIT",
+			"license": "UNLICENSED",
 			"engines": {
 				"node": ">=22.19.0"
 			}
@@ -203,7 +203,7 @@
 		"node_modules/@akramcode/tui": {
 			"version": "1.0.34",
 			"resolved": "https://registry.npmjs.org/@akramcode/tui/-/tui-1.0.34.tgz",
-			"license": "MIT",
+			"license": "UNLICENSED",
 			"dependencies": {
 				"get-east-asian-width": "1.6.0",
 				"marked": "18.0.11"
