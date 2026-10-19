@@ -1,6 +1,6 @@
 {
 	"name": "@akramcode/durable",
-	"version": "1.0.33",
+	"version": "1.0.34",
 	"description": "Durable conversation, task, and document runtime for AkramCode",
 	"type": "module",
 	"main": "./dist/index.js",
@@ -100,9 +100,9 @@
 		"node": ">=22.19.0"
 	},
 	"dependencies": {
-		"@akramcode/chord": "^1.0.33",
-		"@akramcode/ai": "^1.0.33",
-		"@akramcode/providers": "^1.0.33",
+		"@akramcode/chord": "^1.0.34",
+		"@akramcode/ai": "^1.0.34",
+		"@akramcode/providers": "^1.0.34",
 		"diff": "8.0.4",
 		"typebox": "1.3.27"
 	},
