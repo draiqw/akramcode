@@ -3,9 +3,8 @@ import type { AgentSession } from "../../../core/agent-session.ts";
 import { areExperimentalFeaturesEnabled } from "../../../core/experimental.ts";
 import type { ContextUsage } from "../../../core/extensions/types.ts";
 import type { ReadonlyFooterDataProvider } from "../../../core/footer-data-provider.ts";
-import { addUsageToTotals, createUsageTotals, type UsageTotals } from "../../../core/usage-totals.ts";
 import { theme } from "../theme/theme.ts";
-import { type CachePromptUsage, renderCacheStatusLine, renderShareBar } from "./cache-status.ts";
+import { type CachePromptUsage, renderCacheStatusLine } from "./cache-status.ts";
 
 /**
  * Sanitize text for display in a single-line status.
@@ -35,22 +34,12 @@ export function formatTokensPerSecond(tokensPerSecond: number): string {
 	return tokensPerSecond >= 100 ? `${Math.round(tokensPerSecond)} tok/s` : `${tokensPerSecond.toFixed(1)} tok/s`;
 }
 
-/** Cells used by the footer's context gauge. */
-const CONTEXT_GAUGE_CELLS = 10;
-
-/** Renders context fill as a fixed-width bar, e.g. `███░░░░░░░` for 30%. */
-export function renderContextGauge(percent: number, cells: number = CONTEXT_GAUGE_CELLS): string {
-	return renderShareBar(percent, cells);
-}
-
 interface SessionStats {
 	session: AgentSession;
 	sessionId: string;
 	leafId: string | null;
 	entryCount: number;
 	limitsModel: unknown;
-	usageTotals: UsageTotals;
-	latestCacheHitRate: number | undefined;
 	/** Prompt usage of the latest assistant response, for the cache status line. */
 	latestPromptUsage: CachePromptUsage | undefined;
 	contextUsage: ContextUsage | undefined;
@@ -61,7 +50,6 @@ interface SessionStats {
  * Computes token/context stats from session, gets git branch and extension statuses from provider.
  */
 export class FooterComponent implements Component {
-	private showContextGauge = false;
 	private showCacheStatus = false;
 	private cacheCountdownLive = false;
 	private session: AgentSession;
@@ -75,11 +63,6 @@ export class FooterComponent implements Component {
 
 	setSession(session: AgentSession): void {
 		this.session = session;
-	}
-
-	/** Show the context-fill bar and the latest generation speed. */
-	setShowContextGauge(enabled: boolean): void {
-		this.showContextGauge = enabled;
 	}
 
 	/** Show the prompt-cache status line (hit ratio, cached tokens, expiry countdown). */
@@ -109,7 +92,7 @@ export class FooterComponent implements Component {
 	}
 
 	/**
-	 * Usage totals and context usage scan the whole session, and the footer renders on every frame.
+	 * The latest prompt usage and context usage scan the whole session, and the footer renders on every frame.
 	 * Entries are append-only and every append moves the leaf, so the results only change with the
 	 * session, leaf, entry count, or the model whose context window applies.
 	 */
@@ -131,27 +114,11 @@ export class FooterComponent implements Component {
 			return cached;
 		}
 
-		// Calculate cumulative usage from ALL session entries (not just post-compaction messages)
-		const usageTotals = createUsageTotals();
-		let latestCacheHitRate: number | undefined;
 		let latestPromptUsage: CachePromptUsage | undefined;
-
 		for (const entry of sessionManager.getEntries()) {
-			if (entry.type === "usage") {
-				addUsageToTotals(usageTotals, entry.usage);
-			} else if (entry.type === "message" && entry.message.role === "assistant") {
-				addUsageToTotals(usageTotals, entry.message.usage);
-
-				const latestPromptTokens =
-					entry.message.usage.input + entry.message.usage.cacheRead + entry.message.usage.cacheWrite;
-				latestCacheHitRate =
-					latestPromptTokens > 0 ? (entry.message.usage.cacheRead / latestPromptTokens) * 100 : undefined;
+			if (entry.type === "message" && entry.message.role === "assistant") {
 				const { input, cacheRead, cacheWrite } = entry.message.usage;
 				latestPromptUsage = { input, cacheRead, cacheWrite };
-			} else if (entry.type === "message" && entry.message.role === "toolResult" && entry.message.usage) {
-				addUsageToTotals(usageTotals, entry.message.usage);
-			} else if ((entry.type === "branch_summary" || entry.type === "compaction") && entry.usage) {
-				addUsageToTotals(usageTotals, entry.usage);
 			}
 		}
 
@@ -164,8 +131,6 @@ export class FooterComponent implements Component {
 			leafId,
 			entryCount,
 			limitsModel,
-			usageTotals,
-			latestCacheHitRate,
 			latestPromptUsage,
 			contextUsage,
 		};
@@ -174,7 +139,7 @@ export class FooterComponent implements Component {
 
 	render(width: number): string[] {
 		const state = this.session.state;
-		const { usageTotals, latestCacheHitRate, latestPromptUsage, contextUsage } = this.getSessionStats();
+		const { latestPromptUsage, contextUsage } = this.getSessionStats();
 		const cacheLine =
 			this.showCacheStatus &&
 			latestPromptUsage !== undefined &&
@@ -182,44 +147,32 @@ export class FooterComponent implements Component {
 				? renderCacheStatusLine(latestPromptUsage, this.session.promptCacheTouch, Date.now())
 				: undefined;
 		this.cacheCountdownLive = cacheLine?.live ?? false;
-		const contextWindow = contextUsage?.contextWindow ?? state.model?.contextWindow ?? 0;
 		const contextPercentValue = contextUsage?.percent ?? 0;
 		const contextPercent = contextUsage?.percent !== null ? contextPercentValue.toFixed(1) : "?";
 
 		// The working directory and git branch are left out; a session name, when set, leads the line.
 		const sessionName = this.session.sessionManager.getSessionName();
 
-		// Build stats line
+		// Build stats line, e.g. "2.7% context · 96% cache". Token totals and cost are in /usage.
 		const statsParts = [];
-		// Token totals and cost are in /usage; the footer keeps context and cache.
-		// The cache status line shows the hit ratio in more detail.
-		if (!cacheLine && (usageTotals.cacheRead > 0 || usageTotals.cacheWrite > 0) && latestCacheHitRate !== undefined) {
-			statsParts.push(`CH${latestCacheHitRate.toFixed(1)}%`);
-		}
 
 		// Colorize context percentage based on usage
-		let contextPercentStr: string;
-		const gauge =
-			this.showContextGauge && contextPercent !== "?" ? `${renderContextGauge(contextPercentValue)} ` : "";
-		const contextPercentDisplay =
-			contextPercent === "?"
-				? `?/${formatTokens(contextWindow)}`
-				: `${gauge}${contextPercent}%/${formatTokens(contextWindow)}`;
+		const contextPercentDisplay = `${contextPercent}% context`;
 		if (contextPercentValue > 90) {
-			contextPercentStr = theme.fg("error", contextPercentDisplay);
+			statsParts.push(theme.fg("error", contextPercentDisplay));
 		} else if (contextPercentValue > 70) {
-			contextPercentStr = theme.fg("warning", contextPercentDisplay);
+			statsParts.push(theme.fg("warning", contextPercentDisplay));
 		} else {
-			contextPercentStr = contextPercentDisplay;
-		}
-		statsParts.push(contextPercentStr);
-		if (areExperimentalFeaturesEnabled()) {
-			statsParts.push(`${theme.fg("dim", "•")} ${theme.bold(theme.fg("warning", "xp"))}`);
+			statsParts.push(contextPercentDisplay);
 		}
 
 		if (cacheLine) statsParts.push(cacheLine.text);
 
-		let statsLeft = sessionName ? `${sessionName}  ${statsParts.join(" ")}` : statsParts.join(" ");
+		let statsLeft = statsParts.join(theme.fg("dim", " · "));
+		if (areExperimentalFeaturesEnabled()) {
+			statsLeft += ` ${theme.fg("dim", "•")} ${theme.bold(theme.fg("warning", "xp"))}`;
+		}
+		if (sessionName) statsLeft = `${sessionName}  ${statsLeft}`;
 
 		// Add model name on the right side, plus thinking level if model supports it
 		const modelName = state.model?.id || "no-model";

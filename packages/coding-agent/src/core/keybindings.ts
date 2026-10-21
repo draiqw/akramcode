@@ -38,6 +38,8 @@ export interface AppKeybindings {
 	"app.session.delete": true;
 	"app.session.deleteNoninvasive": true;
 	"app.models.save": true;
+	"app.agents.focus": true;
+	"app.agents.stop": true;
 }
 
 export type AppKeybinding = keyof AppKeybindings;
@@ -153,6 +155,14 @@ export const KEYBINDINGS = {
 	"app.models.save": {
 		defaultKeys: "ctrl+s",
 		description: "Save model selection",
+	},
+	"app.agents.focus": {
+		defaultKeys: "down",
+		description: "Select an agent below the empty editor",
+	},
+	"app.agents.stop": {
+		defaultKeys: "x",
+		description: "Stop the selected agent",
 	},
 } as const satisfies KeybindingDefinitions;
 

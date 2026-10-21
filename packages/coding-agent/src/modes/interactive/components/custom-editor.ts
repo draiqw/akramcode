@@ -21,6 +21,8 @@ export class CustomEditor extends Editor {
 	public onEscape?: () => void;
 	public onCtrlD?: () => void;
 	public onPasteImage?: () => void;
+	/** Move focus to the agents panel. Returns false when there is no agent to select. */
+	public onAgentsFocus?: () => boolean;
 	/** Handler for extension-registered shortcuts. Returns true if handled. */
 	public onExtensionShortcut?: (data: string) => boolean;
 
@@ -124,6 +126,11 @@ export class CustomEditor extends Editor {
 				if (handler) handler();
 				return;
 			}
+		}
+
+		// Only from an empty editor: otherwise the key moves the cursor or browses history.
+		if (this.keybindings.matches(data, "app.agents.focus") && this.getText().length === 0 && this.onAgentsFocus?.()) {
+			return;
 		}
 
 		// See docs/adr/coding-agent/modes-interactive-components-custom-editor.md#history-binding-precedence

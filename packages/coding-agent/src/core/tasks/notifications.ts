@@ -4,9 +4,6 @@ import type { TaskInfo } from "./task-registry.ts";
 /** `customType` of the session messages that report background task events. */
 export const TASK_NOTIFICATION_CUSTOM_TYPE = "task-notification";
 
-/** Longest agent result a notification carries; the full text stays in the output file. */
-const MAX_NOTIFICATION_RESULT_CHARS = 30_000;
-
 /** Output lines a finished bash notification carries. */
 const NOTIFICATION_TAIL_LINES = 20;
 const NOTIFICATION_TAIL_BYTES = 4 * 1024;
@@ -59,21 +56,13 @@ export function formatElapsed(ms: number): string {
 export function describeTaskOutcome(task: TaskInfo): string {
 	const parts: string[] = [task.status];
 	if (task.exitCode !== undefined) parts.push(`exit ${task.exitCode}`);
-	if (task.usage) {
-		parts.push(`${task.usage.toolUses} tool use${task.usage.toolUses === 1 ? "" : "s"}`);
-		parts.push(`${formatTokenCount(task.usage.totalTokens)} tokens`);
-	}
 	if (task.endedAt !== undefined) parts.push(formatElapsed(task.endedAt - task.startedAt));
 	return parts.join(" · ");
 }
 
 function finishedSummary(task: TaskInfo): string {
 	const subject =
-		task.kind === "agent"
-			? `Agent "${task.description}"`
-			: task.kind === "monitor"
-				? `Monitor "${task.description}"`
-				: `Background command "${task.description}"`;
+		task.kind === "monitor" ? `Monitor "${task.description}"` : `Background command "${task.description}"`;
 	switch (task.status) {
 		case "completed":
 			return task.exitCode !== undefined
@@ -101,13 +90,7 @@ export function formatTaskFinishedNotification(task: TaskInfo): string {
 		const tail = readTaskOutputTail(task.outputFile, NOTIFICATION_TAIL_LINES, NOTIFICATION_TAIL_BYTES);
 		if (tail.length > 0) lines.push(`<output-tail>\n${tail.join("\n")}\n</output-tail>`);
 	}
-	if (task.result !== undefined) {
-		const result =
-			task.result.length > MAX_NOTIFICATION_RESULT_CHARS
-				? `${task.result.slice(0, MAX_NOTIFICATION_RESULT_CHARS)}\n[Result truncated. Full text: ${task.outputFile}]`
-				: task.result;
-		lines.push(`<result>\n${result}\n</result>`);
-	}
+	if (task.result !== undefined) lines.push(`<result>\n${task.result}\n</result>`);
 	lines.push(`<output-file>${task.outputFile}</output-file>`, "</task-notification>");
 	if (task.kind === "bash") {
 		lines.push(

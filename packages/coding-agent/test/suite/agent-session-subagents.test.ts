@@ -11,6 +11,10 @@ import { createAgentSession } from "../../src/core/sdk.ts";
 import type { Settings } from "../../src/core/settings-manager.ts";
 import { DEFAULT_TOOL_NAMES } from "../../src/core/settings-manager.ts";
 import type { AgentToolDetails } from "../../src/core/subagents/agent-tool.ts";
+import {
+	AGENT_NOTIFICATION_CUSTOM_TYPE,
+	type AgentNotificationDetails,
+} from "../../src/core/subagents/notifications.ts";
 import { TASK_NOTIFICATION_CUSTOM_TYPE, type TaskNotificationDetails } from "../../src/core/tasks/notifications.ts";
 import { createHarness, getMessageText, type Harness } from "./harness.ts";
 
@@ -73,6 +77,13 @@ function notifications(harness: Harness): CustomMessage<TaskNotificationDetails>
 	);
 }
 
+function agentNotifications(harness: Harness): CustomMessage<AgentNotificationDetails>[] {
+	return harness.session.messages.filter(
+		(message): message is CustomMessage<AgentNotificationDetails> =>
+			message.role === "custom" && message.customType === AGENT_NOTIFICATION_CUSTOM_TYPE,
+	);
+}
+
 function schemaProperties(schema: unknown): Record<string, unknown> {
 	return (schema as { properties?: Record<string, unknown> } | undefined)?.properties ?? {};
 }
@@ -104,7 +115,9 @@ describe("AgentSession subagents and background tasks", () => {
 
 	it("activates agent and task_stop by default and honors the settings", async () => {
 		const harness = await setup();
-		expect(harness.session.getActiveToolNames()).toEqual(expect.arrayContaining(["agent", "task_stop"]));
+		expect(harness.session.getActiveToolNames()).toEqual(
+			expect.arrayContaining(["agent", "agent_message", "task_stop"]),
+		);
 		expect(harness.session.getAllTools().map((tool) => tool.name)).not.toContain("monitor");
 		const agentTool = harness.session.getToolDefinition("agent");
 		expect(Object.keys(schemaProperties(agentTool?.parameters))).toContain("run_in_background");
@@ -166,7 +179,9 @@ describe("AgentSession subagents and background tasks", () => {
 
 		const [result] = toolResults(harness, "agent");
 		expect(result.isError).toBe(false);
-		expect(getMessageText(result)).toBe("Child report: no files.");
+		expect(getMessageText(result)).toBe(
+			"Child report: no files.\n\nagent_id: a1 (send it more work with agent_message)",
+		);
 		const details = result.details as unknown as AgentToolDetails;
 		expect(details).toMatchObject({
 			agentType: "explore",
@@ -206,6 +221,7 @@ describe("AgentSession subagents and background tasks", () => {
 		expect(childRequests[0].tools.sort()).toEqual(["bash", "edit", "read", "write"]);
 		// Background parameters are removed from the child's bash, and stripped if sent anyway.
 		expect(childRequests[0].hasToolResults).toBe(false);
+		expect(childRequests[0].tools).not.toContain("agent_message");
 		expect(harness.session.tasks.list()).toEqual([]);
 	});
 
@@ -307,7 +323,7 @@ describe("AgentSession subagents and background tasks", () => {
 		await harness.session.prompt("parallel");
 
 		expect(maxActive).toBe(2);
-		const texts = toolResults(harness, "agent").map((result) => getMessageText(result));
+		const texts = toolResults(harness, "agent").map((result) => getMessageText(result).split("\n")[0]);
 		expect(texts.sort()).toEqual(["answer for task one", "answer for task two"]);
 		for (const result of toolResults(harness, "agent")) {
 			const transcript = (result.details as unknown as AgentToolDetails).transcriptFile;
@@ -466,21 +482,140 @@ describe("AgentSession subagents and background tasks", () => {
 
 		await harness.session.prompt("start");
 		const [result] = toolResults(harness, "agent");
-		expect(getMessageText(result)).toContain("Agent running in background with ID: a1");
+		expect(getMessageText(result)).toContain("Agent a1 is running in the background");
+		// Agents are not background tasks.
+		expect(harness.session.tasks.list()).toEqual([]);
 
 		expect(await harness.session.waitForBackgroundTasks(10_000)).toBe(true);
 
-		const [notification] = notifications(harness);
-		expect(notification.details?.task).toMatchObject({ id: "a1", kind: "agent", status: "completed" });
+		const [notification] = agentNotifications(harness);
+		expect(notification.details?.agent).toMatchObject({
+			id: "a1",
+			status: "completed",
+			result: "background findings",
+		});
+		expect(notification.content).toContain("<agent-id>a1</agent-id>");
 		expect(notification.content).toContain("<result>\nbackground findings\n</result>");
 		expect(lastAssistantText(harness)).toBe("Research finished: background findings.");
-		const task = harness.session.tasks.get("a1");
-		expect(task?.usage?.turns).toBe(1);
-		if (task) {
-			expect(readFileSync(task.outputFile, "utf-8")).toContain("Result:\nbackground findings");
-			cleanupPaths.push(task.outputFile);
-			if (task.transcriptFile) cleanupPaths.push(task.transcriptFile);
-		}
+		expect(harness.session.subagentRegistry.get("a1")?.usage.turns).toBe(1);
+	});
+
+	it("continues a finished agent with agent_message and notifies the main agent", async () => {
+		const harness = await setup();
+		const childRequests = route(
+			harness,
+			[
+				fauxAssistantMessage(fauxToolCall("agent", { description: "Count", prompt: "count files" }), {
+					stopReason: "toolUse",
+				}),
+				fauxAssistantMessage(fauxToolCall("agent_message", { agent_id: "a1", message: "now count dirs" }), {
+					stopReason: "toolUse",
+				}),
+				fauxAssistantMessage("Asked for dirs."),
+				fauxAssistantMessage("Got the dirs."),
+			],
+			(request) => fauxAssistantMessage(`answer to ${request.prompt}`),
+		);
+
+		await harness.session.prompt("go");
+		expect(getMessageText(toolResults(harness, "agent_message")[0])).toContain("Agent a1 resumed");
+		expect(await harness.session.waitForBackgroundTasks(10_000)).toBe(true);
+
+		// The second request keeps the agent's context.
+		expect(childRequests.map((request) => request.prompt)).toEqual(["count files", "now count dirs"]);
+		const [notification] = agentNotifications(harness);
+		expect(notification.content).toContain("<result>\nanswer to now count dirs\n</result>");
+		expect(notification.content).not.toContain("<user-message>");
+		expect(lastAssistantText(harness)).toBe("Got the dirs.");
+		expect(harness.session.subagentRegistry.get("a1")?.usage.turns).toBe(2);
+	});
+
+	it("tells the main agent what the user asked an agent and how it replied", async () => {
+		const harness = await setup();
+		route(
+			harness,
+			[
+				fauxAssistantMessage(fauxToolCall("agent", { description: "Review", prompt: "review" }), {
+					stopReason: "toolUse",
+				}),
+				fauxAssistantMessage("Reviewed."),
+				fauxAssistantMessage("Noted the user's request."),
+			],
+			(request) => fauxAssistantMessage(`reply to ${request.prompt}`),
+		);
+		await harness.session.prompt("go");
+
+		expect(await harness.session.subagentRegistry.send("a1", "also check tests", "user")).toBe("resumed");
+		expect(await harness.session.waitForBackgroundTasks(10_000)).toBe(true);
+
+		const [notification] = agentNotifications(harness);
+		expect(notification.content).toContain('Agent "Review" replied to the user');
+		expect(notification.content).toContain("<user-message>\nalso check tests\n</user-message>");
+		expect(notification.content).toContain("<result>\nreply to also check tests\n</result>");
+		expect(lastAssistantText(harness)).toBe("Noted the user's request.");
+	});
+
+	it("steers a running agent with a message", async () => {
+		const harness = await setup();
+		let releaseFirst = () => {};
+		const firstReleased = new Promise<void>((resolve) => {
+			releaseFirst = resolve;
+		});
+		const childRequests = route(
+			harness,
+			[
+				fauxAssistantMessage(
+					fauxToolCall("agent", { description: "Build", prompt: "build it", run_in_background: true }),
+					{ stopReason: "toolUse" },
+				),
+				fauxAssistantMessage("Started."),
+				fauxAssistantMessage("Built."),
+			],
+			async (request) => {
+				if (request.hasToolResults) return fauxAssistantMessage(`done after ${request.prompt}`);
+				await firstReleased;
+				return fauxAssistantMessage(fauxToolCall("bash", { command: "true" }), { stopReason: "toolUse" });
+			},
+		);
+		await harness.session.prompt("go");
+		await vi.waitFor(() => expect(childRequests).toHaveLength(1));
+
+		expect(await harness.session.subagentRegistry.send("a1", "use the dark theme", "user")).toBe("steered");
+		releaseFirst();
+		expect(await harness.session.waitForBackgroundTasks(10_000)).toBe(true);
+
+		// The steering message reaches the agent after its tool call, in the same run.
+		expect(childRequests.at(-1)?.prompt).toBe("use the dark theme");
+		expect(agentNotifications(harness)).toHaveLength(1);
+		expect(agentNotifications(harness)[0].content).toContain("done after use the dark theme");
+	});
+
+	it("stops a background agent with task_stop without a notification", async () => {
+		const harness = await setup();
+		route(
+			harness,
+			[
+				fauxAssistantMessage(
+					fauxToolCall("agent", { description: "Slow", prompt: "slow", run_in_background: true }),
+					{ stopReason: "toolUse" },
+				),
+				fauxAssistantMessage(fauxToolCall("task_stop", { task_id: "a1" }), { stopReason: "toolUse" }),
+				fauxAssistantMessage("Stopped it."),
+			],
+			(_request, signal) =>
+				new Promise<AssistantMessage>((resolve) => {
+					signal?.addEventListener("abort", () =>
+						resolve(fauxAssistantMessage("late", { stopReason: "aborted" })),
+					);
+				}),
+		);
+
+		await harness.session.prompt("go");
+		expect(getMessageText(toolResults(harness, "task_stop")[0])).toContain("Stopped agent a1");
+		expect(await harness.session.waitForBackgroundTasks(10_000)).toBe(true);
+		expect(harness.session.subagentRegistry.get("a1")?.status).toBe("stopped");
+		expect(agentNotifications(harness)).toHaveLength(0);
+		expect(lastAssistantText(harness)).toBe("Stopped it.");
 	});
 
 	it("delivers monitor output and completion as notifications that trigger turns", async () => {

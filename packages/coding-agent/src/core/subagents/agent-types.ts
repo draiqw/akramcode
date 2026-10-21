@@ -45,7 +45,7 @@ export interface SubagentToolCandidate {
 }
 
 /** Tools subagents never get: they cannot start agents or control background tasks. */
-export const SUBAGENT_EXCLUDED_TOOL_NAMES: readonly string[] = ["agent", "task_stop"];
+export const SUBAGENT_EXCLUDED_TOOL_NAMES: readonly string[] = ["agent", "agent_message", "task_stop"];
 
 export const BUILTIN_AGENT_TYPES: readonly AgentTypeDefinition[] = [
 	{

@@ -2,28 +2,12 @@ import { createWriteStream, mkdtempSync, rmSync, type WriteStream } from "node:f
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-export type TaskKind = "bash" | "agent" | "monitor";
+export type TaskKind = "bash" | "monitor";
 export type TaskStatus = "running" | "completed" | "failed" | "stopped";
-
-/** Token usage of an agent task. */
-export interface TaskUsage {
-	input: number;
-	output: number;
-	cacheRead: number;
-	cacheWrite: number;
-	totalTokens: number;
-	cost: number;
-	turns: number;
-	toolUses: number;
-}
-
-export function emptyTaskUsage(): TaskUsage {
-	return { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: 0, turns: 0, toolUses: 0 };
-}
 
 /** Snapshot of a background task. */
 export interface TaskInfo {
-	/** Short id, for example `b1` (bash), `a1` (agent), or `m1` (monitor). */
+	/** Short id, for example `b1` (bash) or `m1` (monitor). */
 	id: string;
 	kind: TaskKind;
 	description: string;
@@ -34,20 +18,12 @@ export interface TaskInfo {
 	outputFile: string;
 	/** Shell command of bash and monitor tasks. */
 	command?: string;
-	/** Agent type of agent tasks. */
-	agentType?: string;
 	/** Exit code of bash and monitor tasks. */
 	exitCode?: number;
 	/** Error message of failed tasks. */
 	error?: string;
-	/** Final text of agent tasks. */
+	/** Closing note, for example of a monitor that stopped watching at its timeout. */
 	result?: string;
-	/** Usage of agent tasks. */
-	usage?: TaskUsage;
-	/** Recent activity of agent tasks, oldest first. */
-	activity?: string[];
-	/** Transcript file of agent tasks. */
-	transcriptFile?: string;
 }
 
 export interface TaskOutcome {
@@ -59,7 +35,6 @@ export interface TaskOutcome {
 
 export type TaskEvent =
 	| { type: "started"; task: TaskInfo }
-	| { type: "updated"; task: TaskInfo }
 	/** Lines a monitor task delivers to the session. */
 	| { type: "output"; task: TaskInfo; lines: string[]; omittedLines: number }
 	| { type: "finished"; task: TaskInfo; notify: boolean };
@@ -68,7 +43,6 @@ export interface CreateTaskInput {
 	kind: TaskKind;
 	description: string;
 	command?: string;
-	agentType?: string;
 }
 
 /** Handle the code running a task uses to report output and completion. */
@@ -79,8 +53,6 @@ export interface TaskHandle {
 	readonly outputFile: string;
 	/** Append raw output to the output file. */
 	write(data: string | Buffer): void;
-	/** Update the snapshot, for example agent usage and activity. */
-	update(patch: Partial<Pick<TaskInfo, "usage" | "activity" | "transcriptFile">>): void;
 	/** Deliver lines to the session (monitor tasks). */
 	emitOutput(lines: string[], omittedLines?: number): void;
 	/** Mark the task as finished. A stopped task always finishes as `stopped`. Later calls are ignored. */
@@ -101,7 +73,7 @@ interface TaskEntry {
 	capped: boolean;
 }
 
-const ID_PREFIX: Record<TaskKind, string> = { bash: "b", agent: "a", monitor: "m" };
+const ID_PREFIX: Record<TaskKind, string> = { bash: "b", monitor: "m" };
 
 /** Output file size limit. Output past it is discarded, so a command like `yes` cannot fill the disk. */
 const DEFAULT_MAX_OUTPUT_BYTES = 64 * 1024 * 1024;
@@ -113,14 +85,14 @@ const DEFAULT_MAX_OUTPUT_BYTES = 64 * 1024 * 1024;
 const DEFAULT_MAX_BUFFERED_BYTES = 4 * 1024 * 1024;
 
 /**
- * Background tasks of one session: background bash commands, background agents, and monitors.
- * Output streams to one file per task. Listeners receive start, update, output, and finish events;
+ * Background tasks of one session: background bash commands and monitors.
+ * Output streams to one file per task. Listeners receive start, output, and finish events;
  * the session turns `output` and notifying `finished` events into task notifications.
  */
 export class TaskRegistry {
 	private readonly entries = new Map<string, TaskEntry>();
 	private readonly listeners = new Set<(event: TaskEvent) => void>();
-	private readonly counters: Record<TaskKind, number> = { bash: 0, agent: 0, monitor: 0 };
+	private readonly counters: Record<TaskKind, number> = { bash: 0, monitor: 0 };
 	private readonly parentDir: string;
 	private readonly maxOutputBytes: number;
 	private readonly maxBufferedBytes: number;
@@ -160,7 +132,6 @@ export class TaskRegistry {
 				startedAt: Date.now(),
 				outputFile,
 				...(input.command !== undefined ? { command: input.command } : {}),
-				...(input.agentType !== undefined ? { agentType: input.agentType } : {}),
 			},
 			controller: new AbortController(),
 			// `wx` fails instead of following a file or symlink that already exists; 0600 keeps it private.
@@ -184,11 +155,6 @@ export class TaskRegistry {
 			outputFile,
 			write: (data) => {
 				if (!entry.finished) this.writeOutput(entry, data);
-			},
-			update: (patch) => {
-				if (entry.finished) return;
-				Object.assign(entry.info, patch);
-				this.emit({ type: "updated", task: this.snapshot(entry) });
 			},
 			emitOutput: (lines, omittedLines = 0) => {
 				if (entry.finished || entry.controller.signal.aborted || lines.length === 0) return;
@@ -328,12 +294,7 @@ export class TaskRegistry {
 	}
 
 	private snapshot(entry: TaskEntry): TaskInfo {
-		const info = entry.info;
-		return {
-			...info,
-			...(info.usage ? { usage: { ...info.usage } } : {}),
-			...(info.activity ? { activity: [...info.activity] } : {}),
-		};
+		return { ...entry.info };
 	}
 
 	private emit(event: TaskEvent): void {

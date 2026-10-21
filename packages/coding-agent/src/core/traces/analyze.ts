@@ -308,12 +308,12 @@ export function normalizeErrorMessage(message: string): string {
 	);
 }
 
-/** Transcript path in `agent` tool details or task notification details, if any. */
+/** Transcript path in `agent` tool details or agent notification details, if any. */
 function findTranscriptPath(details: unknown): string | undefined {
 	if (!isRecord(details)) return undefined;
 	const direct = str(details.transcriptFile);
 	if (direct) return direct;
-	if (isRecord(details.task)) return str(details.task.transcriptFile);
+	if (isRecord(details.agent)) return str(details.agent.transcriptFile);
 	return undefined;
 }
 
@@ -510,7 +510,7 @@ export class SessionAnalyzer {
 				const { text, images } = contentText(entry.content);
 				Object.assign(event, clip(text, TIMELINE_TEXT_LIMIT));
 				if (images) event.images = images;
-				if (event.customType === "task-notification") {
+				if (event.customType === "task-notification" || event.customType === "agent-notification") {
 					this.summary.taskNotifications++;
 					event.childPath = findTranscriptPath(entry.details);
 				}

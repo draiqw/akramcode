@@ -162,3 +162,12 @@ On native Windows, `app.suspend` has no default because Windows terminals do not
 | `app.message.followUp` | `alt+enter` (`ctrl+q` on Windows and WSL) | Queue follow-up message |
 | `app.message.dequeue` | `alt+up` (`alt+q` on Windows and WSL) | Restore queued messages to editor |
 
+### Agents
+
+| Keybinding id | Default | Description |
+|--------|---------|-------------|
+| `app.agents.focus` | `down` | In an empty editor: select an agent in the panel below the editor |
+| `app.agents.stop` | `x` | In the agents panel: stop the selected agent |
+
+In the agents panel, `tui.select.up`/`tui.select.down` move the selection (`up` on the first line returns to the editor), `tui.select.confirm` opens the selected chat (an agent's or the main chat), and `escape` returns to the editor. In an agent's chat, `app.interrupt` (`escape`) returns to the main chat.
+

@@ -127,6 +127,10 @@ export class ToolExecutionComponent extends Container {
 		this.updateDisplay();
 	}
 
+	getToolName(): string {
+		return this.toolName;
+	}
+
 	private getCallRenderer(): ToolDefinition<any, any>["renderCall"] | undefined {
 		return this.toolDefinition?.renderCall;
 	}

@@ -163,6 +163,7 @@ import {
 	type StatusIndicator,
 	WorkingStatusIndicator,
 } from "./components/status-indicator.ts";
+import { type ChatComponentFactory, SubagentChatBar, SubagentChatView } from "./components/subagent-chat-view.ts";
 import { ThemedText } from "./components/themed-text.ts";
 import { ThinkingSelectorComponent } from "./components/thinking-selector.ts";
 import { ToolExecutionComponent } from "./components/tool-execution.ts";
@@ -283,6 +284,9 @@ function isCompactionCostNotice(item: RenderSessionItem): item is CompactionCost
 function isUsageSessionEntry(item: RenderSessionItem): item is Extract<SessionEntry, { type: "usage" }> {
 	return "type" in item && item.type === "usage";
 }
+
+/** Tools whose calls never fold into tool groups. */
+const STANDALONE_TOOL_NAMES = new Set(["agent", "agent_message"]);
 
 const DEAD_TERMINAL_ERROR_CODES = new Set(["EIO", "EPIPE", "ENOTCONN"]);
 
@@ -487,6 +491,10 @@ export class InteractiveMode {
 	private cacheCountdownTimer: NodeJS.Timeout | undefined;
 	/** Running subagents, listed below the editor. */
 	private runningAgents!: RunningAgentsPanel;
+	/** The chat of the agent shown in place of the main chat, if any. */
+	private agentView: SubagentChatView | undefined;
+	/** Above the editor while an agent's chat is open. */
+	private agentViewBar: SubagentChatBar | undefined;
 	private changelogMarkdown: string | undefined = undefined;
 	private startupNoticesShown = false;
 
@@ -628,6 +636,17 @@ export class InteractiveMode {
 		this.widgetContainerAbove = new Container();
 		this.widgetContainerBelow = new Container();
 		this.runningAgents = new RunningAgentsPanel(() => this.ui.requestRender());
+		this.runningAgents.setActions({
+			open: (id) => this.openAgentView(id),
+			openMain: () => {
+				this.closeAgentView();
+				this.ui.setFocus(this.editor);
+			},
+			stop: (id) => {
+				this.session.subagentRegistry.stop(id);
+			},
+			exit: () => this.ui.setFocus(this.editor),
+		});
 		this.keybindings = KeybindingsManager.create();
 		setKeybindings(this.keybindings);
 		const editorPaddingX = this.settingsManager.getEditorPaddingX();
@@ -647,7 +666,6 @@ export class InteractiveMode {
 			if (this.footer.hasLiveCacheCountdown()) this.ui.requestRender();
 		}, 1000);
 		this.cacheCountdownTimer.unref?.();
-		this.footer.setShowContextGauge(this.settingsManager.getShowContextGauge());
 		this.footer.setShowCacheStatus(this.settingsManager.getShowCacheStatus());
 		this.footerContainer = new Container();
 		this.footerContainer.addChild(this.footer);
@@ -1873,7 +1891,6 @@ export class InteractiveMode {
 			this.renderer.setWheelScrollLines(this.settingsManager.getFullscreenWheelScrollLines());
 		}
 		this.footer.setSession(this.session);
-		this.footer.setShowContextGauge(this.settingsManager.getShowContextGauge());
 		this.footer.setShowCacheStatus(this.settingsManager.getShowCacheStatus());
 		this.lastResponseSpeed = undefined;
 		this.footerDataProvider.setCwd(this.session.cwd);
@@ -2289,6 +2306,8 @@ export class InteractiveMode {
 	private renderWidgets(): void {
 		if (!this.widgetContainerAbove || !this.widgetContainerBelow) return;
 		this.renderWidgetContainer(this.widgetContainerAbove, this.extensionWidgetsAbove, true, true);
+		// Right above the editor, so it is clear where a message goes.
+		if (this.agentViewBar) this.widgetContainerAbove.addChild(this.agentViewBar);
 		this.renderWidgetContainer(this.widgetContainerBelow, this.extensionWidgetsBelow, false, false);
 		// The agents panel sits right below the editor and renders nothing while no agent runs.
 		this.widgetContainerBelow.children.unshift(this.runningAgents);
@@ -2840,7 +2859,9 @@ export class InteractiveMode {
 
 	/** Default Escape handling: abort work, leave bash mode, or act on a double press. */
 	private handleEscape(): void {
-		if (this.session.isStreaming) {
+		if (this.agentView) {
+			this.closeAgentView();
+		} else if (this.session.isStreaming) {
 			this.restoreQueuedMessagesToEditor({ abort: true });
 		} else if (this.session.isBashRunning) {
 			this.session.abortBash();
@@ -2867,6 +2888,11 @@ export class InteractiveMode {
 	private setupKeyHandlers(): void {
 		// See docs/adr/coding-agent/modes-interactive-interactive-mode.md#key-handler-setup-location
 		this.defaultEditor.onEscape = () => this.handleEscape();
+		this.defaultEditor.onAgentsFocus = () => {
+			if (!this.runningAgents.select()) return false;
+			this.ui.setFocus(this.runningAgents);
+			return true;
+		};
 
 		// Register app action handlers
 		this.defaultEditor.onAction("app.clear", () => this.handleCtrlC());
@@ -3027,6 +3053,19 @@ export class InteractiveMode {
 			text = text.trim();
 			if (!text) return;
 
+			// In an agent's chat, messages go to the agent; commands still go to the app.
+			if (this.agentView && !text.startsWith("/") && !text.startsWith("!")) {
+				const id = this.agentView.agentId;
+				this.editor.addToHistory?.(displayPastedText(text, true));
+				this.editor.setText("");
+				try {
+					await this.session.subagentRegistry.send(id, text, "user");
+				} catch (error) {
+					this.showError(error instanceof Error ? error.message : String(error));
+				}
+				return;
+			}
+
 			// Handle commands
 			if ((text === "/skills" || text.startsWith("/skills ")) && this.settingsManager.getEnableSkillCommands()) {
 				if (text === "/skills") {
@@ -3171,9 +3210,10 @@ export class InteractiveMode {
 		const unsubscribeEvents = this.session.subscribe(async (event) => {
 			await this.handleEvent(event);
 		});
-		const stopTrackingAgents = trackRunningAgents(this.session, this.runningAgents);
+		const stopTrackingAgents = trackRunningAgents(this.session.subagentRegistry, this.runningAgents);
 		this.unsubscribe = () => {
 			unsubscribeEvents();
+			this.closeAgentView();
 			stopTrackingAgents();
 		};
 	}
@@ -3783,12 +3823,13 @@ export class InteractiveMode {
 	 * after that group, so a run of calls shows as one summary line. Collapsed thinking that led to the calls
 	 * joins the summary as "Thought for 3s".
 	 */
-	private addToolExecutionToChat(component: ToolExecutionComponent): void {
-		if (!this.settingsManager.getCollapseToolGroups()) {
-			this.chatContainer.addChild(component);
+	private addToolExecutionToChat(component: ToolExecutionComponent, container: Container = this.chatContainer): void {
+		// Agent calls stay on their own lines, so their start and end are visible in the chat.
+		if (!this.settingsManager.getCollapseToolGroups() || STANDALONE_TOOL_NAMES.has(component.getToolName())) {
+			container.addChild(component);
 			return;
 		}
-		const children = this.chatContainer.children;
+		const children = container.children;
 		const thinking: AssistantMessageComponent[] = [];
 		let group: ToolGroupComponent | undefined;
 		for (let i = children.length - 1; i >= 0; i--) {
@@ -3806,7 +3847,7 @@ export class InteractiveMode {
 		}
 		if (!group) {
 			group = new ToolGroupComponent(this.toolOutputExpanded, this.outputPad);
-			this.chatContainer.addChild(group);
+			container.addChild(group);
 		}
 		for (const message of thinking) group.addThinking(message);
 		group.addTool(component);
@@ -4058,6 +4099,87 @@ export class InteractiveMode {
 	private rebuildChatFromMessages(): void {
 		this.chatContainer.clear();
 		this.renderSessionEntries(this.sessionManager.buildContextEntries());
+	}
+
+	/** Chat components with the main chat's settings, for an agent's chat. */
+	private createChatComponentFactory(): ChatComponentFactory {
+		return {
+			userMessage: (text, timestamp) => {
+				const component = new UserMessageComponent(
+					text,
+					this.getMarkdownThemeWithSettings(),
+					this.outputPad,
+					this.getMarkdownTransformers(),
+					timestamp,
+					[],
+				);
+				component.setExpanded(this.toolOutputExpanded);
+				return component;
+			},
+			assistantMessage: () => {
+				const component = new AssistantMessageComponent(
+					undefined,
+					this.hideThinkingBlock,
+					this.getMarkdownThemeWithSettings(),
+					this.hiddenThinkingLabel,
+					this.outputPad,
+					this.getMarkdownTransformers(),
+					true,
+				);
+				component.setExpanded(this.toolOutputExpanded);
+				return component;
+			},
+			toolExecution: (toolName, toolCallId, args) => {
+				// The agent's tools are proxies for this session's tools; render them with this session's renderers.
+				const component = new ToolExecutionComponent(
+					toolName,
+					toolCallId,
+					args,
+					{ imageWidthCells: this.settingsManager.getImageWidthCells() },
+					this.getRegisteredToolDefinition(toolName),
+					this.ui,
+					this.session.cwd,
+				);
+				component.setExpanded(this.toolOutputExpanded);
+				return component;
+			},
+			addToolExecution: (container, component) => this.addToolExecutionToChat(component, container),
+		};
+	}
+
+	/** Show an agent's chat in place of the main chat; the editor then sends messages to the agent. */
+	private openAgentView(id: string): void {
+		const registry = this.session.subagentRegistry;
+		const session = registry.getSession(id);
+		if (!session) return;
+		if (this.agentView?.agentId !== id) {
+			this.closeAgentView();
+			const view = new SubagentChatView(registry, id, session, this.createChatComponentFactory(), () =>
+				this.ui.requestRender(),
+			);
+			const index = this.documentContainer.children.indexOf(this.chatContainer);
+			this.documentContainer.children.splice(index, 1, view);
+			this.agentView = view;
+			this.agentViewBar = new SubagentChatBar(registry, id);
+			this.runningAgents.setViewing(id);
+			this.renderWidgets();
+		}
+		this.ui.setFocus(this.editor);
+		this.ui.requestRender(true);
+	}
+
+	/** Return from an agent's chat to the main chat. */
+	private closeAgentView(): void {
+		const view = this.agentView;
+		if (!view) return;
+		view.dispose();
+		const index = this.documentContainer.children.indexOf(view);
+		if (index >= 0) this.documentContainer.children.splice(index, 1, this.chatContainer);
+		this.agentView = undefined;
+		this.agentViewBar = undefined;
+		this.runningAgents.setViewing(undefined);
+		this.renderWidgets();
+		this.ui.requestRender(true);
 	}
 
 	// =========================================================================
@@ -4335,7 +4457,7 @@ export class InteractiveMode {
 		if (expanded === this.toolOutputExpanded) return;
 
 		this.toolOutputExpanded = expanded;
-		for (const child of this.chatContainer.children) {
+		for (const child of [...this.chatContainer.children, ...(this.agentView?.chatChildren ?? [])]) {
 			if (isExpandable(child)) {
 				child.setExpanded(expanded);
 			}

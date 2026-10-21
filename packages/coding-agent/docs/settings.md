@@ -36,7 +36,7 @@ See [Choose a Model](models.md) for model selection and thinking controls.
 
 | Setting | Type | Default | Description |
 |---|---|---|---|
-| `defaultTools` | `string[]` | `read`, `bash`, `edit`, `write`, `agent`, `task_stop` | Tools enabled at startup. Plain names replace the defaults; `+name` adds a tool and `-name` removes one. An empty array disables all built-in tools but not extension or SDK tools. `agent` and `task_stop` exist only while [subagents and background tasks](subagents.md) are enabled. |
+| `defaultTools` | `string[]` | `read`, `bash`, `edit`, `write`, `agent`, `agent_message`, `task_stop` | Tools enabled at startup. Plain names replace the defaults; `+name` adds a tool and `-name` removes one. An empty array disables all built-in tools but not extension or SDK tools. `agent`, `agent_message`, and `task_stop` exist only while [subagents and background tasks](subagents.md) are enabled. |
 | `codemode.mode` | `"on"` \| `"only"` | `"on"` | How the `codemode` tool presents tools while it is active. `on`: declared tools get a note on calling them from scripts appended to their description, and `codemode` lists only tools that are not declared. `only`: `codemode` lists every tool scripts can call, and active built-in and extension tools are hidden from the model, so it reaches them through `codemode`. |
 | `codemode.inlineBudget` | number | `3000` | Estimated tokens (characters / 4) the `codemode` tool's description may spend on tool declarations. Tools that do not fit are left out and found with `searchTools()`. `0` lists only namespaces. |
 | `grep.backend` | `"rg"` \| `"tgrep"` | `"rg"` | Search program of the `grep` tool. See [Grep backend](#grep-backend). |
@@ -175,8 +175,7 @@ See [Compaction Reference](compaction.md) for trigger, summarization, and valida
 | `markdown.codeBlockIndent` | string | `"  "` | Prefix used to indent rendered code blocks. |
 | `markdown.mermaid` | `"off" \| "final" \| "streaming"` | `"streaming"` | Mermaid rendering mode. |
 | `showWorkingStats` | boolean | `true` | Show elapsed time, output tokens, and tokens per second next to the working indicator. See [Follow AkramCode's work](usage.md#follow-akramcodes-work). |
-| `showContextGauge` | boolean | `true` | Show a context-fill bar and the latest response's tokens per second in the footer. |
-| `showCacheStatus` | boolean | `true` | Show the latest prompt's cache hit ratio and a countdown to the end of the cache lifetime in the footer, e.g. `cache 83% 4:12`. |
+| `showCacheStatus` | boolean | `true` | Show the latest prompt's cache hit ratio and a countdown to the end of the cache lifetime in the footer, e.g. `83% cache 4:12`. |
 
 See [Themes](themes.md) and [Terminal Setup](terminal-setup.md) for format and platform details.
 

@@ -141,6 +141,7 @@ import { type CacheWarmingMode, DEFAULT_TOOL_NAMES, type SettingsManager } from 
 import type { SlashCommandInfo } from "./slash-commands.ts";
 import { BUILTIN_PATH_PREFIX, createSyntheticSourceInfo, isSyntheticPath, type SourceInfo } from "./source-info.ts";
 import {
+	createAgentMessageToolDefinition,
 	createAgentToolDefinition,
 	type SubagentControl,
 	type SubagentSessionFactory,
@@ -154,6 +155,12 @@ import {
 	resolveAgentTypeTools,
 	SUBAGENT_EXCLUDED_TOOL_NAMES,
 } from "./subagents/agent-types.ts";
+import {
+	AGENT_NOTIFICATION_CUSTOM_TYPE,
+	type AgentNotificationDetails,
+	formatAgentFinishedNotification,
+} from "./subagents/notifications.ts";
+import { type SubagentEvent, SubagentRegistry } from "./subagents/subagent-registry.ts";
 import {
 	buildSystemPrompt,
 	buildSystemPromptSections,
@@ -207,8 +214,14 @@ const WORKTREE_NAME_TIMEOUT_MS = 10_000;
 const WORKTREE_NAME_PROMPT =
 	"Name the coding task the user describes. Reply with only a 2-4 word lowercase English kebab-case name, such as fix-login-redirect. No other text.";
 
-function isTaskNotificationMessage(message: AgentMessage): message is CustomMessage<TaskNotificationDetails> {
-	return message.role === "custom" && message.customType === TASK_NOTIFICATION_CUSTOM_TYPE;
+/** A notification about background work: a task event or the end of an agent run. */
+type BackgroundNotification = CustomMessage<TaskNotificationDetails | AgentNotificationDetails>;
+
+function isBackgroundNotificationMessage(message: AgentMessage): message is BackgroundNotification {
+	return (
+		message.role === "custom" &&
+		(message.customType === TASK_NOTIFICATION_CUSTOM_TYPE || message.customType === AGENT_NOTIFICATION_CUSTOM_TYPE)
+	);
 }
 
 // ============================================================================
@@ -531,6 +544,9 @@ export class AgentSession {
 	/** Background tasks of this session. Stopped when the session is disposed. */
 	readonly tasks: TaskRegistry;
 	private _unsubscribeTasks?: () => void;
+	/** Subagents of this session. Stopped and disposed when the session is disposed. */
+	readonly subagentRegistry: SubagentRegistry;
+	private _unsubscribeSubagents?: () => void;
 	/** Task notifications being delivered; `waitForBackgroundTasks()` waits for them. */
 	private readonly _pendingTaskNotifications = new Set<Promise<void>>();
 	/**
@@ -540,7 +556,7 @@ export class AgentSession {
 	 */
 	private _taskNotificationsPaused = false;
 	/** Task notifications held while paused or while compaction runs. */
-	private _heldTaskNotifications: CustomMessage<TaskNotificationDetails>[] = [];
+	private _heldTaskNotifications: BackgroundNotification[] = [];
 	private _heldTaskNotificationReleaseScheduled = false;
 	/** Prompts between their start and the end of their run (or their queueing). */
 	private _promptsInProgress = 0;
@@ -604,6 +620,8 @@ export class AgentSession {
 		this._sessionStartEvent = config.sessionStartEvent ?? { type: "session_start", reason: "startup" };
 		this.tasks = new TaskRegistry();
 		this._unsubscribeTasks = this.tasks.subscribe((event) => this._handleTaskEvent(event));
+		this.subagentRegistry = new SubagentRegistry();
+		this._unsubscribeSubagents = this.subagentRegistry.subscribe((event) => this._handleSubagentEvent(event));
 
 		// Always subscribe to agent events for internal handling
 		// (session persistence, extensions, auto-compaction, retry logic)
@@ -1776,6 +1794,9 @@ export class AgentSession {
 		this._unsubscribeTasks?.();
 		this._unsubscribeTasks = undefined;
 		this.tasks.dispose();
+		this._unsubscribeSubagents?.();
+		this._unsubscribeSubagents = undefined;
+		this.subagentRegistry.dispose();
 		if (this._subagentTempDir) {
 			try {
 				rmSync(this._subagentTempDir, { recursive: true, force: true });
@@ -2821,7 +2842,7 @@ export class AgentSession {
 		this._steeringMessages = [];
 		this._followUpMessages = [];
 		// Task notifications are not the user's queued input: they stay queued and are not lost.
-		this.agent.removeQueuedMessages((message) => !isTaskNotificationMessage(message));
+		this.agent.removeQueuedMessages((message) => !isBackgroundNotificationMessage(message));
 		this._emitQueueUpdate();
 		return { steering, followUp };
 	}
@@ -4124,8 +4145,9 @@ export class AgentSession {
 	}
 
 	/**
-	 * The built-in tools that need this session: `agent` when subagents are enabled and the session
-	 * can create them, and `task_stop` when background tasks are enabled. Monitors are a mode of `bash`.
+	 * The built-in tools that need this session: `agent` and `agent_message` when subagents are enabled
+	 * and the session can create them, and `task_stop` when background tasks are enabled. Monitors are
+	 * a mode of `bash`.
 	 */
 	private _createSessionToolDefinitions(backgroundTasks: TaskRegistry | undefined): ToolDefinition[] {
 		this._agentTypes = undefined;
@@ -4144,7 +4166,8 @@ export class AgentSession {
 					settingsManager: this.settingsManager,
 					modelRuntime: this._modelRuntime,
 					sandbox: this._sandbox,
-					tasks: backgroundTasks,
+					subagents: this.subagentRegistry,
+					background: backgroundTasks !== undefined,
 					getModel: () => this.model,
 					getThinkingLevel: () => this.thinkingLevel,
 					getContextFiles: () => this._resourceLoader.getAgentsFiles().agentsFiles,
@@ -4153,9 +4176,12 @@ export class AgentSession {
 					getTranscriptDir: () => this._getSubagentTranscriptDir(),
 					createSession,
 				}) as ToolDefinition,
+				createAgentMessageToolDefinition(this.subagentRegistry) as ToolDefinition,
 			);
 		}
-		if (backgroundTasks) definitions.push(createTaskStopToolDefinition(backgroundTasks) as ToolDefinition);
+		if (backgroundTasks) {
+			definitions.push(createTaskStopToolDefinition(backgroundTasks, this.subagentRegistry) as ToolDefinition);
+		}
 		// Not activated on registration like extension tools: they are in DEFAULT_TOOL_NAMES, so they
 		// start active with the default tools and follow `--tools` and `defaultTools`.
 		return definitions.map((definition) => ({ ...definition, defaultActive: false }));
@@ -4257,17 +4283,31 @@ export class AgentSession {
 			};
 		}
 		if (!message) return;
-		const notification = {
+		this._deliverBackgroundNotification({
+			role: "custom",
 			customType: TASK_NOTIFICATION_CUSTOM_TYPE,
 			content: message.content,
 			display: true,
 			details: message.details,
-		};
-		const appMessage: CustomMessage<TaskNotificationDetails> = {
-			role: "custom",
-			...notification,
 			timestamp: Date.now(),
-		};
+		});
+	}
+
+	/** Turn the end of an agent run the main agent did not wait for into a notification that triggers a turn. */
+	private _handleSubagentEvent(event: SubagentEvent): void {
+		if (event.type !== "finished" || !event.notify) return;
+		this._deliverBackgroundNotification({
+			role: "custom",
+			customType: AGENT_NOTIFICATION_CUSTOM_TYPE,
+			content: formatAgentFinishedNotification(event.agent),
+			display: true,
+			details: { agent: event.agent },
+			timestamp: Date.now(),
+		});
+	}
+
+	/** Deliver a background notification now, with the current turn, or later when notifications are held. */
+	private _deliverBackgroundNotification(appMessage: BackgroundNotification): void {
 		if (this._taskNotificationsPaused) {
 			this._holdTaskNotification(appMessage);
 			return;
@@ -4287,7 +4327,7 @@ export class AgentSession {
 	}
 
 	/** Start a turn that delivers task notifications; `waitForBackgroundTasks()` waits for it. */
-	private _startTaskNotificationTurn(messages: CustomMessage<TaskNotificationDetails>[]): void {
+	private _startTaskNotificationTurn(messages: BackgroundNotification[]): void {
 		const run = async () => {
 			if (this._isEmittingAgentSettled) {
 				this._deferredSettledActions.push(async () => await this._runAgentPrompt(messages));
@@ -4314,9 +4354,10 @@ export class AgentSession {
 	 * user prompt), or while compaction runs (until it ends). Only the newest monitor output
 	 * notifications are kept; their lines are also in the output file.
 	 */
-	private _holdTaskNotification(message: CustomMessage<TaskNotificationDetails>): void {
+	private _holdTaskNotification(message: BackgroundNotification): void {
 		this._heldTaskNotifications.push(message);
-		const isOutput = (held: CustomMessage<TaskNotificationDetails>) => held.details?.event === "output";
+		const isOutput = (held: BackgroundNotification) =>
+			held.details !== undefined && "event" in held.details && held.details.event === "output";
 		let excess = this._heldTaskNotifications.filter(isOutput).length - MAX_HELD_TASK_OUTPUT_NOTIFICATIONS;
 		if (excess <= 0) return;
 		this._heldTaskNotifications = this._heldTaskNotifications.filter((held) => {
@@ -4332,7 +4373,7 @@ export class AgentSession {
 	 * Held task notifications that go out with a prompt. A user prompt ends the pause after an
 	 * interrupt; an extension's `sendUserMessage()` does not, so they stay held then.
 	 */
-	private _takeHeldTaskNotifications(source: InputSource | undefined): CustomMessage<TaskNotificationDetails>[] {
+	private _takeHeldTaskNotifications(source: InputSource | undefined): BackgroundNotification[] {
 		if (source === "extension" && this._taskNotificationsPaused) return [];
 		this._taskNotificationsPaused = false;
 		const held = this._heldTaskNotifications;
@@ -4357,8 +4398,8 @@ export class AgentSession {
 	/** Pause task notifications after a user interrupt; notifications queued for the run are held too. */
 	private _pauseTaskNotifications(): void {
 		this._taskNotificationsPaused = true;
-		for (const message of this.agent.removeQueuedMessages(isTaskNotificationMessage)) {
-			if (isTaskNotificationMessage(message)) this._holdTaskNotification(message);
+		for (const message of this.agent.removeQueuedMessages(isBackgroundNotificationMessage)) {
+			if (isBackgroundNotificationMessage(message)) this._holdTaskNotification(message);
 		}
 	}
 
@@ -4386,11 +4427,40 @@ export class AgentSession {
 		this._pendingTaskNotifications.add(release);
 	}
 
+	/** Background tasks and agents running in the background. */
+	private _backgroundWorkCount(): number {
+		return this.tasks.running().length + this.subagentRegistry.runningInBackground().length;
+	}
+
+	/** Resolve on the next task output or finish, the next agent run end, or after `timeoutMs`. */
+	private _waitForBackgroundActivity(timeoutMs: number): Promise<void> {
+		return new Promise((resolve) => {
+			const done = () => {
+				clearTimeout(timer);
+				unsubscribeTasks();
+				unsubscribeAgents();
+				resolve();
+			};
+			const timer = setTimeout(done, Math.max(0, timeoutMs));
+			const unsubscribeTasks = this.tasks.subscribe((event) => {
+				if (event.type === "output" || event.type === "finished") done();
+			});
+			const unsubscribeAgents = this.subagentRegistry.subscribe((event) => {
+				if (event.type === "finished") done();
+			});
+		});
+	}
+
+	private _stopBackgroundWork(): void {
+		this.tasks.stopAll();
+		this.subagentRegistry.stopAll();
+	}
+
 	/**
-	 * Wait until no background task is running and every task notification has been handled,
-	 * including the turns the notifications trigger. Print mode uses this so that `-p` returns the
-	 * answer that follows background work. Running tasks are stopped after `timeoutMs`.
-	 * @returns false when the timeout stopped tasks.
+	 * Wait until no background task or background agent is running and every notification has been
+	 * handled, including the turns the notifications trigger. Print mode uses this so that `-p` returns
+	 * the answer that follows background work. Running work is stopped after `timeoutMs`.
+	 * @returns false when the timeout stopped work.
 	 */
 	async waitForBackgroundTasks(timeoutMs: number): Promise<boolean> {
 		const deadline = Date.now() + timeoutMs;
@@ -4398,10 +4468,10 @@ export class AgentSession {
 		// A timer, not a check between waits: a monitor that keeps producing output keeps its notification
 		// turn running, so the loop below may not get back to a check before the deadline.
 		const timer = setTimeout(() => {
-			if (this.tasks.running().length === 0) return;
+			if (this._backgroundWorkCount() === 0) return;
 			timedOut = true;
-			// Stopped tasks send no notifications, so the turns already started can finish.
-			this.tasks.stopAll();
+			// Stopped work sends no notifications, so the turns already started can finish.
+			this._stopBackgroundWork();
 		}, timeoutMs);
 		try {
 			while (true) {
@@ -4411,13 +4481,13 @@ export class AgentSession {
 				await this.waitForIdle();
 				if (this._pendingTaskNotifications.size > 0) continue;
 				if (timedOut) return false;
-				if (this.tasks.running().length === 0) return true;
+				if (this._backgroundWorkCount() === 0) return true;
 				const remaining = deadline - Date.now();
 				if (remaining <= 0) {
-					this.tasks.stopAll();
+					this._stopBackgroundWork();
 					return false;
 				}
-				await this.tasks.waitForActivity(remaining);
+				await this._waitForBackgroundActivity(remaining);
 			}
 		} finally {
 			clearTimeout(timer);

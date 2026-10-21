@@ -567,6 +567,7 @@ describe("SettingsManager", () => {
 				"bash",
 				"edit",
 				"agent",
+				"agent_message",
 				"task_stop",
 				"codemode",
 			]);
@@ -605,6 +606,7 @@ describe("SettingsManager", () => {
 				"edit",
 				"write",
 				"agent",
+				"agent_message",
 				"task_stop",
 				"codemode",
 			]);

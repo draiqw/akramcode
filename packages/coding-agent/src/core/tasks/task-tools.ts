@@ -1,6 +1,7 @@
 import { Text } from "@akramcode/tui";
 import { type Static, Type } from "typebox";
 import type { ToolDefinition } from "../extensions/types.ts";
+import type { SubagentRegistry } from "../subagents/subagent-registry.ts";
 import { str } from "../tools/render-utils.ts";
 import type { TaskRegistry } from "./task-registry.ts";
 
@@ -17,15 +18,28 @@ const taskStopSchema = Type.Object({ task_id: Type.String() });
 
 export type TaskStopToolInput = Static<typeof taskStopSchema>;
 
-export function createTaskStopToolDefinition(tasks: TaskRegistry): ToolDefinition<typeof taskStopSchema> {
+export function createTaskStopToolDefinition(
+	tasks: TaskRegistry,
+	subagents?: SubagentRegistry,
+): ToolDefinition<typeof taskStopSchema> {
 	return {
 		name: "task_stop",
 		label: "task_stop",
-		description: "Stop a background task by id.",
+		description: "Stop a background task or a running agent by id.",
 		parameters: taskStopSchema,
 		async execute(_toolCallId, { task_id }) {
+			const agent = subagents?.get(task_id);
+			if (agent) {
+				if (!subagents?.stop(task_id, { notify: false })) {
+					throw new Error(`Agent ${task_id} is not running (status: ${agent.status})`);
+				}
+				return {
+					content: [{ type: "text", text: `Stopped agent ${task_id} (${agent.description}).` }],
+					details: { taskId: task_id },
+				};
+			}
 			const task = tasks.get(task_id);
-			if (!task) throw new Error(`No task with id ${task_id}`);
+			if (!task) throw new Error(`No task or agent with id ${task_id}`);
 			if (!tasks.stop(task_id, { notify: false })) {
 				throw new Error(`Task ${task_id} is not running (status: ${task.status})`);
 			}

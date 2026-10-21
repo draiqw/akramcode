@@ -1,15 +1,17 @@
 /**
  * Interactive monitoring of background tasks and subagents: a footer status with the number of
- * running tasks, the `/tasks` command to inspect and stop tasks, the chat rendering of task
- * notifications, and the `/agents` command to manage agent types.
+ * running tasks, the `/tasks` command to inspect and stop tasks, the chat rendering of task and
+ * agent notifications, and the `/agents` command to manage agent types.
  */
 
 import { Container, Text } from "@akramcode/tui";
 import type { ExtensionAPI, ExtensionCommandContext, ExtensionContext } from "../../core/extensions/types.ts";
+import { formatAgentTitle, formatSubagentStats, previewLines } from "../../core/subagents/agent-tool.ts";
+import { AGENT_NOTIFICATION_CUSTOM_TYPE, type AgentNotificationDetails } from "../../core/subagents/notifications.ts";
+import { subagentElapsedMs } from "../../core/subagents/subagent-registry.ts";
 import {
 	describeTaskOutcome,
 	formatElapsed,
-	formatTokenCount,
 	readTaskOutputTail,
 	TASK_NOTIFICATION_CUSTOM_TYPE,
 	type TaskNotificationDetails,
@@ -50,27 +52,19 @@ export function formatTaskListItem(task: TaskInfo, now = Date.now()): string {
 	const elapsed = formatElapsed((task.endedAt ?? now) - task.startedAt);
 	const parts = [`${task.id}`, task.status, `${task.kind}: ${truncate(task.description, 50)}`];
 	const stats = [elapsed];
-	if (task.usage) stats.push(`${formatTokenCount(task.usage.totalTokens)} tokens`);
 	if (task.exitCode !== undefined) stats.push(`exit ${task.exitCode}`);
 	return `${parts.join("  ")} · ${stats.join(" · ")}`;
 }
 
-/** Text of the `/tasks` detail view: header, agent activity, and the tail of the output file. */
+/** Text of the `/tasks` detail view: header and the tail of the output file. */
 export function formatTaskDetail(task: TaskInfo, now = Date.now()): string {
 	const lines = [
 		`${task.kind} task ${task.id}: ${task.description}`,
 		`Status: ${task.status} · ${formatElapsed((task.endedAt ?? now) - task.startedAt)}${task.exitCode !== undefined ? ` · exit ${task.exitCode}` : ""}`,
 	];
 	if (task.command) lines.push(`Command: ${truncate(task.command, 200)}`);
-	if (task.agentType) lines.push(`Agent type: ${task.agentType}`);
-	if (task.usage) {
-		lines.push(
-			`Usage: ${task.usage.toolUses} tool uses · ${formatTokenCount(task.usage.totalTokens)} tokens · ${task.usage.turns} turns`,
-		);
-	}
 	if (task.error) lines.push(`Error: ${task.error}`);
 	lines.push(`Output: ${task.outputFile}`);
-	if (task.transcriptFile) lines.push(`Transcript: ${task.transcriptFile}`);
 	const tail = readOutputTail(task.outputFile);
 	lines.push("", tail.length > 0 ? tail.join("\n") : "(no output yet)");
 	return lines.join("\n");
@@ -98,6 +92,41 @@ function renderNotification(details: TaskNotificationDetails, expanded: boolean,
 				: (details.task.result ?? details.task.error ?? `Output: ${details.task.outputFile}`);
 		if (body) container.addChild(new Text(theme.fg("muted", body), outputPad + 2, 0));
 	}
+	return container;
+}
+
+/** The line for the end of an agent run, for example `● Agent "Find the parser" finished · 1m 05s · 12k tokens`. */
+export function formatAgentNotificationLine(details: AgentNotificationDetails, theme: Theme): string {
+	const agent = details.agent;
+	const stats = formatSubagentStats(subagentElapsedMs(agent), agent.usage.totalTokens);
+	const outcome =
+		agent.status === "completed"
+			? theme.fg("success", agent.source === "user" ? "replied" : "finished")
+			: theme.fg(statusColor(agent.status), agent.status === "failed" ? "failed" : "stopped");
+	return `${theme.fg(statusColor(agent.status), "●")} ${formatAgentTitle(agent.description, theme)} ${outcome}${theme.fg("muted", ` · ${stats}`)}`;
+}
+
+function renderAgentNotification(
+	details: AgentNotificationDetails,
+	expanded: boolean,
+	outputPad: number,
+	theme: Theme,
+) {
+	const container = new Container();
+	container.addChild(new Text(formatAgentNotificationLine(details, theme), outputPad, 0));
+	const agent = details.agent;
+	const body = agent.status === "failed" ? (agent.error ?? "") : (agent.result ?? "");
+	if (!body) return container;
+	const branch = theme.fg("muted", "⎿ ");
+	const color = agent.status === "failed" ? "error" : "toolOutput";
+	const lines = expanded ? body.split("\n") : previewLines(body);
+	container.addChild(
+		new Text(
+			lines.map((line, index) => `${index === 0 ? branch : "  "}${theme.fg(color, line)}`).join("\n"),
+			outputPad,
+			0,
+		),
+	);
 	return container;
 }
 
@@ -159,6 +188,14 @@ export default function tasksExtension(akramcode: ExtensionAPI): void {
 		TASK_NOTIFICATION_CUSTOM_TYPE,
 		(message, options, theme) =>
 			message.details ? renderNotification(message.details, options.expanded, options.outputPad, theme) : undefined,
+	);
+
+	akramcode.registerMessageRenderer<AgentNotificationDetails>(
+		AGENT_NOTIFICATION_CUSTOM_TYPE,
+		(message, options, theme) =>
+			message.details
+				? renderAgentNotification(message.details, options.expanded, options.outputPad, theme)
+				: undefined,
 	);
 
 	akramcode.on("session_start", (_event, ctx) => {

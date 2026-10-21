@@ -38,7 +38,7 @@ Review a session before exporting or sharing it. Sessions can contain prompts, t
 | Command | Description |
 |---|---|
 | `/agents` | List, create, edit, and delete [agent types](subagents.md#custom-agent-types) |
-| `/tasks` | Inspect and stop [background tasks](subagents.md#background-tasks) |
+| `/tasks` | Inspect and stop [background commands and monitors](subagents.md#background-tasks) |
 | `/reload` | Reload keybindings, extensions, skills, templates, themes, and context files |
 
 ## Commands added by resources

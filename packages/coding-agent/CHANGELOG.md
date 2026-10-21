@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- Background agents are no longer background tasks: `TaskKind` has no `agent`, `TaskInfo` loses `agentType`, `usage`, `activity`, and `transcriptFile`, `TaskHandle.update()` and the `updated` task event are removed, and `TaskUsage` is no longer exported. Agents live in `AgentSession.subagentRegistry`, and the end of a background run is an `agent-notification` message instead of a `task-notification`.
+
+### Added
+
+- Agents can be opened and messaged. `Down` in an empty editor selects a line in the panel below it, which lists `main chat` and the agents (or click a line in fullscreen mode); `Enter` switches to that chat. An agent's chat updates live, a line above the editor names the agent you are writing to, and `Escape` returns to the main chat. The main agent is told what you asked the agent and how it replied.
+- `agent_message` tool: the main agent sends a running agent more instructions or continues a finished one with its full context; the reply arrives as a notification. `task_stop` stops agents too.
+
+### Changed
+
+- Agent calls are separate lines in the chat, never folded into tool groups: `● Agent "…"` when it starts, then `Finished · time · tokens` with the first lines of the report. A background agent's end is its own line, `● Agent "…" finished · 4m 32s · 922k tokens`.
+- The agents panel shows type, description, running time, and tokens per agent; finished agents disappear from it (an agent whose chat is open stays until you leave it). Agents no longer count as running tasks in the footer or appear in `/tasks`.
+- The footer reads `2.7% context · 96% cache`: no context bar or window size, and the cache figure only shows with `showCacheStatus`.
+
+### Removed
+
+- The `showContextGauge` setting.
+
 ## [1.0.35] - 2026-10-19
 
 ### Changed

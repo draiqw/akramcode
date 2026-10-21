@@ -361,7 +361,7 @@ export interface ExtensionContext {
 	compact(options?: CompactOptions): void;
 	/** Get the current effective system prompt. */
 	getSystemPrompt(): string;
-	/** Background tasks of the session (background bash commands, background agents, monitors). */
+	/** Background tasks of the session (background bash commands and monitors). */
 	readonly tasks?: TaskRegistry;
 	/** Agent type management, when the session offers the `agent` tool. */
 	readonly subagents?: SubagentControl;

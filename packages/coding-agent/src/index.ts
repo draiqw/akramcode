@@ -329,7 +329,6 @@ export type {
 	TaskOutcome,
 	TaskRegistry,
 	TaskStatus,
-	TaskUsage,
 } from "./core/tasks/task-registry.ts";
 export { type EditDiffResult, generateDiffString, generateUnifiedPatch } from "./core/tools/edit-diff.ts";
 // Tools

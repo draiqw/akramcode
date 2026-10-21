@@ -33,16 +33,12 @@ function route(
 	harness.setResponses(Array.from({ length: 20 }, () => respond));
 }
 
+/** Agent lines, without the key hint. */
 function lines(panel: RunningAgentsPanel): string[] {
-	return panel.render(200).map((line) => stripAnsi(line));
-}
-
-async function waitUntil(condition: () => boolean, timeoutMs = 5000): Promise<void> {
-	const start = Date.now();
-	while (!condition()) {
-		if (Date.now() - start > timeoutMs) throw new Error("Timed out");
-		await new Promise((resolve) => setTimeout(resolve, 10));
-	}
+	return panel
+		.render(200)
+		.map((line) => stripAnsi(line))
+		.filter((line) => !line.includes("to switch chat"));
 }
 
 describe("running agents panel", () => {
@@ -64,12 +60,12 @@ describe("running agents panel", () => {
 			initialActiveToolNames: [...DEFAULT_TOOL_NAMES],
 		});
 		harnesses.push(harness);
-		const panel = new RunningAgentsPanel(() => {}, 50);
-		stops.push(trackRunningAgents(harness.session, panel));
+		const panel = new RunningAgentsPanel(() => {});
+		stops.push(trackRunningAgents(harness.session.subagentRegistry, panel));
 		return { harness, panel };
 	}
 
-	it("lists a foreground subagent while it runs and removes it after it finishes", async () => {
+	it("lists a foreground subagent while it runs and removes it when it finishes", async () => {
 		const { harness, panel } = await setup();
 		const seen: string[][] = [];
 		route(
@@ -91,14 +87,11 @@ describe("running agents panel", () => {
 
 		await harness.session.prompt("Use an agent.");
 
-		expect(seen[0]).toEqual([" ● explore: List files · 0s"]);
-		// The second child request comes after its bash call.
-		expect(seen[1]?.[0]).toMatch(/^ ● explore: List files · 0s · 1 tool use · \$ echo hi/);
-		expect(lines(panel)[0]).toMatch(/^ ✓ explore: List files · 0s · 1 tool use/);
-		await waitUntil(() => panel.render(200).length === 0);
+		expect(seen[0]).toEqual(["  ● explore: List files · 0s"]);
+		expect(panel.render(200)).toEqual([]);
 	});
 
-	it("lists a background subagent through its task", async () => {
+	it("lists a background subagent", async () => {
 		const { harness, panel } = await setup();
 		let release: () => void = () => {};
 		const released = new Promise<void>((resolve) => {
@@ -121,10 +114,10 @@ describe("running agents panel", () => {
 		);
 
 		await harness.session.prompt("start");
-		expect(lines(panel)).toEqual([" ● general-purpose: Research · 0s"]);
+		expect(lines(panel)).toEqual(["  ● general-purpose: Research · 0s"]);
 
 		release();
 		expect(await harness.session.waitForBackgroundTasks(10_000)).toBe(true);
-		await waitUntil(() => panel.render(200).length === 0);
+		expect(panel.render(200)).toEqual([]);
 	});
 });

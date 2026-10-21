@@ -63,10 +63,10 @@ describe("TaskRegistry", () => {
 		const events: TaskEvent["type"][] = [];
 		tasks.subscribe((event) => events.push(event.type));
 		const bash = tasks.create({ kind: "bash", description: "npm test", command: "npm test" });
-		const agent = tasks.create({ kind: "agent", description: "find code", agentType: "explore" });
+		const monitor = tasks.create({ kind: "monitor", description: "watch" });
 		const secondBash = tasks.create({ kind: "bash", description: "ls" });
-		expect([bash.id, agent.id, secondBash.id]).toEqual(["b1", "a1", "b2"]);
-		expect(tasks.running().map((task) => task.id)).toEqual(["b1", "a1", "b2"]);
+		expect([bash.id, monitor.id, secondBash.id]).toEqual(["b1", "m1", "b2"]);
+		expect(tasks.running().map((task) => task.id)).toEqual(["b1", "m1", "b2"]);
 
 		bash.write("line 1\n");
 		bash.write(Buffer.from("line 2\n"));
@@ -74,12 +74,7 @@ describe("TaskRegistry", () => {
 		expect(readFileSync(bash.outputFile, "utf-8")).toBe("line 1\nline 2\n");
 		expect(tasks.get("b1")).toMatchObject({ status: "completed", exitCode: 0, command: "npm test" });
 		expect(tasks.get("b1")?.endedAt).toBeGreaterThanOrEqual(tasks.get("b1")?.startedAt ?? 0);
-
-		agent.update({
-			usage: { input: 1, output: 2, cacheRead: 0, cacheWrite: 0, totalTokens: 3, cost: 0, turns: 1, toolUses: 4 },
-		});
-		expect(tasks.get("a1")?.usage?.toolUses).toBe(4);
-		expect(events).toEqual(["started", "started", "started", "finished", "updated"]);
+		expect(events).toEqual(["started", "started", "started", "finished"]);
 	});
 
 	it("finishes stopped tasks as stopped and suppresses notifications on request", async () => {
@@ -141,21 +136,21 @@ describe("task notifications", () => {
 		}
 	});
 
-	it("carries the result of agents and the lines of monitors", () => {
+	it("carries the closing note and the lines of monitors", () => {
 		const task: TaskInfo = {
-			id: "a1",
-			kind: "agent",
-			description: "find code",
+			id: "m1",
+			kind: "monitor",
+			description: "watch logs",
 			status: "completed",
 			startedAt: 0,
 			endedAt: 1000,
-			outputFile: "/tmp/a1.output",
-			result: "Found it in src/index.ts",
+			outputFile: "/tmp/m1.output",
+			result: "Stopped watching after 60 seconds",
 		};
-		expect(formatTaskFinishedNotification(task)).toContain("<result>\nFound it in src/index.ts\n</result>");
-		const monitor: TaskInfo = { ...task, id: "m1", kind: "monitor", status: "running", result: undefined };
-		const text = formatTaskOutputNotification(monitor, ["ERROR one", "ERROR two"], 5);
-		expect(text).toContain("ERROR one\nERROR two\n[5 more lines in /tmp/a1.output]");
+		expect(formatTaskFinishedNotification(task)).toContain("<result>\nStopped watching after 60 seconds\n</result>");
+		const running: TaskInfo = { ...task, status: "running", result: undefined };
+		const text = formatTaskOutputNotification(running, ["ERROR one", "ERROR two"], 5);
+		expect(text).toContain("ERROR one\nERROR two\n[5 more lines in /tmp/m1.output]");
 	});
 });
 
@@ -235,7 +230,7 @@ describe("background bash", () => {
 			"is not running",
 		);
 		await expect(stop.execute("call-4", { task_id: "b9" }, undefined, undefined, noContext)).rejects.toThrow(
-			"No task with id b9",
+			"No task or agent with id b9",
 		);
 	});
 });

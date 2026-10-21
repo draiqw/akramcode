@@ -14,19 +14,35 @@ Parameters:
 | `prompt` | The task |
 | `subagent_type` | Agent type, default `general-purpose` |
 | `model` | Optional model override (`provider/model-id` or a pattern, as for `--model`) |
-| `run_in_background` | Return at once with a task id; the result arrives as a [task notification](#task-notifications) |
+| `run_in_background` | Return at once; the result arrives as an [agent notification](#agent-notifications) |
 
-Several `agent` calls in one assistant message run concurrently. Aborting the main agent (`Escape`) aborts its foreground subagents.
+Each agent gets an id (`a1`, `a2`, ...). A foreground call returns the agent's final message followed by `agent_id: a1`; a background call returns the id at once. Several `agent` calls in one assistant message run concurrently. Aborting the main agent (`Escape`) aborts its foreground subagents.
 
-In the transcript an agent call shows as `agent(description)` with the subagent's latest tool calls while it runs, then a summary such as `Done (7 tool uses · 18k tokens · 42s)`. Expand tool output (`Ctrl+O`) to read the final message and the transcript path.
+### Messaging agents
 
-Below the editor, a panel lists running subagents (foreground and background), one line each: type, description, elapsed time, tool uses, latest tool call, and tokens, for example `● explore: find config files · 1m 12s · 3 tool uses · read ~/src/x.ts · 12k tokens`. A finished agent shows `✓` or `✗` for a few seconds, then leaves; at most five lines are shown.
+An agent keeps its conversation after it finishes, so it can be given more work with its full context:
+
+- The main agent calls `agent_message` with `agent_id` and `message`. A running agent reads the message after its current step (like a steering message). A finished agent continues in the background, and its reply arrives as an [agent notification](#agent-notifications).
+- You write to an agent from its chat (see below). The main agent is notified of the reply, together with your message, so it knows what you agreed with the agent.
+
+`task_stop` with an agent id stops a running agent.
+
+### In the terminal
+
+In the chat, an agent call is its own line, never folded into a tool group: `● Agent "Find config files" · explore`, then `⎿ Running · 1m 12s · 12k tokens` with the latest tool calls while it runs, and `⎿ Finished · 1m 40s · 18k tokens` with the first lines of its report when it is done. Expand tool output (`Ctrl+O`) to read the whole report and the transcript path. A background agent shows `⎿ Started in background · a1`; when it finishes, a separate line reports it: `● Agent "Find config files" finished · 1m 40s · 18k tokens`.
+
+Below the editor, a panel lists agents, one line each: type, description, running time, and tokens, for example `● explore: find config files · 1m 12s · 12k tokens`. Running agents are listed first; a finished one (`✓`, or `✗` when it failed or was stopped) disappears, unless its chat is open; then it stays until you leave that chat. At most five lines are shown.
+
+Switching between the main chat and an agent's chat works the same way in both directions:
+
+- `Down` in an empty editor selects a line in the panel (the hint `down to switch chat` says so). While selecting, a `main chat` line leads the list, and the chat shown now is marked `· open`. `Up`/`Down` move, `Enter` opens, `x` stops a running agent, `Escape` (or `Up` on the first line) returns to the editor. In fullscreen mode a click on a line opens it.
+- An agent's chat replaces the main chat: its prompt, messages, and tool calls, updated live while it runs. A line right above the editor names the agent you are writing to, with its state and the keys: `escape for main chat · down to switch`. Messages you send go to the agent; slash commands still go to AkramCode.
 
 Subagents:
 
 - can never do more than the main session: they get only tools the main session can call itself, and each of their tool calls runs in the main session as a nested call (`ctx.executeTool()`). Extension `tool_call` and `tool_result` hooks, permission checks, the working directory, and the [sandbox](sandbox.md) of the main session apply to them; hooks see the call with `parentToolCallId` set to the `agent` call;
 - receive the project's context files (`AGENTS.md`) and a short system prompt with the date and their type's instructions, not the main system prompt, skills, or prompt templates;
-- never get the `agent` or `task_stop` tools, and their `bash` has no background options, so they cannot start further agents or background work;
+- never get the `agent`, `agent_message`, or `task_stop` tools, and their `bash` has no background options, so they cannot start further agents or background work;
 - save their transcript next to the session file, in `<session>.subagents/` (mode 0700), or, for sessions without a file, in a private temp directory that is deleted when the session ends.
 
 ### Built-in agent types
@@ -62,7 +78,7 @@ Tool names refer to tools of the main session: built-in tools, extension tools, 
 - tools with `codemode` exposure while `codemode` is active;
 - tools with `deferred` exposure, such as the [browser](browser.md) tools and MCP tools of `deferred` servers. Types that list them get them. Types without a `tools` list get only those that `tool_search` has already loaded in the main session.
 
-`codemode`, `tool_search`, `agent`, `task_stop`, and hidden tools are never given. The subagent gets exactly the resolved tools: the list is enforced when its session is created, not only described in its prompt. Names that match no available tool are ignored and reported as warnings at startup and in `/agents`. Built-in types are not reported for missing tools, because they name optional tools on purpose (`explore` lists `grep`, `find`, and `ls`, which are off by default). MCP servers connect after startup, so unmatched `mcp__` names are reported only in `/agents`. Starting a type whose `tools` name a server's tools (such as `mcp__github__*`) waits until that server has connected or failed, so the subagent does not start without them.
+`codemode`, `tool_search`, `agent`, `agent_message`, `task_stop`, and hidden tools are never given. The subagent gets exactly the resolved tools: the list is enforced when its session is created, not only described in its prompt. Names that match no available tool are ignored and reported as warnings at startup and in `/agents`. Built-in types are not reported for missing tools, because they name optional tools on purpose (`explore` lists `grep`, `find`, and `ls`, which are off by default). MCP servers connect after startup, so unmatched `mcp__` names are reported only in `/agents`. Starting a type whose `tools` name a server's tools (such as `mcp__github__*`) waits until that server has connected or failed, so the subagent does not start without them.
 
 Example: a read-only reviewer.
 
@@ -122,15 +138,14 @@ The file is written and the agent type is available at once, without a restart. 
 
 ## Background tasks
 
-A background task runs while the conversation continues. There are three kinds:
+A background task is a shell command that runs while the conversation continues. Agents are not tasks: they have their own panel (see [Subagents](#in-the-terminal)). There are two kinds:
 
 | Kind | Started by | Id |
 |---|---|---|
 | Background command | `bash` with `run_in_background: true` | `b1`, `b2`, ... |
-| Background agent | `agent` with `run_in_background: true` | `a1`, ... |
 | Monitor | `bash` with `run_in_background: true` and `monitor: true` | `m1`, ... |
 
-Each task writes its output to `<task id>.output` in a private directory of the session under the temp directory (`akramcode-tasks-<random>`, mode 0700; files 0600, never written through an existing file or symlink). The directory is deleted when the session ends. The tool result names the file; the model reads it with the `read` tool. For background agents the file records the prompt, the subagent's tool calls, and the result.
+Each task writes its output to `<task id>.output` in a private directory of the session under the temp directory (`akramcode-tasks-<random>`, mode 0700; files 0600, never written through an existing file or symlink). The directory is deleted when the session ends. The tool result names the file; the model reads it with the `read` tool.
 
 An output file holds at most 64 MiB; after that a note marks the limit and later output is discarded while the task keeps running. Output that arrives faster than the disk accepts it is dropped and replaced by a note with the number of dropped bytes, so a command like `yes` cannot fill memory.
 
@@ -142,35 +157,39 @@ A monitor is a background `bash` command with `monitor: true`. It delivers each 
 
 ### Task notifications
 
-When a task finishes, and for each monitor batch, the session receives a `task-notification` message. It names the task, its status (`completed`, `failed`, or `stopped`), and its output file, and carries the last 20 output lines of commands and the final message of agents. The message starts a turn when the agent is idle, or is delivered after the current turn when it is working, so the model reacts in both cases. Notifications that arrive during a turn are delivered together in the next turn. Notifications that arrive during compaction are delivered when it ends.
+When a task finishes, and for each monitor batch, the session receives a `task-notification` message. It names the task, its status (`completed`, `failed`, or `stopped`), and its output file, and carries the last 20 output lines of commands. The message starts a turn when the agent is idle, or is delivered after the current turn when it is working, so the model reacts in both cases. Notifications that arrive during a turn are delivered together in the next turn. Notifications that arrive during compaction are delivered when it ends.
 
 After you interrupt a run (`Escape`, or `abort` in RPC mode), notifications no longer start turns; aborts by `/compact` or extensions do not pause them. They wait and are sent ahead of your next message, which resumes normal delivery (also when that message is queued during a run; messages from extensions do not resume it); of monitor output, only the newest five notifications are kept. Stop a task with `/tasks` if you no longer need it.
 
 In the transcript a notification is one line, for example `● task b1 (bash: npm test) completed · exit 0 · 12s`; expand tool output to see its content.
 
+### Agent notifications
+
+When an agent run that the main agent did not wait for ends (a background agent, an agent continued with `agent_message`, or an agent you wrote to), the session receives an `agent-notification` message with the agent id, its status, its reply, the transcript path, and, when you started the run, your message. It is delivered like a task notification: it starts a turn when the main agent is idle and follows the same rules after an interrupt and during compaction. An agent stopped with `task_stop` sends none.
+
 ### Monitoring in the terminal
 
 - The footer shows the number of running tasks, for example `2 tasks running`.
-- `/tasks` lists the tasks of the session with status, kind, description, elapsed time, and tokens of agents. Select a task to see its details and the tail of its output, refresh it, or stop it. A task you stop from `/tasks` notifies the model.
+- `/tasks` lists the tasks of the session with status, kind, description, and elapsed time. Select a task to see its details and the tail of its output, refresh it, or stop it. A task you stop from `/tasks` notifies the model.
 
 ### Lifecycle
 
-- All running tasks are stopped when the session ends: on exit, `/clear`, `/fork`, and other session switches.
-- In print mode (`-p`, `--mode json`), AkramCode waits for running tasks after the prompt and lets the model react to their notifications, so the printed answer includes their results. After `backgroundTasks.printModeTimeoutSeconds` (default 600) it stops the remaining tasks and exits.
+- All running tasks and agents are stopped when the session ends: on exit, `/clear`, `/fork`, and other session switches.
+- In print mode (`-p`, `--mode json`), AkramCode waits for running tasks and background agents after the prompt and lets the model react to their notifications, so the printed answer includes their results. After `backgroundTasks.printModeTimeoutSeconds` (default 600) it stops the remaining work and exits.
 
 ## Extensions
 
-Extensions reach the session's tasks through `ctx.tasks` (a `TaskRegistry`): `list()`, `running()`, `get(id)`, `stop(id)`, `subscribe(listener)`, and `create()`, which registers a task of their own with an output file; finishing it sends the usual task notification. `ctx.subagents` lists agent types and the tools they resolve to, and `reload()` reads the definitions again. Task notifications are custom messages with `customType: "task-notification"`; an extension can replace their rendering with `registerMessageRenderer`. The built-in `tasks` extension provides the footer status, `/tasks`, `/agents`, and the default rendering.
+Extensions reach the session's tasks through `ctx.tasks` (a `TaskRegistry`): `list()`, `running()`, `get(id)`, `stop(id)`, `subscribe(listener)`, and `create()`, which registers a task of their own with an output file; finishing it sends the usual task notification. `ctx.subagents` lists agent types and the tools they resolve to, and `reload()` reads the definitions again. Task and agent notifications are custom messages with `customType: "task-notification"` and `"agent-notification"`; an extension can replace their rendering with `registerMessageRenderer`. The built-in `tasks` extension provides the footer status, `/tasks`, `/agents`, and the default rendering.
 
 ## Settings
 
 | Setting | Default | Description |
 |---|---|---|
-| `subagents.enabled` | `true` | Offer the `agent` tool and `/agents` |
+| `subagents.enabled` | `true` | Offer the `agent` and `agent_message` tools and `/agents` |
 | `backgroundTasks.enabled` | `true` | Offer `run_in_background` and `monitor` on `bash`, `run_in_background` on `agent`, and `task_stop` |
 | `backgroundTasks.printModeTimeoutSeconds` | `600` | How long print mode waits for running tasks |
 
-Settings take effect for new sessions and after `/reload`. `agent` and `task_stop` are part of the default tools: `--tools` and a [`defaultTools`](settings.md#tools) list of plain names replace them, so name them there to keep them (`--tools read,bash,agent`), and `"defaultTools": ["-agent"]` removes one.
+Settings take effect for new sessions and after `/reload`. `agent`, `agent_message`, and `task_stop` are part of the default tools: `--tools` and a [`defaultTools`](settings.md#tools) list of plain names replace them, so name them there to keep them (`--tools read,bash,agent`), and `"defaultTools": ["-agent"]` removes one.
 
 ## Limitations
 

@@ -1,11 +1,12 @@
 import { homedir } from "node:os";
-import type { AgentMessage, AgentToolResult, ThinkingLevel } from "@akramcode/agent-core";
-import type { AssistantMessage, Model } from "@akramcode/ai";
+import type { AgentToolResult, ThinkingLevel } from "@akramcode/agent-core";
+import type { Model } from "@akramcode/ai";
 import type { SandboxRuntime } from "@akramcode/sandbox";
 import { Container, Markdown, Text } from "@akramcode/tui";
 import { type Static, Type } from "typebox";
 import { keyHint } from "../../modes/interactive/components/keybinding-hints.ts";
 import { getMarkdownTheme, type Theme } from "../../modes/interactive/theme/theme.ts";
+import type { AgentSession } from "../agent-session.ts";
 import { createExtensionRuntime } from "../extensions/loader.ts";
 import type { ExtensionToolContext, ToolDefinition } from "../extensions/types.ts";
 import { resolveCliModel } from "../model-resolver.ts";
@@ -15,7 +16,6 @@ import type { CreateAgentSessionOptions, CreateAgentSessionResult } from "../sdk
 import { SessionManager } from "../session-manager.ts";
 import type { SettingsManager } from "../settings-manager.ts";
 import { formatElapsed, formatTokenCount } from "../tasks/notifications.ts";
-import { emptyTaskUsage, type TaskRegistry, type TaskUsage } from "../tasks/task-registry.ts";
 import { str } from "../tools/render-utils.ts";
 import {
 	type AgentTypeDefinition,
@@ -23,12 +23,18 @@ import {
 	resolveAgentTypeTools,
 	type SubagentToolCandidate,
 } from "./agent-types.ts";
+import {
+	type SubagentInfo,
+	type SubagentRegistry,
+	type SubagentUsage,
+	subagentElapsedMs,
+} from "./subagent-registry.ts";
 
 const DEFAULT_AGENT_TYPE = "general-purpose";
-/** Recent tool calls kept for progress display. */
-const MAX_ACTIVITY_ITEMS = 20;
 /** Tool calls the collapsed progress view shows. */
 const VISIBLE_ACTIVITY_ITEMS = 3;
+/** Lines of the final text the collapsed result shows. */
+const PREVIEW_LINES = 2;
 
 /** Creates the child session of a subagent. `createAgentSession` in production; injected to avoid an import cycle. */
 export type SubagentSessionFactory = (options: CreateAgentSessionOptions) => Promise<CreateAgentSessionResult>;
@@ -62,8 +68,10 @@ export interface SubagentHost {
 	modelRuntime: ModelRuntime;
 	/** The parent's sandbox; the child session must not acquire its own. */
 	sandbox: SandboxRuntime | undefined;
-	/** Registry for `run_in_background`. Without it the parameter is not offered. */
-	tasks: TaskRegistry | undefined;
+	/** Subagents of the parent session. */
+	subagents: SubagentRegistry;
+	/** Whether `run_in_background` is offered. */
+	background: boolean;
 	getModel(): Model<any> | undefined;
 	getThinkingLevel(): ThinkingLevel;
 	getContextFiles(): Array<{ path: string; content: string }>;
@@ -77,18 +85,19 @@ export interface SubagentHost {
 }
 
 export interface AgentToolDetails {
+	agentId: string;
 	agentType: string;
 	description: string;
-	status: "running" | "completed" | "failed";
+	status: "running" | "completed" | "failed" | "stopped";
 	toolUses: number;
-	usage: TaskUsage;
+	usage: SubagentUsage;
 	durationMs: number;
 	/** Recent tool calls, oldest first. */
 	activity: string[];
 	model?: string;
 	transcriptFile?: string;
 	/** Set when the agent runs in the background. */
-	background?: { taskId: string; outputFile: string };
+	background?: boolean;
 }
 
 const agentProperties = {
@@ -105,6 +114,13 @@ const backgroundAgentSchema = Type.Object({
 });
 
 export type AgentToolInput = Static<typeof backgroundAgentSchema>;
+
+const agentMessageSchema = Type.Object({
+	agent_id: Type.String(),
+	message: Type.String(),
+});
+
+export type AgentMessageToolInput = Static<typeof agentMessageSchema>;
 
 function shortenPath(path: string): string {
 	const home = homedir();
@@ -137,26 +153,12 @@ export function describeToolCall(toolName: string, args: Record<string, unknown>
 	}
 }
 
-function getFinalText(messages: readonly AgentMessage[]): string {
-	for (let i = messages.length - 1; i >= 0; i--) {
-		const message = messages[i];
-		if (message.role !== "assistant") continue;
-		const text = message.content
-			.filter((part): part is { type: "text"; text: string } => part.type === "text")
-			.map((part) => part.text)
-			.join("\n")
-			.trim();
-		if (text) return text;
-	}
-	return "";
-}
-
 function buildSubagentPrompt(type: AgentTypeDefinition): string {
 	const date = new Date().toISOString().slice(0, 10);
 	return [
 		"You are a subagent of akramcode, a coding agent harness. The main agent delegated a task to you. You work in a fresh context: the main agent sees only your final message, not your tool calls.",
 		type.systemPrompt,
-		"When you are done, reply with a concise report of what you did and found; the main agent relays it to the user. Include absolute file paths and exact values where they matter. You cannot ask the user questions, so make reasonable assumptions and state them.",
+		"When you are done, reply with a concise report of what you did and found; the main agent relays it to the user. Include absolute file paths and exact values where they matter. You cannot ask questions and wait for answers, so make reasonable assumptions and state them. The main agent or the user may send you more messages later; handle them the same way.",
 		`Current date: ${date}`,
 	]
 		.filter((part) => part.trim().length > 0)
@@ -189,18 +191,6 @@ function resolveSubagentModel(host: SubagentHost, pattern: string | undefined): 
 	const resolved = resolveCliModel({ cliModel: pattern, modelRuntime: host.modelRuntime });
 	if (resolved.error || !resolved.model) throw new Error(resolved.error ?? `Unknown model "${pattern}"`);
 	return resolved.model;
-}
-
-interface SubagentProgress {
-	toolUses: number;
-	usage: TaskUsage;
-	activity: string[];
-	transcriptFile?: string;
-	model?: string;
-}
-
-interface SubagentRunResult extends SubagentProgress {
-	text: string;
 }
 
 type ExecuteParentTool = ExtensionToolContext["executeTool"];
@@ -250,17 +240,13 @@ function createParentToolProxy(source: SubagentToolSource, executeParentTool: Ex
 	};
 }
 
-/** Run one subagent to completion in a child session. Aborting `signal` aborts the child. */
-async function runSubagent(
+/** Create the child session of a subagent. Its tools are proxies for parent tools. */
+async function createSubagentSession(
 	host: SubagentHost,
 	type: AgentTypeDefinition,
-	prompt: string,
-	modelPattern: string | undefined,
-	signal: AbortSignal | undefined,
+	model: Model<any> | undefined,
 	executeParentTool: ExecuteParentTool,
-	onProgress: (progress: SubagentProgress, newActivity: string | undefined) => void,
-): Promise<SubagentRunResult> {
-	const model = resolveSubagentModel(host, modelPattern ?? type.model);
+): Promise<AgentSession> {
 	const sources = host.getToolSources();
 	const { tools } = resolveAgentTypeTools(type, sources);
 	// Every child tool is a proxy for a parent tool the parent can call itself; the child's own
@@ -268,8 +254,7 @@ async function runSubagent(
 	const customTools = sources
 		.filter((source) => tools.includes(source.name))
 		.map((source) => createParentToolProxy(source, executeParentTool));
-	const transcriptDir = host.getTranscriptDir();
-	const { session: child } = await host.createSession({
+	const { session } = await host.createSession({
 		cwd: host.cwd,
 		agentDir: host.agentDir,
 		modelRuntime: host.modelRuntime,
@@ -279,52 +264,10 @@ async function runSubagent(
 		tools,
 		customTools,
 		resourceLoader: createSubagentResourceLoader(buildSubagentPrompt(type), host.getContextFiles()),
-		sessionManager: SessionManager.create(host.cwd, transcriptDir),
+		sessionManager: SessionManager.create(host.cwd, host.getTranscriptDir()),
 		subagent: { sandbox: host.sandbox },
 	});
-	const progress: SubagentProgress = {
-		toolUses: 0,
-		usage: emptyTaskUsage(),
-		activity: [],
-		transcriptFile: child.sessionFile,
-		model: child.model ? `${child.model.provider}/${child.model.id}` : undefined,
-	};
-	const unsubscribe = child.subscribe((event) => {
-		if (event.type === "tool_execution_start") {
-			progress.toolUses++;
-			progress.usage.toolUses = progress.toolUses;
-			const item = describeToolCall(event.toolName, event.args as Record<string, unknown> | undefined);
-			progress.activity = [...progress.activity, item].slice(-MAX_ACTIVITY_ITEMS);
-			onProgress(progress, item);
-		} else if (event.type === "message_end" && event.message.role === "assistant") {
-			const usage = (event.message as AssistantMessage).usage;
-			progress.usage.turns++;
-			progress.usage.input += usage.input;
-			progress.usage.output += usage.output;
-			progress.usage.cacheRead += usage.cacheRead;
-			progress.usage.cacheWrite += usage.cacheWrite;
-			progress.usage.totalTokens += usage.totalTokens;
-			progress.usage.cost += usage.cost.total;
-			onProgress(progress, undefined);
-		}
-	});
-	const onAbort = () => {
-		void child.abort();
-	};
-	signal?.addEventListener("abort", onAbort, { once: true });
-	try {
-		if (signal?.aborted) throw new Error("Agent aborted");
-		await child.prompt(prompt, { expandPromptTemplates: false });
-		if (signal?.aborted) throw new Error("Agent aborted");
-		const last = child.messages.findLast((message): message is AssistantMessage => message.role === "assistant");
-		if (last?.stopReason === "error") throw new Error(last.errorMessage || "Agent request failed");
-		if (last?.stopReason === "aborted") throw new Error("Agent aborted");
-		return { ...progress, transcriptFile: child.sessionFile, text: getFinalText(child.messages) || "(no output)" };
-	} finally {
-		signal?.removeEventListener("abort", onAbort);
-		unsubscribe();
-		child.dispose();
-	}
+	return session;
 }
 
 /** Agent types other than the built-ins, one short line each. */
@@ -335,12 +278,43 @@ function formatCustomAgentTypes(types: readonly AgentTypeDefinition[]): string {
 		.join("");
 }
 
-function statsLine(details: AgentToolDetails): string {
-	return [
-		`${details.toolUses} tool use${details.toolUses === 1 ? "" : "s"}`,
-		`${formatTokenCount(details.usage.totalTokens)} tokens`,
-		formatElapsed(details.durationMs),
-	].join(" · ");
+function toDetails(agent: SubagentInfo, background: boolean): AgentToolDetails {
+	return {
+		agentId: agent.id,
+		agentType: agent.agentType,
+		description: agent.description,
+		status: agent.status,
+		toolUses: agent.usage.toolUses,
+		usage: agent.usage,
+		durationMs: subagentElapsedMs(agent),
+		activity: agent.activity,
+		model: agent.model,
+		transcriptFile: agent.transcriptFile,
+		...(background ? { background: true } : {}),
+	};
+}
+
+/** `5m 05s · 922k tokens`. */
+export function formatSubagentStats(durationMs: number, totalTokens: number): string {
+	return [formatElapsed(durationMs), ...(totalTokens > 0 ? [`${formatTokenCount(totalTokens)} tokens`] : [])].join(
+		" · ",
+	);
+}
+
+/** `Agent "Find the parser"` with the description highlighted. */
+export function formatAgentTitle(description: string, theme: Theme): string {
+	return `${theme.fg("toolTitle", theme.bold("Agent"))} ${theme.fg("accent", `"${truncate(description, 80)}"`)}`;
+}
+
+/** The first lines of a result, each cut to one line. */
+export function previewLines(text: string, count = PREVIEW_LINES): string[] {
+	const lines = text
+		.split("\n")
+		.map((line) => line.trim())
+		.filter((line) => line.length > 0);
+	const shown = lines.slice(0, count).map((line) => truncate(line, 160));
+	if (lines.length > count) shown[shown.length - 1] = `${shown[shown.length - 1]} …`;
+	return shown;
 }
 
 function renderAgentResult(
@@ -356,62 +330,70 @@ function renderAgentResult(
 		.filter((part): part is { type: "text"; text: string } => part.type === "text")
 		.map((part) => part.text)
 		.join("\n");
+	const branch = theme.fg("muted", "⎿ ");
 	if (isError || !details) {
-		container.addChild(new Text(theme.fg(isError ? "error" : "toolOutput", text), 0, 0));
+		container.addChild(new Text(`${branch}${theme.fg(isError ? "error" : "toolOutput", text)}`, 1, 0));
 		return container;
 	}
 	if (details.background) {
-		container.addChild(
-			new Text(
-				theme.fg(
-					"muted",
-					`Running in background (task ${details.background.taskId}) · ${details.background.outputFile}`,
-				),
-				0,
-				0,
-			),
-		);
+		container.addChild(new Text(`${branch}${theme.fg("muted", `Started in background · ${details.agentId}`)}`, 1, 0));
 		return container;
 	}
 	if (isPartial || details.status === "running") {
 		const visible = details.activity.slice(-VISIBLE_ACTIVITY_ITEMS);
 		const hidden = details.toolUses - visible.length;
 		const lines: string[] = [];
-		if (hidden > 0) lines.push(theme.fg("dim", `+${hidden} more tool use${hidden === 1 ? "" : "s"}`));
-		for (const item of visible) lines.push(`${theme.fg("muted", "⎿ ")}${theme.fg("toolOutput", item)}`);
-		lines.push(theme.fg("muted", `Running… (${statsLine(details)})`));
-		container.addChild(new Text(lines.join("\n"), 0, 0));
+		if (hidden > 0) lines.push(theme.fg("dim", `  +${hidden} more tool use${hidden === 1 ? "" : "s"}`));
+		for (const item of visible) lines.push(`  ${theme.fg("toolOutput", item)}`);
+		lines.unshift(
+			`${branch}${theme.fg("muted", `Running · ${formatSubagentStats(details.durationMs, details.usage.totalTokens)}`)}`,
+		);
+		container.addChild(new Text(lines.join("\n"), 1, 0));
 		return container;
 	}
-	const done = theme.fg("success", "Done") + theme.fg("muted", ` (${statsLine(details)})`);
+	const stats = formatSubagentStats(details.durationMs, details.usage.totalTokens);
+	const done = `${branch}${theme.fg("success", "Finished")}${theme.fg("muted", ` · ${stats}`)}`;
 	if (!expanded) {
-		container.addChild(new Text(`${done} ${theme.fg("dim", `(${keyHint("app.tools.expand", "to expand")})`)}`, 0, 0));
+		const report = text.replace(/\n\nagent_id: \S+.*$/s, "");
+		const preview = previewLines(report).map((line) => `  ${theme.fg("toolOutput", line)}`);
+		container.addChild(
+			new Text(
+				[`${done} ${theme.fg("dim", `(${keyHint("app.tools.expand", "to expand")})`)}`, ...preview].join("\n"),
+				1,
+				0,
+			),
+		);
 		return container;
 	}
-	container.addChild(new Text(done, 0, 0));
-	container.addChild(new Markdown(text, 0, 1, getMarkdownTheme()));
+	container.addChild(new Text(done, 1, 0));
+	container.addChild(new Markdown(text, 3, 0, getMarkdownTheme()));
 	if (details.transcriptFile) {
-		container.addChild(new Text(theme.fg("dim", `Transcript: ${shortenPath(details.transcriptFile)}`), 0, 0));
+		container.addChild(new Text(theme.fg("dim", `  Transcript: ${shortenPath(details.transcriptFile)}`), 1, 0));
 	}
 	return container;
+}
+
+/** Text the main agent gets from a foreground run: the report and the id to continue the agent. */
+function formatForegroundResult(id: string, text: string): string {
+	return `${text}\n\nagent_id: ${id} (send it more work with agent_message)`;
 }
 
 /** The `agent` tool: delegate a task to a subagent that runs in a child session of this process. */
 export function createAgentToolDefinition(
 	host: SubagentHost,
 ): ToolDefinition<typeof backgroundAgentSchema, AgentToolDetails | undefined> {
-	const tasks = host.tasks;
 	// Kept short: the description is sent with every request. Details are in docs/subagents.md.
 	const describe = () =>
-		`Run a subagent on a self-contained task in a fresh context (it cannot see this conversation); returns its final message. Calls in one message run in parallel. subagent_type: general-purpose (default), explore (read-only search)${formatCustomAgentTypes(host.getAgentTypes().types)}`;
+		`Run a subagent on a self-contained task in a fresh context (it cannot see this conversation); returns its final message and agent_id. Calls in one message run in parallel. subagent_type: general-purpose (default), explore (read-only search)${formatCustomAgentTypes(host.getAgentTypes().types)}`;
 	return {
 		name: "agent",
 		label: "agent",
 		description: describe(),
 		// Refresh the type list when `/agents` changes the definitions.
 		prepareLoadout: () => ({ descriptions: { agent: describe() } }),
-		// Without a task registry the model is not offered `run_in_background`.
-		parameters: (tasks ? backgroundAgentSchema : agentSchema) as typeof backgroundAgentSchema,
+		// Without background tasks the model is not offered `run_in_background`.
+		parameters: (host.background ? backgroundAgentSchema : agentSchema) as typeof backgroundAgentSchema,
+		renderShell: "self",
 		async execute(_toolCallId, params, signal, onUpdate, ctx) {
 			// Subagent tool calls run in this session through the calling tool's context.
 			const executeParentTool: ExecuteParentTool = (name, args, options) => ctx.executeTool(name, args, options);
@@ -423,96 +405,113 @@ export function createAgentToolDefinition(
 					`Unknown agent type "${typeName}". Available: ${currentTypes.map((candidate) => candidate.name).join(", ")}`,
 				);
 			}
-			const startedAt = Date.now();
-			const makeDetails = (
-				progress: SubagentProgress,
-				status: AgentToolDetails["status"],
-				background?: AgentToolDetails["background"],
-			): AgentToolDetails => ({
+			const background = params.run_in_background === true;
+			if (background && !host.background) throw new Error("Background agents are not available in this session");
+			const model = resolveSubagentModel(host, params.model ?? type.model);
+			if (signal?.aborted) throw new Error("Agent aborted");
+			const session = await createSubagentSession(host, type, model, executeParentTool);
+			const registry = host.subagents;
+			const agent = registry.add({
 				agentType: type.name,
 				description: params.description,
-				status,
-				toolUses: progress.toolUses,
-				usage: { ...progress.usage },
-				durationMs: Date.now() - startedAt,
-				activity: [...progress.activity],
-				model: progress.model,
-				transcriptFile: progress.transcriptFile,
-				...(background ? { background } : {}),
+				session,
+				describeToolCall,
 			});
 
-			if (params.run_in_background) {
-				if (!tasks) throw new Error("Background agents are not available in this session");
-				// Fail fast on a bad model instead of in the background.
-				resolveSubagentModel(host, params.model ?? type.model);
-				const task = tasks.create({ kind: "agent", description: params.description, agentType: type.name });
-				task.write(`Agent ${type.name}: ${params.description}\n\nPrompt:\n${params.prompt}\n\nActivity:\n`);
-				runSubagent(host, type, params.prompt, params.model, task.signal, executeParentTool, (progress, item) => {
-					if (item) task.write(`- ${item}\n`);
-					task.update({
-						usage: { ...progress.usage },
-						activity: [...progress.activity],
-						transcriptFile: progress.transcriptFile,
-					});
-				}).then(
-					(result) => {
-						task.write(`\nResult:\n${result.text}\n`);
-						task.update({ transcriptFile: result.transcriptFile });
-						return task.finish({ status: "completed", result: result.text });
-					},
-					(error: unknown) => {
-						const message = error instanceof Error ? error.message : String(error);
-						task.write(`\nFailed: ${message}\n`);
-						return task.finish({ status: "failed", error: message });
-					},
-				);
-				const progress: SubagentProgress = { toolUses: 0, usage: emptyTaskUsage(), activity: [] };
+			if (background) {
+				void registry.run(agent.id, params.prompt, { foreground: false, source: "agent" });
 				return {
 					content: [
 						{
 							type: "text",
-							text: `Agent running in background with ID: ${task.id}. Progress file: ${task.outputFile}\nYou will be notified with its result when it finishes.`,
+							text: `Agent ${agent.id} is running in the background. You will be notified with its result when it finishes. Use agent_message to send it more instructions.`,
 						},
 					],
-					details: makeDetails(progress, "running", { taskId: task.id, outputFile: task.outputFile }),
+					details: toDetails(registry.get(agent.id) ?? agent, true),
 				};
 			}
 
-			onUpdate?.({
-				content: [{ type: "text", text: "(running...)" }],
-				details: makeDetails({ toolUses: 0, usage: emptyTaskUsage(), activity: [] }, "running"),
+			const update = (info: SubagentInfo) =>
+				onUpdate?.({ content: [{ type: "text", text: "(running...)" }], details: toDetails(info, false) });
+			const unsubscribe = registry.subscribe((event) => {
+				if (event.agent.id === agent.id && event.type !== "finished") update(event.agent);
 			});
-			const result = await runSubagent(
-				host,
-				type,
-				params.prompt,
-				params.model,
-				signal,
-				executeParentTool,
-				(progress) => {
-					onUpdate?.({
-						content: [{ type: "text", text: "(running...)" }],
-						details: makeDetails(progress, "running"),
-					});
-				},
-			);
-			return {
-				content: [{ type: "text", text: result.text }],
-				details: makeDetails(result, "completed"),
-			};
+			// The running time ticks between the agent's events too.
+			const ticker = setInterval(() => {
+				const info = registry.get(agent.id);
+				if (info?.status === "running") update(info);
+			}, 1000);
+			ticker.unref?.();
+			try {
+				const result = await registry.run(agent.id, params.prompt, { foreground: true, source: "agent", signal });
+				if (result.status !== "completed") throw new Error(result.error ?? `Agent ${result.status}`);
+				const finished = registry.get(agent.id) ?? agent;
+				return {
+					content: [{ type: "text", text: formatForegroundResult(agent.id, result.text) }],
+					details: toDetails(finished, false),
+				};
+			} finally {
+				clearInterval(ticker);
+				unsubscribe();
+			}
 		},
 		renderCall(args, theme, context) {
-			const text = (context.lastComponent as Text | undefined) ?? new Text("", 0, 0);
+			const text = (context.lastComponent as Text | undefined) ?? new Text("", 1, 0);
 			const description = str(args?.description) ?? "";
 			const type = str(args?.subagent_type) || DEFAULT_AGENT_TYPE;
-			const suffix = [type, args?.run_in_background === true ? "background" : undefined].filter(Boolean).join(" · ");
-			text.setText(
-				`${theme.fg("toolTitle", theme.bold("agent"))}${theme.fg("accent", `(${description})`)} ${theme.fg("muted", suffix)}`,
-			);
+			const mark = context.isError
+				? theme.fg("error", "●")
+				: context.isPartial
+					? theme.fg("accent", "●")
+					: theme.fg("success", "●");
+			text.setText(`${mark} ${formatAgentTitle(description, theme)} ${theme.fg("muted", `· ${type}`)}`);
 			return text;
 		},
 		renderResult(result, options, theme, context) {
 			return renderAgentResult(result, options.expanded, options.isPartial, context.isError, theme);
+		},
+	};
+}
+
+/** The `agent_message` tool: send a running agent more instructions, or continue a finished one. */
+export function createAgentMessageToolDefinition(
+	subagents: SubagentRegistry,
+): ToolDefinition<typeof agentMessageSchema, { agentId: string; delivery: "steered" | "resumed" } | undefined> {
+	return {
+		name: "agent_message",
+		label: "agent_message",
+		description:
+			"Send a message to an agent you started, by agent_id. A running agent reads it after its current step; a finished agent continues with its full context in the background, and you are notified with its reply.",
+		parameters: agentMessageSchema,
+		renderShell: "self",
+		async execute(_toolCallId, { agent_id, message }) {
+			const agent = subagents.get(agent_id);
+			if (!agent) throw new Error(`No agent with id ${agent_id}`);
+			const delivery = await subagents.send(agent_id, message, "agent");
+			const text =
+				delivery === "steered"
+					? `Message delivered to running agent ${agent_id}.`
+					: `Agent ${agent_id} resumed in the background. You will be notified with its reply.`;
+			return { content: [{ type: "text", text }], details: { agentId: agent_id, delivery } };
+		},
+		renderCall(args, theme, context) {
+			const text = (context.lastComponent as Text | undefined) ?? new Text("", 1, 0);
+			const agent = subagents.get(str(args?.agent_id) ?? "");
+			const title = agent ? formatAgentTitle(agent.description, theme) : theme.fg("toolTitle", theme.bold("Agent"));
+			const mark = context.isError ? theme.fg("error", "●") : theme.fg("accent", "●");
+			const message = previewLines(str(args?.message) ?? "", 1)[0] ?? "";
+			text.setText(
+				`${mark} ${title} ${theme.fg("muted", "· message")}\n${theme.fg("muted", "⎿ ")}${theme.fg("toolOutput", message)}`,
+			);
+			return text;
+		},
+		renderResult(result, _options, theme, context) {
+			if (!context.isError) return new Container();
+			const text = result.content
+				.filter((part): part is { type: "text"; text: string } => part.type === "text")
+				.map((part) => part.text)
+				.join("\n");
+			return new Text(`${theme.fg("muted", "⎿ ")}${theme.fg("error", text)}`, 1, 0);
 		},
 	};
 }

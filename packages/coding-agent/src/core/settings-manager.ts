@@ -222,7 +222,6 @@ export interface Settings {
 	defaultTools?: string[]; // Initial tool selection; `+name`/`-name` entries add to or remove from the inherited selection
 	doubleEscapeClearsInput?: boolean; // default: true - double-escape with a non-empty editor clears it and saves the text to history
 	showWorkingStats?: boolean; // default: true - show elapsed time, output tokens, and tokens/s next to the working indicator
-	showContextGauge?: boolean; // default: true - show a context-fill bar and the latest tokens/s in the footer
 	showCacheStatus?: boolean; // default: true - show the prompt-cache hit ratio and expiry countdown in the footer
 	thinkingBudgets?: ThinkingBudgetsSettings; // Custom token budgets for thinking levels
 	editorPaddingX?: number; // Horizontal padding for input editor (default: 0)
@@ -275,7 +274,15 @@ function deepMergeObjects(base: Record<string, unknown>, overrides: Record<strin
  * Tools enabled at startup when `defaultTools` does not change them. `agent` and `task_stop` are
  * only registered when subagents and background tasks are enabled.
  */
-export const DEFAULT_TOOL_NAMES: readonly string[] = ["read", "bash", "edit", "write", "agent", "task_stop"];
+export const DEFAULT_TOOL_NAMES: readonly string[] = [
+	"read",
+	"bash",
+	"edit",
+	"write",
+	"agent",
+	"agent_message",
+	"task_stop",
+];
 
 function isToolModifier(entry: unknown): boolean {
 	return typeof entry === "string" && (entry.startsWith("+") || entry.startsWith("-"));
@@ -1536,16 +1543,6 @@ export class SettingsManager {
 	getBackgroundTasksPrintModeTimeoutMs(): number {
 		const seconds = this.settings.backgroundTasks?.printModeTimeoutSeconds;
 		return typeof seconds === "number" && Number.isFinite(seconds) && seconds >= 0 ? seconds * 1000 : 600_000;
-	}
-
-	getShowContextGauge(): boolean {
-		return this.settings.showContextGauge ?? true;
-	}
-
-	setShowContextGauge(enabled: boolean): void {
-		this.globalSettings.showContextGauge = enabled;
-		this.markModified("showContextGauge");
-		this.save();
 	}
 
 	getShowCacheStatus(): boolean {
