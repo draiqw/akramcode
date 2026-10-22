@@ -1,0 +1,26 @@
+
+ akramcode v1.0.36
+
+
+ Connected to llama.cpp. Model:
+ mock-coder-7b.
+
+ 14:08 explain this project
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+── ⠹ Working · 1s ────────────────────────────
+
+──────────────────────────────────────────────
+6.6% context                     mock-coder-7b

@@ -1,0 +1,35 @@
+ Prompt cache:     warming: Inactive (waiting for first request) (streaming mode)
+
+ Activity · 0 active days · 0 sessions
+
+     Oct Nov     Dec       Jan     Feb     Mar       Apr     May     Jun       Jul     Aug       Sep     Oct
+ Mon · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+     · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+ Wed · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+     · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+ Fri · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+     · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+ Sun · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+     Less · ░ ▒ ▓ █ More
+
+                    7d      30d      90d      All
+ Input               0        0        0        0
+   cached            0        0        0        0
+ Output              0        0        0        0
+ Cost            $0.00    $0.00    $0.00    $0.00
+
+ Costs use pay-as-you-go API prices, also for subscription use. "+" marks models without a known price.
+
+ Connected to llama.cpp. Model: mock-coder-7b.
+
+ 14:06 Explain this project
+
+ 14:06 Done. I looked at your request: "Explain this project".
+
+ This project contains a small Node.js app (index.js, package.json, README.md). It exposes one function, add(a,
+ b), and a test script. Run npm test to check it.
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+7.0% context                                                                                               mock-coder-7b

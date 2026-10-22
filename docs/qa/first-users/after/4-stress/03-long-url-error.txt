@@ -1,0 +1,35 @@
+
+ Warning: Unknown command /foobar. Type / to see commands.
+
+ Error: No model selected.
+
+ Use /login to connect a subscription, an API key, or a local model. See
+ /Users/draiqws/akramcode/packages/coding-agent/docs/models.md
+
+ Then use /model to select a model.
+
+ Error: Login to llama.cpp failed: Could not reach a llama.cpp router at http://127.0.0.1:8080 (fetch failed). Check
+ that llama-server is running in router mode.
+
+ Error: Login to llama.cpp failed: Invalid server URL "abc". Example: http://127.0.0.1:8080
+
+ Error: Login to llama.cpp failed: Invalid server URL "ftp://x": Server URL must use http or https. Example:
+ http://127.0.0.1:8080
+
+ Error: Login to llama.cpp failed: Could not reach a llama.cpp router at http://127.0.0.1:1 (fetch failed). Check that
+ llama-server is running in router mode.
+
+ Connected to llama.cpp.
+
+ Error: Login to llama.cpp failed: Could not reach a llama.cpp router at
+ http://127.0.0.1:18081/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa (not found). Check that llama-server is running in router mode.
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+0.0% context                                                                                               mock-coder-7b

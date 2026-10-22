@@ -1,0 +1,26 @@
+
+ akramcode v1.0.36
+
+
+ Warning: No models available. Use /login to
+ log into a provider via OAuth or API key.
+ See:
+
+ /Users/draiqws/akramcode/packages/coding-age
+ nt/docs/providers.md
+
+ /Users/draiqws/akramcode/packages/coding-age
+ nt/docs/models.md
+
+
+
+
+
+
+
+
+
+──────────────────────────────────────────────
+
+──────────────────────────────────────────────
+0.0% context                           unknown

@@ -1,0 +1,35 @@
+
+ akramcode v1.0.36
+
+
+ Warning: No models available. Use /login to connect a subscription, an API key, or a local model. See
+ /Users/draiqws/akramcode/packages/coding-agent/docs/models.md
+
+ Warning: Unknown command /foobar. Type / to see commands.
+
+ Error: No model selected.
+
+ Use /login to connect a subscription, an API key, or a local model. See
+ /Users/draiqws/akramcode/packages/coding-agent/docs/models.md
+
+ Then use /model to select a model.
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ Login to DeepSeek
+
+ Enter DeepSeek API key
+>
+ (escape/ctrl+c to cancel, enter to submit)
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+0.0% context                                                                                                     unknown

@@ -1,0 +1,35 @@
+ 3-2ebd4c265071.jsonl
+ Duration (wall):  1m
+ Messages:         1 user, 1 assistant, 0 tool calls
+ Total cost:       $0.00+
+ Usage by model:
+     mock-coder-7b:  2.2k input (0 cached), 55 output ($0.00+)
+ Prompt cache:     0% of input from cache · warming streaming: Inactive (cache lifetime unavailable)
+
+ Activity · 1 active days · 1 sessions
+
+     Oct Nov     Dec       Jan     Feb     Mar       Apr     May     Jun       Jul     Aug       Sep     Oct
+ Mon · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+     · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+ Wed · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+     · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · █
+ Fri · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+     · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+ Sun · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+     Less · ░ ▒ ▓ █ More
+
+                    7d      30d      90d      All
+ Input            2.2k     2.2k     2.2k     2.2k
+   cached            0        0        0        0
+ Output             55       55       55       55
+ Cost           $0.00+   $0.00+   $0.00+   $0.00+
+
+ Usage by model (30d):
+     mock-coder-7b:  2.2k input (0 cached), 55 output ($0.00+)
+
+ Costs use pay-as-you-go API prices, also for subscription use. "+" marks models without a known price.
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+7.0% context                                                                                               mock-coder-7b

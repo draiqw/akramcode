@@ -1,0 +1,35 @@
+
+ Then use /model to select a model.
+
+ Error: Login to llama.cpp failed: Could not reach a llama.cpp router at http://127.0.0.1:8080 (fetch failed). Check
+ that llama-server is running in router mode.
+
+ Error: Login to llama.cpp failed: Invalid server URL "abc". Example: http://127.0.0.1:8080
+
+ Error: Login to llama.cpp failed: Invalid server URL "ftp://x": Server URL must use http or https. Example:
+ http://127.0.0.1:8080
+
+ Error: Login to llama.cpp failed: Could not reach a llama.cpp router at http://127.0.0.1:1 (fetch failed). Check that
+ llama-server is running in router mode.
+
+ Connected to llama.cpp.
+
+ Error: Login to llama.cpp failed: Could not reach a llama.cpp router at
+ http://127.0.0.1:18081/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa (not found). Check that llama-server is running in router mode.
+
+ 14:13 explain this project
+
+ 14:13 Done. I looked at your request: "explain this project".
+
+ This project contains a small Node.js app (index.js, package.json, README.md). It exposes one function, add(a,
+ b), and a test script. Run npm test to check it.
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+7.0% context                                                                                               mock-coder-7b

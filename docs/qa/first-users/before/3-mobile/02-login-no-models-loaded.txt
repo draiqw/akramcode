@@ -1,0 +1,26 @@
+ akramcode v1.0.36
+
+
+ Warning: No models available. Use /login to
+ log into a provider via OAuth or API key.
+ See:
+
+ /Users/draiqws/akramcode/packages/coding-age
+ nt/docs/providers.md
+
+ /Users/draiqws/akramcode/packages/coding-age
+ nt/docs/models.md
+
+ Saved API key for llama.cpp. Credentials
+ saved to
+ /tmp/qa-run/mobile/home/.akramcode/agent/aut
+ h.json
+
+ Error: Saved API key for llama.cpp. No
+ llama.cpp models are loaded. Load one on the
+ router, then select it with /model.
+
+──────────────────────────────────────────────
+
+──────────────────────────────────────────────
+0.0% context                           unknown

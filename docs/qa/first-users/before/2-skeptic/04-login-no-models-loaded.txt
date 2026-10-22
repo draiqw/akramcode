@@ -1,0 +1,35 @@
+ ~/.akramcode/agent/sessions/--private-tmp-qa-run-skeptic-home-my-app--/2026-10-22T10-09-15-488Z_01a16316-1ae0-7111-9f8
+ 3-2ebd4c265071.jsonl
+ Messages:         0 user, 0 assistant, 0 tool calls
+ Total cost:       $0.00
+ Prompt cache:     warming streaming: Inactive (waiting for first request)
+
+ Activity · 0 active days · 0 sessions
+
+     Oct Nov     Dec       Jan     Feb     Mar       Apr     May     Jun       Jul     Aug       Sep     Oct
+ Mon · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+     · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+ Wed · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+     · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+ Fri · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+     · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+ Sun · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+     Less · ░ ▒ ▓ █ More
+
+                    7d      30d      90d      All
+ Input               0        0        0        0
+   cached            0        0        0        0
+ Output              0        0        0        0
+ Cost            $0.00    $0.00    $0.00    $0.00
+
+ Costs use pay-as-you-go API prices, also for subscription use. "+" marks models without a known price.
+
+ Saved API key for llama.cpp. Credentials saved to /tmp/qa-run/skeptic/home/.akramcode/agent/auth.json
+
+ Error: Saved API key for llama.cpp. No llama.cpp models are loaded. Load one on the router, then select it with
+ /model.
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+0.0% context                                                                                                     unknown

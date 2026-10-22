@@ -1,0 +1,35 @@
+
+ akramcode v1.0.36
+
+
+ Warning: No models available. Use /login to connect a subscription, an API key, or a local model. See
+ /Users/draiqws/akramcode/packages/coding-agent/docs/models.md
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+> update
+
+  No matching settings
+
+  Type to search · Enter/Space to change · Esc to cancel
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+0.0% context                                                                                                     unknown

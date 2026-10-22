@@ -1,0 +1,35 @@
+
+ akramcode v1.0.36
+
+
+ Warning: No models available. Use /login to log into a provider via OAuth or API key. See:
+   /Users/draiqws/akramcode/packages/coding-agent/docs/providers.md
+   /Users/draiqws/akramcode/packages/coding-agent/docs/models.md
+
+ Error: No API key found for the selected model.
+
+ Use /login to log into a provider via OAuth or API key. See:
+   /Users/draiqws/akramcode/packages/coding-agent/docs/providers.md
+   /Users/draiqws/akramcode/packages/coding-agent/docs/models.md
+
+ Error: No API key found for the selected model.
+
+ Use /login to log into a provider via OAuth or API key. See:
+   /Users/draiqws/akramcode/packages/coding-agent/docs/providers.md
+   /Users/draiqws/akramcode/packages/coding-agent/docs/models.md
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+ Select provider to configure:
+
+>
+
+ → OpenAI • not configured
+   OpenAI Codex • not configured
+   OpenRouter • not configured
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+0.0% context                                                                                                     unknown

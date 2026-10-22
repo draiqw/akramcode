@@ -1,0 +1,26 @@
+ Model: mock-coder-7b
+
+ 13:13 explain this project
+
+ 13:13 Done. I looked at your request:
+ "explain this project".
+
+ This project contains a small Node.js
+ app (index.js, package.json,
+ README.md). It exposes one function,
+ add(a, b), and a test script. Run npm
+ test to check it.
+
+──────────────────────────────────────────────
+
+ Select provider to configure:
+
+>
+
+ → DeepSeek • not configured
+   llama.cpp ✓ stored
+   OpenAI • not configured
+   OpenRouter • not configured
+
+──────────────────────────────────────────────
+7.0% context                     mock-coder-7b

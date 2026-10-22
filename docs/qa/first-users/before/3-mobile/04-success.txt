@@ -1,0 +1,26 @@
+ Saved API key for llama.cpp. Credentials
+ saved to
+ /tmp/qa-run/mobile/home/.akramcode/agent/aut
+ h.json
+
+ Error: Saved API key for llama.cpp. No
+ llama.cpp models are loaded. Load one on the
+ router, then select it with /model.
+
+ Model: mock-coder-7b
+
+ 13:13 explain this project
+
+ 13:13 Done. I looked at your request:
+ "explain this project".
+
+ This project contains a small Node.js
+ app (index.js, package.json,
+ README.md). It exposes one function,
+ add(a, b), and a test script. Run npm
+ test to check it.
+
+──────────────────────────────────────────────
+
+──────────────────────────────────────────────
+7.0% context                     mock-coder-7b

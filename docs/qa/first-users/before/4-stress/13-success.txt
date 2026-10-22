@@ -1,0 +1,35 @@
+
+ Saved API key for llama.cpp. Credentials saved to /tmp/qa-run/stress/home/.akramcode/agent/auth.json
+
+ Error: Saved API key for llama.cpp. Use /model to select a loaded llama.cpp model.
+
+ Saved API key for llama.cpp. Credentials saved to /tmp/qa-run/stress/home/.akramcode/agent/auth.json
+
+ Error: Saved API key for llama.cpp. Use /model to select a loaded llama.cpp model.
+
+ Error: Failed to save API key for llama.cpp: fetch failed
+
+ Error: Failed to save API key for llama.cpp: This operation was aborted
+
+ Error: Failed to save API key for llama.cpp: This operation was aborted
+
+ Model: mock-coder-7b
+
+ 13:19 explain this project
+
+ 13:19 Done. I looked at your request: "explain this project".
+
+ This project contains a small Node.js app (index.js, package.json, README.md). It exposes one function, add(a,
+ b), and a test script. Run npm test to check it.
+
+ 13:19 and list the files
+
+ 13:19 Done. I looked at your request: "and list the files".
+
+ This project contains a small Node.js app (index.js, package.json, README.md). It exposes one function, add(a,
+ b), and a test script. Run npm test to check it.
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+7.2% context                                                                                               mock-coder-7b

@@ -1,0 +1,26 @@
+
+ akramcode v1.0.36
+
+
+ Connected to llama.cpp. Model:
+ mock-coder-7b.
+
+ 14:08 explain this project
+
+ 14:08 Done. I looked at your request:
+ "explain this project".
+
+ This project contains a small Node.js
+ app (index.js, package.json,
+ README.md). It exposes one function,
+ add(a, b), and a test script. Run npm
+ test to check it.
+
+
+
+
+
+──────────────────────────────────────────────
+
+──────────────────────────────────────────────
+7.0% context                     mock-coder-7b

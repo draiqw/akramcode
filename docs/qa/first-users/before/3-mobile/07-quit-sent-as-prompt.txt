@@ -1,0 +1,26 @@
+
+ Model: mock-coder-7b
+
+ 13:13 explain this project
+
+ 13:13 Done. I looked at your request:
+ "explain this project".
+
+ This project contains a small Node.js
+ app (index.js, package.json,
+ README.md). It exposes one function,
+ add(a, b), and a test script. Run npm
+ test to check it.
+
+ 13:14 /quit
+
+ 13:14 Done. I looked at your request:
+ "/quit".
+
+ This project contains a small Node.js
+ app (index.js, package
+
+── ⠙ Working · 5s · ↓ 26 tokens ──────────────
+
+──────────────────────────────────────────────
+7.0% context                     mock-coder-7b
