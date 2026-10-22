@@ -27,6 +27,7 @@ export const BUILTIN_SLASH_COMMANDS: ReadonlyArray<BuiltinSlashCommand> = [
 	{ name: "rename", description: "Rename the session", argumentHint: "<name>" },
 	{ name: "skills", description: "Run a skill", argumentHint: "<skill>" },
 	{ name: "usage", description: "Show session and all-time token usage, cost, and activity" },
+	{ name: "stack", description: "Show loaded skills, agents, extensions, MCP, commands, tools, and context" },
 	{ name: "fork", description: "Create a new fork from a previous user message" },
 	{ name: "login", description: "Configure provider authentication", argumentHint: "<provider>" },
 	{ name: "logout", description: "Remove provider authentication" },

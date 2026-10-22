@@ -104,6 +104,7 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
+import { collectStack } from "../../core/stack.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
 import {
@@ -115,6 +116,8 @@ import {
 	type UsageBucket,
 	type UsageRecord,
 } from "../../core/usage-stats.ts";
+import { builtInExtensions } from "../../extensions/index.ts";
+import { loadMcpConfig } from "../../extensions/mcp/config.ts";
 import { canAutoUpdateBinary, startBinaryAutoUpdate } from "../../utils/binary-auto-update.ts";
 import { getChangelogPath, getNewEntries, normalizeChangelogLinks, parseChangelog } from "../../utils/changelog.ts";
 import { copyToClipboard, readClipboardFilePaths, readClipboardText } from "../../utils/clipboard.ts";
@@ -155,6 +158,7 @@ import { RunningAgentsPanel, trackRunningAgents } from "./components/running-age
 import { SessionSelectorComponent } from "./components/session-selector.ts";
 import { SettingsSelectorComponent } from "./components/settings-selector.ts";
 import { SkillInvocationMessageComponent } from "./components/skill-invocation-message.ts";
+import { StackViewerComponent } from "./components/stack-viewer.ts";
 import {
 	BranchSummaryStatusIndicator,
 	CompactionStatusIndicator,
@@ -3108,6 +3112,11 @@ export class InteractiveMode {
 				await this.handleUsageCommand();
 				return;
 			}
+			if (text === "/stack") {
+				this.editor.setText("");
+				await this.showStackViewer();
+				return;
+			}
 			if (text === "/fork") {
 				this.showUserMessageSelector();
 				this.editor.setText("");
@@ -4870,6 +4879,56 @@ export class InteractiveMode {
 				this.settingsManager.getDefaultThinkingLevel() ?? DEFAULT_THINKING_LEVEL,
 			);
 			return { component: selector, focus: selector };
+		});
+	}
+
+	private async showStackViewer(): Promise<void> {
+		const session = this.session;
+		const loader = session.resourceLoader;
+		const cwd = this.sessionManager.getCwd();
+		const agentDir = getAgentDir();
+		const packageManager = new DefaultPackageManager({
+			cwd,
+			agentDir,
+			settingsManager: this.settingsManager,
+			builtinExtensions: builtInExtensions.flatMap((extension) =>
+				typeof extension === "function" ? [] : [extension.name],
+			),
+		});
+		// "skip": listing must not install packages that are missing.
+		const resolvedPaths = await packageManager.resolve(async () => "skip");
+		const systemPromptSource = loader.getSystemPromptSource();
+		const systemPrompt = loader.getSystemPrompt();
+		const tabs = collectStack({
+			agentDir,
+			skills: loader.getSkills(),
+			prompts: loader.getPrompts(),
+			extensions: loader.getExtensions().extensions,
+			resolvedPaths,
+			agentTypes: session.subagents?.listTypes(),
+			mcpServers: loadMcpConfig({ agentDir, cwd }).servers,
+			builtinCommands: BUILTIN_SLASH_COMMANDS,
+			extensionCommands: session.extensionRunner.getRegisteredCommands(),
+			tools: session.getAllTools(),
+			activeToolNames: session.getActiveToolNames(),
+			contextFiles: loader.getAgentsFiles().agentsFiles,
+			customSystemPrompt:
+				systemPromptSource && systemPrompt ? { path: systemPromptSource.path, content: systemPrompt } : undefined,
+			appendSystemPrompt: {
+				paths: loader.getAppendSystemPromptSources().map((source) => source.path),
+				contents: loader.getAppendSystemPrompt(),
+			},
+		});
+		this.showSelector((done) => {
+			const viewer = new StackViewerComponent(
+				tabs,
+				() => {
+					done();
+					this.ui.requestRender();
+				},
+				() => this.ui.requestRender(),
+			);
+			return { component: viewer, focus: viewer.getFocusTarget() };
 		});
 	}
 
