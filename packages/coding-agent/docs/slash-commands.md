@@ -21,6 +21,7 @@ Extensions, prompt templates, and skills can add commands. The command menu in A
 | `/rename [name]` | Rename the session, or show the current name when omitted |
 | `/skills [name] [request]` | Run a skill; without a name, pick one from a list |
 | `/usage` | Show the current session (file, messages, cost by model, prompt cache) and usage across all sessions: a daily activity graph and token and cost totals over 7, 30, and 90 days and all time, at API prices |
+| `/stack` | List what the session loaded, one tab per type (skills, agents, extensions, MCP servers, commands, tools, context files): each item's level (builtin, user, project), status (active, disabled, overridden), and estimated system prompt tokens |
 | `/fork` | Create a new session from an earlier user message |
 | `/compact [instructions]` | Compact the current context, optionally with custom instructions |
 
