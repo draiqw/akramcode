@@ -33,4 +33,5 @@ export const BUILTIN_SLASH_COMMANDS: ReadonlyArray<BuiltinSlashCommand> = [
 	{ name: "clear", description: "Start a new session" },
 	{ name: "compact", description: "Manually compact the session context" },
 	{ name: "reload", description: "Reload keybindings, extensions, skills, prompts, themes, and context files" },
+	{ name: "quit", description: "Exit AkramCode" },
 ];

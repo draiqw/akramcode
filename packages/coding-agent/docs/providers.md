@@ -19,12 +19,13 @@ Run `/logout` and select a provider to remove its stored credential. This does n
 
 ## Built-in providers
 
-| Provider | Sign in | API key variable |
-|---|---|---|
-| OpenAI | API key or ChatGPT OAuth | `OPENAI_API_KEY` |
-| OpenAI Codex | OAuth | none |
-| OpenRouter | API key or OAuth | `OPENROUTER_API_KEY` |
-| DeepSeek | API key | `DEEPSEEK_API_KEY` |
+| Provider | Sign in |
+|---|---|
+| OpenAI | API key or ChatGPT OAuth |
+| OpenAI Codex | OAuth |
+| OpenRouter | API key or OAuth |
+| DeepSeek | API key |
+| llama.cpp | Local router URL, optional API key. See [Local Models with llama.cpp](llama-cpp.md) |
 
 Any other OpenAI- or Anthropic-compatible service can be added as a custom provider. See [Models](models.md#configure-a-compatible-endpoint).
 

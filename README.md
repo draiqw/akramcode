@@ -18,6 +18,15 @@ curl -fsSL https://github.com/draiqw/akramcode/releases/latest/download/install.
 
 The script downloads the standalone binary for your platform from [GitHub Releases](https://github.com/draiqw/akramcode/releases), verifies it against `SHA256SUMS`, unpacks it to `~/.akramcode/bin-release`, and puts an `akramcode` launcher in `~/.local/bin`. Set `AKRAMCODE_VERSION=v1.0.20` to pin a release, or `AKRAMCODE_INSTALL_DIR` / `AKRAMCODE_BIN_DIR` to change the locations. Run the same command again to update.
 
+## Get started
+
+```bash
+cd your-project
+akramcode
+```
+
+Run `/login` to connect a subscription, an API key, or a local [llama.cpp](packages/coding-agent/docs/llama-cpp.md) server, then type a task. See the [quickstart](packages/coding-agent/docs/quickstart.md).
+
 ## All Packages
 
 | Package | Description |
@@ -34,7 +43,7 @@ The script downloads the standalone binary for your platform from [GitHub Releas
 
 AkramCode does not include a built-in permission system for restricting filesystem, process, network, or credential access. By default, it runs with the permissions of the user and process that launched it.
 
-If you need stronger boundaries, containerize or sandbox AkramCode. See [packages/coding-agent/docs/containerization.md](packages/coding-agent/docs/containerization.md) for three patterns:
+If you need stronger boundaries, containerize or sandbox AkramCode. See [packages/coding-agent/docs/containerization.md](packages/coding-agent/docs/containerization.md) for two patterns:
 
 - **Plain Docker**: run the whole `akramcode` process in a local container for simple isolation.
 - **OpenShell**: run the whole `akramcode` process in a policy-controlled sandbox.

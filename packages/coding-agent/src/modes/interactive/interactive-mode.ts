@@ -351,12 +351,6 @@ function hasDefaultModelProvider(providerId: string): providerId is keyof typeof
 	return providerId in defaultModelPerProvider;
 }
 
-function llamaCppPostLoginGuidance(actionLabel: string, loadedModelCount: number): string {
-	return loadedModelCount === 0
-		? `${actionLabel}. No llama.cpp models are loaded. Load one on the router, then select it with /model.`
-		: `${actionLabel}. Use /model to select a loaded llama.cpp model.`;
-}
-
 type LoginProviderCompletionOption = {
 	id: string;
 	name: string;
@@ -497,6 +491,8 @@ export class InteractiveMode {
 	private agentViewBar: SubagentChatBar | undefined;
 	private changelogMarkdown: string | undefined = undefined;
 	private startupNoticesShown = false;
+	/** The startup "no models" warning; removed once a model is selected. */
+	private startupModelWarning: Component[] = [];
 
 	// Status line tracking (for mutating immediately-sequential status updates)
 	private lastStatusSpacer: Spacer | undefined = undefined;
@@ -1210,6 +1206,7 @@ export class InteractiveMode {
 
 		if (modelFallbackMessage) {
 			this.showWarning(modelFallbackMessage);
+			this.startupModelWarning = this.chatContainer.children.slice(-2);
 		}
 
 		const crash = takeUnnotifiedCrash();
@@ -1244,11 +1241,16 @@ export class InteractiveMode {
 		// Main interactive loop
 		while (true) {
 			const userInput = await this.getUserInput();
+			const entryCount = this.sessionManager.getEntries().length;
 			try {
 				await this.session.prompt(userInput.text, { images: userInput.images });
 			} catch (error: unknown) {
 				const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
 				this.showError(errorMessage);
+				// A prompt rejected before it was recorded (no model, no key) goes back to the editor instead of being lost.
+				if (this.sessionManager.getEntries().length === entryCount && !this.editor.getText().trim()) {
+					this.editor.setText(userInput.text);
+				}
 			}
 		}
 	}
@@ -3150,6 +3152,23 @@ export class InteractiveMode {
 				this.editor.setText("");
 				return;
 			}
+			if (text === "/quit") {
+				this.editor.setText("");
+				void this.shutdown();
+				return;
+			}
+			// A mistyped command would otherwise be sent to the model as a prompt.
+			const commandName = /^\/([a-z][\w-]*)(?:\s|$)/i.exec(text)?.[1];
+			if (
+				commandName &&
+				!BUILTIN_SLASH_COMMANDS.some((command) => command.name === commandName) &&
+				!this.session.extensionRunner.getCommand(commandName) &&
+				!this.session.promptTemplates.some((template) => template.name === commandName)
+			) {
+				this.editor.setText(text);
+				this.showWarning(`Unknown command /${commandName}. Type / to see commands.`);
+				return;
+			}
 
 			// Handle bash command (! for normal, !! for excluded from context)
 			if (text.startsWith("!")) {
@@ -4888,6 +4907,11 @@ export class InteractiveMode {
 		this.ui.requestRender();
 	}
 
+	private clearStartupModelWarning(): void {
+		for (const component of this.startupModelWarning) this.chatContainer.removeChild(component);
+		this.startupModelWarning = [];
+	}
+
 	private async handleModelCommand(searchTerm?: string): Promise<void> {
 		if (!searchTerm) {
 			this.showModelSelector();
@@ -4898,6 +4922,7 @@ export class InteractiveMode {
 		if (model) {
 			try {
 				await this.session.setModel(model, { persist: false });
+				this.clearStartupModelWarning();
 				this.footer.invalidate();
 				this.updateEditorBorderColor();
 				this.showStatus(`Model: ${model.id}`);
@@ -4959,6 +4984,7 @@ export class InteractiveMode {
 			const selectModel = async (model: Model<any>, persist: boolean) => {
 				try {
 					await this.session.setModel(model, { persist });
+					this.clearStartupModelWarning();
 					this.updateAvailableProviderCount();
 					this.footer.invalidate();
 					this.updateEditorBorderColor();
@@ -5208,7 +5234,7 @@ export class InteractiveMode {
 		const oauthLoginLabel =
 			oauthProvider?.method && "loginLabel" in oauthProvider.method ? oauthProvider.method.loginLabel : undefined;
 		const subscriptionLabel = oauthLoginLabel ?? "Sign in with an account";
-		const apiKeyLabel = "Sign in with an API key";
+		const apiKeyLabel = "Use an API key or local model";
 		const availableAuthTypes = providerOptions
 			? new Set(providerOptions.map((provider) => provider.authType))
 			: new Set<AuthSelectorProvider["authType"]>(["oauth", "api_key"]);
@@ -5369,42 +5395,49 @@ export class InteractiveMode {
 		authType: "oauth" | "api_key",
 		previousModel: Model<any> | undefined,
 	): Promise<void> {
-		const actionLabel = authType === "oauth" ? `Logged in to ${providerName}` : `Saved API key for ${providerName}`;
+		// Matches LLAMA_PROVIDER_ID from extensions/llama/provider.ts; kept inline to avoid coupling interactive mode to the built-in extension.
+		const isLlamaCpp = providerId === "llama.cpp";
+		const actionLabel =
+			authType === "oauth"
+				? `Logged in to ${providerName}`
+				: isLlamaCpp
+					? `Connected to ${providerName}`
+					: `Saved API key for ${providerName}`;
 
 		const session = this.session;
-		// Dynamic catalogs may be empty until the first authenticated network refresh.
+		// Dynamic catalogs may be empty until the first authenticated network refresh, so pick a model after it.
 		const deferSelection =
 			isUnknownModel(previousModel) &&
-			hasDefaultModelProvider(providerId) &&
-			!session.modelRuntime
-				.getAvailableSnapshot()
-				.some((model) => model.provider === providerId && model.id === defaultModelPerProvider[providerId]);
+			!(
+				hasDefaultModelProvider(providerId) &&
+				session.modelRuntime
+					.getAvailableSnapshot()
+					.some((model) => model.provider === providerId && model.id === defaultModelPerProvider[providerId])
+			);
 		const finishAuthentication = async () => {
 			let selectedModel: Model<any> | undefined;
+			let selectionWarning: string | undefined;
 			let selectionError: string | undefined;
 			if (isUnknownModel(previousModel)) {
-				const availableModels = this.session.modelRuntime.getAvailableSnapshot();
-				const providerModels = availableModels.filter((model) => model.provider === providerId);
-				// Matches LLAMA_PROVIDER_ID from extensions/llama/provider.ts; kept inline to avoid coupling interactive mode to the built-in extension.
-				if (providerId === "llama.cpp") {
-					selectionError = llamaCppPostLoginGuidance(actionLabel, providerModels.length);
-				} else if (!hasDefaultModelProvider(providerId)) {
-					selectionError = `${actionLabel}, but no default model is configured for provider "${providerId}". Use /model to select a model.`;
-				} else if (providerModels.length === 0) {
-					selectionError = `${actionLabel}, but no models are available for that provider. Use /model to select a model.`;
+				const providerModels = this.session.modelRuntime
+					.getAvailableSnapshot()
+					.filter((model) => model.provider === providerId);
+				const defaultModelId = hasDefaultModelProvider(providerId)
+					? defaultModelPerProvider[providerId]
+					: undefined;
+				selectedModel = providerModels.find((model) => model.id === defaultModelId) ?? providerModels[0];
+				if (!selectedModel) {
+					selectionWarning = isLlamaCpp
+						? "No llama.cpp models are loaded. Load one on the router, then select it with /model."
+						: "No models are available for that provider yet. Use /model to select a model.";
 				} else {
-					const defaultModelId = defaultModelPerProvider[providerId];
-					selectedModel = providerModels.find((model) => model.id === defaultModelId);
-					if (!selectedModel) {
-						selectionError = `${actionLabel}, but its default model "${defaultModelId}" is not available. Use /model to select a model.`;
-					} else {
-						try {
-							await this.session.setModel(selectedModel, { persist: true });
-						} catch (error: unknown) {
-							selectedModel = undefined;
-							const errorMessage = error instanceof Error ? error.message : String(error);
-							selectionError = `${actionLabel}, but selecting its default model failed: ${errorMessage}. Use /model to select a model.`;
-						}
+					try {
+						await this.session.setModel(selectedModel, { persist: true });
+						this.clearStartupModelWarning();
+					} catch (error: unknown) {
+						const errorMessage = error instanceof Error ? error.message : String(error);
+						selectionError = `Selecting ${selectedModel.id} failed: ${errorMessage}. Use /model to select a model.`;
+						selectedModel = undefined;
 					}
 				}
 			}
@@ -5412,15 +5445,14 @@ export class InteractiveMode {
 			await this.updateAvailableProviderCount();
 			this.footer.invalidate();
 			this.updateEditorBorderColor();
-			if (selectedModel) {
-				this.showStatus(`${actionLabel}. Selected ${selectedModel.id}. Credentials saved to ${getAuthPath()}`);
-			} else {
-				this.showStatus(`${actionLabel}. Credentials saved to ${getAuthPath()}`);
-				if (selectionError) {
-					this.showError(selectionError);
-				} else {
-				}
-			}
+			const credentialsNote = isLlamaCpp ? "" : ` Credentials saved to ${getAuthPath()}`;
+			this.showStatus(
+				selectedModel
+					? `${actionLabel}. Model: ${selectedModel.id}.${credentialsNote}`
+					: `${actionLabel}.${credentialsNote}`,
+			);
+			if (selectionWarning) this.showWarning(selectionWarning);
+			if (selectionError) this.showError(selectionError);
 		};
 		if (deferSelection) {
 			this.showStatus(`${actionLabel}. Credentials saved to ${getAuthPath()}. Refreshing model catalog…`);
@@ -5519,10 +5551,10 @@ export class InteractiveMode {
 				this.showError(
 					`Saved API key for ${providerName}, but local model state could not be synchronized: ${errorMsg}`,
 				);
-			} else if (errorMsg === "Login cancelled") {
+			} else if (errorMsg === "Login cancelled" || dialog.signal.aborted) {
 				onBack?.();
 			} else {
-				this.showError(`Failed to save API key for ${providerName}: ${errorMsg}`);
+				this.showError(`Login to ${providerName} failed: ${errorMsg}`);
 			}
 		}
 	}
@@ -5976,7 +6008,7 @@ export class InteractiveMode {
 				cacheParts.push(`${misses} (${formatTokens(cacheWaste.missedTokens)} tokens re-billed${cost})`);
 			}
 			cacheParts.push(
-				`warming ${cacheWarmingMode}: ${cacheWarmingStatus ? formatCacheWarmingStatus(cacheWarmingStatus) : "inactive"}`,
+				`warming: ${cacheWarmingStatus ? formatCacheWarmingStatus(cacheWarmingStatus) : "inactive"} (${cacheWarmingMode} mode)`,
 			);
 			lines.push(field("Prompt cache", cacheParts.join(" · ")));
 			const decision = cacheWarmingStatus?.decision;

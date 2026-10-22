@@ -1,4 +1,4 @@
-> New issues and PRs from new contributors are closed automatically. Maintainers review closed submissions daily. See [CONTRIBUTING.md](https://github.com/draiqw/akramcode/blob/main/CONTRIBUTING.md).
+> New issues and PRs from new contributors are closed automatically. Maintainers review closed submissions daily. See [CONTRIBUTING.md](https://github.com/draiqw/akramcode/blob/main/docs/CONTRIBUTING.md).
 
 # AkramCode
 
@@ -16,11 +16,10 @@ npm install -g --ignore-scripts @akramcode/coding-agent
 
 This requires Node.js 22.19 or newer. AkramCode does not require dependency lifecycle scripts for a normal npm installation.
 
-On macOS or Linux, you can instead use the installer:
+On macOS or Linux, you can instead install the standalone binary:
 
 ```bash
-gh release download --repo draiqw/akramcode -p 'akramcode-*.tar.gz'
-tar xzf akramcode-*.tar.gz && ./akramcode/akramcode --version
+curl -fsSL https://github.com/draiqw/akramcode/releases/latest/download/install.sh | sh
 ```
 
 Start AkramCode in the directory where you want it to work:
@@ -30,7 +29,7 @@ cd /path/to/project
 akramcode
 ```
 
-For a built-in AI provider, run `/login` inside AkramCode to connect a subscription or API key. Then give AkramCode a task.
+Run `/login` inside AkramCode to connect a subscription, an API key, or a local [llama.cpp](docs/llama-cpp.md) server. Then give AkramCode a task.
 
 See the [documentation](docs/index.md) for full setup and usage instructions.
 
@@ -54,7 +53,7 @@ npm run check
 ./scripts/test.sh
 ```
 
-Read [CONTRIBUTING.md](https://github.com/draiqw/akramcode/blob/main/CONTRIBUTING.md) before opening an issue or pull request. It defines the contribution gate, issue quality bar, and required checks. Read [AGENTS.md](https://github.com/draiqw/akramcode/blob/main/AGENTS.md) for repository-specific implementation, testing, dependency, and release rules.
+Read [CONTRIBUTING.md](https://github.com/draiqw/akramcode/blob/main/docs/CONTRIBUTING.md) before opening an issue or pull request. It defines the contribution gate, issue quality bar, and required checks. Read [AGENTS.md](https://github.com/draiqw/akramcode/blob/main/AGENTS.md) for repository-specific implementation, testing, dependency, and release rules.
 
 ## License
 

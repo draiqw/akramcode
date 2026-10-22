@@ -157,21 +157,35 @@ export function createLlamaProvider(): LlamaProviderController {
 			apiKey: {
 				name: "llama.cpp server",
 				login: async (interaction): Promise<ApiKeyCredential> => {
-					const enteredUrl = await interaction.prompt({
-						type: "text",
-						message: "llama.cpp server URL",
-						placeholder: process.env.LLAMA_BASE_URL ?? DEFAULT_LLAMA_SERVER_URL,
-					});
-					const serverUrl = normalizeLlamaServerUrl(
-						enteredUrl.trim() || process.env.LLAMA_BASE_URL || DEFAULT_LLAMA_SERVER_URL,
-					);
+					const defaultUrl = process.env.LLAMA_BASE_URL ?? DEFAULT_LLAMA_SERVER_URL;
+					const enteredUrl = (
+						await interaction.prompt({
+							type: "text",
+							message: `llama.cpp server URL (Enter for ${defaultUrl})`,
+						})
+					).trim();
+					let serverUrl: string;
+					try {
+						serverUrl = normalizeLlamaServerUrl(enteredUrl || defaultUrl);
+					} catch (error) {
+						const reason = error instanceof Error && error.message !== "Invalid URL" ? `: ${error.message}` : "";
+						throw new Error(`Invalid server URL "${enteredUrl}"${reason}. Example: ${DEFAULT_LLAMA_SERVER_URL}`);
+					}
 					const apiKey = (
 						await interaction.prompt({
 							type: "secret",
-							message: "API key (optional)",
+							message: "API key (optional, Enter to skip)",
 						})
 					).trim();
-					await new LlamaClient(serverUrl, apiKey || undefined).list({ signal: interaction.signal });
+					try {
+						await new LlamaClient(serverUrl, apiKey || undefined).list({ signal: interaction.signal });
+					} catch (error) {
+						if (interaction.signal?.aborted) throw error;
+						const reason = error instanceof Error ? error.message : String(error);
+						throw new Error(
+							`Could not reach a llama.cpp router at ${serverUrl} (${reason}). Check that llama-server is running in router mode.`,
+						);
+					}
 					return {
 						type: "api_key",
 						key: apiKey || undefined,
