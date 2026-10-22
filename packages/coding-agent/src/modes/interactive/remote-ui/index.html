@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>akramcode remote</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="topbar">
+	<span id="title" class="title">akramcode</span>
+	<span id="status" class="status">connecting</span>
+</header>
+<main id="log" class="log"></main>
+<form id="composer" class="composer">
+	<textarea id="input" rows="2" placeholder="Message (Enter to send, Shift+Enter for a new line)" autocomplete="off"></textarea>
+	<button id="stop" type="button" hidden>Stop</button>
+	<button id="send" type="submit">Send</button>
+</form>
+<script src="app.js"></script>
+</body>
+</html>

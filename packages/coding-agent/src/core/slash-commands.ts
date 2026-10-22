@@ -23,6 +23,7 @@ export const BUILTIN_SLASH_COMMANDS: ReadonlyArray<BuiltinSlashCommand> = [
 		description: "Share session as a secret GitHub gist, or export it to HTML or JSONL",
 		argumentHint: "<path>",
 	},
+	{ name: "remote", description: "Open this session in a browser on another computer", argumentHint: "<stop>" },
 	{ name: "bug", description: "Report a bug to the AkramCode developers", argumentHint: "<description>" },
 	{ name: "rename", description: "Rename the session", argumentHint: "<name>" },
 	{ name: "skills", description: "Run a skill", argumentHint: "<skill>" },

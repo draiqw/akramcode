@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `/remote` opens the running session in a browser on another computer: the transcript updates live, and you can send messages and stop the run. Access needs the printed link with a new token per run; `/remote stop` ends it. With `remote.relayUrl` and `remote.relayKey` in settings, the link goes through a public relay (`src/modes/interactive/remote-relay.ts`, run on your server) and works from any network.
+
 ## [1.0.37] - 2026-10-22
 
 ### Added

@@ -145,6 +145,7 @@ for platform in "${PLATFORMS[@]}"; do
     cp dist/modes/interactive/theme/*.json "$OUTPUT_DIR/$platform/theme/"
     cp -r dist/core/export-html "$OUTPUT_DIR/$platform/"
     cp -r dist/core/traces/ui "$OUTPUT_DIR/$platform/traces-ui"
+    cp -r dist/modes/interactive/remote-ui "$OUTPUT_DIR/$platform/remote-ui"
     cp -r docs "$OUTPUT_DIR/$platform/"
     cp -r examples "$OUTPUT_DIR/$platform/"
 

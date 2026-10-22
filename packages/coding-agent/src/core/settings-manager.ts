@@ -123,6 +123,14 @@ export interface WorktreeSettings {
 	enabled?: boolean;
 }
 
+/** Public relay that `/remote` uses to reach browsers outside the local network. */
+export interface RemoteSettings {
+	/** Relay base URL, e.g. `https://remote.example.com`. Without it, `/remote` serves the local network only. */
+	relayUrl?: string;
+	/** Key the relay requires to offer a session. */
+	relayKey?: string;
+}
+
 /** Settings of the built-in browser extension. */
 export interface BrowserSettings {
 	/**
@@ -235,6 +243,7 @@ export interface Settings {
 	backgroundTasks?: BackgroundTaskSettings;
 	browser?: BrowserSettings; // Global-only: which browser is launched or attached, and where it may go
 	sandbox?: SandboxSettings; // Global-only: where the built-in tools run (local machine or an OpenSandbox sandbox)
+	remote?: RemoteSettings; // Global-only: public relay for /remote
 	sessionDir?: string; // Custom session storage directory (same format as --session-dir CLI flag)
 	traces?: TraceCaptureSettingsInput; // Global-only: capture of model requests, network, and tool executions for `akramcode traces`
 	httpProxy?: string; // Proxy URL applied as HTTP_PROXY and HTTPS_PROXY for AkramCode-managed HTTP clients
@@ -1163,6 +1172,11 @@ export class SettingsManager {
 	/** Global-only: a project must not be able to move command execution to another server. */
 	getSandboxSettings(): SandboxSettings | undefined {
 		return this.globalSettings.sandbox;
+	}
+
+	/** Global-only: a project must not be able to send the session to another relay. */
+	getRemoteSettings(): RemoteSettings | undefined {
+		return this.globalSettings.remote;
 	}
 
 	getShellCommandPrefix(): string | undefined {

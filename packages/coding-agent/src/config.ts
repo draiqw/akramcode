@@ -447,6 +447,21 @@ export function getTracesUiDir(): string {
 	return join(packageDir, srcOrDist, "core", "traces", "ui");
 }
 
+/**
+ * Get path to the `/remote` web UI directory (shipped with package)
+ * - For Bun binary: remote-ui/ next to executable
+ * - For Node.js (dist/): dist/modes/interactive/remote-ui/
+ * - For source (src/): src/modes/interactive/remote-ui/
+ */
+export function getRemoteUiDir(): string {
+	if (isBunBinary) {
+		return join(getPackageDir(), "remote-ui");
+	}
+	const packageDir = getPackageDir();
+	const srcOrDist = existsSync(join(packageDir, "src")) ? "src" : "dist";
+	return join(packageDir, srcOrDist, "modes", "interactive", "remote-ui");
+}
+
 /** Get path to package.json */
 export function getPackageJsonPath(): string {
 	return join(getPackageDir(), "package.json");

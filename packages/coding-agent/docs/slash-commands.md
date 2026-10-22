@@ -29,10 +29,12 @@ Extensions, prompt templates, and skills can add commands. The command menu in A
 | Command | Description |
 |---|---|
 | `/share [path]` | Share the session as a secret GitHub gist with a viewer link, or export it to an HTML or JSONL file. Without a path, asks which one |
+| `/remote [stop]` | Open this session in a browser on another computer: read the transcript, send messages, stop the run. Prints a link with a new access token; `/remote stop` ends access |
 | `/bug [description]` | Prepare a private bug report for the AkramCode developers |
 
 Review a session before exporting or sharing it. Sessions can contain prompts, tool arguments, command output, file contents, and credentials exposed during the conversation.
 
+Anyone with the `/remote` link can run commands on this computer through the agent. With `remote.relayUrl` set (see [Settings](settings.md#remote)), the link goes through that relay and works from any network. Without it, `/remote` listens on all network interfaces over plain HTTP; use it on a trusted network or over an encrypted one such as Tailscale.
 
 ## Runtime and project
 

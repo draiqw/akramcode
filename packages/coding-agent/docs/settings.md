@@ -217,6 +217,17 @@ The `sandbox` block is global-only and selects where the built-in tools run. See
 | `sandbox.workspace` | `"mount"` \| `"volume"` | `"mount"` | Mount the session folder, or keep the workspace in a volume per session. |
 | `sandbox.opensandbox` | object | see [sandbox.md](sandbox.md) | Server address, API key, image, limits, reuse and retention. |
 
+## Remote
+
+The `remote` block is global-only and sets the public relay that `/remote` uses, so the session can be opened from any network. Without it, `/remote` serves the local network only.
+
+| Setting | Type | Default | Description |
+|---|---|---|---|
+| `remote.relayUrl` | string | None | Relay base URL, e.g. `https://remote.example.com`. |
+| `remote.relayKey` | string | None | Key the relay requires to offer a session (its `RELAY_KEY`). |
+
+Run the relay on a server with a public HTTPS address: `RELAY_KEY=<key> PORT=8080 node remote-relay.ts` (the file is `src/modes/interactive/remote-relay.ts`, Node 22.18 or newer), behind a TLS reverse proxy that does not buffer responses.
+
 ## Resources
 
 Resource paths in user settings resolve from the agent directory. Paths in project settings resolve from the project `.akramcode` directory. Absolute paths and `~` are supported.

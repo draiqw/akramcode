@@ -57,6 +57,7 @@ import {
 	getAgentDir,
 	getAuthPath,
 	getDebugLogPath,
+	getRemoteUiDir,
 	VERSION,
 } from "../../config.ts";
 import { type AgentSession, type AgentSessionEvent, parseSkillBlock } from "../../core/agent-session.ts";
@@ -174,6 +175,8 @@ import { UserMessageSelectorComponent } from "./components/user-message-selector
 import { editInExternalEditor } from "./external-editor.ts";
 import { refreshModelCatalogs } from "./model-catalog-refresh.ts";
 import { getModelSearchText } from "./model-search.ts";
+import { type RemoteControlServer, startRemoteControl } from "./remote-control.ts";
+import { openRemoteTunnel, type RemoteTunnel } from "./remote-tunnel.ts";
 import { formatRunStats, RunStatsTracker } from "./run-stats.ts";
 import { shareSession } from "./session-share.ts";
 import { ACCENT_COLORS } from "./theme/system-theme.ts";
@@ -464,6 +467,7 @@ export class InteractiveMode {
 	private isInitialized = false;
 	private onInputCallback?: (input: UserInput) => void;
 	private pendingUserInputs: UserInput[] = [];
+	private remoteControl?: { server: RemoteControlServer; tunnel?: RemoteTunnel; urls: string[] };
 	/** Output tokens per second of the latest response, shown in /usage. */
 	private lastResponseSpeed: number | undefined;
 	/** Images pasted into the editor, by the number in their `[Image #N]` marker. */
@@ -3094,6 +3098,11 @@ export class InteractiveMode {
 				this.editor.setText("");
 				return;
 			}
+			if (text === "/remote" || text.startsWith("/remote ")) {
+				this.editor.setText("");
+				await this.handleRemoteCommand(text.slice("/remote".length).trim());
+				return;
+			}
 			if (text === "/bug" || text.startsWith("/bug ")) {
 				const hint = text.slice("/bug".length).trim();
 				this.editor.setText("");
@@ -3229,6 +3238,7 @@ export class InteractiveMode {
 		const unsubscribeEvents = this.session.subscribe(async (event) => {
 			await this.handleEvent(event);
 		});
+		this.remoteControl?.server.sessionChanged();
 		const stopTrackingAgents = trackRunningAgents(this.session.subagentRegistry, this.runningAgents);
 		this.unsubscribe = () => {
 			unsubscribeEvents();
@@ -5767,6 +5777,78 @@ export class InteractiveMode {
 			}
 			this.showError(`Reload failed: ${error instanceof Error ? error.message : String(error)}`);
 		}
+	}
+
+	private async handleRemoteCommand(argument: string): Promise<void> {
+		if (argument === "stop") {
+			if (!this.remoteControl) {
+				this.showStatus("Remote is off");
+				return;
+			}
+			const { server, tunnel } = this.remoteControl;
+			this.remoteControl = undefined;
+			tunnel?.close();
+			await server.close();
+			this.showStatus("Remote stopped");
+			return;
+		}
+		if (argument) {
+			this.showError("Usage: /remote [stop]");
+			return;
+		}
+		if (!this.remoteControl) {
+			const { relayUrl, relayKey } = this.settingsManager.getRemoteSettings() ?? {};
+			if (relayUrl && !relayKey) {
+				this.showError("Set remote.relayKey in settings.json to use remote.relayUrl");
+				return;
+			}
+			let server: RemoteControlServer | undefined;
+			try {
+				server = await startRemoteControl({
+					uiDir: getRemoteUiDir(),
+					// Behind a relay, only the tunnel needs to reach the server.
+					hostname: relayUrl ? "127.0.0.1" : undefined,
+					host: {
+						session: () => this.session,
+						submit: (text) => this.submitRemoteInput(text),
+					},
+				});
+				const tunnel =
+					relayUrl && relayKey
+						? await openRemoteTunnel({ relayUrl, relayKey, localPort: server.port })
+						: undefined;
+				this.remoteControl = {
+					server,
+					tunnel,
+					urls: tunnel ? [`${tunnel.url}#token=${server.token}`] : server.urls,
+				};
+			} catch (error) {
+				await server?.close();
+				this.showError(`Remote failed: ${error instanceof Error ? error.message : String(error)}`);
+				return;
+			}
+		}
+		const links = this.remoteControl.urls.map((url) => hyperlink(url, url)).join("\n");
+		this.showStatus(
+			`Remote on. Open on another computer:\n${links}\nAnyone with the link controls this session. /remote stop to end.`,
+		);
+	}
+
+	/** Browser input from /remote takes the same path as text typed in the editor. */
+	private async submitRemoteInput(text: string): Promise<void> {
+		if (this.session.isCompacting) {
+			this.queueCompactionMessage(text, "steer");
+			return;
+		}
+		if (this.session.isStreaming) {
+			await this.session.prompt(text, { streamingBehavior: "steer" });
+			this.updatePendingMessagesDisplay();
+			this.ui.requestRender();
+			return;
+		}
+		this.flushPendingBashComponents();
+		if (this.onInputCallback) this.onInputCallback({ text });
+		else this.pendingUserInputs.push({ text });
 	}
 
 	private async handleShareCommand(text: string): Promise<void> {
