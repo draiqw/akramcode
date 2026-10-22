@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- `SelectList` marks truncated item descriptions with an ellipsis.
+
 ## [1.0.36] - 2026-10-21
 
 ## [1.0.35] - 2026-10-19

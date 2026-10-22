@@ -51,17 +51,9 @@ Start AkramCode and configure the provider:
 /login llama.cpp
 ```
 
-Enter the router URL and optional API key. The default URL is `http://127.0.0.1:8080`.
+Enter the router URL and optional API key. Press Enter on an empty URL to use `http://127.0.0.1:8080`. AkramCode selects the first loaded model; use `/model` to pick another.
 
-If you start the router with `--no-models-autoload`, `/login llama.cpp` only stores the connection. Load a model on the router, then select it with `/model`.
-
-Environment variables can configure the same values without `/login`:
-
-```bash
-export LLAMA_BASE_URL=http://127.0.0.1:8080
-export LLAMA_API_KEY=optional-secret
-akramcode
-```
+If you start the router with `--no-models-autoload` and no model is loaded yet, `/login llama.cpp` only stores the connection. Load a model on the router, then select it with `/model`.
 
 If the server uses an API key, start `llama-server` with the matching `--api-key` value. Keep `--host 127.0.0.1` for local-only access.
 

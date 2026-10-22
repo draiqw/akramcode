@@ -177,7 +177,9 @@ export class OAuthSelectorComponent extends Container implements Focusable {
 					? this.mode === "login"
 						? "No providers available"
 						: "No providers logged in. Use /login first."
-					: "No matching providers";
+					: this.mode === "login"
+						? "No matching providers. Esc to go back"
+						: "No matching providers";
 			this.listContainer.addChild(new TruncatedText(theme.fg("muted", `  ${message}`), 1, 0));
 		}
 	}

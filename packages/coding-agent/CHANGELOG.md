@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+### Added
+- `/quit` exits AkramCode.
+
+### Changed
+
+- After `/login`, AkramCode selects a model from the refreshed catalog: the provider default, otherwise its first available model. llama.cpp no longer needs a separate `/model` step.
+- An unknown `/command` shows a warning and stays in the editor instead of being sent to the model.
+- `/login` lists local models under "Use an API key or local model". The llama.cpp URL prompt shows the default used on Enter.
+
+### Fixed
+
+- `/login llama.cpp` no longer reports "No llama.cpp models are loaded" before the catalog refresh finds the loaded models.
+- llama.cpp login errors name the URL and suggest a fix; cancelling a login is not reported as an error.
+- The startup "No models available" warning is removed once a model is selected.
+- A prompt sent without a model says no model is selected and stays in the editor.
+- Docs no longer say provider API keys can come from environment variables, and list llama.cpp among the providers.
+
 ## [1.0.36] - 2026-10-21
 
 ### Breaking Changes

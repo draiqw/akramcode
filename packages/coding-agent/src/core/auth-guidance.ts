@@ -4,11 +4,7 @@ import { getDocsPath } from "../config.ts";
 const UNKNOWN_PROVIDER = "unknown";
 
 export function getProviderLoginHelp(): string {
-	return [
-		"Use /login to log into a provider via OAuth or API key. See:",
-		`  ${join(getDocsPath(), "providers.md")}`,
-		`  ${join(getDocsPath(), "models.md")}`,
-	].join("\n");
+	return `Use /login to connect a subscription, an API key, or a local model. See ${join(getDocsPath(), "models.md")}`;
 }
 
 export function formatNoModelsAvailableMessage(): string {
@@ -20,6 +16,7 @@ export function formatNoModelSelectedMessage(): string {
 }
 
 export function formatNoApiKeyFoundMessage(provider: string): string {
-	const providerDisplay = provider === UNKNOWN_PROVIDER ? "the selected model" : provider;
-	return `No API key found for ${providerDisplay}.\n\n${getProviderLoginHelp()}`;
+	// The placeholder model of a fresh install has no provider: say that no model is selected, not that a key is missing.
+	if (provider === UNKNOWN_PROVIDER) return formatNoModelSelectedMessage();
+	return `No API key found for ${provider}.\n\n${getProviderLoginHelp()}`;
 }

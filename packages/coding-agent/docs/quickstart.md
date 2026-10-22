@@ -4,11 +4,10 @@ AkramCode runs in your terminal and works with files on your machine. To use it,
 
 ## 1. Install AkramCode
 
-Download a release binary (macOS arm64):
+Install the standalone binary (macOS and Linux):
 
 ```bash
-gh release download --repo draiqw/akramcode -p 'akramcode-*.tar.gz'
-tar xzf akramcode-*.tar.gz && ./akramcode/akramcode --version
+curl -fsSL https://github.com/draiqw/akramcode/releases/latest/download/install.sh | sh
 ```
 
 Alternatively, install AkramCode from npm. This requires Node.js 22.19 or newer:
@@ -50,9 +49,9 @@ In AkramCode, run:
 /login
 ```
 
-Choose a provider, then follow the prompts to use a subscription or store an API key. Run `/model` afterward if you want to select a different available model.
+Choose a provider, then follow the prompts to use a subscription or store an API key. For a model on your machine, choose **Use an API key or local model**, then **llama.cpp**, and enter the router URL; see [Local Models with llama.cpp](llama-cpp.md). AkramCode selects a model after you connect. Run `/model` afterward if you want a different one.
 
-See [Choose a model and provider](models.md) for supported providers, environment-variable authentication, local models, and custom endpoints.
+See [Choose a model and provider](models.md) for supported providers, local models, and custom endpoints.
 
 ## 4. Give AkramCode a task
 
@@ -112,6 +111,6 @@ If you installed AkramCode with npm, run:
 npm uninstall -g @akramcode/coding-agent
 ```
 
-If you used the release binary, delete the extracted `akramcode` directory.
+If you used the install script, delete `~/.akramcode/bin-release` and `~/.local/bin/akramcode`.
 
 Neither method removes configuration, credentials, sessions, or installed AkramCode packages from `~/.akramcode/agent/`.

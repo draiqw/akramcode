@@ -7,7 +7,7 @@ For a built-in provider, start with `/login`, then choose a model with `/model`.
 | What you have | Recommended setup |
 |---|---|
 | A supported subscription | Sign in through `/login` |
-| A provider API key | Store it through `/login` or set its environment variable |
+| A provider API key | Store it through `/login` |
 | A local GGUF model | Connect AkramCode to the llama.cpp router |
 | An OpenAI- or Anthropic-compatible endpoint | Add it to `models.json` |
 | A provider with a custom protocol or authentication flow | Build or install a provider extension |
@@ -18,9 +18,9 @@ Current providers, model IDs, capabilities, context limits, and pricing. AkramCo
 
 Run `/login` and select a provider. AkramCode stores credentials in [`auth.json`](configuration.md#agent-directory). Run `/logout` to remove stored credentials for a provider.
 
-You can instead provide an API key through the provider's environment variable. This is useful in CI and other environments where AkramCode should not write credentials. [Providers](providers.md) lists the variables and provider-specific setup.
+Provider environment variables such as `OPENAI_API_KEY` are not read; see [Providers](providers.md#environment-variables-are-ignored). For a single run without stored credentials, pass `--api-key`.
 
-When several credential sources are configured, AkramCode uses a runtime `--api-key` first, then a stored `auth.json` credential, an `apiKey` from `models.json`, and finally the provider's environment variables or ambient cloud credentials. Provider extensions can define their own authentication behavior.
+When several credential sources are configured, AkramCode uses a runtime `--api-key` first, then a stored `auth.json` credential, then an `apiKey` from `models.json`. Provider extensions can define their own authentication behavior.
 
 Keep `auth.json` and any credential commands private. Project settings and extensions load without asking and can execute inside the AkramCode process. Review [Security](security.md) before running AkramCode in an unfamiliar directory.
 
@@ -199,10 +199,6 @@ Use an extension when the provider needs custom streaming, model discovery, or a
 ### A model does not appear
 
 Confirm that its provider has usable authentication. Custom models can load from `models.json` but remain unavailable in `/model` until AkramCode can resolve credentials. For llama.cpp, only models currently loaded by the router appear.
-
-### Authentication works in one shell only
-
-Check whether the key came from an environment variable rather than `auth.json`. Environment variables must be present in the process that starts AkramCode.
 
 ### Sign-in opens a browser on a remote machine
 

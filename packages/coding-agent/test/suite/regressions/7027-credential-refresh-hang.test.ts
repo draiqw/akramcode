@@ -132,7 +132,11 @@ describe("post-login model discovery", () => {
 		vi.restoreAllMocks();
 	});
 
-	async function startLogin() {
+	async function startLogin(
+		providerId = "openrouter",
+		providerName = "OpenRouter",
+		authType: "oauth" | "api_key" = "oauth",
+	) {
 		harness = await createHarness();
 		vi.useFakeTimers();
 		const session = harness.session;
@@ -159,11 +163,11 @@ describe("post-login model discovery", () => {
 			showStatus: vi.fn(),
 			showError: vi.fn(),
 			showWarning: vi.fn(),
+			clearStartupModelWarning: vi.fn(),
 			maybeWarnAboutAnthropicSubscriptionAuth: vi.fn(),
 			ui: { requestRender: vi.fn() },
 		};
-		await complete.call(context, "openrouter", "OpenRouter", "oauth", unknownModel);
-		expect(context.showStatus).toHaveBeenCalledWith(expect.stringContaining("Credentials saved"));
+		await complete.call(context, providerId, providerName, authType, unknownModel);
 		expect(context.showError).not.toHaveBeenCalled();
 		expect(setModel).not.toHaveBeenCalled();
 
@@ -172,7 +176,7 @@ describe("post-login model discovery", () => {
 			setModel,
 			currentModel,
 			async discover(ids: string[]) {
-				availableModels.mockReturnValue(ids.map((id) => ({ ...model, provider: "openrouter", id })));
+				availableModels.mockReturnValue(ids.map((id) => ({ ...model, provider: providerId, id })));
 				finishRefresh();
 				await vi.advanceTimersByTimeAsync(0);
 			},
@@ -189,18 +193,20 @@ describe("post-login model discovery", () => {
 		expect(login.showError).not.toHaveBeenCalled();
 	});
 
-	it("reports a refreshed catalog without the provider default", async () => {
+	it("selects the first refreshed model when the provider default is missing", async () => {
 		const login = await startLogin();
 		await login.discover(["fast", "powerful"]);
-		expect(login.setModel).not.toHaveBeenCalled();
-		expect(login.showError).toHaveBeenCalledWith(expect.stringContaining("is not available"));
+		expect(login.setModel).toHaveBeenCalledWith(expect.objectContaining({ provider: "openrouter", id: "fast" }), {
+			persist: true,
+		});
+		expect(login.showError).not.toHaveBeenCalled();
 	});
 
 	it("reports an empty catalog only after refresh", async () => {
 		const login = await startLogin();
 		await login.discover([]);
 		expect(login.setModel).not.toHaveBeenCalled();
-		expect(login.showError).toHaveBeenCalledWith(expect.stringContaining("no models are available"));
+		expect(login.showWarning).toHaveBeenCalledWith(expect.stringContaining("No models are available"));
 	});
 
 	it("preserves a model selected during refresh", async () => {
@@ -211,11 +217,25 @@ describe("post-login model discovery", () => {
 		expect(login.showError).not.toHaveBeenCalled();
 	});
 
+	it("selects a loaded llama.cpp model once the catalog refresh finds it", async () => {
+		const login = await startLogin("llama.cpp", "llama.cpp", "api_key");
+		await login.discover(["local-coder"]);
+		expect(login.setModel).toHaveBeenCalledWith(
+			expect.objectContaining({ provider: "llama.cpp", id: "local-coder" }),
+			{
+				persist: true,
+			},
+		);
+		expect(login.showError).not.toHaveBeenCalled();
+		expect(login.showWarning).not.toHaveBeenCalled();
+		expect(login.showStatus).toHaveBeenLastCalledWith("Connected to llama.cpp. Model: local-coder.");
+	});
+
 	it("bounds refresh to 15 seconds", async () => {
 		const login = await startLogin();
 		await vi.advanceTimersByTimeAsync(15_000);
 		expect(login.showWarning).toHaveBeenCalledWith(expect.stringContaining("timed out"));
-		expect(login.showError).toHaveBeenCalledWith(expect.stringContaining("no models are available"));
+		expect(login.showWarning).toHaveBeenCalledWith(expect.stringContaining("No models are available"));
 		expect(login.setModel).not.toHaveBeenCalled();
 	});
 });

@@ -33,6 +33,7 @@ Extensions, prompt templates, and skills can add commands. The command menu in A
 
 Review a session before exporting or sharing it. Sessions can contain prompts, tool arguments, command output, file contents, and credentials exposed during the conversation.
 
+
 ## Runtime and project
 
 | Command | Description |
@@ -40,6 +41,7 @@ Review a session before exporting or sharing it. Sessions can contain prompts, t
 | `/agents` | List, create, edit, and delete [agent types](subagents.md#custom-agent-types) |
 | `/tasks` | Inspect and stop [background commands and monitors](subagents.md#background-tasks) |
 | `/reload` | Reload keybindings, extensions, skills, templates, themes, and context files |
+| `/quit` | Exit AkramCode. `Ctrl+D` on an empty editor and `Ctrl+C` twice also exit |
 
 ## Commands added by resources
 
