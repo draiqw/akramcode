@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- `/stack` lists what the session loaded, one tab per type (skills, agents, extensions, MCP servers, commands, tools, context files): the level each item comes from, whether it is active, disabled, or overridden, and its estimated system prompt tokens.
+
 ## [1.0.38] - 2026-10-22
 
 ### Added
