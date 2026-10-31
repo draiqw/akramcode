@@ -1,0 +1,22 @@
+Copyright (c) 2026 Akramov Roman. All rights reserved.
+
+akramcode is proprietary software. You may download the official releases from
+https://github.com/draiqw/akramcode/releases, install them, and use them for
+personal and commercial work.
+
+You may not copy, modify, merge, publish, distribute, sublicense, or sell
+akramcode or any part of it, or decompile, disassemble, or otherwise reverse
+engineer it, except where applicable law allows this regardless of this
+license.
+
+akramcode includes third-party software under its own licenses, including code
+derived from pi, Copyright (c) 2025 Mario Zechner, under the MIT License. See
+THIRD_PARTY_NOTICES.md, which ships with every release.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
